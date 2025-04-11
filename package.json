@@ -12,14 +12,19 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.3",
+    "cheerio": "^1.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.1",
     "express": "^4.18.2",
+    "js-cookie": "^3.0.5",
     "lucide-react": "^0.344.0",
     "mongoose": "^8.1.1",
+    "qiankun": "^2.10.16",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "telnyx": "^1.25.5"
+    "systemjs": "^6.15.1",
+    "telnyx": "^1.25.5",
+    "vite-plugin-qiankun": "^1.0.15"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
