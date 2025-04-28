@@ -30,13 +30,38 @@ import MatchHarxReps from './onboarding/MatchHarxReps';
 import RepOnboarding from './onboarding/RepOnboarding';
 import SessionPlanning from './onboarding/SessionPlanning';
 
+interface BaseStep {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+}
+
+interface ComponentStep extends BaseStep {
+  component: React.ComponentType;
+}
+
+interface NonComponentStep extends BaseStep {
+  component?: never;
+}
+
+type Step = ComponentStep | NonComponentStep;
+
+interface Phase {
+  id: number;
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  steps: Step[];
+}
+
 const CompanyOnboarding = () => {
   const [currentPhase, setCurrentPhase] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
 
-  const phases = [
+  const phases: Phase[] = [
     {
       id: 1,
       title: 'Company Account Setup & Identity',
