@@ -13,6 +13,9 @@ RUN npm install --force
 
 COPY . .
 
+ENV VITE_GIGS_API=https://api-gigsmanual.harx.ai/api
+ENV NODE_ENV=development
+
 
 
 RUN npm run build
