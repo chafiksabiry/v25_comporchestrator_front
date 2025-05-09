@@ -22,7 +22,7 @@ import {
 import Cookies from 'js-cookie';
 
 import { phoneNumberService } from '../services/api';
-const gigId = process.env.NODE_ENV === 'development' ? '681b2b9297864fa3b948311f' : Cookies.get('gigId');
+const gigId = import.meta.env.DEV ? '681b2b9297864fa3b948311f' : Cookies.get('gigId');
 
 interface PhoneNumber {
   phoneNumber: string;
@@ -82,10 +82,10 @@ const TelephonySetup = () => {
 
   const fetchDestinationZone = async () => {
     try {
-      const response = await fetch(`${process.env.gigs_api}/gigs/${gigId}/destination-zone`);
+      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}/destination-zone`);
       const data = await response.json();
-      console.log(data);
-      setDestinationZone(data);
+      console.log(data.data.code);
+      setDestinationZone(data.data.code);
     } catch (error) {
       console.error('Error fetching destination zone:', error);
     }
