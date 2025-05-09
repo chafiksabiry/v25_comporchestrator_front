@@ -22,10 +22,7 @@ import {
 import Cookies from 'js-cookie';
 
 import { phoneNumberService } from '../services/api';
-
-// Replace process.env with import.meta.env for Vite
-const gigId = import.meta.env.MODE === 'development' ? '681b2b9297864fa3b948311f' : Cookies.get('gigId');
-const GIGS_API = import.meta.env.VITE_GIGS_API || 'http://localhost:3000/api';
+const gigId = process.env.NODE_ENV === 'development' ? '681b2b9297864fa3b948311f' : Cookies.get('gigId');
 
 interface PhoneNumber {
   phoneNumber: string;
@@ -53,12 +50,12 @@ const TelephonySetup = () => {
   ];
 
   const features = [
-    { id: 'incoming', name: 'Incoming Calls', icon: PhoneIncoming, enabled: true, readOnly: true },
-    { id: 'outgoing', name: 'Outgoing Calls', icon: PhoneForwarded, enabled: true, readOnly: true },
-    { id: 'recording', name: 'Call Recording', icon: Mic, enabled: callRecording, readOnly: false },
-    { id: 'voicemail', name: 'Voicemail', icon: Volume2, enabled: voicemail, readOnly: false },
-    { id: 'mute', name: 'Call Muting', icon: VolumeX, enabled: true, readOnly: true },
-    { id: 'routing', name: 'Smart Routing', icon: PhoneCall, enabled: true, readOnly: true },
+    { id: 'incoming', name: 'Incoming Calls', icon: PhoneIncoming, enabled: true },
+    { id: 'outgoing', name: 'Outgoing Calls', icon: PhoneForwarded, enabled: true },
+    { id: 'recording', name: 'Call Recording', icon: Mic, enabled: callRecording },
+    { id: 'voicemail', name: 'Voicemail', icon: Volume2, enabled: voicemail },
+    { id: 'mute', name: 'Call Muting', icon: VolumeX, enabled: true },
+    { id: 'routing', name: 'Smart Routing', icon: PhoneCall, enabled: true },
   ];
 
   const routingOptions = [
@@ -71,7 +68,6 @@ const TelephonySetup = () => {
   useEffect(() => {
     // Load existing numbers and destination zone on startup
     fetchExistingNumbers();
-    //setDestinationZone('FR');
     fetchDestinationZone();
   }, []);
 
@@ -86,10 +82,10 @@ const TelephonySetup = () => {
 
   const fetchDestinationZone = async () => {
     try {
-      const response = await fetch(`${GIGS_API}/gigs/${gigId}/destination-zone`);
+      const response = await fetch(`${process.env.gigs_api}/gigs/${gigId}/destination-zone`);
       const data = await response.json();
       console.log(data);
-      setDestinationZone(data.data.code);
+      setDestinationZone(data);
     } catch (error) {
       console.error('Error fetching destination zone:', error);
     }
@@ -118,14 +114,6 @@ const TelephonySetup = () => {
       setIsSearchOpen(false); // Close the search
     } catch (error) {
       console.error('Error purchasing number:', error);
-    }
-  };
-
-  const handleFeatureToggle = (featureId: string) => {
-    if (featureId === 'recording') {
-      setCallRecording(!callRecording);
-    } else if (featureId === 'voicemail') {
-      setVoicemail(!voicemail);
     }
   };
 
@@ -262,15 +250,19 @@ const TelephonySetup = () => {
                   <Icon className="mr-2 h-5 w-5 text-indigo-600" />
                   <span className="font-medium text-gray-900">{feature.name}</span>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={feature.enabled}
-                  onChange={() => !feature.readOnly && handleFeatureToggle(feature.id)}
-                  readOnly={feature.readOnly}
-                  className={`h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 ${
-                    feature.readOnly ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                <button
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                    feature.enabled ? 'bg-indigo-600' : 'bg-gray-200'
                   }`}
-                />
+                  role="switch"
+                  aria-checked={feature.enabled}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      feature.enabled ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
               </div>
             );
           })}
