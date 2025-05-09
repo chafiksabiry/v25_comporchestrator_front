@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Phone,
   Settings,
@@ -14,17 +14,37 @@ import {
   Server,
   Shield,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  Search
 } from 'lucide-react';
+import Cookies from 'js-cookie';
+
+import { phoneNumberService } from '../services/api';
+
+// Replace process.env with import.meta.env for Vite
+const gigId = import.meta.env.MODE === 'development' ? '681b2b9297864fa3b948311f' : Cookies.get('gigId');
+const GIGS_API = import.meta.env.VITE_GIGS_API || 'http://localhost:3000/api';
+
+interface PhoneNumber {
+  phoneNumber: string;
+  status: string;
+  features: string[];
+}
 
 const TelephonySetup = () => {
-  const [provider, setProvider] = useState('twilio');
-  const [phoneNumbers, setPhoneNumbers] = useState<string[]>([]);
+  const [provider, setProvider] = useState('telnyx');
+  const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
+  const [destinationZone, setDestinationZone] = useState('');
   const [callRecording, setCallRecording] = useState(true);
   const [voicemail, setVoicemail] = useState(true);
   const [callRouting, setCallRouting] = useState('round-robin');
   const [webhookUrl, setWebhookUrl] = useState('');
   const [testMode, setTestMode] = useState(true);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [availableNumbers, setAvailableNumbers] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const providers = [
     { id: 'twilio', name: 'Twilio', logo: Phone },
@@ -33,12 +53,12 @@ const TelephonySetup = () => {
   ];
 
   const features = [
-    { id: 'incoming', name: 'Incoming Calls', icon: PhoneIncoming, enabled: true },
-    { id: 'outgoing', name: 'Outgoing Calls', icon: PhoneForwarded, enabled: true },
-    { id: 'recording', name: 'Call Recording', icon: Mic, enabled: callRecording },
-    { id: 'voicemail', name: 'Voicemail', icon: Volume2, enabled: voicemail },
-    { id: 'mute', name: 'Call Muting', icon: VolumeX, enabled: true },
-    { id: 'routing', name: 'Smart Routing', icon: PhoneCall, enabled: true },
+    { id: 'incoming', name: 'Incoming Calls', icon: PhoneIncoming, enabled: true, readOnly: true },
+    { id: 'outgoing', name: 'Outgoing Calls', icon: PhoneForwarded, enabled: true, readOnly: true },
+    { id: 'recording', name: 'Call Recording', icon: Mic, enabled: callRecording, readOnly: false },
+    { id: 'voicemail', name: 'Voicemail', icon: Volume2, enabled: voicemail, readOnly: false },
+    { id: 'mute', name: 'Call Muting', icon: VolumeX, enabled: true, readOnly: true },
+    { id: 'routing', name: 'Smart Routing', icon: PhoneCall, enabled: true, readOnly: true },
   ];
 
   const routingOptions = [
@@ -47,6 +67,67 @@ const TelephonySetup = () => {
     { id: 'availability', name: 'Availability Based' },
     { id: 'load-balanced', name: 'Load Balanced' },
   ];
+
+  useEffect(() => {
+    // Load existing numbers and destination zone on startup
+    fetchExistingNumbers();
+    //setDestinationZone('FR');
+    fetchDestinationZone();
+  }, []);
+
+  const fetchExistingNumbers = async () => {
+    try {
+      const data = await phoneNumberService.listPhoneNumbers();
+      setPhoneNumbers(data);
+    } catch (error) {
+      console.error('Error fetching phone numbers:', error);
+    }
+  };
+
+  const fetchDestinationZone = async () => {
+    try {
+      const response = await fetch(`${GIGS_API}/gigs/${gigId}/destination-zone`);
+      const data = await response.json();
+      console.log(data);
+      setDestinationZone(data.data.code);
+    } catch (error) {
+      console.error('Error fetching destination zone:', error);
+    }
+  };
+
+  const searchAvailableNumbers = async () => {
+    if (!destinationZone) {
+      console.error('Destination zone not available');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const data = await phoneNumberService.searchPhoneNumbers(destinationZone);
+      setAvailableNumbers(data);
+    } catch (error) {
+      console.error('Error searching numbers:', error);
+    }
+    setIsLoading(false);
+  };
+
+  const purchaseNumber = async (phoneNumber: string) => {
+    try {
+      await phoneNumberService.purchasePhoneNumber(phoneNumber);
+      fetchExistingNumbers(); // Refresh the list after purchase
+      setIsSearchOpen(false); // Close the search
+    } catch (error) {
+      console.error('Error purchasing number:', error);
+    }
+  };
+
+  const handleFeatureToggle = (featureId: string) => {
+    if (featureId === 'recording') {
+      setCallRecording(!callRecording);
+    } else if (featureId === 'voicemail') {
+      setVoicemail(!voicemail);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -98,32 +179,71 @@ const TelephonySetup = () => {
 
       {/* Phone Numbers */}
       <div className="rounded-lg bg-white p-6 shadow">
-        <h3 className="text-lg font-medium text-gray-900">Phone Numbers</h3>
-        <div className="mt-4 space-y-4">
-          <div className="flex items-center space-x-4">
-            <input
-              type="tel"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Enter phone number"
-            />
-            <button className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
-              Add Number
-            </button>
-          </div>
-          <div className="rounded-lg bg-gray-50 p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <Phone className="mr-2 h-5 w-5 text-indigo-600" />
-                <span className="font-medium text-gray-900">+1 (555) 123-4567</span>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-medium text-gray-900">Phone Numbers</h3>
+          <button
+            onClick={() => setIsSearchOpen(!isSearchOpen)}
+            className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-700"
+          >
+            {isSearchOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+            <span>{isSearchOpen ? 'Hide Search' : 'Search Numbers'}</span>
+          </button>
+        </div>
+
+        {/* Search Panel */}
+        {isSearchOpen && (
+          <div className="mb-6 space-y-4 border-b pb-6">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={searchAvailableNumbers}
+                disabled={isLoading || !destinationZone}
+                className="flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+              >
+                <Search className="mr-2 h-4 w-4" />
+                {isLoading ? 'Searching...' : 'Search Numbers'}
+              </button>
+            </div>
+
+            {/* Available Numbers List */}
+            {availableNumbers.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <h4 className="text-sm font-medium text-gray-700">Available Numbers</h4>
+                <div className="grid gap-2">
+                  {availableNumbers.map((number: any) => (
+                    <div key={number.phone_number} className="flex items-center justify-between rounded-lg border p-3">
+                      <span className="font-medium">{number.phone_number}</span>
+                      <button
+                        onClick={() => purchaseNumber(number.phone_number)}
+                        className="rounded-md bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700"
+                      >
+                        Purchase
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500">Primary</span>
-                <button className="rounded-full bg-red-100 p-1 text-red-600 hover:bg-red-200">
-                  <VolumeX className="h-4 w-4" />
-                </button>
+            )}
+          </div>
+        )}
+
+        {/* Existing Numbers List */}
+        <div className="space-y-4">
+          {phoneNumbers.map((number) => (
+            <div key={number.phoneNumber} className="rounded-lg bg-gray-50 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Phone className="mr-2 h-5 w-5 text-indigo-600" />
+                  <span className="font-medium text-gray-900">{number.phoneNumber}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-500">{number.status}</span>
+                  <button className="rounded-full bg-red-100 p-1 text-red-600 hover:bg-red-200">
+                    <VolumeX className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          ))}
         </div>
       </div>
 
@@ -142,19 +262,15 @@ const TelephonySetup = () => {
                   <Icon className="mr-2 h-5 w-5 text-indigo-600" />
                   <span className="font-medium text-gray-900">{feature.name}</span>
                 </div>
-                <button
-                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                    feature.enabled ? 'bg-indigo-600' : 'bg-gray-200'
+                <input
+                  type="checkbox"
+                  checked={feature.enabled}
+                  onChange={() => !feature.readOnly && handleFeatureToggle(feature.id)}
+                  readOnly={feature.readOnly}
+                  className={`h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 ${
+                    feature.readOnly ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
                   }`}
-                  role="switch"
-                  aria-checked={feature.enabled}
-                >
-                  <span
-                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                      feature.enabled ? 'translate-x-5' : 'translate-x-0'
-                    }`}
-                  />
-                </button>
+                />
               </div>
             );
           })}
