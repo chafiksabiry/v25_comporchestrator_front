@@ -16,7 +16,7 @@ COPY . .
 ENV VITE_GIGS_API=https://api-gigsmanual.harx.ai/api
 ENV NODE_ENV=development
 ENV VITE_API_BASE_URL=https://api-Comp-Orchestrator.harx.ai/api
-
+ENV VITE_COMPANY_API_URL=https://api-companysearchwizard.harx.ai/api
 
 RUN npm run build
 
