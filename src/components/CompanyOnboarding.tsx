@@ -79,7 +79,7 @@ const CompanyOnboarding = () => {
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const companyId = import.meta.env.DEV ? '67f7e68ca15da643118b0148' : Cookies.get('companyId');
+  const companyId = import.meta.env.DEV ? '681e2b764e757b9b928c47b2' : Cookies.get('companyId');
 
   // Charger le progrès initial
   useEffect(() => {
