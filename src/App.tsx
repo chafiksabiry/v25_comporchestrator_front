@@ -25,7 +25,7 @@ function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const handleLogout = () => {
-    if (!import.meta.env.DEV) {
+    if (import.meta.env.VITE_NODE_ENV !== 'development') {
       // Supprimer tous les cookies
       const cookies = Cookies.get();
       Object.keys(cookies).forEach(cookieName => {
