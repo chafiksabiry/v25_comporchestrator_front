@@ -7,13 +7,12 @@ import {
   BarChart2, 
   Menu, 
   X,
-  Home,
   Settings,
   HelpCircle,
   LogOut,
   Building2
 } from 'lucide-react';
-import Dashboard from './components/Dashboard';
+import Cookies from 'js-cookie';
 import ProfileCreation from './components/ProfileCreation';
 import GigGeneration from './components/GigGeneration';
 import Matching from './components/Matching';
@@ -22,13 +21,26 @@ import Optimization from './components/Optimization';
 import CompanyOnboarding from './components/CompanyOnboarding';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const handleLogout = () => {
+    if (!import.meta.env.DEV) {
+      // Supprimer tous les cookies
+      const cookies = Cookies.get();
+      Object.keys(cookies).forEach(cookieName => {
+        Cookies.remove(cookieName);
+      });
+
+      // Rediriger vers /app2
+      window.location.href = '/app2';
+    } else {
+      console.log('Logout disabled in development mode');
+    }
+  };
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return <Dashboard />;
       case 'profile-creation':
         return <ProfileCreation />;
       case 'gig-generation':
@@ -40,9 +52,8 @@ function App() {
       case 'optimization':
         return <Optimization />;
       case 'company-onboarding':
-        return <CompanyOnboarding />;
       default:
-        return <Dashboard />;
+        return <CompanyOnboarding />;
     }
   };
 
@@ -68,15 +79,6 @@ function App() {
         </div>
         <nav className="mt-6 px-4">
           <div className="space-y-4">
-          {/*   <button
-              className={`flex w-full items-center space-x-2 rounded-lg py-2 px-3 ${
-                activeTab === 'dashboard' ? 'bg-indigo-800' : 'hover:bg-indigo-800'
-              }`}
-              onClick={() => setActiveTab('dashboard')}
-            >
-              <Home className="h-5 w-5" />
-              <span>Dashboard</span>
-            </button> */}
             <button
               className={`flex w-full items-center space-x-2 rounded-lg py-2 px-3 ${
                 activeTab === 'company-onboarding' ? 'bg-indigo-800' : 'hover:bg-indigo-800'
@@ -86,33 +88,6 @@ function App() {
               <Building2 className="h-5 w-5" />
               <span>Company Onboarding</span>
             </button>
-          {/*   <button
-              className={`flex w-full items-center space-x-2 rounded-lg py-2 px-3 ${
-                activeTab === 'profile-creation' ? 'bg-indigo-800' : 'hover:bg-indigo-800'
-              }`}
-              onClick={() => setActiveTab('profile-creation')}
-            >
-              <UserCircle className="h-5 w-5" />
-              <span>Profile Creation</span>
-            </button> */}
-         {/*    <button
-              className={`flex w-full items-center space-x-2 rounded-lg py-2 px-3 ${
-                activeTab === 'gig-generation' ? 'bg-indigo-800' : 'hover:bg-indigo-800'
-              }`}
-              onClick={() => setActiveTab('gig-generation')}
-            >
-              <Briefcase className="h-5 w-5" />
-              <span>Gig Generation</span>
-            </button> */}
-           {/*  <button
-              className={`flex w-full items-center space-x-2 rounded-lg py-2 px-3 ${
-                activeTab === 'matching' ? 'bg-indigo-800' : 'hover:bg-indigo-800'
-              }`}
-              onClick={() => setActiveTab('matching')}
-            >
-              <ArrowRightLeft className="h-5 w-5" />
-              <span>Matching</span>
-            </button> */}
             <button
               className={`flex w-full items-center space-x-2 rounded-lg py-2 px-3 ${
                 activeTab === 'approval-publishing' ? 'bg-indigo-800' : 'hover:bg-indigo-800'
@@ -122,15 +97,6 @@ function App() {
               <CheckCircle className="h-5 w-5" />
               <span>Approval & Publishing</span>
             </button>
-           {/*  <button
-              className={`flex w-full items-center space-x-2 rounded-lg py-2 px-3 ${
-                activeTab === 'optimization' ? 'bg-indigo-800' : 'hover:bg-indigo-800'
-              }`}
-              onClick={() => setActiveTab('optimization')}
-            >
-              <BarChart2 className="h-5 w-5" />
-              <span>Optimization</span>
-            </button> */}
           </div>
           <div className="absolute bottom-0 left-0 right-0 border-t border-indigo-800 p-4">
             <div className="space-y-4">
@@ -142,7 +108,10 @@ function App() {
                 <HelpCircle className="h-5 w-5" />
                 <span>Help</span>
               </button>
-              <button className="flex w-full items-center space-x-2 rounded-lg py-2 px-3 hover:bg-indigo-800">
+              <button 
+                onClick={handleLogout}
+                className="flex w-full items-center space-x-2 rounded-lg py-2 px-3 hover:bg-indigo-800"
+              >
                 <LogOut className="h-5 w-5" />
                 <span>Logout</span>
               </button>
