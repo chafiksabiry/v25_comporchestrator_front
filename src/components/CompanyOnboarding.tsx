@@ -117,7 +117,7 @@ const CompanyOnboarding = () => {
       ) + 1;
 
       await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
         { status: 'in_progress' }
       );
 
@@ -141,7 +141,7 @@ const CompanyOnboarding = () => {
       ) + 1;
 
       await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
         { status: 'completed' }
       );
 
