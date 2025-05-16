@@ -33,7 +33,7 @@ function App() {
       });
 
       // Rediriger vers /app2
-      window.location.href = '/app2';
+      window.location.href = '/app1';
     } else {
       console.log('Logout disabled in development mode');
     }
