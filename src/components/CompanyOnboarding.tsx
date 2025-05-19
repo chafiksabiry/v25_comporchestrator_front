@@ -80,6 +80,7 @@ const CompanyOnboarding = () => {
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const companyId = import.meta.env.DEV ? '681e2b764e757b9b928c47b2' : Cookies.get('companyId');
+  console.log('Company ID:', companyId);
 
   // Charger le progrès initial
   useEffect(() => {
