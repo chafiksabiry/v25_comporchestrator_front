@@ -72,6 +72,13 @@ interface OnboardingProgressResponse {
   }[];
 }
 
+interface HasGigsResponse {
+  message: string;
+  data: {
+    hasGigs: boolean;
+  };
+}
+
 const CompanyOnboarding = () => {
   const [currentPhase, setCurrentPhase] = useState(1);
   const [displayedPhase, setDisplayedPhase] = useState(1);
@@ -79,15 +86,27 @@ const CompanyOnboarding = () => {
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasGigs, setHasGigs] = useState(false);
   const companyId = import.meta.env.DEV ? '681e2b764e757b9b928c47b2' : Cookies.get('companyId');
   console.log('Company ID:', companyId);
 
-  // Charger le progrès initial
+  // Charger le progrès initial et vérifier les gigs
   useEffect(() => {
     if (companyId) {
       loadCompanyProgress();
+      checkCompanyGigs();
     }
   }, [companyId]);
+
+  const checkCompanyGigs = async () => {
+    try {
+      const response = await axios.get<HasGigsResponse>(`${import.meta.env.VITE_GIGS_API}/company/${companyId}/has-gigs`);
+      setHasGigs(response.data.data.hasGigs);
+    } catch (error) {
+      console.error('Error checking company gigs:', error);
+      setHasGigs(false);
+    }
+  };
 
   const loadCompanyProgress = async () => {
     setIsLoading(true);
@@ -364,6 +383,10 @@ const CompanyOnboarding = () => {
     const allPreviousCompleted = previousSteps.every(s => 
       s.disabled || completedSteps.includes(s.id)
     );
+
+    // Vérifier si l'étape nécessite des gigs
+    const requiresGigs = stepId >= 5 && stepId <= 13; // Les étapes 5 à 13 nécessitent des gigs
+    const canAccessStep = !requiresGigs || hasGigs;
     
     // Redirection spéciale pour Create Gigs
     if (stepId === 4) {
@@ -371,7 +394,7 @@ const CompanyOnboarding = () => {
       return;
     }
     
-    if (step?.component && allPreviousCompleted && !step.disabled) {
+    if (step?.component && allPreviousCompleted && !step.disabled && canAccessStep) {
       setActiveStep(stepId);
     }
   };
@@ -415,6 +438,52 @@ const CompanyOnboarding = () => {
       </div>
     );
   }
+
+  const renderStep = (step: Step, index: number) => {
+    const Icon = getStepIcon(step);
+    const isCompleted = completedSteps.includes(step.id);
+    const isCurrent = activeStep === step.id;
+    const requiresGigs = step.id >= 5 && step.id <= 13;
+    const isDisabled = step.disabled || (requiresGigs && !hasGigs);
+
+    return (
+      <div
+        key={step.id}
+        className={`relative flex items-start p-4 ${
+          isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'
+        }`}
+        onClick={() => !isDisabled && handleStepClick(step.id)}
+      >
+        <div className="flex-shrink-0">
+          <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
+            isCompleted ? 'bg-green-100' : isCurrent ? 'bg-indigo-100' : 'bg-gray-100'
+          }`}>
+            <Icon className={`h-6 w-6 ${
+              isCompleted ? 'text-green-600' : isCurrent ? 'text-indigo-600' : 'text-gray-400'
+            }`} />
+          </div>
+        </div>
+        <div className="ml-4 flex-1">
+          <div className="flex items-center justify-between">
+            <h3 className={`text-sm font-medium ${
+              isCompleted ? 'text-green-600' : isCurrent ? 'text-indigo-600' : 'text-gray-900'
+            }`}>
+              {step.title}
+            </h3>
+            {isCompleted && (
+              <CheckCircle className="h-5 w-5 text-green-500" />
+            )}
+          </div>
+          <p className="mt-1 text-sm text-gray-500">{step.description}</p>
+          {requiresGigs && !hasGigs && (
+            <p className="mt-1 text-sm text-red-500">
+              Requires at least one gig to be created
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -485,75 +554,7 @@ const CompanyOnboarding = () => {
         </div>
 
         <div className="space-y-4">
-          {displayedPhaseData.steps.map((step) => {
-            const StepIcon = getStepIcon(step);
-            const isClickable = !!step.component;
-            const isCompleted = completedSteps.includes(step.id);
-            const isCurrentStep = !isCompleted && !step.disabled && 
-              displayedPhaseData.steps
-                .slice(0, displayedPhaseData.steps.findIndex(s => s.id === step.id))
-                .every(s => s.disabled || completedSteps.includes(s.id));
-            const canAccessStep = isPhaseAccessible(displayedPhaseData.id);
-            
-            return (
-              <div
-                key={step.id}
-                className={`rounded-lg border p-4 ${
-                  !canAccessStep ? 'opacity-50 cursor-not-allowed border-gray-200 bg-gray-50' :
-                  step.disabled ? 'opacity-50 cursor-not-allowed' :
-                  isCompleted ? 'border-green-200 bg-green-50' :
-                  isCurrentStep ? 'border-indigo-200 bg-indigo-50 ring-2 ring-indigo-500' :
-                  'border-gray-200 bg-white'
-                } ${isClickable && !step.disabled && canAccessStep && (isCompleted || isCurrentStep) ? 'cursor-pointer hover:border-indigo-300' : 'opacity-50'}`}
-                onClick={() => isClickable && !step.disabled && canAccessStep && (isCompleted || isCurrentStep) && handleStepClick(step.id)}
-              >
-                <div className="flex items-start space-x-4">
-                  <div className={`rounded-full p-2 ${
-                    !canAccessStep ? 'bg-gray-200 text-gray-400' :
-                    step.disabled ? 'bg-gray-200 text-gray-400' :
-                    isCompleted ? 'bg-green-100 text-green-600' :
-                    isCurrentStep ? 'bg-indigo-100 text-indigo-600' :
-                    'bg-gray-100 text-gray-500'
-                  }`}>
-                    <StepIcon className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-medium text-gray-900">{step.title}</h3>
-                      {!canAccessStep ? (
-                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                          Locked
-                        </span>
-                      ) : step.disabled ? (
-                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                          Coming Soon
-                        </span>
-                      ) : isCompleted ? (
-                        <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                          <CheckCircle className="mr-1 h-3 w-3" />
-                          Completed
-                        </span>
-                      ) : isCurrentStep ? (
-                        <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-                          <AlertCircle className="mr-1 h-3 w-3" />
-                          Current Step
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-1 text-sm text-gray-500">{step.description}</p>
-                    {isClickable && !step.disabled && canAccessStep && (isCompleted || isCurrentStep) && (
-                      <button 
-                        className="mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-500"
-                        onClick={() => handleStartStep(step.id)}
-                      >
-                        {isCompleted ? 'Review Step' : 'Start Step'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {displayedPhaseData.steps.map((step, index) => renderStep(step, index))}
         </div>
 
         <div className="mt-6 flex justify-between">
