@@ -698,6 +698,8 @@ const UploadContacts = () => {
       }
 
       const data = await response.json();
+
+      console.log('data gigs', data);
       if (data.data) {
         setGigs(data.data);
         // Set the first gig as selected by default if available
