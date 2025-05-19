@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Upload,
   FileText,
@@ -22,8 +23,37 @@ import {
   Globe,
   Settings,
   Plus,
-  X
+  X,
+  Database,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
+import * as XLSX from 'xlsx';
+import Cookies from 'js-cookie';
+
+interface Lead {
+  _id: string;
+  gigId: string;
+  userId: string;
+  Email_1?: string;
+  Phone?: string;
+  Deal_Name?: string;
+  Stage?: string;
+  Pipeline?: string;
+  updatedAt?: string;
+  __v?: number;
+}
+
+interface ApiResponse {
+  success: boolean;
+  count: number;
+  total: number;
+  totalPages: number;
+  currentPage: number;
+  data: Lead[];
+}
 
 const UploadContacts = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -31,6 +61,30 @@ const UploadContacts = () => {
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [parsedLeads, setParsedLeads] = useState<Lead[]>([]);
+  const [showSaveButton, setShowSaveButton] = useState(true);
+  const [showFileName, setShowFileName] = useState(true);
+  const [showZohoModal, setShowZohoModal] = useState(false);
+  const [hasZohoConfig, setHasZohoConfig] = useState(false);
+  const [zohoConfig, setZohoConfig] = useState({
+    clientId: '',
+    clientSecret: '',
+    refreshToken: ''
+  });
+  const [isImportingZoho, setIsImportingZoho] = useState(false);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [isLoadingLeads, setIsLoadingLeads] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [realtimeLeads, setRealtimeLeads] = useState<Lead[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageSize] = useState(50);
+
+  const defaultUserId = '680b62682c1ca099fe2b14ff';
+  const defaultGigId = '680b62682c1ca099fe2b14ff';
 
   const channels = [
     { id: 'all', name: 'All Channels', icon: Globe },
@@ -74,21 +128,162 @@ const UploadContacts = () => {
     }
   ];
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const navigate = useNavigate();
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      // Simulate upload progress
-      setUploadProgress(0);
-      const interval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(interval);
-            return 100;
+      setUploadError(null);
+      setUploadSuccess(false);
+      setIsProcessing(true);
+      setUploadProgress(10);
+      setParsedLeads([]);
+      
+      try {
+        // Read the file content
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            let rows: string[] = [];
+            let headers: string[] = [];
+            if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+              const data = new Uint8Array(e.target?.result as ArrayBuffer);
+              const workbook = XLSX.read(data, { type: 'array' });
+              const sheetName = workbook.SheetNames[0];
+              const worksheet = workbook.Sheets[sheetName];
+              const json: unknown[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+              rows = (json as any[]).map((row: any) => Array.isArray(row) ? row.join(',') : Object.values(row).join(','));
+            } else {
+              // CSV
+              const content = e.target?.result as string;
+              // Détection du séparateur (virgule ou point-virgule)
+              const sep = content.includes(';') && !content.includes(',') ? ';' : ',';
+              rows = content.split('\n');
+              rows = rows.map(row => row.trim()).filter(row => row.length > 0);
+              if (sep !== ',') {
+                rows = rows.map(row => row.replace(/;/g, ','));
+              }
+            }
+            headers = rows[0].split(',').map(header => header.trim());
+            console.log('Headers lus:', headers);
+            
+            // Process each row and create lead objects
+            const totalRows = rows.length - 1;
+            const leads = rows.slice(1)
+              .filter(row => row.trim() !== '') // Filter out empty rows
+              .map((row, index) => {
+                const values = row.split(',').map(value => value.trim());
+                console.log(`Ligne ${index + 2} valeurs:`, values);
+                const lead: any = {
+                  userId: Cookies.get('userId') || defaultUserId,
+                  gigId: Cookies.get('gigId') || defaultGigId,
+                  Last_Activity_Time: new Date(),
+                  Activity_Tag: '',
+                  Deal_Name: '',
+                  Stage: '',
+                  Email_1: '',
+                  Phone: '',
+                  Telephony: '',
+                  Pipeline: '',
+                };
+
+                console.log('🔍 Lead créé avec userId et gigId:', {
+                  userId: lead.userId,
+                  gigId: lead.gigId
+                });
+
+                headers.forEach((header, index) => {
+                  const value = values[index]?.trim();
+                  if (value) { // Only set values that are not empty
+                    switch(header.toLowerCase().replace(/[_ ]/g, '')) { // Normalise: retire espaces et underscores
+                      case 'email':
+                        lead.Email_1 = value;
+                        break;
+                      case 'email1':
+                        lead.Email_1 = value;
+                        break;
+                      case 'phone':
+                        lead.Phone = value;
+                        break;
+                      case 'stage':
+                        lead.Stage = value;
+                        break;
+                      case 'dealname':
+                        lead.Deal_Name = value;
+                        break;
+                      case 'pipeline':
+                        lead.Pipeline = value;
+                        break;
+                      case 'projecttags':
+                        lead.Project_Tags = value.split(';').filter(tag => tag.trim() !== '');
+                        break;
+                    }
+                  }
+                });
+
+                // Validate required fields
+                if (!lead.Email_1 && !lead.Phone) {
+                  toast.error(`Row ${index + 2}: Missing email and phone number. At least one is required.`);
+                  return null;
+                }
+
+                // If Deal_Name is empty but Email_1 exists, use Email_1 as Deal_Name
+                if (!lead.Deal_Name && lead.Email_1) {
+                  lead.Deal_Name = lead.Email_1;
+                }
+
+                // Simulation de progression : avance en fonction du nombre de lignes
+                setUploadProgress(10 + Math.round(((index + 1) / totalRows) * 80));
+
+                return lead;
+              })
+              .filter(lead => lead !== null); // Remove invalid leads
+
+            if (leads.length === 0) {
+              toast.error('No valid leads found in the file. Please check the file format and content.');
+              setUploadError('No valid leads found');
+              setIsProcessing(false);
+              setUploadProgress(0);
+              return;
+            }
+
+            console.log('Leads à envoyer:', leads);
+
+            setParsedLeads(leads);
+            setIsProcessing(false);
+            setUploadProgress(100);
+            return;
+          } catch (error: any) {
+            console.error('Error processing file:', error);
+            const errorMessage = error.response?.data?.message || error.message || 'Error processing file';
+            setUploadError(errorMessage);
+            toast.error(errorMessage);
+            setUploadProgress(0);
+            setIsProcessing(false);
           }
-          return prev + 10;
-        });
-      }, 500);
+        };
+
+        reader.onerror = () => {
+          setUploadError('Error reading file');
+          toast.error('Error reading file');
+          setUploadProgress(0);
+          setIsProcessing(false);
+        };
+
+        if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+          reader.readAsArrayBuffer(file);
+        } else {
+          reader.readAsText(file);
+        }
+      } catch (error: any) {
+        console.error('Error uploading file:', error);
+        const errorMessage = error.message || 'Error uploading file';
+        setUploadError(errorMessage);
+        toast.error(errorMessage);
+        setUploadProgress(0);
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -111,6 +306,372 @@ const UploadContacts = () => {
     }
   };
 
+  const handleSaveLeads = async () => {
+    if (!parsedLeads || parsedLeads.length === 0) return;
+    setIsProcessing(true);
+    setUploadProgress(0);
+    setShowSaveButton(false);
+    setShowFileName(false);
+
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_DASHBOARD_API}/leads`, parsedLeads, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Cookies.get('gigId') || defaultGigId}:${Cookies.get('userId') || defaultUserId}`
+        }
+      });
+      if (response.status === 200) {
+        setUploadSuccess(true);
+        setUploadProgress(100);
+        toast.success(`Successfully uploaded ${parsedLeads.length} contacts!`);
+        
+        // Reset all states after a short delay
+        setTimeout(() => {
+          setSelectedFile(null);
+          setUploadProgress(0);
+          setUploadSuccess(false);
+          setParsedLeads([]);
+          setUploadError(null);
+          setIsProcessing(false);
+          setShowSaveButton(true);
+          setShowFileName(true);
+          toast('File has been reset. You can upload a new file.', {
+            icon: '🔄',
+            duration: 2000
+          });
+        }, 1200);
+      }
+    } catch (error: any) {
+      console.error('Error processing file:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Error processing file';
+      setUploadError(errorMessage);
+      toast.error(errorMessage);
+      setUploadProgress(0);
+      setShowSaveButton(true);
+      setShowFileName(true);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const checkZohoConfig = async () => {
+    try {
+      console.log('🔍 Vérification de la configuration Zoho...');
+      const userId = Cookies.get('userId') || defaultUserId;
+      console.log('👤 UserId utilisé:', userId);
+      
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/config/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Réponse du serveur:', data);
+        setHasZohoConfig(data.hasConfig);
+        console.log('📝 État de la configuration Zoho:', data.hasConfig ? 'Configuré' : 'Non configuré');
+      } else {
+        console.error('❌ Erreur lors de la vérification:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors de la vérification de la configuration Zoho:', error);
+    }
+  };
+
+  useEffect(() => {
+    console.log('🔄 Composant monté - Vérification initiale de la configuration Zoho');
+    checkZohoConfig();
+  }, []);
+
+  useEffect(() => {
+    console.log('📊 État actuel de hasZohoConfig:', hasZohoConfig);
+    if (!hasZohoConfig) {
+      console.log('⚠️ Configuration Zoho non trouvée - Affichage de la modal');
+      setShowZohoModal(true);
+    } else {
+      console.log('✅ Configuration Zoho trouvée - Pas besoin d\'afficher la modal');
+    }
+  }, [hasZohoConfig]);
+
+  const handleZohoConfig = async () => {
+    try {
+      const userId = Cookies.get('userId') || defaultUserId;
+      console.log('Configuring Zoho with userId:', userId);
+      console.log('Zoho config data:', zohoConfig);
+
+      const configResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/configure`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...zohoConfig,
+          userId
+        })
+      });
+
+      console.log('Config response status:', configResponse.status);
+      const data = await configResponse.json();
+      console.log('Config response data:', data);
+
+      if (configResponse.status === 200) {
+        if (data.accessToken) {
+          localStorage.setItem('zoho_access_token', data.accessToken);
+          console.log('Zoho access token stored in localStorage:', data.accessToken);
+          setHasZohoConfig(true);
+        } else {
+          console.error('No access token in response:', data);
+        }
+        toast.success('Zoho CRM configuration saved successfully');
+        setShowZohoModal(false);
+      } else {
+        throw new Error(data.message || 'Error configuring Zoho CRM');
+      }
+    } catch (error: any) {
+      console.error('Error in handleZohoConfig:', error);
+      toast.error(error.message || 'Error configuring Zoho CRM');
+    }
+  };
+
+  const handleImportFromZoho = async () => {
+    console.log('=== Début de l\'importation Zoho ===');
+    setIsImportingZoho(true);
+    setRealtimeLeads([]);
+    try {
+      const userId = Cookies.get('userId') || defaultUserId;
+      const zohoToken = localStorage.getItem('zoho_access_token');
+      
+      console.log('🔑 Informations d\'authentification:', {
+        userId,
+        hasZohoToken: !!zohoToken,
+        tokenLength: zohoToken?.length
+      });
+      
+      if (!zohoToken) {
+        console.error('❌ Token Zoho non trouvé dans le localStorage');
+        throw new Error('Zoho access token not found. Please configure Zoho CRM first.');
+      }
+
+      // Reset parsed leads at the start
+      setParsedLeads([]);
+      console.log('🔄 Réinitialisation de la liste des leads');
+      
+      console.log('📥 Début de la synchronisation des leads depuis Zoho CRM...');
+
+      try {
+        const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/leads/sync-all`;
+        console.log('🌐 Envoi de la requête de synchronisation vers:', apiUrl);
+
+        // Vérifier si le serveur est accessible
+        try {
+          const checkResponse = await fetch(apiUrl, { 
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${zohoToken}`,
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+              userId: userId,
+              gigId: Cookies.get('gigId') || defaultGigId
+            })
+          });
+
+          if (!checkResponse.ok) {
+            const errorData = await checkResponse.json().catch(() => null);
+            console.error('❌ Erreur de réponse du serveur:', {
+              status: checkResponse.status,
+              statusText: checkResponse.statusText,
+              errorData
+            });
+            throw new Error(`Erreur serveur (${checkResponse.status}): ${errorData?.message || checkResponse.statusText}`);
+          }
+
+          const data = await checkResponse.json();
+          
+          if (!data.success) {
+            throw new Error(data.message || 'Erreur lors de la synchronisation');
+          }
+
+          const { leads, sync_info } = data.data;
+          
+          console.log('📊 Informations de synchronisation:', {
+            totalFetched: sync_info.total_fetched,
+            totalSaved: sync_info.total_saved,
+            failed: sync_info.failed,
+            pagesProcessed: sync_info.pages_processed
+          });
+
+          // Mettre à jour les leads en temps réel
+          setRealtimeLeads(leads);
+          
+          // Mettre à jour les leads parsés
+          setParsedLeads(leads);
+
+          // Afficher un message de succès
+          toast.success(`Synchronisation terminée. ${sync_info.total_saved} leads importés avec succès.`);
+
+          console.log('✅ Synchronisation terminée avec succès');
+
+        } catch (checkError: any) {
+          console.error('❌ Erreur de connexion au serveur:', checkError);
+          if (checkError.name === 'TypeError' && checkError.message === 'Failed to fetch') {
+            throw new Error('Impossible de se connecter au serveur. Veuillez vérifier que le serveur est en cours d\'exécution sur le port 5005 et que l\'URL est correcte.');
+          }
+          throw checkError;
+        }
+
+      } catch (error: any) {
+        console.error('❌ Erreur lors de la synchronisation:', error);
+        toast.error(error.message || 'Erreur lors de la synchronisation des leads');
+        throw error;
+      }
+
+    } catch (error: any) {
+      console.error('❌ Erreur globale dans handleImportFromZoho:', error);
+      toast.error(error.message || 'Error importing leads from Zoho CRM');
+    } finally {
+      setIsImportingZoho(false);
+      console.log('=== Fin de l\'importation Zoho ===');
+    }
+  };
+
+  const fetchLeads = async (page = currentPage) => {
+    setIsLoadingLeads(true);
+    setError(null);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/leads?page=${page}&limit=${pageSize}`, {
+        headers: {
+          'Authorization': `Bearer ${Cookies.get('gigId') || defaultGigId}:${Cookies.get('userId') || defaultUserId}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch leads: ${response.statusText}`);
+      }
+
+      const responseData: ApiResponse = await response.json();
+      
+      if (!responseData.success) {
+        throw new Error('Failed to fetch leads: API returned unsuccessful response');
+      }
+
+      if (!Array.isArray(responseData.data)) {
+        throw new Error('Invalid response format: expected data to be an array');
+      }
+
+      setLeads(responseData.data);
+      setTotalPages(responseData.totalPages);
+      setCurrentPage(responseData.currentPage);
+    } catch (error: unknown) {
+      console.error('Error fetching leads:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch leads';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoadingLeads(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeads().catch(error => {
+      console.error('Error in useEffect:', error);
+      setError('Failed to load leads');
+    });
+  }, []);
+
+  const renderPaginationButtons = () => {
+    const buttons = [];
+    const maxVisiblePages = 4; // Nombre maximum de pages visibles
+
+    // Toujours afficher la première page
+    buttons.push(
+      <button
+        key={1}
+        onClick={() => fetchLeads(1)}
+        className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+          1 === currentPage
+            ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+            : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+        }`}
+      >
+        1
+      </button>
+    );
+
+    // Calculer les pages à afficher
+    let startPage = Math.max(2, currentPage - 1);
+    let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+    // Ajuster si on est proche du début ou de la fin
+    if (currentPage <= 2) {
+      endPage = Math.min(4, totalPages - 1);
+    } else if (currentPage >= totalPages - 1) {
+      startPage = Math.max(2, totalPages - 3);
+    }
+
+    // Ajouter les points de suspension au début si nécessaire
+    if (startPage > 2) {
+      buttons.push(
+        <span key="start-ellipsis" className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300">
+          ...
+        </span>
+      );
+    }
+
+    // Ajouter les pages du milieu
+    for (let i = startPage; i <= endPage; i++) {
+      buttons.push(
+        <button
+          key={i}
+          onClick={() => fetchLeads(i)}
+          className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+            i === currentPage
+              ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+              : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+          }`}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    // Ajouter les points de suspension à la fin si nécessaire
+    if (endPage < totalPages - 1) {
+      buttons.push(
+        <span key="end-ellipsis" className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300">
+          ...
+        </span>
+      );
+    }
+
+    // Toujours afficher la dernière page si elle existe et est différente de la première
+    if (totalPages > 1) {
+      buttons.push(
+        <button
+          key={totalPages}
+          onClick={() => fetchLeads(totalPages)}
+          className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+            totalPages === currentPage
+              ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+              : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+          }`}
+        >
+          {totalPages}
+        </button>
+      );
+    }
+
+    return buttons;
+  };
+
+  const handleCreateGig = () => {
+    navigate('/app6');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -119,16 +680,125 @@ const UploadContacts = () => {
           <p className="text-sm text-gray-500">Import and manage your contact list across channels</p>
         </div>
         <div className="flex space-x-3">
+          {!hasZohoConfig && (
+            <button 
+              onClick={() => setShowZohoModal(true)}
+              className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+            >
+              <Database className="mr-2 h-4 w-4" />
+              Configure Zoho CRM
+            </button>
+          )}
+          <button 
+            onClick={handleImportFromZoho}
+            disabled={isImportingZoho || !hasZohoConfig}
+            className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
+          >
+            {isImportingZoho ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Importing...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Import from Zoho
+              </>
+            )}
+          </button>
           <button className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
             <Download className="mr-2 h-4 w-4" />
             Export
           </button>
-          <button className="flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
+          <button 
+            onClick={handleCreateGig}
+            className="flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+          >
             <Plus className="mr-2 h-4 w-4" />
-            Add Contact
+            Create Gig
           </button>
         </div>
       </div>
+
+      {/* Zoho Configuration Modal */}
+      {showZohoModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+            <div className="inline-block transform overflow-hidden rounded-lg bg-white px-4 pt-5 pb-4 text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6 sm:align-middle">
+              <div className="absolute top-0 right-0 pt-4 pr-4">
+                <button
+                  onClick={() => setShowZohoModal(false)}
+                  className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              <div className="sm:flex sm:items-start">
+                <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                  <h3 className="text-lg font-medium leading-6 text-gray-900">Configure Zoho CRM</h3>
+                  <div className="mt-4 space-y-4">
+                    <div>
+                      <label htmlFor="clientId" className="block text-sm font-medium text-gray-700">
+                        Client ID
+                      </label>
+                      <input
+                        type="text"
+                        id="clientId"
+                        value={zohoConfig.clientId}
+                        onChange={(e) => setZohoConfig({...zohoConfig, clientId: e.target.value})}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="clientSecret" className="block text-sm font-medium text-gray-700">
+                        Client Secret
+                      </label>
+                      <input
+                        type="password"
+                        id="clientSecret"
+                        value={zohoConfig.clientSecret}
+                        onChange={(e) => setZohoConfig({...zohoConfig, clientSecret: e.target.value})}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="refreshToken" className="block text-sm font-medium text-gray-700">
+                        Refresh Token
+                      </label>
+                      <input
+                        type="password"
+                        id="refreshToken"
+                        value={zohoConfig.refreshToken}
+                        onChange={(e) => setZohoConfig({...zohoConfig, refreshToken: e.target.value})}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  onClick={handleZohoConfig}
+                  className="inline-flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  Save Configuration
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowZohoModal(false)}
+                  className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:mt-0 sm:w-auto sm:text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Upload Section */}
       <div className="rounded-lg bg-white p-6 shadow">
@@ -137,7 +807,23 @@ const UploadContacts = () => {
             <h3 className="text-lg font-medium text-gray-900">Import Contacts</h3>
             <p className="mt-1 text-sm text-gray-500">Upload your contacts from a CSV or Excel file</p>
           </div>
-          <button className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+          <button 
+            className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+            onClick={() => {
+              // Create a sample CSV template
+              const headers = ['Email', 'Phone', 'Deal Name', 'Stage', 'Pipeline', 'Project Tags'];
+              const csvContent = headers.join(',') + '\n';
+              const blob = new Blob([csvContent], { type: 'text/csv' });
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'contacts_template.csv';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              window.URL.revokeObjectURL(url);
+            }}
+          >
             Download Template
           </button>
         </div>
@@ -149,7 +835,7 @@ const UploadContacts = () => {
               <div className="mt-4">
                 <label htmlFor="file-upload" className="cursor-pointer">
                   <span className="mt-2 block text-sm font-medium text-indigo-600">
-                    Click to upload
+                    {isProcessing ? 'Processing...' : 'Click to upload'}
                   </span>
                   <input
                     id="file-upload"
@@ -157,19 +843,26 @@ const UploadContacts = () => {
                     className="hidden"
                     accept=".csv,.xlsx,.xls"
                     onChange={handleFileSelect}
+                    disabled={isProcessing}
                   />
                 </label>
                 <p className="mt-1 text-xs text-gray-500">CSV, Excel files up to 10MB</p>
               </div>
             </div>
-            {selectedFile && (
+            {selectedFile && showFileName && (
               <div className="mt-4">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center">
                     <FileText className="mr-2 h-4 w-4 text-gray-400" />
                     <span className="font-medium text-gray-900">{selectedFile.name}</span>
                   </div>
-                  <button onClick={() => setSelectedFile(null)}>
+                  <button onClick={() => {
+                    setSelectedFile(null);
+                    setUploadProgress(0);
+                    setUploadError(null);
+                    setUploadSuccess(false);
+                    setParsedLeads([]);
+                  }}>
                     <X className="h-4 w-4 text-gray-400" />
                   </button>
                 </div>
@@ -177,7 +870,9 @@ const UploadContacts = () => {
                   <div className="relative">
                     <div className="h-2 rounded-full bg-gray-200">
                       <div
-                        className="h-2 rounded-full bg-indigo-600 transition-all duration-500"
+                        className={`h-2 rounded-full transition-all duration-500 ${
+                          uploadError ? 'bg-red-600' : uploadSuccess ? 'bg-green-600' : 'bg-indigo-600'
+                        }`}
                         style={{ width: `${uploadProgress}%` }}
                       />
                     </div>
@@ -186,6 +881,25 @@ const UploadContacts = () => {
                     <span>{uploadProgress}% complete</span>
                     <span>{Math.round(selectedFile.size / 1024)} KB</span>
                   </div>
+                  {uploadError && (
+                    <div className="mt-2 text-sm text-red-600">
+                      {uploadError}
+                    </div>
+                  )}
+                  {uploadSuccess && (
+                    <div className="mt-2 text-sm text-green-600">
+                      File uploaded successfully!
+                    </div>
+                  )}
+                  {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
+                    <button
+                      className="mt-4 w-full rounded bg-indigo-600 px-4 py-2 text-white font-semibold hover:bg-indigo-700 disabled:opacity-50"
+                      onClick={handleSaveLeads}
+                      disabled={isProcessing}
+                    >
+                      Save
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -223,7 +937,14 @@ const UploadContacts = () => {
       <div className="rounded-lg bg-white shadow">
         <div className="border-b border-gray-200 p-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900">Contact List</h3>
+            <div>
+              <h3 className="text-lg font-medium text-gray-900">Leads List</h3>
+              {leads.length > 0 && (
+                <p className="mt-1 text-sm text-gray-500">
+                  Showing {leads.length} leads (Page {currentPage} of {totalPages})
+                </p>
+              )}
+            </div>
             <div className="flex items-center space-x-3">
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -232,7 +953,7 @@ const UploadContacts = () => {
                 <input
                   type="text"
                   className="block w-full rounded-md border-gray-300 pl-10 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  placeholder="Search contacts..."
+                  placeholder="Search leads..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -246,6 +967,23 @@ const UploadContacts = () => {
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
+              <button
+                onClick={() => fetchLeads()}
+                className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                disabled={isLoadingLeads}
+              >
+                {isLoadingLeads ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -255,16 +993,19 @@ const UploadContacts = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Contact
+                  Lead
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Channels
+                  Deal Name
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Status
+                  Stage
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Last Contact
+                  Pipeline
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Last Activity
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   Actions
@@ -272,67 +1013,146 @@ const UploadContacts = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
-              {contacts.map((contact) => (
-                <tr key={contact.id}>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="flex items-center">
-                      <div className="h-10 w-10 flex-shrink-0 rounded-full bg-indigo-100 flex items-center justify-center">
-                        <Users className="h-6 w-6 text-indigo-600" />
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{contact.name}</div>
-                        <div className="text-sm text-gray-500">{contact.email}</div>
-                        <div className="text-sm text-gray-500">{contact.phone}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="flex space-x-1">
-                      {contact.channels.map((channel) => {
-                        const ChannelIcon = channels.find(c => c.id === channel)?.icon || Globe;
-                        return (
-                          <div
-                            key={channel}
-                            className="rounded-full bg-gray-100 p-1 text-gray-500"
-                            title={channel}
-                          >
-                            <ChannelIcon className="h-4 w-4" />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      contact.status === 'active'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {contact.status === 'active' ? (
-                        <CheckCircle className="mr-1 h-3 w-3" />
-                      ) : (
-                        <AlertCircle className="mr-1 h-3 w-3" />
-                      )}
-                      {contact.status}
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {contact.lastContact}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                    <button className="mr-2 text-indigo-600 hover:text-indigo-900">
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button className="text-red-600 hover:text-red-900">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+              {error ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-red-500">
+                    {error}
                   </td>
                 </tr>
-              ))}
+              ) : isLoadingLeads ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                    Loading leads...
+                  </td>
+                </tr>
+              ) : leads.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                    No leads found
+                  </td>
+                </tr>
+              ) : (
+                leads.map((lead) => (
+                  <tr key={lead._id}>
+                    <td className="whitespace-nowrap px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="h-10 w-10 flex-shrink-0 rounded-full bg-indigo-100 flex items-center justify-center">
+                          <Users className="h-6 w-6 text-indigo-600" />
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'No Email'}</div>
+                          <div className="text-sm text-gray-500">{lead.Phone || 'No Phone'}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                      {lead.Deal_Name || 'N/A'}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4">
+                      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-800">
+                        {lead.Stage || 'N/A'}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                      {lead.Pipeline || 'N/A'}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                      {lead.updatedAt ? new Date(lead.updatedAt).toLocaleDateString() : 'N/A'}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                      <button className="mr-2 text-indigo-600 hover:text-indigo-900">
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button className="text-red-600 hover:text-red-900">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+          <div className="flex flex-1 justify-between sm:hidden">
+            <button
+              onClick={() => fetchLeads(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => fetchLeads(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Showing page <span className="font-medium">{currentPage}</span> of{' '}
+                <span className="font-medium">{totalPages}</span>
+              </p>
+            </div>
+            <div>
+              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                <button
+                  onClick={() => fetchLeads(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                >
+                  <span className="sr-only">Previous</span>
+                  <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                </button>
+                {renderPaginationButtons()}
+                <button
+                  onClick={() => fetchLeads(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                >
+                  <span className="sr-only">Next</span>
+                  <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Ajout d'une section pour afficher les leads en temps réel */}
+      {realtimeLeads.length > 0 && (
+        <div className="rounded-lg bg-white p-6 shadow">
+          <h3 className="text-lg font-medium text-gray-900">Leads en temps réel</h3>
+          <p className="mt-1 text-sm text-gray-500">Nombre de leads reçus: {realtimeLeads.length}</p>
+          <div className="mt-4 max-h-60 overflow-y-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Téléphone</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deal</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {realtimeLeads.map((lead, index) => (
+                  <tr key={index}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.Email_1 || 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.Phone || 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.Deal_Name || 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.Stage || 'N/A'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
