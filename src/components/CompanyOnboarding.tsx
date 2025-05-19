@@ -87,8 +87,9 @@ const CompanyOnboarding = () => {
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasGigs, setHasGigs] = useState(false);
-  const companyId = import.meta.env.DEV ? '681e2b764e757b9b928c47b2' : Cookies.get('companyId');
+  const companyId = Cookies.get('companyId');
   console.log('Company ID:', companyId);
+  console.log('hasGigs:', hasGigs);
 
   // Charger le progrès initial et vérifier les gigs
   useEffect(() => {
