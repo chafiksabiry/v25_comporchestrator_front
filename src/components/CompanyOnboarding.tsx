@@ -364,6 +364,12 @@ const CompanyOnboarding = () => {
       s.disabled || completedSteps.includes(s.id)
     );
     
+    // Redirection spéciale pour Create Gigs
+    if (stepId === 4) {
+      window.location.href = '/app6';
+      return;
+    }
+    
     if (step?.component && allPreviousCompleted && !step.disabled) {
       setActiveStep(stepId);
     }
