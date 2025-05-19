@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Upload,
   FileText,
@@ -136,8 +135,6 @@ const UploadContacts = () => {
       lastContact: '3 hours ago'
     }
   ];
-
-  const navigate = useNavigate();
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -678,7 +675,7 @@ const UploadContacts = () => {
   };
 
   const handleCreateGig = () => {
-    navigate('/app6');
+    window.location.href = '/app6';
   };
 
   const fetchGigs = async () => {
