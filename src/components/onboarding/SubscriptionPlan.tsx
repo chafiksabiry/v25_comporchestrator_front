@@ -2,8 +2,10 @@ import React from 'react';
 import { Check } from 'lucide-react';
 import axios, { AxiosError } from 'axios';
 import Cookies from 'js-cookie';
+import { useNavigate } from 'react-router-dom';
 
 const SubscriptionPlan = () => {
+  const navigate = useNavigate();
   const companyId = import.meta.env.DEV ? '681e2b764e757b9b928c47b2' : Cookies.get('companyId');
 
   const freePlan = {
@@ -34,6 +36,10 @@ const SubscriptionPlan = () => {
           subscription: 'free'
         }
       );
+      
+      if (!subscriptionResponse.data) {
+        throw new Error('Pas de réponse du serveur pour la mise à jour du plan');
+      }
       console.log('Subscription update response:', subscriptionResponse.data);
 
       // Marquer l'étape comme complétée
@@ -43,19 +49,27 @@ const SubscriptionPlan = () => {
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
         { status: 'completed' }
       );
+      
+      if (!stepResponse.data) {
+        throw new Error('Pas de réponse du serveur pour la mise à jour de l\'étape');
+      }
       console.log('Step completion response:', stepResponse.data);
       
       // Ajouter un message de succès
       alert('Plan gratuit activé avec succès !');
-    } catch (error) {
+      
+      // Recharger la page pour mettre à jour l'interface
+      window.location.reload();
+      
+    } catch (error: any) {
       console.error('Error details:', error);
-      if (error instanceof AxiosError) {
+      if (error.response) {
         console.error('API Error:', {
-          status: error.response?.status,
-          data: error.response?.data,
+          status: error.response.status,
+          data: error.response.data,
           url: error.config?.url
         });
-        alert(`Erreur lors de l'activation du plan: ${error.response?.data?.message || error.message}`);
+        alert(`Erreur lors de l'activation du plan: ${error.response.data?.message || error.message}`);
       } else {
         alert('Une erreur est survenue lors de l\'activation du plan');
       }
