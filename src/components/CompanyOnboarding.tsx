@@ -557,7 +557,7 @@ const CompanyOnboarding = () => {
                   isCurrentStep ? 'border-indigo-200 bg-indigo-50 ring-2 ring-indigo-500' :
                   shouldGrayOut ? 'opacity-50 cursor-not-allowed border-gray-200 bg-gray-50' :
                   'border-gray-200 bg-white'
-                } ${isClickable && !step.disabled && (canAccessStep || isSpecialStep) && (isCompleted || isCurrentStep || hasGigs) && !shouldGrayOut ? 'cursor-pointer hover:border-indigo-300' : ''}`}
+                } ${isClickable && !step.disabled && (canAccessStep || isSpecialStep) && (isCompleted || isCurrentStep || hasGigs) && !shouldGrayOut ? 'cursor-pointer hover:border-indigo-300' : 'opacity-50'}`}
                 onClick={() => isClickable && !step.disabled && (canAccessStep || isSpecialStep) && (isCompleted || isCurrentStep || hasGigs) && !shouldGrayOut && handleStepClick(step.id)}
               >
                 <div className="flex items-start space-x-4">
@@ -585,6 +585,11 @@ const CompanyOnboarding = () => {
                         <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
                           <CheckCircle className="mr-1 h-3 w-3" />
                           Completed
+                        </span>
+                      ) : isCurrentStep ? (
+                        <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                          <AlertCircle className="mr-1 h-3 w-3" />
+                          Current Step
                         </span>
                       ) : (
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
