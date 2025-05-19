@@ -1,11 +1,9 @@
 import React from 'react';
 import { Check } from 'lucide-react';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import Cookies from 'js-cookie';
-import { useNavigate } from 'react-router-dom';
 
 const SubscriptionPlan = () => {
-  const navigate = useNavigate();
   const companyId = import.meta.env.DEV ? '681e2b764e757b9b928c47b2' : Cookies.get('companyId');
 
   const freePlan = {
