@@ -46,6 +46,12 @@ interface Lead {
   __v?: number;
 }
 
+interface Gig {
+  _id: string;
+  name: string;
+  companyId: string;
+}
+
 interface ApiResponse {
   success: boolean;
   count: number;
@@ -82,6 +88,9 @@ const UploadContacts = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize] = useState(50);
+  const [gigs, setGigs] = useState<Gig[]>([]);
+  const [selectedGigId, setSelectedGigId] = useState<string>('');
+  const [isLoadingGigs, setIsLoadingGigs] = useState(false);
 
   const defaultUserId = '680b62682c1ca099fe2b14ff';
   const defaultGigId = '680b62682c1ca099fe2b14ff';
@@ -672,6 +681,58 @@ const UploadContacts = () => {
     navigate('/app6');
   };
 
+  const fetchGigs = async () => {
+    setIsLoadingGigs(true);
+    try {
+      const companyId = Cookies.get('companyId');
+      if (!companyId) {
+        throw new Error('Company ID not found in cookies');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`, {
+        headers: {
+          'Authorization': `Bearer ${Cookies.get('gigId') || defaultGigId}:${Cookies.get('userId') || defaultUserId}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch gigs');
+      }
+
+      const data = await response.json();
+      if (data.data) {
+        setGigs(data.data);
+        // Set the first gig as selected by default if available
+        if (data.data.length > 0) {
+          setSelectedGigId(data.data[0]._id);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching gigs:', error);
+      toast.error('Failed to load gigs');
+    } finally {
+      setIsLoadingGigs(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGigs();
+  }, []);
+
+  const handleGigChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newGigId = e.target.value;
+    setSelectedGigId(newGigId);
+    
+    // Update gigId in all parsed leads
+    setParsedLeads(prevLeads => 
+      prevLeads.map(lead => ({
+        ...lead,
+        gigId: newGigId
+      }))
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -680,6 +741,26 @@ const UploadContacts = () => {
           <p className="text-sm text-gray-500">Import and manage your contact list across channels</p>
         </div>
         <div className="flex space-x-3">
+          <div className="relative">
+            <select
+              value={selectedGigId}
+              onChange={handleGigChange}
+              disabled={isLoadingGigs}
+              className="rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+            >
+              {isLoadingGigs ? (
+                <option>Loading gigs...</option>
+              ) : gigs.length === 0 ? (
+                <option>No gigs available</option>
+              ) : (
+                gigs.map((gig) => (
+                  <option key={gig._id} value={gig._id}>
+                    {gig.name}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
           {!hasZohoConfig && (
             <button 
               onClick={() => setShowZohoModal(true)}
