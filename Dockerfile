@@ -8,8 +8,8 @@ RUN apk add --no-cache git
 
 RUN npm install --force
 
-
-
+# Install specific packages needed for the build
+RUN npm install
 
 COPY . .
 

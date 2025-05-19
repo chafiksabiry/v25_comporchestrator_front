@@ -27,7 +27,8 @@
     "react-router-dom": "^7.6.0",
     "systemjs": "^6.15.1",
     "telnyx": "^1.25.5",
-    "vite-plugin-qiankun": "^1.0.15"
+    "vite-plugin-qiankun": "^1.0.15",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
