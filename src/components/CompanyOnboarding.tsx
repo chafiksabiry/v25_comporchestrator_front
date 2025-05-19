@@ -100,7 +100,7 @@ const CompanyOnboarding = () => {
 
   const checkCompanyGigs = async () => {
     try {
-      const response = await axios.get<HasGigsResponse>(`${import.meta.env.VITE_GIGS_API}/company/${companyId}/has-gigs`);
+      const response = await axios.get<HasGigsResponse>(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}/has-gigs`);
       setHasGigs(response.data.data.hasGigs);
     } catch (error) {
       console.error('Error checking company gigs:', error);
