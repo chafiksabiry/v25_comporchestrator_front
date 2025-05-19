@@ -47,7 +47,7 @@ interface Lead {
 
 interface Gig {
   _id: string;
-  name: string;
+  title: string;
   companyId: string;
 }
 
@@ -754,7 +754,7 @@ const UploadContacts = () => {
               ) : (
                 gigs.map((gig) => (
                   <option key={gig._id} value={gig._id}>
-                    {gig.name}
+                    {gig.title}
                   </option>
                 ))
               )}
