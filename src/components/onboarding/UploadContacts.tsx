@@ -730,6 +730,25 @@ const UploadContacts = () => {
         gigId: newGigId
       }))
     );
+
+    // Update gigId in existing leads
+    setLeads(prevLeads =>
+      prevLeads.map(lead => ({
+        ...lead,
+        gigId: newGigId
+      }))
+    );
+
+    // Update gigId in realtime leads
+    setRealtimeLeads(prevLeads =>
+      prevLeads.map(lead => ({
+        ...lead,
+        gigId: newGigId
+      }))
+    );
+
+    // Update the cookie with the new gigId
+    Cookies.set('gigId', newGigId);
   };
 
   return (
