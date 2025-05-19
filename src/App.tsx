@@ -12,6 +12,7 @@ import {
   LogOut,
   Building2
 } from 'lucide-react';
+import { Toaster } from 'react-hot-toast';
 import Cookies from 'js-cookie';
 import ProfileCreation from './components/ProfileCreation';
 import GigGeneration from './components/GigGeneration';
@@ -59,6 +60,7 @@ function App() {
 
   return (
     <div className="flex h-screen bg-gray-50">
+      <Toaster position="top-right" />
       {/* Sidebar */}
       <div 
         className={`${
