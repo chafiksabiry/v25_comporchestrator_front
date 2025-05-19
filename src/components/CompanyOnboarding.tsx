@@ -526,8 +526,8 @@ const CompanyOnboarding = () => {
                   isCurrentStep ? 'border-indigo-200 bg-indigo-50 ring-2 ring-indigo-500' :
                   shouldGrayOut ? 'opacity-50 cursor-not-allowed border-gray-200 bg-gray-50' :
                   'border-gray-200 bg-white'
-                } ${isClickable && !step.disabled && (canAccessStep || isSpecialStep) && (isCompleted || isCurrentStep) && !shouldGrayOut ? 'cursor-pointer hover:border-indigo-300' : 'opacity-50'}`}
-                onClick={() => isClickable && !step.disabled && (canAccessStep || isSpecialStep) && (isCompleted || isCurrentStep) && !shouldGrayOut && handleStepClick(step.id)}
+                } ${isClickable && !step.disabled && (canAccessStep || isSpecialStep) && (isCompleted || isCurrentStep || hasGigs) && !shouldGrayOut ? 'cursor-pointer hover:border-indigo-300' : 'opacity-50'}`}
+                onClick={() => isClickable && !step.disabled && (canAccessStep || isSpecialStep) && (isCompleted || isCurrentStep || hasGigs) && !shouldGrayOut && handleStepClick(step.id)}
               >
                 <div className="flex items-start space-x-4">
                   <div className={`rounded-full p-2 ${
@@ -560,14 +560,19 @@ const CompanyOnboarding = () => {
                           <AlertCircle className="mr-1 h-3 w-3" />
                           Current Step
                         </span>
+                      ) : isSpecialStep && hasGigs ? (
+                        <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                          <CheckCircle className="mr-1 h-3 w-3" />
+                          Created
+                        </span>
                       ) : isSpecialStep ? (
                         <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                          {hasGigs ? 'Gigs Available' : 'No Gigs Yet'}
+                          No Gigs Yet
                         </span>
                       ) : null}
                     </div>
                     <p className="mt-1 text-sm text-gray-500">{step.description}</p>
-                    {isClickable && !step.disabled && (canAccessStep || isSpecialStep) && (isCompleted || isCurrentStep) && (
+                    {isClickable && !step.disabled && (canAccessStep || isSpecialStep) && (isCompleted || isCurrentStep || hasGigs) && (
                       <button 
                         className="mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-500"
                         onClick={() => handleStartStep(step.id)}
