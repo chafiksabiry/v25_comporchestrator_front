@@ -563,7 +563,7 @@ const CompanyOnboarding = () => {
                       ) : isSpecialStep && hasGigs ? (
                         <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
                           <CheckCircle className="mr-1 h-3 w-3" />
-                          Created
+                          {/* Created */}
                         </span>
                       ) : isSpecialStep ? (
                         <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
