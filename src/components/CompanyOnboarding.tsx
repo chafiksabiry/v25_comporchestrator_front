@@ -79,6 +79,15 @@ interface HasGigsResponse {
   };
 }
 
+interface CompanyResponse {
+  success: boolean;
+  message: string;
+  data: {
+    _id: string;
+    // Add other company fields as needed
+  };
+}
+
 const CompanyOnboarding = () => {
   const [currentPhase, setCurrentPhase] = useState(1);
   const [displayedPhase, setDisplayedPhase] = useState(1);
@@ -87,11 +96,33 @@ const CompanyOnboarding = () => {
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasGigs, setHasGigs] = useState(false);
-  const companyId = Cookies.get('companyId');
-  console.log('Company ID:', companyId);
-  console.log('hasGigs:', hasGigs);
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const userId = Cookies.get('userId');
 
-  // Charger le progrès initial et vérifier les gigs
+  // Fetch company ID using user ID
+  useEffect(() => {
+    const fetchCompanyId = async () => {
+      if (!userId) {
+        console.error('User ID not found in cookies');
+        return;
+      }
+
+      try {
+        const response = await axios.get<CompanyResponse>(`${import.meta.env.VITE_COMPANY_API_URL}/companies/user/${userId}`);
+        if (response.data.success && response.data.data) {
+          setCompanyId(response.data.data._id);
+          // Store company ID in cookie for backward compatibility
+          Cookies.set('companyId', response.data.data._id);
+        }
+      } catch (error) {
+        console.error('Error fetching company ID:', error);
+      }
+    };
+
+    fetchCompanyId();
+  }, [userId]);
+
+  // Load company progress and check gigs when company ID is available
   useEffect(() => {
     if (companyId) {
       loadCompanyProgress();
