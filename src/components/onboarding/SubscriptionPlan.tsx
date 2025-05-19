@@ -1,6 +1,6 @@
 import React from 'react';
 import { Check } from 'lucide-react';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import Cookies from 'js-cookie';
 
 const SubscriptionPlan = () => {
@@ -24,20 +24,41 @@ const SubscriptionPlan = () => {
 
   const handleActivatePlan = async () => {
     try {
+      console.log('Starting plan activation...');
+      console.log('Company ID:', companyId);
+      
       // Mettre à jour le plan d'abonnement
-      await axios.put(`${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/subscription`, {
-        subscription: 'free'
-      });
+      const subscriptionResponse = await axios.put(
+        `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/subscription`,
+        {
+          subscription: 'free'
+        }
+      );
+      console.log('Subscription update response:', subscriptionResponse.data);
 
       // Marquer l'étape comme complétée
       const stepId = 3; // ID du step Subscription Plan
       const phaseId = 1; // ID de la phase Company Account Setup
-      await axios.put(
+      const stepResponse = await axios.put(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
         { status: 'completed' }
       );
+      console.log('Step completion response:', stepResponse.data);
+      
+      // Ajouter un message de succès
+      alert('Plan gratuit activé avec succès !');
     } catch (error) {
-      console.error('Error updating subscription plan:', error);
+      console.error('Error details:', error);
+      if (error instanceof AxiosError) {
+        console.error('API Error:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          url: error.config?.url
+        });
+        alert(`Erreur lors de l'activation du plan: ${error.response?.data?.message || error.message}`);
+      } else {
+        alert('Une erreur est survenue lors de l\'activation du plan');
+      }
     }
   };
 
