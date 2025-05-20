@@ -4,7 +4,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 const SubscriptionPlan = () => {
-  const companyId = import.meta.env.DEV ? '681e2b764e757b9b928c47b2' : Cookies.get('companyId');
+  const companyId = import.meta.env.DEV ? '682b619de656f60ffa91fbef' : Cookies.get('companyId');
 
   const freePlan = {
     name: 'Free',
