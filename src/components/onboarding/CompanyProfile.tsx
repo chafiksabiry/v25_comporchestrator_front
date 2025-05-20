@@ -109,7 +109,7 @@ const CompanyProfile = () => {
     const fetchCompanyData = async () => {
       try {
         setLoading(true);
-        const response = await axios.get<ApiResponse>(`${import.meta.env.VITE_COMPANY_API_URL}/${companyId}/details`);
+        const response = await axios.get<ApiResponse>(`${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/details`);
         if (response.data.success) {
           const company = response.data.data;
           setFormData({
