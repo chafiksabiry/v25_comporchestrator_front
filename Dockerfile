@@ -18,6 +18,7 @@ ENV NODE_ENV=sandbox
 ENV VITE_API_BASE_URL=https://api-Comp-Orchestrator.harx.ai/api
 ENV VITE_COMPANY_API_URL=https://api-companysearchwizard.harx.ai/api
 ENV VITE_DASHBOARD_API=https://api-dashboard.harx.ai/api
+ENV VITE_GOOGLE_API_KEY=AIzaSyCHEKiraViKIrgvloZI-ZBIJqtDMeBuQD0
 
 RUN npm run build
 
