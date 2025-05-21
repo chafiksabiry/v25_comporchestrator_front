@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 import CompanyOnboarding from './CompanyOnboarding';
 import {
   Phone,
@@ -35,7 +34,6 @@ interface PhoneNumber {
 }
 
 const TelephonySetup = () => {
-  const navigate = useNavigate();
   const [provider, setProvider] = useState('telnyx');
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [destinationZone, setDestinationZone] = useState('');
