@@ -80,6 +80,12 @@ interface HasGigsResponse {
   };
 }
 
+interface HasLeadsResponse {
+  success: boolean;
+  hasLeads: boolean;
+  count: number;
+}
+
 interface CompanyResponse {
   success: boolean;
   message: string;
@@ -98,6 +104,7 @@ const CompanyOnboarding = () => {
   const [showUploadContacts, setShowUploadContacts] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasGigs, setHasGigs] = useState(false);
+  const [hasLeads, setHasLeads] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [showGigDetails, setShowGigDetails] = useState(false);
   const userId = Cookies.get('userId');
@@ -130,6 +137,7 @@ const CompanyOnboarding = () => {
     if (companyId) {
       loadCompanyProgress();
       checkCompanyGigs();
+      checkCompanyLeads();
     }
   }, [companyId]);
 
@@ -154,6 +162,30 @@ const CompanyOnboarding = () => {
       }
     } catch (error) {
       console.error('Error checking company gigs:', error);
+    }
+  };
+
+  const checkCompanyLeads = async () => {
+    try {
+      const response = await axios.get<HasLeadsResponse>(`${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads`);
+      const hasLeads = response.data.hasLeads;
+      setHasLeads(hasLeads);
+      
+      // If company has leads, update the onboarding progress for step 7
+      if (hasLeads) {
+        try {
+          await axios.put(
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`,
+            { status: 'completed' }
+          );
+          // Update local state to reflect the completed step
+          setCompletedSteps(prev => [...prev, 7]);
+        } catch (error) {
+          console.error('Error updating onboarding progress:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking company leads:', error);
     }
   };
 
