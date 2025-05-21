@@ -454,7 +454,6 @@ const UploadContacts = () => {
   };
 
   const handleImportFromZoho = async () => {
-    console.log('=== Début de l\'importation Zoho ===');
     setIsImportingZoho(true);
     setRealtimeLeads([]);
     try {
@@ -463,103 +462,61 @@ const UploadContacts = () => {
       const zohoToken = localStorage.getItem('zoho_access_token');
       
       if (!companyId) {
-        throw new Error('Company ID not found in cookies');
+        toast.error('Configuration de l\'entreprise non trouvée. Veuillez vous reconnecter.');
+        return;
       }
-      
-      console.log('🔑 Informations d\'authentification:', {
-        userId,
-        companyId,
-        hasZohoToken: !!zohoToken,
-        tokenLength: zohoToken?.length
-      });
       
       if (!zohoToken) {
-        console.error('❌ Token Zoho non trouvé dans le localStorage');
-        throw new Error('Zoho access token not found. Please configure Zoho CRM first.');
+        toast.error('Configuration Zoho non trouvée. Veuillez configurer Zoho CRM d\'abord.');
+        return;
       }
 
-      // Reset parsed leads at the start
       setParsedLeads([]);
-      console.log('🔄 Réinitialisation de la liste des leads');
       
-      console.log('📥 Début de la synchronisation des leads depuis Zoho CRM...');
-
       try {
         const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/leads/sync-all`;
-        console.log('🌐 Envoi de la requête de synchronisation vers:', apiUrl);
+        const checkResponse = await fetch(apiUrl, { 
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${zohoToken}`,
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            userId: userId,
+            companyId: companyId,
+            gigId: Cookies.get('gigId') || defaultGigId
+          })
+        });
 
-        // Vérifier si le serveur est accessible
-        try {
-          const checkResponse = await fetch(apiUrl, { 
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${zohoToken}`,
-              'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-              userId: userId,
-              companyId: companyId,
-              gigId: Cookies.get('gigId') || defaultGigId
-            })
-          });
-
-          if (!checkResponse.ok) {
-            const errorData = await checkResponse.json().catch(() => null);
-            console.error('❌ Erreur de réponse du serveur:', {
-              status: checkResponse.status,
-              statusText: checkResponse.statusText,
-              errorData
-            });
-            throw new Error(`Erreur serveur (${checkResponse.status}): ${errorData?.message || checkResponse.statusText}`);
-          }
-
-          const data = await checkResponse.json();
-          
-          if (!data.success) {
-            throw new Error(data.message || 'Erreur lors de la synchronisation');
-          }
-
-          const { leads, sync_info } = data.data;
-          
-          console.log('📊 Informations de synchronisation:', {
-            totalFetched: sync_info.total_fetched,
-            totalSaved: sync_info.total_saved,
-            failed: sync_info.failed,
-            pagesProcessed: sync_info.pages_processed
-          });
-
-          // Mettre à jour les leads en temps réel
-          setRealtimeLeads(leads);
-          
-          // Mettre à jour les leads parsés
-          setParsedLeads(leads);
-
-          // Afficher un message de succès
-          toast.success(`Synchronisation terminée. ${sync_info.total_saved} leads importés avec succès.`);
-
-          console.log('✅ Synchronisation terminée avec succès');
-
-        } catch (checkError: any) {
-          console.error('❌ Erreur de connexion au serveur:', checkError);
-          if (checkError.name === 'TypeError' && checkError.message === 'Failed to fetch') {
-            throw new Error('Impossible de se connecter au serveur. Veuillez vérifier que le serveur est en cours d\'exécution sur le port 5005 et que l\'URL est correcte.');
-          }
-          throw checkError;
+        if (!checkResponse.ok) {
+          const errorData = await checkResponse.json().catch(() => null);
+          throw new Error(errorData?.message || 'Erreur lors de la synchronisation avec Zoho');
         }
 
+        const data = await checkResponse.json();
+        
+        if (!data.success) {
+          throw new Error(data.message || 'Erreur lors de la synchronisation');
+        }
+
+        const { leads, sync_info } = data.data;
+        setRealtimeLeads(leads);
+        setParsedLeads(leads);
+        toast.success(`Synchronisation terminée. ${sync_info.total_saved} leads importés avec succès.`);
+
       } catch (error: any) {
-        console.error('❌ Erreur lors de la synchronisation:', error);
-        toast.error(error.message || 'Erreur lors de la synchronisation des leads');
-        throw error;
+        if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+          toast.error('Le service est temporairement indisponible. Veuillez réessayer dans quelques instants.');
+        } else {
+          toast.error(error.message || 'Une erreur est survenue lors de la synchronisation');
+        }
       }
 
     } catch (error: any) {
-      console.error('❌ Erreur globale dans handleImportFromZoho:', error);
-      toast.error(error.message || 'Error importing leads from Zoho CRM');
+      toast.error(error.message || 'Une erreur est survenue lors de l\'importation');
     } finally {
       setIsImportingZoho(false);
-      console.log('=== Fin de l\'importation Zoho ===');
     }
   };
 
