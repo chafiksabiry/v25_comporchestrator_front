@@ -332,7 +332,6 @@ const CompanyOnboarding = () => {
           description: 'Import contacts for multi-channel engagement',
           status: 'pending',
           component: UploadContacts,
-          disabled: true
         },
         {
           id: 7,
