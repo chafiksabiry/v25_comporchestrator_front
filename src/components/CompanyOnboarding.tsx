@@ -31,6 +31,7 @@ import RepOnboarding from './onboarding/RepOnboarding';
 import SessionPlanning from './onboarding/SessionPlanning';
 import Cookies from 'js-cookie';
 import axios from 'axios';
+import GigDetails from './onboarding/GigDetails';
 
 interface BaseStep {
   id: number;
@@ -97,6 +98,7 @@ const CompanyOnboarding = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasGigs, setHasGigs] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const [showGigDetails, setShowGigDetails] = useState(false);
   const userId = Cookies.get('userId');
 
   // Fetch company ID using user ID
@@ -176,7 +178,11 @@ const CompanyOnboarding = () => {
       const step = allSteps.find(s => s.id === stepId);
       
       if (step?.component) {
-        setActiveStep(stepId);
+        if (stepId === 4 && completedSteps.includes(stepId)) {
+          setShowGigDetails(true);
+        } else {
+          setActiveStep(stepId);
+        }
       }
     } catch (error) {
       console.error('Error updating step status:', error);
@@ -435,6 +441,23 @@ const CompanyOnboarding = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (showGigDetails) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => setShowGigDetails(false)}
+            className="flex items-center text-gray-600 hover:text-gray-900"
+          >
+            <ChevronRight className="h-5 w-5 rotate-180" />
+            <span>Back to Onboarding</span>
+          </button>
+        </div>
+        <GigDetails />
       </div>
     );
   }
