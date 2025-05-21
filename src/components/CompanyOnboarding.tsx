@@ -195,6 +195,8 @@ const CompanyOnboarding = () => {
       if (step?.component) {
         if (stepId === 4 && completedSteps.includes(stepId)) {
           setShowGigDetails(true);
+        } else if (stepId === 5) {
+          setShowTelephonySetup(true);
         } else {
           setActiveStep(stepId);
         }
@@ -504,6 +506,23 @@ const CompanyOnboarding = () => {
           </button>
         </div>
         <GigDetails />
+      </div>
+    );
+  }
+
+  if (showTelephonySetup) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => setShowTelephonySetup(false)}
+            className="flex items-center text-gray-600 hover:text-gray-900"
+          >
+            <ChevronRight className="h-5 w-5 rotate-180" />
+            <span>Back to Onboarding</span>
+          </button>
+        </div>
+        <TelephonySetup />
       </div>
     );
   }
