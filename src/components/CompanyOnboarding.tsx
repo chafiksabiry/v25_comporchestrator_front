@@ -459,7 +459,7 @@ const CompanyOnboarding = () => {
       if (completedSteps.includes(stepId)) {
         setShowTelephonySetup(true);
       } else {
-        window.location.href = '/app2';
+        setShowTelephonySetup(true);
       }
       return;
     }
