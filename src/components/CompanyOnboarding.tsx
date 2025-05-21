@@ -492,22 +492,17 @@ const CompanyOnboarding = () => {
       return;
     }
 
-    // Redirection spéciale pour Telephony Setup - toujours accessible
+    // Pour Telephony Setup
     if (stepId === 5) {
-      if (completedSteps.includes(stepId)) {
-        
-        setShowTelephonySetup(true);
-      } else {
+      if (allPreviousCompleted) {
         setShowTelephonySetup(true);
       }
       return;
     }
 
-    // Redirection spéciale pour Upload Contacts
+    // Pour Upload Contacts
     if (stepId === 6) {
-      if (completedSteps.includes(stepId)) {
-        setShowUploadContacts(true);
-      } else {
+      if (allPreviousCompleted) {
         setShowUploadContacts(true);
       }
       return;
@@ -671,20 +666,19 @@ const CompanyOnboarding = () => {
                 .slice(0, displayedPhaseData.steps.findIndex(s => s.id === step.id))
                 .every(s => s.disabled || completedSteps.includes(s.id));
             const canAccessStep = isPhaseAccessible(displayedPhaseData.id);
-            const isSpecialStep = [4, 5, 6].includes(step.id); // Create Gigs, Telephony Setup, Upload Contacts
-            const shouldGrayOut = !hasGigs && !isSpecialStep;
-            
+
+
             return (
               <div
                 key={step.id}
                 className={`rounded-lg border p-4 ${
-                  !canAccessStep && step.id !== 5 ? 'opacity-50 cursor-not-allowed border-gray-200 bg-gray-50' :
+                  !canAccessStep ? 'opacity-50 cursor-not-allowed border-gray-200 bg-gray-50' :
                   step.disabled ? 'opacity-50 cursor-not-allowed' :
                   isCompleted ? 'border-green-200 bg-green-50' :
                   isCurrentStep ? 'border-indigo-200 bg-indigo-50 ring-2 ring-indigo-500' :
                   'border-gray-200 bg-white'
-                } ${(isClickable && !step.disabled && (canAccessStep || step.id === 5) && (isCompleted || isCurrentStep || step.id === 5)) ? 'cursor-pointer hover:border-indigo-300' : ''}`}
-                onClick={() => isClickable && !step.disabled && (canAccessStep || step.id === 5) && (isCompleted || isCurrentStep || step.id === 5) && handleStepClick(step.id)}
+                } ${(isClickable && !step.disabled && canAccessStep && (isCompleted || isCurrentStep)) ? 'cursor-pointer hover:border-indigo-300' : ''}`}
+                onClick={() => isClickable && !step.disabled && canAccessStep && (isCompleted || isCurrentStep) && handleStepClick(step.id)}
               >
                 <div className="flex items-start space-x-4">
                   <div className={`rounded-full p-2 ${
@@ -724,7 +718,7 @@ const CompanyOnboarding = () => {
                       )}
                     </div>
                     <p className="mt-1 text-sm text-gray-500">{step.description}</p>
-                    {isClickable && !step.disabled && (canAccessStep || step.id === 5) && (isCompleted || isCurrentStep || step.id === 5) && (
+                    {isClickable && !step.disabled && canAccessStep && (isCompleted || isCurrentStep) && (
                       <button 
                         className="mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-500"
                         onClick={() => handleStartStep(step.id)}
