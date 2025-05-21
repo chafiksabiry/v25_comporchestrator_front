@@ -527,53 +527,34 @@ const CompanyOnboarding = () => {
     );
   }
 
+  // Déterminer quel composant afficher
+  let activeComponent = null;
+  let onBack: () => void = () => {};
+
   if (showGigDetails) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setShowGigDetails(false)}
-            className="flex items-center text-gray-600 hover:text-gray-900"
-          >
-            <ChevronRight className="h-5 w-5 rotate-180" />
-            <span>Back to Onboarding</span>
-          </button>
-        </div>
-        <GigDetails />
-      </div>
-    );
+    activeComponent = <GigDetails />;
+    onBack = () => setShowGigDetails(false);
+  } else if (showTelephonySetup) {
+    activeComponent = <TelephonySetup />;
+    onBack = () => setShowTelephonySetup(false);
+  } else if (ActiveStepComponent) {
+    activeComponent = <ActiveStepComponent />;
+    onBack = handleBackToOnboarding;
   }
 
-  if (showTelephonySetup) {
+  if (activeComponent) {
     return (
       <div className="space-y-6">
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => setShowTelephonySetup(false)}
+            onClick={onBack}
             className="flex items-center text-gray-600 hover:text-gray-900"
           >
             <ChevronRight className="h-5 w-5 rotate-180" />
             <span>Back to Onboarding</span>
           </button>
         </div>
-        <TelephonySetup />
-      </div>
-    );
-  }
-
-  if (ActiveStepComponent) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={handleBackToOnboarding}
-            className="flex items-center text-gray-600 hover:text-gray-900"
-          >
-            <ChevronRight className="h-5 w-5 rotate-180" />
-            <span>Back to Onboarding</span>
-          </button>
-        </div>
-        <ActiveStepComponent />
+        {activeComponent}
       </div>
     );
   }
