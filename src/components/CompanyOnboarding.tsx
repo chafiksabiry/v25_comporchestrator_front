@@ -421,8 +421,8 @@ const CompanyOnboarding = () => {
       s.disabled || completedSteps.includes(s.id)
     );
     
-    // Redirection spéciale pour Create Gigs
-    if (stepId === 4) {
+    // Redirection spéciale pour Create Gigs seulement si ce n'est pas un Review Step
+    if (stepId === 4 && !completedSteps.includes(stepId)) {
       window.location.href = '/app6';
       return;
     }
