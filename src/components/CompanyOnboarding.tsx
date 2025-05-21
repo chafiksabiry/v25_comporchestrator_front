@@ -438,7 +438,9 @@ const CompanyOnboarding = () => {
     
     // Redirection spéciale pour Create Gigs
     if (stepId === 4) {
-      if (hasGigs) {
+      if (completedSteps.includes(stepId)) {
+        setShowGigDetails(true);
+      } else if (hasGigs) {
         window.location.href = '/app11';
       } else {
         window.location.href = '/app6';
