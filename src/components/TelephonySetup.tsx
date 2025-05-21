@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import CompanyOnboarding from './CompanyOnboarding';
 import {
   Phone,
   Settings,
@@ -23,6 +26,7 @@ import Cookies from 'js-cookie';
 
 import { phoneNumberService } from '../services/api';
 const gigId = import.meta.env.DEV ? '681b2b9297864fa3b948311f' : Cookies.get('gigId');
+const companyId = Cookies.get('companyId');
 
 interface PhoneNumber {
   phoneNumber: string;
@@ -31,6 +35,7 @@ interface PhoneNumber {
 }
 
 const TelephonySetup = () => {
+  const navigate = useNavigate();
   const [provider, setProvider] = useState('telnyx');
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [destinationZone, setDestinationZone] = useState('');
@@ -42,6 +47,8 @@ const TelephonySetup = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [availableNumbers, setAvailableNumbers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const [showCompanyOnboarding, setShowCompanyOnboarding] = useState(false);
 
   const providers = [
     { id: 'twilio', name: 'Twilio', logo: Phone },
@@ -117,6 +124,25 @@ const TelephonySetup = () => {
     }
   };
 
+  const handleSaveConfiguration = async () => {
+    try {
+      await axios.put(
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
+        { status: 'completed' }
+      );
+      // Update local state to reflect the completed step
+      setCompletedSteps(prev => [...prev, 5]);
+      // Show CompanyOnboarding component
+      setShowCompanyOnboarding(true);
+    } catch (error) {
+      console.error('Error updating onboarding progress:', error);
+    }
+  };
+
+  if (showCompanyOnboarding) {
+    return <CompanyOnboarding />;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -135,7 +161,10 @@ const TelephonySetup = () => {
           >
             {testMode ? 'Test Mode' : 'Production Mode'}
           </button>
-          <button className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+          <button 
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            onClick={handleSaveConfiguration}
+          >
             Save Configuration
           </button>
         </div>
