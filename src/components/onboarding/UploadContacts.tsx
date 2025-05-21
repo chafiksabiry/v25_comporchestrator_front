@@ -36,6 +36,7 @@ interface Lead {
   _id: string;
   gigId: string;
   userId: string;
+  companyId: string;
   Email_1?: string;
   Phone?: string;
   Deal_Name?: string;
@@ -77,7 +78,8 @@ const UploadContacts = () => {
   const [zohoConfig, setZohoConfig] = useState({
     clientId: '',
     clientSecret: '',
-    refreshToken: ''
+    refreshToken: '',
+    companyId: Cookies.get('companyId') || ''
   });
   const [isImportingZoho, setIsImportingZoho] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -184,6 +186,7 @@ const UploadContacts = () => {
                 const lead: any = {
                   userId: Cookies.get('userId') || defaultUserId,
                   gigId: Cookies.get('gigId') || defaultGigId,
+                  companyId: Cookies.get('companyId'),
                   Last_Activity_Time: new Date(),
                   Activity_Tag: '',
                   Deal_Name: '',
@@ -404,8 +407,13 @@ const UploadContacts = () => {
   const handleZohoConfig = async () => {
     try {
       const userId = Cookies.get('userId') || defaultUserId;
+      const companyId = Cookies.get('companyId');
       console.log('Configuring Zoho with userId:', userId);
       console.log('Zoho config data:', zohoConfig);
+
+      if (!companyId) {
+        throw new Error('Company ID not found in cookies');
+      }
 
       const configResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/configure`, {
         method: 'POST',
@@ -414,7 +422,8 @@ const UploadContacts = () => {
         },
         body: JSON.stringify({
           ...zohoConfig,
-          userId
+          userId,
+          companyId
         })
       });
 
@@ -447,10 +456,16 @@ const UploadContacts = () => {
     setRealtimeLeads([]);
     try {
       const userId = Cookies.get('userId') || defaultUserId;
+      const companyId = Cookies.get('companyId');
       const zohoToken = localStorage.getItem('zoho_access_token');
+      
+      if (!companyId) {
+        throw new Error('Company ID not found in cookies');
+      }
       
       console.log('🔑 Informations d\'authentification:', {
         userId,
+        companyId,
         hasZohoToken: !!zohoToken,
         tokenLength: zohoToken?.length
       });
@@ -481,6 +496,7 @@ const UploadContacts = () => {
             },
             body: JSON.stringify({
               userId: userId,
+              companyId: companyId,
               gigId: Cookies.get('gigId') || defaultGigId
             })
           });
