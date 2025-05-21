@@ -560,14 +560,8 @@ const UploadContacts = () => {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('zoho_access_token')}`,
-            'Accept': 'application/json',
-            'Origin': window.location.origin,
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+            'Accept': 'application/json'
           },
-          credentials: 'include',
-          mode: 'cors',
           body: JSON.stringify({
             userId: userId,
             companyId: companyId,
