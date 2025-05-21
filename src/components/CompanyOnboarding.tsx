@@ -182,7 +182,7 @@ const CompanyOnboarding = () => {
         try {
           await axios.put(
             `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
-            { status: 'completed' }
+            { status: 'completed' , currentPhase: 3}
           );
           // Update local state to reflect the completed step
           setCompletedSteps(prev => [...prev, 6]);
