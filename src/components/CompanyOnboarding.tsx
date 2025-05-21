@@ -186,6 +186,8 @@ const CompanyOnboarding = () => {
           );
           // Update local state to reflect the completed step
           setCompletedSteps(prev => [...prev, 6]);
+          setCurrentPhase(3);
+          setDisplayedPhase(3);
         } catch (error) {
           console.error('Error updating onboarding progress:', error);
         }
