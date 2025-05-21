@@ -461,7 +461,7 @@ const CompanyOnboarding = () => {
       return;
     }
 
-    // Redirection spéciale pour Upload Contacts - accessible après Create Gigs
+    // Redirection spéciale pour Upload Contacts
     if (stepId === 6) {
       if (completedSteps.includes(stepId)) {
         setActiveStep(stepId);
@@ -619,13 +619,13 @@ const CompanyOnboarding = () => {
               <div
                 key={step.id}
                 className={`rounded-lg border p-4 ${
-                  !canAccessStep && step.id !== 5 && step.id !== 6 ? 'opacity-50 cursor-not-allowed border-gray-200 bg-gray-50' :
+                  !canAccessStep && step.id !== 5 ? 'opacity-50 cursor-not-allowed border-gray-200 bg-gray-50' :
                   step.disabled ? 'opacity-50 cursor-not-allowed' :
                   isCompleted ? 'border-green-200 bg-green-50' :
                   isCurrentStep ? 'border-indigo-200 bg-indigo-50 ring-2 ring-indigo-500' :
                   'border-gray-200 bg-white'
-                } ${(isClickable && !step.disabled && (canAccessStep || step.id === 5 || (step.id === 6 && completedSteps.includes(4))) && (isCompleted || isCurrentStep || step.id === 5 || (step.id === 6 && completedSteps.includes(4)))) ? 'cursor-pointer hover:border-indigo-300' : ''}`}
-                onClick={() => isClickable && !step.disabled && (canAccessStep || step.id === 5 || (step.id === 6 && completedSteps.includes(4))) && (isCompleted || isCurrentStep || step.id === 5 || (step.id === 6 && completedSteps.includes(4))) && handleStepClick(step.id)}
+                } ${(isClickable && !step.disabled && (canAccessStep || step.id === 5) && (isCompleted || isCurrentStep || step.id === 5)) ? 'cursor-pointer hover:border-indigo-300' : ''}`}
+                onClick={() => isClickable && !step.disabled && (canAccessStep || step.id === 5) && (isCompleted || isCurrentStep || step.id === 5) && handleStepClick(step.id)}
               >
                 <div className="flex items-start space-x-4">
                   <div className={`rounded-full p-2 ${
@@ -665,7 +665,7 @@ const CompanyOnboarding = () => {
                       )}
                     </div>
                     <p className="mt-1 text-sm text-gray-500">{step.description}</p>
-                    {isClickable && !step.disabled && (canAccessStep || step.id === 5 || (step.id === 6 && completedSteps.includes(4))) && (isCompleted || isCurrentStep || step.id === 5 || (step.id === 6 && completedSteps.includes(4))) && (
+                    {isClickable && !step.disabled && (canAccessStep || step.id === 5) && (isCompleted || isCurrentStep || step.id === 5) && (
                       <button 
                         className="mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-500"
                         onClick={() => handleStartStep(step.id)}
