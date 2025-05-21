@@ -562,6 +562,7 @@ const UploadContacts = () => {
             'Authorization': `Bearer ${localStorage.getItem('zoho_access_token')}`,
             'Accept': 'application/json'
           },
+          credentials: 'include',
           body: JSON.stringify({
             userId: userId,
             companyId: companyId,
@@ -1140,16 +1141,9 @@ const UploadContacts = () => {
                       Showing {leads.length} leads (Page {currentPage} of {totalPages})
                     </p>
                   ) : (
-                    (() => {
-                      console.log('No leads to display');
-                      return (
-                        <tr>
-                          <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
-                            No leads found
-                          </td>
-                        </tr>
-                      );
-                    })()
+                    <p className="mt-1 text-sm text-gray-500">
+                      No leads found
+                    </p>
                   )}
                 </>
               )}
