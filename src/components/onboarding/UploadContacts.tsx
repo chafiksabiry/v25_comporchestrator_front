@@ -562,6 +562,7 @@ const UploadContacts = () => {
 
   const fetchLeads = async (page = currentPage) => {
     if (!selectedGigId) {
+      console.log('No gig selected, clearing leads');
       setLeads([]);
       setTotalPages(0);
       setCurrentPage(1);
@@ -571,6 +572,7 @@ const UploadContacts = () => {
     setIsLoadingLeads(true);
     setError(null);
     try {
+      console.log('Fetching leads for gig:', selectedGigId);
       const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=${pageSize}`, {
         headers: {
           'Authorization': `Bearer ${Cookies.get('gigId') || defaultGigId}:${Cookies.get('userId') || defaultUserId}`,
@@ -583,6 +585,7 @@ const UploadContacts = () => {
       }
 
       const responseData: ApiResponse = await response.json();
+      console.log('API Response:', responseData);
       
       if (!responseData.success) {
         throw new Error('Failed to fetch leads: API returned unsuccessful response');
@@ -592,6 +595,7 @@ const UploadContacts = () => {
         throw new Error('Invalid response format: expected data to be an array');
       }
 
+      console.log('Setting leads:', responseData.data);
       setLeads(responseData.data);
       setTotalPages(responseData.totalPages);
       setCurrentPage(responseData.currentPage);
@@ -607,16 +611,26 @@ const UploadContacts = () => {
 
   useEffect(() => {
     if (selectedGigId) {
+      console.log('Selected gig changed, fetching leads for:', selectedGigId);
       fetchLeads().catch(error => {
         console.error('Error in useEffect:', error);
         setError('Failed to load leads');
       });
     } else {
+      console.log('No gig selected, clearing leads');
       setLeads([]);
       setTotalPages(0);
       setCurrentPage(1);
     }
   }, [selectedGigId]);
+
+  useEffect(() => {
+    if (leads.length === 0) {
+      console.log('No leads to display');
+    } else {
+      console.log('Rendering leads:', leads);
+    }
+  }, [leads]);
 
   const renderPaginationButtons = () => {
     const buttons = [];
@@ -1084,9 +1098,16 @@ const UploadContacts = () => {
                       Showing {leads.length} leads (Page {currentPage} of {totalPages})
                     </p>
                   ) : (
-                    <p className="mt-1 text-sm text-gray-500">
-                      No leads found for this gig
-                    </p>
+                    (() => {
+                      console.log('No leads to display');
+                      return (
+                        <tr>
+                          <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                            No leads found
+                          </td>
+                        </tr>
+                      );
+                    })()
                   )}
                 </>
               )}
