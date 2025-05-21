@@ -47,6 +47,12 @@ const TelephonySetup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [showCompanyOnboarding, setShowCompanyOnboarding] = useState(false);
+  const [recordingSetting, setRecordingSetting] = useState('record-all');
+  const [securitySettings, setSecuritySettings] = useState({
+    encryption: true,
+    monitoring: true,
+    analytics: true
+  });
 
   const providers = [
     { id: 'twilio', name: 'Twilio', logo: Phone },
@@ -358,7 +364,8 @@ const TelephonySetup = () => {
                   type="radio"
                   name="recording-setting"
                   className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  checked
+                  checked={recordingSetting === 'record-all'}
+                  onChange={() => setRecordingSetting('record-all')}
                 />
                 <label htmlFor="record-all" className="ml-3 block text-sm text-gray-700">
                   Record all calls
@@ -370,6 +377,8 @@ const TelephonySetup = () => {
                   type="radio"
                   name="recording-setting"
                   className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  checked={recordingSetting === 'record-selected'}
+                  onChange={() => setRecordingSetting('record-selected')}
                 />
                 <label htmlFor="record-selected" className="ml-3 block text-sm text-gray-700">
                   Record selected calls only
@@ -381,6 +390,8 @@ const TelephonySetup = () => {
                   type="radio"
                   name="recording-setting"
                   className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  checked={recordingSetting === 'record-none'}
+                  onChange={() => setRecordingSetting('record-none')}
                 />
                 <label htmlFor="record-none" className="ml-3 block text-sm text-gray-700">
                   Disable recording
@@ -396,7 +407,8 @@ const TelephonySetup = () => {
                   id="encryption"
                   type="checkbox"
                   className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  checked
+                  checked={securitySettings.encryption}
+                  onChange={(e) => setSecuritySettings(prev => ({ ...prev, encryption: e.target.checked }))}
                 />
                 <label htmlFor="encryption" className="ml-3 block text-sm text-gray-700">
                   Enable call encryption
@@ -407,7 +419,8 @@ const TelephonySetup = () => {
                   id="monitoring"
                   type="checkbox"
                   className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  checked
+                  checked={securitySettings.monitoring}
+                  onChange={(e) => setSecuritySettings(prev => ({ ...prev, monitoring: e.target.checked }))}
                 />
                 <label htmlFor="monitoring" className="ml-3 block text-sm text-gray-700">
                   Enable call monitoring
@@ -418,7 +431,8 @@ const TelephonySetup = () => {
                   id="analytics"
                   type="checkbox"
                   className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  checked
+                  checked={securitySettings.analytics}
+                  onChange={(e) => setSecuritySettings(prev => ({ ...prev, analytics: e.target.checked }))}
                 />
                 <label htmlFor="analytics" className="ml-3 block text-sm text-gray-700">
                   Enable call analytics
