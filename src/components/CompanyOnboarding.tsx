@@ -447,6 +447,16 @@ const CompanyOnboarding = () => {
       }
       return;
     }
+
+    // Redirection spéciale pour Telephony Setup
+    if (stepId === 5) {
+      if (completedSteps.includes(stepId)) {
+        setShowTelephonySetup(true);
+      } else {
+        window.location.href = '/app2';
+      }
+      return;
+    }
     
     if (step?.component && allPreviousCompleted && !step.disabled) {
       setActiveStep(stepId);
