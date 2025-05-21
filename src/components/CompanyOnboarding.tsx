@@ -322,7 +322,8 @@ const CompanyOnboarding = () => {
           title: 'Telephony Setup',
           description: 'Phone numbers, call tracking, and dialer configuration',
           status: 'pending',
-          component: TelephonySetup
+          component: TelephonySetup,
+          disabled: true
         },
         {
           id: 6,
