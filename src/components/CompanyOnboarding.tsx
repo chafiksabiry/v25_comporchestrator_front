@@ -175,11 +175,11 @@ const CompanyOnboarding = () => {
       if (hasLeads) {
         try {
           await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`,
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
             { status: 'completed' }
           );
           // Update local state to reflect the completed step
-          setCompletedSteps(prev => [...prev, 7]);
+          setCompletedSteps(prev => [...prev, 6]);
         } catch (error) {
           console.error('Error updating onboarding progress:', error);
         }
