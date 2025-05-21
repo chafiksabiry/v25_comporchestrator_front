@@ -135,7 +135,22 @@ const CompanyOnboarding = () => {
   const checkCompanyGigs = async () => {
     try {
       const response = await axios.get<HasGigsResponse>(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}/has-gigs`);
-      setHasGigs(response.data.data.hasGigs);
+      const hasGigs = response.data.data.hasGigs;
+      setHasGigs(hasGigs);
+      
+      // If company has gigs, update the onboarding progress for step 4
+      if (hasGigs) {
+        try {
+          await axios.put(
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/4`,
+            { status: 'completed' }
+          );
+          // Update local state to reflect the completed step
+          setCompletedSteps(prev => [...prev, 4]);
+        } catch (error) {
+          console.error('Error updating onboarding progress:', error);
+        }
+      }
     } catch (error) {
       console.error('Error checking company gigs:', error);
     }
@@ -421,9 +436,13 @@ const CompanyOnboarding = () => {
       s.disabled || completedSteps.includes(s.id)
     );
     
-    // Redirection spéciale pour Create Gigs seulement si ce n'est pas un Review Step
-    if (stepId === 4 && !completedSteps.includes(stepId)) {
-      window.location.href = '/app6';
+    // Redirection spéciale pour Create Gigs
+    if (stepId === 4) {
+      if (hasGigs) {
+        window.location.href = '/app11';
+      } else {
+        window.location.href = '/app6';
+      }
       return;
     }
     
