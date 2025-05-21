@@ -95,6 +95,7 @@ const CompanyOnboarding = () => {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
+  const [showUploadContacts, setShowUploadContacts] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasGigs, setHasGigs] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
@@ -466,9 +467,9 @@ const CompanyOnboarding = () => {
     // Redirection spéciale pour Upload Contacts
     if (stepId === 6) {
       if (completedSteps.includes(stepId)) {
-        setActiveStep(stepId);
+        setShowUploadContacts(true);
       } else {
-        window.location.href = '/app3';
+        setShowUploadContacts(true);
       }
       return;
     }
