@@ -480,8 +480,14 @@ const UploadContacts = () => {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${zohoToken}`,
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'Origin': window.location.origin,
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization'
           },
+          credentials: 'include',
+          mode: 'cors',
           body: JSON.stringify({
             userId: userId,
             companyId: companyId,
@@ -1259,26 +1265,26 @@ const UploadContacts = () => {
           <h3 className="text-lg font-medium text-gray-900">Leads en temps réel</h3>
           <p className="mt-1 text-sm text-gray-500">Nombre de leads reçus: {realtimeLeads.length}</p>
           <div className="mt-4 max-h-60 overflow-y-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Téléphone</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deal</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+            <div className="min-w-full divide-y divide-gray-200">
+              <div className="bg-gray-50">
+                <div className="grid grid-cols-4 px-6 py-3">
+                  <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</div>
+                  <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Téléphone</div>
+                  <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deal</div>
+                  <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</div>
+                </div>
+              </div>
+              <div className="bg-white divide-y divide-gray-200">
                 {realtimeLeads.map((lead, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.Email_1 || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.Phone || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.Deal_Name || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.Stage || 'N/A'}</td>
-                  </tr>
+                  <div key={index} className="grid grid-cols-4 px-6 py-4">
+                    <div className="text-sm text-gray-900">{lead.Email_1 || 'N/A'}</div>
+                    <div className="text-sm text-gray-900">{lead.Phone || 'N/A'}</div>
+                    <div className="text-sm text-gray-900">{lead.Deal_Name || 'N/A'}</div>
+                    <div className="text-sm text-gray-900">{lead.Stage || 'N/A'}</div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
           </div>
         </div>
       )}
