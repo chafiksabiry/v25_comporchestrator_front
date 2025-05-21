@@ -561,10 +561,17 @@ const UploadContacts = () => {
   };
 
   const fetchLeads = async (page = currentPage) => {
+    if (!selectedGigId) {
+      setLeads([]);
+      setTotalPages(0);
+      setCurrentPage(1);
+      return;
+    }
+
     setIsLoadingLeads(true);
     setError(null);
     try {
-      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/leads?page=${page}&limit=${pageSize}`, {
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=${pageSize}`, {
         headers: {
           'Authorization': `Bearer ${Cookies.get('gigId') || defaultGigId}:${Cookies.get('userId') || defaultUserId}`,
           'Content-Type': 'application/json'
@@ -599,11 +606,17 @@ const UploadContacts = () => {
   };
 
   useEffect(() => {
-    fetchLeads().catch(error => {
-      console.error('Error in useEffect:', error);
-      setError('Failed to load leads');
-    });
-  }, []);
+    if (selectedGigId) {
+      fetchLeads().catch(error => {
+        console.error('Error in useEffect:', error);
+        setError('Failed to load leads');
+      });
+    } else {
+      setLeads([]);
+      setTotalPages(0);
+      setCurrentPage(1);
+    }
+  }, [selectedGigId]);
 
   const renderPaginationButtons = () => {
     const buttons = [];
@@ -785,13 +798,16 @@ const UploadContacts = () => {
               {isLoadingGigs ? (
                 <option>Loading gigs...</option>
               ) : gigs.length === 0 ? (
-                <option>No gigs available</option>
+                <option value="">No gigs available</option>
               ) : (
-                gigs.map((gig) => (
-                  <option key={gig._id} value={gig._id}>
-                    {gig.title}
-                  </option>
-                ))
+                <>
+                  <option value="">Select a gig</option>
+                  {gigs.map((gig) => (
+                    <option key={gig._id} value={gig._id}>
+                      {gig.title}
+                    </option>
+                  ))}
+                </>
               )}
             </select>
           </div>
@@ -1054,10 +1070,25 @@ const UploadContacts = () => {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-medium text-gray-900">Leads List</h3>
-              {leads.length > 0 && (
+              {!selectedGigId ? (
                 <p className="mt-1 text-sm text-gray-500">
-                  Showing {leads.length} leads (Page {currentPage} of {totalPages})
+                  Please select a gig to view leads
                 </p>
+              ) : (
+                <>
+                  <p className="mt-1 text-sm font-medium text-indigo-600">
+                    {gigs.find(gig => gig._id === selectedGigId)?.title || 'Selected Gig'}
+                  </p>
+                  {leads.length > 0 ? (
+                    <p className="mt-1 text-sm text-gray-500">
+                      Showing {leads.length} leads (Page {currentPage} of {totalPages})
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-sm text-gray-500">
+                      No leads found for this gig
+                    </p>
+                  )}
+                </>
               )}
             </div>
             <div className="flex items-center space-x-3">
