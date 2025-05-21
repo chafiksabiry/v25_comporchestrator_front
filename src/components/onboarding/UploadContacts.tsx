@@ -323,12 +323,15 @@ const UploadContacts = () => {
     setShowFileName(false);
 
     try {
+      console.log('Saving leads:', parsedLeads);
+      console.log('API URL:', `${import.meta.env.VITE_DASHBOARD_API}/leads`);
       const response = await axios.post(`${import.meta.env.VITE_DASHBOARD_API}/leads`, parsedLeads, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${Cookies.get('gigId') || defaultGigId}:${Cookies.get('userId') || defaultUserId}`
         }
       });
+      console.log('Save response:', response.data);
       if (response.status === 200) {
         setUploadSuccess(true);
         setUploadProgress(100);
@@ -572,8 +575,10 @@ const UploadContacts = () => {
     setIsLoadingLeads(true);
     setError(null);
     try {
+      const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=${pageSize}`;
+      console.log('API URL:', apiUrl);
       console.log('Fetching leads for gig:', selectedGigId);
-      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=${pageSize}`, {
+      const response = await fetch(apiUrl, {
         headers: {
           'Authorization': `Bearer ${Cookies.get('gigId') || defaultGigId}:${Cookies.get('userId') || defaultUserId}`,
           'Content-Type': 'application/json'

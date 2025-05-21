@@ -114,6 +114,7 @@ const CompanyOnboarding = () => {
     const fetchCompanyId = async () => {
       if (!userId) {
         console.error('User ID not found in cookies');
+        window.location.href = '/app4';
         return;
       }
 
@@ -123,9 +124,14 @@ const CompanyOnboarding = () => {
           setCompanyId(response.data.data._id);
           // Store company ID in cookie for backward compatibility
           Cookies.set('companyId', response.data.data._id);
+        } else {
+          // Redirect to /app4 if no company data is found
+          window.location.href = '/app4';
         }
       } catch (error) {
         console.error('Error fetching company ID:', error);
+        // Redirect to /app4 on error
+        window.location.href = '/app4';
       }
     };
 
