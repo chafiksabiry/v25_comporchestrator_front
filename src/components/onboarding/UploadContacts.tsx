@@ -76,9 +76,9 @@ const UploadContacts = () => {
   const [showZohoModal, setShowZohoModal] = useState(false);
   const [hasZohoConfig, setHasZohoConfig] = useState(false);
   const [zohoConfig, setZohoConfig] = useState({
-    clientId: '',
-    clientSecret: '',
-    refreshToken: '',
+    clientId: localStorage.getItem('zoho_client_id') || '',
+    clientSecret: localStorage.getItem('zoho_client_secret') || '',
+    refreshToken: localStorage.getItem('zoho_refresh_token') || '',
     companyId: Cookies.get('companyId') || ''
   });
   const [isImportingZoho, setIsImportingZoho] = useState(false);
@@ -372,6 +372,52 @@ const UploadContacts = () => {
       const userId = Cookies.get('userId') || defaultUserId;
       console.log('👤 UserId utilisé:', userId);
       
+      // Vérifier si nous avons déjà un access token valide
+      const accessToken = localStorage.getItem('zoho_access_token');
+      const tokenExpiry = localStorage.getItem('zoho_token_expiry');
+      
+      if (accessToken && tokenExpiry) {
+        const expiryTime = parseInt(tokenExpiry);
+        const currentTime = Date.now();
+        
+        // Si le token n'est pas expiré, on l'utilise
+        if (currentTime < expiryTime) {
+          console.log('✅ Access token valide trouvé');
+          setHasZohoConfig(true);
+          return;
+        }
+        
+        // Si le token est expiré, on essaie de le rafraîchir
+        console.log('🔄 Access token expiré, tentative de rafraîchissement...');
+        const refreshToken = localStorage.getItem('zoho_refresh_token');
+        if (refreshToken) {
+          const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/refresh-token`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              refreshToken,
+              userId,
+              companyId: Cookies.get('companyId')
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.accessToken) {
+              // Stocker le nouveau token avec son expiration (1 heure)
+              localStorage.setItem('zoho_access_token', data.accessToken);
+              localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString());
+              console.log('✅ Nouveau access token obtenu');
+              setHasZohoConfig(true);
+              return;
+            }
+          }
+        }
+      }
+
+      // Si on arrive ici, on vérifie la configuration de base
       const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/config/${userId}`, {
         method: 'GET',
         headers: {
@@ -418,6 +464,11 @@ const UploadContacts = () => {
         throw new Error('Company ID not found in cookies');
       }
 
+      // Sauvegarder la configuration dans le localStorage
+      localStorage.setItem('zoho_client_id', zohoConfig.clientId);
+      localStorage.setItem('zoho_client_secret', zohoConfig.clientSecret);
+      localStorage.setItem('zoho_refresh_token', zohoConfig.refreshToken);
+
       const configResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/configure`, {
         method: 'POST',
         headers: {
@@ -436,7 +487,9 @@ const UploadContacts = () => {
 
       if (configResponse.status === 200) {
         if (data.accessToken) {
+          // Stocker le token avec son expiration (1 heure)
           localStorage.setItem('zoho_access_token', data.accessToken);
+          localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString());
           console.log('Zoho access token stored in localStorage:', data.accessToken);
           setHasZohoConfig(true);
         } else {
@@ -459,16 +512,43 @@ const UploadContacts = () => {
     try {
       const userId = Cookies.get('userId') || defaultUserId;
       const companyId = Cookies.get('companyId');
-      const zohoToken = localStorage.getItem('zoho_access_token');
       
       if (!companyId) {
         toast.error('Configuration de l\'entreprise non trouvée. Veuillez vous reconnecter.');
         return;
       }
+
+      // Vérifier et rafraîchir le token si nécessaire
+      const accessToken = localStorage.getItem('zoho_access_token');
+      const tokenExpiry = localStorage.getItem('zoho_token_expiry');
       
-      if (!zohoToken) {
-        toast.error('Configuration Zoho non trouvée. Veuillez configurer Zoho CRM d\'abord.');
-        return;
+      if (!accessToken || !tokenExpiry || Date.now() >= parseInt(tokenExpiry)) {
+        const refreshToken = localStorage.getItem('zoho_refresh_token');
+        if (!refreshToken) {
+          toast.error('Configuration Zoho non trouvée. Veuillez configurer Zoho CRM d\'abord.');
+          return;
+        }
+
+        // Rafraîchir le token
+        const refreshResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/refresh-token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            refreshToken,
+            userId,
+            companyId
+          })
+        });
+
+        if (!refreshResponse.ok) {
+          throw new Error('Failed to refresh token');
+        }
+
+        const refreshData = await refreshResponse.json();
+        localStorage.setItem('zoho_access_token', refreshData.accessToken);
+        localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString());
       }
 
       setParsedLeads([]);
@@ -479,7 +559,7 @@ const UploadContacts = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${zohoToken}`,
+            'Authorization': `Bearer ${localStorage.getItem('zoho_access_token')}`,
             'Accept': 'application/json',
             'Origin': window.location.origin,
             'Access-Control-Allow-Origin': '*',
