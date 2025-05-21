@@ -322,8 +322,7 @@ const CompanyOnboarding = () => {
           title: 'Telephony Setup',
           description: 'Phone numbers, call tracking, and dialer configuration',
           status: 'pending',
-          component: TelephonySetup,
-          disabled: true
+          component: TelephonySetup
         },
         {
           id: 6,
@@ -337,21 +336,24 @@ const CompanyOnboarding = () => {
           title: 'Knowledge Base',
           description: 'Create training materials and FAQs',
           status: 'pending',
-          component: KnowledgeBase
+          component: KnowledgeBase,
+          disabled: true
         },
         {
           id: 8,
           title: 'Call Script',
           description: 'Define script and conversation flows',
           status: 'pending',
-          component: CallScript
+          component: CallScript,
+          disabled: true
         },
         {
           id: 9,
           title: 'Reporting Setup',
           description: 'Configure KPIs and reporting preferences',
           status: 'pending',
-          component: ReportingSetup
+          component: ReportingSetup,
+          disabled: true
         }
       ]
     },
@@ -643,10 +645,6 @@ const CompanyOnboarding = () => {
                           Locked
                         </span>
                       ) : step.id === 2 ? (
-                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                          Coming Soon
-                        </span>
-                      ) : step.id === 5 ? (
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
                           Coming Soon
                         </span>
