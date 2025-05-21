@@ -329,7 +329,8 @@ const CompanyOnboarding = () => {
           title: 'Upload Contacts',
           description: 'Import contacts for multi-channel engagement',
           status: 'pending',
-          component: UploadContacts
+          component: UploadContacts,
+          disabled: true
         },
         {
           id: 7,
@@ -644,7 +645,7 @@ const CompanyOnboarding = () => {
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
                           Locked
                         </span>
-                      ) : step.id === 2 ? (
+                      ) : step.disabled ? (
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
                           Coming Soon
                         </span>
