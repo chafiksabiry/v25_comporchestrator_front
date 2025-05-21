@@ -495,6 +495,7 @@ const CompanyOnboarding = () => {
     // Redirection spéciale pour Telephony Setup - toujours accessible
     if (stepId === 5) {
       if (completedSteps.includes(stepId)) {
+        
         setShowTelephonySetup(true);
       } else {
         setShowTelephonySetup(true);
