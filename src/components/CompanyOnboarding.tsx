@@ -436,7 +436,8 @@ const CompanyOnboarding = () => {
           title: 'REP Onboarding',
           description: 'Training, validation, and contract acceptance',
           status: 'pending',
-          component: RepOnboarding
+          component: RepOnboarding,
+          disabled: true
         },
         {
           id: 12,
