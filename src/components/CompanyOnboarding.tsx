@@ -22,7 +22,6 @@ import CompanyProfile from './onboarding/CompanyProfile';
 import KYCVerification from './onboarding/KYCVerification';
 import SubscriptionPlan from './onboarding/SubscriptionPlan';
 import CallScript from './onboarding/CallScript';
-import KnowledgeBase from './onboarding/KnowledgeBase';
 import ReportingSetup from './onboarding/ReportingSetup';
 import CreateGig from './onboarding/CreateGig';
 import UploadContacts from './onboarding/UploadContacts';
@@ -32,6 +31,7 @@ import SessionPlanning from './onboarding/SessionPlanning';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 import GigDetails from './onboarding/GigDetails';
+import KnowledgeBase from './onboarding/KnowledgeBase';
 
 interface BaseStep {
   id: number;
@@ -107,7 +107,7 @@ const CompanyOnboarding = () => {
   const [hasLeads, setHasLeads] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [showGigDetails, setShowGigDetails] = useState(false);
-  const userId = Cookies.get('userId');
+  const userId = Cookies.get('userId') || '682f0a4d641398dc582eb071';
 
   // Fetch company ID using user ID
   useEffect(() => {
@@ -177,17 +177,15 @@ const CompanyOnboarding = () => {
       const hasLeads = response.data.hasLeads;
       setHasLeads(hasLeads);
       
-      // If company has leads, update the onboarding progress for step 7
+      // If company has leads, update the onboarding progress for step 6
       if (hasLeads) {
         try {
           await axios.put(
             `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
-            { status: 'completed' , currentPhase: 3}
+            { status: 'completed' }
           );
           // Update local state to reflect the completed step
           setCompletedSteps(prev => [...prev, 6]);
-          setCurrentPhase(3);
-          setDisplayedPhase(3);
         } catch (error) {
           console.error('Error updating onboarding progress:', error);
         }
@@ -204,10 +202,21 @@ const CompanyOnboarding = () => {
       const progress = response.data;
       console.log('progress', response.data);
       
-      // Vérifier que la phase est valide (entre 1 et 4)
-      const validPhase = Math.max(1, Math.min(4, progress.currentPhase));
-      setCurrentPhase(validPhase);
-      setDisplayedPhase(validPhase);
+      // Store the progress in cookies
+      Cookies.set('companyOnboardingProgress', JSON.stringify(progress));
+      
+      // Check if step 7 is completed and automatically advance to phase 3
+      if (progress.completedSteps.includes(7)) {
+        const validPhase = 3;
+        setCurrentPhase(validPhase);
+        setDisplayedPhase(validPhase);
+      } else {
+        // Vérifier que la phase est valide (entre 1 et 4)
+        const validPhase = Math.max(1, Math.min(4, progress.currentPhase));
+        setCurrentPhase(validPhase);
+        setDisplayedPhase(validPhase);
+      }
+      
       setCompletedSteps(progress.completedSteps);
     } catch (error) {
       console.error('Error loading company progress:', error);
@@ -232,6 +241,16 @@ const CompanyOnboarding = () => {
 
       const allSteps = phases.flatMap(phase => phase.steps);
       const step = allSteps.find(s => s.id === stepId);
+      
+      // Special handling for Knowledge Base step
+      if (stepId === 7) {
+        if (completedSteps.includes(stepId)) {
+          window.location.replace(import.meta.env.VITE_KNOWLEDGE_BASE_URL);
+        } else {
+          window.location.replace(`${import.meta.env.VITE_KNOWLEDGE_BASE_URL}/upload`);
+        }
+        return;
+      }
       
       if (step?.component) {
         if (stepId === 4 && completedSteps.includes(stepId)) {
@@ -379,8 +398,7 @@ const CompanyOnboarding = () => {
           title: 'Knowledge Base',
           description: 'Create training materials and FAQs',
           status: 'pending',
-          component: KnowledgeBase,
-          disabled: true
+          component: KnowledgeBase
         },
         {
           id: 8,
@@ -490,6 +508,32 @@ const CompanyOnboarding = () => {
         window.location.href = '/app11';
       } else {
         window.location.href = '/app6';
+      }
+      return;
+    }
+
+    // Redirection spéciale pour Match HARX REPS
+    if (stepId === 10) {
+      window.location.href = '/app12';
+      return;
+    }
+
+    // Pour Knowledge Base
+    if (stepId === 7) {
+      console.log('Knowledge Base step clicked');
+      console.log('All previous completed:', allPreviousCompleted);
+      console.log('Step completed:', completedSteps.includes(stepId));
+      console.log('Knowledge Base URL:', import.meta.env.VITE_KNOWLEDGE_BASE_URL);
+      
+      if (allPreviousCompleted) {
+        const baseUrl = import.meta.env.VITE_KNOWLEDGE_BASE_URL;
+        if (completedSteps.includes(stepId)) {
+          console.log('Redirecting to review page:', baseUrl);
+          window.location.replace(baseUrl);
+        } else {
+          console.log('Redirecting to upload page:', `${baseUrl}/upload`);
+          window.location.replace(`${baseUrl}/upload`);
+        }
       }
       return;
     }
