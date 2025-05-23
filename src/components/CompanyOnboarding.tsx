@@ -444,7 +444,8 @@ const CompanyOnboarding = () => {
           title: 'Session Planning',
           description: 'Schedule call slots and prioritize leads',
           status: 'pending',
-          component: SessionPlanning
+          component: SessionPlanning,
+          disabled: true
         }
       ]
     },
@@ -458,7 +459,9 @@ const CompanyOnboarding = () => {
           id: 13,
           title: 'Gig Activation',
           description: 'Launch multi-channel operations',
-          status: 'pending'
+          status: 'pending',
+          // component: GigActivation,
+          disabled: true
         }
       ]
     }
