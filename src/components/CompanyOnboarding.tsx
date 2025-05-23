@@ -509,6 +509,14 @@ const CompanyOnboarding = () => {
       }
       return;
     }
+
+    // Pour Match HARX REPS
+    if (stepId === 10) {
+      if (allPreviousCompleted) {
+        window.location.href = '/app12';
+      }
+      return;
+    }
     
     // Pour les autres steps, vérifier la complétion des étapes précédentes
     if (step?.component && allPreviousCompleted && !step.disabled) {
