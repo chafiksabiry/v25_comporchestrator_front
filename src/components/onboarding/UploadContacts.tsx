@@ -93,8 +93,6 @@ const UploadContacts = () => {
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
 
-  const defaultUserId = '680b62682c1ca099fe2b14ff';
-  const defaultGigId = '680b62682c1ca099fe2b14ff';
 
   const channels = [
     { id: 'all', name: 'All Channels', icon: Globe },
@@ -184,8 +182,8 @@ const UploadContacts = () => {
                 const values = row.split(',').map(value => value.trim());
                 console.log(`Ligne ${index + 2} valeurs:`, values);
                 const lead: any = {
-                  userId: Cookies.get('userId') || defaultUserId,
-                  gigId: Cookies.get('gigId') || defaultGigId,
+                  userId: Cookies.get('userId'),
+                  gigId: Cookies.get('gigId'),
                   companyId: Cookies.get('companyId'),
                   Last_Activity_Time: new Date(),
                   Activity_Tag: '',
@@ -328,7 +326,7 @@ const UploadContacts = () => {
       const response = await axios.post(`${import.meta.env.VITE_DASHBOARD_API}/leads`, parsedLeads, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Cookies.get('gigId') || defaultGigId}:${Cookies.get('userId') || defaultUserId}`
+          'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`
         }
       });
       console.log('Save response:', response.data);
@@ -369,7 +367,7 @@ const UploadContacts = () => {
   const checkZohoConfig = async () => {
     try {
       console.log('🔍 Vérification de la configuration Zoho...');
-      const userId = Cookies.get('userId') || defaultUserId;
+      const userId = Cookies.get('userId');
       console.log('👤 UserId utilisé:', userId);
       
       // Vérifier si nous avons déjà un access token valide
@@ -455,7 +453,7 @@ const UploadContacts = () => {
 
   const handleZohoConfig = async () => {
     try {
-      const userId = Cookies.get('userId') || defaultUserId;
+      const userId = Cookies.get('userId');
       const companyId = Cookies.get('companyId');
       console.log('Configuring Zoho with userId:', userId);
       console.log('Zoho config data:', zohoConfig);
@@ -510,7 +508,7 @@ const UploadContacts = () => {
     setIsImportingZoho(true);
     setRealtimeLeads([]);
     try {
-      const userId = Cookies.get('userId') || defaultUserId;
+      const userId = Cookies.get('userId');
       const companyId = Cookies.get('companyId');
       
       if (!companyId) {
@@ -566,7 +564,7 @@ const UploadContacts = () => {
           body: JSON.stringify({
             userId: userId,
             companyId: companyId,
-            gigId: Cookies.get('gigId') || defaultGigId
+            gigId: Cookies.get('gigId')
           })
         });
 
@@ -618,7 +616,7 @@ const UploadContacts = () => {
       console.log('Fetching leads for gig:', selectedGigId);
       const response = await fetch(apiUrl, {
         headers: {
-          'Authorization': `Bearer ${Cookies.get('gigId') || defaultGigId}:${Cookies.get('userId') || defaultUserId}`,
+          'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`,
           'Content-Type': 'application/json'
         }
       });
@@ -774,7 +772,7 @@ const UploadContacts = () => {
 
       const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`, {
         headers: {
-          'Authorization': `Bearer ${Cookies.get('gigId') || defaultGigId}:${Cookies.get('userId') || defaultUserId}`,
+          'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`,
           'Content-Type': 'application/json'
         }
       });
