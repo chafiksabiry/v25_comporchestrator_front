@@ -323,7 +323,7 @@ const CompanyOnboarding = () => {
 
   const handleNextPhase = () => {
     const newPhase = Math.min(4, displayedPhase + 1);
-    if (newPhase === 4) {
+    if (displayedPhase === 3) {
       window.location.href = '/company';
     } else {
       handlePhaseChange(newPhase);
