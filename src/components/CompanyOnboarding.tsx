@@ -787,7 +787,7 @@ const CompanyOnboarding = () => {
           </button>
           <button
             className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
-            disabled={displayedPhase === 4}
+            disabled={false}
             onClick={handleNextPhase}
           >
             Next Phase
