@@ -494,12 +494,6 @@ const CompanyOnboarding = () => {
       return;
     }
 
-    // Redirection spéciale pour Match HARX REPS
-    if (stepId === 10) {
-      window.location.href = '/app12';
-      return;
-    }
-
     // Pour Telephony Setup
     if (stepId === 5) {
       if (allPreviousCompleted) {
