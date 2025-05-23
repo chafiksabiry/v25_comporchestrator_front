@@ -323,7 +323,8 @@ const CompanyOnboarding = () => {
 
   const handleNextPhase = () => {
     const newPhase = Math.min(4, displayedPhase + 1);
-    if (displayedPhase === 3) {
+    // Rediriger seulement si on est déjà en phase 4
+    if (displayedPhase === 4) {
       window.location.href = '/company';
     } else {
       handlePhaseChange(newPhase);
