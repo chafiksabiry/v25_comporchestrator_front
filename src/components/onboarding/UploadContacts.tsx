@@ -184,8 +184,8 @@ const UploadContacts = () => {
                 const values = row.split(',').map(value => value.trim());
                 console.log(`Ligne ${index + 2} valeurs:`, values);
                 const lead: any = {
-                  userId: Cookies.get('userId') || defaultUserId,
-                  gigId: Cookies.get('gigId') || defaultGigId,
+                  userId: Cookies.get('userId'),
+                  gigId: Cookies.get('gigId'),
                   companyId: Cookies.get('companyId'),
                   Last_Activity_Time: new Date(),
                   Activity_Tag: '',
