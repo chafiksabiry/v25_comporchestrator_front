@@ -512,6 +512,12 @@ const CompanyOnboarding = () => {
       return;
     }
 
+    // Redirection spéciale pour Match HARX REPS
+    if (stepId === 10) {
+      window.location.href = '/app12';
+      return;
+    }
+
     // Pour Knowledge Base
     if (stepId === 7) {
       console.log('Knowledge Base step clicked');
