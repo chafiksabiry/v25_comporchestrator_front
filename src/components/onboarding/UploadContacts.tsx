@@ -551,46 +551,75 @@ const UploadContacts = () => {
 
       setParsedLeads([]);
       
-      try {
-        const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/leads/sync-all`;
-        const checkResponse = await fetch(apiUrl, { 
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('zoho_access_token')}`,
-            'Accept': 'application/json'
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            userId: userId,
-            companyId: companyId,
-            gigId: Cookies.get('gigId')
-          })
-        });
+      // Créer un tableau de promesses pour l'importation parallèle
+      const importPromises = gigs.map(async (gig) => {
+        try {
+          const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/leads/sync-all`;
+          const checkResponse = await fetch(apiUrl, { 
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('zoho_access_token')}`,
+              'Accept': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              userId: userId,
+              companyId: companyId,
+              gigId: gig._id
+            })
+          });
 
-        if (!checkResponse.ok) {
-          const errorData = await checkResponse.json().catch(() => null);
-          throw new Error(errorData?.message || 'Erreur lors de la synchronisation avec Zoho');
+          if (!checkResponse.ok) {
+            const errorData = await checkResponse.json().catch(() => null);
+            throw new Error(errorData?.message || `Erreur lors de la synchronisation avec Zoho pour le gig ${gig.title}`);
+          }
+
+          const data = await checkResponse.json();
+          
+          if (!data.success) {
+            throw new Error(data.message || `Erreur lors de la synchronisation pour le gig ${gig.title}`);
+          }
+
+          return {
+            gig: gig.title,
+            leads: data.data.leads,
+            sync_info: data.data.sync_info
+          };
+        } catch (error: any) {
+          return {
+            gig: gig.title,
+            error: error.message
+          };
         }
+      });
 
-        const data = await checkResponse.json();
-        
-        if (!data.success) {
-          throw new Error(data.message || 'Erreur lors de la synchronisation');
-        }
+      // Exécuter toutes les importations en parallèle
+      const results = await Promise.all(importPromises);
+      
+      // Traiter les résultats
+      const allLeads: Lead[] = [];
+      let totalSaved = 0;
+      let errors: string[] = [];
 
-        const { leads, sync_info } = data.data;
-        setRealtimeLeads(leads);
-        setParsedLeads(leads);
-        toast.success(`Synchronisation terminée. ${sync_info.total_saved} leads importés avec succès.`);
-
-      } catch (error: any) {
-        if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-          toast.error('Le service est temporairement indisponible. Veuillez réessayer dans quelques instants.');
+      results.forEach(result => {
+        if ('error' in result) {
+          errors.push(`${result.gig}: ${result.error}`);
         } else {
-          toast.error(error.message || 'Une erreur est survenue lors de la synchronisation');
+          allLeads.push(...result.leads);
+          totalSaved += result.sync_info.total_saved;
         }
+      });
+
+      // Mettre à jour l'état avec tous les leads
+      setRealtimeLeads(allLeads);
+      setParsedLeads(allLeads);
+
+      // Afficher les résultats
+      if (errors.length > 0) {
+        toast.error(`Erreurs lors de l'importation: ${errors.join(', ')}`);
       }
+      toast.success(`Synchronisation terminée. ${totalSaved} leads importés avec succès.`);
 
     } catch (error: any) {
       toast.error(error.message || 'Une erreur est survenue lors de l\'importation');
