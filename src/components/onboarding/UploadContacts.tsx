@@ -443,7 +443,8 @@ const UploadContacts = () => {
     });
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback?code=${code}&userId=${userId}`, {
+      // const userId = Cookies.get('userId');
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback?code=${code}&userId=${Cookies.get('userId')}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
