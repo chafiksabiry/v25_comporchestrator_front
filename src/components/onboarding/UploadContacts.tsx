@@ -921,7 +921,7 @@ const UploadContacts = () => {
         }
 
         console.log('Checking Zoho config for userId:', userId);
-        const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/config/user/${userId}`, {
+        const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/config/user/${userId}`, {
           headers: {
             'Authorization': `Bearer ${Cookies.get('gigId')}:${userId}`,
             'Content-Type': 'application/json'
