@@ -382,6 +382,11 @@ const UploadContacts = () => {
         toast.success('Successfully connected to Zoho CRM');
         setHasZohoConfig(true);
         window.history.replaceState({}, document.title, window.location.pathname);
+        // Notifie la fenêtre principale si besoin
+        if (window.opener) {
+          window.opener.postMessage({ zohoConnected: true }, '*');
+          window.close();
+        }
       } catch (error) {
         console.error('Error handling OAuth callback:', error);
         toast.error('Failed to complete Zoho authentication');
@@ -396,7 +401,15 @@ const UploadContacts = () => {
         });
         if (!response.ok) throw new Error('Failed to get Zoho auth URL');
         const data = await response.json();
-        window.location.href = data.authUrl;
+        // Ouvre la fenêtre popup
+        const popup = window.open(
+          data.authUrl,
+          'ZohoAuth',
+          'width=600,height=700'
+        );
+        if (!popup) {
+          toast.error('Popup blocked! Please allow popups for this site.');
+        }
       } catch (error) {
         toast.error('Failed to initiate Zoho authentication');
         console.error(error);
@@ -870,6 +883,17 @@ const UploadContacts = () => {
     // Update the cookie with the new gigId
     Cookies.set('gigId', newGigId);
   };
+
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      if (event.data.zohoConnected) {
+        toast.success('Zoho connection successful!');
+        setHasZohoConfig(true);
+      }
+    }
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   return (
     <div className="space-y-6">
