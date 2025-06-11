@@ -438,22 +438,10 @@ const UploadContacts = () => {
 
   const handleZohoAuth = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Stocker l'URL de redirection dans le localStorage
-        localStorage.setItem('zoho_redirect_url', window.location.href);
-        // Rediriger vers l'URL d'autorisation Zoho
-        window.location.href = data.authUrl;
-      } else {
-        throw new Error('Failed to get Zoho auth URL');
-      }
+      // Stocker l'URL de redirection dans le localStorage
+      localStorage.setItem('zoho_redirect_url', window.location.href);
+      // Rediriger vers la page d'authentification Zoho
+      window.location.href = '/zoho-auth';
     } catch (error) {
       console.error('Error initiating Zoho auth:', error);
       toast.error('Failed to initiate Zoho authentication');
@@ -964,11 +952,11 @@ const UploadContacts = () => {
           </div>
           {!hasZohoConfig && (
             <button 
-              onClick={() => setShowZohoModal(true)}
+              onClick={handleZohoAuth}
               className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
             >
               <Database className="mr-2 h-4 w-4" />
-              Configure Zoho CRM
+              Connect to Zoho CRM
             </button>
           )}
           <button 

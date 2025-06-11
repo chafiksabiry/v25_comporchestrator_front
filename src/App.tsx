@@ -21,13 +21,15 @@ import ApprovalPublishing from './components/ApprovalPublishing';
 import Optimization from './components/Optimization';
 import CompanyOnboarding from './components/CompanyOnboarding';
 import ZohoCallback from './components/onboarding/ZohoCallback';
+import ZohoAuth from './components/onboarding/ZohoAuth';
 
 function App() {
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // Vérifier si nous sommes sur la page de callback Zoho
+  // Vérifier si nous sommes sur une page spéciale
   const isZohoCallback = window.location.pathname === '/zoho-callback';
+  const isZohoAuth = window.location.pathname === '/zoho-auth';
 
   const handleLogout = () => {
     if (import.meta.env.VITE_NODE_ENV !== 'development') {
@@ -45,9 +47,12 @@ function App() {
   };
 
   const renderContent = () => {
-    // Si nous sommes sur la page de callback Zoho, afficher ce composant
+    // Si nous sommes sur une page spéciale, afficher le composant correspondant
     if (isZohoCallback) {
       return <ZohoCallback />;
+    }
+    if (isZohoAuth) {
+      return <ZohoAuth />;
     }
 
     switch (activeTab) {
@@ -67,8 +72,8 @@ function App() {
     }
   };
 
-  // Si nous sommes sur la page de callback Zoho, ne pas afficher la sidebar
-  if (isZohoCallback) {
+  // Si nous sommes sur une page spéciale, ne pas afficher la sidebar
+  if (isZohoCallback || isZohoAuth) {
     return (
       <div className="flex h-screen bg-gray-50">
         <Toaster position="top-right" />
