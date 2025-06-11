@@ -367,48 +367,68 @@ const UploadContacts = () => {
   const handleZohoConnect = async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
+  
     if (code) {
-      // Appel direct du callback
+      // Callback après redirection Zoho
       try {
         const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/callback?code=${code}`, {
           method: 'GET',
           headers: { 'Accept': 'application/json' }
         });
+  
         if (!response.ok) throw new Error('Failed to exchange code for tokens');
+  
         const data = await response.json();
         localStorage.setItem('zoho_access_token', data.accessToken);
         localStorage.setItem('zoho_refresh_token', data.refreshToken);
         localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString());
+  
         toast.success('Successfully connected to Zoho CRM');
         setHasZohoConfig(true);
         window.history.replaceState({}, document.title, window.location.pathname);
-        // Notifie la fenêtre principale si besoin
+  
+        // Notifie la fenêtre principale
         if (window.opener) {
+          console.log('Notifying main window via postMessage...');
           window.opener.postMessage({ zohoConnected: true }, '*');
-          setTimeout(() => window.close(), 500);
+  
+          // Tentative de fermeture plus fiable
+          setTimeout(() => {
+            console.log('Closing popup...');
+            window.open('', '_self');
+            window.close();
+          }, 500);
+        } else {
+          console.log('No window.opener found');
         }
       } catch (error) {
         console.error('Error handling OAuth callback:', error);
         toast.error('Failed to complete Zoho authentication');
       }
     } else {
-      // Appel direct à l'API pour obtenir l'URL d'authentification Zoho
+      // Première étape : initier l'auth
       localStorage.setItem('zoho_redirect_url', window.location.href);
       try {
         const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth`, {
           method: 'GET',
           headers: { 'Accept': 'application/json' }
         });
+  
         if (!response.ok) throw new Error('Failed to get Zoho auth URL');
+  
         const data = await response.json();
-        // Ouvre la fenêtre popup
+  
+        // Ouvre la popup
         const popup = window.open(
           data.authUrl,
           'ZohoAuth',
           'width=600,height=700'
         );
+  
         if (!popup) {
           toast.error('Popup blocked! Please allow popups for this site.');
+        } else {
+          console.log('Popup opened');
         }
       } catch (error) {
         toast.error('Failed to initiate Zoho authentication');
@@ -416,6 +436,7 @@ const UploadContacts = () => {
       }
     }
   };
+  
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -888,12 +909,13 @@ const UploadContacts = () => {
   };
 
   useEffect(() => {
-    function handleMessage(event: MessageEvent) {
+    const handleMessage = (event: MessageEvent) => {
       if (event.data.zohoConnected) {
-        toast.success('Zoho connection successful!');
+        console.log('Received zohoConnected message');
+        toast.success('Zoho connection successful');
         setHasZohoConfig(true);
       }
-    }
+    };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, []);
