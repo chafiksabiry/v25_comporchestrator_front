@@ -590,6 +590,8 @@ const UploadContacts = () => {
       const importPromises = gigs.map(async (gig) => {
         try {
           const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/leads/sync-all`;
+          console.log('Importing leads for gig:', gig.title);
+          
           const checkResponse = await fetch(apiUrl, { 
             method: 'POST',
             headers: {
@@ -611,26 +613,41 @@ const UploadContacts = () => {
           }
 
           const data = await checkResponse.json();
+          console.log('Import response for gig:', gig.title, data);
           
           if (!data.success) {
             throw new Error(data.message || `Erreur lors de la synchronisation pour le gig ${gig.title}`);
           }
 
+          // Vérifier si data.data et data.data.leads existent
+          if (!data.data || !Array.isArray(data.data.leads)) {
+            console.warn(`No leads found for gig ${gig.title}`);
+            return {
+              gig: gig.title,
+              leads: [],
+              sync_info: { total_saved: 0 }
+            };
+          }
+
           return {
             gig: gig.title,
             leads: data.data.leads,
-            sync_info: data.data.sync_info
+            sync_info: data.data.sync_info || { total_saved: 0 }
           };
         } catch (error: any) {
+          console.error(`Error importing leads for gig ${gig.title}:`, error);
           return {
             gig: gig.title,
-            error: error.message
+            error: error.message,
+            leads: [],
+            sync_info: { total_saved: 0 }
           };
         }
       });
 
       // Exécuter toutes les importations en parallèle
       const results = await Promise.all(importPromises);
+      console.log('Import results:', results);
       
       // Traiter les résultats
       const allLeads: Lead[] = [];
@@ -641,8 +658,10 @@ const UploadContacts = () => {
         if ('error' in result) {
           errors.push(`${result.gig}: ${result.error}`);
         } else {
-          allLeads.push(...result.leads);
-          totalSaved += result.sync_info.total_saved;
+          if (Array.isArray(result.leads)) {
+            allLeads.push(...result.leads);
+          }
+          totalSaved += result.sync_info?.total_saved || 0;
         }
       });
 
@@ -657,6 +676,7 @@ const UploadContacts = () => {
       toast.success(`Synchronisation terminée. ${totalSaved} leads importés avec succès.`);
 
     } catch (error: any) {
+      console.error('Error in handleImportFromZoho:', error);
       toast.error(error.message || 'Une erreur est survenue lors de l\'importation');
     } finally {
       setIsImportingZoho(false);
