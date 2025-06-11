@@ -436,10 +436,71 @@ const UploadContacts = () => {
     }
   };
 
+  const handleZohoAuth = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Rediriger vers l'URL d'autorisation Zoho
+        window.location.href = data.authUrl;
+      } else {
+        throw new Error('Failed to get Zoho auth URL');
+      }
+    } catch (error) {
+      console.error('Error initiating Zoho auth:', error);
+      toast.error('Failed to initiate Zoho authentication');
+    }
+  };
+
   useEffect(() => {
-    console.log('🔄 Composant monté - Vérification initiale de la configuration Zoho');
-    checkZohoConfig();
+    // Vérifier si nous sommes dans le callback OAuth
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    
+    if (code) {
+      handleOAuthCallback(code);
+    } else {
+      checkZohoConfig();
+    }
   }, []);
+
+  const handleOAuthCallback = async (code: string) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/callback?code=${code}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to exchange code for tokens');
+      }
+
+      const data = await response.json();
+
+      // Stocker les tokens
+      localStorage.setItem('zoho_access_token', data.accessToken);
+      localStorage.setItem('zoho_refresh_token', data.refreshToken);
+      localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString()); // 1 heure
+
+      toast.success('Successfully connected to Zoho CRM');
+      setHasZohoConfig(true);
+      setShowZohoModal(false);
+
+      // Nettoyer l'URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } catch (error) {
+      console.error('Error handling OAuth callback:', error);
+      toast.error('Failed to complete Zoho authentication');
+    }
+  };
 
   useEffect(() => {
     console.log('📊 État actuel de hasZohoConfig:', hasZohoConfig);
@@ -946,54 +1007,21 @@ const UploadContacts = () => {
               </div>
               <div className="sm:flex sm:items-start">
                 <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                  <h3 className="text-lg font-medium leading-6 text-gray-900">Configure Zoho CRM</h3>
-                  <div className="mt-4 space-y-4">
-                    <div>
-                      <label htmlFor="clientId" className="block text-sm font-medium text-gray-700">
-                        Client ID
-                      </label>
-                      <input
-                        type="text"
-                        id="clientId"
-                        value={zohoConfig.clientId}
-                        onChange={(e) => setZohoConfig({...zohoConfig, clientId: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="clientSecret" className="block text-sm font-medium text-gray-700">
-                        Client Secret
-                      </label>
-                      <input
-                        type="password"
-                        id="clientSecret"
-                        value={zohoConfig.clientSecret}
-                        onChange={(e) => setZohoConfig({...zohoConfig, clientSecret: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="refreshToken" className="block text-sm font-medium text-gray-700">
-                        Refresh Token
-                      </label>
-                      <input
-                        type="password"
-                        id="refreshToken"
-                        value={zohoConfig.refreshToken}
-                        onChange={(e) => setZohoConfig({...zohoConfig, refreshToken: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                      />
-                    </div>
+                  <h3 className="text-lg font-medium leading-6 text-gray-900">Connect to Zoho CRM</h3>
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-500">
+                      Click the button below to authenticate with Zoho CRM. You will be redirected to Zoho's login page.
+                    </p>
                   </div>
                 </div>
               </div>
               <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
                 <button
                   type="button"
-                  onClick={handleZohoConfig}
+                  onClick={handleZohoAuth}
                   className="inline-flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
                 >
-                  Save Configuration
+                  Connect to Zoho
                 </button>
                 <button
                   type="button"
