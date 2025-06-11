@@ -459,7 +459,8 @@ const UploadContacts = () => {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Cookies.get('gigId')}:${userId}`
         }
       });
 
@@ -470,32 +471,22 @@ const UploadContacts = () => {
         throw new Error(data.error || 'Failed to exchange code for tokens');
       }
 
-      // Vérifier si la configuration existe déjà
-      const configResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/config/user/${userId}`, {
-        headers: {
-          'Authorization': `Bearer ${Cookies.get('gigId')}:${userId}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (configResponse.ok) {
-        const configData = await configResponse.json();
-        console.log('Existing Zoho config:', configData);
-
-        // Stocker les tokens localement
-        localStorage.setItem('zoho_access_token', configData.access_token);
-        localStorage.setItem('zoho_refresh_token', configData.refresh_token);
-        localStorage.setItem('zoho_token_expiry', (Date.now() + (configData.expires_in * 1000)).toString());
-
-        // Nettoyer le userId stocké
-        localStorage.removeItem('zoho_user_id');
-
-        toast.success('Successfully connected to Zoho CRM');
-        setHasZohoConfig(true);
-        setShowZohoModal(false);
-      } else {
-        throw new Error('Failed to retrieve Zoho configuration');
+      // Vérifier que tous les champs requis sont présents
+      if (!data.access_token || !data.refresh_token || !data.expires_in) {
+        throw new Error('Missing required fields in Zoho response');
       }
+
+      // Stocker les tokens localement
+      localStorage.setItem('zoho_access_token', data.access_token);
+      localStorage.setItem('zoho_refresh_token', data.refresh_token);
+      localStorage.setItem('zoho_token_expiry', (Date.now() + (data.expires_in * 1000)).toString());
+
+      // Nettoyer le userId stocké
+      localStorage.removeItem('zoho_user_id');
+
+      toast.success('Successfully connected to Zoho CRM');
+      setHasZohoConfig(true);
+      setShowZohoModal(false);
 
     } catch (error: any) {
       console.error('Error handling OAuth callback:', error);
