@@ -92,6 +92,7 @@ const UploadContacts = () => {
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
+  const [hasZohoAccessToken, setHasZohoAccessToken] = useState(false);
 
 
   const channels = [
@@ -864,6 +865,11 @@ const UploadContacts = () => {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
+  useEffect(() => {
+    const token = localStorage.getItem('zoho_access_token');
+    setHasZohoAccessToken(!!token);
+  }, [hasZohoConfig, showZohoModal]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -904,7 +910,7 @@ const UploadContacts = () => {
           </button>
           <button 
             onClick={handleImportFromZoho}
-            disabled={isImportingZoho || !hasZohoConfig}
+            disabled={isImportingZoho || !hasZohoAccessToken}
             className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
           >
             <Download className="mr-2 h-4 w-4" />
