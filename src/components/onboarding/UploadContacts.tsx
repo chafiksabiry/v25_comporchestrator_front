@@ -418,7 +418,7 @@ const UploadContacts = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
-    const userId = urlParams.get('userId');
+    const userId = urlParams.get('state') || localStorage.getItem('zoho_user_id') || Cookies.get('userId');
     const location = urlParams.get('location');
     const accountsServer = urlParams.get('accounts-server');
     
