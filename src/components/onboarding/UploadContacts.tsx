@@ -402,13 +402,9 @@ const UploadContacts = () => {
         if (!response.ok) throw new Error('Failed to get Zoho auth URL');
         const data = await response.json();
         // Ouvre la fenêtre popup
-        const popup = window.open(
-          data.authUrl,
-          'ZohoAuth',
-          'width=600,height=700'
-        );
-        if (!popup) {
-          toast.error('Popup blocked! Please allow popups for this site.');
+        const tab = window.open(data.authUrl, '_blank');
+        if (!tab) {
+          toast.error('Tab blocked! Please allow popups/tabs for this site.');
         }
       } catch (error) {
         toast.error('Failed to initiate Zoho authentication');
