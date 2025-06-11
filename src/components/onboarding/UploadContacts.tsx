@@ -454,7 +454,10 @@ const UploadContacts = () => {
       setShowZohoModal(false);
 
       // Rediriger vers le composant ZohoCallback
-      window.location.href = '/zoho-callback';
+      if (window.opener) {
+        window.opener.postMessage({ zohoConnected: true }, '*');
+        window.close();
+      }
     } catch (error) {
       console.error('Error handling OAuth callback:', error);
       toast.error('Failed to complete Zoho authentication');
