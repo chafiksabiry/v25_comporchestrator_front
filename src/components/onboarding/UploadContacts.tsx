@@ -418,29 +418,25 @@ const UploadContacts = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
-    const userId = urlParams.get('state') || localStorage.getItem('zoho_user_id') || Cookies.get('userId');
+    const state = urlParams.get('state') || localStorage.getItem('zoho_user_id') || Cookies.get('userId');
     const location = urlParams.get('location');
     const accountsServer = urlParams.get('accounts-server');
     
     console.log('URL Params:', {
       code,
-      userId,
+      state,
       location,
       accountsServer
     });
     
     if (code) {
-      // Si userId n'est pas dans l'URL, essayer de le récupérer du localStorage
-      const finalUserId = userId || localStorage.getItem('zoho_user_id');
-      console.log('Final userId to use:', finalUserId);
-      
-      if (!finalUserId) {
+      if (!state) {
         console.error('No userId found in URL or localStorage');
         toast.error('User ID not found. Please try connecting again.');
         return;
       }
-
-      handleOAuthCallback(code, finalUserId, location || undefined, accountsServer || undefined);
+  
+      handleOAuthCallback(code, state, location || undefined, accountsServer || undefined);
     }
   }, []);
 
@@ -455,11 +451,11 @@ const UploadContacts = () => {
     try {
       const queryParams = new URLSearchParams({
         code,
-        userId,
+        state: userId,  // Utiliser state au lieu de userId
         ...(location && { location }),
         ...(accountsServer && { accountsServer })
       }).toString();
-
+  
       const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback?${queryParams}`, {
         method: 'GET',
         headers: {
@@ -468,31 +464,31 @@ const UploadContacts = () => {
           'Authorization': `Bearer ${Cookies.get('gigId')}:${userId}`
         }
       });
-
+  
       const data = await response.json();
       console.log('Callback response:', data);
-
+  
       if (!response.ok) {
         throw new Error(data.error || 'Failed to exchange code for tokens');
       }
-
+  
       // Vérifier que tous les champs requis sont présents
       if (!data.access_token || !data.refresh_token || !data.expires_in) {
         throw new Error('Missing required fields in Zoho response');
       }
-
+  
       // Stocker les tokens localement
       localStorage.setItem('zoho_access_token', data.access_token);
       localStorage.setItem('zoho_refresh_token', data.refresh_token);
       localStorage.setItem('zoho_token_expiry', (Date.now() + (data.expires_in * 1000)).toString());
-
+  
       // Nettoyer le userId stocké
       localStorage.removeItem('zoho_user_id');
-
+  
       toast.success('Successfully connected to Zoho CRM');
       setHasZohoConfig(true);
       setShowZohoModal(false);
-
+  
     } catch (error: any) {
       console.error('Error handling OAuth callback:', error);
       toast.error(error.message || 'Failed to complete Zoho authentication');
