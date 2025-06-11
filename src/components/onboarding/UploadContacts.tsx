@@ -367,7 +367,6 @@ const UploadContacts = () => {
 
   const handleZohoConnect = async () => {
     console.log('Starting Zoho connection process...');
-    localStorage.setItem('zoho_redirect_url', window.location.href);
     try {
       const userId = Cookies.get('userId');
       console.log('Retrieved userId from cookies:', userId);
@@ -382,7 +381,11 @@ const UploadContacts = () => {
       localStorage.setItem('zoho_user_id', userId);
       console.log('Stored userId in localStorage:', userId);
 
-      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth`, {
+      // Construire l'URL de redirection avec le userId
+      const redirectUri = `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback?userId=${userId}`;
+      const encodedRedirectUri = encodeURIComponent(redirectUri);
+
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth?redirect_uri=${encodedRedirectUri}`, {
         method: 'GET',
         headers: { 
           'Accept': 'application/json',
@@ -399,12 +402,8 @@ const UploadContacts = () => {
       const data = await response.json();
       console.log('Auth URL response:', data);
       
-      // Ajouter le userId dans l'URL de redirection
-      const authUrl = new URL(data.authUrl);
-      authUrl.searchParams.append('state', userId);
-      
       // Redirige l'utilisateur vers l'URL d'authentification Zoho
-      window.location.href = authUrl.toString();
+      window.location.href = data.authUrl;
     } catch (error) {
       console.error('Error in handleZohoConnect:', error);
       toast.error('Failed to initiate Zoho authentication');
@@ -414,24 +413,24 @@ const UploadContacts = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
-    const state = urlParams.get('state'); // Récupérer le userId du paramètre state
+    const userId = urlParams.get('userId');
     console.log('URL Params:', Object.fromEntries(urlParams.entries()));
     console.log('Code from URL:', code);
-    console.log('State (userId) from URL:', state);
+    console.log('UserId from URL:', userId);
     
-    if (code && state) {
-      handleOAuthCallback(code, state);
+    if (code && userId) {
+      handleOAuthCallback(code, userId);
     } else if (code) {
       // Fallback: essayer de récupérer le userId du localStorage
-      const userId = localStorage.getItem('zoho_user_id');
-      console.log('Retrieved userId from localStorage:', userId);
+      const storedUserId = localStorage.getItem('zoho_user_id');
+      console.log('Retrieved userId from localStorage:', storedUserId);
       
-      if (!userId) {
+      if (!storedUserId) {
         console.error('No userId found in localStorage');
         toast.error('User ID not found. Please try connecting again.');
         return;
       }
-      handleOAuthCallback(code, userId);
+      handleOAuthCallback(code, storedUserId);
     }
   }, []);
 
@@ -443,8 +442,7 @@ const UploadContacts = () => {
     });
     
     try {
-      // const userId = Cookies.get('userId');
-      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback?code=${code}&userId=${Cookies.get('userId')}`, {
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback?code=${code}&userId=${userId}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -914,9 +912,49 @@ const UploadContacts = () => {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem('zoho_access_token');
-    setHasZohoAccessToken(!!token);
-  }, [hasZohoConfig, showZohoModal]);
+    const checkZohoToken = async () => {
+      try {
+        const userId = Cookies.get('userId');
+        if (!userId) return;
+
+        const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/token/${userId}`, {
+          headers: {
+            'Authorization': `Bearer ${Cookies.get('gigId')}:${userId}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Zoho Token Data:', {
+            access_token: data.access_token,
+            refresh_token: data.refresh_token,
+            expires_in: data.expires_in
+          });
+
+          if (data.access_token) {
+            localStorage.setItem('zoho_access_token', data.access_token);
+            localStorage.setItem('zoho_refresh_token', data.refresh_token);
+            localStorage.setItem('zoho_token_expiry', (Date.now() + (data.expires_in * 1000)).toString());
+            
+            // Log des tokens stockés
+            console.log('Stored Zoho Tokens:', {
+              access_token: localStorage.getItem('zoho_access_token'),
+              refresh_token: localStorage.getItem('zoho_refresh_token'),
+              expiry: new Date(parseInt(localStorage.getItem('zoho_token_expiry') || '0')).toLocaleString()
+            });
+
+            setHasZohoAccessToken(true);
+            setHasZohoConfig(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking Zoho token:', error);
+      }
+    };
+
+    checkZohoToken();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -959,7 +997,7 @@ const UploadContacts = () => {
           </button>
           <button 
             onClick={handleImportFromZoho}
-            disabled={isImportingZoho || !hasZohoAccessToken}
+            disabled={isImportingZoho || !hasZohoAccessToken || !selectedGigId}
             className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
           >
             <Download className="mr-2 h-4 w-4" />
