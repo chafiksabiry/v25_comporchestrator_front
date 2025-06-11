@@ -414,35 +414,48 @@ const UploadContacts = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     const userId = urlParams.get('userId');
-    console.log('URL Params:', Object.fromEntries(urlParams.entries()));
-    console.log('Code from URL:', code);
-    console.log('UserId from URL:', userId);
+    const location = urlParams.get('location');
+    const accountsServer = urlParams.get('accounts-server');
     
-    if (code && userId) {
-      handleOAuthCallback(code, userId);
-    } else if (code) {
-      // Fallback: essayer de récupérer le userId du localStorage
-      const storedUserId = localStorage.getItem('zoho_user_id');
-      console.log('Retrieved userId from localStorage:', storedUserId);
+    console.log('URL Params:', {
+      code,
+      userId,
+      location,
+      accountsServer
+    });
+    
+    if (code) {
+      // Si userId n'est pas dans l'URL, essayer de le récupérer du localStorage
+      const finalUserId = userId || localStorage.getItem('zoho_user_id');
+      console.log('Final userId to use:', finalUserId);
       
-      if (!storedUserId) {
-        console.error('No userId found in localStorage');
+      if (!finalUserId) {
+        console.error('No userId found in URL or localStorage');
         toast.error('User ID not found. Please try connecting again.');
         return;
       }
-      handleOAuthCallback(code, storedUserId);
+
+      handleOAuthCallback(code, finalUserId, location || undefined, accountsServer || undefined);
     }
   }, []);
 
-  const handleOAuthCallback = async (code: string, userId: string) => {
+  const handleOAuthCallback = async (code: string, userId: string, location?: string, accountsServer?: string) => {
     console.log('handleOAuthCallback called with:', {
       code,
       userId,
-      url: `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback?code=${code}&userId=${userId}`
+      location,
+      accountsServer
     });
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback?code=${code}&userId=${userId}`, {
+      const queryParams = new URLSearchParams({
+        code,
+        userId,
+        ...(location && { location }),
+        ...(accountsServer && { accountsServer })
+      }).toString();
+
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback?${queryParams}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -659,7 +672,7 @@ const UploadContacts = () => {
           errors.push(`${result.gig}: ${result.error}`);
         } else {
           if (Array.isArray(result.leads)) {
-            allLeads.push(...result.leads);
+          allLeads.push(...result.leads);
           }
           totalSaved += result.sync_info?.total_saved || 0;
         }
