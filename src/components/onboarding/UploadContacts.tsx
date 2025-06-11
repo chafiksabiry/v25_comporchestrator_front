@@ -385,7 +385,7 @@ const UploadContacts = () => {
         // Notifie la fenêtre principale si besoin
         if (window.opener) {
           window.opener.postMessage({ zohoConnected: true }, '*');
-          window.close();
+          setTimeout(() => window.close(), 500);
         }
       } catch (error) {
         console.error('Error handling OAuth callback:', error);
@@ -456,7 +456,7 @@ const UploadContacts = () => {
       // Rediriger vers le composant ZohoCallback
       if (window.opener) {
         window.opener.postMessage({ zohoConnected: true }, '*');
-        window.close();
+        setTimeout(() => window.close(), 500);
       }
     } catch (error) {
       console.error('Error handling OAuth callback:', error);
