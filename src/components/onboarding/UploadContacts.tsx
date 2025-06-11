@@ -385,9 +385,10 @@ const UploadContacts = () => {
       // Construire l'URL de redirection avec le userId
       const redirectUri = `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback`;
       const encodedRedirectUri = encodeURIComponent(redirectUri);
+      const state = encodeURIComponent(userId)
 
       // Construire l'URL complète avec tous les paramètres nécessaires
-      const authUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth?redirect_uri=${encodedRedirectUri}&userId=${userId}`;
+      const authUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth?redirect_uri=${encodedRedirectUri}&state=${state}`;
       console.log('Auth URL:', authUrl);
 
       const response = await fetch(authUrl, {
