@@ -393,6 +393,7 @@ const UploadContacts = () => {
   }, []);
 
   const handleOAuthCallback = async (code: string) => {
+    console.log('handleOAuthCallback called with code:', code);
     try {
       const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/callback?code=${code}`, {
         method: 'GET',
@@ -408,21 +409,21 @@ const UploadContacts = () => {
       const data = await response.json();
       console.log('Callback Zoho data:', data);
 
-      if (data.accessToken && data.refreshToken) {
-        localStorage.setItem('zoho_access_token', data.accessToken);
-        localStorage.setItem('zoho_refresh_token', data.refreshToken);
-        localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString());
-        console.log('Zoho Access Token:', data.accessToken);
-        console.log('Zoho Refresh Token:', data.refreshToken);
-        toast.success('Successfully connected to Zoho CRM');
-        setHasZohoConfig(true);
-        setShowZohoModal(false);
-        // Redirige proprement
-        window.location.href = '/app11';
-      } else {
-        toast.error('Tokens not received from Zoho');
-        console.error('Tokens not received:', data);
-      }
+      // Stocker les tokens
+      localStorage.setItem('zoho_access_token', data.accessToken);
+      localStorage.setItem('zoho_refresh_token', data.refreshToken);
+      localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString()); // 1 heure
+
+      // Afficher l'access token dans la console
+      console.log('Zoho Access Token:', data.accessToken);
+      console.log('Zoho Refresh Token:', data.refreshToken);
+
+      toast.success('Successfully connected to Zoho CRM');
+      setHasZohoConfig(true);
+      setShowZohoModal(false);
+
+      // Rediriger vers l'URL propre sans les tokens
+      window.location.href = '/app11';
     } catch (error) {
       console.error('Error handling OAuth callback:', error);
       toast.error('Failed to complete Zoho authentication');
