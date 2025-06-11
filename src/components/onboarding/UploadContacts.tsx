@@ -447,6 +447,8 @@ const UploadContacts = () => {
 
       if (response.ok) {
         const data = await response.json();
+        // Stocker l'URL de redirection dans le localStorage
+        localStorage.setItem('zoho_redirect_url', window.location.href);
         // Rediriger vers l'URL d'autorisation Zoho
         window.location.href = data.authUrl;
       } else {
@@ -490,12 +492,16 @@ const UploadContacts = () => {
       localStorage.setItem('zoho_refresh_token', data.refreshToken);
       localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString()); // 1 heure
 
+      // Afficher l'access token dans la console
+      console.log('Zoho Access Token:', data.accessToken);
+      console.log('Zoho Refresh Token:', data.refreshToken);
+
       toast.success('Successfully connected to Zoho CRM');
       setHasZohoConfig(true);
       setShowZohoModal(false);
 
-      // Nettoyer l'URL
-      window.history.replaceState({}, document.title, window.location.pathname);
+      // Rediriger vers le composant ZohoCallback
+      window.location.href = '/zoho-callback';
     } catch (error) {
       console.error('Error handling OAuth callback:', error);
       toast.error('Failed to complete Zoho authentication');
