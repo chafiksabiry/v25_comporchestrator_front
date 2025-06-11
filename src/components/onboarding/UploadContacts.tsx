@@ -402,6 +402,7 @@ const UploadContacts = () => {
     console.log('handleOAuthCallback called with code:', code);
     try {
       const userId = Cookies.get('userId');
+      console.log('User ID:', userId);
       if (!userId) {
         throw new Error('User ID not found');
       }
