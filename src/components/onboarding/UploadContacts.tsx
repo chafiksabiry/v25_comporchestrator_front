@@ -369,7 +369,13 @@ const UploadContacts = () => {
     // On ne gère plus de popup, on redirige directement
     localStorage.setItem('zoho_redirect_url', window.location.href);
     try {
-      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth`, {
+      const userId = Cookies.get('userId');
+      if (!userId) {
+        toast.error('User ID not found. Please log in again.');
+        return;
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth?userId=${userId}`, {
         method: 'GET',
         headers: { 'Accept': 'application/json' }
       });
@@ -395,7 +401,12 @@ const UploadContacts = () => {
   const handleOAuthCallback = async (code: string) => {
     console.log('handleOAuthCallback called with code:', code);
     try {
-      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/callback?code=${code}`, {
+      const userId = Cookies.get('userId');
+      if (!userId) {
+        throw new Error('User ID not found');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback?code=${code}&userId=${userId}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json'
@@ -406,24 +417,20 @@ const UploadContacts = () => {
         throw new Error('Failed to exchange code for tokens');
       }
 
+      // La redirection sera gérée par le backend
+      // Le backend redirigera vers /app11 avec les tokens dans l'URL
       const data = await response.json();
       console.log('Callback Zoho data:', data);
 
-      // Stocker les tokens
+      // Stocker les tokens localement
       localStorage.setItem('zoho_access_token', data.accessToken);
       localStorage.setItem('zoho_refresh_token', data.refreshToken);
       localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString()); // 1 heure
-
-      // Afficher l'access token dans la console
-      console.log('Zoho Access Token:', data.accessToken);
-      console.log('Zoho Refresh Token:', data.refreshToken);
 
       toast.success('Successfully connected to Zoho CRM');
       setHasZohoConfig(true);
       setShowZohoModal(false);
 
-      // Rediriger vers l'URL propre sans les tokens
-      window.location.href = '/app11';
     } catch (error) {
       console.error('Error handling OAuth callback:', error);
       toast.error('Failed to complete Zoho authentication');
