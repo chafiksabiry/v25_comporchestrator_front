@@ -902,10 +902,11 @@ const UploadContacts = () => {
           </div>
           <button
             onClick={handleZohoConnect}
-            className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+            disabled={hasZohoAccessToken}
+            className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
           >
             <Database className="mr-2 h-4 w-4" />
-            Connect to Zoho CRM
+            {hasZohoAccessToken ? 'Connected to Zoho CRM' : 'Connect to Zoho CRM'}
           </button>
           <button 
             onClick={handleImportFromZoho}
