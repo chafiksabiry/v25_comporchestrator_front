@@ -387,9 +387,20 @@ const UploadContacts = () => {
         toast.error('Failed to complete Zoho authentication');
       }
     } else {
-      // Rediriger vers la page d'authentification Zoho
+      // Appel direct à l'API pour obtenir l'URL d'authentification Zoho
       localStorage.setItem('zoho_redirect_url', window.location.href);
-      window.location.href = '/zoho-auth';
+      try {
+        const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth`, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' }
+        });
+        if (!response.ok) throw new Error('Failed to get Zoho auth URL');
+        const data = await response.json();
+        window.location.href = data.authUrl;
+      } catch (error) {
+        toast.error('Failed to initiate Zoho authentication');
+        console.error(error);
+      }
     }
   };
 
@@ -892,34 +903,7 @@ const UploadContacts = () => {
             </select>
           </div>
           <button
-            onClick={async () => {
-              const urlParams = new URLSearchParams(window.location.search);
-              const code = urlParams.get('code');
-              if (code) {
-                // Appel direct du callback
-                try {
-                  const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/callback?code=${code}`, {
-                    method: 'GET',
-                    headers: { 'Accept': 'application/json' }
-                  });
-                  if (!response.ok) throw new Error('Failed to exchange code for tokens');
-                  const data = await response.json();
-                  localStorage.setItem('zoho_access_token', data.accessToken);
-                  localStorage.setItem('zoho_refresh_token', data.refreshToken);
-                  localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString());
-                  toast.success('Successfully connected to Zoho CRM');
-                  setHasZohoConfig(true);
-                  window.history.replaceState({}, document.title, window.location.pathname);
-                } catch (error) {
-                  console.error('Error handling OAuth callback:', error);
-                  toast.error('Failed to complete Zoho authentication');
-                }
-              } else {
-                // Rediriger vers la page d'authentification Zoho
-                localStorage.setItem('zoho_redirect_url', window.location.href);
-                window.location.href = '/zoho-auth';
-              }
-            }}
+            onClick={handleZohoConnect}
             className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
           >
             <Database className="mr-2 h-4 w-4" />
