@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   UserCircle, 
   Briefcase, 
@@ -22,6 +22,7 @@ import Optimization from './components/Optimization';
 import CompanyOnboarding from './components/CompanyOnboarding';
 import ZohoCallback from './components/onboarding/ZohoCallback';
 import ZohoAuth from './components/onboarding/ZohoAuth';
+import ZohoService from './services/zohoService';
 
 function App() {
   const [activeTab, setActiveTab] = useState('company-onboarding');
@@ -30,6 +31,16 @@ function App() {
   // Vérifier si nous sommes sur une page spéciale
   const isZohoCallback = window.location.pathname === '/zoho-callback';
   const isZohoAuth = window.location.pathname === '/zoho-auth';
+
+  useEffect(() => {
+    // Initialize Zoho configuration
+    const initializeZoho = async () => {
+      const zohoService = ZohoService.getInstance();
+      await zohoService.initializeConfig();
+    };
+
+    initializeZoho();
+  }, []);
 
   const handleLogout = () => {
     if (import.meta.env.VITE_NODE_ENV !== 'development') {
