@@ -915,9 +915,13 @@ const UploadContacts = () => {
     const checkZohoToken = async () => {
       try {
         const userId = Cookies.get('userId');
-        if (!userId) return;
+        if (!userId) {
+          console.error('No userId found in cookies');
+          return;
+        }
 
-        const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/token/${userId}`, {
+        console.log('Checking Zoho config for userId:', userId);
+        const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/config/user/${userId}`, {
           headers: {
             'Authorization': `Bearer ${Cookies.get('gigId')}:${userId}`,
             'Content-Type': 'application/json'
@@ -925,31 +929,40 @@ const UploadContacts = () => {
         });
 
         if (response.ok) {
-          const data = await response.json();
-          console.log('Zoho Token Data:', {
-            access_token: data.access_token,
-            refresh_token: data.refresh_token,
-            expires_in: data.expires_in
-          });
+          const config = await response.json();
+          console.log('Zoho Config Response:', config);
 
-          if (data.access_token) {
-            localStorage.setItem('zoho_access_token', data.access_token);
-            localStorage.setItem('zoho_refresh_token', data.refresh_token);
-            localStorage.setItem('zoho_token_expiry', (Date.now() + (data.expires_in * 1000)).toString());
+          if (config.access_token) {
+            // Stocker les tokens
+            localStorage.setItem('zoho_access_token', config.access_token);
+            localStorage.setItem('zoho_refresh_token', config.refresh_token);
+            localStorage.setItem('zoho_token_expiry', (Date.now() + (config.expires_in * 1000)).toString());
             
             // Log des tokens stockés
             console.log('Stored Zoho Tokens:', {
-              access_token: localStorage.getItem('zoho_access_token'),
-              refresh_token: localStorage.getItem('zoho_refresh_token'),
-              expiry: new Date(parseInt(localStorage.getItem('zoho_token_expiry') || '0')).toLocaleString()
+              access_token: config.access_token,
+              refresh_token: config.refresh_token,
+              expires_in: config.expires_in,
+              updated_at: config.updated_at
             });
 
             setHasZohoAccessToken(true);
             setHasZohoConfig(true);
+          } else {
+            console.log('No access token found in config');
+            setHasZohoAccessToken(false);
+            setHasZohoConfig(false);
           }
+        } else {
+          const errorData = await response.json();
+          console.error('Error fetching Zoho config:', errorData);
+          setHasZohoAccessToken(false);
+          setHasZohoConfig(false);
         }
       } catch (error) {
         console.error('Error checking Zoho token:', error);
+        setHasZohoAccessToken(false);
+        setHasZohoConfig(false);
       }
     };
 
