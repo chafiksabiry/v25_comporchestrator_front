@@ -366,67 +366,107 @@ const UploadContacts = () => {
   };
 
   const handleZohoConnect = async () => {
-    // On ne gère plus de popup, on redirige directement
+    console.log('Starting Zoho connection process...');
     localStorage.setItem('zoho_redirect_url', window.location.href);
     try {
       const userId = Cookies.get('userId');
+      console.log('Retrieved userId from cookies:', userId);
+      
       if (!userId) {
+        console.error('No userId found in cookies');
         toast.error('User ID not found. Please log in again.');
         return;
       }
 
-      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth?userId=${userId}`, {
+      // Stocker le userId dans localStorage pour le récupérer après la redirection
+      localStorage.setItem('zoho_user_id', userId);
+      console.log('Stored userId in localStorage:', userId);
+
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth`, {
         method: 'GET',
-        headers: { 'Accept': 'application/json' }
+        headers: { 
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${userId}`
+        }
       });
-      if (!response.ok) throw new Error('Failed to get Zoho auth URL');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error response:', errorData);
+        throw new Error(errorData.error || 'Failed to get Zoho auth URL');
+      }
+      
       const data = await response.json();
-      console.log('Callback Zoho data:', data);
-      // Redirige l'utilisateur dans la même page
-      window.location.href = data.authUrl;
+      console.log('Auth URL response:', data);
+      
+      // Ajouter le userId dans l'URL de redirection
+      const authUrl = new URL(data.authUrl);
+      authUrl.searchParams.append('state', userId);
+      
+      // Redirige l'utilisateur vers l'URL d'authentification Zoho
+      window.location.href = authUrl.toString();
     } catch (error) {
+      console.error('Error in handleZohoConnect:', error);
       toast.error('Failed to initiate Zoho authentication');
-      console.error(error);
     }
   };
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
-    if (code) {
-      handleOAuthCallback(code);
+    const state = urlParams.get('state'); // Récupérer le userId du paramètre state
+    console.log('URL Params:', Object.fromEntries(urlParams.entries()));
+    console.log('Code from URL:', code);
+    console.log('State (userId) from URL:', state);
+    
+    if (code && state) {
+      handleOAuthCallback(code, state);
+    } else if (code) {
+      // Fallback: essayer de récupérer le userId du localStorage
+      const userId = localStorage.getItem('zoho_user_id');
+      console.log('Retrieved userId from localStorage:', userId);
+      
+      if (!userId) {
+        console.error('No userId found in localStorage');
+        toast.error('User ID not found. Please try connecting again.');
+        return;
+      }
+      handleOAuthCallback(code, userId);
     }
   }, []);
 
-  const handleOAuthCallback = async (code: string) => {
-    console.log('handleOAuthCallback called with code:', code);
+  const handleOAuthCallback = async (code: string, userId: string) => {
+    console.log('handleOAuthCallback called with:', {
+      code,
+      userId,
+      url: `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback?code=${code}&userId=${userId}`
+    });
+    
     try {
-      const userId = Cookies.get('userId');
-      console.log('User ID:', userId);
-      if (!userId) {
-        throw new Error('User ID not found');
-      }
-
       const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback?code=${code}&userId=${userId}`, {
         method: 'GET',
         headers: {
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
         }
       });
 
       if (!response.ok) {
-        throw new Error('Failed to exchange code for tokens');
+        const errorData = await response.json();
+        console.error('Error response:', errorData);
+        throw new Error(errorData.error || 'Failed to exchange code for tokens');
       }
 
-      // La redirection sera gérée par le backend
-      // Le backend redirigera vers /app11 avec les tokens dans l'URL
       const data = await response.json();
       console.log('Callback Zoho data:', data);
 
       // Stocker les tokens localement
       localStorage.setItem('zoho_access_token', data.accessToken);
       localStorage.setItem('zoho_refresh_token', data.refreshToken);
-      localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString()); // 1 heure
+      localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString());
+
+      // Nettoyer le userId stocké
+      localStorage.removeItem('zoho_user_id');
 
       toast.success('Successfully connected to Zoho CRM');
       setHasZohoConfig(true);
