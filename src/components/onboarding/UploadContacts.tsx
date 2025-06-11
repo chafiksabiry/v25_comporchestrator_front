@@ -474,7 +474,6 @@ const UploadContacts = () => {
 
       if (configResponse.status === 200) {
         if (data.accessToken) {
-          // Stocker le token avec son expiration (1 heure)
           localStorage.setItem('zoho_access_token', data.accessToken);
           localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString());
           console.log('Zoho access token stored in localStorage:', data.accessToken);
