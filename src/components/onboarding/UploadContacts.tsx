@@ -463,30 +463,43 @@ const UploadContacts = () => {
         }
       });
 
+      const data = await response.json();
+      console.log('Callback response:', data);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error response:', errorData);
-        throw new Error(errorData.error || 'Failed to exchange code for tokens');
+        throw new Error(data.error || 'Failed to exchange code for tokens');
       }
 
-      const data = await response.json();
-      console.log('Callback Zoho data:', data);
+      // Vérifier si la configuration existe déjà
+      const configResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/config/user/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${Cookies.get('gigId')}:${userId}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
-      // Stocker les tokens localement
-      localStorage.setItem('zoho_access_token', data.accessToken);
-      localStorage.setItem('zoho_refresh_token', data.refreshToken);
-      localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString());
+      if (configResponse.ok) {
+        const configData = await configResponse.json();
+        console.log('Existing Zoho config:', configData);
 
-      // Nettoyer le userId stocké
-      localStorage.removeItem('zoho_user_id');
+        // Stocker les tokens localement
+        localStorage.setItem('zoho_access_token', configData.access_token);
+        localStorage.setItem('zoho_refresh_token', configData.refresh_token);
+        localStorage.setItem('zoho_token_expiry', (Date.now() + (configData.expires_in * 1000)).toString());
 
-      toast.success('Successfully connected to Zoho CRM');
-      setHasZohoConfig(true);
-      setShowZohoModal(false);
+        // Nettoyer le userId stocké
+        localStorage.removeItem('zoho_user_id');
 
-    } catch (error) {
+        toast.success('Successfully connected to Zoho CRM');
+        setHasZohoConfig(true);
+        setShowZohoModal(false);
+      } else {
+        throw new Error('Failed to retrieve Zoho configuration');
+      }
+
+    } catch (error: any) {
       console.error('Error handling OAuth callback:', error);
-      toast.error('Failed to complete Zoho authentication');
+      toast.error(error.message || 'Failed to complete Zoho authentication');
     }
   };
 
