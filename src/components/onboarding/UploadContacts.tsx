@@ -371,50 +371,49 @@ const UploadContacts = () => {
     try {
       const userId = Cookies.get('userId');
       console.log('Retrieved userId from cookies:', userId);
-      
+  
       if (!userId) {
         console.error('No userId found in cookies');
         toast.error('User ID not found. Please log in again.');
         return;
       }
-
-      // Stocker le userId dans localStorage pour le récupérer après la redirection
+  
+      // Stocker le userId dans localStorage
       localStorage.setItem('zoho_user_id', userId);
       console.log('Stored userId in localStorage:', userId);
-
-      // Construire l'URL de redirection avec le userId
+  
       const redirectUri = `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback`;
       const encodedRedirectUri = encodeURIComponent(redirectUri);
-      const state = encodeURIComponent(userId)
-
-      // Construire l'URL complète avec tous les paramètres nécessaires
+      const state = encodeURIComponent(userId);
+  
       const authUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth?redirect_uri=${encodedRedirectUri}&state=${state}`;
       console.log('Auth URL:', authUrl);
-
+  
       const response = await fetch(authUrl, {
         method: 'GET',
-        headers: { 
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${userId}`
-        }
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${userId}`,
+        },
       });
-      
+  
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Error response:', errorData);
         throw new Error(errorData.error || 'Failed to get Zoho auth URL');
       }
-      
+  
       const data = await response.json();
       console.log('Auth URL response:', data);
-      
-      // Redirige l'utilisateur vers l'URL d'authentification Zoho
+  
       window.location.href = data.authUrl;
     } catch (error) {
       console.error('Error in handleZohoConnect:', error);
-      toast.error('Failed to initiate Zoho authentication');
+      toast.error((error as any)?.message || 'Failed to initiate Zoho authentication');
     }
   };
+  
+  
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
