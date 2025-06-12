@@ -337,6 +337,11 @@ const UploadContacts = () => {
         setUploadProgress(100);
         toast.success(`Successfully uploaded ${parsedLeads.length} contacts!`);
         
+        // Rafraîchir la liste des leads après l'importation
+        if (selectedGigId) {
+          await fetchLeads();
+        }
+        
         // Reset all states after a short delay
         setTimeout(() => {
           setSelectedFile(null);
@@ -487,15 +492,14 @@ const UploadContacts = () => {
         throw new Error('Missing required fields in Zoho response');
       }
   
-      // Store tokens locally
-      localStorage.setItem('zoho_access_token', data.access_token);
-      localStorage.setItem('zoho_refresh_token', data.refresh_token);
-      localStorage.setItem('zoho_token_expiry', (Date.now() + (data.expires_in * 1000)).toString());
+      // Store tokens locally with user ID
+      localStorage.setItem(`zoho_access_token_${userId}`, data.access_token);
+      localStorage.setItem(`zoho_refresh_token_${userId}`, data.refresh_token);
+      localStorage.setItem(`zoho_token_expiry_${userId}`, (Date.now() + (data.expires_in * 1000)).toString());
   
       // Clean up stored userId
       localStorage.removeItem('zoho_user_id');
   
-      toast.success('Successfully connected to Zoho CRM');
       setHasZohoConfig(true);
       setShowZohoModal(false);
   
@@ -506,14 +510,27 @@ const UploadContacts = () => {
   };
 
   useEffect(() => {
-    console.log('📊 État actuel de hasZohoConfig:', hasZohoConfig);
-    if (!hasZohoConfig) {
-      console.log('⚠️ Configuration Zoho non trouvée - Affichage de la modal');
-      setShowZohoModal(true);
-    } else {
-      console.log('✅ Configuration Zoho trouvée - Pas besoin d\'afficher la modal');
-    }
-  }, [hasZohoConfig]);
+    const checkZohoConfig = async () => {
+      const userId = Cookies.get('userId');
+      if (!userId) {
+        setHasZohoAccessToken(false);
+        setHasZohoConfig(false);
+        setShowZohoModal(true);
+        return;
+      }
+
+      const accessToken = localStorage.getItem(`zoho_access_token_${userId}`);
+      const tokenExpiry = localStorage.getItem(`zoho_token_expiry_${userId}`);
+      
+      const isConfigured = Boolean(accessToken && tokenExpiry && parseInt(tokenExpiry) > Date.now());
+      
+      setHasZohoAccessToken(isConfigured);
+      setHasZohoConfig(isConfigured);
+      setShowZohoModal(!isConfigured);
+    };
+
+    checkZohoConfig();
+  }, []);
 
   const handleZohoConfig = async () => {
     try {
@@ -526,10 +543,10 @@ const UploadContacts = () => {
         throw new Error('Company ID not found in cookies');
       }
 
-      // Sauvegarder la configuration dans le localStorage
-      localStorage.setItem('zoho_client_id', zohoConfig.clientId);
-      localStorage.setItem('zoho_client_secret', zohoConfig.clientSecret);
-      localStorage.setItem('zoho_refresh_token', zohoConfig.refreshToken);
+      // Sauvegarder la configuration dans le localStorage avec l'ID de l'utilisateur
+      localStorage.setItem(`zoho_client_id_${userId}`, zohoConfig.clientId);
+      localStorage.setItem(`zoho_client_secret_${userId}`, zohoConfig.clientSecret);
+      localStorage.setItem(`zoho_refresh_token_${userId}`, zohoConfig.refreshToken);
 
       const configResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/configure`, {
         method: 'POST',
@@ -549,8 +566,8 @@ const UploadContacts = () => {
 
       if (configResponse.status === 200) {
         if (data.accessToken) {
-          localStorage.setItem('zoho_access_token', data.accessToken);
-          localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString());
+          localStorage.setItem(`zoho_access_token_${userId}`, data.accessToken);
+          localStorage.setItem(`zoho_token_expiry_${userId}`, (Date.now() + 3600000).toString());
           console.log('Zoho access token stored in localStorage:', data.accessToken);
           setHasZohoConfig(true);
         } else {
@@ -662,7 +679,7 @@ const UploadContacts = () => {
           errors.push(`${result.gig}: ${result.error}`);
         } else {
           if (Array.isArray(result.leads)) {
-          allLeads.push(...result.leads);
+            allLeads.push(...result.leads);
           }
           totalSaved += result.sync_info?.total_saved || 0;
         }
@@ -676,7 +693,19 @@ const UploadContacts = () => {
       if (errors.length > 0) {
         toast.error(`Erreurs lors de l'importation: ${errors.join(', ')}`);
       }
-      toast.success(`Synchronisation terminée. ${totalSaved} leads importés avec succès.`);
+      
+      // Afficher le message de succès avec le nombre total de leads importés
+      const successMessage = `Synchronisation terminée. ${totalSaved} leads importés avec succès.`;
+      console.log('Success message:', successMessage);
+      toast.success(successMessage, {
+        duration: 5000, // Afficher le message pendant 5 secondes
+        position: 'top-center'
+      });
+
+      // Rafraîchir la liste des leads après l'importation
+      if (selectedGigId) {
+        await fetchLeads();
+      }
 
     } catch (error: any) {
       console.error('Error in handleImportFromZoho:', error);
@@ -932,19 +961,6 @@ const UploadContacts = () => {
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
-  useEffect(() => {
-    const checkZohoConfig = async () => {
-      const zohoService = ZohoService.getInstance();
-      const isConfigured = zohoService.isConfigured();
-      
-      setHasZohoAccessToken(isConfigured);
-      setHasZohoConfig(isConfigured);
-      setShowZohoModal(!isConfigured);
-    };
-
-    checkZohoConfig();
   }, []);
 
   return (
