@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   UserCircle, 
   Briefcase, 
@@ -20,10 +20,27 @@ import Matching from './components/Matching';
 import ApprovalPublishing from './components/ApprovalPublishing';
 import Optimization from './components/Optimization';
 import CompanyOnboarding from './components/CompanyOnboarding';
+import ZohoCallback from './components/onboarding/ZohoCallback';
+import ZohoAuth from './components/onboarding/ZohoAuth';
+import ZohoService from './services/zohoService';
 
 function App() {
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Vérifier si nous sommes sur une page spéciale
+  const isZohoCallback = window.location.pathname === '/zoho-callback';
+  const isZohoAuth = window.location.pathname === '/zoho-auth';
+
+  useEffect(() => {
+    // Initialize Zoho configuration
+    const initializeZoho = async () => {
+      const zohoService = ZohoService.getInstance();
+      await zohoService.initializeConfig();
+    };
+
+    initializeZoho();
+  }, []);
 
   const handleLogout = () => {
     if (import.meta.env.VITE_NODE_ENV !== 'development') {
@@ -41,6 +58,14 @@ function App() {
   };
 
   const renderContent = () => {
+    // Si nous sommes sur une page spéciale, afficher le composant correspondant
+    if (isZohoCallback) {
+      return <ZohoCallback />;
+    }
+    if (isZohoAuth) {
+      return <ZohoAuth />;
+    }
+
     switch (activeTab) {
       case 'profile-creation':
         return <ProfileCreation />;
@@ -57,6 +82,18 @@ function App() {
         return <CompanyOnboarding />;
     }
   };
+
+  // Si nous sommes sur une page spéciale, ne pas afficher la sidebar
+  if (isZohoCallback || isZohoAuth) {
+    return (
+      <div className="flex h-screen bg-gray-50">
+        <Toaster position="top-right" />
+        <main className="flex-1 overflow-y-auto">
+          {renderContent()}
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">

@@ -31,6 +31,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import Cookies from 'js-cookie';
+import ZohoService from '../../services/zohoService';
 
 interface Lead {
   _id: string;
@@ -92,6 +93,7 @@ const UploadContacts = () => {
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
+  const [hasZohoAccessToken, setHasZohoAccessToken] = useState(false);
 
 
   const channels = [
@@ -364,82 +366,144 @@ const UploadContacts = () => {
     }
   };
 
-  const checkZohoConfig = async () => {
+  const handleZohoConnect = async () => {
+    console.log('Starting Zoho connection process...');
     try {
-      console.log('🔍 Vérification de la configuration Zoho...');
       const userId = Cookies.get('userId');
-      console.log('👤 UserId utilisé:', userId);
-      
-      // Vérifier si nous avons déjà un access token valide
-      const accessToken = localStorage.getItem('zoho_access_token');
-      const tokenExpiry = localStorage.getItem('zoho_token_expiry');
-      
-      if (accessToken && tokenExpiry) {
-        const expiryTime = parseInt(tokenExpiry);
-        const currentTime = Date.now();
-        
-        // Si le token n'est pas expiré, on l'utilise
-        if (currentTime < expiryTime) {
-          console.log('✅ Access token valide trouvé');
-          setHasZohoConfig(true);
-          return;
-        }
-        
-        // Si le token est expiré, on essaie de le rafraîchir
-        console.log('🔄 Access token expiré, tentative de rafraîchissement...');
-        const refreshToken = localStorage.getItem('zoho_refresh_token');
-        if (refreshToken) {
-          const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/refresh-token`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              refreshToken,
-              userId,
-              companyId: Cookies.get('companyId')
-            })
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data.accessToken) {
-              // Stocker le nouveau token avec son expiration (1 heure)
-              localStorage.setItem('zoho_access_token', data.accessToken);
-              localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString());
-              console.log('✅ Nouveau access token obtenu');
-              setHasZohoConfig(true);
-              return;
-            }
-          }
-        }
+      console.log('Retrieved userId from cookies:', userId);
+  
+      if (!userId) {
+        console.error('No userId found in cookies');
+        toast.error('User ID not found. Please log in again.');
+        return;
       }
-
-      // Si on arrive ici, on vérifie la configuration de base
-      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/config/${userId}`, {
+  
+      // Store userId in localStorage
+      localStorage.setItem('zoho_user_id', userId);
+      console.log('Stored userId in localStorage:', userId);
+  
+      const redirectUri = `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback`;
+      const encodedRedirectUri = encodeURIComponent(redirectUri);
+      const encodedState = encodeURIComponent(userId); // Ensure state is properly encoded
+  
+      const authUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth?redirect_uri=${encodedRedirectUri}&state=${encodedState}`;
+      console.log('Auth URL:', authUrl);
+  
+      const response = await fetch(authUrl, {
         method: 'GET',
         headers: {
-          'Accept': 'application/json'
-        }
+          Accept: 'application/json',
+          Authorization: `Bearer ${userId}`,
+        },
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Réponse du serveur:', data);
-        setHasZohoConfig(data.hasConfig);
-        console.log('📝 État de la configuration Zoho:', data.hasConfig ? 'Configuré' : 'Non configuré');
-      } else {
-        console.error('❌ Erreur lors de la vérification:', response.status);
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error response:', errorData);
+        throw new Error(errorData.error || 'Failed to get Zoho auth URL');
       }
+  
+      const data = await response.json();
+      console.log('Auth URL response:', data);
+  
+      // Ensure the state parameter is included in the redirect URL
+      const redirectUrl = new URL(data.authUrl);
+      redirectUrl.searchParams.set('state', userId);
+      window.location.href = redirectUrl.toString();
     } catch (error) {
-      console.error('❌ Erreur lors de la vérification de la configuration Zoho:', error);
+      console.error('Error in handleZohoConnect:', error);
+      toast.error((error as any)?.message || 'Failed to initiate Zoho authentication');
     }
   };
+  
+  
 
   useEffect(() => {
-    console.log('🔄 Composant monté - Vérification initiale de la configuration Zoho');
-    checkZohoConfig();
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    const location = urlParams.get('location');
+    const accountsServer = urlParams.get('accounts-server');
+    
+    console.log('URL Params:', {
+      code,
+      state,
+      location,
+      accountsServer
+    });
+    
+    if (code) {
+      if (!state) {
+        console.error('No state parameter found in URL');
+        toast.error('Authentication state not found. Please try connecting again.');
+        return;
+      }
+  
+      handleOAuthCallback(code, state, location || undefined, accountsServer || undefined);
+    }
   }, []);
+
+  const handleOAuthCallback = async (code: string, state: string, location?: string, accountsServer?: string) => {
+    console.log('handleOAuthCallback called with:', {
+      code,
+      state,
+      location,
+      accountsServer
+    });
+    
+    try {
+      // Get userId from state parameter or localStorage
+      const userId = state || localStorage.getItem('zoho_user_id') || Cookies.get('userId');
+      
+      if (!userId) {
+        throw new Error('User ID not found in state parameter or storage');
+      }
+
+      const queryParams = new URLSearchParams({
+        code,
+        state: userId,
+        ...(location && { location }),
+        ...(accountsServer && { accountsServer })
+      }).toString();
+  
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback?${queryParams}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Cookies.get('gigId')}:${userId}`
+        }
+      });
+  
+      const data = await response.json();
+      console.log('Callback response:', data);
+  
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to exchange code for tokens');
+      }
+  
+      // Verify all required fields are present
+      if (!data.access_token || !data.refresh_token || !data.expires_in) {
+        throw new Error('Missing required fields in Zoho response');
+      }
+  
+      // Store tokens locally
+      localStorage.setItem('zoho_access_token', data.access_token);
+      localStorage.setItem('zoho_refresh_token', data.refresh_token);
+      localStorage.setItem('zoho_token_expiry', (Date.now() + (data.expires_in * 1000)).toString());
+  
+      // Clean up stored userId
+      localStorage.removeItem('zoho_user_id');
+  
+      toast.success('Successfully connected to Zoho CRM');
+      setHasZohoConfig(true);
+      setShowZohoModal(false);
+  
+    } catch (error: any) {
+      console.error('Error handling OAuth callback:', error);
+      toast.error(error.message || 'Failed to complete Zoho authentication');
+    }
+  };
 
   useEffect(() => {
     console.log('📊 État actuel de hasZohoConfig:', hasZohoConfig);
@@ -485,7 +549,6 @@ const UploadContacts = () => {
 
       if (configResponse.status === 200) {
         if (data.accessToken) {
-          // Stocker le token avec son expiration (1 heure)
           localStorage.setItem('zoho_access_token', data.accessToken);
           localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString());
           console.log('Zoho access token stored in localStorage:', data.accessToken);
@@ -516,37 +579,12 @@ const UploadContacts = () => {
         return;
       }
 
-      // Vérifier et rafraîchir le token si nécessaire
-      const accessToken = localStorage.getItem('zoho_access_token');
-      const tokenExpiry = localStorage.getItem('zoho_token_expiry');
+      const zohoService = ZohoService.getInstance();
+      const accessToken = await zohoService.getValidAccessToken();
       
-      if (!accessToken || !tokenExpiry || Date.now() >= parseInt(tokenExpiry)) {
-        const refreshToken = localStorage.getItem('zoho_refresh_token');
-        if (!refreshToken) {
-          toast.error('Configuration Zoho non trouvée. Veuillez configurer Zoho CRM d\'abord.');
-          return;
-        }
-
-        // Rafraîchir le token
-        const refreshResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/refresh-token`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            refreshToken,
-            userId,
-            companyId
-          })
-        });
-
-        if (!refreshResponse.ok) {
-          throw new Error('Failed to refresh token');
-        }
-
-        const refreshData = await refreshResponse.json();
-        localStorage.setItem('zoho_access_token', refreshData.accessToken);
-        localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString());
+      if (!accessToken) {
+        toast.error('Configuration Zoho non trouvée. Veuillez configurer Zoho CRM d\'abord.');
+        return;
       }
 
       setParsedLeads([]);
@@ -555,11 +593,13 @@ const UploadContacts = () => {
       const importPromises = gigs.map(async (gig) => {
         try {
           const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/leads/sync-all`;
+          console.log('Importing leads for gig:', gig.title);
+          
           const checkResponse = await fetch(apiUrl, { 
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('zoho_access_token')}`,
+              'Authorization': `Bearer ${accessToken}`,
               'Accept': 'application/json'
             },
             credentials: 'include',
@@ -576,26 +616,41 @@ const UploadContacts = () => {
           }
 
           const data = await checkResponse.json();
+          console.log('Import response for gig:', gig.title, data);
           
           if (!data.success) {
             throw new Error(data.message || `Erreur lors de la synchronisation pour le gig ${gig.title}`);
           }
 
+          // Vérifier si data.data et data.data.leads existent
+          if (!data.data || !Array.isArray(data.data.leads)) {
+            console.warn(`No leads found for gig ${gig.title}`);
+            return {
+              gig: gig.title,
+              leads: [],
+              sync_info: { total_saved: 0 }
+            };
+          }
+
           return {
             gig: gig.title,
             leads: data.data.leads,
-            sync_info: data.data.sync_info
+            sync_info: data.data.sync_info || { total_saved: 0 }
           };
         } catch (error: any) {
+          console.error(`Error importing leads for gig ${gig.title}:`, error);
           return {
             gig: gig.title,
-            error: error.message
+            error: error.message,
+            leads: [],
+            sync_info: { total_saved: 0 }
           };
         }
       });
 
       // Exécuter toutes les importations en parallèle
       const results = await Promise.all(importPromises);
+      console.log('Import results:', results);
       
       // Traiter les résultats
       const allLeads: Lead[] = [];
@@ -606,8 +661,10 @@ const UploadContacts = () => {
         if ('error' in result) {
           errors.push(`${result.gig}: ${result.error}`);
         } else {
+          if (Array.isArray(result.leads)) {
           allLeads.push(...result.leads);
-          totalSaved += result.sync_info.total_saved;
+          }
+          totalSaved += result.sync_info?.total_saved || 0;
         }
       });
 
@@ -622,6 +679,7 @@ const UploadContacts = () => {
       toast.success(`Synchronisation terminée. ${totalSaved} leads importés avec succès.`);
 
     } catch (error: any) {
+      console.error('Error in handleImportFromZoho:', error);
       toast.error(error.message || 'Une erreur est survenue lors de l\'importation');
     } finally {
       setIsImportingZoho(false);
@@ -864,6 +922,31 @@ const UploadContacts = () => {
     Cookies.set('gigId', newGigId);
   };
 
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.zohoConnected) {
+        console.log('Received zohoConnected message');
+        toast.success('Zoho connection successful');
+        setHasZohoConfig(true);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  useEffect(() => {
+    const checkZohoConfig = async () => {
+      const zohoService = ZohoService.getInstance();
+      const isConfigured = zohoService.isConfigured();
+      
+      setHasZohoAccessToken(isConfigured);
+      setHasZohoConfig(isConfigured);
+      setShowZohoModal(!isConfigured);
+    };
+
+    checkZohoConfig();
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -895,18 +978,17 @@ const UploadContacts = () => {
               )}
             </select>
           </div>
-          {!hasZohoConfig && (
-            <button 
-              onClick={() => setShowZohoModal(true)}
-              className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-            >
-              <Database className="mr-2 h-4 w-4" />
-              Configure Zoho CRM
-            </button>
-          )}
+          <button
+            onClick={handleZohoConnect}
+            disabled={hasZohoAccessToken}
+            className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
+          >
+            <Database className="mr-2 h-4 w-4" />
+            {hasZohoAccessToken ? 'Connected to Zoho CRM' : 'Connect to Zoho CRM'}
+          </button>
           <button 
             onClick={handleImportFromZoho}
-            disabled={isImportingZoho || !hasZohoConfig}
+            disabled={isImportingZoho || !hasZohoAccessToken || !selectedGigId}
             className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
           >
             <Download className="mr-2 h-4 w-4" />
@@ -927,86 +1009,6 @@ const UploadContacts = () => {
           </button>
         </div>
       </div>
-
-      {/* Zoho Configuration Modal */}
-      {showZohoModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-screen items-center justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-            <div className="inline-block transform overflow-hidden rounded-lg bg-white px-4 pt-5 pb-4 text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6 sm:align-middle">
-              <div className="absolute top-0 right-0 pt-4 pr-4">
-                <button
-                  onClick={() => setShowZohoModal(false)}
-                  className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-              <div className="sm:flex sm:items-start">
-                <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                  <h3 className="text-lg font-medium leading-6 text-gray-900">Configure Zoho CRM</h3>
-                  <div className="mt-4 space-y-4">
-                    <div>
-                      <label htmlFor="clientId" className="block text-sm font-medium text-gray-700">
-                        Client ID
-                      </label>
-                      <input
-                        type="text"
-                        id="clientId"
-                        value={zohoConfig.clientId}
-                        onChange={(e) => setZohoConfig({...zohoConfig, clientId: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="clientSecret" className="block text-sm font-medium text-gray-700">
-                        Client Secret
-                      </label>
-                      <input
-                        type="password"
-                        id="clientSecret"
-                        value={zohoConfig.clientSecret}
-                        onChange={(e) => setZohoConfig({...zohoConfig, clientSecret: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="refreshToken" className="block text-sm font-medium text-gray-700">
-                        Refresh Token
-                      </label>
-                      <input
-                        type="password"
-                        id="refreshToken"
-                        value={zohoConfig.refreshToken}
-                        onChange={(e) => setZohoConfig({...zohoConfig, refreshToken: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-                <button
-                  type="button"
-                  onClick={handleZohoConfig}
-                  className="inline-flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  Save Configuration
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowZohoModal(false)}
-                  className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:mt-0 sm:w-auto sm:text-sm"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Upload Section */}
       <div className="rounded-lg bg-white p-6 shadow">
