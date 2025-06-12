@@ -16,8 +16,7 @@ const ZohoCallback = () => {
         const location = urlParams.get('location');
         const accountsServer = urlParams.get('accounts-server');
         
-        // Récupérer le userId du localStorage ou des cookies
-        const userId = localStorage.getItem('zoho_user_id') || Cookies.get('userId');
+        const userId = Cookies.get('userId');
         
         if (!userId) {
           throw new Error('User ID not found');
@@ -27,7 +26,6 @@ const ZohoCallback = () => {
           throw new Error('Authorization code not found');
         }
 
-        // Construire les paramètres de la requête
         const queryParams = new URLSearchParams({
           code,
           userId,
@@ -56,20 +54,11 @@ const ZohoCallback = () => {
           throw new Error('Missing required fields in Zoho response');
         }
 
-        // Stocker les tokens
-        localStorage.setItem('zoho_access_token', data.access_token);
-        localStorage.setItem('zoho_refresh_token', data.refresh_token);
-        localStorage.setItem('zoho_token_expiry', (Date.now() + (data.expires_in * 1000)).toString());
-
-        // Nettoyer le userId stocké
-        localStorage.removeItem('zoho_user_id');
-
         setAccessToken(data.access_token);
         setRefreshToken(data.refresh_token);
 
         toast.success('Successfully connected to Zoho CRM');
 
-        // Attendre 3 secondes avant de rediriger
         setTimeout(() => {
           navigate('/contacts');
         }, 3000);

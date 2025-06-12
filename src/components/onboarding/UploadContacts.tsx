@@ -77,9 +77,9 @@ const UploadContacts = () => {
   const [showZohoModal, setShowZohoModal] = useState(false);
   const [hasZohoConfig, setHasZohoConfig] = useState(false);
   const [zohoConfig, setZohoConfig] = useState({
-    clientId: localStorage.getItem('zoho_client_id') || '',
-    clientSecret: localStorage.getItem('zoho_client_secret') || '',
-    refreshToken: localStorage.getItem('zoho_refresh_token') || '',
+    clientId: '',
+    clientSecret: '',
+    refreshToken: '',
     companyId: Cookies.get('companyId') || ''
   });
   const [isImportingZoho, setIsImportingZoho] = useState(false);
@@ -383,13 +383,9 @@ const UploadContacts = () => {
         return;
       }
   
-      // Store userId in localStorage
-      localStorage.setItem('zoho_user_id', userId);
-      console.log('Stored userId in localStorage:', userId);
-  
       const redirectUri = `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback`;
       const encodedRedirectUri = encodeURIComponent(redirectUri);
-      const encodedState = encodeURIComponent(userId); // Ensure state is properly encoded
+      const encodedState = encodeURIComponent(userId);
   
       const authUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth?redirect_uri=${encodedRedirectUri}&state=${encodedState}`;
       console.log('Auth URL:', authUrl);
@@ -411,7 +407,6 @@ const UploadContacts = () => {
       const data = await response.json();
       console.log('Auth URL response:', data);
   
-      // Ensure the state parameter is included in the redirect URL
       const redirectUrl = new URL(data.authUrl);
       redirectUrl.searchParams.set('state', userId);
       window.location.href = redirectUrl.toString();
@@ -457,11 +452,10 @@ const UploadContacts = () => {
     });
     
     try {
-      // Get userId from state parameter or localStorage
-      const userId = state || localStorage.getItem('zoho_user_id') || Cookies.get('userId');
+      const userId = state || Cookies.get('userId');
       
       if (!userId) {
-        throw new Error('User ID not found in state parameter or storage');
+        throw new Error('User ID not found in state parameter or cookies');
       }
 
       const queryParams = new URLSearchParams({
@@ -487,18 +481,6 @@ const UploadContacts = () => {
         throw new Error(data.error || 'Failed to exchange code for tokens');
       }
   
-      // Verify all required fields are present
-      if (!data.access_token || !data.refresh_token || !data.expires_in) {
-        throw new Error('Missing required fields in Zoho response');
-      }
-  
-      // Store tokens locally
-      localStorage.setItem('zoho_access_token', data.access_token);
-      localStorage.setItem('zoho_refresh_token', data.refresh_token);
-      localStorage.setItem('zoho_token_expiry', (Date.now() + (data.expires_in * 1000)).toString());
-  
-      // Clean up stored userId
-      localStorage.removeItem('zoho_user_id');
       setHasZohoConfig(true);
       setShowZohoModal(false);
   
@@ -529,15 +511,11 @@ const UploadContacts = () => {
         throw new Error('Company ID not found in cookies');
       }
 
-      // Sauvegarder la configuration dans le localStorage
-      localStorage.setItem('zoho_client_id', zohoConfig.clientId);
-      localStorage.setItem('zoho_client_secret', zohoConfig.clientSecret);
-      localStorage.setItem('zoho_refresh_token', zohoConfig.refreshToken);
-
       const configResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/configure`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Cookies.get('gigId')}:${userId}`
         },
         body: JSON.stringify({
           ...zohoConfig,
@@ -551,14 +529,7 @@ const UploadContacts = () => {
       console.log('Config response data:', data);
 
       if (configResponse.status === 200) {
-        if (data.accessToken) {
-          localStorage.setItem('zoho_access_token', data.accessToken);
-          localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString());
-          console.log('Zoho access token stored in localStorage:', data.accessToken);
-          setHasZohoConfig(true);
-        } else {
-          console.error('No access token in response:', data);
-        }
+        setHasZohoConfig(true);
         toast.success('Zoho CRM configuration saved successfully');
         setShowZohoModal(false);
       } else {

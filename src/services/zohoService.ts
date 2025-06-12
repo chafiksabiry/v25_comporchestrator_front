@@ -15,7 +15,7 @@ class ZohoService {
   };
 
   private constructor() {
-    this.initializeFromStorage();
+    this.initializeFromServer();
   }
 
   public static getInstance(): ZohoService {
@@ -25,20 +25,12 @@ class ZohoService {
     return ZohoService.instance;
   }
 
-  private initializeFromStorage() {
-    this.config.accessToken = localStorage.getItem('zoho_access_token');
-    this.config.refreshToken = localStorage.getItem('zoho_refresh_token');
-    const expiry = localStorage.getItem('zoho_token_expiry');
-    this.config.tokenExpiry = expiry ? parseInt(expiry) : null;
-    this.config.isConfigured = !!(this.config.accessToken && this.config.refreshToken);
-  }
-
-  public async initializeConfig() {
+  private async initializeFromServer() {
     try {
       const userId = Cookies.get('userId');
       if (!userId) {
         console.error('No userId found in cookies');
-        return false;
+        return;
       }
 
       const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/config/user/${userId}`, {
@@ -50,56 +42,36 @@ class ZohoService {
 
       if (response.ok) {
         const config = await response.json();
-        if (config.access_token) {
-          this.config.accessToken = config.access_token;
-          this.config.refreshToken = config.refresh_token;
-          this.config.tokenExpiry = Date.now() + (config.expires_in * 1000);
-          this.config.isConfigured = true;
-
-          // Update localStorage
-          localStorage.setItem('zoho_access_token', config.access_token);
-          localStorage.setItem('zoho_refresh_token', config.refresh_token);
-          localStorage.setItem('zoho_token_expiry', this.config.tokenExpiry.toString());
-
-          return true;
-        }
+        this.config.accessToken = config.access_token;
+        this.config.refreshToken = config.refresh_token;
+        this.config.tokenExpiry = Date.now() + (config.expires_in * 1000);
+        this.config.isConfigured = true;
       }
-      return false;
     } catch (error) {
-      console.error('Error initializing Zoho config:', error);
-      return false;
+      console.error('Error initializing Zoho config from server:', error);
     }
   }
 
   public async refreshToken() {
     try {
       const userId = Cookies.get('userId');
-      const companyId = Cookies.get('companyId');
-      
-      if (!this.config.refreshToken || !userId || !companyId) {
+      if (!userId) {
         return false;
       }
 
-      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/refresh-token`, {
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/config/user/${userId}/refresh-token`, {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${Cookies.get('gigId')}:${userId}`,
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          refreshToken: this.config.refreshToken,
-          userId,
-          companyId
-        })
+        }
       });
 
       if (response.ok) {
         const data = await response.json();
-        this.config.accessToken = data.accessToken;
-        this.config.tokenExpiry = Date.now() + 3600000;
-
-        localStorage.setItem('zoho_access_token', data.accessToken);
-        localStorage.setItem('zoho_token_expiry', this.config.tokenExpiry.toString());
-
+        this.config.accessToken = data.access_token;
+        this.config.refreshToken = data.refresh_token;
+        this.config.tokenExpiry = Date.now() + (data.expires_in * 1000);
         return true;
       }
       return false;
