@@ -32,7 +32,6 @@ import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import Cookies from 'js-cookie';
 import ZohoService from '../../services/zohoService';
-import { motion, AnimatePresence } from 'framer-motion';
 
 interface Lead {
   _id: string;
@@ -934,554 +933,467 @@ const UploadContacts = () => {
     checkZohoConfig();
   }, []);
 
+  // Add notification after 3 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      toast(
+        <div className="flex flex-col gap-1">
+          <p className="font-medium">Import Options Available:</p>
+          <ul className="list-disc pl-4">
+            <li>Import from Zoho CRM</li>
+            <li>Upload a CSV or Excel file</li>
+          </ul>
+        </div>,
+        {
+          duration: 5000,
+          position: 'top-center',
+          style: {
+            background: '#f8fafc',
+            color: '#1e293b',
+            border: '1px solid #e2e8f0',
+            padding: '16px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+          },
+        }
+      );
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="min-h-screen bg-gray-50 p-6"
-    >
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header Section */}
-        <motion.div 
-          initial={{ y: -20 }}
-          animate={{ y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="bg-white rounded-xl shadow-sm p-6 transition-all duration-300 hover:shadow-md"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Upload Contacts
-              </h2>
-              <p className="text-sm text-gray-500 mt-1">Import and manage your contact list across channels</p>
-            </div>
-            <div className="flex space-x-3">
-              <div className="relative">
-                <select
-                  value={selectedGigId}
-                  onChange={handleGigChange}
-                  disabled={isLoadingGigs}
-                  className="rounded-lg border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm transition-all duration-200 hover:border-indigo-400"
-                >
-                  {isLoadingGigs ? (
-                    <option>Loading gigs...</option>
-                  ) : gigs.length === 0 ? (
-                    <option value="">No gigs available</option>
-                  ) : (
-                    <>
-                      <option value="">Select a gig</option>
-                      {gigs.map((gig) => (
-                        <option key={gig._id} value={gig._id}>
-                          {gig.title}
-                        </option>
-                      ))}
-                    </>
-                  )}
-                </select>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Upload Contacts</h2>
+          <p className="text-sm text-gray-500">Import and manage your contact list across channels</p>
+        </div>
+        <div className="flex space-x-3">
+          <div className="relative">
+            <select
+              value={selectedGigId}
+              onChange={handleGigChange}
+              disabled={isLoadingGigs}
+              className="rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+            >
+              {isLoadingGigs ? (
+                <option>Loading gigs...</option>
+              ) : gigs.length === 0 ? (
+                <option value="">No gigs available</option>
+              ) : (
+                <>
+                  <option value="">Select a gig</option>
+                  {gigs.map((gig) => (
+                    <option key={gig._id} value={gig._id}>
+                      {gig.title}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
+          </div>
+          <button
+            onClick={handleZohoConnect}
+            disabled={hasZohoAccessToken}
+            className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
+          >
+            <Database className="mr-2 h-4 w-4" />
+            {hasZohoAccessToken ? 'Connected to Zoho CRM' : 'Connect to Zoho CRM'}
+          </button>
+          <button 
+            onClick={handleImportFromZoho}
+            disabled={isImportingZoho || !hasZohoAccessToken || !selectedGigId}
+            className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Import from Zoho
+          </button>
+          <button 
+            className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export
+          </button>
+          <button 
+            onClick={handleCreateGig}
+            className="flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Create Gig
+          </button>
+        </div>
+      </div>
+
+      {/* Upload Section */}
+      <div className="rounded-lg bg-white p-6 shadow">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900">Import Contacts</h3>
+            <p className="mt-1 text-sm text-gray-500">Upload your contacts from a CSV or Excel file</p>
+          </div>
+          <button 
+            className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+            onClick={() => {
+              // Create a sample CSV template
+              const headers = ['Email', 'Phone', 'Deal Name', 'Stage', 'Pipeline', 'Project Tags'];
+              const csvContent = headers.join(',') + '\n';
+              const blob = new Blob([csvContent], { type: 'text/csv' });
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'contacts_template.csv';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              window.URL.revokeObjectURL(url);
+            }}
+          >
+            Download Template
+          </button>
+        </div>
+
+        <div className="mt-4">
+          <div className="rounded-lg border-2 border-dashed border-gray-300 p-6">
+            <div className="text-center">
+              <Upload className="mx-auto h-12 w-12 text-gray-400" />
+              <div className="mt-4">
+                <label htmlFor="file-upload" className="cursor-pointer">
+                  <span className="mt-2 block text-sm font-medium text-indigo-600">
+                    {isProcessing ? 'Processing...' : 'Click to upload'}
+                  </span>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    className="hidden"
+                    accept=".csv,.xlsx,.xls"
+                    onChange={handleFileSelect}
+                    disabled={isProcessing}
+                  />
+                </label>
+                <p className="mt-1 text-xs text-gray-500">CSV, Excel files up to 10MB</p>
               </div>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleZohoConnect}
-                disabled={hasZohoAccessToken}
-                className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 transition-all duration-200 hover:shadow-md"
-              >
-                <Database className="mr-2 h-4 w-4" />
-                {hasZohoAccessToken ? 'Connected to Zoho CRM' : 'Connect to Zoho CRM'}
-              </motion.button>
-              <motion.button 
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleImportFromZoho}
-                disabled={isImportingZoho || !hasZohoAccessToken || !selectedGigId}
-                className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 transition-all duration-200 hover:shadow-md"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Import from Zoho
-              </motion.button>
-              <motion.button 
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-all duration-200 hover:shadow-md"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </motion.button>
-              <motion.button 
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleCreateGig}
-                className="flex items-center rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 hover:shadow-md"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Create Gig
-              </motion.button>
             </div>
-          </div>
-        </motion.div>
-
-        {/* Upload Section */}
-        <motion.div 
-          initial={{ y: -20 }}
-          animate={{ y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="bg-white rounded-xl shadow-sm p-6 transition-all duration-300 hover:shadow-md"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-medium text-gray-900">Import Contacts</h3>
-              <p className="mt-1 text-sm text-gray-500">Upload your contacts from a CSV or Excel file</p>
-            </div>
-            <motion.button 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200"
-              onClick={() => {
-                const headers = ['Email', 'Phone', 'Deal Name', 'Stage', 'Pipeline', 'Project Tags'];
-                const csvContent = headers.join(',') + '\n';
-                const blob = new Blob([csvContent], { type: 'text/csv' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'contacts_template.csv';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-              }}
-            >
-              Download Template
-            </motion.button>
-          </div>
-
-          <div className="mt-4">
-            <motion.div 
-              whileHover={{ scale: 1.01 }}
-              className="rounded-xl border-2 border-dashed border-gray-300 p-8 transition-all duration-200 hover:border-indigo-400 hover:bg-gray-50"
-            >
-              <div className="text-center">
-                <motion.div
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  <Upload className="mx-auto h-12 w-12 text-indigo-400" />
-                </motion.div>
-                <div className="mt-4">
-                  <label htmlFor="file-upload" className="cursor-pointer">
-                    <span className="mt-2 block text-sm font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200">
-                      {isProcessing ? 'Processing...' : 'Click to upload'}
-                    </span>
-                    <input
-                      id="file-upload"
-                      type="file"
-                      className="hidden"
-                      accept=".csv,.xlsx,.xls"
-                      onChange={handleFileSelect}
+            {selectedFile && showFileName && (
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center">
+                    <FileText className="mr-2 h-4 w-4 text-gray-400" />
+                    <span className="font-medium text-gray-900">{selectedFile.name}</span>
+                  </div>
+                  <button onClick={() => {
+                    setSelectedFile(null);
+                    setUploadProgress(0);
+                    setUploadError(null);
+                    setUploadSuccess(false);
+                    setParsedLeads([]);
+                  }}>
+                    <X className="h-4 w-4 text-gray-400" />
+                  </button>
+                </div>
+                <div className="mt-2">
+                  <div className="relative">
+                    <div className="h-2 rounded-full bg-gray-200">
+                      <div
+                        className={`h-2 rounded-full transition-all duration-500 ${
+                          uploadError ? 'bg-red-600' : uploadSuccess ? 'bg-green-600' : 'bg-indigo-600'
+                        }`}
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                    <span>{uploadProgress}% complete</span>
+                    <span>{Math.round(selectedFile.size / 1024)} KB</span>
+                  </div>
+                  {uploadError && (
+                    <div className="mt-2 text-sm text-red-600">
+                      {uploadError}
+                    </div>
+                  )}
+                  {uploadSuccess && (
+                    <div className="mt-2 text-sm text-green-600">
+                      File uploaded successfully!
+                    </div>
+                  )}
+                  {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
+                    <button
+                      className="mt-4 w-full rounded bg-indigo-600 px-4 py-2 text-white font-semibold hover:bg-indigo-700 disabled:opacity-50"
+                      onClick={handleSaveLeads}
                       disabled={isProcessing}
-                    />
-                  </label>
-                  <p className="mt-1 text-xs text-gray-500">CSV, Excel files up to 10MB</p>
+                    >
+                      Save
+                    </button>
+                  )}
                 </div>
               </div>
-              <AnimatePresence>
-                {selectedFile && showFileName && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="mt-4"
-                  >
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center">
-                        <FileText className="mr-2 h-4 w-4 text-indigo-400" />
-                        <span className="font-medium text-gray-900">{selectedFile.name}</span>
-                      </div>
-                      <motion.button 
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => {
-                          setSelectedFile(null);
-                          setUploadProgress(0);
-                          setUploadError(null);
-                          setUploadSuccess(false);
-                          setParsedLeads([]);
-                        }}
-                        className="text-gray-400 hover:text-red-500 transition-colors duration-200"
-                      >
-                        <X className="h-4 w-4" />
-                      </motion.button>
-                    </div>
-                    <div className="mt-2">
-                      <div className="relative">
-                        <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${uploadProgress}%` }}
-                            transition={{ duration: 0.5 }}
-                            className={`h-2 rounded-full ${
-                              uploadError ? 'bg-red-600' : uploadSuccess ? 'bg-green-600' : 'bg-indigo-600'
-                            }`}
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                        <span>{uploadProgress}% complete</span>
-                        <span>{Math.round(selectedFile.size / 1024)} KB</span>
-                      </div>
-                      {uploadError && (
-                        <motion.div 
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="mt-2 text-sm text-red-600"
-                        >
-                          {uploadError}
-                        </motion.div>
-                      )}
-                      {uploadSuccess && (
-                        <motion.div 
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="mt-2 text-sm text-green-600"
-                        >
-                          File uploaded successfully!
-                        </motion.div>
-                      )}
-                      {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          className="mt-4 w-full rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-white font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 hover:shadow-md disabled:opacity-50"
-                          onClick={handleSaveLeads}
-                          disabled={isProcessing}
-                        >
-                          Save
-                        </motion.button>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
+            )}
           </div>
-        </motion.div>
+        </div>
+      </div>
 
-        {/* Channel Filter */}
-        <motion.div 
-          initial={{ y: -20 }}
-          animate={{ y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-white rounded-xl shadow-sm p-6 transition-all duration-300 hover:shadow-md"
-        >
-          <h3 className="text-lg font-medium text-gray-900">Channel Filter</h3>
-          <div className="mt-4 flex flex-wrap gap-3">
-            {channels.map((channel) => {
-              const Icon = channel.icon;
-              const isSelected = selectedChannels.includes(channel.id);
-              
-              return (
-                <motion.button
-                  key={channel.id}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`flex items-center space-x-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
-                    isSelected
-                      ? 'bg-indigo-100 text-indigo-700 ring-2 ring-indigo-500'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  } hover:shadow-md`}
-                  onClick={() => toggleChannel(channel.id)}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{channel.name}</span>
-                </motion.button>
-              );
-            })}
-          </div>
-        </motion.div>
+      {/* Channel Filter */}
+      <div className="rounded-lg bg-white p-6 shadow">
+        <h3 className="text-lg font-medium text-gray-900">Channel Filter</h3>
+        <div className="mt-4 flex flex-wrap gap-3">
+          {channels.map((channel) => {
+            const Icon = channel.icon;
+            const isSelected = selectedChannels.includes(channel.id);
+            
+            return (
+              <button
+                key={channel.id}
+                className={`flex items-center space-x-2 rounded-full px-4 py-2 text-sm font-medium ${
+                  isSelected
+                    ? 'bg-indigo-100 text-indigo-700'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                onClick={() => toggleChannel(channel.id)}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{channel.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-        {/* Contact List */}
-        <motion.div 
-          initial={{ y: -20 }}
-          animate={{ y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md"
-        >
-          <div className="border-b border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">Leads List</h3>
-                {!selectedGigId ? (
-                  <p className="mt-1 text-sm text-gray-500">
-                    Please select a gig to view leads
+      {/* Contact List */}
+      <div className="rounded-lg bg-white shadow">
+        <div className="border-b border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900">Leads List</h3>
+              {!selectedGigId ? (
+                <p className="mt-1 text-sm text-gray-500">
+                  Please select a gig to view leads
+                </p>
+              ) : (
+                <>
+                  <p className="mt-1 text-sm font-medium text-indigo-600">
+                    {gigs.find(gig => gig._id === selectedGigId)?.title || 'Selected Gig'}
                   </p>
+                  {leads.length > 0 ? (
+                    <p className="mt-1 text-sm text-gray-500">
+                      Showing {leads.length} leads (Page {currentPage} of {totalPages})
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-sm text-gray-500">
+                      No leads found
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <Search className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  className="block w-full rounded-md border-gray-300 pl-10 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  placeholder="Search leads..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <select
+                className="rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+              <button
+                onClick={() => fetchLeads()}
+                className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                disabled={isLoadingLeads}
+              >
+                {isLoadingLeads ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
                 ) : (
                   <>
-                    <p className="mt-1 text-sm font-medium text-indigo-600">
-                      {gigs.find(gig => gig._id === selectedGigId)?.title || 'Selected Gig'}
-                    </p>
-                    {leads.length > 0 ? (
-                      <p className="mt-1 text-sm text-gray-500">
-                        Showing {leads.length} leads (Page {currentPage} of {totalPages})
-                      </p>
-                    ) : (
-                      <p className="mt-1 text-sm text-gray-500">
-                        No leads found
-                      </p>
-                    )}
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh
                   </>
                 )}
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <Search className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    className="block w-full rounded-lg border-gray-300 pl-10 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm transition-all duration-200"
-                    placeholder="Search leads..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <select
-                  className="rounded-lg border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm transition-all duration-200"
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => fetchLeads()}
-                  className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-all duration-200"
-                  disabled={isLoadingLeads}
-                >
-                  {isLoadingLeads ? (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                      Loading...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Refresh
-                    </>
-                  )}
-                </motion.button>
-              </div>
+              </button>
             </div>
           </div>
+        </div>
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Lead
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Deal Name
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Stage
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Pipeline
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Last Activity
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
+              {error ? (
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Lead
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Deal Name
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Stage
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Pipeline
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Last Activity
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Actions
-                  </th>
+                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-red-500">
+                    {error}
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 bg-white">
-                {error ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-red-500">
-                      {error}
-                    </td>
-                  </tr>
-                ) : isLoadingLeads ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
-                      <div className="flex items-center justify-center">
-                        <RefreshCw className="h-5 w-5 animate-spin mr-2" />
-                        Loading leads...
+              ) : isLoadingLeads ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                    Loading leads...
+                  </td>
+                </tr>
+              ) : leads.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                    No leads found
+                  </td>
+                </tr>
+              ) : (
+                leads.map((lead) => (
+                  <tr key={lead._id}>
+                    <td className="whitespace-nowrap px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="h-10 w-10 flex-shrink-0 rounded-full bg-indigo-100 flex items-center justify-center">
+                          <Users className="h-6 w-6 text-indigo-600" />
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'No Email'}</div>
+                          <div className="text-sm text-gray-500">{lead.Phone || 'No Phone'}</div>
+                        </div>
                       </div>
                     </td>
-                  </tr>
-                ) : leads.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
-                      No leads found
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                      {lead.Deal_Name || 'N/A'}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4">
+                      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-800">
+                        {lead.Stage || 'N/A'}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                      {lead.Pipeline || 'N/A'}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                      {lead.updatedAt ? new Date(lead.updatedAt).toLocaleDateString() : 'N/A'}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                      <button className="mr-2 text-indigo-600 hover:text-indigo-900">
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button className="text-red-600 hover:text-red-900">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </td>
                   </tr>
-                ) : (
-                  leads.map((lead) => (
-                    <motion.tr 
-                      key={lead._id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.3 }}
-                      className="hover:bg-gray-50 transition-colors duration-200"
-                    >
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div className="flex items-center">
-                          <div className="h-10 w-10 flex-shrink-0 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center">
-                            <Users className="h-6 w-6 text-white" />
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'No Email'}</div>
-                            <div className="text-sm text-gray-500">{lead.Phone || 'No Phone'}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                        {lead.Deal_Name || 'N/A'}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-800">
-                          {lead.Stage || 'N/A'}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                        {lead.Pipeline || 'N/A'}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                        {lead.updatedAt ? new Date(lead.updatedAt).toLocaleDateString() : 'N/A'}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                        <motion.button 
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          className="mr-2 text-indigo-600 hover:text-indigo-900 transition-colors duration-200"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </motion.button>
-                        <motion.button 
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          className="text-red-600 hover:text-red-900 transition-colors duration-200"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </motion.button>
-                      </td>
-                    </motion.tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-          {/* Pagination Controls */}
-          <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-            <div className="flex flex-1 justify-between sm:hidden">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => fetchLeads(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-all duration-200"
-              >
-                Previous
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => fetchLeads(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-all duration-200"
-              >
-                Next
-              </motion.button>
-            </div>
-            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing page <span className="font-medium">{currentPage}</span> of{' '}
-                  <span className="font-medium">{totalPages}</span>
-                </p>
-              </div>
-              <div>
-                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => fetchLeads(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 transition-all duration-200"
-                  >
-                    <span className="sr-only">Previous</span>
-                    <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-                  </motion.button>
-                  {renderPaginationButtons()}
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => fetchLeads(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 transition-all duration-200"
-                  >
-                    <span className="sr-only">Next</span>
-                    <ChevronRight className="h-5 w-5" aria-hidden="true" />
-                  </motion.button>
-                </nav>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Real-time Leads Section */}
-        <AnimatePresence>
-          {realtimeLeads.length > 0 && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5 }}
-              className="bg-white rounded-xl shadow-sm p-6 transition-all duration-300 hover:shadow-md"
+        {/* Pagination Controls */}
+        <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+          <div className="flex flex-1 justify-between sm:hidden">
+            <button
+              onClick={() => fetchLeads(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             >
-              <h3 className="text-lg font-medium text-gray-900">Real-time Leads</h3>
-              <p className="mt-1 text-sm text-gray-500">Number of leads received: {realtimeLeads.length}</p>
-              <div className="mt-4 max-h-60 overflow-y-auto">
-                <div className="min-w-full divide-y divide-gray-200">
-                  <div className="bg-gray-50">
-                    <div className="grid grid-cols-4 px-6 py-3">
-                      <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</div>
-                      <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</div>
-                      <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deal</div>
-                      <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</div>
-                    </div>
-                  </div>
-                  <div className="bg-white divide-y divide-gray-200">
-                    {realtimeLeads.map((lead, index) => (
-                      <motion.div 
-                        key={index}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
-                        className="grid grid-cols-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-200"
-                      >
-                        <div className="text-sm text-gray-900">{lead.Email_1 || 'N/A'}</div>
-                        <div className="text-sm text-gray-900">{lead.Phone || 'N/A'}</div>
-                        <div className="text-sm text-gray-900">{lead.Deal_Name || 'N/A'}</div>
-                        <div className="text-sm text-gray-900">{lead.Stage || 'N/A'}</div>
-                      </motion.div>
-                    ))}
-                  </div>
+              Previous
+            </button>
+            <button
+              onClick={() => fetchLeads(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Showing page <span className="font-medium">{currentPage}</span> of{' '}
+                <span className="font-medium">{totalPages}</span>
+              </p>
+            </div>
+            <div>
+              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                <button
+                  onClick={() => fetchLeads(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                >
+                  <span className="sr-only">Previous</span>
+                  <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                </button>
+                {renderPaginationButtons()}
+                <button
+                  onClick={() => fetchLeads(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                >
+                  <span className="sr-only">Next</span>
+                  <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Ajout d'une section pour afficher les leads en temps réel */}
+      {realtimeLeads.length > 0 && (
+        <div className="rounded-lg bg-white p-6 shadow">
+          <h3 className="text-lg font-medium text-gray-900">Leads en temps réel</h3>
+          <p className="mt-1 text-sm text-gray-500">Nombre de leads reçus: {realtimeLeads.length}</p>
+          <div className="mt-4 max-h-60 overflow-y-auto">
+            <div className="min-w-full divide-y divide-gray-200">
+              <div className="bg-gray-50">
+                <div className="grid grid-cols-4 px-6 py-3">
+                  <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</div>
+                  <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Téléphone</div>
+                  <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deal</div>
+                  <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</div>
                 </div>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </motion.div>
+              <div className="bg-white divide-y divide-gray-200">
+                {realtimeLeads.map((lead, index) => (
+                  <div key={index} className="grid grid-cols-4 px-6 py-4">
+                    <div className="text-sm text-gray-900">{lead.Email_1 || 'N/A'}</div>
+                    <div className="text-sm text-gray-900">{lead.Phone || 'N/A'}</div>
+                    <div className="text-sm text-gray-900">{lead.Deal_Name || 'N/A'}</div>
+                    <div className="text-sm text-gray-900">{lead.Stage || 'N/A'}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
