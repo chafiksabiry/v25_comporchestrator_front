@@ -387,9 +387,9 @@ const UploadContacts = () => {
       localStorage.setItem('zoho_user_id', userId);
       console.log('Stored userId in localStorage:', userId);
   
-      const redirectUri = `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback`;
+      const redirectUri = `${window.location.origin}/app6/contacts`;
       const encodedRedirectUri = encodeURIComponent(redirectUri);
-      const encodedState = encodeURIComponent(userId); // Ensure state is properly encoded
+      const encodedState = encodeURIComponent(userId);
   
       const authUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth?redirect_uri=${encodedRedirectUri}&state=${encodedState}`;
       console.log('Auth URL:', authUrl);
@@ -411,10 +411,12 @@ const UploadContacts = () => {
       const data = await response.json();
       console.log('Auth URL response:', data);
   
-      // Ensure the state parameter is included in the redirect URL
-      const redirectUrl = new URL(data.authUrl);
-      redirectUrl.searchParams.set('state', userId);
-      window.location.href = redirectUrl.toString();
+      if (!data.authUrl) {
+        throw new Error('No auth URL received from server');
+      }
+  
+      // Rediriger vers l'URL d'authentification Zoho
+      window.location.href = data.authUrl;
     } catch (error) {
       console.error('Error in handleZohoConnect:', error);
       toast.error((error as any)?.message || 'Failed to initiate Zoho authentication');
@@ -437,14 +439,12 @@ const UploadContacts = () => {
       accountsServer
     });
     
-    if (code) {
-      if (!state) {
-        console.error('No state parameter found in URL');
-        toast.error('Authentication state not found. Please try connecting again.');
-        return;
-      }
-  
+    if (code && state) {
       handleOAuthCallback(code, state, location || undefined, accountsServer || undefined);
+      
+      // Nettoyer les paramètres d'URL après le traitement
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
     }
   }, []);
 
@@ -457,7 +457,6 @@ const UploadContacts = () => {
     });
     
     try {
-      // Get userId from state parameter or localStorage
       const userId = state || localStorage.getItem('zoho_user_id') || Cookies.get('userId');
       
       if (!userId) {
@@ -500,6 +499,7 @@ const UploadContacts = () => {
       // Clean up stored userId
       localStorage.removeItem('zoho_user_id');
   
+      toast.success('Successfully connected to Zoho CRM');
       setHasZohoConfig(true);
       setShowZohoModal(false);
   
