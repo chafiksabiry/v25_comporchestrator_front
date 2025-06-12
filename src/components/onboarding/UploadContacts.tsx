@@ -94,7 +94,11 @@ const UploadContacts = () => {
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
   const [hasZohoAccessToken, setHasZohoAccessToken] = useState(false);
-
+  const [zohoTokens, setZohoTokens] = useState({
+    access_token: '',
+    refresh_token: '',
+    expires_in: 0
+  });
 
   const channels = [
     { id: 'all', name: 'All Channels', icon: Globe },
@@ -570,6 +574,99 @@ const UploadContacts = () => {
     }
   };
 
+  const getZohoConfig = async () => {
+    try {
+      const userId = Cookies.get('userId');
+      if (!userId) {
+        throw new Error('User ID not found');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/config/user/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${Cookies.get('gigId')}:${userId}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch Zoho configuration');
+      }
+
+      const config = await response.json();
+      setZohoTokens({
+        access_token: config.access_token,
+        refresh_token: config.refresh_token,
+        expires_in: config.expires_in
+      });
+      setHasZohoConfig(true);
+      return config;
+    } catch (error) {
+      console.error('Error fetching Zoho config:', error);
+      setHasZohoConfig(false);
+      throw error;
+    }
+  };
+
+  const refreshZohoToken = async () => {
+    try {
+      const userId = Cookies.get('userId');
+      if (!userId) {
+        throw new Error('User ID not found');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/config/user/${userId}/refresh-token`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${Cookies.get('gigId')}:${userId}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to refresh Zoho token');
+      }
+
+      const data = await response.json();
+      setZohoTokens({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_in: data.expires_in
+      });
+      return data;
+    } catch (error) {
+      console.error('Error refreshing Zoho token:', error);
+      throw error;
+    }
+  };
+
+  const getValidAccessToken = async () => {
+    try {
+      // Si pas de token ou token expiré, on rafraîchit
+      if (!zohoTokens.access_token || Date.now() >= zohoTokens.expires_in) {
+        await refreshZohoToken();
+      }
+      return zohoTokens.access_token;
+    } catch (error) {
+      console.error('Error getting valid access token:', error);
+      throw error;
+    }
+  };
+
+  useEffect(() => {
+    const checkZohoConfig = async () => {
+      try {
+        await getZohoConfig();
+        setHasZohoAccessToken(true);
+        setShowZohoModal(false);
+      } catch (error) {
+        setHasZohoAccessToken(false);
+        setShowZohoModal(true);
+      }
+    };
+
+    checkZohoConfig();
+  }, []);
+
   const handleImportFromZoho = async () => {
     setIsImportingZoho(true);
     setRealtimeLeads([]);
@@ -582,8 +679,7 @@ const UploadContacts = () => {
         return;
       }
 
-      const zohoService = ZohoService.getInstance();
-      const accessToken = await zohoService.getValidAccessToken();
+      const accessToken = await getValidAccessToken();
       
       if (!accessToken) {
         toast.error('Configuration Zoho non trouvée. Veuillez configurer Zoho CRM d\'abord.');
@@ -947,19 +1043,6 @@ const UploadContacts = () => {
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
-  useEffect(() => {
-    const checkZohoConfig = async () => {
-      const zohoService = ZohoService.getInstance();
-      const isConfigured = zohoService.isConfigured();
-      
-      setHasZohoAccessToken(isConfigured);
-      setHasZohoConfig(isConfigured);
-      setShowZohoModal(!isConfigured);
-    };
-
-    checkZohoConfig();
   }, []);
 
   return (
