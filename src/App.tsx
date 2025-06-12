@@ -36,10 +36,12 @@ function App() {
     // Initialize Zoho configuration
     const initializeZoho = async () => {
       const zohoService = ZohoService.getInstance();
-      await zohoService.initializeConfig();
+      // L'initialisation est maintenant gérée dans le constructeur de ZohoService
     };
 
-    initializeZoho();
+    initializeZoho().catch(error => {
+      console.debug('App: Error initializing Zoho', error);
+    });
   }, []);
 
   const handleLogout = () => {
