@@ -375,21 +375,24 @@ const UploadContacts = () => {
     console.log('Starting Zoho connection process...');
     try {
       const userId = Cookies.get('userId');
+      const companyId = Cookies.get('companyId');
       console.log('Retrieved userId from cookies:', userId);
+      console.log('Retrieved companyId from cookies:', companyId);
   
-      if (!userId) {
-        console.error('No userId found in cookies');
-        toast.error('User ID not found. Please log in again.');
+      if (!userId || !companyId) {
+        console.error('Missing required cookies:', { userId, companyId });
+        toast.error('User ID or Company ID not found. Please log in again.');
         return;
       }
   
-      // Store userId in localStorage
+      // Store userId and companyId in localStorage
       localStorage.setItem('zoho_user_id', userId);
-      console.log('Stored userId in localStorage:', userId);
+      localStorage.setItem('zoho_company_id', companyId);
+      console.log('Stored userId and companyId in localStorage:', { userId, companyId });
   
       const redirectUri = `${window.location.origin}/app6/contacts`;
       const encodedRedirectUri = encodeURIComponent(redirectUri);
-      const encodedState = encodeURIComponent(userId);
+      const encodedState = encodeURIComponent(JSON.stringify({ userId, companyId }));
   
       const authUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth?redirect_uri=${encodedRedirectUri}&state=${encodedState}`;
       console.log('Auth URL:', authUrl);
@@ -397,9 +400,10 @@ const UploadContacts = () => {
       const response = await fetch(authUrl, {
         method: 'GET',
         headers: {
-          Accept: 'application/json',
-          Authorization: `Bearer ${userId}`,
-        },
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Cookies.get('gigId')}:${userId}`
+        }
       });
   
       if (!response.ok) {
@@ -440,27 +444,38 @@ const UploadContacts = () => {
     });
     
     if (code && state) {
-      handleOAuthCallback(code, state, location || undefined, accountsServer || undefined);
-      
-      // Nettoyer les paramètres d'URL après le traitement
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
+      try {
+        // Décoder et parser le state qui contient userId et companyId
+        const stateData = JSON.parse(decodeURIComponent(state));
+        console.log('Decoded state data:', stateData);
+        
+        if (!stateData.userId || !stateData.companyId) {
+          throw new Error('Invalid state data: missing userId or companyId');
+        }
+        
+        handleOAuthCallback(code, stateData.userId, location || undefined, accountsServer || undefined);
+        
+        // Nettoyer les paramètres d'URL après le traitement
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+      } catch (error) {
+        console.error('Error processing state:', error);
+        toast.error('Invalid authentication state. Please try connecting again.');
+      }
     }
   }, []);
 
-  const handleOAuthCallback = async (code: string, state: string, location?: string, accountsServer?: string) => {
+  const handleOAuthCallback = async (code: string, userId: string, location?: string, accountsServer?: string) => {
     console.log('handleOAuthCallback called with:', {
       code,
-      state,
+      userId,
       location,
       accountsServer
     });
     
     try {
-      const userId = state || localStorage.getItem('zoho_user_id') || Cookies.get('userId');
-      
       if (!userId) {
-        throw new Error('User ID not found in state parameter or storage');
+        throw new Error('User ID is required and cannot be empty');
       }
 
       const queryParams = new URLSearchParams({
@@ -496,8 +511,9 @@ const UploadContacts = () => {
       localStorage.setItem(`zoho_refresh_token_${userId}`, data.refresh_token);
       localStorage.setItem(`zoho_token_expiry_${userId}`, (Date.now() + (data.expires_in * 1000)).toString());
   
-      // Clean up stored userId
+      // Clean up stored data
       localStorage.removeItem('zoho_user_id');
+      localStorage.removeItem('zoho_company_id');
   
       toast.success('Successfully connected to Zoho CRM');
       setHasZohoConfig(true);
