@@ -492,10 +492,10 @@ const UploadContacts = () => {
         throw new Error('Missing required fields in Zoho response');
       }
   
-      // Store tokens in cookies
-      Cookies.set('zoho_access_token', data.access_token, { expires: data.expires_in / 86400 }); // Convert seconds to days
-      Cookies.set('zoho_refresh_token', data.refresh_token, { expires: 30 }); // 30 days expiry
-      Cookies.set('zoho_token_expiry', (Date.now() + (data.expires_in * 1000)).toString(), { expires: data.expires_in / 86400 });
+      // Store tokens locally
+      localStorage.setItem('zoho_access_token', data.access_token);
+      localStorage.setItem('zoho_refresh_token', data.refresh_token);
+      localStorage.setItem('zoho_token_expiry', (Date.now() + (data.expires_in * 1000)).toString());
   
       // Clean up stored userId
       localStorage.removeItem('zoho_user_id');
@@ -529,10 +529,10 @@ const UploadContacts = () => {
         throw new Error('Company ID not found in cookies');
       }
 
-      // Save configuration in cookies
-      Cookies.set('zoho_client_id', zohoConfig.clientId, { expires: 30 });
-      Cookies.set('zoho_client_secret', zohoConfig.clientSecret, { expires: 30 });
-      Cookies.set('zoho_refresh_token', zohoConfig.refreshToken, { expires: 30 });
+      // Sauvegarder la configuration dans le localStorage
+      localStorage.setItem('zoho_client_id', zohoConfig.clientId);
+      localStorage.setItem('zoho_client_secret', zohoConfig.clientSecret);
+      localStorage.setItem('zoho_refresh_token', zohoConfig.refreshToken);
 
       const configResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/configure`, {
         method: 'POST',
@@ -552,9 +552,9 @@ const UploadContacts = () => {
 
       if (configResponse.status === 200) {
         if (data.accessToken) {
-          Cookies.set('zoho_access_token', data.accessToken, { expires: 1 }); // 1 day expiry
-          Cookies.set('zoho_token_expiry', (Date.now() + 3600000).toString(), { expires: 1 });
-          console.log('Zoho access token stored in cookies:', data.accessToken);
+          localStorage.setItem('zoho_access_token', data.accessToken);
+          localStorage.setItem('zoho_token_expiry', (Date.now() + 3600000).toString());
+          console.log('Zoho access token stored in localStorage:', data.accessToken);
           setHasZohoConfig(true);
         } else {
           console.error('No access token in response:', data);
