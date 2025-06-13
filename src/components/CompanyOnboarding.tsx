@@ -107,11 +107,18 @@ const CompanyOnboarding = () => {
   const [hasLeads, setHasLeads] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [showGigDetails, setShowGigDetails] = useState(false);
-  const userId = Cookies.get('userId') || '682f0a4d641398dc582eb071';
+  const userId = Cookies.get('userId') || '68308337cf52e87c3ad15982';
 
   // Fetch company ID using user ID
   useEffect(() => {
     const fetchCompanyId = async () => {
+      if (import.meta.env.VITE_NODE_ENV === 'development') {
+        const devCompanyId = '6830839c641398dc582eb897';
+        setCompanyId(devCompanyId);
+        Cookies.set('companyId', devCompanyId);
+        return;
+      }
+
       if (!userId) {
         console.error('User ID not found in cookies');
         window.location.href = '/app4';
