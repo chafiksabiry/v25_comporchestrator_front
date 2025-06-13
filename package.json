@@ -28,6 +28,7 @@
     "sweetalert2": "^11.22.0",
     "systemjs": "^6.15.1",
     "telnyx": "^1.25.5",
+    "twilio": "^5.7.0",
     "vite-plugin-qiankun": "^1.0.15",
     "xlsx": "^0.18.5"
   },
