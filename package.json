@@ -17,6 +17,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.1",
     "express": "^4.18.2",
+    "framer-motion": "^12.17.3",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.344.0",
     "mongoose": "^8.1.1",
@@ -28,6 +29,7 @@
     "sweetalert2": "^11.22.0",
     "systemjs": "^6.15.1",
     "telnyx": "^1.25.5",
+    "twilio": "^5.7.0",
     "vite-plugin-qiankun": "^1.0.15",
     "xlsx": "^0.18.5"
   },

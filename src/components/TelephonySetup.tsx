@@ -24,7 +24,9 @@ import {
 import Cookies from 'js-cookie';
 
 import { phoneNumberService } from '../services/api';
-const gigId = import.meta.env.DEV ? '681b2b9297864fa3b948311f' : Cookies.get('gigId');
+import type { AvailablePhoneNumber } from '../services/api';
+
+const gigId = import.meta.env.DEV ? '683083e7af226bea2d459372' : Cookies.get('gigId');
 const companyId = Cookies.get('companyId');
 
 interface PhoneNumber {
@@ -43,7 +45,7 @@ const TelephonySetup = () => {
   const [webhookUrl, setWebhookUrl] = useState('');
   const [testMode, setTestMode] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [availableNumbers, setAvailableNumbers] = useState<any[]>([]);
+  const [availableNumbers, setAvailableNumbers] = useState<AvailablePhoneNumber[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [showCompanyOnboarding, setShowCompanyOnboarding] = useState(false);
@@ -85,9 +87,10 @@ const TelephonySetup = () => {
   const fetchExistingNumbers = async () => {
     try {
       const data = await phoneNumberService.listPhoneNumbers();
-      setPhoneNumbers(data);
+      setPhoneNumbers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching phone numbers:', error);
+      setPhoneNumbers([]);
     }
   };
 
@@ -102,6 +105,10 @@ const TelephonySetup = () => {
     }
   };
 
+  const getPhoneNumber = (number: AvailablePhoneNumber): string => {
+    return number.phoneNumber || number.phone_number || '';
+  };
+
   const searchAvailableNumbers = async () => {
     if (!destinationZone) {
       console.error('Destination zone not available');
@@ -110,17 +117,23 @@ const TelephonySetup = () => {
     
     setIsLoading(true);
     try {
-      const data = await phoneNumberService.searchPhoneNumbers(destinationZone);
-      setAvailableNumbers(data);
+      const data = await phoneNumberService.searchPhoneNumbers(destinationZone, provider);
+      setAvailableNumbers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error searching numbers:', error);
+      setAvailableNumbers([]);
     }
     setIsLoading(false);
   };
 
   const purchaseNumber = async (phoneNumber: string) => {
+    if (!gigId) {
+      console.error('gigId is required to purchase a phone number');
+      return;
+    }
+
     try {
-      await phoneNumberService.purchasePhoneNumber(phoneNumber);
+      await phoneNumberService.purchasePhoneNumber(phoneNumber, provider, gigId);
       fetchExistingNumbers(); // Refresh the list after purchase
       setIsSearchOpen(false); // Close the search
     } catch (error) {
@@ -226,21 +239,34 @@ const TelephonySetup = () => {
             </div>
 
             {/* Available Numbers List */}
-            {availableNumbers.length > 0 && (
+            {Array.isArray(availableNumbers) && availableNumbers.length > 0 && (
               <div className="mt-4 space-y-2">
                 <h4 className="text-sm font-medium text-gray-700">Available Numbers</h4>
                 <div className="grid gap-2">
-                  {availableNumbers.map((number: any) => (
-                    <div key={number.phone_number} className="flex items-center justify-between rounded-lg border p-3">
-                      <span className="font-medium">{number.phone_number}</span>
-                      <button
-                        onClick={() => purchaseNumber(number.phone_number)}
-                        className="rounded-md bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700"
+                  {availableNumbers.map((number) => {
+                    const phoneNumber = getPhoneNumber(number);
+                    return (
+                      <div 
+                        key={phoneNumber}
+                        className="flex items-center justify-between rounded-lg border p-3"
                       >
-                        Purchase
-                      </button>
-                    </div>
-                  ))}
+                        <div className="flex flex-col">
+                          <span className="font-medium">{phoneNumber}</span>
+                          {number.locality && (
+                            <span className="text-sm text-gray-500">
+                              {number.locality}, {number.region}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => purchaseNumber(phoneNumber)}
+                          className="rounded-md bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700"
+                        >
+                          Purchase
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -249,7 +275,7 @@ const TelephonySetup = () => {
 
         {/* Existing Numbers List */}
         <div className="space-y-4">
-          {phoneNumbers.map((number) => (
+          {Array.isArray(phoneNumbers) && phoneNumbers.map((number) => (
             <div key={number.phoneNumber} className="rounded-lg bg-gray-50 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
