@@ -93,7 +93,7 @@ const UploadContacts = () => {
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
   const [hasZohoAccessToken, setHasZohoAccessToken] = useState(false);
-
+  const [showImportChoiceModal, setShowImportChoiceModal] = useState(false);
 
   const channels = [
     { id: 'all', name: 'All Channels', icon: Globe },
@@ -935,6 +935,33 @@ const UploadContacts = () => {
     checkZohoConfig();
   }, []);
 
+  // Show import choice modal on first visit
+  useEffect(() => {
+    const hasSeenModal = localStorage.getItem('hasSeenImportChoiceModal');
+    if (!hasSeenModal) {
+      setShowImportChoiceModal(true);
+    }
+  }, []);
+
+  const handleImportChoice = (choice: 'zoho' | 'file') => {
+    localStorage.setItem('hasSeenImportChoiceModal', 'true');
+    setShowImportChoiceModal(false);
+    
+    if (choice === 'zoho') {
+      // Focus on Zoho import section
+      const zohoButton = document.querySelector('[data-zoho-import]');
+      if (zohoButton) {
+        zohoButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    } else {
+      // Focus on file upload section
+      const uploadSection = document.querySelector('[data-file-upload]');
+      if (uploadSection) {
+        uploadSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -978,6 +1005,7 @@ const UploadContacts = () => {
             onClick={handleImportFromZoho}
             disabled={isImportingZoho || !hasZohoAccessToken || !selectedGigId}
             className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
+            data-zoho-import
           >
             <Download className="mr-2 h-4 w-4" />
             Import from Zoho
@@ -986,7 +1014,7 @@ const UploadContacts = () => {
       </div>
 
       {/* Upload Section */}
-      <div className="rounded-lg bg-white p-6 shadow">
+      <div className="rounded-lg bg-white p-6 shadow" data-file-upload>
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-medium text-gray-900">Import Contacts</h3>
@@ -1349,6 +1377,83 @@ const UploadContacts = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Choice Modal */}
+      {showImportChoiceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="relative w-full max-w-md transform rounded-lg bg-white p-6 text-left shadow-xl transition-all">
+            <div className="absolute right-4 top-4">
+              <button
+                onClick={() => {
+                  localStorage.setItem('hasSeenImportChoiceModal', 'true');
+                  setShowImportChoiceModal(false);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
+                <Upload className="h-6 w-6 text-indigo-600" />
+              </div>
+              <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                Choisissez votre méthode d'importation
+              </h3>
+              <p className="mb-6 text-sm text-gray-600">
+                Comment souhaitez-vous importer vos leads ?
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => handleImportChoice('zoho')}
+                className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-4 text-left hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <div className="flex items-center">
+                  <div className="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+                    <Database className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900">Zoho CRM</h4>
+                    <p className="text-sm text-gray-500">Synchroniser avec votre CRM Zoho</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </button>
+
+              <button
+                onClick={() => handleImportChoice('file')}
+                className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-4 text-left hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <div className="flex items-center">
+                  <div className="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+                    <FileText className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-900">Fichier Excel/CSV</h4>
+                    <p className="text-sm text-gray-500">Importer depuis un fichier local</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => {
+                  localStorage.setItem('hasSeenImportChoiceModal', 'true');
+                  setShowImportChoiceModal(false);
+                }}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Plus tard
+              </button>
             </div>
           </div>
         </div>
