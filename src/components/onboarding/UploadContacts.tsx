@@ -1033,9 +1033,6 @@ const UploadContacts = () => {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className={`font-semibold text-base ${selectedGigId === gig._id ? 'text-indigo-700' : 'text-gray-900'}`}>{gig.title}</span>
-                    {selectedGigId === gig._id && (
-                      <span className="ml-2 px-2 py-0.5 rounded bg-indigo-600 text-white text-xs font-semibold">Selected</span>
-                    )}
                   </div>
                   <div className="mb-1">
                     <span className="inline-block rounded bg-indigo-100 text-indigo-700 px-2 py-0.5 text-xs font-medium">{gig.category || 'No category'}</span>
