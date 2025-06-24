@@ -151,7 +151,6 @@ const CompanyOnboarding = () => {
     if (companyId) {
       loadCompanyProgress();
       checkCompanyGigs();
-      checkCompanyLeads();
       
       // Vérifier si l'utilisateur vient de se connecter à Zoho
       checkZohoConnection();
@@ -214,6 +213,24 @@ const CompanyOnboarding = () => {
       console.error('Error checking company leads:', error);
     }
   };
+
+  // Real-time leads checking
+  useEffect(() => {
+    if (!companyId) return;
+
+    // Initial check
+    checkCompanyLeads();
+
+    // Set up real-time checking every 30 seconds
+    const intervalId = setInterval(() => {
+      checkCompanyLeads();
+    }, 30000); // Check every 30 seconds
+
+    // Cleanup interval on component unmount or when companyId changes
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [companyId]);
 
   const loadCompanyProgress = async () => {
     setIsLoading(true);
