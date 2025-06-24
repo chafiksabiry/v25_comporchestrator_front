@@ -161,20 +161,13 @@ const CompanyOnboarding = () => {
   // Si l'URL contient ?startStep=6 ou si on est sur l'URL spécifique avec session, on lance handleStartStep(6)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const currentUrl = window.location.href;
-    
     // Vérifier si l'URL contient le paramètre startStep=6
     if (params.get('session') === 'someGeneratedSessionId') {
       handleStartStep(6);
       // Nettoyer l'URL pour éviter de relancer à chaque render
-      // params.delete('session');
-      // const newSearch = params.toString();
-      // window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
-    }
-    
-    // Vérifier si on est sur l'URL spécifique avec session
-    if (currentUrl.includes('v25.harx.ai/app11') && params.get('session')) {
-      handleStartStep(6);
+      params.delete('session');
+      const newSearch = params.toString();
+      window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
     }
   }, [companyId]);
 
