@@ -26,10 +26,9 @@ import ZohoService from './services/zohoService';
 import UploadContacts from './components/onboarding/UploadContacts';
 
 function App() {
-  // Vérifie le paramètre session dans l'URL
+  // Vérifie le flag AVANT tout le reste
   const params = new URLSearchParams(window.location.search);
-  const session = params.get('session');
-  if (session === 'someGeneratedSessionId') {
+  if (params.get('showUploadContacts') === '1') {
     return (
       <div className="flex h-screen bg-gray-50">
         <UploadContacts />
