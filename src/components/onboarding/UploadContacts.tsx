@@ -425,6 +425,16 @@ const UploadContacts = () => {
     const location = urlParams.get('location');
     const accountsServer = urlParams.get('accounts-server');
     
+    const params = new URLSearchParams(window.location.search);
+    // Vérifier si l'URL contient le paramètre startStep=6
+    if (params.get('session') === 'someGeneratedSessionId') {
+
+      // Nettoyer l'URL pour éviter de relancer à chaque render
+      params.delete('session');
+      const newSearch = params.toString();
+      window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
+    }
+
     console.log('URL Params:', {
       code,
       state,

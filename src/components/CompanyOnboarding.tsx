@@ -164,10 +164,6 @@ const CompanyOnboarding = () => {
     // Vérifier si l'URL contient le paramètre startStep=6
     if (params.get('session') === 'someGeneratedSessionId') {
       handleStartStep(6);
-      // Nettoyer l'URL pour éviter de relancer à chaque render
-      params.delete('session');
-      const newSearch = params.toString();
-      window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
     }
   }, [companyId]);
 
