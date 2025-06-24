@@ -982,29 +982,34 @@ const UploadContacts = () => {
           <h2 className="text-xl font-bold text-gray-900">Upload Contacts</h2>
           <p className="text-sm text-gray-500">Import and manage your contact list across channels</p>
         </div>
-        <div className="flex space-x-3">
-          <div className="relative">
-            <select
-              value={selectedGigId}
-              onChange={handleGigChange}
-              disabled={isLoadingGigs}
-              className="rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-            >
-              {isLoadingGigs ? (
-                <option>Loading gigs...</option>
-              ) : gigs.length === 0 ? (
-                <option value="">No gigs available</option>
-              ) : (
-                <>
-                  <option value="">Select a gig</option>
-                  {gigs.map((gig) => (
-                    <option key={gig._id} value={gig._id}>
-                      {gig.title}
-                    </option>
-                  ))}
-                </>
-              )}
-            </select>
+        <div className="flex space-x-3 items-end">
+          <div className="relative flex flex-col items-start bg-white rounded-lg shadow px-3 py-2 mr-2">
+            <label htmlFor="gig-select" className="mb-1 text-xs font-semibold text-gray-700">Select a Gig</label>
+            <div className="flex items-center">
+              <Database className="h-5 w-5 text-indigo-500 mr-2" />
+              <select
+                id="gig-select"
+                value={selectedGigId}
+                onChange={handleGigChange}
+                disabled={isLoadingGigs}
+                className="rounded-md border border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm bg-white min-w-[180px]"
+              >
+                {isLoadingGigs ? (
+                  <option>Loading gigs...</option>
+                ) : gigs.length === 0 ? (
+                  <option value="">No gigs available</option>
+                ) : (
+                  <>
+                    <option value="">Select a gig</option>
+                    {gigs.map((gig) => (
+                      <option key={gig._id} value={gig._id}>
+                        {gig.title}
+                      </option>
+                    ))}
+                  </>
+                )}
+              </select>
+            </div>
           </div>
           <button
             onClick={handleZohoConnect}
