@@ -983,35 +983,7 @@ const UploadContacts = () => {
           <h2 className="text-xl font-bold text-gray-900">Upload Contacts</h2>
           <p className="text-sm text-gray-500">Import and manage your contact list across channels</p>
         </div>
-        <div className="flex space-x-3 items-end">
-          <div className="relative flex flex-col items-start bg-white rounded-lg shadow px-3 py-2 mr-2">
-            <label htmlFor="gig-select" className="mb-1 text-xs font-semibold text-gray-700">Select a Gig</label>
-            <div className="flex items-center">
-              <Database className="h-5 w-5 text-indigo-500 mr-2" />
-              <select
-                id="gig-select"
-                value={selectedGigId}
-                onChange={handleGigChange}
-                disabled={isLoadingGigs}
-                className="rounded-md border border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm bg-white min-w-[180px]"
-              >
-                {isLoadingGigs ? (
-                  <option>Loading gigs...</option>
-                ) : gigs.length === 0 ? (
-                  <option value="">No gigs available</option>
-                ) : (
-                  <>
-                    <option value="">Select a gig</option>
-                    {gigs.map((gig) => (
-                      <option key={gig._id} value={gig._id}>
-                        {gig.title}
-                      </option>
-                    ))}
-                  </>
-                )}
-              </select>
-            </div>
-          </div>
+        <div className="flex space-x-3">
           <button
             onClick={handleZohoConnect}
             disabled={hasZohoAccessToken}
@@ -1384,16 +1356,23 @@ const UploadContacts = () => {
 
       {/* Gigs List Section */}
       {showGigsList && (
-        <div className="rounded-lg bg-white p-6 shadow mt-6">
+        <div className="rounded-lg bg-white p-6 shadow mt-4 mb-4">
           <h3 className="text-lg font-medium text-gray-900 mb-2">Gigs List</h3>
           {gigs.length === 0 ? (
             <p className="text-gray-500">No gigs available.</p>
           ) : (
             <ul className="divide-y divide-gray-200">
               {gigs.map((gig) => (
-                <li key={gig._id} className="py-2">
-                  <span className="font-medium text-indigo-700">{gig.title}</span>
+                <li
+                  key={gig._id}
+                  className={`py-2 cursor-pointer flex items-center justify-between rounded transition-colors ${selectedGigId === gig._id ? 'bg-indigo-50 border border-indigo-500' : 'hover:bg-gray-50'}`}
+                  onClick={() => setSelectedGigId(gig._id)}
+                >
+                  <span className={`font-medium ${selectedGigId === gig._id ? 'text-indigo-700' : 'text-gray-900'}`}>{gig.title}</span>
                   <span className="ml-2 text-xs text-gray-500">ID: {gig._id}</span>
+                  {selectedGigId === gig._id && (
+                    <span className="ml-4 px-2 py-1 rounded bg-indigo-600 text-white text-xs font-semibold">Selected</span>
+                  )}
                 </li>
               ))}
             </ul>
