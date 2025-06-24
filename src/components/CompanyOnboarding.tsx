@@ -158,6 +158,18 @@ const CompanyOnboarding = () => {
     }
   }, [companyId]);
 
+  // Si l'URL contient ?startStep=6, on lance handleStartStep(6)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('startStep') === '6') {
+      handleStartStep(6);
+      // Nettoyer l'URL pour éviter de relancer à chaque render
+      params.delete('startStep');
+      const newSearch = params.toString();
+      window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
+    }
+  }, [companyId]);
+
   const checkCompanyGigs = async () => {
     try {
       const response = await axios.get<HasGigsResponse>(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}/has-gigs`);
