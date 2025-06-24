@@ -1354,7 +1354,7 @@ const UploadContacts = () => {
         </div>
       </div>
 
-      {/* Gigs List Section */}
+      {/* Gigs List Section - now just below the action bar */}
       {showGigsList && (
         <div className="rounded-lg bg-white p-6 shadow mt-4 mb-4">
           <h3 className="text-lg font-medium text-gray-900 mb-2">Gigs List</h3>
