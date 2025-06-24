@@ -26,15 +26,7 @@ import ZohoService from './services/zohoService';
 import UploadContacts from './components/onboarding/UploadContacts';
 
 function App() {
-  // Vérifie le flag AVANT tout le reste
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('showUploadContacts') === '1') {
-    return (
-      <div className="flex h-screen bg-gray-50">
-        <UploadContacts />
-      </div>
-    );
-  }
+
 
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
