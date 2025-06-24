@@ -661,14 +661,6 @@ const UploadContacts = () => {
         toast.error(`Erreurs lors de l'importation: ${errors.join(', ')}`);
       }
       
-      // Afficher le message de succès avec le nombre total de leads importés
-      const successMessage = `Synchronisation terminée. ${totalSaved} leads importés avec succès.`;
-      console.log('Success message:', successMessage);
-      toast.success(successMessage, {
-        duration: 5000, // Afficher le message pendant 5 secondes
-        position: 'top-center'
-      });
-
       // Rafraîchir la liste des leads après l'importation
       if (selectedGigId) {
         await fetchLeads();
