@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import Cookies from 'js-cookie';
 
 const ZohoCallback = () => {
-  const navigate = useNavigate();
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
 
@@ -60,24 +58,26 @@ const ZohoCallback = () => {
         toast.success('Successfully connected to Zoho CRM');
 
         setTimeout(() => {
-          navigate('/contacts');
+          window.location.href = '/app11?startStep=6';
         }, 3000);
 
       } catch (error: any) {
         console.error('Error handling Zoho callback:', error);
         toast.error(error.message || 'Failed to complete Zoho authentication');
-        navigate('/contacts');
+        setTimeout(() => {
+          window.location.href = '/app11';
+        }, 2000);
       }
     };
 
     handleCallback();
-  }, [navigate]);
+  }, []);
 
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="text-center">
         <h2 className="text-lg font-medium text-gray-900">Zoho Authentication Successful!</h2>
-        <p className="mt-2 text-sm text-gray-500">You will be redirected in a few seconds...</p>
+        <p className="mt-2 text-sm text-gray-500">You will be redirected to the main application in a few seconds...</p>
         {accessToken && (
           <div className="mt-4 p-4 bg-gray-100 rounded-lg">
             <p className="text-sm font-medium text-gray-700">Access Token:</p>
