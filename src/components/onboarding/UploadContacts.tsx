@@ -996,7 +996,7 @@ const UploadContacts = () => {
             className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
             onClick={() => {
               // Create a sample CSV template
-              const headers = ['Email', 'Phone', 'Deal Name', 'Stage', 'Pipeline', 'Project Tags'];
+              const headers = ['Email', 'Phone', 'Lead Name', 'Stage', 'Pipeline', 'Project Tags'];
               const csvContent = headers.join(',') + '\n';
               const blob = new Blob([csvContent], { type: 'text/csv' });
               const url = window.URL.createObjectURL(blob);
@@ -1196,7 +1196,7 @@ const UploadContacts = () => {
                   Lead
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Deal Name
+                  Lead Name
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   Stage
@@ -1335,7 +1335,7 @@ const UploadContacts = () => {
                 <div className="grid grid-cols-4 px-6 py-3">
                   <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</div>
                   <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Téléphone</div>
-                  <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deal</div>
+                  <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lead</div>
                   <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</div>
                 </div>
               </div>
