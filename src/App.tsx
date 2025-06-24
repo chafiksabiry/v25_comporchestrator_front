@@ -26,13 +26,7 @@ import ZohoService from './services/zohoService';
 import UploadContacts from './components/onboarding/UploadContacts';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('company-onboarding');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-  // Vérifier si nous sommes sur une page spéciale
-  const isZohoCallback = window.location.pathname === '/zoho-callback';
-  const isZohoAuth = window.location.pathname === '/zoho-auth';
-
+  // Vérifie le flag AVANT tout le reste
   const params = new URLSearchParams(window.location.search);
   if (params.get('showUploadContacts') === '1') {
     return (
@@ -41,6 +35,13 @@ function App() {
       </div>
     );
   }
+
+  const [activeTab, setActiveTab] = useState('company-onboarding');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Vérifier si nous sommes sur une page spéciale
+  const isZohoCallback = window.location.pathname === '/zoho-callback';
+  const isZohoAuth = window.location.pathname === '/zoho-auth';
 
   useEffect(() => {
     // Initialize Zoho configuration
