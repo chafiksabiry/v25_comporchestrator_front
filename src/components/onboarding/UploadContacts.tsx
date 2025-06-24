@@ -935,6 +935,9 @@ const UploadContacts = () => {
         console.log('✅ Zoho est configuré - Affichage du composant UploadContacts');
         // Optionnel: Afficher un message de succès
         toast.success('Zoho CRM connected successfully! You can now import contacts.');
+        setTimeout(() => {
+          window.location.href = '/app11?showUploadContacts=1';
+        }, 3000);
       }
     };
 
@@ -982,6 +985,15 @@ const UploadContacts = () => {
 
     return () => clearTimeout(timer);
   }, []);
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('showUploadContacts') === '1') {
+    return (
+      <div className="flex h-screen bg-gray-50">
+        <UploadContacts />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
