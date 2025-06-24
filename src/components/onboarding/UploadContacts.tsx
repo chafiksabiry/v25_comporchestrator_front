@@ -51,6 +51,8 @@ interface Gig {
   _id: string;
   title: string;
   companyId: string;
+  category?: string;
+  description?: string;
 }
 
 interface ApiResponse {
@@ -74,7 +76,6 @@ const UploadContacts = () => {
   const [parsedLeads, setParsedLeads] = useState<Lead[]>([]);
   const [showSaveButton, setShowSaveButton] = useState(true);
   const [showFileName, setShowFileName] = useState(true);
-  const [showZohoModal, setShowZohoModal] = useState(false);
   const [hasZohoConfig, setHasZohoConfig] = useState(false);
   const [zohoConfig, setZohoConfig] = useState({
     clientId: '',
@@ -94,7 +95,9 @@ const UploadContacts = () => {
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
   const [hasZohoAccessToken, setHasZohoAccessToken] = useState(false);
-
+  const [showImportChoiceModal, setShowImportChoiceModal] = useState(false);
+  const [selectedImportChoice, setSelectedImportChoice] = useState<'zoho' | 'file' | null>(null);
+  const [showGigsList, setShowGigsList] = useState(false);
 
   const channels = [
     { id: 'all', name: 'All Channels', icon: Globe },
@@ -425,6 +428,16 @@ const UploadContacts = () => {
     const location = urlParams.get('location');
     const accountsServer = urlParams.get('accounts-server');
     
+    const params = new URLSearchParams(window.location.search);
+    // Vérifier si l'URL contient le paramètre startStep=6
+    if (params.get('session') === 'someGeneratedSessionId') {
+
+      // Nettoyer l'URL pour éviter de relancer à chaque render
+      params.delete('session');
+      const newSearch = params.toString();
+      window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
+    }
+
     console.log('URL Params:', {
       code,
       state,
@@ -482,7 +495,6 @@ const UploadContacts = () => {
       }
   
       setHasZohoConfig(true);
-      setShowZohoModal(false);
   
     } catch (error: any) {
       console.error('Error handling OAuth callback:', error);
@@ -494,7 +506,6 @@ const UploadContacts = () => {
     console.log('📊 État actuel de hasZohoConfig:', hasZohoConfig);
     if (!hasZohoConfig) {
       console.log('⚠️ Configuration Zoho non trouvée - Affichage de la modal');
-      setShowZohoModal(true);
     } else {
       console.log('✅ Configuration Zoho trouvée - Pas besoin d\'afficher la modal');
     }
@@ -531,7 +542,6 @@ const UploadContacts = () => {
       if (configResponse.status === 200) {
         setHasZohoConfig(true);
         toast.success('Zoho CRM configuration saved successfully');
-        setShowZohoModal(false);
       } else {
         throw new Error(data.message || 'Error configuring Zoho CRM');
       }
@@ -831,10 +841,6 @@ const UploadContacts = () => {
     return buttons;
   };
 
-  const handleCreateGig = () => {
-    window.location.href = '/app6';
-  };
-
   const fetchGigs = async () => {
     setIsLoadingGigs(true);
     try {
@@ -924,56 +930,53 @@ const UploadContacts = () => {
     const checkZohoConfig = async () => {
       const zohoService = ZohoService.getInstance();
       const isConfigured = zohoService.isConfigured();
-      
       setHasZohoAccessToken(isConfigured);
       setHasZohoConfig(isConfigured);
-      setShowZohoModal(!isConfigured);
+      if (isConfigured) {
+        console.log('✅ Zoho est configuré - Affichage du composant UploadContacts');
+      }
     };
-
     checkZohoConfig();
   }, []);
 
-  // Add notification after 3 seconds
+  // Show import choice modal on first visit
   useEffect(() => {
-    const timer = setTimeout(() => {
-      toast(
-        <div className="flex flex-col items-center text-center gap-2">
-          <div className="flex items-center gap-2 mb-2">
-            <Database className="h-5 w-5 text-indigo-600" />
-            <h3 className="text-lg font-semibold text-indigo-600">Import Options Available</h3>
-          </div>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Database className="h-4 w-4 text-gray-600" />
-              <span className="text-gray-700">Import from Zoho CRM</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Upload className="h-4 w-4 text-gray-600" />
-              <span className="text-gray-700">Upload a CSV or Excel file</span>
-            </div>
-          </div>
-        </div>,
-        {
-          duration: 5000,
-          position: 'top-center',
-          style: {
-            background: 'white',
-            color: '#1e293b',
-            border: '1px solid #e2e8f0',
-            padding: '20px',
-            borderRadius: '12px',
-            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-            maxWidth: '400px',
-            width: '100%',
-            margin: '0 auto',
-          },
-          icon: 'ℹ️',
-        }
-      );
-    }, 3000);
-
-    return () => clearTimeout(timer);
+    const hasSeenModal = localStorage.getItem('hasSeenImportChoiceModal');
+    if (!hasSeenModal) {
+      setShowImportChoiceModal(true);
+    }
   }, []);
+
+  const handleImportChoice = (choice: 'zoho' | 'file') => {
+    setSelectedImportChoice(choice);
+  };
+
+  const handleConfirmChoice = () => {
+    if (selectedImportChoice) {
+      localStorage.setItem('hasSeenImportChoiceModal', 'true');
+      setShowImportChoiceModal(false);
+      
+      if (selectedImportChoice === 'zoho') {
+        // Focus on Zoho import section
+        const zohoButton = document.querySelector('[data-zoho-import]');
+        if (zohoButton) {
+          zohoButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else {
+        // Focus on file upload section
+        const uploadSection = document.querySelector('[data-file-upload]');
+        if (uploadSection) {
+          uploadSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+  };
+
+  const handleCancelModal = () => {
+    localStorage.setItem('hasSeenImportChoiceModal', 'true');
+    setShowImportChoiceModal(false);
+    setSelectedImportChoice(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -983,29 +986,6 @@ const UploadContacts = () => {
           <p className="text-sm text-gray-500">Import and manage your contact list across channels</p>
         </div>
         <div className="flex space-x-3">
-          <div className="relative">
-            <select
-              value={selectedGigId}
-              onChange={handleGigChange}
-              disabled={isLoadingGigs}
-              className="rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-            >
-              {isLoadingGigs ? (
-                <option>Loading gigs...</option>
-              ) : gigs.length === 0 ? (
-                <option value="">No gigs available</option>
-              ) : (
-                <>
-                  <option value="">Select a gig</option>
-                  {gigs.map((gig) => (
-                    <option key={gig._id} value={gig._id}>
-                      {gig.title}
-                    </option>
-                  ))}
-                </>
-              )}
-            </select>
-          </div>
           <button
             onClick={handleZohoConnect}
             disabled={hasZohoAccessToken}
@@ -1014,32 +994,61 @@ const UploadContacts = () => {
             <Database className="mr-2 h-4 w-4" />
             {hasZohoAccessToken ? 'Connected to Zoho CRM' : 'Connect to Zoho CRM'}
           </button>
-          <button 
-            onClick={handleImportFromZoho}
-            disabled={isImportingZoho || !hasZohoAccessToken || !selectedGigId}
-            className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
+          <button
+            onClick={async () => {
+              if (!selectedGigId) {
+                setShowGigsList(true);
+                return;
+              }
+              await handleImportFromZoho();
+            }}
+            className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+            data-zoho-import
           >
             <Download className="mr-2 h-4 w-4" />
             Import from Zoho
           </button>
-          <button 
+          <button
+            onClick={() => setShowGigsList((prev) => !prev)}
             className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
           >
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </button>
-          <button 
-            onClick={handleCreateGig}
-            className="flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Create Gig
+            {showGigsList ? 'Hide gigs' : 'Show gigs'}
           </button>
         </div>
       </div>
 
+            {/* Gigs List Section - now just below the action bar */}
+            {showGigsList && (
+        <div className="rounded-lg bg-white p-6 shadow mt-4 mb-4">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Gigs List</h3>
+          {gigs.length === 0 ? (
+            <p className="text-gray-500">No gigs available.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {gigs.map((gig) => (
+                <div
+                  key={gig._id}
+                  className={`cursor-pointer rounded-lg border p-4 shadow-sm flex flex-col transition-all duration-150 hover:shadow-md hover:border-indigo-400 ${selectedGigId === gig._id ? 'border-indigo-600 ring-2 ring-indigo-200 bg-indigo-50' : 'border-gray-200 bg-white'}`}
+                  onClick={() => setSelectedGigId(gig._id)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`font-semibold text-base ${selectedGigId === gig._id ? 'text-indigo-700' : 'text-gray-900'}`}>{gig.title}</span>
+                  </div>
+                  <div className="mb-1">
+                    <span className="inline-block rounded bg-indigo-100 text-indigo-700 px-2 py-0.5 text-xs font-medium">{gig.category || 'No category'}</span>
+                  </div>
+                  <div className="text-xs text-gray-600 line-clamp-2" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'}}>
+                    {gig.description || 'No description'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Upload Section */}
-      <div className="rounded-lg bg-white p-6 shadow">
+      <div className="rounded-lg bg-white p-6 shadow" data-file-upload>
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-medium text-gray-900">Import Contacts</h3>
@@ -1049,7 +1058,7 @@ const UploadContacts = () => {
             className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
             onClick={() => {
               // Create a sample CSV template
-              const headers = ['Email', 'Phone', 'Deal Name', 'Stage', 'Pipeline', 'Project Tags'];
+              const headers = ['Email', 'Phone', 'Lead Name', 'Stage', 'Pipeline', 'Project Tags'];
               const csvContent = headers.join(',') + '\n';
               const blob = new Blob([csvContent], { type: 'text/csv' });
               const url = window.URL.createObjectURL(blob);
@@ -1249,7 +1258,7 @@ const UploadContacts = () => {
                   Lead
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Deal Name
+                  Lead Name
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   Stage
@@ -1388,7 +1397,7 @@ const UploadContacts = () => {
                 <div className="grid grid-cols-4 px-6 py-3">
                   <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</div>
                   <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Téléphone</div>
-                  <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deal</div>
+                  <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lead</div>
                   <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</div>
                 </div>
               </div>
@@ -1402,6 +1411,51 @@ const UploadContacts = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Choice Modal */}
+      {showImportChoiceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="relative w-full max-w-md transform rounded-lg bg-white p-6 text-left shadow-xl transition-all">
+            <div className="absolute right-4 top-4">
+              <button
+                onClick={handleCancelModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
+                <Upload className="h-6 w-6 text-indigo-600" />
+              </div>
+              <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                Choose your import method
+              </h3>
+              <p className="mb-6 text-sm text-gray-600">
+                You can import your leads using <b>Zoho CRM</b> or by uploading an <b>Excel/CSV file</b>.<br />
+                Click Next to continue.
+              </p>
+            </div>
+            <div className="mt-6 flex justify-between space-x-3">
+              <button
+                onClick={handleCancelModal}
+                className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.setItem('hasSeenImportChoiceModal', 'true');
+                  setShowImportChoiceModal(false);
+                }}
+                className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                Next
+              </button>
             </div>
           </div>
         </div>

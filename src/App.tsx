@@ -23,8 +23,11 @@ import CompanyOnboarding from './components/CompanyOnboarding';
 import ZohoCallback from './components/onboarding/ZohoCallback';
 import ZohoAuth from './components/onboarding/ZohoAuth';
 import ZohoService from './services/zohoService';
+import UploadContacts from './components/onboarding/UploadContacts';
 
 function App() {
+
+
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
