@@ -58,7 +58,7 @@ const ZohoCallback = () => {
         toast.success('Successfully connected to Zoho CRM');
 
         setTimeout(() => {
-          window.location.href = '/app11';
+          window.location.href = '/app11?startStep=6';
         }, 3000);
 
       } catch (error: any) {
