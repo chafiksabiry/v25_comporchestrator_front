@@ -32,6 +32,7 @@ import Cookies from 'js-cookie';
 import axios from 'axios';
 import GigDetails from './onboarding/GigDetails';
 import KnowledgeBase from './onboarding/KnowledgeBase';
+import ZohoService from '../services/zohoService';
 
 interface BaseStep {
   id: number;
@@ -151,6 +152,9 @@ const CompanyOnboarding = () => {
       loadCompanyProgress();
       checkCompanyGigs();
       checkCompanyLeads();
+      
+      // Vérifier si l'utilisateur vient de se connecter à Zoho
+      checkZohoConnection();
     }
   }, [companyId]);
 
@@ -229,6 +233,25 @@ const CompanyOnboarding = () => {
       console.error('Error loading company progress:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Fonction pour vérifier si l'utilisateur vient de se connecter à Zoho
+  const checkZohoConnection = async () => {
+    try {
+      // Vérifier si Zoho est configuré pour cet utilisateur
+      const zohoService = ZohoService.getInstance();
+      const isConfigured = zohoService.isConfigured();
+      
+      // Si Zoho est configuré et que l'utilisateur vient de revenir de la connexion,
+      // afficher automatiquement le composant UploadContacts
+      if (isConfigured) {
+        console.log('✅ Zoho est configuré - Affichage automatique du composant UploadContacts');
+        setShowUploadContacts(true);
+        setActiveStep(6); // Step 6 est Upload Contacts
+      }
+    } catch (error) {
+      console.error('Error checking Zoho connection:', error);
     }
   };
 
