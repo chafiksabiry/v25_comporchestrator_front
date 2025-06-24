@@ -986,15 +986,6 @@ const UploadContacts = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('showUploadContacts') === '1') {
-    return (
-      <div className="flex h-screen bg-gray-50">
-        <UploadContacts />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
