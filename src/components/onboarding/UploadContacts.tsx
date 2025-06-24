@@ -94,6 +94,7 @@ const UploadContacts = () => {
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
   const [hasZohoAccessToken, setHasZohoAccessToken] = useState(false);
   const [showImportChoiceModal, setShowImportChoiceModal] = useState(false);
+  const [selectedImportChoice, setSelectedImportChoice] = useState<'zoho' | 'file' | null>(null);
 
   const channels = [
     { id: 'all', name: 'All Channels', icon: Globe },
@@ -944,22 +945,34 @@ const UploadContacts = () => {
   }, []);
 
   const handleImportChoice = (choice: 'zoho' | 'file') => {
-    localStorage.setItem('hasSeenImportChoiceModal', 'true');
-    setShowImportChoiceModal(false);
-    
-    if (choice === 'zoho') {
-      // Focus on Zoho import section
-      const zohoButton = document.querySelector('[data-zoho-import]');
-      if (zohoButton) {
-        zohoButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    } else {
-      // Focus on file upload section
-      const uploadSection = document.querySelector('[data-file-upload]');
-      if (uploadSection) {
-        uploadSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setSelectedImportChoice(choice);
+  };
+
+  const handleConfirmChoice = () => {
+    if (selectedImportChoice) {
+      localStorage.setItem('hasSeenImportChoiceModal', 'true');
+      setShowImportChoiceModal(false);
+      
+      if (selectedImportChoice === 'zoho') {
+        // Focus on Zoho import section
+        const zohoButton = document.querySelector('[data-zoho-import]');
+        if (zohoButton) {
+          zohoButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else {
+        // Focus on file upload section
+        const uploadSection = document.querySelector('[data-file-upload]');
+        if (uploadSection) {
+          uploadSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       }
     }
+  };
+
+  const handleCancelModal = () => {
+    localStorage.setItem('hasSeenImportChoiceModal', 'true');
+    setShowImportChoiceModal(false);
+    setSelectedImportChoice(null);
   };
 
   return (
@@ -1388,10 +1401,7 @@ const UploadContacts = () => {
           <div className="relative w-full max-w-md transform rounded-lg bg-white p-6 text-left shadow-xl transition-all">
             <div className="absolute right-4 top-4">
               <button
-                onClick={() => {
-                  localStorage.setItem('hasSeenImportChoiceModal', 'true');
-                  setShowImportChoiceModal(false);
-                }}
+                onClick={handleCancelModal}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <X className="h-6 w-6" />
@@ -1413,7 +1423,11 @@ const UploadContacts = () => {
             <div className="space-y-3">
               <button
                 onClick={() => handleImportChoice('zoho')}
-                className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-4 text-left hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={`flex w-full items-center justify-between rounded-lg border p-4 text-left transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                  selectedImportChoice === 'zoho'
+                    ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500'
+                    : 'border-gray-200 hover:bg-gray-50'
+                }`}
               >
                 <div className="flex items-center">
                   <div className="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
@@ -1424,12 +1438,23 @@ const UploadContacts = () => {
                     <p className="text-sm text-gray-500">Synchroniser avec votre CRM Zoho</p>
                   </div>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
+                {selectedImportChoice === 'zoho' && (
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600">
+                    <CheckCircle className="h-4 w-4 text-white" />
+                  </div>
+                )}
+                {selectedImportChoice !== 'zoho' && (
+                  <ChevronRight className="h-5 w-5 text-gray-400" />
+                )}
               </button>
 
               <button
                 onClick={() => handleImportChoice('file')}
-                className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-4 text-left hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={`flex w-full items-center justify-between rounded-lg border p-4 text-left transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                  selectedImportChoice === 'file'
+                    ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500'
+                    : 'border-gray-200 hover:bg-gray-50'
+                }`}
               >
                 <div className="flex items-center">
                   <div className="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
@@ -1440,19 +1465,30 @@ const UploadContacts = () => {
                     <p className="text-sm text-gray-500">Importer depuis un fichier local</p>
                   </div>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
+                {selectedImportChoice === 'file' && (
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600">
+                    <CheckCircle className="h-4 w-4 text-white" />
+                  </div>
+                )}
+                {selectedImportChoice !== 'file' && (
+                  <ChevronRight className="h-5 w-5 text-gray-400" />
+                )}
               </button>
             </div>
 
-            <div className="mt-6 text-center">
+            <div className="mt-6 flex justify-between space-x-3">
               <button
-                onClick={() => {
-                  localStorage.setItem('hasSeenImportChoiceModal', 'true');
-                  setShowImportChoiceModal(false);
-                }}
-                className="text-sm text-gray-500 hover:text-gray-700"
+                onClick={handleCancelModal}
+                className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                Plus tard
+                Annuler
+              </button>
+              <button
+                onClick={handleConfirmChoice}
+                disabled={!selectedImportChoice}
+                className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Suivant
               </button>
             </div>
           </div>
