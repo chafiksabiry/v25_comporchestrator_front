@@ -1407,88 +1407,33 @@ const UploadContacts = () => {
                 <X className="h-6 w-6" />
               </button>
             </div>
-            
             <div className="text-center">
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
                 <Upload className="h-6 w-6 text-indigo-600" />
               </div>
               <h3 className="mb-2 text-lg font-semibold text-gray-900">
-                Choisissez votre méthode d'importation
+                Choose your import method
               </h3>
               <p className="mb-6 text-sm text-gray-600">
-                Comment souhaitez-vous importer vos leads ?
+                You can import your leads using <b>Zoho CRM</b> or by uploading an <b>Excel/CSV file</b>.<br />
+                Click Next to continue.
               </p>
             </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => handleImportChoice('zoho')}
-                className={`flex w-full items-center justify-between rounded-lg border p-4 text-left transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                  selectedImportChoice === 'zoho'
-                    ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500'
-                    : 'border-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center">
-                  <div className="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
-                    <Database className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">Zoho CRM</h4>
-                    <p className="text-sm text-gray-500">Synchroniser avec votre CRM Zoho</p>
-                  </div>
-                </div>
-                {selectedImportChoice === 'zoho' && (
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600">
-                    <CheckCircle className="h-4 w-4 text-white" />
-                  </div>
-                )}
-                {selectedImportChoice !== 'zoho' && (
-                  <ChevronRight className="h-5 w-5 text-gray-400" />
-                )}
-              </button>
-
-              <button
-                onClick={() => handleImportChoice('file')}
-                className={`flex w-full items-center justify-between rounded-lg border p-4 text-left transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                  selectedImportChoice === 'file'
-                    ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500'
-                    : 'border-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center">
-                  <div className="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-                    <FileText className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">Fichier Excel/CSV</h4>
-                    <p className="text-sm text-gray-500">Importer depuis un fichier local</p>
-                  </div>
-                </div>
-                {selectedImportChoice === 'file' && (
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600">
-                    <CheckCircle className="h-4 w-4 text-white" />
-                  </div>
-                )}
-                {selectedImportChoice !== 'file' && (
-                  <ChevronRight className="h-5 w-5 text-gray-400" />
-                )}
-              </button>
-            </div>
-
             <div className="mt-6 flex justify-between space-x-3">
               <button
                 onClick={handleCancelModal}
                 className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                Annuler
+                Cancel
               </button>
               <button
-                onClick={handleConfirmChoice}
-                disabled={!selectedImportChoice}
-                className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => {
+                  localStorage.setItem('hasSeenImportChoiceModal', 'true');
+                  setShowImportChoiceModal(false);
+                }}
+                className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                Suivant
+                Next
               </button>
             </div>
           </div>
