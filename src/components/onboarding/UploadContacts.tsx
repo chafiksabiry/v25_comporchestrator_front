@@ -74,7 +74,6 @@ const UploadContacts = () => {
   const [parsedLeads, setParsedLeads] = useState<Lead[]>([]);
   const [showSaveButton, setShowSaveButton] = useState(true);
   const [showFileName, setShowFileName] = useState(true);
-  const [showZohoModal, setShowZohoModal] = useState(false);
   const [hasZohoConfig, setHasZohoConfig] = useState(false);
   const [zohoConfig, setZohoConfig] = useState({
     clientId: '',
@@ -492,7 +491,6 @@ const UploadContacts = () => {
       }
   
       setHasZohoConfig(true);
-      setShowZohoModal(false);
   
     } catch (error: any) {
       console.error('Error handling OAuth callback:', error);
@@ -504,7 +502,6 @@ const UploadContacts = () => {
     console.log('📊 État actuel de hasZohoConfig:', hasZohoConfig);
     if (!hasZohoConfig) {
       console.log('⚠️ Configuration Zoho non trouvée - Affichage de la modal');
-      setShowZohoModal(true);
     } else {
       console.log('✅ Configuration Zoho trouvée - Pas besoin d\'afficher la modal');
     }
@@ -541,7 +538,6 @@ const UploadContacts = () => {
       if (configResponse.status === 200) {
         setHasZohoConfig(true);
         toast.success('Zoho CRM configuration saved successfully');
-        setShowZohoModal(false);
       } else {
         throw new Error(data.message || 'Error configuring Zoho CRM');
       }
@@ -936,55 +932,11 @@ const UploadContacts = () => {
       const isConfigured = zohoService.isConfigured();
       setHasZohoAccessToken(isConfigured);
       setHasZohoConfig(isConfigured);
-      setShowZohoModal(!isConfigured);
       if (isConfigured) {
         console.log('✅ Zoho est configuré - Affichage du composant UploadContacts');
-        toast.success('Zoho CRM connected successfully! You can now import contacts.');
       }
     };
     checkZohoConfig();
-  }, []);
-
-  // Add notification after 3 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      toast(
-        <div className="flex flex-col items-center text-center gap-2">
-          <div className="flex items-center gap-2 mb-2">
-            <Database className="h-5 w-5 text-indigo-600" />
-            <h3 className="text-lg font-semibold text-indigo-600">Import Options Available</h3>
-          </div>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Database className="h-4 w-4 text-gray-600" />
-              <span className="text-gray-700">Import from Zoho CRM</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Upload className="h-4 w-4 text-gray-600" />
-              <span className="text-gray-700">Upload a CSV or Excel file</span>
-            </div>
-          </div>
-        </div>,
-        {
-          duration: 5000,
-          position: 'top-center',
-          style: {
-            background: 'white',
-            color: '#1e293b',
-            border: '1px solid #e2e8f0',
-            padding: '20px',
-            borderRadius: '12px',
-            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-            maxWidth: '400px',
-            width: '100%',
-            margin: '0 auto',
-          },
-          icon: 'ℹ️',
-        }
-      );
-    }, 3000);
-
-    return () => clearTimeout(timer);
   }, []);
 
   return (
