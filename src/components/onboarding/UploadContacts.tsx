@@ -51,6 +51,8 @@ interface Gig {
   _id: string;
   title: string;
   companyId: string;
+  category?: string;
+  description?: string;
 }
 
 interface ApiResponse {
@@ -1018,25 +1020,32 @@ const UploadContacts = () => {
             {/* Gigs List Section - now just below the action bar */}
             {showGigsList && (
         <div className="rounded-lg bg-white p-6 shadow mt-4 mb-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Gigs List</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Gigs List</h3>
           {gigs.length === 0 ? (
             <p className="text-gray-500">No gigs available.</p>
           ) : (
-            <ul className="divide-y divide-gray-200">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {gigs.map((gig) => (
-                <li
+                <div
                   key={gig._id}
-                  className={`py-2 cursor-pointer flex items-center justify-between rounded transition-colors ${selectedGigId === gig._id ? 'bg-indigo-50 border border-indigo-500' : 'hover:bg-gray-50'}`}
+                  className={`cursor-pointer rounded-lg border p-4 shadow-sm flex flex-col transition-all duration-150 hover:shadow-md hover:border-indigo-400 ${selectedGigId === gig._id ? 'border-indigo-600 ring-2 ring-indigo-200 bg-indigo-50' : 'border-gray-200 bg-white'}`}
                   onClick={() => setSelectedGigId(gig._id)}
                 >
-                  <span className={`font-medium ${selectedGigId === gig._id ? 'text-indigo-700' : 'text-gray-900'}`}>{gig.title}</span>
-                  <span className="ml-2 text-xs text-gray-500">ID: {gig._id}</span>
-                  {selectedGigId === gig._id && (
-                    <span className="ml-4 px-2 py-1 rounded bg-indigo-600 text-white text-xs font-semibold">Selected</span>
-                  )}
-                </li>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`font-semibold text-base ${selectedGigId === gig._id ? 'text-indigo-700' : 'text-gray-900'}`}>{gig.title}</span>
+                    {selectedGigId === gig._id && (
+                      <span className="ml-2 px-2 py-0.5 rounded bg-indigo-600 text-white text-xs font-semibold">Selected</span>
+                    )}
+                  </div>
+                  <div className="mb-1">
+                    <span className="inline-block rounded bg-indigo-100 text-indigo-700 px-2 py-0.5 text-xs font-medium">{gig.category || 'No category'}</span>
+                  </div>
+                  <div className="text-xs text-gray-600 line-clamp-2" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'}}>
+                    {gig.description || 'No description'}
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </div>
       )}
