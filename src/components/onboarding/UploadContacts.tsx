@@ -837,10 +837,6 @@ const UploadContacts = () => {
     return buttons;
   };
 
-  const handleCreateGig = () => {
-    window.location.href = '/app6';
-  };
-
   const fetchGigs = async () => {
     setIsLoadingGigs(true);
     try {
@@ -985,19 +981,6 @@ const UploadContacts = () => {
           >
             <Download className="mr-2 h-4 w-4" />
             Import from Zoho
-          </button>
-          <button 
-            className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </button>
-          <button 
-            onClick={handleCreateGig}
-            className="flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Create Gig
           </button>
         </div>
       </div>
