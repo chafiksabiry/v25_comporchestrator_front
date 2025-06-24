@@ -308,6 +308,7 @@ const CompanyOnboarding = () => {
     }
   };
 
+
   const handleStepComplete = async (stepId: number) => {
     if (!companyId) return;
 
