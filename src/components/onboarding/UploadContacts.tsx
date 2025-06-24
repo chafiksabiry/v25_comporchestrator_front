@@ -924,23 +924,14 @@ const UploadContacts = () => {
     const checkZohoConfig = async () => {
       const zohoService = ZohoService.getInstance();
       const isConfigured = zohoService.isConfigured();
-      
       setHasZohoAccessToken(isConfigured);
       setHasZohoConfig(isConfigured);
       setShowZohoModal(!isConfigured);
-      
-      // Si Zoho est configuré et que l'utilisateur vient de se connecter, 
-      // on peut automatiquement afficher le composant UploadContacts
       if (isConfigured) {
         console.log('✅ Zoho est configuré - Affichage du composant UploadContacts');
-        // Optionnel: Afficher un message de succès
         toast.success('Zoho CRM connected successfully! You can now import contacts.');
-        setTimeout(() => {
-          window.location.href = '/app11?showUploadContacts=1';
-        }, 3000);
       }
     };
-
     checkZohoConfig();
   }, []);
 
