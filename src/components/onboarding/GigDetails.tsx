@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { useNavigate } from 'react-router-dom';
 
 interface Gig {
   _id: string;
@@ -49,7 +48,6 @@ interface GigResponse {
 }
 
 const GigDetails = () => {
-  const navigate = useNavigate();
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -174,7 +172,7 @@ const GigDetails = () => {
           </span>
           <button
             className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg shadow transition-colors duration-200"
-            onClick={() => navigate('/app6')}
+            onClick={() => { window.location.href = '/app6'; }}
           >
             Add gig
           </button>
