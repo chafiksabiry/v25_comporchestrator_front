@@ -506,6 +506,11 @@ const UploadContacts = () => {
   }, [hasZohoConfig]);
 
   const handleImportFromZoho = async () => {
+    if (!selectedGigId) {
+      toast.error('Please select a gig first');
+      return;
+    }
+
     setIsImportingZoho(true);
     setRealtimeLeads([]);
     try {
@@ -527,98 +532,64 @@ const UploadContacts = () => {
 
       setParsedLeads([]);
       
-      // Créer un tableau de promesses pour l'importation parallèle
-      const importPromises = gigs.map(async (gig) => {
-        try {
-          const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/leads/sync-all`;
-          console.log('Importing leads for gig:', gig.title);
-          
-          const checkResponse = await fetch(apiUrl, { 
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${accessToken}`,
-              'Accept': 'application/json'
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              userId: userId,
-              companyId: companyId,
-              gigId: gig._id
-            })
-          });
-
-          if (!checkResponse.ok) {
-            const errorData = await checkResponse.json().catch(() => null);
-            throw new Error(errorData?.message || `Erreur lors de la synchronisation avec Zoho pour le gig ${gig.title}`);
-          }
-
-          const data = await checkResponse.json();
-          console.log('Import response for gig:', gig.title, data);
-          
-          if (!data.success) {
-            throw new Error(data.message || `Erreur lors de la synchronisation pour le gig ${gig.title}`);
-          }
-
-          // Vérifier si data.data et data.data.leads existent
-          if (!data.data || !Array.isArray(data.data.leads)) {
-            console.warn(`No leads found for gig ${gig.title}`);
-            return {
-              gig: gig.title,
-              leads: [],
-              sync_info: { total_saved: 0 }
-            };
-          }
-
-          return {
-            gig: gig.title,
-            leads: data.data.leads,
-            sync_info: data.data.sync_info || { total_saved: 0 }
-          };
-        } catch (error: any) {
-          console.error(`Error importing leads for gig ${gig.title}:`, error);
-          return {
-            gig: gig.title,
-            error: error.message,
-            leads: [],
-            sync_info: { total_saved: 0 }
-          };
-        }
-      });
-
-      // Exécuter toutes les importations en parallèle
-      const results = await Promise.all(importPromises);
-      console.log('Import results:', results);
-      
-      // Traiter les résultats
-      const allLeads: Lead[] = [];
-      let totalSaved = 0;
-      let errors: string[] = [];
-
-      results.forEach(result => {
-        if ('error' in result) {
-          errors.push(`${result.gig}: ${result.error}`);
-        } else {
-          if (Array.isArray(result.leads)) {
-            allLeads.push(...result.leads);
-          }
-          totalSaved += result.sync_info?.total_saved || 0;
-        }
-      });
-
-      // Mettre à jour l'état avec tous les leads
-      setRealtimeLeads(allLeads);
-      setParsedLeads(allLeads);
-
-      // Afficher les résultats
-      if (errors.length > 0) {
-        toast.error(`Erreurs lors de l'importation: ${errors.join(', ')}`);
+      // Trouver le gig sélectionné
+      const selectedGig = gigs.find(gig => gig._id === selectedGigId);
+      if (!selectedGig) {
+        toast.error('Gig sélectionné non trouvé');
+        return;
       }
+
+      console.log('Importing leads for selected gig:', selectedGig.title);
+      
+      const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/leads/sync-all`;
+      const checkResponse = await fetch(apiUrl, { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          userId: userId,
+          companyId: companyId,
+          gigId: selectedGigId
+        })
+      });
+
+      if (!checkResponse.ok) {
+        const errorData = await checkResponse.json().catch(() => null);
+        throw new Error(errorData?.message || `Erreur lors de la synchronisation avec Zoho pour le gig ${selectedGig.title}`);
+      }
+
+      const data = await checkResponse.json();
+      console.log('Import response for gig:', selectedGig.title, data);
+      
+      if (!data.success) {
+        throw new Error(data.message || `Erreur lors de la synchronisation pour le gig ${selectedGig.title}`);
+      }
+
+      // Vérifier si data.data et data.data.leads existent
+      if (!data.data || !Array.isArray(data.data.leads)) {
+        console.warn(`No leads found for gig ${selectedGig.title}`);
+        toast.info(`Aucun lead trouvé pour le gig ${selectedGig.title}`);
+        setRealtimeLeads([]);
+        setParsedLeads([]);
+        return;
+      }
+
+      const leads = data.data.leads;
+      const syncInfo = data.data.sync_info || { total_saved: 0 };
+
+      // Mettre à jour l'état avec les leads du gig sélectionné
+      setRealtimeLeads(leads);
+      setParsedLeads(leads);
+
+      // Afficher le succès
+      toast.success(`Importation réussie pour ${selectedGig.title}: ${leads.length} leads importés`);
       
       // Rafraîchir la liste des leads après l'importation
-      if (selectedGigId) {
-        await fetchLeads();
-      }
+      await fetchLeads();
 
     } catch (error: any) {
       console.error('Error in handleImportFromZoho:', error);
