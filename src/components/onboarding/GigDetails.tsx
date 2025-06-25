@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { useNavigate } from 'react-router-dom';
 
 interface Gig {
   _id: string;
@@ -48,6 +49,7 @@ interface GigResponse {
 }
 
 const GigDetails = () => {
+  const navigate = useNavigate();
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -166,8 +168,16 @@ const GigDetails = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Gig Details</h2>
-        <div className="text-sm text-gray-500">
-          {gigs.length} gig{gigs.length !== 1 ? 's' : ''} found
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-500">
+            {gigs.length} gig{gigs.length !== 1 ? 's' : ''} found
+          </span>
+          <button
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg shadow transition-colors duration-200"
+            onClick={() => navigate('/app6')}
+          >
+            Add gig
+          </button>
         </div>
       </div>
       
