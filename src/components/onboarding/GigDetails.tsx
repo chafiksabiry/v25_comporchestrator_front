@@ -78,59 +78,46 @@ const GigDetails = () => {
   const getStatusColor = (status: string) => {
     if (!status) {
       return {
-        bg: 'bg-gradient-to-r from-gray-400 to-gray-600',
-        text: 'text-white',
-        border: 'border-gray-500'
+        bg: 'bg-white/30',
+        text: 'text-indigo-900',
+        border: 'border-white/40'
       };
     }
-    
     switch (status.toLowerCase()) {
       case 'active':
         return {
-          bg: 'bg-gradient-to-r from-green-400 to-green-600',
-          text: 'text-white',
-          border: 'border-green-500'
+          bg: 'bg-white/30',
+          text: 'text-blue-900',
+          border: 'border-white/40'
         };
       case 'pending':
         return {
-          bg: 'bg-gradient-to-r from-yellow-400 to-orange-500',
-          text: 'text-white',
-          border: 'border-yellow-500'
+          bg: 'bg-white/30',
+          text: 'text-yellow-900',
+          border: 'border-white/40'
         };
       case 'completed':
         return {
-          bg: 'bg-gradient-to-r from-blue-400 to-blue-600',
-          text: 'text-white',
-          border: 'border-blue-500'
+          bg: 'bg-white/30',
+          text: 'text-green-900',
+          border: 'border-white/40'
         };
       case 'cancelled':
         return {
-          bg: 'bg-gradient-to-r from-red-400 to-red-600',
-          text: 'text-white',
-          border: 'border-red-500'
+          bg: 'bg-white/30',
+          text: 'text-red-900',
+          border: 'border-white/40'
         };
       default:
         return {
-          bg: 'bg-gradient-to-r from-gray-400 to-gray-600',
-          text: 'text-white',
-          border: 'border-gray-500'
+          bg: 'bg-white/30',
+          text: 'text-indigo-900',
+          border: 'border-white/40'
         };
     }
   };
 
-  const getCardGradient = (index: number) => {
-    const gradients = [
-      'from-purple-400 via-pink-500 to-red-500',
-      'from-green-400 via-blue-500 to-purple-600',
-      'from-yellow-400 via-orange-500 to-red-500',
-      'from-pink-400 via-purple-500 to-indigo-500',
-      'from-blue-400 via-cyan-500 to-blue-600',
-      'from-indigo-400 via-purple-500 to-pink-500',
-      'from-emerald-400 via-teal-500 to-emerald-600',
-      'from-violet-400 via-purple-500 to-violet-600'
-    ];
-    return gradients[index % gradients.length];
-  };
+  const getCardGradient = () => 'from-blue-500 via-indigo-500 to-purple-500';
 
   const formatCommission = (commission: Gig['commission']) => {
     if (!commission) return 'Not specified';
@@ -198,12 +185,11 @@ const GigDetails = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {gigs.map((gig, index) => {
             const statusColors = getStatusColor(gig.status);
-            const cardGradient = getCardGradient(index);
             
             return (
               <div
                 key={gig._id}
-                className={`group relative overflow-hidden rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 bg-gradient-to-br ${cardGradient}`}
+                className={`group relative overflow-hidden rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 bg-gradient-to-br ${getCardGradient()}`}
               >
                 {/* Card Header */}
                 <div className="p-6 text-white">
