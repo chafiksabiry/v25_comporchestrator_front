@@ -2,11 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   Upload,
   FileText,
-  CheckCircle,
-  AlertCircle,
   Download,
   RefreshCw,
-  Filter,
   Search,
   Trash2,
   Edit,
@@ -20,12 +17,12 @@ import {
   Linkedin,
   Youtube,
   Globe,
-  Settings,
-  Plus,
   X,
   Database,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -91,13 +88,14 @@ const UploadContacts = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize] = useState(50);
+  const [totalCount, setTotalCount] = useState(0);
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
   const [hasZohoAccessToken, setHasZohoAccessToken] = useState(false);
   const [showImportChoiceModal, setShowImportChoiceModal] = useState(false);
   const [selectedImportChoice, setSelectedImportChoice] = useState<'zoho' | 'file' | null>(null);
-  const [showGigsList, setShowGigsList] = useState(false);
+  const [showGigsSection, setShowGigsSection] = useState(true);
 
   const channels = [
     { id: 'all', name: 'All Channels', icon: Globe },
@@ -338,7 +336,6 @@ const UploadContacts = () => {
       if (response.status === 200) {
         setUploadSuccess(true);
         setUploadProgress(100);
-        toast.success(`Successfully uploaded ${parsedLeads.length} contacts!`);
         
         // Rafraîchir la liste des leads après l'importation
         if (selectedGigId) {
@@ -511,47 +508,12 @@ const UploadContacts = () => {
     }
   }, [hasZohoConfig]);
 
-  const handleZohoConfig = async () => {
-    try {
-      const userId = Cookies.get('userId');
-      const companyId = Cookies.get('companyId');
-      console.log('Configuring Zoho with userId:', userId);
-      console.log('Zoho config data:', zohoConfig);
-
-      if (!companyId) {
-        throw new Error('Company ID not found in cookies');
-      }
-
-      const configResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/configure`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Cookies.get('gigId')}:${userId}`
-        },
-        body: JSON.stringify({
-          ...zohoConfig,
-          userId,
-          companyId
-        })
-      });
-
-      console.log('Config response status:', configResponse.status);
-      const data = await configResponse.json();
-      console.log('Config response data:', data);
-
-      if (configResponse.status === 200) {
-        setHasZohoConfig(true);
-        toast.success('Zoho CRM configuration saved successfully');
-      } else {
-        throw new Error(data.message || 'Error configuring Zoho CRM');
-      }
-    } catch (error: any) {
-      console.error('Error in handleZohoConfig:', error);
-      toast.error(error.message || 'Error configuring Zoho CRM');
-    }
-  };
-
   const handleImportFromZoho = async () => {
+    if (!selectedGigId) {
+      toast.error('Please select a gig first');
+      return;
+    }
+
     setIsImportingZoho(true);
     setRealtimeLeads([]);
     try {
@@ -573,98 +535,62 @@ const UploadContacts = () => {
 
       setParsedLeads([]);
       
-      // Créer un tableau de promesses pour l'importation parallèle
-      const importPromises = gigs.map(async (gig) => {
-        try {
-          const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/leads/sync-all`;
-          console.log('Importing leads for gig:', gig.title);
-          
-          const checkResponse = await fetch(apiUrl, { 
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${accessToken}`,
-              'Accept': 'application/json'
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              userId: userId,
-              companyId: companyId,
-              gigId: gig._id
-            })
-          });
-
-          if (!checkResponse.ok) {
-            const errorData = await checkResponse.json().catch(() => null);
-            throw new Error(errorData?.message || `Erreur lors de la synchronisation avec Zoho pour le gig ${gig.title}`);
-          }
-
-          const data = await checkResponse.json();
-          console.log('Import response for gig:', gig.title, data);
-          
-          if (!data.success) {
-            throw new Error(data.message || `Erreur lors de la synchronisation pour le gig ${gig.title}`);
-          }
-
-          // Vérifier si data.data et data.data.leads existent
-          if (!data.data || !Array.isArray(data.data.leads)) {
-            console.warn(`No leads found for gig ${gig.title}`);
-            return {
-              gig: gig.title,
-              leads: [],
-              sync_info: { total_saved: 0 }
-            };
-          }
-
-          return {
-            gig: gig.title,
-            leads: data.data.leads,
-            sync_info: data.data.sync_info || { total_saved: 0 }
-          };
-        } catch (error: any) {
-          console.error(`Error importing leads for gig ${gig.title}:`, error);
-          return {
-            gig: gig.title,
-            error: error.message,
-            leads: [],
-            sync_info: { total_saved: 0 }
-          };
-        }
-      });
-
-      // Exécuter toutes les importations en parallèle
-      const results = await Promise.all(importPromises);
-      console.log('Import results:', results);
-      
-      // Traiter les résultats
-      const allLeads: Lead[] = [];
-      let totalSaved = 0;
-      let errors: string[] = [];
-
-      results.forEach(result => {
-        if ('error' in result) {
-          errors.push(`${result.gig}: ${result.error}`);
-        } else {
-          if (Array.isArray(result.leads)) {
-            allLeads.push(...result.leads);
-          }
-          totalSaved += result.sync_info?.total_saved || 0;
-        }
-      });
-
-      // Mettre à jour l'état avec tous les leads
-      setRealtimeLeads(allLeads);
-      setParsedLeads(allLeads);
-
-      // Afficher les résultats
-      if (errors.length > 0) {
-        toast.error(`Erreurs lors de l'importation: ${errors.join(', ')}`);
+      // Trouver le gig sélectionné
+      const selectedGig = gigs.find(gig => gig._id === selectedGigId);
+      if (!selectedGig) {
+        toast.error('Gig sélectionné non trouvé');
+        return;
       }
+
+      console.log('Importing leads for selected gig:', selectedGig.title);
       
-      // Rafraîchir la liste des leads après l'importation
-      if (selectedGigId) {
+      const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/leads/sync-all`;
+      const checkResponse = await fetch(apiUrl, { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          userId: userId,
+          companyId: companyId,
+          gigId: selectedGigId
+        })
+      });
+
+      if (!checkResponse.ok) {
+        const errorData = await checkResponse.json().catch(() => null);
+        throw new Error(errorData?.message || `Erreur lors de la synchronisation avec Zoho pour le gig ${selectedGig.title}`);
+      }
+
+      const data = await checkResponse.json();
+      console.log('Import response for gig:', selectedGig.title, data);
+      
+      if (!data.success) {
+        throw new Error(data.message || `Erreur lors de la synchronisation pour le gig ${selectedGig.title}`);
+      }
+
+      // Vérifier si data.data et data.data.leads existent
+      if (!data.data || !Array.isArray(data.data.leads)) {
+        console.warn(`No leads found for gig ${selectedGig.title}`);
+        setRealtimeLeads([]);
+        setParsedLeads([]);
+        // Refresh automatique même si aucun lead trouvé
         await fetchLeads();
+        return;
       }
+
+      const leads = data.data.leads;
+      const syncInfo = data.data.sync_info || { total_saved: 0 };
+
+      // Mettre à jour l'état avec les leads du gig sélectionné
+      setRealtimeLeads(leads);
+      setParsedLeads(leads);
+
+      // Refresh automatique de la liste des leads après l'importation
+      await fetchLeads();
 
     } catch (error: any) {
       console.error('Error in handleImportFromZoho:', error);
@@ -680,6 +606,7 @@ const UploadContacts = () => {
       setLeads([]);
       setTotalPages(0);
       setCurrentPage(1);
+      setTotalCount(0);
       return;
     }
 
@@ -715,6 +642,7 @@ const UploadContacts = () => {
       setLeads(responseData.data);
       setTotalPages(responseData.totalPages);
       setCurrentPage(responseData.currentPage);
+      setTotalCount(responseData.total);
     } catch (error: unknown) {
       console.error('Error fetching leads:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch leads';
@@ -750,7 +678,27 @@ const UploadContacts = () => {
 
   const renderPaginationButtons = () => {
     const buttons = [];
-    const maxVisiblePages = 4; // Nombre maximum de pages visibles
+    const maxVisiblePages = 5; // Nombre maximum de pages visibles
+
+    // Si le nombre total de pages est inférieur ou égal au maximum visible, afficher toutes les pages
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        buttons.push(
+          <button
+            key={i}
+            onClick={() => fetchLeads(i)}
+            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+              i === currentPage
+                ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+                : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+            }`}
+          >
+            {i}
+          </button>
+        );
+      }
+      return buttons;
+    }
 
     // Toujours afficher la première page
     buttons.push(
@@ -767,14 +715,14 @@ const UploadContacts = () => {
       </button>
     );
 
-    // Calculer les pages à afficher
+    // Calculer les pages à afficher autour de la page courante
     let startPage = Math.max(2, currentPage - 1);
     let endPage = Math.min(totalPages - 1, currentPage + 1);
 
     // Ajuster si on est proche du début ou de la fin
-    if (currentPage <= 2) {
+    if (currentPage <= 3) {
       endPage = Math.min(4, totalPages - 1);
-    } else if (currentPage >= totalPages - 1) {
+    } else if (currentPage >= totalPages - 2) {
       startPage = Math.max(2, totalPages - 3);
     }
 
@@ -910,7 +858,6 @@ const UploadContacts = () => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data.zohoConnected) {
         console.log('Received zohoConnected message');
-        toast.success('Zoho connection successful');
         setHasZohoConfig(true);
       }
     };
@@ -971,66 +918,115 @@ const UploadContacts = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">Upload Contacts</h2>
-          <p className="text-sm text-gray-500">Import and manage your contact list across channels</p>
-        </div>
-        <div className="flex space-x-3">
-          <button
-            onClick={handleZohoConnect}
-            disabled={hasZohoAccessToken}
-            className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
-          >
-            <Database className="mr-2 h-4 w-4" />
-            {hasZohoAccessToken ? 'Connected to Zoho CRM' : 'Connect to Zoho CRM'}
-          </button>
-          <button
-            onClick={async () => {
-              if (!selectedGigId) {
-                setShowGigsList(true);
-                return;
-              }
-              await handleImportFromZoho();
-            }}
-            className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-            data-zoho-import
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Import from Zoho
-          </button>
-          <button
-            onClick={() => setShowGigsList((prev) => !prev)}
-            className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-          >
-            {showGigsList ? 'Hide gigs' : 'Show gigs'}
-          </button>
+    <div className="space-y-6 bg-gradient-to-br from-gray-50 to-white min-h-screen p-6">
+      {/* Header Section */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              Upload Contacts
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">Import and manage your contact list across channels</p>
+          </div>
+          <div className="flex space-x-3">
+            <button
+              onClick={handleZohoConnect}
+              disabled={hasZohoAccessToken}
+              className="flex items-center rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
+            >
+              <Database className="mr-2 h-4 w-4" />
+              {hasZohoAccessToken ? 'Connected to Zoho CRM' : 'Connect to Zoho CRM'}
+            </button>
+            <button
+              onClick={async () => {
+                if (!selectedGigId) {
+                  toast.error('Please select a gig first');
+                  return;
+                }
+                await handleImportFromZoho();
+              }}
+              className="flex items-center rounded-lg bg-gradient-to-r from-green-500 to-green-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-green-600 hover:to-green-700 transition-all duration-200 transform hover:scale-105"
+              data-zoho-import
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Import from Zoho
+            </button>
+            <button
+              onClick={() => setShowGigsSection(!showGigsSection)}
+              className="flex items-center rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-purple-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105"
+            >
+              {showGigsSection ? (
+                <>
+                  <ChevronUp className="mr-2 h-4 w-4" />
+                  Hide Gigs
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="mr-2 h-4 w-4" />
+                  Show Gigs
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
-            {/* Gigs List Section - now just below the action bar */}
-            {showGigsList && (
-        <div className="rounded-lg bg-white p-6 shadow mt-4 mb-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Gigs List</h3>
-          {gigs.length === 0 ? (
-            <p className="text-gray-500">No gigs available.</p>
+      {/* Gigs Selection Cards */}
+      {showGigsSection && (
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 transition-all duration-300 ease-in-out">
+          <h4 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+            <Users className="mr-2 h-5 w-5 text-indigo-600" />
+            Select a Gig
+          </h4>
+          {isLoadingGigs ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+              <span className="ml-3 text-sm text-gray-600">Loading gigs...</span>
+            </div>
+          ) : gigs.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="mx-auto h-12 w-12 text-gray-400 mb-4">
+                <Users className="h-12 w-12" />
+              </div>
+              <p className="text-sm text-gray-500">No gigs available.</p>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {gigs.map((gig) => (
                 <div
                   key={gig._id}
-                  className={`cursor-pointer rounded-lg border p-4 shadow-sm flex flex-col transition-all duration-150 hover:shadow-md hover:border-indigo-400 ${selectedGigId === gig._id ? 'border-indigo-600 ring-2 ring-indigo-200 bg-indigo-50' : 'border-gray-200 bg-white'}`}
+                  className={`cursor-pointer rounded-xl border-2 p-6 shadow-sm flex flex-col transition-all duration-300 hover:shadow-lg hover:scale-105 ${
+                    selectedGigId === gig._id 
+                      ? 'border-indigo-500 ring-4 ring-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50' 
+                      : 'border-gray-200 bg-white hover:border-indigo-300'
+                  }`}
                   onClick={() => setSelectedGigId(gig._id)}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`font-semibold text-base ${selectedGigId === gig._id ? 'text-indigo-700' : 'text-gray-900'}`}>{gig.title}</span>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`font-bold text-lg ${
+                      selectedGigId === gig._id ? 'text-indigo-700' : 'text-gray-900'
+                    }`}>
+                      {gig.title}
+                    </span>
+                    {selectedGigId === gig._id && (
+                      <div className="w-3 h-3 bg-indigo-500 rounded-full animate-pulse"></div>
+                    )}
                   </div>
-                  <div className="mb-1">
-                    <span className="inline-block rounded bg-indigo-100 text-indigo-700 px-2 py-0.5 text-xs font-medium">{gig.category || 'No category'}</span>
+                  <div className="mb-3">
+                    <span className="inline-block rounded-full bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-700 px-3 py-1 text-xs font-semibold">
+                      {gig.category || 'No category'}
+                    </span>
                   </div>
-                  <div className="text-xs text-gray-600 line-clamp-2" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'}}>
-                    {gig.description || 'No description'}
+                  <div 
+                    className="text-sm text-gray-600 line-clamp-3 flex-grow" 
+                    style={{
+                      display: '-webkit-box', 
+                      WebkitLineClamp: 3, 
+                      WebkitBoxOrient: 'vertical', 
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {gig.description || 'No description available'}
                   </div>
                 </div>
               ))}
@@ -1040,14 +1036,17 @@ const UploadContacts = () => {
       )}
 
       {/* Upload Section */}
-      <div className="rounded-lg bg-white p-6 shadow" data-file-upload>
-        <div className="flex items-center justify-between">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6" data-file-upload>
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-lg font-medium text-gray-900">Import Contacts</h3>
-            <p className="mt-1 text-sm text-gray-500">Upload your contacts from a CSV or Excel file</p>
+            <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+              <Upload className="mr-2 h-5 w-5 text-indigo-600" />
+              Import Contacts
+            </h3>
+            <p className="mt-1 text-sm text-gray-600">Upload your contacts from a CSV or Excel file</p>
           </div>
           <button 
-            className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+            className="text-sm font-medium text-indigo-600 hover:text-indigo-500 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg transition-colors duration-200"
             onClick={() => {
               // Create a sample CSV template
               const headers = ['Email', 'Phone', 'Lead Name', 'Stage', 'Pipeline', 'Project Tags'];
@@ -1068,12 +1067,14 @@ const UploadContacts = () => {
         </div>
 
         <div className="mt-4">
-          <div className="rounded-lg border-2 border-dashed border-gray-300 p-6">
+          <div className="rounded-xl border-2 border-dashed border-gray-300 p-8 hover:border-indigo-400 transition-colors duration-200">
             <div className="text-center">
-              <Upload className="mx-auto h-12 w-12 text-gray-400" />
+              <div className="mx-auto h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
+                <Upload className="h-8 w-8 text-indigo-600" />
+              </div>
               <div className="mt-4">
                 <label htmlFor="file-upload" className="cursor-pointer">
-                  <span className="mt-2 block text-sm font-medium text-indigo-600">
+                  <span className="mt-2 block text-lg font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200">
                     {isProcessing ? 'Processing...' : 'Click to upload'}
                   </span>
                   <input
@@ -1085,14 +1086,14 @@ const UploadContacts = () => {
                     disabled={isProcessing}
                   />
                 </label>
-                <p className="mt-1 text-xs text-gray-500">CSV, Excel files up to 10MB</p>
+                <p className="mt-2 text-sm text-gray-500">CSV, Excel files up to 10MB</p>
               </div>
             </div>
             {selectedFile && showFileName && (
-              <div className="mt-4">
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center">
-                    <FileText className="mr-2 h-4 w-4 text-gray-400" />
+                    <FileText className="mr-2 h-4 w-4 text-indigo-500" />
                     <span className="font-medium text-gray-900">{selectedFile.name}</span>
                   </div>
                   <button onClick={() => {
@@ -1102,15 +1103,15 @@ const UploadContacts = () => {
                     setUploadSuccess(false);
                     setParsedLeads([]);
                   }}>
-                    <X className="h-4 w-4 text-gray-400" />
+                    <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
                   </button>
                 </div>
-                <div className="mt-2">
+                <div className="mt-3">
                   <div className="relative">
-                    <div className="h-2 rounded-full bg-gray-200">
+                    <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
                       <div
-                        className={`h-2 rounded-full transition-all duration-500 ${
-                          uploadError ? 'bg-red-600' : uploadSuccess ? 'bg-green-600' : 'bg-indigo-600'
+                        className={`h-3 rounded-full transition-all duration-500 ${
+                          uploadError ? 'bg-red-500' : uploadSuccess ? 'bg-green-500' : 'bg-gradient-to-r from-indigo-500 to-purple-500'
                         }`}
                         style={{ width: `${uploadProgress}%` }}
                       />
@@ -1121,22 +1122,22 @@ const UploadContacts = () => {
                     <span>{Math.round(selectedFile.size / 1024)} KB</span>
                   </div>
                   {uploadError && (
-                    <div className="mt-2 text-sm text-red-600">
+                    <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
                       {uploadError}
                     </div>
                   )}
                   {uploadSuccess && (
-                    <div className="mt-2 text-sm text-green-600">
+                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-600">
                       File uploaded successfully!
                     </div>
                   )}
                   {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
                     <button
-                      className="mt-4 w-full rounded bg-indigo-600 px-4 py-2 text-white font-semibold hover:bg-indigo-700 disabled:opacity-50"
+                      className="mt-4 w-full rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 text-white font-semibold hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 transition-all duration-200 transform hover:scale-105"
                       onClick={handleSaveLeads}
                       disabled={isProcessing}
                     >
-                      Save
+                      Save {parsedLeads.length} Contacts
                     </button>
                   )}
                 </div>
@@ -1147,9 +1148,12 @@ const UploadContacts = () => {
       </div>
 
       {/* Channel Filter */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h3 className="text-lg font-medium text-gray-900">Channel Filter</h3>
-        <div className="mt-4 flex flex-wrap gap-3">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+        <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+          <Globe className="mr-2 h-5 w-5 text-indigo-600" />
+          Channel Filter
+        </h3>
+        <div className="flex flex-wrap gap-3">
           {channels.map((channel) => {
             const Icon = channel.icon;
             const isSelected = selectedChannels.includes(channel.id);
@@ -1157,10 +1161,10 @@ const UploadContacts = () => {
             return (
               <button
                 key={channel.id}
-                className={`flex items-center space-x-2 rounded-full px-4 py-2 text-sm font-medium ${
+                className={`flex items-center space-x-2 rounded-full px-4 py-3 text-sm font-medium transition-all duration-200 transform hover:scale-105 ${
                   isSelected
-                    ? 'bg-indigo-100 text-indigo-700'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
                 }`}
                 onClick={() => toggleChannel(channel.id)}
               >
@@ -1173,31 +1177,31 @@ const UploadContacts = () => {
       </div>
 
       {/* Contact List */}
-      <div className="rounded-lg bg-white shadow">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100">
         <div className="border-b border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-medium text-gray-900">Leads List</h3>
-              {!selectedGigId ? (
-                <p className="mt-1 text-sm text-gray-500">
-                  Please select a gig to view leads
-                </p>
-              ) : (
-                <>
-                  <p className="mt-1 text-sm font-medium text-indigo-600">
-                    {gigs.find(gig => gig._id === selectedGigId)?.title || 'Selected Gig'}
-                  </p>
-                  {leads.length > 0 ? (
-                    <p className="mt-1 text-sm text-gray-500">
-                      Showing {leads.length} leads (Page {currentPage} of {totalPages})
-                    </p>
-                  ) : (
-                    <p className="mt-1 text-sm text-gray-500">
-                      No leads found
-                    </p>
-                  )}
-                </>
-              )}
+              <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+                <Users className="mr-2 h-5 w-5 text-indigo-600" />
+                Leads List
+              </h3>
+              <div className="mt-2">
+                {selectedGigId ? (
+                  <div className="text-sm text-gray-600">
+                    {leads.length > 0 ? (
+                      <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium">
+                        Showing {leads.length} leads on page {currentPage} of {totalPages} (Total: {totalCount})
+                      </span>
+                    ) : (
+                      <span className="bg-gray-50 text-gray-600 px-3 py-1 rounded-full text-xs font-medium">
+                        No leads found
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Please select a gig to view leads</p>
+                )}
+              </div>
             </div>
             <div className="flex items-center space-x-3">
               <div className="relative">
@@ -1206,14 +1210,14 @@ const UploadContacts = () => {
                 </div>
                 <input
                   type="text"
-                  className="block w-full rounded-md border-gray-300 pl-10 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  className="block w-full rounded-lg border-gray-300 pl-10 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm shadow-sm"
                   placeholder="Search leads..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
               <select
-                className="rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                className="rounded-lg border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm shadow-sm"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
@@ -1223,8 +1227,8 @@ const UploadContacts = () => {
               </select>
               <button
                 onClick={() => fetchLeads()}
-                className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                disabled={isLoadingLeads}
+                className="flex items-center rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-indigo-600 hover:to-purple-600 transition-all duration-200 transform hover:scale-105"
+                disabled={isLoadingLeads || !selectedGigId}
               >
                 {isLoadingLeads ? (
                   <>
@@ -1241,165 +1245,177 @@ const UploadContacts = () => {
             </div>
           </div>
         </div>
-
+        {/* Tableau d'affichage des leads */}
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Lead
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Lead Name
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Stage
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Pipeline
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Last Activity
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {error ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-red-500">
-                    {error}
-                  </td>
-                </tr>
-              ) : isLoadingLeads ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
-                    Loading leads...
-                  </td>
-                </tr>
-              ) : leads.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
-                    No leads found
-                  </td>
-                </tr>
-              ) : (
-                leads.map((lead) => (
-                  <tr key={lead._id}>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 flex-shrink-0 rounded-full bg-indigo-100 flex items-center justify-center">
-                          <Users className="h-6 w-6 text-indigo-600" />
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'No Email'}</div>
-                          <div className="text-sm text-gray-500">{lead.Phone || 'No Phone'}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                      {lead.Deal_Name || 'N/A'}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-800">
-                        {lead.Stage || 'N/A'}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                      {lead.Pipeline || 'N/A'}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                      {lead.updatedAt ? new Date(lead.updatedAt).toLocaleDateString() : 'N/A'}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                      <button className="mr-2 text-indigo-600 hover:text-indigo-900">
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button className="text-red-600 hover:text-red-900">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
+          <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
+            <div className="relative">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
+                      Lead
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
+                      Lead Name
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
+                      Stage
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
+                      Pipeline
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
+                      Last Activity
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
+                      Actions
+                    </th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination Controls */}
-        <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-          <div className="flex flex-1 justify-between sm:hidden">
-            <button
-              onClick={() => fetchLeads(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => fetchLeads(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-gray-700">
-                Showing page <span className="font-medium">{currentPage}</span> of{' '}
-                <span className="font-medium">{totalPages}</span>
-              </p>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {error ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-red-500">
+                        {error}
+                      </td>
+                    </tr>
+                  ) : isLoadingLeads ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                        <div className="flex items-center justify-center py-8">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mr-3"></div>
+                          Loading leads...
+                        </div>
+                      </td>
+                    </tr>
+                  ) : leads.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                        <div className="flex flex-col items-center justify-center py-8">
+                          <Users className="h-12 w-12 text-gray-300 mb-2" />
+                          <p>No leads found</p>
+                          <p className="text-xs text-gray-400 mt-1">Try importing some leads or check your filters</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    leads.map((lead, index) => (
+                      <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <div className="flex items-center">
+                            <div className="h-10 w-10 flex-shrink-0 rounded-full bg-indigo-100 flex items-center justify-center">
+                              <Users className="h-6 w-6 text-indigo-600" />
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'No Email'}</div>
+                              <div className="text-sm text-gray-500">{lead.Phone || 'No Phone'}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                          {lead.Deal_Name || 'N/A'}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-800">
+                            {lead.Stage || 'N/A'}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                          {lead.Pipeline || 'N/A'}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                          {lead.updatedAt ? new Date(lead.updatedAt).toLocaleDateString() : 'N/A'}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                          <div className="flex items-center justify-end space-x-2">
+                            <button className="text-indigo-600 hover:text-indigo-900 p-1 rounded-md hover:bg-indigo-50 transition-colors duration-150">
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button className="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50 transition-colors duration-150">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
-            <div>
-              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+          </div>
+        </div>
+        {/* Pagination Controls */}
+        {leads.length > 0 && totalPages > 1 && (
+          <div className="bg-white px-6 py-4 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center text-sm text-gray-700">
+                <span>
+                  Showing <span className="font-medium">{((currentPage - 1) * pageSize) + 1}</span> to{' '}
+                  <span className="font-medium">
+                    {Math.min(currentPage * pageSize, totalCount)}
+                  </span>{' '}
+                  of <span className="font-medium">{totalCount}</span> results
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
                 <button
                   onClick={() => fetchLeads(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                  className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span className="sr-only">Previous</span>
-                  <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
                 </button>
-                {renderPaginationButtons()}
+                <div className="flex items-center space-x-1">
+                  {renderPaginationButtons()}
+                </div>
                 <button
                   onClick={() => fetchLeads(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                  className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span className="sr-only">Next</span>
-                  <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                  Next
+                  <ChevronRight className="h-4 w-4" />
                 </button>
-              </nav>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Ajout d'une section pour afficher les leads en temps réel */}
       {realtimeLeads.length > 0 && (
-        <div className="rounded-lg bg-white p-6 shadow">
-          <h3 className="text-lg font-medium text-gray-900">Leads en temps réel</h3>
-          <p className="mt-1 text-sm text-gray-500">Nombre de leads reçus: {realtimeLeads.length}</p>
-          <div className="mt-4 max-h-60 overflow-y-auto">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+          <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <RefreshCw className="mr-2 h-5 w-5 text-green-600 animate-spin" />
+            Leads en temps réel
+          </h3>
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-4">
+            <p className="text-sm font-medium text-green-700">
+              Nombre de leads reçus: <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">{realtimeLeads.length}</span>
+            </p>
+          </div>
+          <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
             <div className="min-w-full divide-y divide-gray-200">
-              <div className="bg-gray-50">
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 sticky top-0">
                 <div className="grid grid-cols-4 px-6 py-3">
-                  <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</div>
-                  <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Téléphone</div>
-                  <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lead</div>
-                  <div className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</div>
+                  <div className="text-left text-xs font-semibold text-indigo-700 uppercase tracking-wider">Email</div>
+                  <div className="text-left text-xs font-semibold text-indigo-700 uppercase tracking-wider">Téléphone</div>
+                  <div className="text-left text-xs font-semibold text-indigo-700 uppercase tracking-wider">Lead</div>
+                  <div className="text-left text-xs font-semibold text-indigo-700 uppercase tracking-wider">Stage</div>
                 </div>
               </div>
-              <div className="bg-white divide-y divide-gray-200">
+              <div className="bg-white divide-y divide-gray-100">
                 {realtimeLeads.map((lead, index) => (
-                  <div key={index} className="grid grid-cols-4 px-6 py-4">
-                    <div className="text-sm text-gray-900">{lead.Email_1 || 'N/A'}</div>
-                    <div className="text-sm text-gray-900">{lead.Phone || 'N/A'}</div>
-                    <div className="text-sm text-gray-900">{lead.Deal_Name || 'N/A'}</div>
-                    <div className="text-sm text-gray-900">{lead.Stage || 'N/A'}</div>
+                  <div key={index} className="grid grid-cols-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
+                    <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'N/A'}</div>
+                    <div className="text-sm text-gray-700">{lead.Phone || 'N/A'}</div>
+                    <div className="text-sm text-gray-700">{lead.Deal_Name || 'N/A'}</div>
+                    <div className="text-sm">
+                      <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-800 px-2.5 py-0.5 text-xs font-medium">
+                        {lead.Stage || 'N/A'}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
