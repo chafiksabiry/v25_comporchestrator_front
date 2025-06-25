@@ -1289,6 +1289,93 @@ const UploadContacts = () => {
             </div>
           </div>
         </div>
+        {/* Tableau d'affichage des leads */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Lead
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Lead Name
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Stage
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Pipeline
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Last Activity
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
+              {error ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-red-500">
+                    {error}
+                  </td>
+                </tr>
+              ) : isLoadingLeads ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                    Loading leads...
+                  </td>
+                </tr>
+              ) : leads.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                    No leads found
+                  </td>
+                </tr>
+              ) : (
+                leads.map((lead) => (
+                  <tr key={lead._id}>
+                    <td className="whitespace-nowrap px-6 py-4">
+                      <div className="flex items-center">
+                        <div className="h-10 w-10 flex-shrink-0 rounded-full bg-indigo-100 flex items-center justify-center">
+                          <Users className="h-6 w-6 text-indigo-600" />
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'No Email'}</div>
+                          <div className="text-sm text-gray-500">{lead.Phone || 'No Phone'}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                      {lead.Deal_Name || 'N/A'}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4">
+                      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-800">
+                        {lead.Stage || 'N/A'}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                      {lead.Pipeline || 'N/A'}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                      {lead.updatedAt ? new Date(lead.updatedAt).toLocaleDateString() : 'N/A'}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                      <button className="mr-2 text-indigo-600 hover:text-indigo-900">
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button className="text-red-600 hover:text-red-900">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        {/* Pagination Controls ici si besoin */}
       </div>
 
       {/* Ajout d'une section pour afficher les leads en temps réel */}
