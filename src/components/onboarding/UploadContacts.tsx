@@ -2,11 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   Upload,
   FileText,
-  CheckCircle,
-  AlertCircle,
   Download,
   RefreshCw,
-  Filter,
   Search,
   Trash2,
   Edit,
@@ -20,8 +17,6 @@ import {
   Linkedin,
   Youtube,
   Globe,
-  Settings,
-  Plus,
   X,
   Database,
   ChevronLeft,
@@ -97,7 +92,6 @@ const UploadContacts = () => {
   const [hasZohoAccessToken, setHasZohoAccessToken] = useState(false);
   const [showImportChoiceModal, setShowImportChoiceModal] = useState(false);
   const [selectedImportChoice, setSelectedImportChoice] = useState<'zoho' | 'file' | null>(null);
-  const [showGigsList, setShowGigsList] = useState(false);
 
   const channels = [
     { id: 'all', name: 'All Channels', icon: Globe },
@@ -510,46 +504,6 @@ const UploadContacts = () => {
       console.log('✅ Configuration Zoho trouvée - Pas besoin d\'afficher la modal');
     }
   }, [hasZohoConfig]);
-
-  const handleZohoConfig = async () => {
-    try {
-      const userId = Cookies.get('userId');
-      const companyId = Cookies.get('companyId');
-      console.log('Configuring Zoho with userId:', userId);
-      console.log('Zoho config data:', zohoConfig);
-
-      if (!companyId) {
-        throw new Error('Company ID not found in cookies');
-      }
-
-      const configResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/configure`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Cookies.get('gigId')}:${userId}`
-        },
-        body: JSON.stringify({
-          ...zohoConfig,
-          userId,
-          companyId
-        })
-      });
-
-      console.log('Config response status:', configResponse.status);
-      const data = await configResponse.json();
-      console.log('Config response data:', data);
-
-      if (configResponse.status === 200) {
-        setHasZohoConfig(true);
-        toast.success('Zoho CRM configuration saved successfully');
-      } else {
-        throw new Error(data.message || 'Error configuring Zoho CRM');
-      }
-    } catch (error: any) {
-      console.error('Error in handleZohoConfig:', error);
-      toast.error(error.message || 'Error configuring Zoho CRM');
-    }
-  };
 
   const handleImportFromZoho = async () => {
     setIsImportingZoho(true);
@@ -989,7 +943,7 @@ const UploadContacts = () => {
           <button
             onClick={async () => {
               if (!selectedGigId) {
-                setShowGigsList(true);
+                toast.error('Please select a gig first');
                 return;
               }
               await handleImportFromZoho();
@@ -1000,44 +954,8 @@ const UploadContacts = () => {
             <Download className="mr-2 h-4 w-4" />
             Import from Zoho
           </button>
-          <button
-            onClick={() => setShowGigsList((prev) => !prev)}
-            className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-          >
-            {showGigsList ? 'Hide gigs' : 'Show gigs'}
-          </button>
         </div>
       </div>
-
-            {/* Gigs List Section - now just below the action bar */}
-            {showGigsList && (
-        <div className="rounded-lg bg-white p-6 shadow mt-4 mb-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Gigs List</h3>
-          {gigs.length === 0 ? (
-            <p className="text-gray-500">No gigs available.</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {gigs.map((gig) => (
-                <div
-                  key={gig._id}
-                  className={`cursor-pointer rounded-lg border p-4 shadow-sm flex flex-col transition-all duration-150 hover:shadow-md hover:border-indigo-400 ${selectedGigId === gig._id ? 'border-indigo-600 ring-2 ring-indigo-200 bg-indigo-50' : 'border-gray-200 bg-white'}`}
-                  onClick={() => setSelectedGigId(gig._id)}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`font-semibold text-base ${selectedGigId === gig._id ? 'text-indigo-700' : 'text-gray-900'}`}>{gig.title}</span>
-                  </div>
-                  <div className="mb-1">
-                    <span className="inline-block rounded bg-indigo-100 text-indigo-700 px-2 py-0.5 text-xs font-medium">{gig.category || 'No category'}</span>
-                  </div>
-                  <div className="text-xs text-gray-600 line-clamp-2" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'}}>
-                    {gig.description || 'No description'}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Upload Section */}
       <div className="rounded-lg bg-white p-6 shadow" data-file-upload>
@@ -1178,26 +1096,36 @@ const UploadContacts = () => {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-medium text-gray-900">Leads List</h3>
-              {!selectedGigId ? (
-                <p className="mt-1 text-sm text-gray-500">
-                  Please select a gig to view leads
-                </p>
-              ) : (
-                <>
-                  <p className="mt-1 text-sm font-medium text-indigo-600">
-                    {gigs.find(gig => gig._id === selectedGigId)?.title || 'Selected Gig'}
-                  </p>
-                  {leads.length > 0 ? (
-                    <p className="mt-1 text-sm text-gray-500">
-                      Showing {leads.length} leads (Page {currentPage} of {totalPages})
-                    </p>
-                  ) : (
-                    <p className="mt-1 text-sm text-gray-500">
-                      No leads found
-                    </p>
-                  )}
-                </>
-              )}
+              <div className="mt-2 flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <label htmlFor="gig-select" className="text-sm font-medium text-gray-700">
+                    Select Gig:
+                  </label>
+                  <select
+                    id="gig-select"
+                    className="rounded-md border-gray-300 py-1 pl-3 pr-8 text-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                    value={selectedGigId}
+                    onChange={(e) => setSelectedGigId(e.target.value)}
+                    disabled={isLoadingGigs}
+                  >
+                    <option value="">Select a gig...</option>
+                    {gigs.map((gig) => (
+                      <option key={gig._id} value={gig._id}>
+                        {gig.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {selectedGigId && (
+                  <div className="text-sm text-gray-500">
+                    {leads.length > 0 ? (
+                      <span>Showing {leads.length} leads (Page {currentPage} of {totalPages})</span>
+                    ) : (
+                      <span>No leads found</span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center space-x-3">
               <div className="relative">
@@ -1224,7 +1152,7 @@ const UploadContacts = () => {
               <button
                 onClick={() => fetchLeads()}
                 className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                disabled={isLoadingLeads}
+                disabled={isLoadingLeads || !selectedGigId}
               >
                 {isLoadingLeads ? (
                   <>
