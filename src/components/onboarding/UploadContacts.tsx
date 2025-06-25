@@ -336,7 +336,6 @@ const UploadContacts = () => {
       if (response.status === 200) {
         setUploadSuccess(true);
         setUploadProgress(100);
-        toast.success(`Successfully uploaded ${parsedLeads.length} contacts!`);
         
         // Rafraîchir la liste des leads après l'importation
         if (selectedGigId) {
@@ -576,7 +575,6 @@ const UploadContacts = () => {
       // Vérifier si data.data et data.data.leads existent
       if (!data.data || !Array.isArray(data.data.leads)) {
         console.warn(`No leads found for gig ${selectedGig.title}`);
-        toast.success(`Aucun lead trouvé pour le gig ${selectedGig.title}`);
         setRealtimeLeads([]);
         setParsedLeads([]);
         // Refresh automatique même si aucun lead trouvé
@@ -591,9 +589,6 @@ const UploadContacts = () => {
       setRealtimeLeads(leads);
       setParsedLeads(leads);
 
-      // Afficher le succès
-      toast.success(`Importation réussie pour ${selectedGig.title}: ${leads.length} leads importés`);
-      
       // Refresh automatique de la liste des leads après l'importation
       await fetchLeads();
 
@@ -863,7 +858,6 @@ const UploadContacts = () => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data.zohoConnected) {
         console.log('Received zohoConnected message');
-        toast.success('Zoho connection successful');
         setHasZohoConfig(true);
       }
     };
@@ -1349,16 +1343,6 @@ const UploadContacts = () => {
               </table>
             </div>
           </div>
-          {/* Scroll indicator */}
-          {leads.length > 8 && (
-            <div className="text-center py-2 bg-gray-50 border-t border-gray-200">
-              <div className="flex items-center justify-center text-xs text-gray-500">
-                <ChevronUp className="h-3 w-3 mr-1" />
-                <span>Scroll to see all {leads.length} leads</span>
-                <ChevronDown className="h-3 w-3 ml-1" />
-              </div>
-            </div>
-          )}
         </div>
         {/* Pagination Controls */}
         {leads.length > 0 && totalPages > 1 && (
