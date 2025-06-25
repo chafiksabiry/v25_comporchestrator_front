@@ -20,7 +20,9 @@ import {
   X,
   Database,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -92,6 +94,7 @@ const UploadContacts = () => {
   const [hasZohoAccessToken, setHasZohoAccessToken] = useState(false);
   const [showImportChoiceModal, setShowImportChoiceModal] = useState(false);
   const [selectedImportChoice, setSelectedImportChoice] = useState<'zoho' | 'file' | null>(null);
+  const [showGigsSection, setShowGigsSection] = useState(true);
 
   const channels = [
     { id: 'all', name: 'All Channels', icon: Globe },
@@ -928,8 +931,87 @@ const UploadContacts = () => {
         </div>
       </div>
 
-              {/* Gigs Selection Cards */}
-              <div className="p-6 border-b border-gray-200">
+      {/* Gigs Selection Cards */}
+      <div className="border-b border-gray-200 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900">Leads List</h3>
+            <div className="mt-2">
+              {selectedGigId ? (
+                <div className="text-sm text-gray-500">
+                  {leads.length > 0 ? (
+                    <span>Showing {leads.length} leads (Page {currentPage} of {totalPages})</span>
+                  ) : (
+                    <span>No leads found</span>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">Please select a gig to view leads</p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setShowGigsSection(!showGigsSection)}
+              className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+            >
+              {showGigsSection ? (
+                <>
+                  <ChevronUp className="mr-2 h-4 w-4" />
+                  Hide Gigs
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="mr-2 h-4 w-4" />
+                  Show Gigs
+                </>
+              )}
+            </button>
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                className="block w-full rounded-md border-gray-300 pl-10 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                placeholder="Search leads..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <select
+              className="rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            <button
+              onClick={() => fetchLeads()}
+              className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+              disabled={isLoadingLeads || !selectedGigId}
+            >
+              {isLoadingLeads ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Refresh
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Gigs Selection Cards */}
+      {showGigsSection && (
+        <div className="p-6 border-b border-gray-200">
           <h4 className="text-sm font-medium text-gray-900 mb-4">Select a Gig</h4>
           {isLoadingGigs ? (
             <div className="flex items-center justify-center py-8">
@@ -978,6 +1060,7 @@ const UploadContacts = () => {
             </div>
           )}
         </div>
+      )}
 
       {/* Upload Section */}
       <div className="rounded-lg bg-white p-6 shadow" data-file-upload>
@@ -1114,67 +1197,6 @@ const UploadContacts = () => {
 
       {/* Contact List */}
       <div className="rounded-lg bg-white shadow">
-        <div className="border-b border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-medium text-gray-900">Leads List</h3>
-              <div className="mt-2">
-                {selectedGigId ? (
-                  <div className="text-sm text-gray-500">
-                    {leads.length > 0 ? (
-                      <span>Showing {leads.length} leads (Page {currentPage} of {totalPages})</span>
-                    ) : (
-                      <span>No leads found</span>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500">Please select a gig to view leads</p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Search className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  className="block w-full rounded-md border-gray-300 pl-10 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  placeholder="Search leads..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <select
-                className="rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-              <button
-                onClick={() => fetchLeads()}
-                className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                disabled={isLoadingLeads || !selectedGigId}
-              >
-                {isLoadingLeads ? (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Refresh
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
