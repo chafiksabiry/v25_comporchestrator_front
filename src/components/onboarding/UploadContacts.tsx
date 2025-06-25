@@ -572,10 +572,7 @@ const UploadContacts = () => {
       // Vérifier si data.data et data.data.leads existent
       if (!data.data || !Array.isArray(data.data.leads)) {
         console.warn(`No leads found for gig ${selectedGig.title}`);
-        toast(`Aucun lead trouvé pour le gig ${selectedGig.title}`, {
-          icon: 'ℹ️',
-          duration: 3000
-        });
+        toast.success(`Aucun lead trouvé pour le gig ${selectedGig.title}`);
         setRealtimeLeads([]);
         setParsedLeads([]);
         return;
@@ -1070,27 +1067,8 @@ const UploadContacts = () => {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-medium text-gray-900">Leads List</h3>
-              <div className="mt-2 flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <label htmlFor="gig-select" className="text-sm font-medium text-gray-700">
-                    Select Gig:
-                  </label>
-                  <select
-                    id="gig-select"
-                    className="rounded-md border-gray-300 py-1 pl-3 pr-8 text-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
-                    value={selectedGigId}
-                    onChange={(e) => setSelectedGigId(e.target.value)}
-                    disabled={isLoadingGigs}
-                  >
-                    <option value="">Select a gig...</option>
-                    {gigs.map((gig) => (
-                      <option key={gig._id} value={gig._id}>
-                        {gig.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {selectedGigId && (
+              <div className="mt-2">
+                {selectedGigId ? (
                   <div className="text-sm text-gray-500">
                     {leads.length > 0 ? (
                       <span>Showing {leads.length} leads (Page {currentPage} of {totalPages})</span>
@@ -1098,6 +1076,8 @@ const UploadContacts = () => {
                       <span>No leads found</span>
                     )}
                   </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Please select a gig to view leads</p>
                 )}
               </div>
             </div>
@@ -1142,6 +1122,57 @@ const UploadContacts = () => {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Gigs Selection Cards */}
+        <div className="p-6 border-b border-gray-200">
+          <h4 className="text-sm font-medium text-gray-900 mb-4">Select a Gig</h4>
+          {isLoadingGigs ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+              <span className="ml-2 text-sm text-gray-500">Loading gigs...</span>
+            </div>
+          ) : gigs.length === 0 ? (
+            <p className="text-sm text-gray-500">No gigs available.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {gigs.map((gig) => (
+                <div
+                  key={gig._id}
+                  className={`cursor-pointer rounded-lg border p-4 shadow-sm flex flex-col transition-all duration-150 hover:shadow-md hover:border-indigo-400 ${
+                    selectedGigId === gig._id 
+                      ? 'border-indigo-600 ring-2 ring-indigo-200 bg-indigo-50' 
+                      : 'border-gray-200 bg-white'
+                  }`}
+                  onClick={() => setSelectedGigId(gig._id)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`font-semibold text-base ${
+                      selectedGigId === gig._id ? 'text-indigo-700' : 'text-gray-900'
+                    }`}>
+                      {gig.title}
+                    </span>
+                  </div>
+                  <div className="mb-1">
+                    <span className="inline-block rounded bg-indigo-100 text-indigo-700 px-2 py-0.5 text-xs font-medium">
+                      {gig.category || 'No category'}
+                    </span>
+                  </div>
+                  <div 
+                    className="text-xs text-gray-600 line-clamp-2" 
+                    style={{
+                      display: '-webkit-box', 
+                      WebkitLineClamp: 2, 
+                      WebkitBoxOrient: 'vertical', 
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {gig.description || 'No description'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="overflow-x-auto">
