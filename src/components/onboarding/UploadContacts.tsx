@@ -572,7 +572,10 @@ const UploadContacts = () => {
       // Vérifier si data.data et data.data.leads existent
       if (!data.data || !Array.isArray(data.data.leads)) {
         console.warn(`No leads found for gig ${selectedGig.title}`);
-        toast.info(`Aucun lead trouvé pour le gig ${selectedGig.title}`);
+        toast(`Aucun lead trouvé pour le gig ${selectedGig.title}`, {
+          icon: 'ℹ️',
+          duration: 3000
+        });
         setRealtimeLeads([]);
         setParsedLeads([]);
         return;
