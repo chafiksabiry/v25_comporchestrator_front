@@ -167,13 +167,13 @@ const GigDetails = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Gig Details</h2>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">
-            {gigs.length} gig{gigs.length !== 1 ? 's' : ''} found
-          </span>
           <button
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg shadow transition-colors duration-200"
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold px-5 py-2 rounded-full shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
             onClick={() => { window.location.href = '/app6'; }}
           >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
             Add gig
           </button>
         </div>
