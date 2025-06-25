@@ -88,6 +88,7 @@ const UploadContacts = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize] = useState(50);
+  const [totalCount, setTotalCount] = useState(0);
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
@@ -610,6 +611,7 @@ const UploadContacts = () => {
       setLeads([]);
       setTotalPages(0);
       setCurrentPage(1);
+      setTotalCount(0);
       return;
     }
 
@@ -645,6 +647,7 @@ const UploadContacts = () => {
       setLeads(responseData.data);
       setTotalPages(responseData.totalPages);
       setCurrentPage(responseData.currentPage);
+      setTotalCount(responseData.total);
     } catch (error: unknown) {
       console.error('Error fetching leads:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch leads';
@@ -680,7 +683,27 @@ const UploadContacts = () => {
 
   const renderPaginationButtons = () => {
     const buttons = [];
-    const maxVisiblePages = 4; // Nombre maximum de pages visibles
+    const maxVisiblePages = 5; // Nombre maximum de pages visibles
+
+    // Si le nombre total de pages est inférieur ou égal au maximum visible, afficher toutes les pages
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        buttons.push(
+          <button
+            key={i}
+            onClick={() => fetchLeads(i)}
+            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+              i === currentPage
+                ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+                : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+            }`}
+          >
+            {i}
+          </button>
+        );
+      }
+      return buttons;
+    }
 
     // Toujours afficher la première page
     buttons.push(
@@ -697,14 +720,14 @@ const UploadContacts = () => {
       </button>
     );
 
-    // Calculer les pages à afficher
+    // Calculer les pages à afficher autour de la page courante
     let startPage = Math.max(2, currentPage - 1);
     let endPage = Math.min(totalPages - 1, currentPage + 1);
 
     // Ajuster si on est proche du début ou de la fin
-    if (currentPage <= 2) {
+    if (currentPage <= 3) {
       endPage = Math.min(4, totalPages - 1);
-    } else if (currentPage >= totalPages - 1) {
+    } else if (currentPage >= totalPages - 2) {
       startPage = Math.max(2, totalPages - 3);
     }
 
@@ -1130,67 +1153,6 @@ const UploadContacts = () => {
         </div>
       </div>
 
-      {/* Gigs Selection Cards */}
-      <div className="border-b border-gray-200 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-medium text-gray-900">Leads List</h3>
-            <div className="mt-2">
-              {selectedGigId ? (
-                <div className="text-sm text-gray-500">
-                  {leads.length > 0 ? (
-                    <span>Showing {leads.length} leads (Page {currentPage} of {totalPages})</span>
-                  ) : (
-                    <span>No leads found</span>
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">Please select a gig to view leads</p>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            <div className="relative">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <Search className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                className="block w-full rounded-md border-gray-300 pl-10 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                placeholder="Search leads..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <select
-              className="rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-            <button
-              onClick={() => fetchLeads()}
-              className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-              disabled={isLoadingLeads || !selectedGigId}
-            >
-              {isLoadingLeads ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Loading...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Refresh
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
       {/* Channel Filter */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
         <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
@@ -1234,7 +1196,7 @@ const UploadContacts = () => {
                   <div className="text-sm text-gray-600">
                     {leads.length > 0 ? (
                       <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium">
-                        Showing {leads.length} leads (Page {currentPage} of {totalPages})
+                        Showing {leads.length} leads on page {currentPage} of {totalPages} (Total: {totalCount})
                       </span>
                     ) : (
                       <span className="bg-gray-50 text-gray-600 px-3 py-1 rounded-full text-xs font-medium">
@@ -1375,7 +1337,43 @@ const UploadContacts = () => {
             </tbody>
           </table>
         </div>
-        {/* Pagination Controls ici si besoin */}
+        {/* Pagination Controls */}
+        {leads.length > 0 && totalPages > 1 && (
+          <div className="bg-white px-6 py-4 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center text-sm text-gray-700">
+                <span>
+                  Showing <span className="font-medium">{((currentPage - 1) * pageSize) + 1}</span> to{' '}
+                  <span className="font-medium">
+                    {Math.min(currentPage * pageSize, totalCount)}
+                  </span>{' '}
+                  of <span className="font-medium">{totalCount}</span> results
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => fetchLeads(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </button>
+                <div className="flex items-center space-x-1">
+                  {renderPaginationButtons()}
+                </div>
+                <button
+                  onClick={() => fetchLeads(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Ajout d'une section pour afficher les leads en temps réel */}
