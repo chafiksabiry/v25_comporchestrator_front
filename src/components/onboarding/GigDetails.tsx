@@ -76,6 +76,14 @@ const GigDetails = () => {
   }, [companyId]);
 
   const getStatusColor = (status: string) => {
+    if (!status) {
+      return {
+        bg: 'bg-gradient-to-r from-gray-400 to-gray-600',
+        text: 'text-white',
+        border: 'border-gray-500'
+      };
+    }
+    
     switch (status.toLowerCase()) {
       case 'active':
         return {
@@ -125,16 +133,20 @@ const GigDetails = () => {
   };
 
   const formatCommission = (commission: Gig['commission']) => {
+    if (!commission) return 'Not specified';
+    
     if (commission.transactionCommission?.amount) {
-      return `${commission.transactionCommission.amount} ${commission.currency}`;
+      return `${commission.transactionCommission.amount} ${commission.currency || 'EUR'}`;
     }
     if (commission.bonusAmount) {
-      return `${commission.bonusAmount} ${commission.currency}`;
+      return `${commission.bonusAmount} ${commission.currency || 'EUR'}`;
     }
-    return commission.base;
+    return commission.base || 'Not specified';
   };
 
   const getAvailabilityText = (availability: Gig['availability']) => {
+    if (!availability) return 'Not specified';
+    
     if (availability.schedule && availability.schedule.length > 0) {
       const days = availability.schedule.length;
       return `${days} day${days > 1 ? 's' : ''}/week`;
@@ -221,17 +233,17 @@ const GigDetails = () => {
                     lineHeight: '1.4',
                     maxHeight: '4.2em'
                   }}>
-                    {gig.description}
+                    {gig.description || 'No description available'}
                   </p>
                   
                   {/* Key Info Grid */}
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     {/* Seniority */}
-                    {gig.seniority && (
+                    {gig.seniority && gig.seniority.level && (
                       <div className="bg-white/10 rounded-lg p-3">
                         <div className="text-white/70 text-xs font-medium mb-1">Seniority</div>
                         <div className="text-white text-sm font-semibold">
-                          {gig.seniority.level} ({gig.seniority.yearsExperience}y)
+                          {gig.seniority.level} ({gig.seniority.yearsExperience || '0'}y)
                         </div>
                       </div>
                     )}
@@ -257,7 +269,7 @@ const GigDetails = () => {
                     )}
                     
                     {/* Team Size */}
-                    {gig.team && (
+                    {gig.team && gig.team.size && (
                       <div className="bg-white/10 rounded-lg p-3">
                         <div className="text-white/70 text-xs font-medium mb-1">Team Size</div>
                         <div className="text-white text-sm font-semibold">
@@ -273,7 +285,7 @@ const GigDetails = () => {
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      {new Date(gig.createdAt).toLocaleDateString()}
+                      {gig.createdAt ? new Date(gig.createdAt).toLocaleDateString() : 'Date unknown'}
                     </div>
                     
                     <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-lg text-xs font-medium">
