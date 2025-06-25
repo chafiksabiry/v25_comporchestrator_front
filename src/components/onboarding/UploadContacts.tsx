@@ -928,6 +928,57 @@ const UploadContacts = () => {
         </div>
       </div>
 
+              {/* Gigs Selection Cards */}
+              <div className="p-6 border-b border-gray-200">
+          <h4 className="text-sm font-medium text-gray-900 mb-4">Select a Gig</h4>
+          {isLoadingGigs ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+              <span className="ml-2 text-sm text-gray-500">Loading gigs...</span>
+            </div>
+          ) : gigs.length === 0 ? (
+            <p className="text-sm text-gray-500">No gigs available.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {gigs.map((gig) => (
+                <div
+                  key={gig._id}
+                  className={`cursor-pointer rounded-lg border p-4 shadow-sm flex flex-col transition-all duration-150 hover:shadow-md hover:border-indigo-400 ${
+                    selectedGigId === gig._id 
+                      ? 'border-indigo-600 ring-2 ring-indigo-200 bg-indigo-50' 
+                      : 'border-gray-200 bg-white'
+                  }`}
+                  onClick={() => setSelectedGigId(gig._id)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`font-semibold text-base ${
+                      selectedGigId === gig._id ? 'text-indigo-700' : 'text-gray-900'
+                    }`}>
+                      {gig.title}
+                    </span>
+                  </div>
+                  <div className="mb-1">
+                    <span className="inline-block rounded bg-indigo-100 text-indigo-700 px-2 py-0.5 text-xs font-medium">
+                      {gig.category || 'No category'}
+                    </span>
+                  </div>
+                  <div 
+                    className="text-xs text-gray-600 line-clamp-2" 
+                    style={{
+                      display: '-webkit-box', 
+                      WebkitLineClamp: 2, 
+                      WebkitBoxOrient: 'vertical', 
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {gig.description || 'No description'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
       {/* Upload Section */}
       <div className="rounded-lg bg-white p-6 shadow" data-file-upload>
         <div className="flex items-center justify-between">
@@ -1122,57 +1173,6 @@ const UploadContacts = () => {
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Gigs Selection Cards */}
-        <div className="p-6 border-b border-gray-200">
-          <h4 className="text-sm font-medium text-gray-900 mb-4">Select a Gig</h4>
-          {isLoadingGigs ? (
-            <div className="flex items-center justify-center py-8">
-              <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
-              <span className="ml-2 text-sm text-gray-500">Loading gigs...</span>
-            </div>
-          ) : gigs.length === 0 ? (
-            <p className="text-sm text-gray-500">No gigs available.</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {gigs.map((gig) => (
-                <div
-                  key={gig._id}
-                  className={`cursor-pointer rounded-lg border p-4 shadow-sm flex flex-col transition-all duration-150 hover:shadow-md hover:border-indigo-400 ${
-                    selectedGigId === gig._id 
-                      ? 'border-indigo-600 ring-2 ring-indigo-200 bg-indigo-50' 
-                      : 'border-gray-200 bg-white'
-                  }`}
-                  onClick={() => setSelectedGigId(gig._id)}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`font-semibold text-base ${
-                      selectedGigId === gig._id ? 'text-indigo-700' : 'text-gray-900'
-                    }`}>
-                      {gig.title}
-                    </span>
-                  </div>
-                  <div className="mb-1">
-                    <span className="inline-block rounded bg-indigo-100 text-indigo-700 px-2 py-0.5 text-xs font-medium">
-                      {gig.category || 'No category'}
-                    </span>
-                  </div>
-                  <div 
-                    className="text-xs text-gray-600 line-clamp-2" 
-                    style={{
-                      display: '-webkit-box', 
-                      WebkitLineClamp: 2, 
-                      WebkitBoxOrient: 'vertical', 
-                      overflow: 'hidden'
-                    }}
-                  >
-                    {gig.description || 'No description'}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         <div className="overflow-x-auto">
