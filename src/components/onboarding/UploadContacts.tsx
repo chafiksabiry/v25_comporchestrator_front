@@ -928,6 +928,22 @@ const UploadContacts = () => {
             <Download className="mr-2 h-4 w-4" />
             Import from Zoho
           </button>
+          <button
+            onClick={() => setShowGigsSection(!showGigsSection)}
+            className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          >
+            {showGigsSection ? (
+              <>
+                <ChevronUp className="mr-2 h-4 w-4" />
+                Hide Gigs
+              </>
+            ) : (
+              <>
+                <ChevronDown className="mr-2 h-4 w-4" />
+                Show Gigs
+              </>
+            )}
+          </button>
         </div>
       </div>
 
@@ -951,22 +967,6 @@ const UploadContacts = () => {
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            <button
-              onClick={() => setShowGigsSection(!showGigsSection)}
-              className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-            >
-              {showGigsSection ? (
-                <>
-                  <ChevronUp className="mr-2 h-4 w-4" />
-                  Hide Gigs
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="mr-2 h-4 w-4" />
-                  Show Gigs
-                </>
-              )}
-            </button>
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                 <Search className="h-5 w-5 text-gray-400" />
