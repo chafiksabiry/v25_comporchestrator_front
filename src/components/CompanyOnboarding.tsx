@@ -303,11 +303,7 @@ const CompanyOnboarding = () => {
       
       // Special handling for Knowledge Base step
       if (stepId === 7) {
-        if (completedSteps.includes(stepId)) {
           window.location.replace(import.meta.env.VITE_KNOWLEDGE_BASE_URL);
-        } else {
-          window.location.replace(`${import.meta.env.VITE_KNOWLEDGE_BASE_URL}/upload`);
-        }
         return;
       }
       
@@ -605,8 +601,8 @@ const CompanyOnboarding = () => {
           console.log('Redirecting to review page:', baseUrl);
           window.location.replace(baseUrl);
         } else {
-          console.log('Redirecting to upload page:', `${baseUrl}/upload`);
-          window.location.replace(`${baseUrl}/upload`);
+          console.log('Redirecting to upload page:', `${baseUrl}`);
+          window.location.replace(`${baseUrl}`);
         }
       }
       return;
