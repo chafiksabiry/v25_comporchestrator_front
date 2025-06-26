@@ -20,6 +20,7 @@ ENV VITE_COMPANY_API_URL=https://preprod-api-companysearchwizard.harx.ai/api
 ENV VITE_DASHBOARD_API=https://preprod-api-dashboard.harx.ai/api
 ENV VITE_GOOGLE_API_KEY=AIzaSyCHEKiraViKIrgvloZI-ZBIJqtDMeBuQD0
 ENV VITE_KNOWLEDGE_BASE_URL=/knowledgebase
+ENV VITE_SCRIPT_GENERATION_BASE_URL=/knowledgebase/script-generator
 
 RUN npm run build
 
