@@ -242,8 +242,11 @@ const CompanyOnboarding = () => {
       // Store the progress in cookies
       Cookies.set('companyOnboardingProgress', JSON.stringify(progress));
       
-      // Check if step 7 is completed and automatically advance to phase 3
-      if (progress.completedSteps.includes(7)) {
+      // Check if all non-disabled steps in Phase 2 are completed before advancing to phase 3
+      const phase2Steps = phases[1].steps.filter(step => !step.disabled);
+      const allPhase2Completed = phase2Steps.every(step => progress.completedSteps.includes(step.id));
+      
+      if (allPhase2Completed) {
         const validPhase = 3;
         setCurrentPhase(validPhase);
         setDisplayedPhase(validPhase);
@@ -301,6 +304,12 @@ const CompanyOnboarding = () => {
       // Special handling for Knowledge Base step
       if (stepId === 7) {
           window.location.replace(import.meta.env.VITE_KNOWLEDGE_BASE_URL);
+        return;
+      }
+      
+      // Special handling for Call Script step
+      if (stepId === 8) {
+          window.location.replace(import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL);
         return;
       }
       
@@ -463,8 +472,7 @@ const CompanyOnboarding = () => {
           title: 'Call Script',
           description: 'Define script and conversation flows',
           status: 'pending',
-          component: CallScript,
-          disabled: true
+          component: CallScript
         },
         {
           id: 9,
@@ -596,6 +604,21 @@ const CompanyOnboarding = () => {
           console.log('Redirecting to upload page:', `${baseUrl}`);
           window.location.replace(`${baseUrl}`);
         }
+      }
+      return;
+    }
+
+    // Pour Call Script
+    if (stepId === 8) {
+      console.log('Call Script step clicked');
+      console.log('All previous completed:', allPreviousCompleted);
+      console.log('Step completed:', completedSteps.includes(stepId));
+      console.log('Script Generation URL:', import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL);
+      
+      if (allPreviousCompleted) {
+        const baseUrl = import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL;
+        console.log('Redirecting to script generation:', baseUrl);
+        window.location.replace(baseUrl);
       }
       return;
     }
