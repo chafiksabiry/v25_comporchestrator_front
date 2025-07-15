@@ -53,8 +53,6 @@ const SubscriptionPlan = () => {
       }
       console.log('Step completion response:', stepResponse.data);
       
-      // Ajouter un message de succès
-      alert('Plan gratuit activé avec succès !');
       
       // Recharger la page pour mettre à jour l'interface
       window.location.reload();
