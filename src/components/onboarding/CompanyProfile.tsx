@@ -50,6 +50,7 @@ interface CompanyResponse {
       website: string;
     };
     logoUrl?: string;
+    logo?: string;
   };
 }
 
@@ -208,7 +209,9 @@ function CompanyProfile() {
         `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/details`
       );
       setCompany(response.data.data);
-      if (response.data.data.logoUrl) {
+      if ((response.data.data as any).logo) {
+        setLogoUrl((response.data.data as any).logo);
+      } else if (response.data.data.logoUrl) {
         setLogoUrl(response.data.data.logoUrl);
       }
     } catch (err) {
@@ -348,7 +351,7 @@ function CompanyProfile() {
     mission: company.mission || '',
     founded: company.founded || '',
     headquarters: company.headquarters || '',
-    logoUrl: company.logoUrl || '',
+    logoUrl: company.logo || company.logoUrl || '',
     contact: company.contact || {},
     socialMedia: company.socialMedia || {},
     culture: company.culture || {
@@ -492,7 +495,7 @@ function CompanyProfile() {
                             onClick={() => {
                               setCompany((prev) => ({
                                 ...prev,
-                                logoUrl: logoUrl
+                                logo: logoUrl
                               }));
                               setEditingField(null);
                               setHasChanges(true);
