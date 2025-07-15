@@ -122,7 +122,7 @@ const CompanyOnboarding = () => {
 
       if (!userId) {
         console.error('User ID not found in cookies');
-        window.location.href = '/app4';
+        window.location.href = '/auth';
         return;
       }
 
@@ -133,13 +133,13 @@ const CompanyOnboarding = () => {
           // Store company ID in cookie for backward compatibility
           Cookies.set('companyId', response.data.data._id);
         } else {
-          // Redirect to /app4 if no company data is found
-          window.location.href = '/app4';
+          // Redirect to /auth if no company data is found
+          window.location.href = '/auth';
         }
       } catch (error) {
         console.error('Error fetching company ID:', error);
-        // Redirect to /app4 on error
-        window.location.href = '/app4';
+        // Redirect to /auth on error
+        window.location.href = '/auth';
       }
     };
 
