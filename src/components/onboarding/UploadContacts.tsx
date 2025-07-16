@@ -440,16 +440,17 @@ Return only the JSON response, no additional text.
     setShowFileName(false);
 
     try {
-      // Convert leads to MongoDB format for API
+      // Convert leads to API format (try both MongoDB ObjectId and string formats)
       const leadsForAPI = parsedLeads.map((lead: any) => {
         const userId = Cookies.get('userId');
         const gigId = Cookies.get('gigId');
         const companyId = Cookies.get('companyId');
         
+        // Try string format first (more common for APIs)
         return {
-          userId: { "$oid": lead.userId?.$oid || userId },
-          companyId: { "$oid": lead.companyId?.$oid || companyId },
-          gigId: { "$oid": lead.gigId?.$oid || gigId },
+          userId: lead.userId?.$oid || userId,
+          companyId: lead.companyId?.$oid || companyId,
+          gigId: lead.gigId?.$oid || gigId,
           Last_Activity_Time: lead.Last_Activity_Time || null,
           Deal_Name: lead.Deal_Name || "Unnamed Lead",
           Email_1: lead.Email_1 || "no-email@placeholder.com",
@@ -477,14 +478,17 @@ Return only the JSON response, no additional text.
         setUploadProgress(progress);
         
         try {
-          const response = await axios.post(`${import.meta.env.VITE_DASHBOARD_API}/leads`, [lead], {
+          const response = await axios.post(`${import.meta.env.VITE_DASHBOARD_API}/leads`, lead, {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`
             }
           });
           
-          if (response.status === 200) {
+          console.log(`Lead ${i + 1} response status:`, response.status);
+          console.log(`Lead ${i + 1} response data:`, response.data);
+          
+          if (response.status === 200 || response.status === 201) {
             savedLeads.push(response.data);
             console.log(`Lead ${i + 1} saved successfully:`, response.data);
           } else {
