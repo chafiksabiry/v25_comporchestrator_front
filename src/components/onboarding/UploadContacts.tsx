@@ -1287,81 +1287,32 @@ Return only the JSON response, no additional text.
 
       {/* Upload Section */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6" data-file-upload>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-              <Upload className="mr-2 h-5 w-5 text-indigo-600" />
-              Import Contacts
-            </h3>
-            <p className="mt-1 text-sm text-gray-600">Upload your contacts from any file format. AI-powered processing extracts and validates contact data automatically.</p>
-          </div>
-          <button 
-            className="text-sm font-medium text-indigo-600 hover:text-indigo-500 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg transition-colors duration-200"
-            onClick={() => {
-              // Create a sample CSV template with examples
-              const headers = ['Email', 'Phone', 'Lead Name', 'Stage', 'Pipeline', 'Project Tags'];
-              const examples = [
-                'john.doe@example.com,+1-555-123-4567,John Doe,New,Sales Pipeline,prospect;high-value',
-                'jane.smith@company.com,+33 1 23 45 67 89,Jane Smith,Qualified,Enterprise Pipeline,enterprise;decision-maker',
-                'mike.wilson@startup.io,+44 20 7946 0958,Mike Wilson,Contacted,Startup Pipeline,startup;tech',
-                'no-email@placeholder.com,+1-555-999-8888,Phone Only Lead,New,Sales Pipeline,phone-lead',
-                'email-only@example.com,no-phone@placeholder.com,Email Only Lead,Qualified,Enterprise Pipeline,email-lead'
-              ];
-              const csvContent = headers.join(',') + '\n' + examples.join('\n');
-              const blob = new Blob([csvContent], { type: 'text/csv' });
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = 'contacts_template.csv';
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              window.URL.revokeObjectURL(url);
-            }}
-          >
-            Download Template
-          </button>
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+            <Upload className="mr-2 h-5 w-5 text-indigo-600" />
+            Import Contacts
+          </h3>
+          <p className="mt-1 text-sm text-gray-600">Upload your contacts from any file format. The system will automatically extract and process your contact data.</p>
         </div>
 
         <div className="mt-4">
-          {/* AI Processing Info */}
-          <div className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <Database className="h-6 w-6 text-indigo-600" />
-              </div>
-              <div className="ml-3">
-                <h4 className="text-sm font-semibold text-indigo-800">AI-Powered Processing</h4>
-                <p className="text-sm text-indigo-700 mt-1">
-                  Your file will be processed using OpenAI's GPT-4 to:
-                </p>
-                <ul className="text-xs text-indigo-600 mt-2 space-y-1">
-                  <li>• Validate email formats and phone numbers</li>
-                  <li>• Standardize data formats</li>
-                  <li>• Detect and report data quality issues</li>
-                  <li>• Provide detailed validation feedback</li>
-                </ul>
-              </div>
-            </div>
-            <button
-              onClick={testOpenAIConnection}
-              className="ml-4 px-3 py-1 text-xs font-medium text-indigo-600 bg-indigo-100 hover:bg-indigo-200 rounded-md transition-colors duration-200"
-            >
-              Test Connection
-            </button>
-          </div>
-          </div>
 
-          <div className="rounded-xl border-2 border-dashed border-gray-300 p-8 hover:border-indigo-400 transition-colors duration-200">
+          <div className="rounded-xl border-2 border-dashed border-gray-300 p-12 hover:border-indigo-400 hover:bg-indigo-50 transition-all duration-300 bg-gradient-to-br from-gray-50 to-white">
             <div className="text-center">
-              <div className="mx-auto h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
-                <Upload className="h-8 w-8 text-indigo-600" />
+              <div className="mx-auto h-20 w-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center mb-6 shadow-lg">
+                <Upload className="h-10 w-10 text-indigo-600" />
               </div>
               <div className="mt-4">
-                <label htmlFor="file-upload" className="cursor-pointer">
-                  <span className="mt-2 block text-lg font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200">
-                    {isProcessing ? 'Processing...' : 'Click to upload'}
+                <label htmlFor="file-upload" className="cursor-pointer group">
+                  <span className="mt-2 block text-xl font-semibold text-indigo-600 group-hover:text-indigo-500 transition-colors duration-200">
+                    {isProcessing ? (
+                      <div className="flex items-center justify-center">
+                        <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                        Processing...
+                      </div>
+                    ) : (
+                      'Click to upload or drag and drop'
+                    )}
                   </span>
                   <input
                     id="file-upload"
@@ -1372,7 +1323,29 @@ Return only the JSON response, no additional text.
                     disabled={isProcessing}
                   />
                 </label>
-                <p className="mt-2 text-sm text-gray-500">All file types supported up to 10MB</p>
+                <p className="mt-3 text-sm text-gray-500">Supports all file formats (CSV, Excel, JSON, TXT, PDF) up to 10MB</p>
+                <div className="mt-4 flex items-center justify-center space-x-4 text-xs text-gray-400">
+                  <div className="flex items-center">
+                    <FileText className="mr-1 h-3 w-3" />
+                    <span>CSV</span>
+                  </div>
+                  <div className="flex items-center">
+                    <FileText className="mr-1 h-3 w-3" />
+                    <span>Excel</span>
+                  </div>
+                  <div className="flex items-center">
+                    <FileText className="mr-1 h-3 w-3" />
+                    <span>JSON</span>
+                  </div>
+                  <div className="flex items-center">
+                    <FileText className="mr-1 h-3 w-3" />
+                    <span>TXT</span>
+                  </div>
+                  <div className="flex items-center">
+                    <FileText className="mr-1 h-3 w-3" />
+                    <span>PDF</span>
+                  </div>
+                </div>
               </div>
             </div>
             {selectedFile && showFileName && (
