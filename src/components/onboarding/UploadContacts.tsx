@@ -1249,45 +1249,6 @@ Return only the JSON response, no additional text.
             </select>
           </div>
         )}
-
-        {/* Selected Gig Information */}
-        {selectedGigId && (
-          <div className="mt-6 p-6 bg-gradient-to-br from-slate-50 to-gray-50 border border-slate-200 rounded-xl shadow-sm">
-            <h5 className="text-lg font-bold text-slate-900 mb-4 flex items-center">
-              <Database className="mr-3 h-5 w-5 text-slate-600" />
-              Selected Gig Information
-            </h5>
-            {(() => {
-              const selectedGig = gigs.find(gig => gig._id === selectedGigId);
-              return selectedGig ? (
-                <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-base">
-                    <div className="space-y-3">
-                      <div>
-                        <span className="font-semibold text-slate-700">Title:</span>
-                        <span className="ml-3 text-slate-900 font-medium">{selectedGig.title}</span>
-                      </div>
-                      {selectedGig.category && (
-                        <div>
-                          <span className="font-semibold text-slate-700">Category:</span>
-                          <span className="ml-3 text-slate-900 font-medium">{selectedGig.category}</span>
-                        </div>
-                      )}
-                    </div>
-                    {selectedGig.description && (
-                      <div className="md:col-span-2">
-                        <span className="font-semibold text-slate-700">Description:</span>
-                        <p className="mt-2 text-slate-900 leading-relaxed">{selectedGig.description}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <p className="text-base text-slate-600 font-medium">Gig information not available</p>
-              );
-            })()}
-          </div>
-        )}
       </div>
 
       {/* Import Methods Section */}
