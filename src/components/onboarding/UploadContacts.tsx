@@ -1197,58 +1197,136 @@ Return only the JSON response, no additional text.
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      {/* Simple Header */}
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Upload Contacts</h1>
-        <p className="text-gray-600">Import your leads from files or Zoho CRM</p>
+    <div className="space-y-4 bg-gradient-to-br from-blue-50 to-white min-h-screen p-4">
+      {/* Page Header */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+        <div className="flex items-start space-x-6 mb-6">
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold text-gray-900 mb-3 flex items-center">
+              <Users className="mr-3 h-8 w-8 text-blue-600" />
+              Upload Contacts
+            </h1>
+            <p className="text-lg text-gray-600">
+              Import, manage, and organize your leads efficiently. Choose between connecting with your CRM system or uploading contact files directly.
+            </p>
+          </div>
+        </div>
       </div>
 
 
 
-      {/* Gig Selection */}
-      <div className="bg-white border rounded-lg p-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Select Gig</label>
+      {/* Gigs Selection Dropdown */}
+      <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 transition-all duration-300 ease-in-out">
+        <h4 className="text-xl font-bold text-slate-900 mb-6 flex items-center">
+          <Users className="mr-3 h-6 w-6 text-slate-600" />
+          Select a Gig
+        </h4>
         {isLoadingGigs ? (
-          <div className="flex items-center py-4">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-            <span className="text-sm text-gray-600">Loading gigs...</span>
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
+            <span className="ml-4 text-base text-slate-600 font-medium">Loading gigs...</span>
+          </div>
+        ) : gigs.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="mx-auto h-16 w-16 text-slate-300 mb-4">
+              <Users className="h-16 w-16" />
+            </div>
+            <p className="text-base text-slate-500 font-medium">No gigs available.</p>
           </div>
         ) : (
-          <select
-            value={selectedGigId}
-            onChange={(e) => setSelectedGigId(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-          >
-            <option value="">Choose a gig...</option>
-            {gigs.map((gig) => (
-              <option key={gig._id} value={gig._id}>
-                {gig.title}
-              </option>
-            ))}
-          </select>
+          <div className="max-w-lg">
+            <select
+              value={selectedGigId}
+              onChange={(e) => setSelectedGigId(e.target.value)}
+              className="w-full rounded-xl border-2 border-slate-300 py-4 px-5 text-base font-medium focus:border-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:ring-offset-2 bg-white shadow-sm hover:border-slate-400 transition-all duration-200"
+            >
+              <option value="" className="text-slate-500">Select a gig...</option>
+              {gigs.map((gig) => (
+                <option key={gig._id} value={gig._id} className="text-slate-900">
+                  {gig.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Selected Gig Information */}
+        {selectedGigId && (
+          <div className="mt-6 p-6 bg-gradient-to-br from-slate-50 to-gray-50 border border-slate-200 rounded-xl shadow-sm">
+            <h5 className="text-lg font-bold text-slate-900 mb-4 flex items-center">
+              <Database className="mr-3 h-5 w-5 text-slate-600" />
+              Selected Gig Information
+            </h5>
+            {(() => {
+              const selectedGig = gigs.find(gig => gig._id === selectedGigId);
+              return selectedGig ? (
+                <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-base">
+                    <div className="space-y-3">
+                      <div>
+                        <span className="font-semibold text-slate-700">Title:</span>
+                        <span className="ml-3 text-slate-900 font-medium">{selectedGig.title}</span>
+                      </div>
+                      {selectedGig.category && (
+                        <div>
+                          <span className="font-semibold text-slate-700">Category:</span>
+                          <span className="ml-3 text-slate-900 font-medium">{selectedGig.category}</span>
+                        </div>
+                      )}
+                    </div>
+                    {selectedGig.description && (
+                      <div className="md:col-span-2">
+                        <span className="font-semibold text-slate-700">Description:</span>
+                        <p className="mt-2 text-slate-900 leading-relaxed">{selectedGig.description}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-base text-slate-600 font-medium">Gig information not available</p>
+              );
+            })()}
+          </div>
         )}
       </div>
 
-      {/* Import Methods */}
-      <div className="bg-white border rounded-lg p-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Import Methods</h3>
-        
-        <div className="space-y-4">
-          {/* Zoho Import */}
-          <div className="border rounded-lg p-4">
-            <div className="flex items-center justify-between mb-3">
+      {/* Import Methods Section */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
+        <div className="mb-4">
+          <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+            <Users className="mr-2 h-5 w-5 text-blue-600" />
+            Import Leads
+          </h3>
+          <p className="mt-1 text-sm text-gray-600">Choose your preferred method to import leads into your selected gig.</p>
+        </div>
+
+        {/* Import Methods Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+          {/* Zoho Import Card */}
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-2xl p-6 hover:border-emerald-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02]">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <img src={zohoLogo} alt="Zoho" className="h-6 w-6 mr-2" />
-                <span className="font-medium">Zoho CRM</span>
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-emerald-200 shadow-sm">
+                  <img 
+                    src={zohoLogo} 
+                    alt="Zoho CRM" 
+                    className="h-7 w-7 object-contain"
+                  />
+                </div>
+                <div>
+                  <h4 className="text-xl font-bold text-emerald-900">Zoho CRM Integration</h4>
+                  <p className="text-sm text-emerald-700">Connect and sync with your Zoho CRM</p>
+                </div>
               </div>
-              <button
-                onClick={handleZohoConnect}
-                disabled={hasZohoAccessToken}
-                className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded disabled:opacity-50"
-              >
-                {hasZohoAccessToken ? 'Connected' : 'Connect'}
-              </button>
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleZohoConnect}
+                  disabled={hasZohoAccessToken}
+                  className="px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-200 hover:bg-emerald-300 rounded-xl transition-colors duration-200 disabled:opacity-50 shadow-sm"
+                >
+                  {hasZohoAccessToken ? 'Connected' : 'Connect to Zoho'}
+                </button>
+              </div>
             </div>
             <button
               onClick={async () => {
@@ -1259,38 +1337,79 @@ Return only the JSON response, no additional text.
                 await handleImportFromZoho();
               }}
               disabled={!hasZohoAccessToken || isImportingZoho}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold py-4 px-6 rounded-xl hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
             >
-              {isImportingZoho ? 'Importing...' : 'Import from Zoho'}
+              {isImportingZoho ? (
+                <div className="flex items-center justify-center">
+                  <RefreshCw className="mr-3 h-5 w-5 animate-spin" />
+                  Importing from Zoho...
+                </div>
+              ) : (
+                <div className="flex items-center justify-center">
+                  <img 
+                    src={zohoLogo} 
+                    alt="Zoho" 
+                    className="h-6 w-6 mr-3 object-contain"
+                  />
+                  Sync with Zoho CRM
+                </div>
+              )}
             </button>
           </div>
 
-          {/* File Upload */}
-          <div className="border rounded-lg p-4" data-file-upload>
-            <div className="flex items-center mb-3">
-              <Upload className="h-5 w-5 mr-2 text-gray-600" />
-              <span className="font-medium">File Upload</span>
+          {/* File Upload Card */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02]" data-file-upload>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-blue-200 shadow-sm">
+                  <Upload className="h-6 w-6 text-blue-700" />
+                </div>
+                <div>
+                  <h4 className="text-xl font-bold text-blue-900">File Upload</h4>
+                  <p className="text-sm text-blue-700">Upload and process contact files</p>
+                </div>
+              </div>
             </div>
             
-            <label htmlFor="file-upload" className="block border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-gray-400">
-              <input
-                id="file-upload"
-                type="file"
-                className="hidden"
-                accept="*"
-                onChange={handleFileSelect}
-                disabled={isProcessing}
-              />
-              {isProcessing ? 'Processing...' : 'Click to upload file'}
-            </label>
+            {/* File Upload Area */}
+            <div className="rounded-xl border-2 border-dashed border-blue-400 p-6 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 bg-white shadow-sm">
+              <div className="text-center">
+                <label htmlFor="file-upload" className="cursor-pointer group">
+                  <div className="flex items-center justify-center space-x-3">
+                    <Upload className="h-6 w-6 text-blue-700" />
+                    <span className="text-base font-semibold text-blue-700 group-hover:text-blue-600 transition-colors duration-200">
+                      {isProcessing ? (
+                        <div className="flex items-center">
+                          <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                          Processing...
+                        </div>
+                      ) : (
+                        'Click to upload or drag and drop - All file formats supported up to 10MB'
+                      )}
+                    </span>
+                  </div>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    className="hidden"
+                    accept="*"
+                    onChange={handleFileSelect}
+                    disabled={isProcessing}
+                  />
+                </label>
+              </div>
+            </div>
           </div>
         </div>
 
-                {/* File Processing Results */}
+        {/* File Processing Results */}
         {selectedFile && showFileName && (
           <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-            <div className="flex items-center justify-between text-sm mb-2">
-              <span className="font-medium">{selectedFile.name}</span>
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center">
+                <FileText className="mr-2 h-4 w-4 text-blue-600" />
+                <span className="font-medium text-gray-900">{selectedFile.name}</span>
+              </div>
               <button onClick={() => {
                 setSelectedFile(null);
                 setUploadProgress(0);
@@ -1299,79 +1418,240 @@ Return only the JSON response, no additional text.
                 setParsedLeads([]);
                 setValidationResults(null);
               }}>
-                <X className="h-4 w-4 text-gray-400" />
+                <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
               </button>
             </div>
-            
-            {/* Progress Bar */}
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-              <div
-                className={`h-2 rounded-full ${
-                  uploadError ? 'bg-red-500' : uploadSuccess ? 'bg-green-500' : 'bg-blue-500'
-                }`}
-                style={{ width: `${uploadProgress}%` }}
-              />
-            </div>
-            
-            {uploadError && (
-              <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                {uploadError}
+            <div className="mt-3">
+              <div className="relative">
+                <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
+                  <div
+                    className={`h-3 rounded-full transition-all duration-500 ${
+                      uploadError ? 'bg-red-500' : uploadSuccess ? 'bg-green-500' : 'bg-gradient-to-r from-green-500 to-emerald-500'
+                    }`}
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
               </div>
-            )}
-            
-            {uploadSuccess && (
-              <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
-                File uploaded successfully!
+              <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                <span>{uploadProgress}% complete</span>
+                <span>{Math.round(selectedFile.size / 1024)} KB</span>
               </div>
-            )}
-            
-            {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
-              <div className="mt-4">
-                {validationResults && (
-                  <div className="bg-blue-50 p-3 rounded mb-3">
-                    <div className="text-sm">
-                      <div>Total: {validationResults.totalRows}</div>
-                      <div>Valid: {validationResults.validRows}</div>
+              {uploadError && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                  {uploadError}
+                </div>
+              )}
+              {uploadSuccess && (
+                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-600">
+                  File uploaded successfully!
+                </div>
+              )}
+              {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
+                <div className="mt-4 space-y-4">
+                  {validationResults && (
+                                      <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3">
+                    <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                      <Database className="mr-2 h-4 w-4" />
+                      AI Processing Results
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-blue-600 font-medium">Total Rows:</span> {validationResults.totalRows}
+                      </div>
+                      <div>
+                        <span className="text-green-600 font-medium">Valid Rows:</span> {validationResults.validRows}
+                      </div>
                       {validationResults.invalidRows > 0 && (
-                        <div>Invalid: {validationResults.invalidRows}</div>
+                        <div className="col-span-2">
+                          <span className="text-red-600 font-medium">Invalid Rows:</span> {validationResults.invalidRows}
+                        </div>
                       )}
                     </div>
-                  </div>
-                )}
-                
-                <div className="mb-3">
-                  <h4 className="font-medium mb-2">Preview ({parsedLeads.length} leads)</h4>
-                  <div className="max-h-40 overflow-y-auto border rounded p-2">
-                    {parsedLeads.slice(0, 5).map((lead: any, index: number) => (
-                      <div key={index} className="text-sm py-1 border-b last:border-b-0">
-                        <div className="font-medium">{lead.Deal_Name || 'Unnamed'}</div>
-                        <div className="text-gray-600">{lead.Email_1 || 'No email'}</div>
+                    {validationResults.errors && validationResults.errors.length > 0 && (
+                      <div className="mt-3">
+                        <details className="text-xs">
+                          <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
+                            View validation errors ({validationResults.errors.length})
+                          </summary>
+                            <div className="mt-2 space-y-1">
+                              {validationResults.errors.map((error: string, index: number) => (
+                                <div key={index} className="text-red-600 bg-red-50 p-2 rounded">
+                                  {error}
+                                </div>
+                              ))}
+                            </div>
+                          </details>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Preview Section */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center">
+                        <Users className="mr-2 h-4 w-4" />
+                        <h4 className="text-sm font-semibold text-gray-800">
+                          Confirm & Edit Leads ({parsedLeads.length})
+                        </h4>
                       </div>
-                    ))}
-                    {parsedLeads.length > 5 && (
-                      <div className="text-sm text-gray-500 py-1">
-                        ... and {parsedLeads.length - 5} more
-                      </div>
+                      <button
+                        onClick={() => setShowLeadsPreview(!showLeadsPreview)}
+                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                        title={showLeadsPreview ? "Hide leads preview" : "Show leads preview"}
+                      >
+                        {showLeadsPreview ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                    {showLeadsPreview && (
+                      <>
+                        <p className="text-xs text-gray-600 mb-3">Review and edit your leads before saving. Click the edit icon to modify any field.</p>
+                        <div className="max-h-60 overflow-y-auto">
+                          <div className="space-y-2">
+                            {parsedLeads.map((lead: any, index: number) => (
+                                                          <div key={index} className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-lg p-3 border border-gray-200 hover:border-slate-300 transition-all duration-200">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
+                                    <span className="text-xs font-bold text-slate-600">{index + 1}</span>
+                                  </div>
+                                    <span className="text-sm font-semibold text-gray-900">
+                                      {lead.Deal_Name || 'Unnamed Lead'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      onClick={() => setEditingLeadIndex(editingLeadIndex === index ? null : index)}
+                                      className="text-slate-600 hover:text-slate-800 p-2 rounded-md hover:bg-slate-50 transition-colors duration-200"
+                                      title="Edit lead"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const newLeads = [...parsedLeads];
+                                        newLeads.splice(index, 1);
+                                        setParsedLeads(newLeads);
+                                        toast.success('Lead removed');
+                                      }}
+                                      className="text-red-500 hover:text-red-700 p-2 rounded-md hover:bg-red-50 transition-colors duration-200"
+                                      title="Delete lead"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                                
+                                {editingLeadIndex === index ? (
+                                  <div className="space-y-3 bg-white rounded-lg p-3 border border-slate-200 shadow-sm">
+                                    <div className="grid grid-cols-1 gap-3">
+                                      <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
+                                        <input
+                                          type="text"
+                                          value={lead.Deal_Name || ''}
+                                          onChange={(e) => handleEditLead(index, 'Deal_Name', e.target.value)}
+                                          placeholder="Enter lead name"
+                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                                        <input
+                                          type="email"
+                                          value={lead.Email_1 || ''}
+                                          onChange={(e) => handleEditLead(index, 'Email_1', e.target.value)}
+                                          placeholder="Enter email address"
+                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
+                                        <input
+                                          type="tel"
+                                          value={lead.Phone || ''}
+                                          onChange={(e) => handleEditLead(index, 'Phone', e.target.value)}
+                                          placeholder="Enter phone number"
+                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="flex justify-end space-x-2 pt-2 border-t border-gray-100">
+                                      <button
+                                        onClick={() => setEditingLeadIndex(null)}
+                                        className="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 border border-gray-300"
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setEditingLeadIndex(null);
+                                          toast.success('Lead updated');
+                                        }}
+                                        className="px-3 py-1 text-sm font-medium text-white bg-gradient-to-r from-slate-700 to-slate-900 rounded-lg hover:from-slate-800 hover:to-slate-950 transition-all duration-200 shadow-sm"
+                                      >
+                                        Save Changes
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="grid grid-cols-1 gap-2 text-sm">
+                                    <div className="flex items-center space-x-2">
+                                      <Mail className="h-4 w-4 text-gray-400" />
+                                      <span className="text-gray-600">
+                                        <span className="font-medium">Email:</span> {lead.Email_1 || 'No email'}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Phone className="h-4 w-4 text-gray-400" />
+                                      <span className="text-gray-600">
+                                        <span className="font-medium">Phone:</span> {lead.Phone || 'No phone'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
                     )}
                   </div>
+                  
+                  <button
+                    className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-blue-800 px-4 py-3 text-white font-bold hover:from-blue-700 hover:to-blue-900 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    onClick={handleSaveLeads}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? (
+                      <div className="flex items-center justify-center">
+                        <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                        Saving Contacts...
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center">
+                        <Users className="mr-2 h-5 w-5" />
+                        Save {parsedLeads.length} Contacts
+                      </div>
+                    )}
+                  </button>
                 </div>
-                
-                <button
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded disabled:opacity-50"
-                  onClick={handleSaveLeads}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? 'Saving...' : `Save ${parsedLeads.length} Contacts`}
-                </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
       </div>
 
       {/* Channel Filter */}
-      <div className="bg-white border rounded-lg p-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-3">Channel Filter</h3>
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <Globe className="mr-2 h-5 w-5 text-blue-600" />
+            Channel Filter
+          </h3>
         <div className="flex flex-wrap gap-2">
           {channels.map((channel) => {
             const Icon = channel.icon;
@@ -1380,15 +1660,15 @@ Return only the JSON response, no additional text.
             return (
               <button
                 key={channel.id}
-                className={`px-3 py-1 text-sm rounded ${
+                className={`flex items-center space-x-2 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 transform hover:scale-105 ${
                   isSelected
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
                 }`}
                 onClick={() => toggleChannel(channel.id)}
               >
-                <Icon className="h-4 w-4 inline mr-1" />
-                {channel.name}
+                <Icon className="h-4 w-4" />
+                <span>{channel.name}</span>
               </button>
             );
           })}
@@ -1396,147 +1676,234 @@ Return only the JSON response, no additional text.
       </div>
 
       {/* Contact List */}
-      <div className="bg-white border rounded-lg">
-        <div className="border-b p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-medium text-gray-900">Leads List</h3>
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100">
+        <div className="border-b border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+                <Users className="mr-2 h-5 w-5 text-blue-600" />
+                Leads List
+              </h3>
+                            <div className="mt-2">
+                {selectedGigId ? (
+                  <div className="text-sm text-gray-600">
+                    {leads.length > 0 ? (
+                      <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
+                        Showing {filteredLeads.length} of {leads.length} leads {searchQuery && `(filtered by "${searchQuery}")`}
+                      </span>
+                    ) : (
+                      <span className="bg-gray-50 text-gray-600 px-3 py-1 rounded-full text-xs font-medium">
+                        No leads found
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Please select a gig to view leads</p>
+                )}
+              </div>
+            </div>
             <div className="flex items-center space-x-2">
-              <input
-                type="text"
-                className="border border-gray-300 rounded px-3 py-1 text-sm"
-                placeholder="Search leads..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <Search className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  className="block w-full rounded-lg border-gray-300 pl-10 focus:border-blue-600 focus:ring-blue-600 sm:text-sm shadow-sm"
+                  placeholder="Search leads..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
               <select
-                className="border border-gray-300 rounded px-3 py-1 text-sm"
+                className="rounded-lg border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-600 focus:outline-none focus:ring-blue-600 sm:text-sm shadow-sm"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
                 <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="active">Active (Not Closed)</option>
+                <option value="inactive">Inactive (Closed)</option>
               </select>
               <button
                 onClick={() => fetchLeads()}
-                className="bg-blue-600 text-white px-3 py-1 rounded text-sm disabled:opacity-50"
+                className="flex items-center rounded-lg bg-gradient-to-r from-blue-600 to-blue-800 px-3 py-2 text-sm font-medium text-white shadow-md hover:from-blue-700 hover:to-blue-900 transition-all duration-200 transform hover:scale-105"
                 disabled={isLoadingLeads || !selectedGigId}
               >
-                {isLoadingLeads ? 'Loading...' : 'Refresh'}
+                {isLoadingLeads ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh
+                  </>
+                )}
               </button>
             </div>
           </div>
-          
-          {selectedGigId && (
-            <div className="text-sm text-gray-600">
-              {leads.length > 0 ? (
-                <span>Showing {filteredLeads.length} of {leads.length} leads</span>
-              ) : (
-                <span>No leads found</span>
-              )}
-            </div>
-          )}
         </div>
-        {/* Leads Table */}
+        {/* Tableau d'affichage des leads */}
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Email</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Phone</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Name</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Stage</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {error ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-4 text-center text-sm text-red-500">
-                    {error}
-                  </td>
-                </tr>
-              ) : isLoadingLeads ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-4 text-center text-sm text-gray-500">
-                    Loading leads...
-                  </td>
-                </tr>
-              ) : leads.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-4 text-center text-sm text-gray-500">
-                    No leads found
-                  </td>
-                </tr>
-              ) : filteredLeads.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-4 text-center text-sm text-gray-500">
-                    No leads match your search
-                  </td>
-                </tr>
-              ) : (
-                filteredLeads.map((lead) => (
-                  <tr key={lead._id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-sm text-gray-900">{lead.Email_1 || 'N/A'}</td>
-                    <td className="px-4 py-2 text-sm text-gray-900">{lead.Phone || 'N/A'}</td>
-                    <td className="px-4 py-2 text-sm text-gray-900">{lead.Deal_Name || 'N/A'}</td>
-                    <td className="px-4 py-2 text-sm">
-                      <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
-                        {lead.Stage || 'N/A'}
-                      </span>
-                    </td>
+          <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
+            <div className="relative">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
+                      Lead
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
+                      Lead Name
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
+                      Stage
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
+                      Pipeline
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
+                      Last Activity
+                    </th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {error ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-red-500">
+                        {error}
+                      </td>
+                    </tr>
+                  ) : isLoadingLeads ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                        <div className="flex items-center justify-center py-8">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
+                          Loading leads...
+                        </div>
+                      </td>
+                    </tr>
+                  ) : leads.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                        <div className="flex flex-col items-center justify-center py-8">
+                          <Users className="h-12 w-12 text-gray-300 mb-2" />
+                          <p>No leads found</p>
+                          <p className="text-xs text-gray-400 mt-1">Try importing some leads or check your filters</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredLeads.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                        <div className="flex flex-col items-center justify-center py-8">
+                          <Search className="h-12 w-12 text-gray-300 mb-2" />
+                          <p>No leads match your search</p>
+                          <p className="text-xs text-gray-400 mt-1">Try adjusting your search terms or filters</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredLeads.map((lead, index) => (
+                      <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <div className="flex items-center">
+                                                    <div className="h-10 w-10 flex-shrink-0 rounded-full bg-blue-100 flex items-center justify-center">
+                          <Users className="h-6 w-6 text-blue-700" />
+                        </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'No Email'}</div>
+                              <div className="text-sm text-gray-500">{lead.Phone || 'No Phone'}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                          {lead.Deal_Name || 'N/A'}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-800">
+                            {lead.Stage || 'N/A'}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                          {lead.Pipeline || 'N/A'}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                          {lead.updatedAt ? new Date(lead.updatedAt).toLocaleDateString() : 'N/A'}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
         {/* Pagination Controls */}
         {filteredLeads.length > 0 && (
           <div className="bg-white px-4 py-3 border-t border-gray-200">
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-700">
-                Showing {filteredLeads.length} of {leads.length} leads
-              </div>
-              <button
-                onClick={() => setSearchQuery('')}
-                className="text-sm text-gray-600 hover:text-gray-800"
-              >
-                Clear Search
-              </button>
+                              <div className="flex items-center text-sm text-gray-700">
+                  <span>
+                    Showing <span className="font-medium">{filteredLeads.length}</span> of{' '}
+                    <span className="font-medium">{leads.length}</span> leads
+                    {searchQuery && (
+                      <span className="text-blue-600"> (filtered by "{searchQuery}")</span>
+                    )}
+                  </span>
+                </div>
+                              <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Clear Search
+                  </button>
+                </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Real-time Leads */}
+      {/* Ajout d'une section pour afficher les leads en temps réel */}
       {realtimeLeads.length > 0 && (
-        <div className="bg-white border rounded-lg p-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-3">Real-time Leads ({realtimeLeads.length})</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Email</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Phone</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Name</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Stage</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
+          <h3 className="text-xl font-semibold text-gray-900 mb-3 flex items-center">
+            <RefreshCw className="mr-2 h-5 w-5 text-green-600 animate-spin" />
+            Leads en temps réel
+          </h3>
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-3 mb-3">
+            <p className="text-sm font-medium text-green-700">
+              Nombre de leads reçus: <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">{realtimeLeads.length}</span>
+            </p>
+          </div>
+          <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
+            <div className="min-w-full divide-y divide-gray-200">
+                        <div className="bg-gradient-to-r from-blue-50 to-blue-100 sticky top-0">
+            <div className="grid grid-cols-4 px-6 py-3">
+              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Email</div>
+              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Téléphone</div>
+              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Lead</div>
+              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Stage</div>
+            </div>
+          </div>
+              <div className="bg-white divide-y divide-gray-100">
                 {realtimeLeads.map((lead, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-sm text-gray-900">{lead.Email_1 || 'N/A'}</td>
-                    <td className="px-4 py-2 text-sm text-gray-900">{lead.Phone || 'N/A'}</td>
-                    <td className="px-4 py-2 text-sm text-gray-900">{lead.Deal_Name || 'N/A'}</td>
-                    <td className="px-4 py-2 text-sm">
-                      <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
-                        {lead.Stage || 'N/A'}
-                      </span>
-                    </td>
-                  </tr>
+                  <div key={index} className="grid grid-cols-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
+                    <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'N/A'}</div>
+                    <div className="text-sm text-gray-700">{lead.Phone || 'N/A'}</div>
+                    <div className="text-sm text-gray-700">{lead.Deal_Name || 'N/A'}</div>
+                    <div className="text-sm">
+                                        <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-800 px-2.5 py-0.5 text-xs font-medium">
+                    {lead.Stage || 'N/A'}
+                  </span>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1544,31 +1911,43 @@ Return only the JSON response, no additional text.
       {/* Import Choice Modal */}
       {showImportChoiceModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-            <div className="text-center">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Choose your import method
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Import leads from Zoho CRM or upload a file
-              </p>
-            </div>
-            <div className="flex space-x-3">
+          <div className="relative w-full max-w-md transform rounded-lg bg-white p-6 text-left shadow-xl transition-all">
+            <div className="absolute right-4 top-4">
               <button
                 onClick={handleCancelModal}
-                className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded"
+                className="text-gray-400 hover:text-gray-600"
               >
-                Cancel
+                <X className="h-6 w-6" />
               </button>
-              <button
-                onClick={() => {
-                  localStorage.setItem('hasSeenImportChoiceModal', 'true');
-                  setShowImportChoiceModal(false);
-                }}
-                className="flex-1 px-4 py-2 text-sm bg-blue-600 text-white rounded"
-              >
-                Next
-              </button>
+            </div>
+            <div className="text-center">
+                          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+              <Upload className="h-6 w-6 text-blue-700" />
+            </div>
+              <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                Choose your import method
+              </h3>
+              <p className="mb-6 text-sm text-gray-600">
+                You can import your leads using <b>Zoho CRM</b> or by uploading an <b>Excel/CSV file</b>.<br />
+                Click Next to continue.
+              </p>
+            </div>
+            <div className="mt-6 flex justify-between space-x-3">
+                              <button
+                  onClick={handleCancelModal}
+                  className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    localStorage.setItem('hasSeenImportChoiceModal', 'true');
+                    setShowImportChoiceModal(false);
+                  }}
+                  className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                >
+                  Next
+                </button>
             </div>
           </div>
         </div>
