@@ -1169,9 +1169,9 @@ Return only the JSON response, no additional text.
   };
 
   return (
-    <div className="space-y-6 bg-gradient-to-br from-gray-50 to-white min-h-screen p-6">
+    <div className="space-y-4 bg-gradient-to-br from-gray-50 to-white min-h-screen p-4">
       {/* Header Section */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
@@ -1224,8 +1224,8 @@ Return only the JSON response, no additional text.
 
       {/* Gigs Selection Cards */}
       {showGigsSection && (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 transition-all duration-300 ease-in-out">
-          <h4 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 transition-all duration-300 ease-in-out">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <Users className="mr-2 h-5 w-5 text-indigo-600" />
             Select a Gig
           </h4>
@@ -1242,7 +1242,7 @@ Return only the JSON response, no additional text.
               <p className="text-sm text-gray-500">No gigs available.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {gigs.map((gig) => (
                 <div
                   key={gig._id}
@@ -1287,8 +1287,8 @@ Return only the JSON response, no additional text.
       )}
 
       {/* Upload Section */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6" data-file-upload>
-        <div className="mb-6">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4" data-file-upload>
+        <div className="mb-4">
           <h3 className="text-xl font-semibold text-gray-900 flex items-center">
             <Upload className="mr-2 h-5 w-5 text-indigo-600" />
             Import Contacts
@@ -1298,14 +1298,14 @@ Return only the JSON response, no additional text.
 
         <div className="mt-4">
 
-          <div className="rounded-xl border-2 border-dashed border-gray-300 p-12 hover:border-indigo-400 hover:bg-indigo-50 transition-all duration-300 bg-gradient-to-br from-gray-50 to-white">
+          <div className="rounded-xl border-2 border-dashed border-gray-300 p-8 hover:border-indigo-400 hover:bg-indigo-50 transition-all duration-300 bg-gradient-to-br from-gray-50 to-white">
             <div className="text-center">
-              <div className="mx-auto h-20 w-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center mb-6 shadow-lg">
-                <Upload className="h-10 w-10 text-indigo-600" />
+              <div className="mx-auto h-16 w-16 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                <Upload className="h-8 w-8 text-indigo-600" />
               </div>
-              <div className="mt-4">
-                <label htmlFor="file-upload" className="cursor-pointer group">
-                  <span className="mt-2 block text-xl font-semibold text-indigo-600 group-hover:text-indigo-500 transition-colors duration-200">
+                              <div className="mt-3">
+                  <label htmlFor="file-upload" className="cursor-pointer group">
+                    <span className="mt-2 block text-lg font-semibold text-indigo-600 group-hover:text-indigo-500 transition-colors duration-200">
                     {isProcessing ? (
                       <div className="flex items-center justify-center">
                         <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
@@ -1324,8 +1324,8 @@ Return only the JSON response, no additional text.
                     disabled={isProcessing}
                   />
                 </label>
-                <p className="mt-3 text-sm text-gray-500">Supports all file formats (CSV, Excel, JSON, TXT, PDF) up to 10MB</p>
-                <div className="mt-4 flex items-center justify-center space-x-4 text-xs text-gray-400">
+                <p className="mt-2 text-sm text-gray-500">Supports all file formats (CSV, Excel, JSON, TXT, PDF) up to 10MB</p>
+                <div className="mt-3 flex items-center justify-center space-x-4 text-xs text-gray-400">
                   <div className="flex items-center">
                     <FileText className="mr-1 h-3 w-3" />
                     <span>CSV</span>
@@ -1350,7 +1350,7 @@ Return only the JSON response, no additional text.
               </div>
             </div>
             {selectedFile && showFileName && (
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center">
                     <FileText className="mr-2 h-4 w-4 text-indigo-500" />
@@ -1433,7 +1433,7 @@ Return only the JSON response, no additional text.
                       )}
                       
                       {/* Preview Section */}
-                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <div className="bg-white border border-gray-200 rounded-lg p-3">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center">
                             <Users className="mr-2 h-4 w-4" />
@@ -1455,11 +1455,11 @@ Return only the JSON response, no additional text.
                         </div>
                         {showLeadsPreview && (
                           <>
-                            <p className="text-xs text-gray-600 mb-4">Review and edit your leads before saving. Click the edit icon to modify any field.</p>
-                            <div className="max-h-80 overflow-y-auto">
-                              <div className="space-y-3">
+                            <p className="text-xs text-gray-600 mb-3">Review and edit your leads before saving. Click the edit icon to modify any field.</p>
+                            <div className="max-h-60 overflow-y-auto">
+                              <div className="space-y-2">
                                 {parsedLeads.map((lead: any, index: number) => (
-                                  <div key={index} className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-4 border border-gray-200 hover:border-blue-300 transition-all duration-200">
+                                  <div key={index} className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-3 border border-gray-200 hover:border-blue-300 transition-all duration-200">
                                     <div className="flex items-center justify-between mb-3">
                                       <div className="flex items-center space-x-3">
                                         <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -1493,8 +1493,8 @@ Return only the JSON response, no additional text.
                                     </div>
                                     
                                     {editingLeadIndex === index ? (
-                                      <div className="space-y-3 bg-white rounded-lg p-4 border border-blue-200 shadow-sm">
-                                        <div className="grid grid-cols-1 gap-4">
+                                      <div className="space-y-3 bg-white rounded-lg p-3 border border-blue-200 shadow-sm">
+                                        <div className="grid grid-cols-1 gap-3">
                                           <div>
                                             <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
                                             <input
@@ -1502,7 +1502,7 @@ Return only the JSON response, no additional text.
                                               value={lead.Deal_Name || ''}
                                               onChange={(e) => handleEditLead(index, 'Deal_Name', e.target.value)}
                                               placeholder="Enter lead name"
-                                              className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm"
+                                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm"
                                             />
                                           </div>
                                           <div>
@@ -1512,7 +1512,7 @@ Return only the JSON response, no additional text.
                                               value={lead.Email_1 || ''}
                                               onChange={(e) => handleEditLead(index, 'Email_1', e.target.value)}
                                               placeholder="Enter email address"
-                                              className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm"
+                                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm"
                                             />
                                           </div>
                                           <div>
@@ -1522,14 +1522,14 @@ Return only the JSON response, no additional text.
                                               value={lead.Phone || ''}
                                               onChange={(e) => handleEditLead(index, 'Phone', e.target.value)}
                                               placeholder="Enter phone number"
-                                              className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm"
+                                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm"
                                             />
                                           </div>
                                         </div>
-                                        <div className="flex justify-end space-x-3 pt-3 border-t border-gray-100">
+                                        <div className="flex justify-end space-x-2 pt-2 border-t border-gray-100">
                                           <button
                                             onClick={() => setEditingLeadIndex(null)}
-                                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 border border-gray-300"
+                                            className="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 border border-gray-300"
                                           >
                                             Cancel
                                           </button>
@@ -1538,7 +1538,7 @@ Return only the JSON response, no additional text.
                                               setEditingLeadIndex(null);
                                               toast.success('Lead updated');
                                             }}
-                                            className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-sm"
+                                            className="px-3 py-1 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-sm"
                                           >
                                             Save Changes
                                           </button>
@@ -1568,44 +1568,23 @@ Return only the JSON response, no additional text.
                         )}
                       </div>
                       
-                      <div className="flex space-x-4">
-                        <button
-                          className="flex-1 rounded-xl bg-gradient-to-r from-gray-400 to-gray-500 px-6 py-4 text-white font-bold hover:from-gray-500 hover:to-gray-600 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                          onClick={() => {
-                            setSelectedFile(null);
-                            setUploadProgress(0);
-                            setUploadError(null);
-                            setUploadSuccess(false);
-                            setParsedLeads([]);
-                            setValidationResults(null);
-                            setEditingLeadIndex(null);
-                            toast('Upload cancelled', { icon: '❌' });
-                          }}
-                          disabled={isProcessing}
-                        >
+                      <button
+                        className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 px-4 py-3 text-white font-bold hover:from-blue-600 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                        onClick={handleSaveLeads}
+                        disabled={isProcessing}
+                      >
+                        {isProcessing ? (
                           <div className="flex items-center justify-center">
-                            <X className="mr-2 h-5 w-5" />
-                            Cancel Upload
+                            <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                            Saving Contacts...
                           </div>
-                        </button>
-                        <button
-                          className="flex-1 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4 text-white font-bold hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                          onClick={handleSaveLeads}
-                          disabled={isProcessing}
-                        >
-                          {isProcessing ? (
-                            <div className="flex items-center justify-center">
-                              <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-                              Saving Contacts...
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-center">
-                              <Users className="mr-2 h-5 w-5" />
-                              Save {parsedLeads.length} Contacts
-                            </div>
-                          )}
-                        </button>
-                      </div>
+                        ) : (
+                          <div className="flex items-center justify-center">
+                            <Users className="mr-2 h-5 w-5" />
+                            Save {parsedLeads.length} Contacts
+                          </div>
+                        )}
+                      </button>
                     </div>
                   )}
                 </div>
@@ -1616,12 +1595,12 @@ Return only the JSON response, no additional text.
       </div>
 
       {/* Channel Filter */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
+        <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
           <Globe className="mr-2 h-5 w-5 text-indigo-600" />
           Channel Filter
         </h3>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2">
           {channels.map((channel) => {
             const Icon = channel.icon;
             const isSelected = selectedChannels.includes(channel.id);
@@ -1629,7 +1608,7 @@ Return only the JSON response, no additional text.
             return (
               <button
                 key={channel.id}
-                className={`flex items-center space-x-2 rounded-full px-4 py-3 text-sm font-medium transition-all duration-200 transform hover:scale-105 ${
+                className={`flex items-center space-x-2 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 transform hover:scale-105 ${
                   isSelected
                     ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
@@ -1646,7 +1625,7 @@ Return only the JSON response, no additional text.
 
       {/* Contact List */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100">
-        <div className="border-b border-gray-200 p-6">
+        <div className="border-b border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-semibold text-gray-900 flex items-center">
@@ -1671,7 +1650,7 @@ Return only the JSON response, no additional text.
                 )}
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                   <Search className="h-5 w-5 text-gray-400" />
@@ -1695,7 +1674,7 @@ Return only the JSON response, no additional text.
               </select>
               <button
                 onClick={() => fetchLeads()}
-                className="flex items-center rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-indigo-600 hover:to-purple-600 transition-all duration-200 transform hover:scale-105"
+                className="flex items-center rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 px-3 py-2 text-sm font-medium text-white shadow-md hover:from-indigo-600 hover:to-purple-600 transition-all duration-200 transform hover:scale-105"
                 disabled={isLoadingLeads || !selectedGigId}
               >
                 {isLoadingLeads ? (
@@ -1814,7 +1793,7 @@ Return only the JSON response, no additional text.
         </div>
         {/* Pagination Controls */}
         {leads.length > 0 && totalPages > 1 && (
-          <div className="bg-white px-6 py-4 border-t border-gray-200">
+          <div className="bg-white px-4 py-3 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center text-sm text-gray-700">
                 <span>
@@ -1853,17 +1832,17 @@ Return only the JSON response, no additional text.
 
       {/* Ajout d'une section pour afficher les leads en temps réel */}
       {realtimeLeads.length > 0 && (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
+          <h3 className="text-xl font-semibold text-gray-900 mb-3 flex items-center">
             <RefreshCw className="mr-2 h-5 w-5 text-green-600 animate-spin" />
             Leads en temps réel
           </h3>
-          <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-4">
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-3 mb-3">
             <p className="text-sm font-medium text-green-700">
               Nombre de leads reçus: <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">{realtimeLeads.length}</span>
             </p>
           </div>
-          <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
+          <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
             <div className="min-w-full divide-y divide-gray-200">
               <div className="bg-gradient-to-r from-indigo-50 to-purple-50 sticky top-0">
                 <div className="grid grid-cols-4 px-6 py-3">
