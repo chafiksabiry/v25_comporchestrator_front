@@ -26,14 +26,46 @@ import ZohoService from './services/zohoService';
 import UploadContacts from './components/onboarding/UploadContacts';
 
 function App() {
-
-
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [userName, setUserName] = useState<string>('Admin User');
 
   // Vérifier si nous sommes sur une page spéciale
   const isZohoCallback = window.location.pathname === '/zoho-callback';
   const isZohoAuth = window.location.pathname === '/zoho-auth';
+
+  // Fonction pour récupérer le nom de l'utilisateur
+  const fetchUserName = async () => {
+    try {
+      const userId = Cookies.get('userId');
+      if (!userId) {
+        console.debug('No userId found in cookies');
+        return;
+      }
+
+      // Récupérer les informations utilisateur depuis l'API profile
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/auth/profile`, {
+        headers: {
+          'Authorization': `Bearer ${Cookies.get('gigId')}:${userId}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        if (userData.success && userData.data && userData.data.fullName) {
+          setUserName(userData.data.fullName);
+        } else if (userData.name || userData.firstName || userData.lastName) {
+          const name = userData.name || `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+          setUserName(name);
+        }
+      } else {
+        console.debug('Failed to fetch user data, using default name');
+      }
+    } catch (error) {
+      console.debug('Error fetching user data:', error);
+    }
+  };
 
   useEffect(() => {
     // Initialize Zoho configuration
@@ -45,6 +77,9 @@ function App() {
     initializeZoho().catch(error => {
       console.debug('App: Error initializing Zoho', error);
     });
+
+    // Récupérer le nom de l'utilisateur
+    fetchUserName();
   }, []);
 
   const handleLogout = () => {
@@ -179,9 +214,9 @@ function App() {
               <div className="relative">
                 <div className="flex items-center space-x-2">
                   <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center text-white">
-                    A
+                    {userName.charAt(0).toUpperCase()}
                   </div>
-                  <span className="font-medium">Admin User</span>
+                  <span className="font-medium">{userName}</span>
                 </div>
               </div>
             </div>
