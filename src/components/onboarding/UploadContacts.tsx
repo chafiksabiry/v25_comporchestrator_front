@@ -1203,57 +1203,13 @@ Return only the JSON response, no additional text.
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-3 flex items-center justify-center">
             <Users className="mr-3 h-8 w-8 text-blue-600" />
-            Lead Management Hub
+            Upload Contacts
           </h1>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
             Import, manage, and organize your leads efficiently. Choose between connecting with your CRM system or uploading contact files directly.
           </p>
         </div>
 
-        {/* Tips Section */}
-        <div className="bg-gradient-to-br from-slate-50 to-gray-50 border border-slate-200 rounded-xl p-6 shadow-sm">
-          <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center">
-            <MessageSquare className="mr-3 h-6 w-6 text-slate-600" />
-            Pro Tips
-          </h3>
-          
-          {/* Line 2: Two methods explanation */}
-          <div className="mb-6 p-4 bg-white rounded-lg border border-slate-200 shadow-sm">
-            <p className="text-base text-slate-700 leading-relaxed">
-              To add leads to your system, you have two convenient methods available. The first method allows you to connect directly with your CRM system for seamless data integration. The second method enables you to upload contact files in various formats for immediate processing and import.
-            </p>
-          </div>
-
-          {/* Line 3: Select gig */}
-          <div className="mb-6 p-4 bg-white rounded-lg border border-slate-200 shadow-sm">
-            <p className="text-base text-slate-700">
-              Always select a gig first before importing leads to ensure proper organization and categorization of your data.
-            </p>
-          </div>
-
-          {/* Line 4: Two columns explaining methods */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
-              <h4 className="text-lg font-semibold text-emerald-900 mb-2 flex items-center">
-                <img src={zohoLogo} alt="Zoho" className="h-5 w-5 mr-2 object-contain" />
-                Method 1: CRM Integration
-              </h4>
-              <p className="text-sm text-emerald-700 leading-relaxed">
-                Connect with your CRM system to automatically import and synchronize your existing leads. This method provides real-time access to your CRM data and ensures consistency across platforms.
-              </p>
-            </div>
-            
-            <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-              <h4 className="text-lg font-semibold text-blue-900 mb-2 flex items-center">
-                <Upload className="h-5 w-5 mr-2 text-blue-700" />
-                Method 2: File Upload
-              </h4>
-              <p className="text-sm text-blue-700 leading-relaxed">
-                Upload contact files in various formats (CSV, Excel, JSON, TXT, PDF) for immediate processing. Our system automatically validates and formats your data for optimal results.
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
 
@@ -1278,9 +1234,6 @@ Return only the JSON response, no additional text.
           </div>
         ) : (
           <div className="max-w-lg">
-            <label className="block text-sm font-semibold text-slate-700 mb-3">
-              Choose a gig to organize your leads
-            </label>
             <select
               value={selectedGigId}
               onChange={(e) => setSelectedGigId(e.target.value)}
@@ -1289,7 +1242,7 @@ Return only the JSON response, no additional text.
               <option value="" className="text-slate-500">Select a gig...</option>
               {gigs.map((gig) => (
                 <option key={gig._id} value={gig._id} className="text-slate-900">
-                  {gig.title} {gig.category && `(${gig.category})`}
+                  {gig.title} {gig.category}
                 </option>
               ))}
             </select>
@@ -1420,32 +1373,29 @@ Return only the JSON response, no additional text.
             {/* File Upload Area */}
             <div className="rounded-xl border-2 border-dashed border-blue-400 p-6 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 bg-white shadow-sm">
               <div className="text-center">
-                <div className="mx-auto h-16 w-16 bg-blue-200 rounded-full flex items-center justify-center mb-4">
-                  <Upload className="h-8 w-8 text-blue-700" />
-                </div>
-                <div>
-                  <label htmlFor="file-upload" className="cursor-pointer group">
-                    <span className="block text-base font-semibold text-blue-700 group-hover:text-blue-600 transition-colors duration-200">
+                <label htmlFor="file-upload" className="cursor-pointer group">
+                  <div className="flex items-center justify-center space-x-3">
+                    <Upload className="h-6 w-6 text-blue-700" />
+                    <span className="text-base font-semibold text-blue-700 group-hover:text-blue-600 transition-colors duration-200">
                       {isProcessing ? (
-                        <div className="flex items-center justify-center">
+                        <div className="flex items-center">
                           <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
                           Processing...
                         </div>
                       ) : (
-                        'Click to upload or drag and drop'
+                        'Click to upload or drag and drop - All file formats supported up to 10MB'
                       )}
                     </span>
-                    <input
-                      id="file-upload"
-                      type="file"
-                      className="hidden"
-                      accept="*"
-                      onChange={handleFileSelect}
-                      disabled={isProcessing}
-                    />
-                  </label>
-                  <p className="mt-3 text-sm text-slate-600">All file formats supported up to 10MB</p>
-                </div>
+                  </div>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    className="hidden"
+                    accept="*"
+                    onChange={handleFileSelect}
+                    disabled={isProcessing}
+                  />
+                </label>
               </div>
             </div>
           </div>
