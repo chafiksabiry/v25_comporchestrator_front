@@ -153,13 +153,23 @@ You are a data processing expert. Analyze the following ${fileType} file content
 File content:
 ${fileContent}
 
-Please process this data and return a JSON array of lead objects with the following structure:
+Please process this data and return a JSON array of lead objects with the following MongoDB format:
 {
   "leads": [
     {
+      "userId": {
+        "$oid": "685abed9c8feb663b492e50e"
+      },
+      "companyId": {
+        "$oid": "685abf28641398dc582f4c95"
+      },
+      "gigId": {
+        "$oid": "685bc91cf38bd37aba8b3d9b"
+      },
+      "Last_Activity_Time": null,
+      "Deal_Name": "Lead Name",
       "Email_1": "email@example.com",
       "Phone": "+1234567890",
-      "Deal_Name": "Lead Name",
       "Stage": "New",
       "Pipeline": "Sales Pipeline",
       "Project_Tags": ["tag1", "tag2"]
@@ -178,13 +188,17 @@ Please process this data and return a JSON array of lead objects with the follow
 
 Rules:
 1. Extract email addresses and validate their format
-2. Extract phone numbers and standardize them
+2. Extract phone numbers and standardize them (always include Phone field)
 3. Use Deal_Name if available, otherwise use email as Deal_Name
 4. Set default Stage to "New" if not provided
 5. Set default Pipeline to "Sales Pipeline" if not provided
 6. Split Project_Tags by semicolon if multiple tags
 7. Only include leads that have at least email OR phone
-8. Provide detailed validation feedback
+8. Always include Phone field (use "no-phone@placeholder.com" if no phone provided)
+9. Always include Email_1 field (use "no-email@placeholder.com" if no email provided)
+10. Use the exact MongoDB ObjectId format with "$oid" for userId, companyId, and gigId
+11. Set Last_Activity_Time to null
+12. Provide detailed validation feedback
 
 Return only the JSON response, no additional text.
 `;
@@ -230,16 +244,30 @@ Return only the JSON response, no additional text.
         throw new Error('Invalid response format from OpenAI');
       }
 
-      // Add required fields to each lead
-      const processedLeads = parsedData.leads.map((lead: any) => ({
-        ...lead,
-        userId: Cookies.get('userId'),
-        gigId: Cookies.get('gigId'),
-        companyId: Cookies.get('companyId'),
-        Last_Activity_Time: new Date(),
-        Activity_Tag: '',
-        Telephony: ''
-      }));
+      // Add required fields to each lead with MongoDB ObjectId format
+      const processedLeads = parsedData.leads.map((lead: any) => {
+        const userId = Cookies.get('userId');
+        const gigId = Cookies.get('gigId');
+        const companyId = Cookies.get('companyId');
+        
+        return {
+          ...lead,
+          // Use the MongoDB ObjectId format from OpenAI response, or create it if not present
+          userId: lead.userId || { "$oid": userId },
+          companyId: lead.companyId || { "$oid": companyId },
+          gigId: lead.gigId || { "$oid": gigId },
+          // Ensure these fields are always present
+          Last_Activity_Time: lead.Last_Activity_Time || null,
+          Email_1: lead.Email_1 || "no-email@placeholder.com",
+          Phone: lead.Phone || "no-phone@placeholder.com",
+          Deal_Name: lead.Deal_Name || "Unnamed Lead",
+          Stage: lead.Stage || "New",
+          Pipeline: lead.Pipeline || "Sales Pipeline",
+          Activity_Tag: lead.Activity_Tag || '',
+          Telephony: lead.Telephony || '',
+          Project_Tags: lead.Project_Tags || []
+        };
+      });
 
       return {
         leads: processedLeads,
@@ -388,9 +416,31 @@ Return only the JSON response, no additional text.
     setShowFileName(false);
 
     try {
-      console.log('Saving leads:', parsedLeads);
+      // Convert leads to MongoDB format for API
+      const leadsForAPI = parsedLeads.map((lead: any) => {
+        const userId = Cookies.get('userId');
+        const gigId = Cookies.get('gigId');
+        const companyId = Cookies.get('companyId');
+        
+        return {
+          userId: { "$oid": lead.userId?.$oid || userId },
+          companyId: { "$oid": lead.companyId?.$oid || companyId },
+          gigId: { "$oid": lead.gigId?.$oid || gigId },
+          Last_Activity_Time: lead.Last_Activity_Time || null,
+          Deal_Name: lead.Deal_Name || "Unnamed Lead",
+          Email_1: lead.Email_1 || "no-email@placeholder.com",
+          Phone: lead.Phone || "no-phone@placeholder.com",
+          Stage: lead.Stage || "New",
+          Pipeline: lead.Pipeline || "Sales Pipeline",
+          Activity_Tag: lead.Activity_Tag || '',
+          Telephony: lead.Telephony || '',
+          Project_Tags: lead.Project_Tags || []
+        };
+      });
+
+      console.log('Saving leads with MongoDB format:', leadsForAPI);
       console.log('API URL:', `${import.meta.env.VITE_DASHBOARD_API}/leads`);
-      const response = await axios.post(`${import.meta.env.VITE_DASHBOARD_API}/leads`, parsedLeads, {
+      const response = await axios.post(`${import.meta.env.VITE_DASHBOARD_API}/leads`, leadsForAPI, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`
@@ -891,7 +941,7 @@ Return only the JSON response, no additional text.
     const newGigId = e.target.value;
     setSelectedGigId(newGigId);
     
-    // Update gigId in all parsed leads
+    // Update gigId in all parsed leads (keep as string for interface compatibility)
     setParsedLeads(prevLeads => 
       prevLeads.map(lead => ({
         ...lead,
@@ -1155,7 +1205,9 @@ Return only the JSON response, no additional text.
               const examples = [
                 'john.doe@example.com,+1-555-123-4567,John Doe,New,Sales Pipeline,prospect;high-value',
                 'jane.smith@company.com,+33 1 23 45 67 89,Jane Smith,Qualified,Enterprise Pipeline,enterprise;decision-maker',
-                'mike.wilson@startup.io,+44 20 7946 0958,Mike Wilson,Contacted,Startup Pipeline,startup;tech'
+                'mike.wilson@startup.io,+44 20 7946 0958,Mike Wilson,Contacted,Startup Pipeline,startup;tech',
+                'no-email@placeholder.com,+1-555-999-8888,Phone Only Lead,New,Sales Pipeline,phone-lead',
+                'email-only@example.com,no-phone@placeholder.com,Email Only Lead,Qualified,Enterprise Pipeline,email-lead'
               ];
               const csvContent = headers.join(',') + '\n' + examples.join('\n');
               const blob = new Blob([csvContent], { type: 'text/csv' });
