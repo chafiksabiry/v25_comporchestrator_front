@@ -282,7 +282,10 @@ const CompanyOnboarding = () => {
   };
 
   const handleStartStep = async (stepId: number) => {
-    if (!companyId) return;
+    if (!companyId) {
+      console.error('Company ID not available for starting step');
+      return;
+    }
 
     try {
       // Mettre à jour le statut de l'étape à "in_progress"
@@ -319,12 +322,19 @@ const CompanyOnboarding = () => {
       }
     } catch (error) {
       console.error('Error updating step status:', error);
+      // Afficher un message d'erreur plus informatif
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+      }
     }
   };
 
 
   const handleStepComplete = async (stepId: number) => {
-    if (!companyId) return;
+    if (!companyId) {
+      console.error('Company ID not available for step completion');
+      return;
+    }
 
     try {
       const phaseId = phases.findIndex(phase => 
@@ -339,6 +349,10 @@ const CompanyOnboarding = () => {
       setCompletedSteps(prev => [...prev, stepId]);
     } catch (error) {
       console.error('Error completing step:', error);
+      // Afficher un message d'erreur plus informatif
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+      }
     }
   };
 
