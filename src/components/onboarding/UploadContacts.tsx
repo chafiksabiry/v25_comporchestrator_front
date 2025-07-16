@@ -1345,7 +1345,7 @@ Return only the JSON response, no additional text.
                           Processing...
                         </div>
                       ) : (
-                        'Click to upload or drag and drop - All file formats supported up to 10MB'
+                        'Click to upload or drag and drop'
                       )}
                     </span>
                   </div>
