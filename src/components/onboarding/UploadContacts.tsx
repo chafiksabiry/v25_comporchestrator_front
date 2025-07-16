@@ -97,7 +97,6 @@ const UploadContacts = () => {
   const [hasZohoAccessToken, setHasZohoAccessToken] = useState(false);
   const [showImportChoiceModal, setShowImportChoiceModal] = useState(false);
   const [selectedImportChoice, setSelectedImportChoice] = useState<'zoho' | 'file' | null>(null);
-  const [showGigsSection, setShowGigsSection] = useState(true);
   const [showLeadsPreview, setShowLeadsPreview] = useState(true);
   const [validationResults, setValidationResults] = useState<any>(null);
   const [editingLeadIndex, setEditingLeadIndex] = useState<number | null>(null);
@@ -1228,15 +1227,15 @@ Return only the JSON response, no additional text.
             <div className="flex items-start space-x-3">
               <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
               <div>
-                <p className="text-sm font-medium text-blue-800">AI Processing</p>
-                <p className="text-xs text-blue-700">Our AI automatically validates and formats your data for optimal results</p>
+                <p className="text-sm font-medium text-blue-800">You Have Two Methods</p>
+                <p className="text-xs text-blue-700">First method: Connect with Zoho CRM for seamless integration</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
               <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
               <div>
-                <p className="text-sm font-medium text-blue-800">Real-time Sync</p>
-                <p className="text-xs text-blue-700">Zoho integration keeps your data synchronized automatically</p>
+                <p className="text-sm font-medium text-blue-800">Second Method</p>
+                <p className="text-xs text-blue-700">Upload files directly with automatic data processing</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
@@ -1250,63 +1249,82 @@ Return only the JSON response, no additional text.
         </div>
       </div>
 
-      {/* Gig Selection Toggle */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => setShowGigsSection(!showGigsSection)}
-          className="flex items-center rounded-lg bg-gradient-to-r from-blue-600 to-blue-800 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-blue-700 hover:to-blue-900 transition-all duration-200 transform hover:scale-105"
-        >
-          {showGigsSection ? (
-            <>
-              <ChevronUp className="mr-2 h-4 w-4" />
-              Hide Gigs
-            </>
-          ) : (
-            <>
-              <ChevronDown className="mr-2 h-4 w-4" />
-              Show Gigs
-            </>
-          )}
-        </button>
-      </div>
+
 
       {/* Gigs Selection Dropdown */}
-      {showGigsSection && (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 transition-all duration-300 ease-in-out">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Users className="mr-2 h-5 w-5 text-blue-600" />
-            Select a Gig
-          </h4>
-          {isLoadingGigs ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-              <span className="ml-3 text-sm text-gray-600">Loading gigs...</span>
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 transition-all duration-300 ease-in-out">
+        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <Users className="mr-2 h-5 w-5 text-blue-600" />
+          Select a Gig
+        </h4>
+        {isLoadingGigs ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-sm text-gray-600">Loading gigs...</span>
+          </div>
+        ) : gigs.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="mx-auto h-10 w-10 text-gray-400 mb-3">
+              <Users className="h-10 w-10" />
             </div>
-          ) : gigs.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="mx-auto h-10 w-10 text-gray-400 mb-3">
-                <Users className="h-10 w-10" />
-              </div>
-              <p className="text-sm text-gray-500">No gigs available.</p>
-            </div>
-          ) : (
-            <div className="max-w-md">
-              <select
-                value={selectedGigId}
-                onChange={(e) => setSelectedGigId(e.target.value)}
-                className="w-full rounded-lg border-gray-300 py-3 px-4 text-base focus:border-blue-600 focus:outline-none focus:ring-blue-600 sm:text-sm shadow-sm bg-white"
-              >
-                <option value="">Select a gig...</option>
-                {gigs.map((gig) => (
-                  <option key={gig._id} value={gig._id}>
-                    {gig.title} {gig.category && `(${gig.category})`}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-      )}
+            <p className="text-sm text-gray-500">No gigs available.</p>
+          </div>
+        ) : (
+          <div className="max-w-md">
+            <select
+              value={selectedGigId}
+              onChange={(e) => setSelectedGigId(e.target.value)}
+              className="w-full rounded-lg border-gray-300 py-3 px-4 text-base focus:border-blue-600 focus:outline-none focus:ring-blue-600 sm:text-sm shadow-sm bg-white"
+            >
+              <option value="">Select a gig...</option>
+              {gigs.map((gig) => (
+                <option key={gig._id} value={gig._id}>
+                  {gig.title} {gig.category && `(${gig.category})`}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Selected Gig Information */}
+        {selectedGigId && (
+          <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
+            <h5 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
+              <Database className="mr-2 h-4 w-4 text-green-600" />
+              Selected Gig Information
+            </h5>
+            {(() => {
+              const selectedGig = gigs.find(gig => gig._id === selectedGigId);
+              return selectedGig ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-700">Title:</span>
+                    <span className="ml-2 text-gray-900">{selectedGig.title}</span>
+                  </div>
+                  {selectedGig.category && (
+                    <div>
+                      <span className="font-medium text-gray-700">Category:</span>
+                      <span className="ml-2 text-gray-900">{selectedGig.category}</span>
+                    </div>
+                  )}
+                  {selectedGig.description && (
+                    <div className="md:col-span-2">
+                      <span className="font-medium text-gray-700">Description:</span>
+                      <span className="ml-2 text-gray-900">{selectedGig.description}</span>
+                    </div>
+                  )}
+                  <div className="md:col-span-2">
+                    <span className="font-medium text-gray-700">Gig ID:</span>
+                    <span className="ml-2 text-gray-500 font-mono text-xs">{selectedGig._id}</span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-600">Gig information not available</p>
+              );
+            })()}
+          </div>
+        )}
+      </div>
 
       {/* Import Methods Section */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
@@ -1319,28 +1337,28 @@ Return only the JSON response, no additional text.
         </div>
 
         {/* Import Methods Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
           {/* Zoho Import Card */}
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-xl p-4 hover:border-blue-400 transition-all duration-300">
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-2xl p-6 hover:border-emerald-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02]">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mr-3 border border-blue-200">
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-emerald-200 shadow-sm">
                   <img 
                     src={zohoLogo} 
                     alt="Zoho CRM" 
-                    className="h-6 w-6 object-contain"
+                    className="h-7 w-7 object-contain"
                   />
                 </div>
                 <div>
-                  <h4 className="text-lg font-semibold text-blue-900">Zoho CRM Integration</h4>
-                  <p className="text-sm text-blue-700">Connect and sync with your Zoho CRM</p>
+                  <h4 className="text-xl font-bold text-emerald-900">Zoho CRM Integration</h4>
+                  <p className="text-sm text-emerald-700">Connect and sync with your Zoho CRM</p>
                 </div>
               </div>
               <div className="flex space-x-2">
                 <button
                   onClick={handleZohoConnect}
                   disabled={hasZohoAccessToken}
-                  className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-200 hover:bg-blue-300 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-200 hover:bg-emerald-300 rounded-xl transition-colors duration-200 disabled:opacity-50 shadow-sm"
                 >
                   {hasZohoAccessToken ? 'Connected' : 'Connect to Zoho'}
                 </button>
@@ -1355,11 +1373,11 @@ Return only the JSON response, no additional text.
                 await handleImportFromZoho();
               }}
               disabled={!hasZohoAccessToken || isImportingZoho}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-800 text-white font-semibold py-3 px-4 rounded-lg hover:from-blue-700 hover:to-blue-900 disabled:opacity-50 transition-all duration-200 transform hover:scale-105"
+              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold py-4 px-6 rounded-xl hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
             >
               {isImportingZoho ? (
                 <div className="flex items-center justify-center">
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  <RefreshCw className="mr-3 h-5 w-5 animate-spin" />
                   Importing from Zoho...
                 </div>
               ) : (
@@ -1367,7 +1385,7 @@ Return only the JSON response, no additional text.
                   <img 
                     src={zohoLogo} 
                     alt="Zoho" 
-                    className="h-5 w-5 mr-2 object-contain"
+                    className="h-6 w-6 mr-3 object-contain"
                   />
                   Sync with Zoho CRM
                 </div>
@@ -1376,31 +1394,31 @@ Return only the JSON response, no additional text.
           </div>
 
           {/* File Upload Card */}
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-xl p-4 hover:border-blue-400 transition-all duration-300" data-file-upload>
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02]" data-file-upload>
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <div className="w-10 h-10 bg-blue-200 rounded-full flex items-center justify-center mr-3">
-                  <Upload className="h-5 w-5 text-blue-700" />
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-blue-200 shadow-sm">
+                  <Upload className="h-6 w-6 text-blue-700" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-semibold text-blue-900">File Upload</h4>
+                  <h4 className="text-xl font-bold text-blue-900">File Upload</h4>
                   <p className="text-sm text-blue-700">Upload and process contact files</p>
                 </div>
               </div>
             </div>
             
             {/* File Upload Area */}
-            <div className="rounded-lg border-2 border-dashed border-blue-400 p-4 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 bg-white">
+            <div className="rounded-xl border-2 border-dashed border-blue-400 p-6 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 bg-white shadow-sm">
               <div className="text-center">
-                <div className="mx-auto h-12 w-12 bg-blue-200 rounded-full flex items-center justify-center mb-3">
-                  <Upload className="h-6 w-6 text-blue-700" />
+                <div className="mx-auto h-16 w-16 bg-blue-200 rounded-full flex items-center justify-center mb-4">
+                  <Upload className="h-8 w-8 text-blue-700" />
                 </div>
                 <div>
                   <label htmlFor="file-upload" className="cursor-pointer group">
-                    <span className="block text-sm font-semibold text-blue-700 group-hover:text-blue-600 transition-colors duration-200">
+                    <span className="block text-base font-semibold text-blue-700 group-hover:text-blue-600 transition-colors duration-200">
                       {isProcessing ? (
                         <div className="flex items-center justify-center">
-                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                          <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
                           Processing...
                         </div>
                       ) : (
@@ -1416,7 +1434,7 @@ Return only the JSON response, no additional text.
                       disabled={isProcessing}
                     />
                   </label>
-                  <p className="mt-2 text-xs text-slate-600">All file formats supported up to 10MB</p>
+                  <p className="mt-3 text-sm text-slate-600">All file formats supported up to 10MB</p>
                 </div>
               </div>
             </div>
