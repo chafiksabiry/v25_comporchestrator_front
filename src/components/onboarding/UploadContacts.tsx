@@ -97,6 +97,7 @@ const UploadContacts = () => {
   const [selectedImportChoice, setSelectedImportChoice] = useState<'zoho' | 'file' | null>(null);
   const [showGigsSection, setShowGigsSection] = useState(true);
   const [validationResults, setValidationResults] = useState<any>(null);
+  const [editingLeadIndex, setEditingLeadIndex] = useState<number | null>(null);
 
   const channels = [
     { id: 'all', name: 'All Channels', icon: Globe },
@@ -1126,6 +1127,12 @@ Return only the JSON response, no additional text.
     }
   };
 
+  const handleEditLead = (index: number, field: string, value: string) => {
+    const newLeads = [...parsedLeads];
+    newLeads[index] = { ...newLeads[index], [field]: value };
+    setParsedLeads(newLeads);
+  };
+
   const handleCancelModal = () => {
     localStorage.setItem('hasSeenImportChoiceModal', 'true');
     setShowImportChoiceModal(false);
@@ -1422,6 +1429,117 @@ Return only the JSON response, no additional text.
                           )}
                         </div>
                       )}
+                      
+                      {/* Preview Section */}
+                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                        <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                          <Users className="mr-2 h-4 w-4" />
+                          Preview Leads ({parsedLeads.length})
+                        </h4>
+                        <div className="max-h-60 overflow-y-auto">
+                          <div className="space-y-2">
+                            {parsedLeads.map((lead: any, index: number) => (
+                              <div key={index} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      onClick={() => setEditingLeadIndex(editingLeadIndex === index ? null : index)}
+                                      className="text-blue-500 hover:text-blue-700 p-1"
+                                    >
+                                      <Edit className="h-3 w-3" />
+                                    </button>
+                                    <span className="text-sm font-medium text-gray-900">
+                                      {lead.Deal_Name || 'Unnamed Lead'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                      lead.Stage === 'New' ? 'bg-blue-100 text-blue-800' :
+                                      lead.Stage === 'Qualified' ? 'bg-green-100 text-green-800' :
+                                      'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {lead.Stage || 'New'}
+                                    </span>
+                                    <button
+                                      onClick={() => {
+                                        const newLeads = [...parsedLeads];
+                                        newLeads.splice(index, 1);
+                                        setParsedLeads(newLeads);
+                                      }}
+                                      className="text-red-500 hover:text-red-700 p-1"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                                
+                                {editingLeadIndex === index ? (
+                                  <div className="space-y-2">
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <input
+                                        type="text"
+                                        value={lead.Deal_Name || ''}
+                                        onChange={(e) => handleEditLead(index, 'Deal_Name', e.target.value)}
+                                        placeholder="Lead Name"
+                                        className="text-xs px-2 py-1 border border-gray-300 rounded"
+                                      />
+                                      <input
+                                        type="text"
+                                        value={lead.Email_1 || ''}
+                                        onChange={(e) => handleEditLead(index, 'Email_1', e.target.value)}
+                                        placeholder="Email"
+                                        className="text-xs px-2 py-1 border border-gray-300 rounded"
+                                      />
+                                      <input
+                                        type="text"
+                                        value={lead.Phone || ''}
+                                        onChange={(e) => handleEditLead(index, 'Phone', e.target.value)}
+                                        placeholder="Phone"
+                                        className="text-xs px-2 py-1 border border-gray-300 rounded"
+                                      />
+                                      <select
+                                        value={lead.Stage || 'New'}
+                                        onChange={(e) => handleEditLead(index, 'Stage', e.target.value)}
+                                        className="text-xs px-2 py-1 border border-gray-300 rounded"
+                                      >
+                                        <option value="New">New</option>
+                                        <option value="Qualified">Qualified</option>
+                                        <option value="Contacted">Contacted</option>
+                                        <option value="Proposal">Proposal</option>
+                                        <option value="Closed">Closed</option>
+                                      </select>
+                                    </div>
+                                    <div className="flex justify-end space-x-2">
+                                      <button
+                                        onClick={() => setEditingLeadIndex(null)}
+                                        className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                                      >
+                                        Done
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                                    <div>
+                                      <span className="font-medium">Email:</span> {lead.Email_1 || 'N/A'}
+                                    </div>
+                                    <div>
+                                      <span className="font-medium">Phone:</span> {lead.Phone || 'N/A'}
+                                    </div>
+                                    <div>
+                                      <span className="font-medium">Pipeline:</span> {lead.Pipeline || 'N/A'}
+                                    </div>
+                                    <div>
+                                      <span className="font-medium">Tags:</span> {lead.Project_Tags?.join(', ') || 'N/A'}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      
                       <button
                         className="w-full rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 text-white font-semibold hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 transition-all duration-200 transform hover:scale-105"
                         onClick={handleSaveLeads}
