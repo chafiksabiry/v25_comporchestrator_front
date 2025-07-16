@@ -22,7 +22,14 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  UserPlus,
+  FileSpreadsheet,
+  Cloud,
+  Settings,
+  CheckCircle,
+  AlertCircle,
+  Info
 } from 'lucide-react';
 import zohoLogo from '../../assets/public/images/zoho-logo.png';
 import axios from 'axios';
@@ -1202,10 +1209,10 @@ Return only the JSON response, no additional text.
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
         <div className="flex items-start space-x-6 mb-6">
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900 mb-3 flex items-center">
-              <Users className="mr-3 h-8 w-8 text-blue-600" />
-              Upload Contacts
-            </h1>
+                      <h1 className="text-3xl font-bold text-gray-900 mb-3 flex items-center">
+            <UserPlus className="mr-3 h-8 w-8 text-blue-600" />
+            Upload Contacts
+          </h1>
             <p className="text-lg text-gray-600">
               Import, manage, and organize your leads efficiently. Choose between connecting with your CRM system or uploading contact files directly.
             </p>
@@ -1218,7 +1225,7 @@ Return only the JSON response, no additional text.
       {/* Gigs Selection Dropdown */}
       <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 transition-all duration-300 ease-in-out">
         <h4 className="text-xl font-bold text-slate-900 mb-6 flex items-center">
-          <Users className="mr-3 h-6 w-6 text-slate-600" />
+          <Settings className="mr-3 h-6 w-6 text-slate-600" />
           Select a Gig
         </h4>
         {isLoadingGigs ? (
@@ -1229,7 +1236,7 @@ Return only the JSON response, no additional text.
         ) : gigs.length === 0 ? (
           <div className="text-center py-12">
             <div className="mx-auto h-16 w-16 text-slate-300 mb-4">
-              <Users className="h-16 w-16" />
+              <Settings className="h-16 w-16" />
             </div>
             <p className="text-base text-slate-500 font-medium">No gigs available.</p>
           </div>
@@ -1255,7 +1262,7 @@ Return only the JSON response, no additional text.
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
         <div className="mb-4">
           <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-            <Users className="mr-2 h-5 w-5 text-blue-600" />
+            <Cloud className="mr-2 h-5 w-5 text-blue-600" />
             Import Leads
           </h3>
           <p className="mt-1 text-sm text-gray-600">Choose your preferred method to import leads into your selected gig.</p>
@@ -1323,7 +1330,7 @@ Return only the JSON response, no additional text.
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-blue-200 shadow-sm">
-                  <Upload className="h-6 w-6 text-blue-700" />
+                  <FileSpreadsheet className="h-6 w-6 text-blue-700" />
                 </div>
                 <div>
                   <h4 className="text-xl font-bold text-blue-900">File Upload</h4>
@@ -1337,7 +1344,7 @@ Return only the JSON response, no additional text.
               <div className="text-center">
                 <label htmlFor="file-upload" className="cursor-pointer group">
                   <div className="flex items-center justify-center space-x-3">
-                    <Upload className="h-6 w-6 text-blue-700" />
+                    <FileSpreadsheet className="h-6 w-6 text-blue-700" />
                     <span className="text-base font-semibold text-blue-700 group-hover:text-blue-600 transition-colors duration-200">
                       {isProcessing ? (
                         <div className="flex items-center">
@@ -1412,7 +1419,7 @@ Return only the JSON response, no additional text.
                   {validationResults && (
                                       <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3">
                     <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
-                      <Database className="mr-2 h-4 w-4" />
+                      <Info className="mr-2 h-4 w-4" />
                       AI Processing Results
                     </h4>
                     <div className="grid grid-cols-2 gap-4 text-sm">
@@ -1451,7 +1458,7 @@ Return only the JSON response, no additional text.
                   <div className="bg-white border border-gray-200 rounded-lg p-3">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center">
-                        <Users className="mr-2 h-4 w-4" />
+                        <CheckCircle className="mr-2 h-4 w-4" />
                         <h4 className="text-sm font-semibold text-gray-800">
                           Confirm & Edit Leads ({parsedLeads.length})
                         </h4>
@@ -1594,10 +1601,10 @@ Return only the JSON response, no additional text.
                         Saving Contacts...
                       </div>
                     ) : (
-                      <div className="flex items-center justify-center">
-                        <Users className="mr-2 h-5 w-5" />
-                        Save {parsedLeads.length} Contacts
-                      </div>
+                                              <div className="flex items-center justify-center">
+                          <UserPlus className="mr-2 h-5 w-5" />
+                          Save {parsedLeads.length} Contacts
+                        </div>
                     )}
                   </button>
                 </div>
@@ -1641,10 +1648,10 @@ Return only the JSON response, no additional text.
         <div className="border-b border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                <Users className="mr-2 h-5 w-5 text-blue-600" />
-                Leads List
-              </h3>
+                          <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+              <FileText className="mr-2 h-5 w-5 text-blue-600" />
+              Leads List
+            </h3>
                             <div className="mt-2">
                 {selectedGigId ? (
                   <div className="text-sm text-gray-600">
@@ -1749,7 +1756,7 @@ Return only the JSON response, no additional text.
                     <tr>
                       <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-8">
-                          <Users className="h-12 w-12 text-gray-300 mb-2" />
+                          <FileText className="h-12 w-12 text-gray-300 mb-2" />
                           <p>No leads found</p>
                           <p className="text-xs text-gray-400 mt-1">Try importing some leads or check your filters</p>
                         </div>
@@ -1771,7 +1778,7 @@ Return only the JSON response, no additional text.
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="flex items-center">
                                                     <div className="h-10 w-10 flex-shrink-0 rounded-full bg-blue-100 flex items-center justify-center">
-                          <Users className="h-6 w-6 text-blue-700" />
+                          <UserPlus className="h-6 w-6 text-blue-700" />
                         </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'No Email'}</div>
@@ -1883,7 +1890,7 @@ Return only the JSON response, no additional text.
             </div>
             <div className="text-center">
                           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-              <Upload className="h-6 w-6 text-blue-700" />
+              <Cloud className="h-6 w-6 text-blue-700" />
             </div>
               <h3 className="mb-2 text-lg font-semibold text-gray-900">
                 Choose your import method
