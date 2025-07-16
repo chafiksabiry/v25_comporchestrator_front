@@ -1,0 +1,42 @@
+[
+  {
+    "Email_1": "john.doe@example.com",
+    "Phone": "+1-555-123-4567",
+    "Deal_Name": "John Doe",
+    "Stage": "New",
+    "Pipeline": "Sales Pipeline",
+    "Project_Tags": ["prospect", "high-value"]
+  },
+  {
+    "Email_1": "jane.smith@company.com",
+    "Phone": "+33 1 23 45 67 89",
+    "Deal_Name": "Jane Smith",
+    "Stage": "Qualified",
+    "Pipeline": "Enterprise Pipeline",
+    "Project_Tags": ["enterprise", "decision-maker"]
+  },
+  {
+    "Email_1": "mike.wilson@startup.io",
+    "Phone": "+44 20 7946 0958",
+    "Deal_Name": "Mike Wilson",
+    "Stage": "Contacted",
+    "Pipeline": "Startup Pipeline",
+    "Project_Tags": ["startup", "tech"]
+  },
+  {
+    "Email_1": "no-email@placeholder.com",
+    "Phone": "+1-555-999-8888",
+    "Deal_Name": "Phone Only Lead",
+    "Stage": "New",
+    "Pipeline": "Sales Pipeline",
+    "Project_Tags": ["phone-lead"]
+  },
+  {
+    "Email_1": "email-only@example.com",
+    "Phone": "no-phone@placeholder.com",
+    "Deal_Name": "Email Only Lead",
+    "Stage": "Qualified",
+    "Pipeline": "Enterprise Pipeline",
+    "Project_Tags": ["email-lead"]
+  }
+] 

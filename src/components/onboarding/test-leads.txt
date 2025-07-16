@@ -1,0 +1,5 @@
+John Doe, john.doe@example.com, +1-555-123-4567, prospect, Sales Pipeline
+Jane Smith, jane.smith@company.com, +33 1 23 45 67 89, decision-maker, Enterprise Pipeline
+Mike Wilson, mike.wilson@startup.io, +44 20 7946 0958, tech, Startup Pipeline
+Phone Only Lead, no-email@placeholder.com, +1-555-999-8888, phone-lead, Sales Pipeline
+Email Only Lead, email-only@example.com, no-phone@placeholder.com, email-lead, Enterprise Pipeline 

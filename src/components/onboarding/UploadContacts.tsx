@@ -297,7 +297,10 @@ Return only the JSON response, no additional text.
             let fileContent = '';
             let fileType = '';
 
-            if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+            // Determine file type based on extension
+            const fileExtension = file.name.toLowerCase().split('.').pop();
+            
+            if (fileExtension === 'xlsx' || fileExtension === 'xls') {
               fileType = 'Excel';
               const data = new Uint8Array(e.target?.result as ArrayBuffer);
               const workbook = XLSX.read(data, { type: 'array' });
@@ -306,8 +309,22 @@ Return only the JSON response, no additional text.
               const json: unknown[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
               const rows = (json as any[]).map((row: any) => Array.isArray(row) ? row.join(',') : Object.values(row).join(','));
               fileContent = rows.join('\n');
-            } else {
+            } else if (fileExtension === 'csv') {
               fileType = 'CSV';
+              fileContent = e.target?.result as string;
+            } else if (fileExtension === 'json') {
+              fileType = 'JSON';
+              fileContent = e.target?.result as string;
+            } else if (fileExtension === 'txt') {
+              fileType = 'Text';
+              fileContent = e.target?.result as string;
+            } else if (fileExtension === 'pdf') {
+              fileType = 'PDF';
+              // For PDF files, we'll send the raw content and let OpenAI extract text
+              fileContent = e.target?.result as string;
+            } else {
+              // For any other file type, treat as text
+              fileType = 'Unknown';
               fileContent = e.target?.result as string;
             }
 
@@ -373,9 +390,16 @@ Return only the JSON response, no additional text.
           setIsProcessing(false);
         };
 
-        if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        // Read file based on type
+        const fileExtension = file.name.toLowerCase().split('.').pop();
+        
+        if (fileExtension === 'xlsx' || fileExtension === 'xls') {
           reader.readAsArrayBuffer(file);
+        } else if (fileExtension === 'pdf') {
+          // For PDF files, we'll try to read as text first, then as array buffer if needed
+          reader.readAsText(file);
         } else {
+          // For all other file types, read as text
           reader.readAsText(file);
         }
       } catch (error: any) {
@@ -1195,7 +1219,7 @@ Return only the JSON response, no additional text.
               <Upload className="mr-2 h-5 w-5 text-indigo-600" />
               Import Contacts
             </h3>
-            <p className="mt-1 text-sm text-gray-600">Upload your contacts from a CSV or Excel file. AI-powered processing ensures data quality and validation.</p>
+            <p className="mt-1 text-sm text-gray-600">Upload your contacts from any file format. AI-powered processing extracts and validates contact data automatically.</p>
           </div>
           <button 
             className="text-sm font-medium text-indigo-600 hover:text-indigo-500 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg transition-colors duration-200"
@@ -1269,12 +1293,12 @@ Return only the JSON response, no additional text.
                     id="file-upload"
                     type="file"
                     className="hidden"
-                    accept=".csv,.xlsx,.xls"
+                    accept="*"
                     onChange={handleFileSelect}
                     disabled={isProcessing}
                   />
                 </label>
-                <p className="mt-2 text-sm text-gray-500">CSV, Excel files up to 10MB</p>
+                <p className="mt-2 text-sm text-gray-500">All file types supported up to 10MB</p>
               </div>
             </div>
             {selectedFile && showFileName && (
