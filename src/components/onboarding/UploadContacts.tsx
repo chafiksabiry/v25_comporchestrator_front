@@ -82,6 +82,7 @@ const UploadContacts = () => {
   });
   const [isImportingZoho, setIsImportingZoho] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [isLoadingLeads, setIsLoadingLeads] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [realtimeLeads, setRealtimeLeads] = useState<Lead[]>([]);
@@ -844,6 +845,7 @@ Return only the JSON response, no additional text.
 
       console.log('Setting leads:', responseData.data);
       setLeads(responseData.data);
+      setFilteredLeads(responseData.data); // Initialiser les leads filtrés
       setTotalPages(responseData.totalPages);
       setCurrentPage(responseData.currentPage);
       setTotalCount(responseData.total);
@@ -1162,6 +1164,32 @@ Return only the JSON response, no additional text.
     setParsedLeads(newLeads);
   };
 
+  // Fonction de filtrage des leads
+  const filterLeads = (leads: Lead[], query: string, status: string) => {
+    return leads.filter(lead => {
+      // Filtre par recherche textuelle
+      const searchMatch = query === '' || 
+        lead.Deal_Name?.toLowerCase().includes(query.toLowerCase()) ||
+        lead.Email_1?.toLowerCase().includes(query.toLowerCase()) ||
+        lead.Phone?.toLowerCase().includes(query.toLowerCase()) ||
+        lead.Stage?.toLowerCase().includes(query.toLowerCase()) ||
+        lead.Pipeline?.toLowerCase().includes(query.toLowerCase());
+
+      // Filtre par statut
+      const statusMatch = status === 'all' || 
+        (status === 'active' && lead.Stage !== 'Closed') ||
+        (status === 'inactive' && lead.Stage === 'Closed');
+
+      return searchMatch && statusMatch;
+    });
+  };
+
+  // Effet pour filtrer les leads quand la recherche ou le statut change
+  useEffect(() => {
+    const filtered = filterLeads(leads, searchQuery, filterStatus);
+    setFilteredLeads(filtered);
+  }, [leads, searchQuery, filterStatus]);
+
   const handleCancelModal = () => {
     localStorage.setItem('hasSeenImportChoiceModal', 'true');
     setShowImportChoiceModal(false);
@@ -1170,92 +1198,71 @@ Return only the JSON response, no additional text.
 
   return (
     <div className="space-y-4 bg-gradient-to-br from-gray-50 to-white min-h-screen p-4">
-      {/* Header Section */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Upload Contacts
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">Import and manage your contact list across channels</p>
-          </div>
-          <div className="flex space-x-3">
-            <button
-              onClick={() => setShowGigsSection(!showGigsSection)}
-              className="flex items-center rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-purple-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105"
-            >
-              {showGigsSection ? (
-                <>
-                  <ChevronUp className="mr-2 h-4 w-4" />
-                  Hide Gigs
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="mr-2 h-4 w-4" />
-                  Show Gigs
-                </>
-              )}
-            </button>
-          </div>
-        </div>
+      {/* Gig Selection Toggle */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowGigsSection(!showGigsSection)}
+          className="flex items-center rounded-lg bg-gradient-to-r from-orange-500 to-red-500 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-orange-600 hover:to-red-600 transition-all duration-200 transform hover:scale-105"
+        >
+          {showGigsSection ? (
+            <>
+              <ChevronUp className="mr-2 h-4 w-4" />
+              Hide Gigs
+            </>
+          ) : (
+            <>
+              <ChevronDown className="mr-2 h-4 w-4" />
+              Show Gigs
+            </>
+          )}
+        </button>
       </div>
 
       {/* Gigs Selection Cards */}
       {showGigsSection && (
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 transition-all duration-300 ease-in-out">
           <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Users className="mr-2 h-5 w-5 text-indigo-600" />
+            <Users className="mr-2 h-5 w-5 text-orange-600" />
             Select a Gig
           </h4>
           {isLoadingGigs ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600"></div>
               <span className="ml-3 text-sm text-gray-600">Loading gigs...</span>
             </div>
           ) : gigs.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="mx-auto h-12 w-12 text-gray-400 mb-4">
-                <Users className="h-12 w-12" />
+            <div className="text-center py-8">
+              <div className="mx-auto h-10 w-10 text-gray-400 mb-3">
+                <Users className="h-10 w-10" />
               </div>
               <p className="text-sm text-gray-500">No gigs available.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {gigs.map((gig) => (
                 <div
                   key={gig._id}
-                  className={`cursor-pointer rounded-xl border-2 p-6 shadow-sm flex flex-col transition-all duration-300 hover:shadow-lg hover:scale-105 ${
+                  className={`cursor-pointer rounded-lg border-2 p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:scale-105 ${
                     selectedGigId === gig._id 
-                      ? 'border-indigo-500 ring-4 ring-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50' 
-                      : 'border-gray-200 bg-white hover:border-indigo-300'
+                      ? 'border-orange-500 ring-2 ring-orange-100 bg-gradient-to-br from-orange-50 to-red-50' 
+                      : 'border-gray-200 bg-white hover:border-orange-300'
                   }`}
                   onClick={() => setSelectedGigId(gig._id)}
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={`font-bold text-lg ${
-                      selectedGigId === gig._id ? 'text-indigo-700' : 'text-gray-900'
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`font-semibold text-base ${
+                      selectedGigId === gig._id ? 'text-orange-700' : 'text-gray-900'
                     }`}>
                       {gig.title}
                     </span>
                     {selectedGigId === gig._id && (
-                      <div className="w-3 h-3 bg-indigo-500 rounded-full animate-pulse"></div>
+                      <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
                     )}
                   </div>
-                  <div className="mb-3">
-                    <span className="inline-block rounded-full bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-700 px-3 py-1 text-xs font-semibold">
+                  <div className="mb-2">
+                    <span className="inline-block rounded-full bg-gradient-to-r from-orange-100 to-red-100 text-orange-700 px-2 py-1 text-xs font-medium">
                       {gig.category || 'No category'}
                     </span>
-                  </div>
-                  <div 
-                    className="text-sm text-gray-600 line-clamp-3 flex-grow" 
-                    style={{
-                      display: '-webkit-box', 
-                      WebkitLineClamp: 3, 
-                      WebkitBoxOrient: 'vertical', 
-                      overflow: 'hidden'
-                    }}
-                  >
-                    {gig.description || 'No description available'}
                   </div>
                 </div>
               ))}
@@ -1268,7 +1275,7 @@ Return only the JSON response, no additional text.
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
         <div className="mb-4">
           <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-            <Users className="mr-2 h-5 w-5 text-indigo-600" />
+            <Users className="mr-2 h-5 w-5 text-orange-600" />
             Import Leads
           </h3>
           <p className="mt-1 text-sm text-gray-600">Choose your preferred method to import leads into your selected gig.</p>
@@ -1277,38 +1284,38 @@ Return only the JSON response, no additional text.
         {/* Import Methods Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
           {/* Zoho Import Card */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 hover:border-blue-300 transition-all duration-300">
+          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl p-4 hover:border-purple-300 transition-all duration-300">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                  <Database className="h-5 w-5 text-blue-600" />
+                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                  <Database className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-semibold text-blue-900">Zoho CRM Import</h4>
-                  <p className="text-sm text-blue-700">Sync leads from your Zoho CRM</p>
+                  <h4 className="text-lg font-semibold text-purple-900">Zoho CRM Import</h4>
+                  <p className="text-sm text-purple-700">Sync leads from your Zoho CRM</p>
                 </div>
               </div>
               <div className="flex space-x-2">
                 <button
                   onClick={handleZohoConnect}
                   disabled={hasZohoAccessToken}
-                  className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                  className="px-3 py-1 text-xs font-medium text-purple-600 bg-purple-100 hover:bg-purple-200 rounded-lg transition-colors duration-200 disabled:opacity-50"
                 >
                   {hasZohoAccessToken ? 'Connected' : 'Connect'}
                 </button>
               </div>
             </div>
             <div className="space-y-2 mb-4">
-              <div className="flex items-center text-sm text-blue-700">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+              <div className="flex items-center text-sm text-purple-700">
+                <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
                 Automatic synchronization
               </div>
-              <div className="flex items-center text-sm text-blue-700">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+              <div className="flex items-center text-sm text-purple-700">
+                <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
                 Real-time data updates
               </div>
-              <div className="flex items-center text-sm text-blue-700">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+              <div className="flex items-center text-sm text-purple-700">
+                <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
                 No file upload required
               </div>
             </div>
@@ -1321,7 +1328,7 @@ Return only the JSON response, no additional text.
                 await handleImportFromZoho();
               }}
               disabled={!hasZohoAccessToken || isImportingZoho}
-              className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-blue-600 hover:to-indigo-700 disabled:opacity-50 transition-all duration-200 transform hover:scale-105"
+              className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-purple-600 hover:to-indigo-700 disabled:opacity-50 transition-all duration-200 transform hover:scale-105"
             >
               {isImportingZoho ? (
                 <div className="flex items-center justify-center">
@@ -1338,42 +1345,42 @@ Return only the JSON response, no additional text.
           </div>
 
           {/* File Upload Card */}
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4 hover:border-green-300 transition-all duration-300" data-file-upload>
+          <div className="bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-200 rounded-xl p-4 hover:border-teal-300 transition-all duration-300" data-file-upload>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center">
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                  <Upload className="h-5 w-5 text-green-600" />
+                <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center mr-3">
+                  <Upload className="h-5 w-5 text-teal-600" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-semibold text-green-900">File Upload</h4>
-                  <p className="text-sm text-green-700">Upload contacts from any file format</p>
+                  <h4 className="text-lg font-semibold text-teal-900">File Upload</h4>
+                  <p className="text-sm text-teal-700">Upload contacts from any file format</p>
                 </div>
               </div>
             </div>
             <div className="space-y-2 mb-4">
-              <div className="flex items-center text-sm text-green-700">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+              <div className="flex items-center text-sm text-teal-700">
+                <div className="w-2 h-2 bg-teal-500 rounded-full mr-2"></div>
                 Supports CSV, Excel, JSON, TXT, PDF
               </div>
-              <div className="flex items-center text-sm text-green-700">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+              <div className="flex items-center text-sm text-teal-700">
+                <div className="w-2 h-2 bg-teal-500 rounded-full mr-2"></div>
                 AI-powered data processing
               </div>
-              <div className="flex items-center text-sm text-green-700">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+              <div className="flex items-center text-sm text-teal-700">
+                <div className="w-2 h-2 bg-teal-500 rounded-full mr-2"></div>
                 Preview and edit before saving
               </div>
             </div>
             
             {/* File Upload Area */}
-            <div className="rounded-lg border-2 border-dashed border-green-300 p-4 hover:border-green-400 hover:bg-green-50 transition-all duration-300 bg-white">
+            <div className="rounded-lg border-2 border-dashed border-teal-300 p-4 hover:border-teal-400 hover:bg-teal-50 transition-all duration-300 bg-white">
               <div className="text-center">
-                <div className="mx-auto h-12 w-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
-                  <Upload className="h-6 w-6 text-green-600" />
+                <div className="mx-auto h-12 w-12 bg-teal-100 rounded-full flex items-center justify-center mb-3">
+                  <Upload className="h-6 w-6 text-teal-600" />
                 </div>
                 <div>
                   <label htmlFor="file-upload" className="cursor-pointer group">
-                    <span className="block text-sm font-semibold text-green-600 group-hover:text-green-500 transition-colors duration-200">
+                    <span className="block text-sm font-semibold text-teal-600 group-hover:text-teal-500 transition-colors duration-200">
                       {isProcessing ? (
                         <div className="flex items-center justify-center">
                           <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
@@ -1392,7 +1399,7 @@ Return only the JSON response, no additional text.
                       disabled={isProcessing}
                     />
                   </label>
-                  <p className="mt-2 text-xs text-green-600">All file formats supported up to 10MB</p>
+                  <p className="mt-2 text-xs text-teal-600">All file formats supported up to 10MB</p>
                 </div>
               </div>
             </div>
@@ -1620,7 +1627,7 @@ Return only the JSON response, no additional text.
                   </div>
                   
                   <button
-                    className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 px-4 py-3 text-white font-bold hover:from-blue-600 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-red-600 px-4 py-3 text-white font-bold hover:from-orange-600 hover:to-red-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                     onClick={handleSaveLeads}
                     disabled={isProcessing}
                   >
@@ -1646,7 +1653,7 @@ Return only the JSON response, no additional text.
       {/* Channel Filter */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
         <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-          <Globe className="mr-2 h-5 w-5 text-indigo-600" />
+          <Globe className="mr-2 h-5 w-5 text-orange-600" />
           Channel Filter
         </h3>
         <div className="flex flex-wrap gap-2">
@@ -1659,7 +1666,7 @@ Return only the JSON response, no additional text.
                 key={channel.id}
                 className={`flex items-center space-x-2 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 transform hover:scale-105 ${
                   isSelected
-                    ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg'
+                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
                 }`}
                 onClick={() => toggleChannel(channel.id)}
@@ -1678,15 +1685,15 @@ Return only the JSON response, no additional text.
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                <Users className="mr-2 h-5 w-5 text-indigo-600" />
+                <Users className="mr-2 h-5 w-5 text-orange-600" />
                 Leads List
               </h3>
-              <div className="mt-2">
+                            <div className="mt-2">
                 {selectedGigId ? (
                   <div className="text-sm text-gray-600">
                     {leads.length > 0 ? (
-                      <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium">
-                        Showing {leads.length} leads on page {currentPage} of {totalPages} (Total: {totalCount})
+                      <span className="bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-xs font-medium">
+                        Showing {filteredLeads.length} of {leads.length} leads {searchQuery && `(filtered by "${searchQuery}")`}
                       </span>
                     ) : (
                       <span className="bg-gray-50 text-gray-600 px-3 py-1 rounded-full text-xs font-medium">
@@ -1706,24 +1713,24 @@ Return only the JSON response, no additional text.
                 </div>
                 <input
                   type="text"
-                  className="block w-full rounded-lg border-gray-300 pl-10 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm shadow-sm"
+                  className="block w-full rounded-lg border-gray-300 pl-10 focus:border-orange-500 focus:ring-orange-500 sm:text-sm shadow-sm"
                   placeholder="Search leads..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
               <select
-                className="rounded-lg border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm shadow-sm"
+                className="rounded-lg border-gray-300 py-2 pl-3 pr-10 text-base focus:border-orange-500 focus:outline-none focus:ring-orange-500 sm:text-sm shadow-sm"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
                 <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="active">Active (Not Closed)</option>
+                <option value="inactive">Inactive (Closed)</option>
               </select>
               <button
                 onClick={() => fetchLeads()}
-                className="flex items-center rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 px-3 py-2 text-sm font-medium text-white shadow-md hover:from-indigo-600 hover:to-purple-600 transition-all duration-200 transform hover:scale-105"
+                className="flex items-center rounded-lg bg-gradient-to-r from-orange-500 to-red-500 px-3 py-2 text-sm font-medium text-white shadow-md hover:from-orange-600 hover:to-red-600 transition-all duration-200 transform hover:scale-105"
                 disabled={isLoadingLeads || !selectedGigId}
               >
                 {isLoadingLeads ? (
@@ -1779,7 +1786,7 @@ Return only the JSON response, no additional text.
                     <tr>
                       <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex items-center justify-center py-8">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mr-3"></div>
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600 mr-3"></div>
                           Loading leads...
                         </div>
                       </td>
@@ -1794,14 +1801,24 @@ Return only the JSON response, no additional text.
                         </div>
                       </td>
                     </tr>
+                  ) : filteredLeads.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                        <div className="flex flex-col items-center justify-center py-8">
+                          <Search className="h-12 w-12 text-gray-300 mb-2" />
+                          <p>No leads match your search</p>
+                          <p className="text-xs text-gray-400 mt-1">Try adjusting your search terms or filters</p>
+                        </div>
+                      </td>
+                    </tr>
                   ) : (
-                    leads.map((lead, index) => (
+                    filteredLeads.map((lead, index) => (
                       <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="flex items-center">
-                            <div className="h-10 w-10 flex-shrink-0 rounded-full bg-indigo-100 flex items-center justify-center">
-                              <Users className="h-6 w-6 text-indigo-600" />
-                            </div>
+                                                    <div className="h-10 w-10 flex-shrink-0 rounded-full bg-orange-100 flex items-center justify-center">
+                          <Users className="h-6 w-6 text-orange-600" />
+                        </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'No Email'}</div>
                               <div className="text-sm text-gray-500">{lead.Phone || 'No Phone'}</div>
@@ -1812,7 +1829,7 @@ Return only the JSON response, no additional text.
                           {lead.Deal_Name || 'N/A'}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
-                          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-800">
+                          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-800">
                             {lead.Stage || 'N/A'}
                           </span>
                         </td>
@@ -1824,7 +1841,7 @@ Return only the JSON response, no additional text.
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                           <div className="flex items-center justify-end space-x-2">
-                            <button className="text-indigo-600 hover:text-indigo-900 p-1 rounded-md hover:bg-indigo-50 transition-colors duration-150">
+                            <button className="text-orange-600 hover:text-orange-900 p-1 rounded-md hover:bg-orange-50 transition-colors duration-150">
                               <Edit className="h-4 w-4" />
                             </button>
                             <button className="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50 transition-colors duration-150">
@@ -1841,39 +1858,27 @@ Return only the JSON response, no additional text.
           </div>
         </div>
         {/* Pagination Controls */}
-        {leads.length > 0 && totalPages > 1 && (
+        {filteredLeads.length > 0 && (
           <div className="bg-white px-4 py-3 border-t border-gray-200">
             <div className="flex items-center justify-between">
-              <div className="flex items-center text-sm text-gray-700">
-                <span>
-                  Showing <span className="font-medium">{((currentPage - 1) * pageSize) + 1}</span> to{' '}
-                  <span className="font-medium">
-                    {Math.min(currentPage * pageSize, totalCount)}
-                  </span>{' '}
-                  of <span className="font-medium">{totalCount}</span> results
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => fetchLeads(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </button>
-                <div className="flex items-center space-x-1">
-                  {renderPaginationButtons()}
+                              <div className="flex items-center text-sm text-gray-700">
+                  <span>
+                    Showing <span className="font-medium">{filteredLeads.length}</span> of{' '}
+                    <span className="font-medium">{leads.length}</span> leads
+                    {searchQuery && (
+                      <span className="text-orange-600"> (filtered by "{searchQuery}")</span>
+                    )}
+                  </span>
                 </div>
-                <button
-                  onClick={() => fetchLeads(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
+                              <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Clear Search
+                  </button>
+                </div>
             </div>
           </div>
         )}
