@@ -463,17 +463,52 @@ Return only the JSON response, no additional text.
       });
 
       console.log('Saving leads with MongoDB format:', leadsForAPI);
+      console.log('Number of leads to save:', leadsForAPI.length);
       console.log('API URL:', `${import.meta.env.VITE_DASHBOARD_API}/leads`);
-      const response = await axios.post(`${import.meta.env.VITE_DASHBOARD_API}/leads`, leadsForAPI, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`
+      
+      // Envoyer chaque lead individuellement pour s'assurer qu'ils sont tous sauvegardés
+      const savedLeads = [];
+      for (let i = 0; i < leadsForAPI.length; i++) {
+        const lead = leadsForAPI[i];
+        console.log(`Saving lead ${i + 1}/${leadsForAPI.length}:`, lead);
+        
+        // Mettre à jour la progression
+        const progress = Math.round(((i + 1) / leadsForAPI.length) * 100);
+        setUploadProgress(progress);
+        
+        try {
+          const response = await axios.post(`${import.meta.env.VITE_DASHBOARD_API}/leads`, [lead], {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`
+            }
+          });
+          
+          if (response.status === 200) {
+            savedLeads.push(response.data);
+            console.log(`Lead ${i + 1} saved successfully:`, response.data);
+          } else {
+            console.error(`Failed to save lead ${i + 1}:`, response.statusText);
+          }
+        } catch (error) {
+          console.error(`Error saving lead ${i + 1}:`, error);
         }
-      });
+      }
+      
+      const response = { status: 200, data: savedLeads };
       console.log('Save response:', response.data);
       if (response.status === 200) {
-        setUploadSuccess(true);
-        setUploadProgress(100);
+        const savedCount = savedLeads.length;
+        const totalCount = leadsForAPI.length;
+        
+        if (savedCount === totalCount) {
+          setUploadSuccess(true);
+          setUploadProgress(100);
+          toast.success(`Successfully saved all ${savedCount} leads!`);
+        } else {
+          setUploadError(`Only ${savedCount} out of ${totalCount} leads were saved. Check console for details.`);
+          toast.error(`Only ${savedCount} out of ${totalCount} leads were saved.`);
+        }
         
         // Rafraîchir la liste des leads après l'importation
         if (selectedGigId) {
