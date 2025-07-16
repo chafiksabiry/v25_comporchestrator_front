@@ -141,11 +141,19 @@ const UploadContacts = () => {
     }
   ];
 
-  const processFileWithOpenAI = async (fileContent: string, fileType: string) => {
+    const processFileWithOpenAI = async (fileContent: string, fileType: string) => {
     try {
       const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
       if (!openaiApiKey) {
         throw new Error('OpenAI API key not configured');
+      }
+
+      const userId = Cookies.get('userId');
+      const gigId = selectedGigId; // Use selected gig ID instead of cookie
+      const companyId = Cookies.get('companyId');
+
+      if (!gigId) {
+        throw new Error('Please select a gig first');
       }
 
       const prompt = `
@@ -159,13 +167,13 @@ Please process this data and return a JSON array of lead objects with the follow
   "leads": [
     {
       "userId": {
-        "$oid": "685abed9c8feb663b492e50e"
+        "$oid": "${userId}"
       },
       "companyId": {
-        "$oid": "685abf28641398dc582f4c95"
+        "$oid": "${companyId}"
       },
       "gigId": {
-        "$oid": "685bc91cf38bd37aba8b3d9b"
+        "$oid": "${gigId}"
       },
       "Last_Activity_Time": null,
       "Deal_Name": "Lead Name",
@@ -176,16 +184,16 @@ Please process this data and return a JSON array of lead objects with the follow
       "Project_Tags": ["tag1", "tag2"]
     }
   ],
-  "validation": {
-    "totalRows": 10,
-    "validRows": 8,
-    "invalidRows": 2,
-    "errors": [
-      "Row 3: Invalid email format",
-      "Row 7: Missing required fields"
-    ]
-  }
-}
+      "validation": {
+        "totalRows": 10,
+        "validRows": 8,
+        "invalidRows": 2,
+        "errors": [
+          "Row 3: Invalid email format",
+          "Row 7: Missing required fields"
+        ]
+      }
+    }
 
 Rules:
 1. Extract email addresses and validate their format
@@ -200,6 +208,7 @@ Rules:
 10. Use the exact MongoDB ObjectId format with "$oid" for userId, companyId, and gigId
 11. Set Last_Activity_Time to null
 12. Provide detailed validation feedback
+13. IMPORTANT: Use the provided userId, companyId, and gigId values exactly as shown above
 
 Return only the JSON response, no additional text.
 `;
@@ -248,7 +257,7 @@ Return only the JSON response, no additional text.
       // Add required fields to each lead with MongoDB ObjectId format
       const processedLeads = parsedData.leads.map((lead: any) => {
         const userId = Cookies.get('userId');
-        const gigId = Cookies.get('gigId');
+        const gigId = selectedGigId; // Use selected gig ID instead of cookie
         const companyId = Cookies.get('companyId');
         
         return {
@@ -283,6 +292,12 @@ Return only the JSON response, no additional text.
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Check if a gig is selected before processing
+      if (!selectedGigId) {
+        toast.error('Please select a gig first before uploading a file');
+        return;
+      }
+      
       setSelectedFile(file);
       setUploadError(null);
       setUploadSuccess(false);
@@ -442,16 +457,25 @@ Return only the JSON response, no additional text.
 
     try {
       // Convert leads to API format (try both MongoDB ObjectId and string formats)
+      const currentUserId = Cookies.get('userId');
+      const currentGigId = selectedGigId; // Use selected gig ID instead of cookie
+      const currentCompanyId = Cookies.get('companyId');
+      
+      console.log('Current IDs for API:', {
+        userId: currentUserId,
+        gigId: currentGigId,
+        companyId: currentCompanyId
+      });
+      
       const leadsForAPI = parsedLeads.map((lead: any) => {
-        const userId = Cookies.get('userId');
-        const gigId = Cookies.get('gigId');
-        const companyId = Cookies.get('companyId');
+        // Use the selected gigId
+        const finalGigId = selectedGigId;
         
         // Try string format first (more common for APIs)
         return {
-          userId: lead.userId?.$oid || userId,
-          companyId: lead.companyId?.$oid || companyId,
-          gigId: lead.gigId?.$oid || gigId,
+          userId: lead.userId?.$oid || currentUserId,
+          companyId: lead.companyId?.$oid || currentCompanyId,
+          gigId: lead.gigId?.$oid || finalGigId,
           Last_Activity_Time: lead.Last_Activity_Time || null,
           Deal_Name: lead.Deal_Name || "Unnamed Lead",
           Email_1: lead.Email_1 || "no-email@placeholder.com",
@@ -480,11 +504,11 @@ Return only the JSON response, no additional text.
         
         try {
           const response = await axios.post(`${import.meta.env.VITE_DASHBOARD_API}/leads`, lead, {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`
-            }
-          });
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`
+        }
+      });
           
           console.log(`Lead ${i + 1} response status:`, response.status);
           console.log(`Lead ${i + 1} response data:`, response.data);
@@ -507,8 +531,8 @@ Return only the JSON response, no additional text.
         const totalCount = leadsForAPI.length;
         
         if (savedCount === totalCount) {
-          setUploadSuccess(true);
-          setUploadProgress(100);
+        setUploadSuccess(true);
+        setUploadProgress(100);
           toast.success(`Successfully saved all ${savedCount} leads!`);
         } else {
           setUploadError(`Only ${savedCount} out of ${totalCount} leads were saved. Check console for details.`);
@@ -1029,8 +1053,12 @@ Return only the JSON response, no additional text.
       }))
     );
 
-    // Update the cookie with the new gigId
+    // Update the cookie with the new gigId for consistency
     Cookies.set('gigId', newGigId);
+    
+    // Log the change for debugging
+    console.log('Gig changed to:', newGigId);
+    console.log('Updated parsedLeads with new gigId');
   };
 
   useEffect(() => {
@@ -1442,7 +1470,7 @@ Return only the JSON response, no additional text.
                               <div key={index} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center space-x-2">
-                                    <button
+                    <button
                                       onClick={() => setEditingLeadIndex(editingLeadIndex === index ? null : index)}
                                       className="text-blue-500 hover:text-blue-700 p-1"
                                     >
@@ -1542,11 +1570,11 @@ Return only the JSON response, no additional text.
                       
                       <button
                         className="w-full rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 text-white font-semibold hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 transition-all duration-200 transform hover:scale-105"
-                        onClick={handleSaveLeads}
-                        disabled={isProcessing}
-                      >
-                        Save {parsedLeads.length} Contacts
-                      </button>
+                      onClick={handleSaveLeads}
+                      disabled={isProcessing}
+                    >
+                      Save {parsedLeads.length} Contacts
+                    </button>
                     </div>
                   )}
                 </div>
