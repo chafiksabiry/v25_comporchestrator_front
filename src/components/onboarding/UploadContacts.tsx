@@ -1199,6 +1199,57 @@ Return only the JSON response, no additional text.
 
   return (
     <div className="space-y-4 bg-gradient-to-br from-blue-50 to-white min-h-screen p-4">
+      {/* Page Header */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-3 flex items-center justify-center">
+            <Users className="mr-3 h-8 w-8 text-blue-600" />
+            Lead Management Hub
+          </h1>
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+            Import, manage, and organize your leads efficiently. Connect with Zoho CRM for seamless synchronization or upload files with AI-powered processing.
+          </p>
+        </div>
+
+        {/* Tips Section */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-blue-900 mb-3 flex items-center">
+            <MessageSquare className="mr-2 h-5 w-5 text-blue-600" />
+            Pro Tips
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-start space-x-3">
+              <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <p className="text-sm font-medium text-blue-800">Select Your Gig First</p>
+                <p className="text-xs text-blue-700">Choose a gig before importing leads to ensure proper organization</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <p className="text-sm font-medium text-blue-800">AI Processing</p>
+                <p className="text-xs text-blue-700">Our AI automatically validates and formats your data for optimal results</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <p className="text-sm font-medium text-blue-800">Real-time Sync</p>
+                <p className="text-xs text-blue-700">Zoho integration keeps your data synchronized automatically</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <p className="text-sm font-medium text-blue-800">Preview & Edit</p>
+                <p className="text-xs text-blue-700">Review and modify leads before saving to ensure accuracy</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Gig Selection Toggle */}
       <div className="flex justify-end">
         <button
@@ -1252,21 +1303,6 @@ Return only the JSON response, no additional text.
                   </option>
                 ))}
               </select>
-              {selectedGigId && (
-                <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-blue-900">
-                        {gigs.find(g => g._id === selectedGigId)?.title}
-                      </p>
-                      <p className="text-xs text-blue-600">
-                        {gigs.find(g => g._id === selectedGigId)?.category || 'No category'}
-                      </p>
-                    </div>
-                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -1296,8 +1332,8 @@ Return only the JSON response, no additional text.
                   />
                 </div>
                 <div>
-                  <h4 className="text-lg font-semibold text-blue-900">Zoho CRM Import</h4>
-                  <p className="text-sm text-blue-700">Sync leads from your Zoho CRM</p>
+                  <h4 className="text-lg font-semibold text-blue-900">Zoho CRM Integration</h4>
+                  <p className="text-sm text-blue-700">Connect and sync with your Zoho CRM</p>
                 </div>
               </div>
               <div className="flex space-x-2">
@@ -1308,20 +1344,6 @@ Return only the JSON response, no additional text.
                 >
                   {hasZohoAccessToken ? 'Connected' : 'Connect to Zoho'}
                 </button>
-              </div>
-            </div>
-            <div className="space-y-2 mb-4">
-              <div className="flex items-center text-sm text-blue-700">
-                <div className="w-2 h-2 bg-blue-600 rounded-full mr-2"></div>
-                Automatic synchronization
-              </div>
-              <div className="flex items-center text-sm text-blue-700">
-                <div className="w-2 h-2 bg-blue-600 rounded-full mr-2"></div>
-                Real-time data updates
-              </div>
-              <div className="flex items-center text-sm text-blue-700">
-                <div className="w-2 h-2 bg-blue-600 rounded-full mr-2"></div>
-                No file upload required
               </div>
             </div>
             <button
@@ -1342,8 +1364,12 @@ Return only the JSON response, no additional text.
                 </div>
               ) : (
                 <div className="flex items-center justify-center">
-                  <Download className="mr-2 h-4 w-4" />
-                  Import from Zoho CRM
+                  <img 
+                    src={zohoLogo} 
+                    alt="Zoho" 
+                    className="h-5 w-5 mr-2 object-contain"
+                  />
+                  Sync with Zoho CRM
                 </div>
               )}
             </button>
@@ -1358,22 +1384,8 @@ Return only the JSON response, no additional text.
                 </div>
                 <div>
                   <h4 className="text-lg font-semibold text-blue-900">File Upload</h4>
-                  <p className="text-sm text-blue-700">Upload contacts from any file format</p>
+                  <p className="text-sm text-blue-700">Upload and process contact files</p>
                 </div>
-              </div>
-            </div>
-            <div className="space-y-2 mb-4">
-              <div className="flex items-center text-sm text-blue-700">
-                <div className="w-2 h-2 bg-blue-600 rounded-full mr-2"></div>
-                Supports CSV, Excel, JSON, TXT, PDF
-              </div>
-              <div className="flex items-center text-sm text-blue-700">
-                <div className="w-2 h-2 bg-blue-600 rounded-full mr-2"></div>
-                AI-powered data processing
-              </div>
-              <div className="flex items-center text-sm text-blue-700">
-                <div className="w-2 h-2 bg-blue-600 rounded-full mr-2"></div>
-                Preview and edit before saving
               </div>
             </div>
             
