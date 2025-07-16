@@ -1340,32 +1340,30 @@ Return only the JSON response, no additional text.
             </div>
             
             {/* File Upload Area */}
-            <div className="rounded-xl border-2 border-dashed border-blue-300 p-6 hover:border-blue-400 hover:bg-blue-50 transition-all duration-300 bg-white shadow-sm">
-              <div className="text-center">
-                <label htmlFor="file-upload" className="cursor-pointer group">
-                  <div className="flex items-center justify-center space-x-3">
-                    <FileSpreadsheet className="h-6 w-6 text-blue-700" />
-                    <span className="text-base font-semibold text-blue-700 group-hover:text-blue-600 transition-colors duration-200">
-                      {isProcessing ? (
-                        <div className="flex items-center">
-                          <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-                          Processing...
-                        </div>
-                      ) : (
-                        'Click to upload or drag and drop'
-                      )}
-                    </span>
-                  </div>
-                  <input
-                    id="file-upload"
-                    type="file"
-                    className="hidden"
-                    accept="*"
-                    onChange={handleFileSelect}
-                    disabled={isProcessing}
-                  />
-                </label>
-              </div>
+            <div className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl cursor-pointer">
+              <label htmlFor="file-upload" className="cursor-pointer group block">
+                <div className="flex items-center justify-center space-x-3">
+                  <FileSpreadsheet className="h-6 w-6 text-white" />
+                  <span className="text-base font-semibold text-white group-hover:text-blue-100 transition-colors duration-200">
+                    {isProcessing ? (
+                      <div className="flex items-center">
+                        <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                        Processing...
+                      </div>
+                    ) : (
+                      'Click to upload or drag and drop'
+                    )}
+                  </span>
+                </div>
+                <input
+                  id="file-upload"
+                  type="file"
+                  className="hidden"
+                  accept="*"
+                  onChange={handleFileSelect}
+                  disabled={isProcessing}
+                />
+              </label>
             </div>
           </div>
         </div>
