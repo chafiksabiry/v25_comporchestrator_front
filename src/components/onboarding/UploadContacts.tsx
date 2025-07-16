@@ -1271,10 +1271,10 @@ Return only the JSON response, no additional text.
         {/* Import Methods Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
           {/* Zoho Import Card */}
-          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-2xl p-6 hover:border-emerald-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02]">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02]">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-emerald-200 shadow-sm">
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-blue-200 shadow-sm">
                   <img 
                     src={zohoLogo} 
                     alt="Zoho CRM" 
@@ -1282,15 +1282,15 @@ Return only the JSON response, no additional text.
                   />
                 </div>
                 <div>
-                  <h4 className="text-xl font-bold text-emerald-900">Zoho CRM Integration</h4>
-                  <p className="text-sm text-emerald-700">Connect and sync with your Zoho CRM</p>
+                  <h4 className="text-xl font-bold text-blue-900">Zoho CRM Integration</h4>
+                  <p className="text-sm text-blue-700">Connect and sync with your Zoho CRM</p>
                 </div>
               </div>
               <div className="flex space-x-2">
                 <button
                   onClick={handleZohoConnect}
                   disabled={hasZohoAccessToken}
-                  className="px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-200 hover:bg-emerald-300 rounded-xl transition-colors duration-200 disabled:opacity-50 shadow-sm"
+                  className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-200 hover:bg-blue-300 rounded-xl transition-colors duration-200 disabled:opacity-50 shadow-sm"
                 >
                   {hasZohoAccessToken ? 'Connected' : 'Connect to Zoho'}
                 </button>
@@ -1305,7 +1305,7 @@ Return only the JSON response, no additional text.
                 await handleImportFromZoho();
               }}
               disabled={!hasZohoAccessToken || isImportingZoho}
-              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold py-4 px-6 rounded-xl hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
             >
               {isImportingZoho ? (
                 <div className="flex items-center justify-center">
@@ -1340,7 +1340,7 @@ Return only the JSON response, no additional text.
             </div>
             
             {/* File Upload Area */}
-            <div className="rounded-xl border-2 border-dashed border-blue-400 p-6 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 bg-white shadow-sm">
+            <div className="rounded-xl border-2 border-dashed border-blue-300 p-6 hover:border-blue-400 hover:bg-blue-50 transition-all duration-300 bg-white shadow-sm">
               <div className="text-center">
                 <label htmlFor="file-upload" className="cursor-pointer group">
                   <div className="flex items-center justify-center space-x-3">
@@ -1591,7 +1591,7 @@ Return only the JSON response, no additional text.
                   </div>
                   
                   <button
-                    className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-blue-800 px-4 py-3 text-white font-bold hover:from-blue-700 hover:to-blue-900 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-white font-bold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                     onClick={handleSaveLeads}
                     disabled={isProcessing}
                   >
@@ -1630,7 +1630,7 @@ Return only the JSON response, no additional text.
                 key={channel.id}
                 className={`flex items-center space-x-2 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 transform hover:scale-105 ${
                   isSelected
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
                 }`}
                 onClick={() => toggleChannel(channel.id)}
@@ -1656,9 +1656,9 @@ Return only the JSON response, no additional text.
                 {selectedGigId ? (
                   <div className="text-sm text-gray-600">
                     {leads.length > 0 ? (
-                      <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
-                        Showing {filteredLeads.length} of {leads.length} leads {searchQuery && `(filtered by "${searchQuery}")`}
-                      </span>
+                                          <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium">
+                      Showing {filteredLeads.length} of {leads.length} leads {searchQuery && `(filtered by "${searchQuery}")`}
+                    </span>
                     ) : (
                       <span className="bg-gray-50 text-gray-600 px-3 py-1 rounded-full text-xs font-medium">
                         No leads found
@@ -1694,7 +1694,7 @@ Return only the JSON response, no additional text.
               </select>
               <button
                 onClick={() => fetchLeads()}
-                className="flex items-center rounded-lg bg-gradient-to-r from-blue-600 to-blue-800 px-3 py-2 text-sm font-medium text-white shadow-md hover:from-blue-700 hover:to-blue-900 transition-all duration-200 transform hover:scale-105"
+                className="flex items-center rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105"
                 disabled={isLoadingLeads || !selectedGigId}
               >
                 {isLoadingLeads ? (
@@ -1790,9 +1790,9 @@ Return only the JSON response, no additional text.
                           {lead.Deal_Name || 'N/A'}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
-                          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-800">
-                            {lead.Stage || 'N/A'}
-                          </span>
+                                          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-800">
+                  {lead.Stage || 'N/A'}
+                </span>
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                           {lead.Pipeline || 'N/A'}
@@ -1817,7 +1817,7 @@ Return only the JSON response, no additional text.
                     Showing <span className="font-medium">{filteredLeads.length}</span> of{' '}
                     <span className="font-medium">{leads.length}</span> leads
                     {searchQuery && (
-                      <span className="text-blue-600"> (filtered by "{searchQuery}")</span>
+                      <span className="text-indigo-600"> (filtered by "{searchQuery}")</span>
                     )}
                   </span>
                 </div>
@@ -1839,17 +1839,17 @@ Return only the JSON response, no additional text.
       {realtimeLeads.length > 0 && (
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
           <h3 className="text-xl font-semibold text-gray-900 mb-3 flex items-center">
-            <RefreshCw className="mr-2 h-5 w-5 text-green-600 animate-spin" />
+            <RefreshCw className="mr-2 h-5 w-5 text-blue-600 animate-spin" />
             Leads en temps réel
           </h3>
-          <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-3 mb-3">
-            <p className="text-sm font-medium text-green-700">
-              Nombre de leads reçus: <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">{realtimeLeads.length}</span>
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3 mb-3">
+            <p className="text-sm font-medium text-blue-700">
+              Nombre de leads reçus: <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-bold">{realtimeLeads.length}</span>
             </p>
           </div>
           <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
             <div className="min-w-full divide-y divide-gray-200">
-                        <div className="bg-gradient-to-r from-blue-50 to-blue-100 sticky top-0">
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 sticky top-0">
             <div className="grid grid-cols-4 px-6 py-3">
               <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Email</div>
               <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Téléphone</div>
@@ -1864,7 +1864,7 @@ Return only the JSON response, no additional text.
                     <div className="text-sm text-gray-700">{lead.Phone || 'N/A'}</div>
                     <div className="text-sm text-gray-700">{lead.Deal_Name || 'N/A'}</div>
                     <div className="text-sm">
-                                        <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-800 px-2.5 py-0.5 text-xs font-medium">
+                                        <span className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-800 px-2.5 py-0.5 text-xs font-medium">
                     {lead.Stage || 'N/A'}
                   </span>
                     </div>
