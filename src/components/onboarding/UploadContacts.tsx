@@ -1206,44 +1206,51 @@ Return only the JSON response, no additional text.
             Lead Management Hub
           </h1>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Import, manage, and organize your leads efficiently. Connect with Zoho CRM for seamless synchronization or upload files with AI-powered processing.
+            Import, manage, and organize your leads efficiently. Choose between connecting with your CRM system or uploading contact files directly.
           </p>
         </div>
 
         {/* Tips Section */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-blue-900 mb-3 flex items-center">
-            <MessageSquare className="mr-2 h-5 w-5 text-blue-600" />
+        <div className="bg-gradient-to-br from-slate-50 to-gray-50 border border-slate-200 rounded-xl p-6 shadow-sm">
+          <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center">
+            <MessageSquare className="mr-3 h-6 w-6 text-slate-600" />
             Pro Tips
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-start space-x-3">
-              <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
-              <div>
-                <p className="text-sm font-medium text-blue-800">Select Your Gig First</p>
-                <p className="text-xs text-blue-700">Choose a gig before importing leads to ensure proper organization</p>
-              </div>
+          
+          {/* Line 2: Two methods explanation */}
+          <div className="mb-6 p-4 bg-white rounded-lg border border-slate-200 shadow-sm">
+            <p className="text-base text-slate-700 leading-relaxed">
+              To add leads to your system, you have two convenient methods available. The first method allows you to connect directly with your CRM system for seamless data integration. The second method enables you to upload contact files in various formats for immediate processing and import.
+            </p>
+          </div>
+
+          {/* Line 3: Select gig */}
+          <div className="mb-6 p-4 bg-white rounded-lg border border-slate-200 shadow-sm">
+            <p className="text-base text-slate-700">
+              Always select a gig first before importing leads to ensure proper organization and categorization of your data.
+            </p>
+          </div>
+
+          {/* Line 4: Two columns explaining methods */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
+              <h4 className="text-lg font-semibold text-emerald-900 mb-2 flex items-center">
+                <img src={zohoLogo} alt="Zoho" className="h-5 w-5 mr-2 object-contain" />
+                Method 1: CRM Integration
+              </h4>
+              <p className="text-sm text-emerald-700 leading-relaxed">
+                Connect with your CRM system to automatically import and synchronize your existing leads. This method provides real-time access to your CRM data and ensures consistency across platforms.
+              </p>
             </div>
-            <div className="flex items-start space-x-3">
-              <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
-              <div>
-                <p className="text-sm font-medium text-blue-800">You Have Two Methods</p>
-                <p className="text-xs text-blue-700">First method: Connect with Zoho CRM for seamless integration</p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-3">
-              <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
-              <div>
-                <p className="text-sm font-medium text-blue-800">Second Method</p>
-                <p className="text-xs text-blue-700">Upload files directly with automatic data processing</p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-3">
-              <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
-              <div>
-                <p className="text-sm font-medium text-blue-800">Preview & Edit</p>
-                <p className="text-xs text-blue-700">Review and modify leads before saving to ensure accuracy</p>
-              </div>
+            
+            <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+              <h4 className="text-lg font-semibold text-blue-900 mb-2 flex items-center">
+                <Upload className="h-5 w-5 mr-2 text-blue-700" />
+                Method 2: File Upload
+              </h4>
+              <p className="text-sm text-blue-700 leading-relaxed">
+                Upload contact files in various formats (CSV, Excel, JSON, TXT, PDF) for immediate processing. Our system automatically validates and formats your data for optimal results.
+              </p>
             </div>
           </div>
         </div>
@@ -1252,33 +1259,36 @@ Return only the JSON response, no additional text.
 
 
       {/* Gigs Selection Dropdown */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 transition-all duration-300 ease-in-out">
-        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <Users className="mr-2 h-5 w-5 text-blue-600" />
+      <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 transition-all duration-300 ease-in-out">
+        <h4 className="text-xl font-bold text-slate-900 mb-6 flex items-center">
+          <Users className="mr-3 h-6 w-6 text-slate-600" />
           Select a Gig
         </h4>
         {isLoadingGigs ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-sm text-gray-600">Loading gigs...</span>
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
+            <span className="ml-4 text-base text-slate-600 font-medium">Loading gigs...</span>
           </div>
         ) : gigs.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="mx-auto h-10 w-10 text-gray-400 mb-3">
-              <Users className="h-10 w-10" />
+          <div className="text-center py-12">
+            <div className="mx-auto h-16 w-16 text-slate-300 mb-4">
+              <Users className="h-16 w-16" />
             </div>
-            <p className="text-sm text-gray-500">No gigs available.</p>
+            <p className="text-base text-slate-500 font-medium">No gigs available.</p>
           </div>
         ) : (
-          <div className="max-w-md">
+          <div className="max-w-lg">
+            <label className="block text-sm font-semibold text-slate-700 mb-3">
+              Choose a gig to organize your leads
+            </label>
             <select
               value={selectedGigId}
               onChange={(e) => setSelectedGigId(e.target.value)}
-              className="w-full rounded-lg border-gray-300 py-3 px-4 text-base focus:border-blue-600 focus:outline-none focus:ring-blue-600 sm:text-sm shadow-sm bg-white"
+              className="w-full rounded-xl border-2 border-slate-300 py-4 px-5 text-base font-medium focus:border-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:ring-offset-2 bg-white shadow-sm hover:border-slate-400 transition-all duration-200"
             >
-              <option value="">Select a gig...</option>
+              <option value="" className="text-slate-500">Select a gig...</option>
               {gigs.map((gig) => (
-                <option key={gig._id} value={gig._id}>
+                <option key={gig._id} value={gig._id} className="text-slate-900">
                   {gig.title} {gig.category && `(${gig.category})`}
                 </option>
               ))}
@@ -1288,38 +1298,38 @@ Return only the JSON response, no additional text.
 
         {/* Selected Gig Information */}
         {selectedGigId && (
-          <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
-            <h5 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
-              <Database className="mr-2 h-4 w-4 text-green-600" />
+          <div className="mt-6 p-6 bg-gradient-to-br from-slate-50 to-gray-50 border border-slate-200 rounded-xl shadow-sm">
+            <h5 className="text-lg font-bold text-slate-900 mb-4 flex items-center">
+              <Database className="mr-3 h-5 w-5 text-slate-600" />
               Selected Gig Information
             </h5>
             {(() => {
               const selectedGig = gigs.find(gig => gig._id === selectedGigId);
               return selectedGig ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium text-gray-700">Title:</span>
-                    <span className="ml-2 text-gray-900">{selectedGig.title}</span>
-                  </div>
-                  {selectedGig.category && (
-                    <div>
-                      <span className="font-medium text-gray-700">Category:</span>
-                      <span className="ml-2 text-gray-900">{selectedGig.category}</span>
+                <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-base">
+                    <div className="space-y-3">
+                      <div>
+                        <span className="font-semibold text-slate-700">Title:</span>
+                        <span className="ml-3 text-slate-900 font-medium">{selectedGig.title}</span>
+                      </div>
+                      {selectedGig.category && (
+                        <div>
+                          <span className="font-semibold text-slate-700">Category:</span>
+                          <span className="ml-3 text-slate-900 font-medium">{selectedGig.category}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {selectedGig.description && (
-                    <div className="md:col-span-2">
-                      <span className="font-medium text-gray-700">Description:</span>
-                      <span className="ml-2 text-gray-900">{selectedGig.description}</span>
-                    </div>
-                  )}
-                  <div className="md:col-span-2">
-                    <span className="font-medium text-gray-700">Gig ID:</span>
-                    <span className="ml-2 text-gray-500 font-mono text-xs">{selectedGig._id}</span>
+                    {selectedGig.description && (
+                      <div className="md:col-span-2">
+                        <span className="font-semibold text-slate-700">Description:</span>
+                        <p className="mt-2 text-slate-900 leading-relaxed">{selectedGig.description}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-gray-600">Gig information not available</p>
+                <p className="text-base text-slate-600 font-medium">Gig information not available</p>
               );
             })()}
           </div>
