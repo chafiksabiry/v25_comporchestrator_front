@@ -96,6 +96,7 @@ const UploadContacts = () => {
   const [showImportChoiceModal, setShowImportChoiceModal] = useState(false);
   const [selectedImportChoice, setSelectedImportChoice] = useState<'zoho' | 'file' | null>(null);
   const [showGigsSection, setShowGigsSection] = useState(true);
+  const [showLeadsPreview, setShowLeadsPreview] = useState(true);
   const [validationResults, setValidationResults] = useState<any>(null);
   const [editingLeadIndex, setEditingLeadIndex] = useState<number | null>(null);
 
@@ -1433,124 +1434,143 @@ Return only the JSON response, no additional text.
                       
                       {/* Preview Section */}
                       <div className="bg-white border border-gray-200 rounded-lg p-4">
-                        <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
-                          <Users className="mr-2 h-4 w-4" />
-                          Confirm & Edit Leads ({parsedLeads.length})
-                        </h4>
-                        <p className="text-xs text-gray-600 mb-4">Review and edit your leads before saving. Click the edit icon to modify any field.</p>
-                        <div className="max-h-80 overflow-y-auto">
-                          <div className="space-y-3">
-                            {parsedLeads.map((lead: any, index: number) => (
-                              <div key={index} className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-4 border border-gray-200 hover:border-blue-300 transition-all duration-200">
-                                <div className="flex items-center justify-between mb-3">
-                                  <div className="flex items-center space-x-3">
-                                    <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                                      <span className="text-xs font-bold text-indigo-600">{index + 1}</span>
-                                    </div>
-                                    <span className="text-sm font-semibold text-gray-900">
-                                      {lead.Deal_Name || 'Unnamed Lead'}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <button
-                                      onClick={() => setEditingLeadIndex(editingLeadIndex === index ? null : index)}
-                                      className="text-blue-500 hover:text-blue-700 p-2 rounded-md hover:bg-blue-50 transition-colors duration-200"
-                                      title="Edit lead"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        const newLeads = [...parsedLeads];
-                                        newLeads.splice(index, 1);
-                                        setParsedLeads(newLeads);
-                                        toast.success('Lead removed');
-                                      }}
-                                      className="text-red-500 hover:text-red-700 p-2 rounded-md hover:bg-red-50 transition-colors duration-200"
-                                      title="Delete lead"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </button>
-                                  </div>
-                                </div>
-                                
-                                {editingLeadIndex === index ? (
-                                  <div className="space-y-3 bg-white rounded-lg p-3 border border-blue-200">
-                                    <div className="grid grid-cols-1 gap-3">
-                                      <div>
-                                        <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
-                                        <input
-                                          type="text"
-                                          value={lead.Deal_Name || ''}
-                                          onChange={(e) => handleEditLead(index, 'Deal_Name', e.target.value)}
-                                          placeholder="Enter lead name"
-                                          className="w-full text-sm px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
-                                        <input
-                                          type="email"
-                                          value={lead.Email_1 || ''}
-                                          onChange={(e) => handleEditLead(index, 'Email_1', e.target.value)}
-                                          placeholder="Enter email address"
-                                          className="w-full text-sm px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
-                                        <input
-                                          type="tel"
-                                          value={lead.Phone || ''}
-                                          onChange={(e) => handleEditLead(index, 'Phone', e.target.value)}
-                                          placeholder="Enter phone number"
-                                          className="w-full text-sm px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="flex justify-end space-x-2 pt-2">
-                                      <button
-                                        onClick={() => setEditingLeadIndex(null)}
-                                        className="px-3 py-1 text-xs font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors duration-200"
-                                      >
-                                        Cancel
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          setEditingLeadIndex(null);
-                                          toast.success('Lead updated');
-                                        }}
-                                        className="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors duration-200"
-                                      >
-                                        Save
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="grid grid-cols-1 gap-2 text-sm">
-                                    <div className="flex items-center space-x-2">
-                                      <Mail className="h-4 w-4 text-gray-400" />
-                                      <span className="text-gray-600">
-                                        <span className="font-medium">Email:</span> {lead.Email_1 || 'No email'}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                      <Phone className="h-4 w-4 text-gray-400" />
-                                      <span className="text-gray-600">
-                                        <span className="font-medium">Phone:</span> {lead.Phone || 'No phone'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center">
+                            <Users className="mr-2 h-4 w-4" />
+                            <h4 className="text-sm font-semibold text-gray-800">
+                              Confirm & Edit Leads ({parsedLeads.length})
+                            </h4>
                           </div>
+                          <button
+                            onClick={() => setShowLeadsPreview(!showLeadsPreview)}
+                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                            title={showLeadsPreview ? "Hide leads preview" : "Show leads preview"}
+                          >
+                            {showLeadsPreview ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </button>
                         </div>
+                        {showLeadsPreview && (
+                          <>
+                            <p className="text-xs text-gray-600 mb-4">Review and edit your leads before saving. Click the edit icon to modify any field.</p>
+                            <div className="max-h-80 overflow-y-auto">
+                              <div className="space-y-3">
+                                {parsedLeads.map((lead: any, index: number) => (
+                                  <div key={index} className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-4 border border-gray-200 hover:border-blue-300 transition-all duration-200">
+                                    <div className="flex items-center justify-between mb-3">
+                                      <div className="flex items-center space-x-3">
+                                        <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                                          <span className="text-xs font-bold text-indigo-600">{index + 1}</span>
+                                        </div>
+                                        <span className="text-sm font-semibold text-gray-900">
+                                          {lead.Deal_Name || 'Unnamed Lead'}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <button
+                                          onClick={() => setEditingLeadIndex(editingLeadIndex === index ? null : index)}
+                                          className="text-blue-500 hover:text-blue-700 p-2 rounded-md hover:bg-blue-50 transition-colors duration-200"
+                                          title="Edit lead"
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            const newLeads = [...parsedLeads];
+                                            newLeads.splice(index, 1);
+                                            setParsedLeads(newLeads);
+                                            toast.success('Lead removed');
+                                          }}
+                                          className="text-red-500 hover:text-red-700 p-2 rounded-md hover:bg-red-50 transition-colors duration-200"
+                                          title="Delete lead"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                    
+                                    {editingLeadIndex === index ? (
+                                      <div className="space-y-3 bg-white rounded-lg p-4 border border-blue-200 shadow-sm">
+                                        <div className="grid grid-cols-1 gap-4">
+                                          <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
+                                            <input
+                                              type="text"
+                                              value={lead.Deal_Name || ''}
+                                              onChange={(e) => handleEditLead(index, 'Deal_Name', e.target.value)}
+                                              placeholder="Enter lead name"
+                                              className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm"
+                                            />
+                                          </div>
+                                          <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                                            <input
+                                              type="email"
+                                              value={lead.Email_1 || ''}
+                                              onChange={(e) => handleEditLead(index, 'Email_1', e.target.value)}
+                                              placeholder="Enter email address"
+                                              className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm"
+                                            />
+                                          </div>
+                                          <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
+                                            <input
+                                              type="tel"
+                                              value={lead.Phone || ''}
+                                              onChange={(e) => handleEditLead(index, 'Phone', e.target.value)}
+                                              placeholder="Enter phone number"
+                                              className="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm"
+                                            />
+                                          </div>
+                                        </div>
+                                        <div className="flex justify-end space-x-3 pt-3 border-t border-gray-100">
+                                          <button
+                                            onClick={() => setEditingLeadIndex(null)}
+                                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 border border-gray-300"
+                                          >
+                                            Cancel
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              setEditingLeadIndex(null);
+                                              toast.success('Lead updated');
+                                            }}
+                                            className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-sm"
+                                          >
+                                            Save Changes
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="grid grid-cols-1 gap-2 text-sm">
+                                        <div className="flex items-center space-x-2">
+                                          <Mail className="h-4 w-4 text-gray-400" />
+                                          <span className="text-gray-600">
+                                            <span className="font-medium">Email:</span> {lead.Email_1 || 'No email'}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                          <Phone className="h-4 w-4 text-gray-400" />
+                                          <span className="text-gray-600">
+                                            <span className="font-medium">Phone:</span> {lead.Phone || 'No phone'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
                       
-                      <div className="flex space-x-3">
+                      <div className="flex space-x-4">
                         <button
-                          className="flex-1 rounded-lg bg-gray-500 px-4 py-3 text-white font-semibold hover:bg-gray-600 disabled:opacity-50 transition-all duration-200 transform hover:scale-105"
+                          className="flex-1 rounded-xl bg-gradient-to-r from-gray-400 to-gray-500 px-6 py-4 text-white font-bold hover:from-gray-500 hover:to-gray-600 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                           onClick={() => {
                             setSelectedFile(null);
                             setUploadProgress(0);
@@ -1563,20 +1583,26 @@ Return only the JSON response, no additional text.
                           }}
                           disabled={isProcessing}
                         >
-                          Cancel
+                          <div className="flex items-center justify-center">
+                            <X className="mr-2 h-5 w-5" />
+                            Cancel Upload
+                          </div>
                         </button>
                         <button
-                          className="flex-1 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 text-white font-semibold hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 transition-all duration-200 transform hover:scale-105"
+                          className="flex-1 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4 text-white font-bold hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                           onClick={handleSaveLeads}
                           disabled={isProcessing}
                         >
                           {isProcessing ? (
                             <div className="flex items-center justify-center">
-                              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                              Saving...
+                              <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                              Saving Contacts...
                             </div>
                           ) : (
-                            `Save ${parsedLeads.length} Contacts`
+                            <div className="flex items-center justify-center">
+                              <Users className="mr-2 h-5 w-5" />
+                              Save {parsedLeads.length} Contacts
+                            </div>
                           )}
                         </button>
                       </div>
