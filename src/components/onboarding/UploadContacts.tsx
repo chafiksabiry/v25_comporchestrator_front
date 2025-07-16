@@ -96,6 +96,7 @@ const UploadContacts = () => {
   const [showImportChoiceModal, setShowImportChoiceModal] = useState(false);
   const [selectedImportChoice, setSelectedImportChoice] = useState<'zoho' | 'file' | null>(null);
   const [showGigsSection, setShowGigsSection] = useState(true);
+  const [validationResults, setValidationResults] = useState<any>(null);
 
   const channels = [
     { id: 'all', name: 'All Channels', icon: Globe },
@@ -139,6 +140,117 @@ const UploadContacts = () => {
     }
   ];
 
+  const processFileWithOpenAI = async (fileContent: string, fileType: string) => {
+    try {
+      const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+      if (!openaiApiKey) {
+        throw new Error('OpenAI API key not configured');
+      }
+
+      const prompt = `
+You are a data processing expert. Analyze the following ${fileType} file content and extract lead information.
+
+File content:
+${fileContent}
+
+Please process this data and return a JSON array of lead objects with the following structure:
+{
+  "leads": [
+    {
+      "Email_1": "email@example.com",
+      "Phone": "+1234567890",
+      "Deal_Name": "Lead Name",
+      "Stage": "New",
+      "Pipeline": "Sales Pipeline",
+      "Project_Tags": ["tag1", "tag2"]
+    }
+  ],
+  "validation": {
+    "totalRows": 10,
+    "validRows": 8,
+    "invalidRows": 2,
+    "errors": [
+      "Row 3: Invalid email format",
+      "Row 7: Missing required fields"
+    ]
+  }
+}
+
+Rules:
+1. Extract email addresses and validate their format
+2. Extract phone numbers and standardize them
+3. Use Deal_Name if available, otherwise use email as Deal_Name
+4. Set default Stage to "New" if not provided
+5. Set default Pipeline to "Sales Pipeline" if not provided
+6. Split Project_Tags by semicolon if multiple tags
+7. Only include leads that have at least email OR phone
+8. Provide detailed validation feedback
+
+Return only the JSON response, no additional text.
+`;
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openaiApiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a data processing expert that returns only valid JSON responses.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 4000
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content;
+      
+      if (!content) {
+        throw new Error('No response from OpenAI');
+      }
+
+      // Parse the JSON response
+      const parsedData = JSON.parse(content);
+      
+      if (!parsedData.leads || !Array.isArray(parsedData.leads)) {
+        throw new Error('Invalid response format from OpenAI');
+      }
+
+      // Add required fields to each lead
+      const processedLeads = parsedData.leads.map((lead: any) => ({
+        ...lead,
+        userId: Cookies.get('userId'),
+        gigId: Cookies.get('gigId'),
+        companyId: Cookies.get('companyId'),
+        Last_Activity_Time: new Date(),
+        Activity_Tag: '',
+        Telephony: ''
+      }));
+
+      return {
+        leads: processedLeads,
+        validation: parsedData.validation
+      };
+    } catch (error) {
+      console.error('Error processing with OpenAI:', error);
+      throw error;
+    }
+  };
+
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -154,103 +266,32 @@ const UploadContacts = () => {
         const reader = new FileReader();
         reader.onload = async (e) => {
           try {
-            let rows: string[] = [];
-            let headers: string[] = [];
+            let fileContent = '';
+            let fileType = '';
+
             if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+              fileType = 'Excel';
               const data = new Uint8Array(e.target?.result as ArrayBuffer);
               const workbook = XLSX.read(data, { type: 'array' });
               const sheetName = workbook.SheetNames[0];
               const worksheet = workbook.Sheets[sheetName];
               const json: unknown[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-              rows = (json as any[]).map((row: any) => Array.isArray(row) ? row.join(',') : Object.values(row).join(','));
+              const rows = (json as any[]).map((row: any) => Array.isArray(row) ? row.join(',') : Object.values(row).join(','));
+              fileContent = rows.join('\n');
             } else {
-              // CSV
-              const content = e.target?.result as string;
-              // Détection du séparateur (virgule ou point-virgule)
-              const sep = content.includes(';') && !content.includes(',') ? ';' : ',';
-              rows = content.split('\n');
-              rows = rows.map(row => row.trim()).filter(row => row.length > 0);
-              if (sep !== ',') {
-                rows = rows.map(row => row.replace(/;/g, ','));
-              }
+              fileType = 'CSV';
+              fileContent = e.target?.result as string;
             }
-            headers = rows[0].split(',').map(header => header.trim());
-            console.log('Headers lus:', headers);
+
+            setUploadProgress(30);
             
-            // Process each row and create lead objects
-            const totalRows = rows.length - 1;
-            const leads = rows.slice(1)
-              .filter(row => row.trim() !== '') // Filter out empty rows
-              .map((row, index) => {
-                const values = row.split(',').map(value => value.trim());
-                console.log(`Ligne ${index + 2} valeurs:`, values);
-                const lead: any = {
-                  userId: Cookies.get('userId'),
-                  gigId: Cookies.get('gigId'),
-                  companyId: Cookies.get('companyId'),
-                  Last_Activity_Time: new Date(),
-                  Activity_Tag: '',
-                  Deal_Name: '',
-                  Stage: '',
-                  Email_1: '',
-                  Phone: '',
-                  Telephony: '',
-                  Pipeline: '',
-                };
+            // Process with OpenAI
+            console.log('Processing file with OpenAI...');
+            const result = await processFileWithOpenAI(fileContent, fileType);
+            
+            setUploadProgress(80);
 
-                console.log('🔍 Lead créé avec userId et gigId:', {
-                  userId: lead.userId,
-                  gigId: lead.gigId
-                });
-
-                headers.forEach((header, index) => {
-                  const value = values[index]?.trim();
-                  if (value) { // Only set values that are not empty
-                    switch(header.toLowerCase().replace(/[_ ]/g, '')) { // Normalise: retire espaces et underscores
-                      case 'email':
-                        lead.Email_1 = value;
-                        break;
-                      case 'email1':
-                        lead.Email_1 = value;
-                        break;
-                      case 'phone':
-                        lead.Phone = value;
-                        break;
-                      case 'stage':
-                        lead.Stage = value;
-                        break;
-                      case 'dealname':
-                        lead.Deal_Name = value;
-                        break;
-                      case 'pipeline':
-                        lead.Pipeline = value;
-                        break;
-                      case 'projecttags':
-                        lead.Project_Tags = value.split(';').filter(tag => tag.trim() !== '');
-                        break;
-                    }
-                  }
-                });
-
-                // Validate required fields
-                if (!lead.Email_1 && !lead.Phone) {
-                  toast.error(`Row ${index + 2}: Missing email and phone number. At least one is required.`);
-                  return null;
-                }
-
-                // If Deal_Name is empty but Email_1 exists, use Email_1 as Deal_Name
-                if (!lead.Deal_Name && lead.Email_1) {
-                  lead.Deal_Name = lead.Email_1;
-                }
-
-                // Simulation de progression : avance en fonction du nombre de lignes
-                setUploadProgress(10 + Math.round(((index + 1) / totalRows) * 80));
-
-                return lead;
-              })
-              .filter(lead => lead !== null); // Remove invalid leads
-
-            if (leads.length === 0) {
+            if (result.leads.length === 0) {
               toast.error('No valid leads found in the file. Please check the file format and content.');
               setUploadError('No valid leads found');
               setIsProcessing(false);
@@ -258,15 +299,38 @@ const UploadContacts = () => {
               return;
             }
 
-            console.log('Leads à envoyer:', leads);
+            // Show validation results
+            if (result.validation) {
+              const { totalRows, validRows, invalidRows, errors } = result.validation;
+              setValidationResults(result.validation);
+              
+              if (invalidRows > 0) {
+                toast.error(`${invalidRows} rows had validation errors. Check the console for details.`);
+                console.log('Validation errors:', errors);
+              }
+              
+              toast.success(`Successfully processed ${validRows} out of ${totalRows} rows`);
+            }
 
-            setParsedLeads(leads);
+            console.log('Leads processed with OpenAI:', result.leads);
+            setParsedLeads(result.leads);
             setIsProcessing(false);
             setUploadProgress(100);
-            return;
+            
           } catch (error: any) {
             console.error('Error processing file:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Error processing file';
+            let errorMessage = 'Error processing file';
+            
+            if (error.message.includes('OpenAI API key not configured')) {
+              errorMessage = 'OpenAI API key not configured. Please check your environment variables.';
+            } else if (error.message.includes('OpenAI API error')) {
+              errorMessage = 'OpenAI API error. Please check your API key and try again.';
+            } else if (error.message.includes('Invalid response format')) {
+              errorMessage = 'AI processing returned invalid format. Please check your file structure.';
+            } else {
+              errorMessage = error.response?.data?.message || error.message || 'Error processing file';
+            }
+            
             setUploadError(errorMessage);
             toast.error(errorMessage);
             setUploadProgress(0);
@@ -349,6 +413,7 @@ const UploadContacts = () => {
           setUploadSuccess(false);
           setParsedLeads([]);
           setUploadError(null);
+          setValidationResults(null);
           setIsProcessing(false);
           setShowSaveButton(true);
           setShowFileName(true);
@@ -911,6 +976,43 @@ const UploadContacts = () => {
     }
   };
 
+  const testOpenAIConnection = async () => {
+    try {
+      const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+      if (!openaiApiKey) {
+        toast.error('OpenAI API key not configured');
+        return;
+      }
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openaiApiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4',
+          messages: [
+            {
+              role: 'user',
+              content: 'Hello, this is a test message. Please respond with "Connection successful" if you can read this.'
+            }
+          ],
+          max_tokens: 10
+        })
+      });
+
+      if (response.ok) {
+        toast.success('OpenAI connection successful!');
+      } else {
+        toast.error('OpenAI connection failed. Please check your API key.');
+      }
+    } catch (error) {
+      console.error('OpenAI test error:', error);
+      toast.error('OpenAI connection test failed');
+    }
+  };
+
   const handleCancelModal = () => {
     localStorage.setItem('hasSeenImportChoiceModal', 'true');
     setShowImportChoiceModal(false);
@@ -1043,14 +1145,19 @@ const UploadContacts = () => {
               <Upload className="mr-2 h-5 w-5 text-indigo-600" />
               Import Contacts
             </h3>
-            <p className="mt-1 text-sm text-gray-600">Upload your contacts from a CSV or Excel file</p>
+            <p className="mt-1 text-sm text-gray-600">Upload your contacts from a CSV or Excel file. AI-powered processing ensures data quality and validation.</p>
           </div>
           <button 
             className="text-sm font-medium text-indigo-600 hover:text-indigo-500 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg transition-colors duration-200"
             onClick={() => {
-              // Create a sample CSV template
+              // Create a sample CSV template with examples
               const headers = ['Email', 'Phone', 'Lead Name', 'Stage', 'Pipeline', 'Project Tags'];
-              const csvContent = headers.join(',') + '\n';
+              const examples = [
+                'john.doe@example.com,+1-555-123-4567,John Doe,New,Sales Pipeline,prospect;high-value',
+                'jane.smith@company.com,+33 1 23 45 67 89,Jane Smith,Qualified,Enterprise Pipeline,enterprise;decision-maker',
+                'mike.wilson@startup.io,+44 20 7946 0958,Mike Wilson,Contacted,Startup Pipeline,startup;tech'
+              ];
+              const csvContent = headers.join(',') + '\n' + examples.join('\n');
               const blob = new Blob([csvContent], { type: 'text/csv' });
               const url = window.URL.createObjectURL(blob);
               const a = document.createElement('a');
@@ -1067,6 +1174,35 @@ const UploadContacts = () => {
         </div>
 
         <div className="mt-4">
+          {/* AI Processing Info */}
+          <div className="mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <Database className="h-6 w-6 text-indigo-600" />
+              </div>
+              <div className="ml-3">
+                <h4 className="text-sm font-semibold text-indigo-800">AI-Powered Processing</h4>
+                <p className="text-sm text-indigo-700 mt-1">
+                  Your file will be processed using OpenAI's GPT-4 to:
+                </p>
+                <ul className="text-xs text-indigo-600 mt-2 space-y-1">
+                  <li>• Validate email formats and phone numbers</li>
+                  <li>• Standardize data formats</li>
+                  <li>• Detect and report data quality issues</li>
+                  <li>• Provide detailed validation feedback</li>
+                </ul>
+              </div>
+            </div>
+            <button
+              onClick={testOpenAIConnection}
+              className="ml-4 px-3 py-1 text-xs font-medium text-indigo-600 bg-indigo-100 hover:bg-indigo-200 rounded-md transition-colors duration-200"
+            >
+              Test Connection
+            </button>
+          </div>
+          </div>
+
           <div className="rounded-xl border-2 border-dashed border-gray-300 p-8 hover:border-indigo-400 transition-colors duration-200">
             <div className="text-center">
               <div className="mx-auto h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
@@ -1102,6 +1238,7 @@ const UploadContacts = () => {
                     setUploadError(null);
                     setUploadSuccess(false);
                     setParsedLeads([]);
+                    setValidationResults(null);
                   }}>
                     <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
                   </button>
@@ -1132,13 +1269,52 @@ const UploadContacts = () => {
                     </div>
                   )}
                   {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
-                    <button
-                      className="mt-4 w-full rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 text-white font-semibold hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 transition-all duration-200 transform hover:scale-105"
-                      onClick={handleSaveLeads}
-                      disabled={isProcessing}
-                    >
-                      Save {parsedLeads.length} Contacts
-                    </button>
+                    <div className="mt-4 space-y-4">
+                      {validationResults && (
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+                          <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                            <Database className="mr-2 h-4 w-4" />
+                            AI Processing Results
+                          </h4>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="text-blue-600 font-medium">Total Rows:</span> {validationResults.totalRows}
+                            </div>
+                            <div>
+                              <span className="text-green-600 font-medium">Valid Rows:</span> {validationResults.validRows}
+                            </div>
+                            {validationResults.invalidRows > 0 && (
+                              <div className="col-span-2">
+                                <span className="text-red-600 font-medium">Invalid Rows:</span> {validationResults.invalidRows}
+                              </div>
+                            )}
+                          </div>
+                          {validationResults.errors && validationResults.errors.length > 0 && (
+                            <div className="mt-3">
+                              <details className="text-xs">
+                                <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
+                                  View validation errors ({validationResults.errors.length})
+                                </summary>
+                                <div className="mt-2 space-y-1">
+                                  {validationResults.errors.map((error: string, index: number) => (
+                                    <div key={index} className="text-red-600 bg-red-50 p-2 rounded">
+                                      {error}
+                                    </div>
+                                  ))}
+                                </div>
+                              </details>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <button
+                        className="w-full rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 text-white font-semibold hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 transition-all duration-200 transform hover:scale-105"
+                        onClick={handleSaveLeads}
+                        disabled={isProcessing}
+                      >
+                        Save {parsedLeads.length} Contacts
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
