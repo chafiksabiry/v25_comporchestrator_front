@@ -1197,12 +1197,12 @@ Return only the JSON response, no additional text.
   };
 
   return (
-    <div className="space-y-4 bg-gradient-to-br from-gray-50 to-white min-h-screen p-4">
+    <div className="space-y-4 bg-gradient-to-br from-slate-50 to-white min-h-screen p-4">
       {/* Gig Selection Toggle */}
       <div className="flex justify-end">
         <button
           onClick={() => setShowGigsSection(!showGigsSection)}
-          className="flex items-center rounded-lg bg-gradient-to-r from-orange-500 to-red-500 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-orange-600 hover:to-red-600 transition-all duration-200 transform hover:scale-105"
+          className="flex items-center rounded-lg bg-gradient-to-r from-slate-700 to-slate-900 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-slate-800 hover:to-slate-950 transition-all duration-200 transform hover:scale-105"
         >
           {showGigsSection ? (
             <>
@@ -1218,16 +1218,16 @@ Return only the JSON response, no additional text.
         </button>
       </div>
 
-      {/* Gigs Selection Cards */}
+      {/* Gigs Selection Dropdown */}
       {showGigsSection && (
         <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 transition-all duration-300 ease-in-out">
           <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Users className="mr-2 h-5 w-5 text-orange-600" />
+            <Users className="mr-2 h-5 w-5 text-slate-700" />
             Select a Gig
           </h4>
           {isLoadingGigs ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600"></div>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-700"></div>
               <span className="ml-3 text-sm text-gray-600">Loading gigs...</span>
             </div>
           ) : gigs.length === 0 ? (
@@ -1238,34 +1238,34 @@ Return only the JSON response, no additional text.
               <p className="text-sm text-gray-500">No gigs available.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {gigs.map((gig) => (
-                <div
-                  key={gig._id}
-                  className={`cursor-pointer rounded-lg border-2 p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:scale-105 ${
-                    selectedGigId === gig._id 
-                      ? 'border-orange-500 ring-2 ring-orange-100 bg-gradient-to-br from-orange-50 to-red-50' 
-                      : 'border-gray-200 bg-white hover:border-orange-300'
-                  }`}
-                  onClick={() => setSelectedGigId(gig._id)}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`font-semibold text-base ${
-                      selectedGigId === gig._id ? 'text-orange-700' : 'text-gray-900'
-                    }`}>
-                      {gig.title}
-                    </span>
-                    {selectedGigId === gig._id && (
-                      <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-                    )}
-                  </div>
-                  <div className="mb-2">
-                    <span className="inline-block rounded-full bg-gradient-to-r from-orange-100 to-red-100 text-orange-700 px-2 py-1 text-xs font-medium">
-                      {gig.category || 'No category'}
-                    </span>
+            <div className="max-w-md">
+              <select
+                value={selectedGigId}
+                onChange={(e) => setSelectedGigId(e.target.value)}
+                className="w-full rounded-lg border-gray-300 py-3 px-4 text-base focus:border-slate-700 focus:outline-none focus:ring-slate-700 sm:text-sm shadow-sm bg-white"
+              >
+                <option value="">Select a gig...</option>
+                {gigs.map((gig) => (
+                  <option key={gig._id} value={gig._id}>
+                    {gig.title} {gig.category && `(${gig.category})`}
+                  </option>
+                ))}
+              </select>
+              {selectedGigId && (
+                <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        {gigs.find(g => g._id === selectedGigId)?.title}
+                      </p>
+                      <p className="text-xs text-slate-600">
+                        {gigs.find(g => g._id === selectedGigId)?.category || 'No category'}
+                      </p>
+                    </div>
+                    <div className="w-2 h-2 bg-slate-700 rounded-full animate-pulse"></div>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
@@ -1275,7 +1275,7 @@ Return only the JSON response, no additional text.
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
         <div className="mb-4">
           <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-            <Users className="mr-2 h-5 w-5 text-orange-600" />
+            <Users className="mr-2 h-5 w-5 text-slate-700" />
             Import Leads
           </h3>
           <p className="mt-1 text-sm text-gray-600">Choose your preferred method to import leads into your selected gig.</p>
@@ -1284,38 +1284,38 @@ Return only the JSON response, no additional text.
         {/* Import Methods Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
           {/* Zoho Import Card */}
-          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl p-4 hover:border-purple-300 transition-all duration-300">
+          <div className="bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-300 rounded-xl p-4 hover:border-slate-400 transition-all duration-300">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center">
-                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                  <Database className="h-5 w-5 text-purple-600" />
+                <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center mr-3">
+                  <Database className="h-5 w-5 text-slate-700" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-semibold text-purple-900">Zoho CRM Import</h4>
-                  <p className="text-sm text-purple-700">Sync leads from your Zoho CRM</p>
+                  <h4 className="text-lg font-semibold text-slate-900">Zoho CRM Import</h4>
+                  <p className="text-sm text-slate-700">Sync leads from your Zoho CRM</p>
                 </div>
               </div>
               <div className="flex space-x-2">
                 <button
                   onClick={handleZohoConnect}
                   disabled={hasZohoAccessToken}
-                  className="px-3 py-1 text-xs font-medium text-purple-600 bg-purple-100 hover:bg-purple-200 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                  className="px-3 py-1 text-xs font-medium text-slate-700 bg-slate-200 hover:bg-slate-300 rounded-lg transition-colors duration-200 disabled:opacity-50"
                 >
-                  {hasZohoAccessToken ? 'Connected' : 'Connect'}
+                  {hasZohoAccessToken ? 'Connected' : 'Connect to Zoho'}
                 </button>
               </div>
             </div>
             <div className="space-y-2 mb-4">
-              <div className="flex items-center text-sm text-purple-700">
-                <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+              <div className="flex items-center text-sm text-slate-700">
+                <div className="w-2 h-2 bg-slate-600 rounded-full mr-2"></div>
                 Automatic synchronization
               </div>
-              <div className="flex items-center text-sm text-purple-700">
-                <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+              <div className="flex items-center text-sm text-slate-700">
+                <div className="w-2 h-2 bg-slate-600 rounded-full mr-2"></div>
                 Real-time data updates
               </div>
-              <div className="flex items-center text-sm text-purple-700">
-                <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+              <div className="flex items-center text-sm text-slate-700">
+                <div className="w-2 h-2 bg-slate-600 rounded-full mr-2"></div>
                 No file upload required
               </div>
             </div>
@@ -1328,7 +1328,7 @@ Return only the JSON response, no additional text.
                 await handleImportFromZoho();
               }}
               disabled={!hasZohoAccessToken || isImportingZoho}
-              className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-purple-600 hover:to-indigo-700 disabled:opacity-50 transition-all duration-200 transform hover:scale-105"
+              className="w-full bg-gradient-to-r from-slate-700 to-slate-900 text-white font-semibold py-3 px-4 rounded-lg hover:from-slate-800 hover:to-slate-950 disabled:opacity-50 transition-all duration-200 transform hover:scale-105"
             >
               {isImportingZoho ? (
                 <div className="flex items-center justify-center">
@@ -1345,42 +1345,42 @@ Return only the JSON response, no additional text.
           </div>
 
           {/* File Upload Card */}
-          <div className="bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-200 rounded-xl p-4 hover:border-teal-300 transition-all duration-300" data-file-upload>
+          <div className="bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-300 rounded-xl p-4 hover:border-slate-400 transition-all duration-300" data-file-upload>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center">
-                <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center mr-3">
-                  <Upload className="h-5 w-5 text-teal-600" />
+                <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center mr-3">
+                  <Upload className="h-5 w-5 text-slate-700" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-semibold text-teal-900">File Upload</h4>
-                  <p className="text-sm text-teal-700">Upload contacts from any file format</p>
+                  <h4 className="text-lg font-semibold text-slate-900">File Upload</h4>
+                  <p className="text-sm text-slate-700">Upload contacts from any file format</p>
                 </div>
               </div>
             </div>
             <div className="space-y-2 mb-4">
-              <div className="flex items-center text-sm text-teal-700">
-                <div className="w-2 h-2 bg-teal-500 rounded-full mr-2"></div>
+              <div className="flex items-center text-sm text-slate-700">
+                <div className="w-2 h-2 bg-slate-600 rounded-full mr-2"></div>
                 Supports CSV, Excel, JSON, TXT, PDF
               </div>
-              <div className="flex items-center text-sm text-teal-700">
-                <div className="w-2 h-2 bg-teal-500 rounded-full mr-2"></div>
+              <div className="flex items-center text-sm text-slate-700">
+                <div className="w-2 h-2 bg-slate-600 rounded-full mr-2"></div>
                 AI-powered data processing
               </div>
-              <div className="flex items-center text-sm text-teal-700">
-                <div className="w-2 h-2 bg-teal-500 rounded-full mr-2"></div>
+              <div className="flex items-center text-sm text-slate-700">
+                <div className="w-2 h-2 bg-slate-600 rounded-full mr-2"></div>
                 Preview and edit before saving
               </div>
             </div>
             
             {/* File Upload Area */}
-            <div className="rounded-lg border-2 border-dashed border-teal-300 p-4 hover:border-teal-400 hover:bg-teal-50 transition-all duration-300 bg-white">
+            <div className="rounded-lg border-2 border-dashed border-slate-400 p-4 hover:border-slate-500 hover:bg-slate-50 transition-all duration-300 bg-white">
               <div className="text-center">
-                <div className="mx-auto h-12 w-12 bg-teal-100 rounded-full flex items-center justify-center mb-3">
-                  <Upload className="h-6 w-6 text-teal-600" />
+                <div className="mx-auto h-12 w-12 bg-slate-200 rounded-full flex items-center justify-center mb-3">
+                  <Upload className="h-6 w-6 text-slate-700" />
                 </div>
                 <div>
                   <label htmlFor="file-upload" className="cursor-pointer group">
-                    <span className="block text-sm font-semibold text-teal-600 group-hover:text-teal-500 transition-colors duration-200">
+                    <span className="block text-sm font-semibold text-slate-700 group-hover:text-slate-600 transition-colors duration-200">
                       {isProcessing ? (
                         <div className="flex items-center justify-center">
                           <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
@@ -1399,7 +1399,7 @@ Return only the JSON response, no additional text.
                       disabled={isProcessing}
                     />
                   </label>
-                  <p className="mt-2 text-xs text-teal-600">All file formats supported up to 10MB</p>
+                  <p className="mt-2 text-xs text-slate-600">All file formats supported up to 10MB</p>
                 </div>
               </div>
             </div>
@@ -1411,7 +1411,7 @@ Return only the JSON response, no additional text.
           <div className="mt-4 p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center">
-                <FileText className="mr-2 h-4 w-4 text-indigo-500" />
+                <FileText className="mr-2 h-4 w-4 text-slate-600" />
                 <span className="font-medium text-gray-900">{selectedFile.name}</span>
               </div>
               <button onClick={() => {
@@ -1453,30 +1453,30 @@ Return only the JSON response, no additional text.
               {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
                 <div className="mt-4 space-y-4">
                   {validationResults && (
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
-                      <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
-                        <Database className="mr-2 h-4 w-4" />
-                        AI Processing Results
-                      </h4>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-blue-600 font-medium">Total Rows:</span> {validationResults.totalRows}
-                        </div>
-                        <div>
-                          <span className="text-green-600 font-medium">Valid Rows:</span> {validationResults.validRows}
-                        </div>
-                        {validationResults.invalidRows > 0 && (
-                          <div className="col-span-2">
-                            <span className="text-red-600 font-medium">Invalid Rows:</span> {validationResults.invalidRows}
-                          </div>
-                        )}
+                                      <div className="bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200 rounded-lg p-3">
+                    <h4 className="text-sm font-semibold text-slate-800 mb-2 flex items-center">
+                      <Database className="mr-2 h-4 w-4" />
+                      AI Processing Results
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-slate-600 font-medium">Total Rows:</span> {validationResults.totalRows}
                       </div>
-                      {validationResults.errors && validationResults.errors.length > 0 && (
-                        <div className="mt-3">
-                          <details className="text-xs">
-                            <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
-                              View validation errors ({validationResults.errors.length})
-                            </summary>
+                      <div>
+                        <span className="text-green-600 font-medium">Valid Rows:</span> {validationResults.validRows}
+                      </div>
+                      {validationResults.invalidRows > 0 && (
+                        <div className="col-span-2">
+                          <span className="text-red-600 font-medium">Invalid Rows:</span> {validationResults.invalidRows}
+                        </div>
+                      )}
+                    </div>
+                    {validationResults.errors && validationResults.errors.length > 0 && (
+                      <div className="mt-3">
+                        <details className="text-xs">
+                          <summary className="cursor-pointer text-slate-600 hover:text-slate-800">
+                            View validation errors ({validationResults.errors.length})
+                          </summary>
                             <div className="mt-2 space-y-1">
                               {validationResults.errors.map((error: string, index: number) => (
                                 <div key={index} className="text-red-600 bg-red-50 p-2 rounded">
@@ -1517,12 +1517,12 @@ Return only the JSON response, no additional text.
                         <div className="max-h-60 overflow-y-auto">
                           <div className="space-y-2">
                             {parsedLeads.map((lead: any, index: number) => (
-                              <div key={index} className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-3 border border-gray-200 hover:border-blue-300 transition-all duration-200">
-                                <div className="flex items-center justify-between mb-3">
-                                  <div className="flex items-center space-x-3">
-                                    <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                                      <span className="text-xs font-bold text-indigo-600">{index + 1}</span>
-                                    </div>
+                                                          <div key={index} className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-lg p-3 border border-gray-200 hover:border-slate-300 transition-all duration-200">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
+                                    <span className="text-xs font-bold text-slate-600">{index + 1}</span>
+                                  </div>
                                     <span className="text-sm font-semibold text-gray-900">
                                       {lead.Deal_Name || 'Unnamed Lead'}
                                     </span>
@@ -1530,7 +1530,7 @@ Return only the JSON response, no additional text.
                                   <div className="flex items-center space-x-2">
                                     <button
                                       onClick={() => setEditingLeadIndex(editingLeadIndex === index ? null : index)}
-                                      className="text-blue-500 hover:text-blue-700 p-2 rounded-md hover:bg-blue-50 transition-colors duration-200"
+                                      className="text-slate-600 hover:text-slate-800 p-2 rounded-md hover:bg-slate-50 transition-colors duration-200"
                                       title="Edit lead"
                                     >
                                       <Edit className="h-4 w-4" />
@@ -1551,7 +1551,7 @@ Return only the JSON response, no additional text.
                                 </div>
                                 
                                 {editingLeadIndex === index ? (
-                                  <div className="space-y-3 bg-white rounded-lg p-3 border border-blue-200 shadow-sm">
+                                  <div className="space-y-3 bg-white rounded-lg p-3 border border-slate-200 shadow-sm">
                                     <div className="grid grid-cols-1 gap-3">
                                       <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
@@ -1560,7 +1560,7 @@ Return only the JSON response, no additional text.
                                           value={lead.Deal_Name || ''}
                                           onChange={(e) => handleEditLead(index, 'Deal_Name', e.target.value)}
                                           placeholder="Enter lead name"
-                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm"
+                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
                                         />
                                       </div>
                                       <div>
@@ -1570,7 +1570,7 @@ Return only the JSON response, no additional text.
                                           value={lead.Email_1 || ''}
                                           onChange={(e) => handleEditLead(index, 'Email_1', e.target.value)}
                                           placeholder="Enter email address"
-                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm"
+                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
                                         />
                                       </div>
                                       <div>
@@ -1580,7 +1580,7 @@ Return only the JSON response, no additional text.
                                           value={lead.Phone || ''}
                                           onChange={(e) => handleEditLead(index, 'Phone', e.target.value)}
                                           placeholder="Enter phone number"
-                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm"
+                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
                                         />
                                       </div>
                                     </div>
@@ -1596,7 +1596,7 @@ Return only the JSON response, no additional text.
                                           setEditingLeadIndex(null);
                                           toast.success('Lead updated');
                                         }}
-                                        className="px-3 py-1 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-sm"
+                                        className="px-3 py-1 text-sm font-medium text-white bg-gradient-to-r from-slate-700 to-slate-900 rounded-lg hover:from-slate-800 hover:to-slate-950 transition-all duration-200 shadow-sm"
                                       >
                                         Save Changes
                                       </button>
@@ -1627,7 +1627,7 @@ Return only the JSON response, no additional text.
                   </div>
                   
                   <button
-                    className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-red-600 px-4 py-3 text-white font-bold hover:from-orange-600 hover:to-red-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    className="w-full rounded-xl bg-gradient-to-r from-slate-700 to-slate-900 px-4 py-3 text-white font-bold hover:from-slate-800 hover:to-slate-950 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                     onClick={handleSaveLeads}
                     disabled={isProcessing}
                   >
@@ -1653,7 +1653,7 @@ Return only the JSON response, no additional text.
       {/* Channel Filter */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
         <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-          <Globe className="mr-2 h-5 w-5 text-orange-600" />
+          <Globe className="mr-2 h-5 w-5 text-slate-700" />
           Channel Filter
         </h3>
         <div className="flex flex-wrap gap-2">
@@ -1666,7 +1666,7 @@ Return only the JSON response, no additional text.
                 key={channel.id}
                 className={`flex items-center space-x-2 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 transform hover:scale-105 ${
                   isSelected
-                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg'
+                    ? 'bg-gradient-to-r from-slate-700 to-slate-900 text-white shadow-lg'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
                 }`}
                 onClick={() => toggleChannel(channel.id)}
@@ -1685,14 +1685,14 @@ Return only the JSON response, no additional text.
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                <Users className="mr-2 h-5 w-5 text-orange-600" />
+                <Users className="mr-2 h-5 w-5 text-slate-700" />
                 Leads List
               </h3>
                             <div className="mt-2">
                 {selectedGigId ? (
                   <div className="text-sm text-gray-600">
                     {leads.length > 0 ? (
-                      <span className="bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-xs font-medium">
+                      <span className="bg-slate-50 text-slate-700 px-3 py-1 rounded-full text-xs font-medium">
                         Showing {filteredLeads.length} of {leads.length} leads {searchQuery && `(filtered by "${searchQuery}")`}
                       </span>
                     ) : (
@@ -1713,14 +1713,14 @@ Return only the JSON response, no additional text.
                 </div>
                 <input
                   type="text"
-                  className="block w-full rounded-lg border-gray-300 pl-10 focus:border-orange-500 focus:ring-orange-500 sm:text-sm shadow-sm"
+                  className="block w-full rounded-lg border-gray-300 pl-10 focus:border-slate-700 focus:ring-slate-700 sm:text-sm shadow-sm"
                   placeholder="Search leads..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
               <select
-                className="rounded-lg border-gray-300 py-2 pl-3 pr-10 text-base focus:border-orange-500 focus:outline-none focus:ring-orange-500 sm:text-sm shadow-sm"
+                className="rounded-lg border-gray-300 py-2 pl-3 pr-10 text-base focus:border-slate-700 focus:outline-none focus:ring-slate-700 sm:text-sm shadow-sm"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
@@ -1730,7 +1730,7 @@ Return only the JSON response, no additional text.
               </select>
               <button
                 onClick={() => fetchLeads()}
-                className="flex items-center rounded-lg bg-gradient-to-r from-orange-500 to-red-500 px-3 py-2 text-sm font-medium text-white shadow-md hover:from-orange-600 hover:to-red-600 transition-all duration-200 transform hover:scale-105"
+                className="flex items-center rounded-lg bg-gradient-to-r from-slate-700 to-slate-900 px-3 py-2 text-sm font-medium text-white shadow-md hover:from-slate-800 hover:to-slate-950 transition-all duration-200 transform hover:scale-105"
                 disabled={isLoadingLeads || !selectedGigId}
               >
                 {isLoadingLeads ? (
@@ -1786,7 +1786,7 @@ Return only the JSON response, no additional text.
                     <tr>
                       <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex items-center justify-center py-8">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600 mr-3"></div>
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-700 mr-3"></div>
                           Loading leads...
                         </div>
                       </td>
@@ -1816,8 +1816,8 @@ Return only the JSON response, no additional text.
                       <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="flex items-center">
-                                                    <div className="h-10 w-10 flex-shrink-0 rounded-full bg-orange-100 flex items-center justify-center">
-                          <Users className="h-6 w-6 text-orange-600" />
+                                                    <div className="h-10 w-10 flex-shrink-0 rounded-full bg-slate-100 flex items-center justify-center">
+                          <Users className="h-6 w-6 text-slate-700" />
                         </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'No Email'}</div>
@@ -1829,7 +1829,7 @@ Return only the JSON response, no additional text.
                           {lead.Deal_Name || 'N/A'}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
-                          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-800">
+                          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-800">
                             {lead.Stage || 'N/A'}
                           </span>
                         </td>
@@ -1840,14 +1840,7 @@ Return only the JSON response, no additional text.
                           {lead.updatedAt ? new Date(lead.updatedAt).toLocaleDateString() : 'N/A'}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                          <div className="flex items-center justify-end space-x-2">
-                            <button className="text-orange-600 hover:text-orange-900 p-1 rounded-md hover:bg-orange-50 transition-colors duration-150">
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button className="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50 transition-colors duration-150">
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
+                          {/* Actions removed as requested */}
                         </td>
                       </tr>
                     ))
@@ -1866,7 +1859,7 @@ Return only the JSON response, no additional text.
                     Showing <span className="font-medium">{filteredLeads.length}</span> of{' '}
                     <span className="font-medium">{leads.length}</span> leads
                     {searchQuery && (
-                      <span className="text-orange-600"> (filtered by "{searchQuery}")</span>
+                      <span className="text-slate-600"> (filtered by "{searchQuery}")</span>
                     )}
                   </span>
                 </div>
@@ -1898,14 +1891,14 @@ Return only the JSON response, no additional text.
           </div>
           <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
             <div className="min-w-full divide-y divide-gray-200">
-              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 sticky top-0">
-                <div className="grid grid-cols-4 px-6 py-3">
-                  <div className="text-left text-xs font-semibold text-indigo-700 uppercase tracking-wider">Email</div>
-                  <div className="text-left text-xs font-semibold text-indigo-700 uppercase tracking-wider">Téléphone</div>
-                  <div className="text-left text-xs font-semibold text-indigo-700 uppercase tracking-wider">Lead</div>
-                  <div className="text-left text-xs font-semibold text-indigo-700 uppercase tracking-wider">Stage</div>
-                </div>
-              </div>
+                        <div className="bg-gradient-to-r from-slate-50 to-slate-100 sticky top-0">
+            <div className="grid grid-cols-4 px-6 py-3">
+              <div className="text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Email</div>
+              <div className="text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Téléphone</div>
+              <div className="text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Lead</div>
+              <div className="text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Stage</div>
+            </div>
+          </div>
               <div className="bg-white divide-y divide-gray-100">
                 {realtimeLeads.map((lead, index) => (
                   <div key={index} className="grid grid-cols-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
@@ -1913,9 +1906,9 @@ Return only the JSON response, no additional text.
                     <div className="text-sm text-gray-700">{lead.Phone || 'N/A'}</div>
                     <div className="text-sm text-gray-700">{lead.Deal_Name || 'N/A'}</div>
                     <div className="text-sm">
-                      <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-800 px-2.5 py-0.5 text-xs font-medium">
-                        {lead.Stage || 'N/A'}
-                      </span>
+                                        <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-800 px-2.5 py-0.5 text-xs font-medium">
+                    {lead.Stage || 'N/A'}
+                  </span>
                     </div>
                   </div>
                 ))}
@@ -1938,9 +1931,9 @@ Return only the JSON response, no additional text.
               </button>
             </div>
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
-                <Upload className="h-6 w-6 text-indigo-600" />
-              </div>
+                          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+              <Upload className="h-6 w-6 text-slate-700" />
+            </div>
               <h3 className="mb-2 text-lg font-semibold text-gray-900">
                 Choose your import method
               </h3>
@@ -1961,7 +1954,7 @@ Return only the JSON response, no additional text.
                   localStorage.setItem('hasSeenImportChoiceModal', 'true');
                   setShowImportChoiceModal(false);
                 }}
-                className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="flex-1 rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-700"
               >
                 Next
               </button>
