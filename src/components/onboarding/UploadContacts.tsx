@@ -1242,7 +1242,7 @@ Return only the JSON response, no additional text.
               <option value="" className="text-slate-500">Select a gig...</option>
               {gigs.map((gig) => (
                 <option key={gig._id} value={gig._id} className="text-slate-900">
-                  {gig.title} {gig.category}
+                  {gig.title}
                 </option>
               ))}
             </select>
