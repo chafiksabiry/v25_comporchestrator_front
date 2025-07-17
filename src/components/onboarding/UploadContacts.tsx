@@ -680,16 +680,7 @@ Return only the JSON response, no additional text.
         // Clear any cached Zoho data
         setRealtimeLeads([]);
         setParsedLeads([]);
-        
-        // Demander à l'utilisateur s'il souhaite rafraîchir la page
-        const shouldRefresh = window.confirm(
-          'Zoho CRM a bien été déconnecté. Voulez-vous rafraîchir la page pour nettoyer toutes les données en cache ?'
-        );
-        if (shouldRefresh) {
-          setTimeout(() => {
-            window.location.reload();
-          }, 500);
-        }
+        // (plus de rafraîchissement ni d'alerte)
       } else {
         throw new Error(data.message || 'Failed to disconnect from Zoho');
       }
