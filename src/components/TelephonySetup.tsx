@@ -79,10 +79,17 @@ const TelephonySetup = () => {
   ];
 
   useEffect(() => {
+    // Vérifier que companyId est disponible
+    if (!companyId) {
+      console.error('Company ID not found in cookies');
+      alert('Company ID not found. Please refresh the page and try again.');
+      return;
+    }
+
     // Load existing numbers and destination zone on startup
     fetchExistingNumbers();
     fetchDestinationZone();
-  }, []);
+  }, [companyId]);
 
   const fetchExistingNumbers = async () => {
     try {
@@ -96,6 +103,11 @@ const TelephonySetup = () => {
 
   const fetchDestinationZone = async () => {
     try {
+      if (!gigId) {
+        console.error('Gig ID not found');
+        return;
+      }
+
       const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}/destination-zone`);
       const data = await response.json();
       console.log(data.data.code);
@@ -143,6 +155,12 @@ const TelephonySetup = () => {
 
   const handleSaveConfiguration = async () => {
     try {
+      // Vérifier que companyId est disponible
+      if (!companyId) {
+        console.error('Company ID not found in cookies');
+        throw new Error('Company ID not found. Please refresh the page and try again.');
+      }
+
       await axios.put(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
         { status: 'completed' }
@@ -153,6 +171,12 @@ const TelephonySetup = () => {
       setShowCompanyOnboarding(true);
     } catch (error) {
       console.error('Error updating onboarding progress:', error);
+      // Afficher un message d'erreur plus informatif
+      if (error instanceof Error) {
+        alert(`Error: ${error.message}`);
+      } else {
+        alert('An error occurred while saving the configuration. Please try again.');
+      }
     }
   };
 

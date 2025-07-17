@@ -47,6 +47,8 @@ function App() {
     });
   }, []);
 
+
+
   const handleLogout = () => {
     if (import.meta.env.VITE_NODE_ENV !== 'development') {
       // Supprimer tous les cookies

@@ -1,0 +1,6 @@
+Email,Phone,Lead Name,Stage,Pipeline,Project Tags
+john.doe@example.com,+1-555-123-4567,John Doe,New,Sales Pipeline,prospect;high-value
+jane.smith@company.com,+33 1 23 45 67 89,Jane Smith,Qualified,Enterprise Pipeline,enterprise;decision-maker
+mike.wilson@startup.io,+44 20 7946 0958,Mike Wilson,Contacted,Startup Pipeline,startup;tech
+no-email@placeholder.com,+1-555-999-8888,Phone Only Lead,New,Sales Pipeline,phone-lead
+email-only@example.com,no-phone@placeholder.com,Email Only Lead,Qualified,Enterprise Pipeline,email-lead 
