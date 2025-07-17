@@ -161,7 +161,7 @@ const CompanyOnboarding = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     // Vérifier si l'URL contient le paramètre startStep=6
-    if (params.get('session') === 'someGeneratedSessionId') {
+    if (params.get('session') === 'someGeneratedSessionId' && companyId) {
       handleStartStep(6);
     }
   }, [companyId]);
