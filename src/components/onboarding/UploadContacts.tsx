@@ -782,49 +782,68 @@ Return only the JSON response, no additional text.
     }
   }, [hasZohoConfig]);
 
+  // Ajout d'une fonction utilitaire pour fetch Zoho avec refresh automatique
+  const fetchZohoWithAutoRefresh = async (url: string, options: RequestInit = {}) => {
+    const userId = Cookies.get('userId');
+    const gigId = Cookies.get('gigId');
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${gigId}:${userId}`,
+      ...options.headers,
+    };
+    let response = await fetch(url, { ...options, headers });
+    if (response.status === 401) {
+      // Tenter un refresh automatique du token
+      const refreshRes = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/config/user/${userId}/refresh-token`, {
+        method: 'POST',
+        headers,
+      });
+      if (refreshRes.ok) {
+        // Réessayer la requête initiale
+        response = await fetch(url, { ...options, headers });
+      } else {
+        toast.error('Session Zoho expirée. Veuillez vous reconnecter.');
+        throw new Error('Zoho token expired');
+      }
+    }
+    return response;
+  };
+
+  // Remplacer tous les fetch vers l'API Zoho par fetchZohoWithAutoRefresh
+  // Exemple pour handleImportFromZoho :
   const handleImportFromZoho = async () => {
     if (!selectedGigId) {
       toast.error('Please select a gig first');
       return;
     }
-
     setIsImportingZoho(true);
     setRealtimeLeads([]);
     try {
       const userId = Cookies.get('userId');
       const companyId = Cookies.get('companyId');
-      
       if (!companyId) {
         toast.error('Configuration de l\'entreprise non trouvée. Veuillez vous reconnecter.');
         return;
       }
-
       const zohoService = ZohoService.getInstance();
       const accessToken = await zohoService.getValidAccessToken();
-      
       if (!accessToken) {
         toast.error('Configuration Zoho non trouvée. Veuillez configurer Zoho CRM d\'abord.');
         return;
       }
-
       setParsedLeads([]);
-      
-      // Trouver le gig sélectionné
       const selectedGig = gigs.find(gig => gig._id === selectedGigId);
       if (!selectedGig) {
         toast.error('Gig sélectionné non trouvé');
         return;
       }
-
-      console.log('Importing leads for selected gig:', selectedGig.title);
-      
       const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/leads/sync-all`;
-      const checkResponse = await fetch(apiUrl, { 
+      const checkResponse = await fetchZohoWithAutoRefresh(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`,
-          'Accept': 'application/json'
+          'Accept': 'application/json',
         },
         credentials: 'include',
         body: JSON.stringify({
@@ -833,39 +852,24 @@ Return only the JSON response, no additional text.
           gigId: selectedGigId
         })
       });
-
       if (!checkResponse.ok) {
         const errorData = await checkResponse.json().catch(() => null);
         throw new Error(errorData?.message || `Erreur lors de la synchronisation avec Zoho pour le gig ${selectedGig.title}`);
       }
-
       const data = await checkResponse.json();
-      console.log('Import response for gig:', selectedGig.title, data);
-      
       if (!data.success) {
         throw new Error(data.message || `Erreur lors de la synchronisation pour le gig ${selectedGig.title}`);
       }
-
-      // Vérifier si data.data et data.data.leads existent
       if (!data.data || !Array.isArray(data.data.leads)) {
-        console.warn(`No leads found for gig ${selectedGig.title}`);
         setRealtimeLeads([]);
         setParsedLeads([]);
-        // Refresh automatique même si aucun lead trouvé
         await fetchLeads();
         return;
       }
-
-      const leads = data.data.leads;
-      const syncInfo = data.data.sync_info || { total_saved: 0 };
-
-      // Mettre à jour l'état avec les leads du gig sélectionné
-      setRealtimeLeads(leads);
-      setParsedLeads(leads);
-
-      // Refresh automatique de la liste des leads après l'importation
+      const leadsFromApi = data.data.leads;
+      setRealtimeLeads(leadsFromApi);
+      setParsedLeads(leadsFromApi);
       await fetchLeads();
-
     } catch (error: any) {
       console.error('Error in handleImportFromZoho:', error);
       toast.error(error.message || 'Une erreur est survenue lors de l\'importation');
