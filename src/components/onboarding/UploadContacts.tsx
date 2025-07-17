@@ -29,7 +29,8 @@ import {
   Settings,
   CheckCircle,
   AlertCircle,
-  Info
+  Info,
+  LogOut
 } from 'lucide-react';
 import zohoLogo from '../../assets/public/images/zoho-logo.png';
 import axios from 'axios';
@@ -89,6 +90,7 @@ const UploadContacts = () => {
     companyId: Cookies.get('companyId') || ''
   });
   const [isImportingZoho, setIsImportingZoho] = useState(false);
+  const [isDisconnectingZoho, setIsDisconnectingZoho] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [isLoadingLeads, setIsLoadingLeads] = useState(false);
@@ -627,8 +629,73 @@ Return only the JSON response, no additional text.
       toast.error((error as any)?.message || 'Failed to initiate Zoho authentication');
     }
   };
-  
-  
+
+  const handleZohoDisconnect = async () => {
+    // Confirmation dialog
+    const confirmed = window.confirm(
+      'Are you sure you want to disconnect from Zoho CRM? This will remove all your Zoho configuration and you will need to reconnect to use Zoho features again.'
+    );
+    
+    if (!confirmed) {
+      return;
+    }
+    
+    console.log('Starting Zoho disconnection process...');
+    setIsDisconnectingZoho(true);
+    try {
+      const userId = Cookies.get('userId');
+      const gigId = Cookies.get('gigId');
+      
+      if (!userId) {
+        console.error('No userId found in cookies');
+        toast.error('User ID not found. Please log in again.');
+        return;
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/disconnect`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${gigId}:${userId}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error response:', errorData);
+        throw new Error(errorData.message || 'Failed to disconnect from Zoho');
+      }
+
+      const data = await response.json();
+      console.log('Disconnect response:', data);
+
+      if (data.success) {
+        // Reset Zoho service configuration
+        const zohoService = ZohoService.getInstance();
+        zohoService.resetConfiguration();
+        
+        setHasZohoConfig(false);
+        setHasZohoAccessToken(false);
+        toast.success('Successfully disconnected from Zoho CRM');
+        
+        // Clear any cached Zoho data
+        setRealtimeLeads([]);
+        setParsedLeads([]);
+        
+        // Refresh the page to clear any cached data
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        throw new Error(data.message || 'Failed to disconnect from Zoho');
+      }
+    } catch (error) {
+      console.error('Error in handleZohoDisconnect:', error);
+      toast.error((error as any)?.message || 'Failed to disconnect from Zoho');
+    } finally {
+      setIsDisconnectingZoho(false);
+    }
+  };
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -1284,16 +1351,48 @@ Return only the JSON response, no additional text.
                 <div>
                   <h4 className="text-xl font-bold text-blue-900">Zoho CRM Integration</h4>
                   <p className="text-sm text-blue-700">Connect and sync with your Zoho CRM</p>
+                  {hasZohoAccessToken && (
+                    <div className="flex items-center mt-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                      <span className="text-xs text-green-700 font-medium">Connected</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex space-x-2">
-                <button
-                  onClick={handleZohoConnect}
-                  disabled={hasZohoAccessToken}
-                  className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-200 hover:bg-blue-300 rounded-xl transition-colors duration-200 disabled:opacity-50 shadow-sm"
-                >
-                  {hasZohoAccessToken ? 'Connected' : 'Connect to Zoho'}
-                </button>
+                {hasZohoAccessToken ? (
+                  <button
+                    onClick={handleZohoDisconnect}
+                    disabled={isDisconnectingZoho}
+                    className="px-4 py-2 text-sm font-medium text-red-700 bg-red-200 hover:bg-red-300 rounded-xl transition-colors duration-200 shadow-sm disabled:opacity-50"
+                  >
+                    {isDisconnectingZoho ? (
+                      <div className="flex items-center">
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                        Disconnecting...
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Disconnect
+                      </div>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleZohoConnect}
+                    className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-200 hover:bg-blue-300 rounded-xl transition-colors duration-200 shadow-sm"
+                  >
+                    <div className="flex items-center">
+                      <img 
+                        src={zohoLogo} 
+                        alt="Zoho" 
+                        className="h-4 w-4 mr-2 object-contain"
+                      />
+                      Connect to Zoho
+                    </div>
+                  </button>
+                )}
               </div>
             </div>
             <button
@@ -1311,6 +1410,15 @@ Return only the JSON response, no additional text.
                 <div className="flex items-center justify-center">
                   <RefreshCw className="mr-3 h-5 w-5 animate-spin" />
                   Importing from Zoho...
+                </div>
+              ) : !hasZohoAccessToken ? (
+                <div className="flex items-center justify-center">
+                  <img 
+                    src={zohoLogo} 
+                    alt="Zoho" 
+                    className="h-6 w-6 mr-3 object-contain"
+                  />
+                  Connect to Zoho CRM First
                 </div>
               ) : (
                 <div className="flex items-center justify-center">
