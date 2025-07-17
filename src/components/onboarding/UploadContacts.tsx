@@ -632,13 +632,12 @@ Return only the JSON response, no additional text.
 
   const handleZohoDisconnect = async () => {
     // Confirmation dialog
-    const confirmed = window.confirm(
-      'Are you sure you want to disconnect from Zoho CRM? This will remove all your Zoho configuration and you will need to reconnect to use Zoho features again.'
-    );
-    
-    if (!confirmed) {
-      return;
-    }
+    // const confirmed = window.confirm(
+    //   'Are you sure you want to disconnect from Zoho CRM? This will remove all your Zoho configuration and you will need to reconnect to use Zoho features again.'
+    // );
+    // if (!confirmed) {
+    //   return;
+    // }
     
     console.log('Starting Zoho disconnection process...');
     setIsDisconnectingZoho(true);
@@ -656,7 +655,7 @@ Return only the JSON response, no additional text.
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${gigId}:${userId}`,
+          'Authorization': `Bearer ${userId}`,
         },
       });
 
