@@ -842,7 +842,7 @@ Return only the JSON response, no additional text.
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
+          'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`,
           'Accept': 'application/json',
         },
         credentials: 'include',
