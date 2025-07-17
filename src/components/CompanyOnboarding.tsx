@@ -122,7 +122,7 @@ const CompanyOnboarding = () => {
 
       if (!userId) {
         console.error('User ID not found in cookies');
-        window.location.href = '/app4';
+        window.location.href = '/auth';
         return;
       }
 
@@ -133,13 +133,13 @@ const CompanyOnboarding = () => {
           // Store company ID in cookie for backward compatibility
           Cookies.set('companyId', response.data.data._id);
         } else {
-          // Redirect to /app4 if no company data is found
-          window.location.href = '/app4';
+          // Redirect to /auth if no company data is found
+          window.location.href = '/auth';
         }
       } catch (error) {
         console.error('Error fetching company ID:', error);
-        // Redirect to /app4 on error
-        window.location.href = '/app4';
+        // Redirect to /auth on error
+        window.location.href = '/auth';
       }
     };
 
@@ -161,7 +161,7 @@ const CompanyOnboarding = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     // Vérifier si l'URL contient le paramètre startStep=6
-    if (params.get('session') === 'someGeneratedSessionId') {
+    if (params.get('session') === 'someGeneratedSessionId' && companyId) {
       handleStartStep(6);
     }
   }, [companyId]);
@@ -285,7 +285,10 @@ const CompanyOnboarding = () => {
   };
 
   const handleStartStep = async (stepId: number) => {
-    if (!companyId) return;
+    if (!companyId) {
+      console.error('Company ID not available for starting step');
+      return;
+    }
 
     try {
       // Mettre à jour le statut de l'étape à "in_progress"
@@ -324,12 +327,19 @@ const CompanyOnboarding = () => {
       }
     } catch (error) {
       console.error('Error updating step status:', error);
+      // Afficher un message d'erreur plus informatif
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+      }
     }
   };
 
 
   const handleStepComplete = async (stepId: number) => {
-    if (!companyId) return;
+    if (!companyId) {
+      console.error('Company ID not available for step completion');
+      return;
+    }
 
     try {
       const phaseId = phases.findIndex(phase => 
@@ -344,6 +354,10 @@ const CompanyOnboarding = () => {
       setCompletedSteps(prev => [...prev, stepId]);
     } catch (error) {
       console.error('Error completing step:', error);
+      // Afficher un message d'erreur plus informatif
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+      }
     }
   };
 

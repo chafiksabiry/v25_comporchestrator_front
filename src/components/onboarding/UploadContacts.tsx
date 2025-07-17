@@ -22,8 +22,17 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  UserPlus,
+  FileSpreadsheet,
+  Cloud,
+  Settings,
+  CheckCircle,
+  AlertCircle,
+  Info,
+  LogOut
 } from 'lucide-react';
+import zohoLogo from '../../assets/public/images/zoho-logo.png';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx';
@@ -81,7 +90,9 @@ const UploadContacts = () => {
     companyId: Cookies.get('companyId') || ''
   });
   const [isImportingZoho, setIsImportingZoho] = useState(false);
+  const [isDisconnectingZoho, setIsDisconnectingZoho] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [isLoadingLeads, setIsLoadingLeads] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [realtimeLeads, setRealtimeLeads] = useState<Lead[]>([]);
@@ -95,7 +106,9 @@ const UploadContacts = () => {
   const [hasZohoAccessToken, setHasZohoAccessToken] = useState(false);
   const [showImportChoiceModal, setShowImportChoiceModal] = useState(false);
   const [selectedImportChoice, setSelectedImportChoice] = useState<'zoho' | 'file' | null>(null);
-  const [showGigsSection, setShowGigsSection] = useState(true);
+  const [showLeadsPreview, setShowLeadsPreview] = useState(true);
+  const [validationResults, setValidationResults] = useState<any>(null);
+  const [editingLeadIndex, setEditingLeadIndex] = useState<number | null>(null);
 
   const channels = [
     { id: 'all', name: 'All Channels', icon: Globe },
@@ -139,9 +152,163 @@ const UploadContacts = () => {
     }
   ];
 
+    const processFileWithOpenAI = async (fileContent: string, fileType: string) => {
+    try {
+      const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+      if (!openaiApiKey) {
+        throw new Error('OpenAI API key not configured');
+      }
+
+      const userId = Cookies.get('userId');
+      const gigId = selectedGigId; // Use selected gig ID instead of cookie
+      const companyId = Cookies.get('companyId');
+
+      if (!gigId) {
+        throw new Error('Please select a gig first');
+      }
+
+      const prompt = `
+You are a data processing expert. Analyze the following ${fileType} file content and extract lead information.
+
+File content:
+${fileContent}
+
+Please process this data and return a JSON array of lead objects with the following MongoDB format:
+{
+  "leads": [
+    {
+      "userId": {
+        "$oid": "${userId}"
+      },
+      "companyId": {
+        "$oid": "${companyId}"
+      },
+      "gigId": {
+        "$oid": "${gigId}"
+      },
+      "Last_Activity_Time": null,
+      "Deal_Name": "Lead Name",
+      "Email_1": "email@example.com",
+      "Phone": "+1234567890",
+      "Stage": "New",
+      "Pipeline": "Sales Pipeline",
+      "Project_Tags": ["tag1", "tag2"]
+    }
+  ],
+      "validation": {
+        "totalRows": 10,
+        "validRows": 8,
+        "invalidRows": 2,
+        "errors": [
+          "Row 3: Invalid email format",
+          "Row 7: Missing required fields"
+        ]
+      }
+    }
+
+Rules:
+1. Extract email addresses and validate their format
+2. Extract phone numbers and standardize them (always include Phone field)
+3. Use Deal_Name if available, otherwise use email as Deal_Name
+4. Set default Stage to "New" if not provided
+5. Set default Pipeline to "Sales Pipeline" if not provided
+6. Split Project_Tags by semicolon if multiple tags
+7. Only include leads that have at least email OR phone
+8. Always include Phone field (use "no-phone@placeholder.com" if no phone provided)
+9. Always include Email_1 field (use "no-email@placeholder.com" if no email provided)
+10. Use the exact MongoDB ObjectId format with "$oid" for userId, companyId, and gigId
+11. Set Last_Activity_Time to null
+12. Provide detailed validation feedback
+13. IMPORTANT: Use the provided userId, companyId, and gigId values exactly as shown above
+
+Return only the JSON response, no additional text.
+`;
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openaiApiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a data processing expert that returns only valid JSON responses.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 4000
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content;
+      
+      if (!content) {
+        throw new Error('No response from OpenAI');
+      }
+
+      // Parse the JSON response
+      const parsedData = JSON.parse(content);
+      
+      if (!parsedData.leads || !Array.isArray(parsedData.leads)) {
+        throw new Error('Invalid response format from OpenAI');
+      }
+
+      // Add required fields to each lead with MongoDB ObjectId format
+      const processedLeads = parsedData.leads.map((lead: any) => {
+        const userId = Cookies.get('userId');
+        const gigId = selectedGigId; // Use selected gig ID instead of cookie
+        const companyId = Cookies.get('companyId');
+        
+        return {
+          ...lead,
+          // Use the MongoDB ObjectId format from OpenAI response, or create it if not present
+          userId: lead.userId || { "$oid": userId },
+          companyId: lead.companyId || { "$oid": companyId },
+          gigId: lead.gigId || { "$oid": gigId },
+          // Ensure these fields are always present
+          Last_Activity_Time: lead.Last_Activity_Time || null,
+          Email_1: lead.Email_1 || "no-email@placeholder.com",
+          Phone: lead.Phone || "no-phone@placeholder.com",
+          Deal_Name: lead.Deal_Name || "Unnamed Lead",
+          Stage: lead.Stage || "New",
+          Pipeline: lead.Pipeline || "Sales Pipeline",
+          Activity_Tag: lead.Activity_Tag || '',
+          Telephony: lead.Telephony || '',
+          Project_Tags: lead.Project_Tags || []
+        };
+      });
+
+      return {
+        leads: processedLeads,
+        validation: parsedData.validation
+      };
+    } catch (error) {
+      console.error('Error processing with OpenAI:', error);
+      throw error;
+    }
+  };
+
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Check if a gig is selected before processing
+      if (!selectedGigId) {
+        toast.error('Please select a gig first before uploading a file');
+        return;
+      }
+      
       setSelectedFile(file);
       setUploadError(null);
       setUploadSuccess(false);
@@ -154,103 +321,49 @@ const UploadContacts = () => {
         const reader = new FileReader();
         reader.onload = async (e) => {
           try {
-            let rows: string[] = [];
-            let headers: string[] = [];
-            if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+            let fileContent = '';
+            let fileType = '';
+
+            // Determine file type based on extension
+            const fileExtension = file.name.toLowerCase().split('.').pop();
+            
+            if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+              fileType = 'Excel';
               const data = new Uint8Array(e.target?.result as ArrayBuffer);
               const workbook = XLSX.read(data, { type: 'array' });
               const sheetName = workbook.SheetNames[0];
               const worksheet = workbook.Sheets[sheetName];
               const json: unknown[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-              rows = (json as any[]).map((row: any) => Array.isArray(row) ? row.join(',') : Object.values(row).join(','));
+              const rows = (json as any[]).map((row: any) => Array.isArray(row) ? row.join(',') : Object.values(row).join(','));
+              fileContent = rows.join('\n');
+            } else if (fileExtension === 'csv') {
+              fileType = 'CSV';
+              fileContent = e.target?.result as string;
+            } else if (fileExtension === 'json') {
+              fileType = 'JSON';
+              fileContent = e.target?.result as string;
+            } else if (fileExtension === 'txt') {
+              fileType = 'Text';
+              fileContent = e.target?.result as string;
+            } else if (fileExtension === 'pdf') {
+              fileType = 'PDF';
+              // For PDF files, we'll send the raw content and let OpenAI extract text
+              fileContent = e.target?.result as string;
             } else {
-              // CSV
-              const content = e.target?.result as string;
-              // Détection du séparateur (virgule ou point-virgule)
-              const sep = content.includes(';') && !content.includes(',') ? ';' : ',';
-              rows = content.split('\n');
-              rows = rows.map(row => row.trim()).filter(row => row.length > 0);
-              if (sep !== ',') {
-                rows = rows.map(row => row.replace(/;/g, ','));
-              }
+              // For any other file type, treat as text
+              fileType = 'Unknown';
+              fileContent = e.target?.result as string;
             }
-            headers = rows[0].split(',').map(header => header.trim());
-            console.log('Headers lus:', headers);
+
+            setUploadProgress(30);
             
-            // Process each row and create lead objects
-            const totalRows = rows.length - 1;
-            const leads = rows.slice(1)
-              .filter(row => row.trim() !== '') // Filter out empty rows
-              .map((row, index) => {
-                const values = row.split(',').map(value => value.trim());
-                console.log(`Ligne ${index + 2} valeurs:`, values);
-                const lead: any = {
-                  userId: Cookies.get('userId'),
-                  gigId: Cookies.get('gigId'),
-                  companyId: Cookies.get('companyId'),
-                  Last_Activity_Time: new Date(),
-                  Activity_Tag: '',
-                  Deal_Name: '',
-                  Stage: '',
-                  Email_1: '',
-                  Phone: '',
-                  Telephony: '',
-                  Pipeline: '',
-                };
+            // Process with OpenAI
+            console.log('Processing file with OpenAI...');
+            const result = await processFileWithOpenAI(fileContent, fileType);
+            
+            setUploadProgress(80);
 
-                console.log('🔍 Lead créé avec userId et gigId:', {
-                  userId: lead.userId,
-                  gigId: lead.gigId
-                });
-
-                headers.forEach((header, index) => {
-                  const value = values[index]?.trim();
-                  if (value) { // Only set values that are not empty
-                    switch(header.toLowerCase().replace(/[_ ]/g, '')) { // Normalise: retire espaces et underscores
-                      case 'email':
-                        lead.Email_1 = value;
-                        break;
-                      case 'email1':
-                        lead.Email_1 = value;
-                        break;
-                      case 'phone':
-                        lead.Phone = value;
-                        break;
-                      case 'stage':
-                        lead.Stage = value;
-                        break;
-                      case 'dealname':
-                        lead.Deal_Name = value;
-                        break;
-                      case 'pipeline':
-                        lead.Pipeline = value;
-                        break;
-                      case 'projecttags':
-                        lead.Project_Tags = value.split(';').filter(tag => tag.trim() !== '');
-                        break;
-                    }
-                  }
-                });
-
-                // Validate required fields
-                if (!lead.Email_1 && !lead.Phone) {
-                  toast.error(`Row ${index + 2}: Missing email and phone number. At least one is required.`);
-                  return null;
-                }
-
-                // If Deal_Name is empty but Email_1 exists, use Email_1 as Deal_Name
-                if (!lead.Deal_Name && lead.Email_1) {
-                  lead.Deal_Name = lead.Email_1;
-                }
-
-                // Simulation de progression : avance en fonction du nombre de lignes
-                setUploadProgress(10 + Math.round(((index + 1) / totalRows) * 80));
-
-                return lead;
-              })
-              .filter(lead => lead !== null); // Remove invalid leads
-
-            if (leads.length === 0) {
+            if (result.leads.length === 0) {
               toast.error('No valid leads found in the file. Please check the file format and content.');
               setUploadError('No valid leads found');
               setIsProcessing(false);
@@ -258,15 +371,38 @@ const UploadContacts = () => {
               return;
             }
 
-            console.log('Leads à envoyer:', leads);
+            // Show validation results
+            if (result.validation) {
+              const { totalRows, validRows, invalidRows, errors } = result.validation;
+              setValidationResults(result.validation);
+              
+              if (invalidRows > 0) {
+                toast.error(`${invalidRows} rows had validation errors. Check the console for details.`);
+                console.log('Validation errors:', errors);
+              }
+              
+              toast.success(`Successfully processed ${validRows} out of ${totalRows} rows`);
+            }
 
-            setParsedLeads(leads);
+            console.log('Leads processed with OpenAI:', result.leads);
+            setParsedLeads(result.leads);
             setIsProcessing(false);
             setUploadProgress(100);
-            return;
+            
           } catch (error: any) {
             console.error('Error processing file:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Error processing file';
+            let errorMessage = 'Error processing file';
+            
+            if (error.message.includes('OpenAI API key not configured')) {
+              errorMessage = 'OpenAI API key not configured. Please check your environment variables.';
+            } else if (error.message.includes('OpenAI API error')) {
+              errorMessage = 'OpenAI API error. Please check your API key and try again.';
+            } else if (error.message.includes('Invalid response format')) {
+              errorMessage = 'AI processing returned invalid format. Please check your file structure.';
+            } else {
+              errorMessage = error.response?.data?.message || error.message || 'Error processing file';
+            }
+            
             setUploadError(errorMessage);
             toast.error(errorMessage);
             setUploadProgress(0);
@@ -281,9 +417,16 @@ const UploadContacts = () => {
           setIsProcessing(false);
         };
 
-        if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        // Read file based on type
+        const fileExtension = file.name.toLowerCase().split('.').pop();
+        
+        if (fileExtension === 'xlsx' || fileExtension === 'xls') {
           reader.readAsArrayBuffer(file);
+        } else if (fileExtension === 'pdf') {
+          // For PDF files, we'll try to read as text first, then as array buffer if needed
+          reader.readAsText(file);
         } else {
+          // For all other file types, read as text
           reader.readAsText(file);
         }
       } catch (error: any) {
@@ -324,18 +467,88 @@ const UploadContacts = () => {
     setShowFileName(false);
 
     try {
-      console.log('Saving leads:', parsedLeads);
+      // Convert leads to API format (try both MongoDB ObjectId and string formats)
+      const currentUserId = Cookies.get('userId');
+      const currentGigId = selectedGigId; // Use selected gig ID instead of cookie
+      const currentCompanyId = Cookies.get('companyId');
+      
+      console.log('Current IDs for API:', {
+        userId: currentUserId,
+        gigId: currentGigId,
+        companyId: currentCompanyId
+      });
+      
+      const leadsForAPI = parsedLeads.map((lead: any) => {
+        // Use the selected gigId
+        const finalGigId = selectedGigId;
+        
+        // Try string format first (more common for APIs)
+        return {
+          userId: lead.userId?.$oid || currentUserId,
+          companyId: lead.companyId?.$oid || currentCompanyId,
+          gigId: lead.gigId?.$oid || finalGigId,
+          Last_Activity_Time: lead.Last_Activity_Time || null,
+          Deal_Name: lead.Deal_Name || "Unnamed Lead",
+          Email_1: lead.Email_1 || "no-email@placeholder.com",
+          Phone: lead.Phone || "no-phone@placeholder.com",
+          Stage: lead.Stage || "New",
+          Pipeline: lead.Pipeline || "Sales Pipeline",
+          Activity_Tag: lead.Activity_Tag || '',
+          Telephony: lead.Telephony || '',
+          Project_Tags: lead.Project_Tags || []
+        };
+      });
+
+      console.log('Saving leads with MongoDB format:', leadsForAPI);
+      console.log('Number of leads to save:', leadsForAPI.length);
       console.log('API URL:', `${import.meta.env.VITE_DASHBOARD_API}/leads`);
-      const response = await axios.post(`${import.meta.env.VITE_DASHBOARD_API}/leads`, parsedLeads, {
+      
+      // Envoyer chaque lead individuellement pour s'assurer qu'ils sont tous sauvegardés
+      const savedLeads = [];
+      for (let i = 0; i < leadsForAPI.length; i++) {
+        const lead = leadsForAPI[i];
+        console.log(`Saving lead ${i + 1}/${leadsForAPI.length}:`, lead);
+        
+        // Mettre à jour la progression
+        const progress = Math.round(((i + 1) / leadsForAPI.length) * 100);
+        setUploadProgress(progress);
+        
+        try {
+          const response = await axios.post(`${import.meta.env.VITE_DASHBOARD_API}/leads`, lead, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`
         }
       });
+          
+          console.log(`Lead ${i + 1} response status:`, response.status);
+          console.log(`Lead ${i + 1} response data:`, response.data);
+          
+          if (response.status === 200 || response.status === 201) {
+            savedLeads.push(response.data);
+            console.log(`Lead ${i + 1} saved successfully:`, response.data);
+          } else {
+            console.error(`Failed to save lead ${i + 1}:`, response.statusText);
+          }
+        } catch (error) {
+          console.error(`Error saving lead ${i + 1}:`, error);
+        }
+      }
+      
+      const response = { status: 200, data: savedLeads };
       console.log('Save response:', response.data);
       if (response.status === 200) {
+        const savedCount = savedLeads.length;
+        const totalCount = leadsForAPI.length;
+        
+        if (savedCount === totalCount) {
         setUploadSuccess(true);
         setUploadProgress(100);
+          toast.success(`Successfully saved all ${savedCount} leads!`);
+        } else {
+          setUploadError(`Only ${savedCount} out of ${totalCount} leads were saved. Check console for details.`);
+          toast.error(`Only ${savedCount} out of ${totalCount} leads were saved.`);
+        }
         
         // Rafraîchir la liste des leads après l'importation
         if (selectedGigId) {
@@ -349,6 +562,7 @@ const UploadContacts = () => {
           setUploadSuccess(false);
           setParsedLeads([]);
           setUploadError(null);
+          setValidationResults(null);
           setIsProcessing(false);
           setShowSaveButton(true);
           setShowFileName(true);
@@ -415,8 +629,68 @@ const UploadContacts = () => {
       toast.error((error as any)?.message || 'Failed to initiate Zoho authentication');
     }
   };
-  
-  
+
+  const handleZohoDisconnect = async () => {
+    // Confirmation dialog
+    // const confirmed = window.confirm(
+    //   'Are you sure you want to disconnect from Zoho CRM? This will remove all your Zoho configuration and you will need to reconnect to use Zoho features again.'
+    // );
+    // if (!confirmed) {
+    //   return;
+    // }
+    
+    console.log('Starting Zoho disconnection process...');
+    setIsDisconnectingZoho(true);
+    try {
+      const userId = Cookies.get('userId');
+      const gigId = Cookies.get('gigId');
+      
+      if (!userId) {
+        console.error('No userId found in cookies');
+        toast.error('User ID not found. Please log in again.');
+        return;
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/disconnect`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${gigId}:${userId}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error response:', errorData);
+        throw new Error(errorData.message || 'Failed to disconnect from Zoho');
+      }
+
+      const data = await response.json();
+      console.log('Disconnect response:', data);
+
+      if (data.success) {
+        // Reset Zoho service configuration
+        const zohoService = ZohoService.getInstance();
+        zohoService.resetConfiguration();
+        
+        setHasZohoConfig(false);
+        setHasZohoAccessToken(false);
+        toast.success('Successfully disconnected from Zoho CRM');
+        
+        // Clear any cached Zoho data
+        setRealtimeLeads([]);
+        setParsedLeads([]);
+        // (plus de rafraîchissement ni d'alerte)
+      } else {
+        throw new Error(data.message || 'Failed to disconnect from Zoho');
+      }
+    } catch (error) {
+      console.error('Error in handleZohoDisconnect:', error);
+      toast.error((error as any)?.message || 'Failed to disconnect from Zoho');
+    } finally {
+      setIsDisconnectingZoho(false);
+    }
+  };
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -508,49 +782,68 @@ const UploadContacts = () => {
     }
   }, [hasZohoConfig]);
 
+  // Ajout d'une fonction utilitaire pour fetch Zoho avec refresh automatique
+  const fetchZohoWithAutoRefresh = async (url: string, options: RequestInit = {}) => {
+    const userId = Cookies.get('userId');
+    const gigId = Cookies.get('gigId');
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${gigId}:${userId}`,
+      ...options.headers,
+    };
+    let response = await fetch(url, { ...options, headers });
+    if (response.status === 401) {
+      // Tenter un refresh automatique du token
+      const refreshRes = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/config/user/${userId}/refresh-token`, {
+        method: 'POST',
+        headers,
+      });
+      if (refreshRes.ok) {
+        // Réessayer la requête initiale
+        response = await fetch(url, { ...options, headers });
+      } else {
+        toast.error('Session Zoho expirée. Veuillez vous reconnecter.');
+        throw new Error('Zoho token expired');
+      }
+    }
+    return response;
+  };
+
+  // Remplacer tous les fetch vers l'API Zoho par fetchZohoWithAutoRefresh
+  // Exemple pour handleImportFromZoho :
   const handleImportFromZoho = async () => {
     if (!selectedGigId) {
       toast.error('Please select a gig first');
       return;
     }
-
     setIsImportingZoho(true);
     setRealtimeLeads([]);
     try {
       const userId = Cookies.get('userId');
       const companyId = Cookies.get('companyId');
-      
       if (!companyId) {
         toast.error('Configuration de l\'entreprise non trouvée. Veuillez vous reconnecter.');
         return;
       }
-
       const zohoService = ZohoService.getInstance();
       const accessToken = await zohoService.getValidAccessToken();
-      
       if (!accessToken) {
         toast.error('Configuration Zoho non trouvée. Veuillez configurer Zoho CRM d\'abord.');
         return;
       }
-
       setParsedLeads([]);
-      
-      // Trouver le gig sélectionné
       const selectedGig = gigs.find(gig => gig._id === selectedGigId);
       if (!selectedGig) {
         toast.error('Gig sélectionné non trouvé');
         return;
       }
-
-      console.log('Importing leads for selected gig:', selectedGig.title);
-      
       const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/leads/sync-all`;
-      const checkResponse = await fetch(apiUrl, { 
+      const checkResponse = await fetchZohoWithAutoRefresh(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'Accept': 'application/json'
+          'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`,
+          'Accept': 'application/json',
         },
         credentials: 'include',
         body: JSON.stringify({
@@ -559,39 +852,24 @@ const UploadContacts = () => {
           gigId: selectedGigId
         })
       });
-
       if (!checkResponse.ok) {
         const errorData = await checkResponse.json().catch(() => null);
         throw new Error(errorData?.message || `Erreur lors de la synchronisation avec Zoho pour le gig ${selectedGig.title}`);
       }
-
       const data = await checkResponse.json();
-      console.log('Import response for gig:', selectedGig.title, data);
-      
       if (!data.success) {
         throw new Error(data.message || `Erreur lors de la synchronisation pour le gig ${selectedGig.title}`);
       }
-
-      // Vérifier si data.data et data.data.leads existent
       if (!data.data || !Array.isArray(data.data.leads)) {
-        console.warn(`No leads found for gig ${selectedGig.title}`);
         setRealtimeLeads([]);
         setParsedLeads([]);
-        // Refresh automatique même si aucun lead trouvé
         await fetchLeads();
         return;
       }
-
-      const leads = data.data.leads;
-      const syncInfo = data.data.sync_info || { total_saved: 0 };
-
-      // Mettre à jour l'état avec les leads du gig sélectionné
-      setRealtimeLeads(leads);
-      setParsedLeads(leads);
-
-      // Refresh automatique de la liste des leads après l'importation
+      const leadsFromApi = data.data.leads;
+      setRealtimeLeads(leadsFromApi);
+      setParsedLeads(leadsFromApi);
       await fetchLeads();
-
     } catch (error: any) {
       console.error('Error in handleImportFromZoho:', error);
       toast.error(error.message || 'Une erreur est survenue lors de l\'importation');
@@ -640,6 +918,7 @@ const UploadContacts = () => {
 
       console.log('Setting leads:', responseData.data);
       setLeads(responseData.data);
+      setFilteredLeads(responseData.data); // Initialiser les leads filtrés
       setTotalPages(responseData.totalPages);
       setCurrentPage(responseData.currentPage);
       setTotalCount(responseData.total);
@@ -826,7 +1105,7 @@ const UploadContacts = () => {
     const newGigId = e.target.value;
     setSelectedGigId(newGigId);
     
-    // Update gigId in all parsed leads
+    // Update gigId in all parsed leads (keep as string for interface compatibility)
     setParsedLeads(prevLeads => 
       prevLeads.map(lead => ({
         ...lead,
@@ -850,8 +1129,12 @@ const UploadContacts = () => {
       }))
     );
 
-    // Update the cookie with the new gigId
+    // Update the cookie with the new gigId for consistency
     Cookies.set('gigId', newGigId);
+    
+    // Log the change for debugging
+    console.log('Gig changed to:', newGigId);
+    console.log('Updated parsedLeads with new gigId');
   };
 
   useEffect(() => {
@@ -911,6 +1194,75 @@ const UploadContacts = () => {
     }
   };
 
+  const testOpenAIConnection = async () => {
+    try {
+      const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+      if (!openaiApiKey) {
+        toast.error('OpenAI API key not configured');
+        return;
+      }
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openaiApiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4',
+          messages: [
+            {
+              role: 'user',
+              content: 'Hello, this is a test message. Please respond with "Connection successful" if you can read this.'
+            }
+          ],
+          max_tokens: 10
+        })
+      });
+
+      if (response.ok) {
+        toast.success('OpenAI connection successful!');
+      } else {
+        toast.error('OpenAI connection failed. Please check your API key.');
+      }
+    } catch (error) {
+      console.error('OpenAI test error:', error);
+      toast.error('OpenAI connection test failed');
+    }
+  };
+
+  const handleEditLead = (index: number, field: string, value: string) => {
+    const newLeads = [...parsedLeads];
+    newLeads[index] = { ...newLeads[index], [field]: value };
+    setParsedLeads(newLeads);
+  };
+
+  // Fonction de filtrage des leads
+  const filterLeads = (leads: Lead[], query: string, status: string) => {
+    return leads.filter(lead => {
+      // Filtre par recherche textuelle
+      const searchMatch = query === '' || 
+        lead.Deal_Name?.toLowerCase().includes(query.toLowerCase()) ||
+        lead.Email_1?.toLowerCase().includes(query.toLowerCase()) ||
+        lead.Phone?.toLowerCase().includes(query.toLowerCase()) ||
+        lead.Stage?.toLowerCase().includes(query.toLowerCase()) ||
+        lead.Pipeline?.toLowerCase().includes(query.toLowerCase());
+
+      // Filtre par statut
+      const statusMatch = status === 'all' || 
+        (status === 'active' && lead.Stage !== 'Closed') ||
+        (status === 'inactive' && lead.Stage === 'Closed');
+
+      return searchMatch && statusMatch;
+    });
+  };
+
+  // Effet pour filtrer les leads quand la recherche ou le statut change
+  useEffect(() => {
+    const filtered = filterLeads(leads, searchQuery, filterStatus);
+    setFilteredLeads(filtered);
+  }, [leads, searchQuery, filterStatus]);
+
   const handleCancelModal = () => {
     localStorage.setItem('hasSeenImportChoiceModal', 'true');
     setShowImportChoiceModal(false);
@@ -918,25 +1270,130 @@ const UploadContacts = () => {
   };
 
   return (
-    <div className="space-y-6 bg-gradient-to-br from-gray-50 to-white min-h-screen p-6">
-      {/* Header Section */}
+    <div className="space-y-4 bg-gradient-to-br from-blue-50 to-white min-h-screen p-4">
+      {/* Page Header */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Upload Contacts
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">Import and manage your contact list across channels</p>
+        <div className="flex items-start space-x-6 mb-6">
+          <div className="flex-1">
+                      <h1 className="text-3xl font-bold text-gray-900 mb-3 flex items-center">
+            <UserPlus className="mr-3 h-8 w-8 text-blue-600" />
+            Upload Contacts
+          </h1>
+            <p className="text-lg text-gray-600">
+              Import, manage, and organize your leads efficiently. Choose between connecting with your CRM system or uploading contact files directly.
+            </p>
           </div>
-          <div className="flex space-x-3">
-            <button
-              onClick={handleZohoConnect}
-              disabled={hasZohoAccessToken}
-              className="flex items-center rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
+        </div>
+      </div>
+
+
+
+      {/* Gigs Selection Dropdown */}
+      <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 transition-all duration-300 ease-in-out">
+        <h4 className="text-xl font-bold text-slate-900 mb-6 flex items-center">
+          <Settings className="mr-3 h-6 w-6 text-slate-600" />
+          Select a Gig
+        </h4>
+        {isLoadingGigs ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
+            <span className="ml-4 text-base text-slate-600 font-medium">Loading gigs...</span>
+          </div>
+        ) : gigs.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="mx-auto h-16 w-16 text-slate-300 mb-4">
+              <Settings className="h-16 w-16" />
+            </div>
+            <p className="text-base text-slate-500 font-medium">No gigs available.</p>
+          </div>
+        ) : (
+          <div className="max-w-lg">
+            <select
+              value={selectedGigId}
+              onChange={(e) => setSelectedGigId(e.target.value)}
+              className="w-full rounded-xl border-2 border-slate-300 py-4 px-5 text-base font-medium focus:border-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:ring-offset-2 bg-white shadow-sm hover:border-slate-400 transition-all duration-200"
             >
-              <Database className="mr-2 h-4 w-4" />
-              {hasZohoAccessToken ? 'Connected to Zoho CRM' : 'Connect to Zoho CRM'}
-            </button>
+              <option value="" className="text-slate-500">Select a gig...</option>
+              {gigs.map((gig) => (
+                <option key={gig._id} value={gig._id} className="text-slate-900">
+                  {gig.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {/* Import Methods Section */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
+        <div className="mb-4">
+          <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+            <Cloud className="mr-2 h-5 w-5 text-blue-600" />
+            Import Leads
+          </h3>
+          <p className="mt-1 text-sm text-gray-600">Choose your preferred method to import leads into your selected gig.</p>
+        </div>
+
+        {/* Import Methods Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+          {/* Zoho Import Card */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02]">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-blue-200 shadow-sm">
+                  <img 
+                    src={zohoLogo} 
+                    alt="Zoho CRM" 
+                    className="h-7 w-7 object-contain"
+                  />
+                </div>
+                <div>
+                  <h4 className="text-xl font-bold text-blue-900">Zoho CRM Integration</h4>
+                  <p className="text-sm text-blue-700">Connect and sync with your Zoho CRM</p>
+                  {hasZohoAccessToken && (
+                    <div className="flex items-center mt-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                      <span className="text-xs text-green-700 font-medium">Connected</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex space-x-2">
+                {hasZohoAccessToken ? (
+                  <button
+                    onClick={handleZohoDisconnect}
+                    disabled={isDisconnectingZoho}
+                    className="px-4 py-2 text-sm font-medium text-red-700 bg-red-200 hover:bg-red-300 rounded-xl transition-colors duration-200 shadow-sm disabled:opacity-50"
+                  >
+                    {isDisconnectingZoho ? (
+                      <div className="flex items-center">
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                        Disconnecting...
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Disconnect
+                      </div>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleZohoConnect}
+                    className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-200 hover:bg-blue-300 rounded-xl transition-colors duration-200 shadow-sm"
+                  >
+                    <div className="flex items-center">
+                      <img 
+                        src={zohoLogo} 
+                        alt="Zoho" 
+                        className="h-4 w-4 mr-2 object-contain"
+                      />
+                      Connect to Zoho
+                    </div>
+                  </button>
+                )}
+              </div>
+            </div>
             <button
               onClick={async () => {
                 if (!selectedGigId) {
@@ -945,215 +1402,330 @@ const UploadContacts = () => {
                 }
                 await handleImportFromZoho();
               }}
-              className="flex items-center rounded-lg bg-gradient-to-r from-green-500 to-green-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-green-600 hover:to-green-700 transition-all duration-200 transform hover:scale-105"
-              data-zoho-import
+              disabled={!hasZohoAccessToken || isImportingZoho}
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
             >
-              <Download className="mr-2 h-4 w-4" />
-              Import from Zoho
-            </button>
-            <button
-              onClick={() => setShowGigsSection(!showGigsSection)}
-              className="flex items-center rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-purple-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105"
-            >
-              {showGigsSection ? (
-                <>
-                  <ChevronUp className="mr-2 h-4 w-4" />
-                  Hide Gigs
-                </>
+              {isImportingZoho ? (
+                <div className="flex items-center justify-center">
+                  <RefreshCw className="mr-3 h-5 w-5 animate-spin" />
+                  Importing from Zoho...
+                </div>
+              ) : !hasZohoAccessToken ? (
+                <div className="flex items-center justify-center">
+                  <img 
+                    src={zohoLogo} 
+                    alt="Zoho" 
+                    className="h-6 w-6 mr-3 object-contain"
+                  />
+                  Connect to Zoho CRM First
+                </div>
               ) : (
-                <>
-                  <ChevronDown className="mr-2 h-4 w-4" />
-                  Show Gigs
-                </>
+                <div className="flex items-center justify-center">
+                  <img 
+                    src={zohoLogo} 
+                    alt="Zoho" 
+                    className="h-6 w-6 mr-3 object-contain"
+                  />
+                  Sync with Zoho CRM
+                </div>
               )}
             </button>
           </div>
-        </div>
-      </div>
 
-      {/* Gigs Selection Cards */}
-      {showGigsSection && (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 transition-all duration-300 ease-in-out">
-          <h4 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-            <Users className="mr-2 h-5 w-5 text-indigo-600" />
-            Select a Gig
-          </h4>
-          {isLoadingGigs ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-              <span className="ml-3 text-sm text-gray-600">Loading gigs...</span>
-            </div>
-          ) : gigs.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="mx-auto h-12 w-12 text-gray-400 mb-4">
-                <Users className="h-12 w-12" />
+          {/* File Upload Card */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02]" data-file-upload>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-blue-200 shadow-sm">
+                  <FileSpreadsheet className="h-6 w-6 text-blue-700" />
+                </div>
+                <div>
+                  <h4 className="text-xl font-bold text-blue-900">File Upload</h4>
+                  <p className="text-sm text-blue-700">Upload and process contact files</p>
+                </div>
               </div>
-              <p className="text-sm text-gray-500">No gigs available.</p>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {gigs.map((gig) => (
-                <div
-                  key={gig._id}
-                  className={`cursor-pointer rounded-xl border-2 p-6 shadow-sm flex flex-col transition-all duration-300 hover:shadow-lg hover:scale-105 ${
-                    selectedGigId === gig._id 
-                      ? 'border-indigo-500 ring-4 ring-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50' 
-                      : 'border-gray-200 bg-white hover:border-indigo-300'
-                  }`}
-                  onClick={() => setSelectedGigId(gig._id)}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={`font-bold text-lg ${
-                      selectedGigId === gig._id ? 'text-indigo-700' : 'text-gray-900'
-                    }`}>
-                      {gig.title}
-                    </span>
-                    {selectedGigId === gig._id && (
-                      <div className="w-3 h-3 bg-indigo-500 rounded-full animate-pulse"></div>
+            
+            {/* File Upload Area */}
+            <div className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl cursor-pointer">
+              <label htmlFor="file-upload" className="cursor-pointer group block">
+                <div className="flex items-center justify-center space-x-3">
+                  <FileSpreadsheet className="h-6 w-6 text-white" />
+                  <span className="text-base font-semibold text-white group-hover:text-blue-100 transition-colors duration-200">
+                    {isProcessing ? (
+                      <div className="flex items-center">
+                        <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                        Processing...
+                      </div>
+                    ) : (
+                      'Click to upload or drag and drop'
+                    )}
+                  </span>
+                </div>
+                <input
+                  id="file-upload"
+                  type="file"
+                  className="hidden"
+                  accept="*"
+                  onChange={handleFileSelect}
+                  disabled={isProcessing}
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* File Processing Results */}
+        {selectedFile && showFileName && (
+          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center">
+                <FileText className="mr-2 h-4 w-4 text-blue-600" />
+                <span className="font-medium text-gray-900">{selectedFile.name}</span>
+              </div>
+              <button onClick={() => {
+                setSelectedFile(null);
+                setUploadProgress(0);
+                setUploadError(null);
+                setUploadSuccess(false);
+                setParsedLeads([]);
+                setValidationResults(null);
+              }}>
+                <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+              </button>
+            </div>
+            <div className="mt-3">
+              <div className="relative">
+                <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
+                  <div
+                    className={`h-3 rounded-full transition-all duration-500 ${
+                      uploadError ? 'bg-red-500' : uploadSuccess ? 'bg-green-500' : 'bg-gradient-to-r from-green-500 to-emerald-500'
+                    }`}
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+              <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                <span>{uploadProgress}% complete</span>
+                <span>{Math.round(selectedFile.size / 1024)} KB</span>
+              </div>
+              {uploadError && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                  {uploadError}
+                </div>
+              )}
+              {uploadSuccess && (
+                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-600">
+                  File uploaded successfully!
+                </div>
+              )}
+              {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
+                <div className="mt-4 space-y-4">
+                  {validationResults && (
+                                      <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3">
+                    <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                      <Info className="mr-2 h-4 w-4" />
+                      AI Processing Results
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-blue-600 font-medium">Total Rows:</span> {validationResults.totalRows}
+                      </div>
+                      <div>
+                        <span className="text-green-600 font-medium">Valid Rows:</span> {validationResults.validRows}
+                      </div>
+                      {validationResults.invalidRows > 0 && (
+                        <div className="col-span-2">
+                          <span className="text-red-600 font-medium">Invalid Rows:</span> {validationResults.invalidRows}
+                        </div>
+                      )}
+                    </div>
+                    {validationResults.errors && validationResults.errors.length > 0 && (
+                      <div className="mt-3">
+                        <details className="text-xs">
+                          <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
+                            View validation errors ({validationResults.errors.length})
+                          </summary>
+                            <div className="mt-2 space-y-1">
+                              {validationResults.errors.map((error: string, index: number) => (
+                                <div key={index} className="text-red-600 bg-red-50 p-2 rounded">
+                                  {error}
+                                </div>
+                              ))}
+                            </div>
+                          </details>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Preview Section */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center">
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        <h4 className="text-sm font-semibold text-gray-800">
+                          Confirm & Edit Leads ({parsedLeads.length})
+                        </h4>
+                      </div>
+                      <button
+                        onClick={() => setShowLeadsPreview(!showLeadsPreview)}
+                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                        title={showLeadsPreview ? "Hide leads preview" : "Show leads preview"}
+                      >
+                        {showLeadsPreview ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                    {showLeadsPreview && (
+                      <>
+                        <p className="text-xs text-gray-600 mb-3">Review and edit your leads before saving. Click the edit icon to modify any field.</p>
+                        <div className="max-h-60 overflow-y-auto">
+                          <div className="space-y-2">
+                            {parsedLeads.map((lead: any, index: number) => (
+                                                          <div key={index} className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-lg p-3 border border-gray-200 hover:border-slate-300 transition-all duration-200">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center space-x-3">
+                                  <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
+                                    <span className="text-xs font-bold text-slate-600">{index + 1}</span>
+                                  </div>
+                                    <span className="text-sm font-semibold text-gray-900">
+                                      {lead.Deal_Name || 'Unnamed Lead'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      onClick={() => setEditingLeadIndex(editingLeadIndex === index ? null : index)}
+                                      className="text-slate-600 hover:text-slate-800 p-2 rounded-md hover:bg-slate-50 transition-colors duration-200"
+                                      title="Edit lead"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const newLeads = [...parsedLeads];
+                                        newLeads.splice(index, 1);
+                                        setParsedLeads(newLeads);
+                                        toast.success('Lead removed');
+                                      }}
+                                      className="text-red-500 hover:text-red-700 p-2 rounded-md hover:bg-red-50 transition-colors duration-200"
+                                      title="Delete lead"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                                
+                                {editingLeadIndex === index ? (
+                                  <div className="space-y-3 bg-white rounded-lg p-3 border border-slate-200 shadow-sm">
+                                    <div className="grid grid-cols-1 gap-3">
+                                      <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
+                                        <input
+                                          type="text"
+                                          value={lead.Deal_Name || ''}
+                                          onChange={(e) => handleEditLead(index, 'Deal_Name', e.target.value)}
+                                          placeholder="Enter lead name"
+                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                                        <input
+                                          type="email"
+                                          value={lead.Email_1 || ''}
+                                          onChange={(e) => handleEditLead(index, 'Email_1', e.target.value)}
+                                          placeholder="Enter email address"
+                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
+                                        <input
+                                          type="tel"
+                                          value={lead.Phone || ''}
+                                          onChange={(e) => handleEditLead(index, 'Phone', e.target.value)}
+                                          placeholder="Enter phone number"
+                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="flex justify-end space-x-2 pt-2 border-t border-gray-100">
+                                      <button
+                                        onClick={() => setEditingLeadIndex(null)}
+                                        className="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 border border-gray-300"
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setEditingLeadIndex(null);
+                                          toast.success('Lead updated');
+                                        }}
+                                        className="px-3 py-1 text-sm font-medium text-white bg-gradient-to-r from-slate-700 to-slate-900 rounded-lg hover:from-slate-800 hover:to-slate-950 transition-all duration-200 shadow-sm"
+                                      >
+                                        Save Changes
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="grid grid-cols-1 gap-2 text-sm">
+                                    <div className="flex items-center space-x-2">
+                                      <Mail className="h-4 w-4 text-gray-400" />
+                                      <span className="text-gray-600">
+                                        <span className="font-medium">Email:</span> {lead.Email_1 || 'No email'}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <Phone className="h-4 w-4 text-gray-400" />
+                                      <span className="text-gray-600">
+                                        <span className="font-medium">Phone:</span> {lead.Phone || 'No phone'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
                     )}
                   </div>
-                  <div className="mb-3">
-                    <span className="inline-block rounded-full bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-700 px-3 py-1 text-xs font-semibold">
-                      {gig.category || 'No category'}
-                    </span>
-                  </div>
-                  <div 
-                    className="text-sm text-gray-600 line-clamp-3 flex-grow" 
-                    style={{
-                      display: '-webkit-box', 
-                      WebkitLineClamp: 3, 
-                      WebkitBoxOrient: 'vertical', 
-                      overflow: 'hidden'
-                    }}
-                  >
-                    {gig.description || 'No description available'}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Upload Section */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6" data-file-upload>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-              <Upload className="mr-2 h-5 w-5 text-indigo-600" />
-              Import Contacts
-            </h3>
-            <p className="mt-1 text-sm text-gray-600">Upload your contacts from a CSV or Excel file</p>
-          </div>
-          <button 
-            className="text-sm font-medium text-indigo-600 hover:text-indigo-500 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg transition-colors duration-200"
-            onClick={() => {
-              // Create a sample CSV template
-              const headers = ['Email', 'Phone', 'Lead Name', 'Stage', 'Pipeline', 'Project Tags'];
-              const csvContent = headers.join(',') + '\n';
-              const blob = new Blob([csvContent], { type: 'text/csv' });
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = 'contacts_template.csv';
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              window.URL.revokeObjectURL(url);
-            }}
-          >
-            Download Template
-          </button>
-        </div>
-
-        <div className="mt-4">
-          <div className="rounded-xl border-2 border-dashed border-gray-300 p-8 hover:border-indigo-400 transition-colors duration-200">
-            <div className="text-center">
-              <div className="mx-auto h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
-                <Upload className="h-8 w-8 text-indigo-600" />
-              </div>
-              <div className="mt-4">
-                <label htmlFor="file-upload" className="cursor-pointer">
-                  <span className="mt-2 block text-lg font-medium text-indigo-600 hover:text-indigo-500 transition-colors duration-200">
-                    {isProcessing ? 'Processing...' : 'Click to upload'}
-                  </span>
-                  <input
-                    id="file-upload"
-                    type="file"
-                    className="hidden"
-                    accept=".csv,.xlsx,.xls"
-                    onChange={handleFileSelect}
+                  
+                  <button
+                    className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-white font-bold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    onClick={handleSaveLeads}
                     disabled={isProcessing}
-                  />
-                </label>
-                <p className="mt-2 text-sm text-gray-500">CSV, Excel files up to 10MB</p>
-              </div>
-            </div>
-            {selectedFile && showFileName && (
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center">
-                    <FileText className="mr-2 h-4 w-4 text-indigo-500" />
-                    <span className="font-medium text-gray-900">{selectedFile.name}</span>
-                  </div>
-                  <button onClick={() => {
-                    setSelectedFile(null);
-                    setUploadProgress(0);
-                    setUploadError(null);
-                    setUploadSuccess(false);
-                    setParsedLeads([]);
-                  }}>
-                    <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                  >
+                    {isProcessing ? (
+                      <div className="flex items-center justify-center">
+                        <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                        Saving Contacts...
+                      </div>
+                    ) : (
+                                              <div className="flex items-center justify-center">
+                          <UserPlus className="mr-2 h-5 w-5" />
+                          Save {parsedLeads.length} Contacts
+                        </div>
+                    )}
                   </button>
                 </div>
-                <div className="mt-3">
-                  <div className="relative">
-                    <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
-                      <div
-                        className={`h-3 rounded-full transition-all duration-500 ${
-                          uploadError ? 'bg-red-500' : uploadSuccess ? 'bg-green-500' : 'bg-gradient-to-r from-indigo-500 to-purple-500'
-                        }`}
-                        style={{ width: `${uploadProgress}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                    <span>{uploadProgress}% complete</span>
-                    <span>{Math.round(selectedFile.size / 1024)} KB</span>
-                  </div>
-                  {uploadError && (
-                    <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-                      {uploadError}
-                    </div>
-                  )}
-                  {uploadSuccess && (
-                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-600">
-                      File uploaded successfully!
-                    </div>
-                  )}
-                  {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
-                    <button
-                      className="mt-4 w-full rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 text-white font-semibold hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 transition-all duration-200 transform hover:scale-105"
-                      onClick={handleSaveLeads}
-                      disabled={isProcessing}
-                    >
-                      Save {parsedLeads.length} Contacts
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Channel Filter */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-          <Globe className="mr-2 h-5 w-5 text-indigo-600" />
-          Channel Filter
-        </h3>
-        <div className="flex flex-wrap gap-3">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <Globe className="mr-2 h-5 w-5 text-blue-600" />
+            Channel Filter
+          </h3>
+        <div className="flex flex-wrap gap-2">
           {channels.map((channel) => {
             const Icon = channel.icon;
             const isSelected = selectedChannels.includes(channel.id);
@@ -1161,9 +1733,9 @@ const UploadContacts = () => {
             return (
               <button
                 key={channel.id}
-                className={`flex items-center space-x-2 rounded-full px-4 py-3 text-sm font-medium transition-all duration-200 transform hover:scale-105 ${
+                className={`flex items-center space-x-2 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 transform hover:scale-105 ${
                   isSelected
-                    ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
                 }`}
                 onClick={() => toggleChannel(channel.id)}
@@ -1178,20 +1750,20 @@ const UploadContacts = () => {
 
       {/* Contact List */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100">
-        <div className="border-b border-gray-200 p-6">
+        <div className="border-b border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-                <Users className="mr-2 h-5 w-5 text-indigo-600" />
-                Leads List
-              </h3>
-              <div className="mt-2">
+                          <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+              <FileText className="mr-2 h-5 w-5 text-blue-600" />
+              Leads List
+            </h3>
+                            <div className="mt-2">
                 {selectedGigId ? (
                   <div className="text-sm text-gray-600">
                     {leads.length > 0 ? (
-                      <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium">
-                        Showing {leads.length} leads on page {currentPage} of {totalPages} (Total: {totalCount})
-                      </span>
+                                          <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium">
+                      Showing {filteredLeads.length} of {leads.length} leads {searchQuery && `(filtered by "${searchQuery}")`}
+                    </span>
                     ) : (
                       <span className="bg-gray-50 text-gray-600 px-3 py-1 rounded-full text-xs font-medium">
                         No leads found
@@ -1203,31 +1775,31 @@ const UploadContacts = () => {
                 )}
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                   <Search className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
                   type="text"
-                  className="block w-full rounded-lg border-gray-300 pl-10 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm shadow-sm"
+                  className="block w-full rounded-lg border-gray-300 pl-10 focus:border-blue-600 focus:ring-blue-600 sm:text-sm shadow-sm"
                   placeholder="Search leads..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
               <select
-                className="rounded-lg border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm shadow-sm"
+                className="rounded-lg border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-600 focus:outline-none focus:ring-blue-600 sm:text-sm shadow-sm"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
                 <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="active">Active (Not Closed)</option>
+                <option value="inactive">Inactive (Closed)</option>
               </select>
               <button
                 onClick={() => fetchLeads()}
-                className="flex items-center rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-md hover:from-indigo-600 hover:to-purple-600 transition-all duration-200 transform hover:scale-105"
+                className="flex items-center rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105"
                 disabled={isLoadingLeads || !selectedGigId}
               >
                 {isLoadingLeads ? (
@@ -1267,9 +1839,6 @@ const UploadContacts = () => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
                       Last Activity
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
-                      Actions
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
@@ -1283,7 +1852,7 @@ const UploadContacts = () => {
                     <tr>
                       <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex items-center justify-center py-8">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mr-3"></div>
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
                           Loading leads...
                         </div>
                       </td>
@@ -1292,20 +1861,30 @@ const UploadContacts = () => {
                     <tr>
                       <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-8">
-                          <Users className="h-12 w-12 text-gray-300 mb-2" />
+                          <FileText className="h-12 w-12 text-gray-300 mb-2" />
                           <p>No leads found</p>
                           <p className="text-xs text-gray-400 mt-1">Try importing some leads or check your filters</p>
                         </div>
                       </td>
                     </tr>
+                  ) : filteredLeads.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                        <div className="flex flex-col items-center justify-center py-8">
+                          <Search className="h-12 w-12 text-gray-300 mb-2" />
+                          <p>No leads match your search</p>
+                          <p className="text-xs text-gray-400 mt-1">Try adjusting your search terms or filters</p>
+                        </div>
+                      </td>
+                    </tr>
                   ) : (
-                    leads.map((lead, index) => (
+                    filteredLeads.map((lead, index) => (
                       <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="flex items-center">
-                            <div className="h-10 w-10 flex-shrink-0 rounded-full bg-indigo-100 flex items-center justify-center">
-                              <Users className="h-6 w-6 text-indigo-600" />
-                            </div>
+                                                    <div className="h-10 w-10 flex-shrink-0 rounded-full bg-blue-100 flex items-center justify-center">
+                          <UserPlus className="h-6 w-6 text-blue-700" />
+                        </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'No Email'}</div>
                               <div className="text-sm text-gray-500">{lead.Phone || 'No Phone'}</div>
@@ -1316,25 +1895,15 @@ const UploadContacts = () => {
                           {lead.Deal_Name || 'N/A'}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
-                          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-800">
-                            {lead.Stage || 'N/A'}
-                          </span>
+                                          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-800">
+                  {lead.Stage || 'N/A'}
+                </span>
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                           {lead.Pipeline || 'N/A'}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                           {lead.updatedAt ? new Date(lead.updatedAt).toLocaleDateString() : 'N/A'}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                          <div className="flex items-center justify-end space-x-2">
-                            <button className="text-indigo-600 hover:text-indigo-900 p-1 rounded-md hover:bg-indigo-50 transition-colors duration-150">
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button className="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50 transition-colors duration-150">
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
                         </td>
                       </tr>
                     ))
@@ -1345,39 +1914,27 @@ const UploadContacts = () => {
           </div>
         </div>
         {/* Pagination Controls */}
-        {leads.length > 0 && totalPages > 1 && (
-          <div className="bg-white px-6 py-4 border-t border-gray-200">
+        {filteredLeads.length > 0 && (
+          <div className="bg-white px-4 py-3 border-t border-gray-200">
             <div className="flex items-center justify-between">
-              <div className="flex items-center text-sm text-gray-700">
-                <span>
-                  Showing <span className="font-medium">{((currentPage - 1) * pageSize) + 1}</span> to{' '}
-                  <span className="font-medium">
-                    {Math.min(currentPage * pageSize, totalCount)}
-                  </span>{' '}
-                  of <span className="font-medium">{totalCount}</span> results
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => fetchLeads(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </button>
-                <div className="flex items-center space-x-1">
-                  {renderPaginationButtons()}
+                              <div className="flex items-center text-sm text-gray-700">
+                  <span>
+                    Showing <span className="font-medium">{filteredLeads.length}</span> of{' '}
+                    <span className="font-medium">{leads.length}</span> leads
+                    {searchQuery && (
+                      <span className="text-indigo-600"> (filtered by "{searchQuery}")</span>
+                    )}
+                  </span>
                 </div>
-                <button
-                  onClick={() => fetchLeads(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
+                              <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Clear Search
+                  </button>
+                </div>
             </div>
           </div>
         )}
@@ -1385,26 +1942,26 @@ const UploadContacts = () => {
 
       {/* Ajout d'une section pour afficher les leads en temps réel */}
       {realtimeLeads.length > 0 && (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-            <RefreshCw className="mr-2 h-5 w-5 text-green-600 animate-spin" />
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
+          <h3 className="text-xl font-semibold text-gray-900 mb-3 flex items-center">
+            <RefreshCw className="mr-2 h-5 w-5 text-blue-600 animate-spin" />
             Leads en temps réel
           </h3>
-          <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-4">
-            <p className="text-sm font-medium text-green-700">
-              Nombre de leads reçus: <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">{realtimeLeads.length}</span>
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3 mb-3">
+            <p className="text-sm font-medium text-blue-700">
+              Nombre de leads reçus: <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-bold">{realtimeLeads.length}</span>
             </p>
           </div>
-          <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
+          <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
             <div className="min-w-full divide-y divide-gray-200">
-              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 sticky top-0">
-                <div className="grid grid-cols-4 px-6 py-3">
-                  <div className="text-left text-xs font-semibold text-indigo-700 uppercase tracking-wider">Email</div>
-                  <div className="text-left text-xs font-semibold text-indigo-700 uppercase tracking-wider">Téléphone</div>
-                  <div className="text-left text-xs font-semibold text-indigo-700 uppercase tracking-wider">Lead</div>
-                  <div className="text-left text-xs font-semibold text-indigo-700 uppercase tracking-wider">Stage</div>
-                </div>
-              </div>
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 sticky top-0">
+            <div className="grid grid-cols-4 px-6 py-3">
+              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Email</div>
+              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Téléphone</div>
+              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Lead</div>
+              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Stage</div>
+            </div>
+          </div>
               <div className="bg-white divide-y divide-gray-100">
                 {realtimeLeads.map((lead, index) => (
                   <div key={index} className="grid grid-cols-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
@@ -1412,9 +1969,9 @@ const UploadContacts = () => {
                     <div className="text-sm text-gray-700">{lead.Phone || 'N/A'}</div>
                     <div className="text-sm text-gray-700">{lead.Deal_Name || 'N/A'}</div>
                     <div className="text-sm">
-                      <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-800 px-2.5 py-0.5 text-xs font-medium">
-                        {lead.Stage || 'N/A'}
-                      </span>
+                                        <span className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-800 px-2.5 py-0.5 text-xs font-medium">
+                    {lead.Stage || 'N/A'}
+                  </span>
                     </div>
                   </div>
                 ))}
@@ -1437,9 +1994,9 @@ const UploadContacts = () => {
               </button>
             </div>
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
-                <Upload className="h-6 w-6 text-indigo-600" />
-              </div>
+                          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+              <Cloud className="h-6 w-6 text-blue-700" />
+            </div>
               <h3 className="mb-2 text-lg font-semibold text-gray-900">
                 Choose your import method
               </h3>
@@ -1449,21 +2006,21 @@ const UploadContacts = () => {
               </p>
             </div>
             <div className="mt-6 flex justify-between space-x-3">
-              <button
-                onClick={handleCancelModal}
-                className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  localStorage.setItem('hasSeenImportChoiceModal', 'true');
-                  setShowImportChoiceModal(false);
-                }}
-                className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                Next
-              </button>
+                              <button
+                  onClick={handleCancelModal}
+                  className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    localStorage.setItem('hasSeenImportChoiceModal', 'true');
+                    setShowImportChoiceModal(false);
+                  }}
+                  className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                >
+                  Next
+                </button>
             </div>
           </div>
         </div>
