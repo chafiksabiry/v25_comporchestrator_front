@@ -655,7 +655,7 @@ Return only the JSON response, no additional text.
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userId}`,
+          'Authorization': `Bearer ${gigId}:${userId}`,
         },
       });
 
