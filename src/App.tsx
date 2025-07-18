@@ -23,8 +23,11 @@ import CompanyOnboarding from './components/CompanyOnboarding';
 import ZohoCallback from './components/onboarding/ZohoCallback';
 import ZohoAuth from './components/onboarding/ZohoAuth';
 import ZohoService from './services/zohoService';
+import UploadContacts from './components/onboarding/UploadContacts';
 
 function App() {
+
+
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
@@ -42,7 +45,46 @@ function App() {
     initializeZoho().catch(error => {
       console.debug('App: Error initializing Zoho', error);
     });
+
+    // Récupérer le lastGig depuis le localStorage du host
+    const lastGigStr = localStorage.getItem("lastGig");
+    if (lastGigStr) {
+      const lastGig = JSON.parse(lastGigStr);
+      console.log("Récupéré depuis host localStorage :", lastGig);
+    }
+
+    // Récupérer et stocker le dernier gig dans les cookies
+    const fetchAndStoreLastGig = async () => {
+      try {
+        // Récupérer le companyId depuis les cookies ou localStorage
+        const companyId = Cookies.get('companyId') || localStorage.getItem('companyId');
+        
+        if (!companyId) {
+          console.log('CompanyId not found, skipping last gig fetch');
+          return;
+        }
+
+        const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}/last`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.data && result.data._id) {
+          // Stocker le gig ID dans les cookies avec une expiration de 30 jours
+          Cookies.set('lastGigId', result.data._id, { expires: 30 });
+          console.log('Last gig ID stored in cookies:', result.data._id);
+        }
+      } catch (error) {
+        console.error('Error fetching last gig:', error);
+      }
+    };
+
+    fetchAndStoreLastGig();
   }, []);
+
 
   const handleLogout = () => {
     if (import.meta.env.VITE_NODE_ENV !== 'development') {

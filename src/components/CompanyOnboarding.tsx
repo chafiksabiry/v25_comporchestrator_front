@@ -32,6 +32,7 @@ import Cookies from 'js-cookie';
 import axios from 'axios';
 import GigDetails from './onboarding/GigDetails';
 import KnowledgeBase from './onboarding/KnowledgeBase';
+import ZohoService from '../services/zohoService';
 
 interface BaseStep {
   id: number;
@@ -121,7 +122,7 @@ const CompanyOnboarding = () => {
 
       if (!userId) {
         console.error('User ID not found in cookies');
-        window.location.href = '/app4';
+        window.location.href = '/auth';
         return;
       }
 
@@ -132,13 +133,13 @@ const CompanyOnboarding = () => {
           // Store company ID in cookie for backward compatibility
           Cookies.set('companyId', response.data.data._id);
         } else {
-          // Redirect to /app4 if no company data is found
-          window.location.href = '/app4';
+          // Redirect to /auth if no company data is found
+          window.location.href = '/auth';
         }
       } catch (error) {
         console.error('Error fetching company ID:', error);
-        // Redirect to /app4 on error
-        window.location.href = '/app4';
+        // Redirect to /auth on error
+        window.location.href = '/auth';
       }
     };
 
@@ -150,7 +151,18 @@ const CompanyOnboarding = () => {
     if (companyId) {
       loadCompanyProgress();
       checkCompanyGigs();
-      checkCompanyLeads();
+      
+      // Vérifier si l'utilisateur vient de se connecter à Zoho
+      checkZohoConnection();
+    }
+  }, [companyId]);
+
+  // Si l'URL contient ?startStep=6 ou si on est sur l'URL spécifique avec session, on lance handleStartStep(6)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    // Vérifier si l'URL contient le paramètre startStep=6
+    if (params.get('session') === 'someGeneratedSessionId' && companyId) {
+      handleStartStep(6);
     }
   }, [companyId]);
 
@@ -202,6 +214,24 @@ const CompanyOnboarding = () => {
     }
   };
 
+  // Real-time leads checking
+  useEffect(() => {
+    if (!companyId) return;
+
+    // Initial check
+    checkCompanyLeads();
+
+    // Set up real-time checking every 30 seconds
+    const intervalId = setInterval(() => {
+      checkCompanyLeads();
+    }, 30000); // Check every 30 seconds
+
+    // Cleanup interval on component unmount or when companyId changes
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [companyId]);
+
   const loadCompanyProgress = async () => {
     setIsLoading(true);
     try {
@@ -212,8 +242,11 @@ const CompanyOnboarding = () => {
       // Store the progress in cookies
       Cookies.set('companyOnboardingProgress', JSON.stringify(progress));
       
-      // Check if step 7 is completed and automatically advance to phase 3
-      if (progress.completedSteps.includes(7)) {
+      // Check if all non-disabled steps in Phase 2 are completed before advancing to phase 3
+      const phase2Steps = phases[1].steps.filter(step => !step.disabled);
+      const allPhase2Completed = phase2Steps.every(step => progress.completedSteps.includes(step.id));
+      
+      if (allPhase2Completed) {
         const validPhase = 3;
         setCurrentPhase(validPhase);
         setDisplayedPhase(validPhase);
@@ -232,8 +265,30 @@ const CompanyOnboarding = () => {
     }
   };
 
+  // Fonction pour vérifier si l'utilisateur vient de se connecter à Zoho
+  const checkZohoConnection = async () => {
+    try {
+      // Vérifier si Zoho est configuré pour cet utilisateur
+      const zohoService = ZohoService.getInstance();
+      const isConfigured = zohoService.isConfigured();
+      
+      // Si Zoho est configuré et que l'utilisateur vient de revenir de la connexion,
+      // afficher automatiquement le composant UploadContacts
+      if (isConfigured) {
+        console.log('✅ Zoho est configuré - Affichage automatique du composant UploadContacts');
+        setShowUploadContacts(true);
+        setActiveStep(6); // Step 6 est Upload Contacts
+      }
+    } catch (error) {
+      console.error('Error checking Zoho connection:', error);
+    }
+  };
+
   const handleStartStep = async (stepId: number) => {
-    if (!companyId) return;
+    if (!companyId) {
+      console.error('Company ID not available for starting step');
+      return;
+    }
 
     try {
       // Mettre à jour le statut de l'étape à "in_progress"
@@ -251,11 +306,13 @@ const CompanyOnboarding = () => {
       
       // Special handling for Knowledge Base step
       if (stepId === 7) {
-        if (completedSteps.includes(stepId)) {
           window.location.replace(import.meta.env.VITE_KNOWLEDGE_BASE_URL);
-        } else {
-          window.location.replace(`${import.meta.env.VITE_KNOWLEDGE_BASE_URL}/upload`);
-        }
+        return;
+      }
+      
+      // Special handling for Call Script step
+      if (stepId === 8) {
+          window.location.replace(import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL);
         return;
       }
       
@@ -270,11 +327,19 @@ const CompanyOnboarding = () => {
       }
     } catch (error) {
       console.error('Error updating step status:', error);
+      // Afficher un message d'erreur plus informatif
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+      }
     }
   };
 
+
   const handleStepComplete = async (stepId: number) => {
-    if (!companyId) return;
+    if (!companyId) {
+      console.error('Company ID not available for step completion');
+      return;
+    }
 
     try {
       const phaseId = phases.findIndex(phase => 
@@ -289,6 +354,10 @@ const CompanyOnboarding = () => {
       setCompletedSteps(prev => [...prev, stepId]);
     } catch (error) {
       console.error('Error completing step:', error);
+      // Afficher un message d'erreur plus informatif
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+      }
     }
   };
 
@@ -417,8 +486,7 @@ const CompanyOnboarding = () => {
           title: 'Call Script',
           description: 'Define script and conversation flows',
           status: 'pending',
-          component: CallScript,
-          disabled: true
+          component: CallScript
         },
         {
           id: 9,
@@ -547,9 +615,24 @@ const CompanyOnboarding = () => {
           console.log('Redirecting to review page:', baseUrl);
           window.location.replace(baseUrl);
         } else {
-          console.log('Redirecting to upload page:', `${baseUrl}/upload`);
-          window.location.replace(`${baseUrl}/upload`);
+          console.log('Redirecting to upload page:', `${baseUrl}`);
+          window.location.replace(`${baseUrl}`);
         }
+      }
+      return;
+    }
+
+    // Pour Call Script
+    if (stepId === 8) {
+      console.log('Call Script step clicked');
+      console.log('All previous completed:', allPreviousCompleted);
+      console.log('Step completed:', completedSteps.includes(stepId));
+      console.log('Script Generation URL:', import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL);
+      
+      if (allPreviousCompleted) {
+        const baseUrl = import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL;
+        console.log('Redirecting to script generation:', baseUrl);
+        window.location.replace(baseUrl);
       }
       return;
     }
