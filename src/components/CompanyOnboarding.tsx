@@ -519,14 +519,14 @@ const CompanyOnboarding = () => {
           component: RepOnboarding,
           disabled: true
         },
-        {
-          id: 12,
-          title: 'Session Planning',
-          description: 'Schedule call slots and prioritize leads',
-          status: 'pending',
-          component: SessionPlanning,
-          disabled: true
-        }
+        // {
+        //   id: 12,
+        //   title: 'Session Planning',
+        //   description: 'Schedule call slots and prioritize leads',
+        //   status: 'pending',
+        //   component: SessionPlanning,
+        //   disabled: true
+        // }
       ]
     },
     {
