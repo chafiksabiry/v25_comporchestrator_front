@@ -27,7 +27,7 @@ import Cookies from 'js-cookie';
 import { phoneNumberService } from '../services/api';
 import type { AvailablePhoneNumber } from '../services/api';
 
-const gigId = import.meta.env.DEV ? '683083e7af226bea2d459372' : Cookies.get('gigId');
+const gigId = import.meta.env.MODE === 'development' ? '683083e7af226bea2d459372' : Cookies.get('lastGigId');
 const companyId = Cookies.get('companyId');
 
 interface PhoneNumber {
@@ -136,8 +136,8 @@ const TelephonySetup = () => {
     }
 
     try {
-     /*  await phoneNumberService.purchasePhoneNumber(phoneNumber, provider, gigId);
-      fetchExistingNumbers(); // Refresh the list after purchase */
+      await phoneNumberService.purchasePhoneNumber(phoneNumber, provider, gigId);
+      fetchExistingNumbers(); // Refresh the list after purchase 
       setIsSearchOpen(false); // Close the search
       
       // Show success popup
@@ -227,17 +227,11 @@ const TelephonySetup = () => {
       {/* Integration Status */}
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="text-lg font-medium text-gray-900">Integration Status</h3>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-lg border border-green-200 bg-green-50 p-4">
             <div className="flex items-center">
               <Server className="mr-2 h-5 w-5 text-green-500" />
               <span className="font-medium text-green-800">API Connected</span>
-            </div>
-          </div>
-          <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-            <div className="flex items-center">
-              <Shield className="mr-2 h-5 w-5 text-green-500" />
-              <span className="font-medium text-green-800">SSL Secure</span>
             </div>
           </div>
           <div className="rounded-lg border border-green-200 bg-green-50 p-4">

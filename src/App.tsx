@@ -129,6 +129,7 @@ function App() {
               <Building2 className="h-5 w-5" />
               <span>Company Onboarding</span>
             </button>
+            {/* 
             <button
               className={`flex w-full items-center space-x-2 rounded-lg py-2 px-3 ${
                 activeTab === 'approval-publishing' ? 'bg-indigo-800' : 'hover:bg-indigo-800'
@@ -138,6 +139,7 @@ function App() {
               <CheckCircle className="h-5 w-5" />
               <span>Approval & Publishing</span>
             </button>
+            */}
           </div>
           <div className="absolute bottom-0 left-0 right-0 border-t border-indigo-800 p-4">
             <div className="space-y-4">
