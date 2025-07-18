@@ -34,6 +34,7 @@ interface PhoneNumber {
   phoneNumber: string;
   status: string;
   features: string[];
+  provider?: string;
 }
 
 const TelephonySetup = () => {
@@ -58,6 +59,7 @@ const TelephonySetup = () => {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [purchasedNumber, setPurchasedNumber] = useState('');
   const [purchasedCountry, setPurchasedCountry] = useState('');
+  const [purchasedPhoneInfo, setPurchasedPhoneInfo] = useState<PhoneNumber | null>(null);
 
   const providers = [
     { id: 'twilio', name: 'Twilio', logo: Phone },
@@ -85,7 +87,23 @@ const TelephonySetup = () => {
     // Load existing numbers and destination zone on startup
     fetchExistingNumbers();
     fetchDestinationZone();
+    fetchPurchasedPhoneNumber();
   }, []);
+
+  const fetchPurchasedPhoneNumber = async () => {
+    if (!gigId) return;
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/phone-numbers/gig/${gigId}`);
+      const data = await response.json();
+      console.log("data", data);
+      if (Array.isArray(data) && data.length > 0) {
+        setPurchasedPhoneInfo(data[0]); // Take the first phone number if multiple exist
+      }
+    } catch (error) {
+      console.error('Error fetching purchased phone number:', error);
+    }
+  };
 
   const fetchExistingNumbers = async () => {
     try {
@@ -138,6 +156,7 @@ const TelephonySetup = () => {
     try {
       await phoneNumberService.purchasePhoneNumber(phoneNumber, provider, gigId);
       fetchExistingNumbers(); // Refresh the list after purchase 
+      fetchPurchasedPhoneNumber(); // Refresh purchased phone info
       setIsSearchOpen(false); // Close the search
       
       // Show success popup
@@ -228,25 +247,80 @@ const TelephonySetup = () => {
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="text-lg font-medium text-gray-900">Integration Status</h3>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+          <div className={`rounded-lg border p-4 ${
+            purchasedPhoneInfo 
+              ? 'border-green-200 bg-green-50' 
+              : 'border-red-200 bg-red-50'
+          }`}>
             <div className="flex items-center">
-              <Server className="mr-2 h-5 w-5 text-green-500" />
-              <span className="font-medium text-green-800">API Connected</span>
+              <Server className={`mr-2 h-5 w-5 ${
+                purchasedPhoneInfo ? 'text-green-500' : 'text-red-500'
+              }`} />
+              <span className={`font-medium ${
+                purchasedPhoneInfo ? 'text-green-800' : 'text-red-800'
+              }`}>
+                {purchasedPhoneInfo ? 'API Connected' : 'API Not Connected'}
+              </span>
             </div>
           </div>
-          <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+          <div className={`rounded-lg border p-4 ${
+            purchasedPhoneInfo 
+              ? 'border-green-200 bg-green-50' 
+              : 'border-red-200 bg-red-50'
+          }`}>
             <div className="flex items-center">
-              <Headphones className="mr-2 h-5 w-5 text-green-500" />
-              <span className="font-medium text-green-800">Audio Quality OK</span>
+              <Headphones className={`mr-2 h-5 w-5 ${
+                purchasedPhoneInfo ? 'text-green-500' : 'text-red-500'
+              }`} />
+              <span className={`font-medium ${
+                purchasedPhoneInfo ? 'text-green-800' : 'text-red-800'
+              }`}>
+                {purchasedPhoneInfo ? 'Audio Quality OK' : 'Audio Quality Not Ready'}
+              </span>
             </div>
           </div>
-          <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+          <div className={`rounded-lg border p-4 ${
+            purchasedPhoneInfo 
+              ? 'border-green-200 bg-green-50' 
+              : 'border-red-200 bg-red-50'
+          }`}>
             <div className="flex items-center">
-              <Settings className="mr-2 h-5 w-5 text-green-500" />
-              <span className="font-medium text-green-800">System Ready</span>
+              <Settings className={`mr-2 h-5 w-5 ${
+                purchasedPhoneInfo ? 'text-green-500' : 'text-red-500'
+              }`} />
+              <span className={`font-medium ${
+                purchasedPhoneInfo ? 'text-green-800' : 'text-red-800'
+              }`}>
+                {purchasedPhoneInfo ? 'System Ready' : 'System Not Ready'}
+              </span>
             </div>
           </div>
         </div>
+        
+        {/* Purchased Phone Number Info */}
+        {purchasedPhoneInfo && (
+          <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Phone className="mr-2 h-5 w-5 text-blue-500" />
+                <div>
+                  <span className="font-medium text-blue-800">Active Phone Number</span>
+                  <div className="text-sm text-blue-600">
+                    {purchasedPhoneInfo.phoneNumber}
+                    {purchasedPhoneInfo.provider && (
+                      <span className="ml-2 text-xs bg-blue-100 px-2 py-1 rounded">
+                        {purchasedPhoneInfo.provider}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-sm text-blue-600">Status: {purchasedPhoneInfo.status}</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Provider Selection */}
