@@ -45,6 +45,13 @@ function App() {
     initializeZoho().catch(error => {
       console.debug('App: Error initializing Zoho', error);
     });
+
+    // Récupérer le lastGig depuis le localStorage du host
+    const lastGigStr = localStorage.getItem("lastGig");
+    if (lastGigStr) {
+      const lastGig = JSON.parse(lastGigStr);
+      console.log("Récupéré depuis host localStorage :", lastGig);
+    }
   }, []);
 
 
