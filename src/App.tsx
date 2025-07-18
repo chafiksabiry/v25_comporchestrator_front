@@ -76,10 +76,6 @@ function App() {
           // Stocker le gig ID dans les cookies avec une expiration de 30 jours
           Cookies.set('lastGigId', result.data._id, { expires: 30 });
           console.log('Last gig ID stored in cookies:', result.data._id);
-          
-          // Optionnellement, stocker aussi les données complètes du gig
-          Cookies.set('lastGigData', JSON.stringify(result.data), { expires: 30 });
-          console.log('Last gig data stored in cookies');
         }
       } catch (error) {
         console.error('Error fetching last gig:', error);
@@ -88,27 +84,6 @@ function App() {
 
     fetchAndStoreLastGig();
   }, []);
-
-
-
-  // Fonction utilitaire pour récupérer le dernier gig ID depuis les cookies
-  const getLastGigId = (): string | null => {
-    return Cookies.get('lastGigId') || null;
-  };
-
-  // Fonction utilitaire pour récupérer les données complètes du dernier gig
-  const getLastGigData = (): any | null => {
-    const gigData = Cookies.get('lastGigData');
-    if (gigData) {
-      try {
-        return JSON.parse(gigData);
-      } catch (error) {
-        console.error('Error parsing last gig data from cookies:', error);
-        return null;
-      }
-    }
-    return null;
-  };
 
   // Fonction pour supprimer le dernier gig des cookies
   const clearLastGig = () => {
