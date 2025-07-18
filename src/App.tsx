@@ -85,12 +85,6 @@ function App() {
     fetchAndStoreLastGig();
   }, []);
 
-  // Fonction pour supprimer le dernier gig des cookies
-  const clearLastGig = () => {
-    Cookies.remove('lastGigId');
-    Cookies.remove('lastGigData');
-    console.log('Last gig data cleared from cookies');
-  };
 
   const handleLogout = () => {
     if (import.meta.env.VITE_NODE_ENV !== 'development') {
