@@ -1,3 +1,31 @@
+/**
+ * UploadContacts Component
+ * 
+ * Ce composant permet de gérer l'importation et la gestion des contacts/leads pour une entreprise.
+ * Il offre deux méthodes principales d'importation :
+ * 
+ * 1. Import depuis un fichier (CSV, Excel, PDF, TXT) :
+ *    - Utilise OpenAI pour analyser et extraire les données
+ *    - Validation automatique des données
+ *    - Prévisualisation avant sauvegarde
+ *    - Support de multiples formats de fichiers
+ * 
+ * 2. Import depuis Zoho CRM :
+ *    - Connexion OAuth avec Zoho
+ *    - Synchronisation automatique des leads
+ *    - Gestion des tokens d'accès
+ * 
+ * Fonctionnalités principales :
+ * - Gestion des gigs (projets) associés aux leads
+ * - Filtrage et recherche des contacts
+ * - Pagination des résultats
+ * - Édition en ligne des données
+ * - Validation des données avant import
+ * - Interface utilisateur responsive
+ * 
+ * @component
+ * @returns {JSX.Element} Le composant UploadContacts
+ */
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Upload,

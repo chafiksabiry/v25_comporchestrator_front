@@ -52,9 +52,70 @@ function App() {
       const lastGig = JSON.parse(lastGigStr);
       console.log("Récupéré depuis host localStorage :", lastGig);
     }
+
+    // Récupérer et stocker le dernier gig dans les cookies
+    const fetchAndStoreLastGig = async () => {
+      try {
+        // Récupérer le companyId depuis les cookies ou localStorage
+        const companyId = Cookies.get('companyId') || localStorage.getItem('companyId');
+        
+        if (!companyId) {
+          console.log('CompanyId not found, skipping last gig fetch');
+          return;
+        }
+
+        const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}/last`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.data && result.data._id) {
+          // Stocker le gig ID dans les cookies avec une expiration de 30 jours
+          Cookies.set('lastGigId', result.data._id, { expires: 30 });
+          console.log('Last gig ID stored in cookies:', result.data._id);
+          
+          // Optionnellement, stocker aussi les données complètes du gig
+          Cookies.set('lastGigData', JSON.stringify(result.data), { expires: 30 });
+          console.log('Last gig data stored in cookies');
+        }
+      } catch (error) {
+        console.error('Error fetching last gig:', error);
+      }
+    };
+
+    fetchAndStoreLastGig();
   }, []);
 
 
+
+  // Fonction utilitaire pour récupérer le dernier gig ID depuis les cookies
+  const getLastGigId = (): string | null => {
+    return Cookies.get('lastGigId') || null;
+  };
+
+  // Fonction utilitaire pour récupérer les données complètes du dernier gig
+  const getLastGigData = (): any | null => {
+    const gigData = Cookies.get('lastGigData');
+    if (gigData) {
+      try {
+        return JSON.parse(gigData);
+      } catch (error) {
+        console.error('Error parsing last gig data from cookies:', error);
+        return null;
+      }
+    }
+    return null;
+  };
+
+  // Fonction pour supprimer le dernier gig des cookies
+  const clearLastGig = () => {
+    Cookies.remove('lastGigId');
+    Cookies.remove('lastGigData');
+    console.log('Last gig data cleared from cookies');
+  };
 
   const handleLogout = () => {
     if (import.meta.env.VITE_NODE_ENV !== 'development') {
