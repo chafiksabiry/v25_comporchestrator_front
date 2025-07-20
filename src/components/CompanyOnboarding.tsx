@@ -537,7 +537,7 @@ const CompanyOnboarding = () => {
           description: 'Launch multi-channel operations',
           status: 'pending',
           // component: GigActivation,
-          disabled: true
+          // disabled: true
         }
       ]
     }
