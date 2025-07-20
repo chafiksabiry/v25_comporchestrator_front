@@ -238,7 +238,9 @@ const CompanyOnboarding = () => {
     try {
       const response = await axios.get<OnboardingProgressResponse>(`${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`);
       const progress = response.data;
-      console.log('progress', response.data);
+      console.log('🔄 API Response:', response.data);
+      console.log('🔄 currentPhase from API:', progress.currentPhase);
+      console.log('🔄 completedSteps from API:', progress.completedSteps);
       
       // Store the progress in cookies
       Cookies.set('companyOnboardingProgress', JSON.stringify(progress));
@@ -246,11 +248,13 @@ const CompanyOnboarding = () => {
       // Check if step 7 is completed and automatically advance to phase 3
       if (progress.completedSteps.includes(7)) {
         const validPhase = 3;
+        console.log('🔄 Forcing phase to 3 because step 7 is completed');
         setCurrentPhase(validPhase);
         setDisplayedPhase(validPhase);
       } else {
         // Vérifier que la phase est valide (entre 1 et 4)
         const validPhase = Math.max(1, Math.min(4, progress.currentPhase));
+        console.log('🔄 Setting phase to:', validPhase, 'from API currentPhase:', progress.currentPhase);
         setCurrentPhase(validPhase);
         setDisplayedPhase(validPhase);
       }
@@ -699,9 +703,20 @@ const CompanyOnboarding = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Company Onboarding</h1>
-        <button className="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
-          Save Progress
-        </button>
+        <div className="flex space-x-2">
+          <button 
+            onClick={() => {
+              console.log('🔄 Forcing data refresh...');
+              loadCompanyProgress();
+            }}
+            className="rounded-lg bg-yellow-600 px-4 py-2 text-white hover:bg-yellow-700"
+          >
+            🔄 Refresh Data
+          </button>
+          <button className="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
+            Save Progress
+          </button>
+        </div>
       </div>
 
       {/* Progress Overview */}
