@@ -158,6 +158,17 @@ const CompanyOnboarding = () => {
     }
   }, [companyId]);
 
+  // Recharger les données périodiquement pour détecter les changements
+  useEffect(() => {
+    if (!companyId) return;
+
+    const interval = setInterval(() => {
+      loadCompanyProgress();
+    }, 5000); // Recharger toutes les 5 secondes
+
+    return () => clearInterval(interval);
+  }, [companyId]);
+
   // Si l'URL contient ?startStep=6 ou si on est sur l'URL spécifique avec session, on lance handleStartStep(6)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -713,7 +724,7 @@ const CompanyOnboarding = () => {
         {phases.map((phase) => {
           const PhaseIcon = phase.icon;
           const isActive = displayedPhase === phase.id;
-          const isCompleted = currentPhase > phase.id;
+          const isCompleted = isPhaseCompleted(phase.id);
           const isAccessible = isPhaseAccessible(phase.id);
           
           // Debug pour la Phase 3
