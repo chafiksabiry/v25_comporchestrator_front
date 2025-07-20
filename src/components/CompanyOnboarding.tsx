@@ -712,6 +712,18 @@ const CompanyOnboarding = () => {
           const isCompleted = currentPhase > phase.id;
           const isAccessible = isPhaseAccessible(phase.id);
           
+          // Debug pour la Phase 3
+          if (phase.id === 3) {
+            console.log('Phase 3 Debug:', {
+              isActive,
+              isCompleted,
+              isAccessible,
+              currentPhase,
+              displayedPhase,
+              completedSteps
+            });
+          }
+          
           return (
             <div
               key={phase.id}
