@@ -774,6 +774,19 @@ const CompanyOnboarding = () => {
                 .every(s => s.disabled || completedSteps.includes(s.id));
             const canAccessStep = isPhaseAccessible(displayedPhaseData.id);
 
+            // Debug pour l'étape 13
+            if (step.id === 13) {
+              console.log('Step 13 Debug:', {
+                isClickable,
+                isCompleted,
+                isCurrentStep,
+                canAccessStep,
+                stepDisabled: step.disabled,
+                completedSteps,
+                displayedPhaseData: displayedPhaseData.id
+              });
+            }
+
 
             return (
               <div
@@ -784,8 +797,8 @@ const CompanyOnboarding = () => {
                   isCompleted ? 'border-green-200 bg-green-50' :
                   isCurrentStep ? 'border-indigo-200 bg-indigo-50 ring-2 ring-indigo-500' :
                   'border-gray-200 bg-white'
-                } ${(isClickable && !step.disabled && canAccessStep && (isCompleted || isCurrentStep)) ? 'cursor-pointer hover:border-indigo-300' : ''}`}
-                onClick={() => isClickable && !step.disabled && canAccessStep && (isCompleted || isCurrentStep) && handleStepClick(step.id)}
+                } ${(isClickable && !step.disabled && canAccessStep) ? 'cursor-pointer hover:border-indigo-300' : ''}`}
+                onClick={() => isClickable && !step.disabled && canAccessStep && handleStepClick(step.id)}
               >
                 <div className="flex items-start space-x-4">
                   <div className={`rounded-full p-2 ${
@@ -825,7 +838,7 @@ const CompanyOnboarding = () => {
                       )}
                     </div>
                     <p className="mt-1 text-sm text-gray-500">{step.description}</p>
-                    {isClickable && !step.disabled && canAccessStep && (isCompleted || isCurrentStep) && (
+                    {isClickable && !step.disabled && canAccessStep && (
                       <button 
                         className="mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-500"
                         onClick={() => handleStartStep(step.id)}
