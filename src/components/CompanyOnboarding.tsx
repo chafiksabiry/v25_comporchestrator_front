@@ -245,19 +245,11 @@ const CompanyOnboarding = () => {
       // Store the progress in cookies
       Cookies.set('companyOnboardingProgress', JSON.stringify(progress));
       
-      // Check if step 7 is completed and automatically advance to phase 3
-      if (progress.completedSteps.includes(7)) {
-        const validPhase = 3;
-        console.log('🔄 Forcing phase to 3 because step 7 is completed');
-        setCurrentPhase(validPhase);
-        setDisplayedPhase(validPhase);
-      } else {
-        // Vérifier que la phase est valide (entre 1 et 4)
-        const validPhase = Math.max(1, Math.min(4, progress.currentPhase));
-        console.log('🔄 Setting phase to:', validPhase, 'from API currentPhase:', progress.currentPhase);
-        setCurrentPhase(validPhase);
-        setDisplayedPhase(validPhase);
-      }
+      // Vérifier que la phase est valide (entre 1 et 4)
+      const validPhase = Math.max(1, Math.min(4, progress.currentPhase));
+      console.log('🔄 Setting phase to:', validPhase, 'from API currentPhase:', progress.currentPhase);
+      setCurrentPhase(validPhase);
+      setDisplayedPhase(validPhase);
       
       setCompletedSteps(progress.completedSteps);
     } catch (error) {
