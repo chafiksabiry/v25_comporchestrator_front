@@ -159,15 +159,16 @@ const CompanyOnboarding = () => {
   }, [companyId]);
 
   // Recharger les données périodiquement pour détecter les changements
-  useEffect(() => {
-    if (!companyId) return;
+  // Désactivé car cause trop de rafraîchissements
+  // useEffect(() => {
+  //   if (!companyId) return;
 
-    const interval = setInterval(() => {
-      loadCompanyProgress();
-    }, 5000); // Recharger toutes les 5 secondes
+  //   const interval = setInterval(() => {
+  //     loadCompanyProgress();
+  //   }, 5000); // Recharger toutes les 5 secondes
 
-    return () => clearInterval(interval);
-  }, [companyId]);
+  //   return () => clearInterval(interval);
+  // }, [companyId]);
 
   // Si l'URL contient ?startStep=6 ou si on est sur l'URL spécifique avec session, on lance handleStartStep(6)
   useEffect(() => {
@@ -257,9 +258,10 @@ const CompanyOnboarding = () => {
       Cookies.set('companyOnboardingProgress', JSON.stringify(progress));
       
       // Check if step 7 is completed and automatically advance to phase 3
-      if (progress.completedSteps.includes(7)) {
+      // BUT only if we're not already in phase 4 or beyond
+      if (progress.completedSteps.includes(7) && progress.currentPhase < 4) {
         const validPhase = 3;
-        console.log('🔄 Forcing phase to 3 because step 7 is completed');
+        console.log('🔄 Forcing phase to 3 because step 7 is completed and currentPhase < 4');
         setCurrentPhase(validPhase);
         setDisplayedPhase(validPhase);
       } else {
