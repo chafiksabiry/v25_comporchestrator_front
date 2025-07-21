@@ -13,7 +13,20 @@ import {
   MessageCircle,
   CheckSquare,
   Square,
-  ArrowLeft
+  ArrowLeft,
+  DollarSign,
+  Plus,
+  Building,
+  Calendar,
+  MapPin,
+  Users,
+  Target,
+  Award,
+  Globe,
+  Clock as ClockIcon,
+  TrendingUp,
+  FileText,
+  Settings
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 
@@ -813,6 +826,12 @@ const ApprovalPublishing = () => {
     setCurrentGigData(null);
   };
 
+  const addCommissionOption = () => {
+    console.log('➕ Adding commission option');
+    // Cette fonction peut être étendue pour ajouter de nouvelles options de commission
+    // Pour l'instant, elle affiche juste un log
+  };
+
   if (isLoading) {
     console.log('⏳ Rendering loading state');
     return (
@@ -875,150 +894,230 @@ const ApprovalPublishing = () => {
         
         <div className="space-y-6">
           {/* Basic Information */}
-          <div className="rounded-lg bg-white shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
+          <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <FileText className="h-6 w-6 text-blue-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Basic Information</h2>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Title:</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.title}</p>
+              <div className="space-y-4">
+                <div className="bg-white rounded-lg p-4 border border-blue-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="h-4 w-4 text-blue-500" />
+                    <span className="text-sm font-semibold text-gray-700">Title</span>
+                  </div>
+                  <p className="text-sm text-gray-900 font-medium">{currentGigData.title}</p>
                 </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Category:</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.category || 'Not specified'}</p>
+                <div className="bg-white rounded-lg p-4 border border-blue-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Award className="h-4 w-4 text-purple-500" />
+                    <span className="text-sm font-semibold text-gray-700">Category</span>
+                  </div>
+                  <p className="text-sm text-gray-900 font-medium">{currentGigData.category || 'Not specified'}</p>
                 </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Status:</span>
-                  <p className="text-sm text-gray-900 mt-1 capitalize">{currentGigData.status}</p>
+                <div className="bg-white rounded-lg p-4 border border-blue-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-4 w-4 text-green-500" />
+                    <span className="text-sm font-semibold text-gray-700">Status</span>
+                  </div>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    currentGigData.status === 'active' || currentGigData.status === 'approved' 
+                      ? 'bg-green-100 text-green-800' 
+                      : currentGigData.status === 'pending' || currentGigData.status === 'to_activate'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {currentGigData.status}
+                  </span>
                 </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Destination Zone:</span>
-                  <p className="text-sm text-gray-900 mt-1">
+                <div className="bg-white rounded-lg p-4 border border-blue-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Globe className="h-4 w-4 text-indigo-500" />
+                    <span className="text-sm font-semibold text-gray-700">Destination Zone</span>
+                  </div>
+                  <p className="text-sm text-gray-900 font-medium">
                     {timezoneData[0]?.countryName || currentGigData.destination_zone || 'Not specified'}
                   </p>
                 </div>
               </div>
-              <div className="space-y-3">
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Company:</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.companyName || company?.name || 'Not specified'}</p>
+              <div className="space-y-4">
+                <div className="bg-white rounded-lg p-4 border border-blue-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Building className="h-4 w-4 text-orange-500" />
+                    <span className="text-sm font-semibold text-gray-700">Company</span>
+                  </div>
+                  <p className="text-sm text-gray-900 font-medium">{currentGigData.companyName || company?.name || 'Not specified'}</p>
                 </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Created:</span>
-                  <p className="text-sm text-gray-900 mt-1">
+                <div className="bg-white rounded-lg p-4 border border-blue-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="h-4 w-4 text-emerald-500" />
+                    <span className="text-sm font-semibold text-gray-700">Created</span>
+                  </div>
+                  <p className="text-sm text-gray-900 font-medium">
                     {currentGigData.createdAt ? formatDate(currentGigData.createdAt) : 'Not available'}
                   </p>
                 </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Updated:</span>
-                  <p className="text-sm text-gray-900 mt-1">
+                <div className="bg-white rounded-lg p-4 border border-blue-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ClockIcon className="h-4 w-4 text-cyan-500" />
+                    <span className="text-sm font-semibold text-gray-700">Updated</span>
+                  </div>
+                  <p className="text-sm text-gray-900 font-medium">
                     {currentGigData.updatedAt ? formatDate(currentGigData.updatedAt) : 'Not available'}
                   </p>
                 </div>
               </div>
             </div>
-            <div className="mt-4">
-              <span className="text-sm font-medium text-gray-500">Description:</span>
-              <p className="text-sm text-gray-900 mt-1">{currentGigData.description}</p>
+            <div className="mt-6 bg-white rounded-lg p-4 border border-blue-100">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="h-4 w-4 text-blue-500" />
+                <span className="text-sm font-semibold text-gray-700">Description</span>
+              </div>
+              <p className="text-sm text-gray-900 leading-relaxed">{currentGigData.description}</p>
             </div>
           </div>
 
           {/* Activities & Industries */}
-          <div className="rounded-lg bg-white shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Activities & Industries</h2>
+          <div className="rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Target className="h-6 w-6 text-green-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Activities & Industries</h2>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <span className="text-sm font-medium text-gray-500">Activities:</span>
-                <div className="mt-2 flex flex-wrap gap-2">
+              <div className="bg-white rounded-lg p-4 border border-green-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="h-4 w-4 text-green-500" />
+                  <span className="text-sm font-semibold text-gray-700">Activities</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
                   {currentGigData.activities?.map((activity: string, index: number) => (
-                    <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200">
                       {activity}
                     </span>
-                  )) || <span className="text-sm text-gray-500">No activities specified</span>}
+                  )) || <span className="text-sm text-gray-500 italic">No activities specified</span>}
                 </div>
               </div>
-              <div>
-                <span className="text-sm font-medium text-gray-500">Industries:</span>
-                <div className="mt-2 flex flex-wrap gap-2">
+              <div className="bg-white rounded-lg p-4 border border-green-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <Building className="h-4 w-4 text-emerald-500" />
+                  <span className="text-sm font-semibold text-gray-700">Industries</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
                   {currentGigData.industries?.map((industry: string, index: number) => (
-                    <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 border border-emerald-200">
                       {industry}
                     </span>
-                  )) || <span className="text-sm text-gray-500">No industries specified</span>}
+                  )) || <span className="text-sm text-gray-500 italic">No industries specified</span>}
                 </div>
               </div>
             </div>
           </div>
 
           {/* Seniority */}
-          <div className="rounded-lg bg-white shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Seniority Requirements</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <span className="text-sm font-medium text-gray-500">Level:</span>
-                <p className="text-sm text-gray-900 mt-1">{currentGigData.seniority?.level || 'Not specified'}</p>
+          <div className="rounded-xl bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-100 shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Award className="h-6 w-6 text-purple-600" />
               </div>
-              <div>
-                <span className="text-sm font-medium text-gray-500">Years of Experience:</span>
-                <p className="text-sm text-gray-900 mt-1">{currentGigData.seniority?.yearsExperience || 'Not specified'}</p>
+              <h2 className="text-xl font-bold text-gray-900">Seniority Requirements</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg p-4 border border-purple-100">
+                <div className="flex items-center gap-2 mb-2">
+                  <Target className="h-4 w-4 text-purple-500" />
+                  <span className="text-sm font-semibold text-gray-700">Level</span>
+                </div>
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-100 to-violet-100 text-purple-800 border border-purple-200">
+                  {currentGigData.seniority?.level || 'Not specified'}
+                </span>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-purple-100">
+                <div className="flex items-center gap-2 mb-2">
+                  <ClockIcon className="h-4 w-4 text-violet-500" />
+                  <span className="text-sm font-semibold text-gray-700">Years of Experience</span>
+                </div>
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-violet-100 to-purple-100 text-violet-800 border border-violet-200">
+                  {currentGigData.seniority?.yearsExperience || 'Not specified'}
+                </span>
               </div>
             </div>
           </div>
 
           {/* Skills */}
-          <div className="rounded-lg bg-white shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Skills & Languages</h2>
-            <div className="space-y-4">
-              <div>
-                <span className="text-sm font-medium text-gray-500">Professional Skills:</span>
-                <div className="mt-2 flex flex-wrap gap-2">
+          <div className="rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Award className="h-6 w-6 text-orange-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Skills & Languages</h2>
+            </div>
+            <div className="space-y-6">
+              <div className="bg-white rounded-lg p-4 border border-orange-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <Target className="h-4 w-4 text-purple-500" />
+                  <span className="text-sm font-semibold text-gray-700">Professional Skills</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
                   {currentGigData.skills?.professional?.map((skill: any, index: number) => {
                     const skillId = skill.skill?.$oid || skill.skill?._id || skill.skill || skill._id;
                     const skillName = skillsData[skillId]?.name || `Skill ${skillId || 'Unknown'}`;
                     return (
-                      <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-100 to-violet-100 text-purple-800 border border-purple-200">
                         {skillName} (Level {skill.level || 'N/A'})
                       </span>
                     );
-                  }) || <span className="text-sm text-gray-500">No professional skills specified</span>}
+                  }) || <span className="text-sm text-gray-500 italic">No professional skills specified</span>}
                 </div>
               </div>
-              <div>
-                <span className="text-sm font-medium text-gray-500">Technical Skills:</span>
-                <div className="mt-2 flex flex-wrap gap-2">
+              <div className="bg-white rounded-lg p-4 border border-orange-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <Settings className="h-4 w-4 text-orange-500" />
+                  <span className="text-sm font-semibold text-gray-700">Technical Skills</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
                   {currentGigData.skills?.technical?.map((skill: any, index: number) => {
                     const skillId = skill.skill?.$oid || skill.skill?._id || skill.skill || skill._id;
                     const skillName = skillsData[skillId]?.name || `Skill ${skillId || 'Unknown'}`;
                     return (
-                      <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                      <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 border border-orange-200">
                         {skillName} (Level {skill.level || 'N/A'})
                       </span>
                     );
-                  }) || <span className="text-sm text-gray-500">No technical skills specified</span>}
+                  }) || <span className="text-sm text-gray-500 italic">No technical skills specified</span>}
                 </div>
               </div>
-              <div>
-                <span className="text-sm font-medium text-gray-500">Soft Skills:</span>
-                <div className="mt-2 flex flex-wrap gap-2">
+              <div className="bg-white rounded-lg p-4 border border-orange-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="h-4 w-4 text-pink-500" />
+                  <span className="text-sm font-semibold text-gray-700">Soft Skills</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
                   {currentGigData.skills?.soft?.map((skill: any, index: number) => {
                     const skillId = skill.skill?.$oid || skill.skill?._id || skill.skill || skill._id;
                     const skillName = skillsData[skillId]?.name || `Skill ${skillId || 'Unknown'}`;
                     return (
-                      <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
+                      <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-pink-100 to-rose-100 text-pink-800 border border-pink-200">
                         {skillName} (Level {skill.level || 'N/A'})
                       </span>
                     );
-                  }) || <span className="text-sm text-gray-500">No soft skills specified</span>}
+                  }) || <span className="text-sm text-gray-500 italic">No soft skills specified</span>}
                 </div>
               </div>
-              <div>
-                <span className="text-sm font-medium text-gray-500">Languages:</span>
-                <div className="mt-2 flex flex-wrap gap-2">
+              <div className="bg-white rounded-lg p-4 border border-orange-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <Globe className="h-4 w-4 text-indigo-500" />
+                  <span className="text-sm font-semibold text-gray-700">Languages</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
                   {currentGigData.skills?.languages?.map((lang: any, index: number) => (
-                    <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                    <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-800 border border-indigo-200">
                       {lang.language} ({lang.proficiency})
                     </span>
-                  )) || <span className="text-sm text-gray-500">No languages specified</span>}
+                  )) || <span className="text-sm text-gray-500 italic">No languages specified</span>}
                 </div>
               </div>
             </div>
@@ -1319,12 +1418,15 @@ const ApprovalPublishing = () => {
                   <label htmlFor="base_type" className="block text-sm font-medium text-gray-700 mb-2">
                     Base Type
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="base_type"
                     defaultValue={currentGigData.commission?.base}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
+                  >
+                    <option value="">Select base type...</option>
+                    <option value="Fixed Salary">Fixed Salary</option>
+                    <option value="Base + Commission">Base + Commission</option>
+                  </select>
                 </div>
                 <div>
                   <label htmlFor="base_amount" className="block text-sm font-medium text-gray-700 mb-2">
@@ -1341,12 +1443,15 @@ const ApprovalPublishing = () => {
                   <label htmlFor="bonus_type" className="block text-sm font-medium text-gray-700 mb-2">
                     Bonus Type
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="bonus_type"
                     defaultValue={currentGigData.commission?.bonus}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
+                  >
+                    <option value="">Select bonus type...</option>
+                    <option value="Performance Bonus">Performance Bonus</option>
+                    <option value="Team Bonus">Team Bonus</option>
+                  </select>
                 </div>
                 <div>
                   <label htmlFor="bonus_amount" className="block text-sm font-medium text-gray-700 mb-2">
@@ -1365,12 +1470,18 @@ const ApprovalPublishing = () => {
                   <label htmlFor="commission_type" className="block text-sm font-medium text-gray-700 mb-2">
                     Commission Type
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="commission_type"
                     defaultValue={currentGigData.commission?.transactionCommission?.type}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
+                  >
+                    <option value="">Select commission type...</option>
+                    <option value="Fixed Amount">Fixed Amount</option>
+                    <option value="Percentage">Percentage</option>
+                    <option value="Tiered Amount">Tiered Amount</option>
+                    <option value="Volume Based">Volume Based</option>
+                    <option value="Performance Based">Performance Based</option>
+                  </select>
                 </div>
                 <div>
                   <label htmlFor="commission_amount" className="block text-sm font-medium text-gray-700 mb-2">
@@ -1393,11 +1504,58 @@ const ApprovalPublishing = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="">Select currency</option>
-                    <option value="EUR">EUR</option>
-                    <option value="USD">USD</option>
-                    <option value="GBP">GBP</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="CAD">CAD (C$)</option>
+                    <option value="AUD">AUD (A$)</option>
                   </select>
                 </div>
+              </div>
+            </div>
+            
+            {/* Additional Commission Fields */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label htmlFor="unit_type" className="block text-sm font-medium text-gray-700 mb-2">
+                  Unit Type
+                </label>
+                <select
+                  id="unit_type"
+                  defaultValue={currentGigData.commission?.unitType}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Select unit...</option>
+                  <option value="Calls">Calls</option>
+                  <option value="Sales">Sales</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="period" className="block text-sm font-medium text-gray-700 mb-2">
+                  Period
+                </label>
+                <select
+                  id="period"
+                  defaultValue={currentGigData.commission?.period}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Select period...</option>
+                  <option value="Daily">Daily</option>
+                  <option value="Weekly">Weekly</option>
+                  <option value="Monthly">Monthly</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="minimum_volume" className="block text-sm font-medium text-gray-700 mb-2">
+                  Minimum Volume
+                </label>
+                <input
+                  type="number"
+                  id="minimum_volume"
+                  defaultValue={currentGigData.commission?.minimumVolume?.amount}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Enter minimum volume"
+                />
               </div>
             </div>
           </div>
