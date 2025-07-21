@@ -595,9 +595,9 @@ const ApprovalPublishing = () => {
             const timezone = responseData.data[0];
             setTimezoneData(prev => ({ 
               ...prev, 
-              destinationZone: timezone 
+              0: timezone // Store as index 0 for easy access
             }));
-            console.log(`✅ Set destination zone timezone:`, timezone.zoneName);
+            console.log(`✅ Set destination zone timezone:`, timezone.countryName);
           } else {
             console.warn('⚠️ Invalid response format for destination zone timezones');
           }
@@ -873,7 +873,7 @@ const ApprovalPublishing = () => {
                 <div>
                   <span className="text-sm font-medium text-gray-500">Destination Zone:</span>
                   <p className="text-sm text-gray-900 mt-1">
-                    {timezoneData[0].countryName}
+                    {timezoneData[0]?.countryName || currentGigData.destination_zone || 'Not specified'}
                   </p>
                 </div>
               </div>
@@ -1212,9 +1212,9 @@ const ApprovalPublishing = () => {
                     defaultValue={currentGigData.destination_zone}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
-                  {timezoneData.destinationZone && (
+                  {timezoneData[0] && (
                     <p className="mt-1 text-xs text-gray-500">
-                      Timezone: {timezoneData.destinationZone.zoneName} ({timezoneData.destinationZone.countryName})
+                      Country: {timezoneData[0].countryName}
                     </p>
                   )}
                 </div>
