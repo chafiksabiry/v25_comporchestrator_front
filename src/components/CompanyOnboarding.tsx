@@ -97,6 +97,17 @@ interface CompanyResponse {
   };
 }
 
+interface GigResponse {
+  success: boolean;
+  message: string;
+  data: Array<{
+    _id: string;
+    title: string;
+    status: string;
+    // Add other gig fields as needed
+  }>;
+}
+
 const CompanyOnboarding = () => {
   const [currentPhase, setCurrentPhase] = useState(1);
   const [displayedPhase, setDisplayedPhase] = useState(1);
@@ -150,6 +161,7 @@ const CompanyOnboarding = () => {
   // Load company progress and check gigs when company ID is available
   useEffect(() => {
     if (companyId) {
+      console.log('🔄 Company ID available, loading progress and checking gigs...');
       loadCompanyProgress();
       checkCompanyGigs();
       
@@ -227,16 +239,56 @@ const CompanyOnboarding = () => {
     }
   };
 
+  const checkActiveGigs = async () => {
+    try {
+      console.log('🔍 Checking for active gigs...');
+      const response = await axios.get<GigResponse>(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`);
+      
+      if (response.data && response.data.data) {
+        const gigs = response.data.data;
+        const hasActiveGig = gigs.some((gig: any) => 
+          gig.status === 'active' || gig.status === 'approved' || gig.status === 'published'
+        );
+        
+        console.log('🔍 Active gigs check:', { 
+          totalGigs: gigs.length, 
+          hasActiveGig, 
+          gigStatuses: gigs.map((g: any) => g.status) 
+        });
+        
+        // If at least one gig is active, mark step 13 (phase 4) as completed
+        if (hasActiveGig && !completedSteps.includes(13)) {
+          try {
+            console.log('✅ Found active gig - marking step 13 as completed');
+            await axios.put(
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
+              { status: 'completed' }
+            );
+            // Update local state to reflect the completed step
+            setCompletedSteps(prev => [...prev, 13]);
+            console.log('✅ Step 13 marked as completed');
+          } catch (error) {
+            console.error('Error updating onboarding progress for step 13:', error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking active gigs:', error);
+    }
+  };
+
   // Real-time leads checking
   useEffect(() => {
     if (!companyId) return;
 
     // Initial check
     checkCompanyLeads();
+    checkActiveGigs();
 
     // Set up real-time checking every 30 seconds
     const intervalId = setInterval(() => {
       checkCompanyLeads();
+      checkActiveGigs();
     }, 30000); // Check every 30 seconds
 
     // Cleanup interval on component unmount or when companyId changes

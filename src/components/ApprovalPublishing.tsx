@@ -339,9 +339,42 @@ const ApprovalPublishing = () => {
       setGigs(prevGigs => prevGigs.map(gig => 
         gig._id === gigId ? { ...gig, status: 'active' } : gig
       ));
+
+      // Mark step 13 (phase 4) as completed since we now have an active gig
+      await markStep13AsCompleted();
     } catch (error) {
       console.error('❌ Error approving gig:', error);
       setError(error instanceof Error ? error.message : 'Failed to approve gig');
+    }
+  };
+
+  const markStep13AsCompleted = async () => {
+    try {
+      const companyId = Cookies.get('companyId');
+      if (!companyId) {
+        console.warn('Company ID not found, cannot mark step 13 as completed');
+        return;
+      }
+
+      console.log('🎯 Marking step 13 (phase 4) as completed due to active gig');
+      const response = await fetch(
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: 'completed' })
+        }
+      );
+
+      if (response.ok) {
+        console.log('✅ Step 13 marked as completed successfully');
+      } else {
+        console.warn('⚠️ Failed to mark step 13 as completed:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ Error marking step 13 as completed:', error);
     }
   };
 
