@@ -453,7 +453,7 @@ const ApprovalPublishing = () => {
       });
 
       if (!hasActiveGig) {
-        console.log('⚠️ No active gigs found - marking step 13 as pending');
+        console.log('⚠️ No active gigs found - marking step 13 as in_progress');
         const response = await fetch(
           `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
           {
@@ -461,14 +461,14 @@ const ApprovalPublishing = () => {
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ status: 'pending' })
+            body: JSON.stringify({ status: 'in_progress' })
           }
         );
 
         if (response.ok) {
-          console.log('⚠️ Step 13 marked as pending successfully');
+          console.log('⚠️ Step 13 marked as in_progress successfully');
         } else {
-          console.warn('⚠️ Failed to mark step 13 as pending:', response.status);
+          console.warn('⚠️ Failed to mark step 13 as in_progress:', response.status);
         }
       }
     } catch (error) {
