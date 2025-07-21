@@ -11,7 +11,8 @@ import {
   ChevronUp,
   MessageCircle,
   CheckSquare,
-  Square
+  Square,
+  ArrowLeft
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 
@@ -30,17 +31,52 @@ interface Gig {
   issues?: string[];
 }
 
+interface Company {
+  _id: string;
+  name: string;
+  industry?: string;
+  contact?: {
+    email?: string;
+    phone?: string;
+    address?: string;
+    website?: string;
+  };
+}
+
 const ApprovalPublishing = () => {
   const [expandedGig, setExpandedGig] = useState<string | null>(null);
   const [selectedGigs, setSelectedGigs] = useState<string[]>([]);
   const [filter, setFilter] = useState('pending');
   const [gigs, setGigs] = useState<Gig[]>([]);
+  const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchGigs();
+    fetchCompanyDetails();
   }, []);
+
+    const fetchCompanyDetails = async () => {
+    try {
+      const companyId = Cookies.get('companyId');
+      if (!companyId) {
+        console.error('❌ Company ID not found for company details');
+        return;
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/details`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🏢 Company details fetched:', data.data);
+        setCompany(data.data);
+      } else {
+        console.error('❌ Failed to fetch company details:', response.status);
+      }
+    } catch (err) {
+      console.error('❌ Error fetching company details:', err);
+    }
+  };
 
   const fetchGigs = async () => {
     console.log('🔄 Starting fetchGigs...');
@@ -91,12 +127,12 @@ const ApprovalPublishing = () => {
             status: gig.status || 'pending',
             category: gig.category,
             budget: gig.commission?.baseAmount && gig.commission.baseAmount !== '0' ? `$${gig.commission.baseAmount}` : null,
-                      companyId: gig.companyId,
-          companyName: gig.companyName || gig.company?.name || 'Company',
-          createdAt: gig.createdAt,
-          updatedAt: gig.updatedAt,
-          submittedBy: gig.submittedBy || gig.companyName || gig.company?.name || 'Company',
-          issues: gig.issues || []
+            companyId: gig.companyId,
+            companyName: gig.companyName || gig.company?.name || company?.name || 'Company',
+            createdAt: gig.createdAt,
+            updatedAt: gig.updatedAt,
+            submittedBy: gig.submittedBy || gig.companyName || gig.company?.name || company?.name || 'Company',
+            issues: gig.issues || []
           };
           console.log('🔄 Transformed gig:', transformed);
           return transformed;
@@ -228,8 +264,23 @@ const ApprovalPublishing = () => {
   
   return (
     <div className="space-y-6">
+      {/* Back to Onboarding Button */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Approval & Publishing</h1>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => {
+              console.log('⬅️ Back to onboarding clicked');
+              // Navigation logic would go here
+              window.history.back();
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft size={16} />
+            Back to Onboarding
+          </button>
+          <div className="h-6 w-px bg-gray-300"></div>
+          <h1 className="text-2xl font-bold text-gray-900">Approval & Publishing</h1>
+        </div>
         <div className="flex space-x-2">
           <button 
             className={`rounded-lg px-4 py-2 ${selectedGigs.length > 0 ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
