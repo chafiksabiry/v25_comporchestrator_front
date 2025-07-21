@@ -210,21 +210,38 @@ const ApprovalPublishing = () => {
 
   const formatDate = (dateString: string) => {
     console.log('📅 Formatting date:', dateString);
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
-    let result;
-    if (diffInHours < 1) result = 'Just now';
-    else if (diffInHours < 24) result = `${diffInHours} hours ago`;
-    else {
-      const diffInDays = Math.floor(diffInHours / 24);
-      if (diffInDays === 1) result = '1 day ago';
-      else result = `${diffInDays} days ago`;
+    if (!dateString) {
+      console.log('📅 No date string provided');
+      return 'Invalid date';
     }
     
-    console.log('📅 Formatted result:', result);
-    return result;
+    try {
+      const date = new Date(dateString);
+      
+      if (isNaN(date.getTime())) {
+        console.log('📅 Invalid date format');
+        return 'Invalid date';
+      }
+      
+      const now = new Date();
+      const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+      
+      let result;
+      if (diffInHours < 1) result = 'Just now';
+      else if (diffInHours < 24) result = `${diffInHours} hours ago`;
+      else {
+        const diffInDays = Math.floor(diffInHours / 24);
+        if (diffInDays === 1) result = '1 day ago';
+        else result = `${diffInDays} days ago`;
+      }
+      
+      console.log('📅 Formatted result:', result);
+      return result;
+    } catch (error) {
+      console.error('📅 Error formatting date:', error);
+      return 'Error formatting date';
+    }
   };
 
   const formatStatus = (status: string) => {
@@ -698,6 +715,10 @@ const ApprovalPublishing = () => {
 
       const gigData = await response.json();
       console.log('📋 Gig details for preview:', gigData);
+      console.log('📅 Date fields:', {
+        createdAt: gigData.data?.createdAt,
+        updatedAt: gigData.data?.updatedAt
+      });
       
       setCurrentGigData(gigData.data);
       
@@ -884,11 +905,15 @@ const ApprovalPublishing = () => {
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-500">Created:</span>
-                  <p className="text-sm text-gray-900 mt-1">{formatDate(currentGigData.createdAt)}</p>
+                  <p className="text-sm text-gray-900 mt-1">
+                    {currentGigData.createdAt ? formatDate(currentGigData.createdAt) : 'Not available'}
+                  </p>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-500">Updated:</span>
-                  <p className="text-sm text-gray-900 mt-1">{formatDate(currentGigData.updatedAt)}</p>
+                  <p className="text-sm text-gray-900 mt-1">
+                    {currentGigData.updatedAt ? formatDate(currentGigData.updatedAt) : 'Not available'}
+                  </p>
                 </div>
               </div>
             </div>
