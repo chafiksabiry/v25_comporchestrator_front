@@ -140,7 +140,20 @@ const ApprovalPublishing = () => {
 
   const filteredGigs = gigs.filter(gig => {
     if (filter === 'all') return true;
-    return gig.status === filter;
+    
+    // Mapping des statuts pour la compatibilité
+    const statusMapping: { [key: string]: string[] } = {
+      'pending': ['pending', 'to_activate', 'draft', 'submitted'],
+      'approved': ['approved', 'active', 'published'],
+      'rejected': ['rejected', 'declined', 'cancelled']
+    };
+    
+    const validStatuses = statusMapping[filter] || [filter];
+    const isMatch = validStatuses.includes(gig.status);
+    
+    console.log(`🔍 Filtering gig ${gig._id} (${gig.title}): status="${gig.status}", filter="${filter}", validStatuses=${JSON.stringify(validStatuses)}, isMatch=${isMatch}`);
+    
+    return isMatch;
   });
   
   console.log('🔍 Filtered gigs:', { 
@@ -333,22 +346,22 @@ const ApprovalPublishing = () => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
-                      {gig.status === 'pending' && (
+                      {(gig.status === 'pending' || gig.status === 'to_activate' || gig.status === 'draft' || gig.status === 'submitted') && (
                         <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
                           <Clock className="mr-1 h-3 w-3" />
-                          Pending
+                          {gig.status === 'to_activate' ? 'To Activate' : gig.status === 'draft' ? 'Draft' : gig.status === 'submitted' ? 'Submitted' : 'Pending'}
                         </span>
                       )}
-                      {gig.status === 'approved' && (
+                      {(gig.status === 'approved' || gig.status === 'active' || gig.status === 'published') && (
                         <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
                           <CheckCircle className="mr-1 h-3 w-3" />
-                          Approved
+                          {gig.status === 'active' ? 'Active' : gig.status === 'published' ? 'Published' : 'Approved'}
                         </span>
                       )}
-                      {gig.status === 'rejected' && (
+                      {(gig.status === 'rejected' || gig.status === 'declined' || gig.status === 'cancelled') && (
                         <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
                           <XCircle className="mr-1 h-3 w-3" />
-                          Rejected
+                          {gig.status === 'declined' ? 'Declined' : gig.status === 'cancelled' ? 'Cancelled' : 'Rejected'}
                         </span>
                       )}
                       {expandedGig === gig._id ? (
@@ -418,7 +431,7 @@ const ApprovalPublishing = () => {
                         Comment
                       </button>
                       
-                      {gig.status === 'pending' && (
+                      {(gig.status === 'pending' || gig.status === 'to_activate' || gig.status === 'draft' || gig.status === 'submitted') && (
                         <>
                           <button className="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700">
                             <CheckCircle className="mr-2 h-4 w-4" />
