@@ -60,6 +60,7 @@ const ApprovalPublishing = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'main' | 'preview' | 'edit'>('main');
   const [currentGigData, setCurrentGigData] = useState<any>(null);
+  const [skillsData, setSkillsData] = useState<{[key: string]: any}>({});
 
   useEffect(() => {
     fetchGigs();
@@ -356,6 +357,68 @@ const ApprovalPublishing = () => {
     }
   };
 
+  const fetchSkillsData = async (gigData: any) => {
+    try {
+      console.log('🔍 Fetching skills data for gig');
+      const skillsIds: string[] = [];
+      
+      // Collect all skill IDs from the gig
+      if (gigData.skills?.professional) {
+        gigData.skills.professional.forEach((skill: any) => {
+          if (skill.skill?.$oid) {
+            skillsIds.push(skill.skill.$oid);
+          }
+        });
+      }
+      
+      if (gigData.skills?.technical) {
+        gigData.skills.technical.forEach((skill: any) => {
+          if (skill.skill?.$oid) {
+            skillsIds.push(skill.skill.$oid);
+          }
+        });
+      }
+      
+      if (gigData.skills?.soft) {
+        gigData.skills.soft.forEach((skill: any) => {
+          if (skill.skill?.$oid) {
+            skillsIds.push(skill.skill.$oid);
+          }
+        });
+      }
+      
+      console.log('📋 Skills IDs to fetch:', skillsIds);
+      
+      if (skillsIds.length === 0) {
+        console.log('⚠️ No skills IDs found');
+        return;
+      }
+      
+      // Fetch skills data from API
+      const skillsDataMap: {[key: string]: any} = {};
+      
+      for (const skillId of skillsIds) {
+        try {
+          const response = await fetch(`${import.meta.env.VITE_SKILLS_API || 'http://localhost:3003'}/skills/${skillId}`);
+          if (response.ok) {
+            const skillData = await response.json();
+            skillsDataMap[skillId] = skillData;
+            console.log(`✅ Fetched skill ${skillId}:`, skillData.name);
+          } else {
+            console.warn(`⚠️ Failed to fetch skill ${skillId}`);
+          }
+        } catch (error) {
+          console.warn(`⚠️ Error fetching skill ${skillId}:`, error);
+        }
+      }
+      
+      setSkillsData(skillsDataMap);
+      console.log('✅ Skills data fetched and set:', skillsDataMap);
+    } catch (error) {
+      console.error('❌ Error fetching skills data:', error);
+    }
+  };
+
   const archiveGig = async (gigId: string) => {
     try {
       console.log('📦 Archiving gig:', gigId);
@@ -444,6 +507,10 @@ const ApprovalPublishing = () => {
       console.log('📋 Gig details for preview:', gigData);
       
       setCurrentGigData(gigData.data);
+      
+      // Fetch skills data for this gig
+      await fetchSkillsData(gigData.data);
+      
       setCurrentView('preview');
     } catch (error) {
       console.error('❌ Error previewing gig:', error);
@@ -488,6 +555,10 @@ const ApprovalPublishing = () => {
       console.log('📋 Current gig data for editing:', gigData);
       
       setCurrentGigData(gigData.data);
+      
+      // Fetch skills data for this gig
+      await fetchSkillsData(gigData.data);
+      
       setCurrentView('edit');
     } catch (error) {
       console.error('❌ Error editing gig:', error);
@@ -669,31 +740,43 @@ const ApprovalPublishing = () => {
               <div>
                 <span className="text-sm font-medium text-gray-500">Professional Skills:</span>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {currentGigData.skills?.professional?.map((skill: any, index: number) => (
-                    <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                      Level {skill.level}
-                    </span>
-                  )) || <span className="text-sm text-gray-500">No professional skills specified</span>}
+                  {currentGigData.skills?.professional?.map((skill: any, index: number) => {
+                    const skillId = skill.skill?.$oid;
+                    const skillName = skillsData[skillId]?.name || `Skill ${skillId}`;
+                    return (
+                      <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        {skillName} (Level {skill.level})
+                      </span>
+                    );
+                  }) || <span className="text-sm text-gray-500">No professional skills specified</span>}
                 </div>
               </div>
               <div>
                 <span className="text-sm font-medium text-gray-500">Technical Skills:</span>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {currentGigData.skills?.technical?.map((skill: any, index: number) => (
-                    <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                      Level {skill.level}
-                    </span>
-                  )) || <span className="text-sm text-gray-500">No technical skills specified</span>}
+                  {currentGigData.skills?.technical?.map((skill: any, index: number) => {
+                    const skillId = skill.skill?.$oid;
+                    const skillName = skillsData[skillId]?.name || `Skill ${skillId}`;
+                    return (
+                      <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                        {skillName} (Level {skill.level})
+                      </span>
+                    );
+                  }) || <span className="text-sm text-gray-500">No technical skills specified</span>}
                 </div>
               </div>
               <div>
                 <span className="text-sm font-medium text-gray-500">Soft Skills:</span>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {currentGigData.skills?.soft?.map((skill: any, index: number) => (
-                    <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
-                      Level {skill.level}
-                    </span>
-                  )) || <span className="text-sm text-gray-500">No soft skills specified</span>}
+                  {currentGigData.skills?.soft?.map((skill: any, index: number) => {
+                    const skillId = skill.skill?.$oid;
+                    const skillName = skillsData[skillId]?.name || `Skill ${skillId}`;
+                    return (
+                      <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
+                        {skillName} (Level {skill.level})
+                      </span>
+                    );
+                  }) || <span className="text-sm text-gray-500">No soft skills specified</span>}
                 </div>
               </div>
               <div>
