@@ -366,26 +366,46 @@ const ApprovalPublishing = () => {
       const technicalIds: string[] = [];
       const softIds: string[] = [];
       
+      console.log('🔍 Gig skills structure:', gigData.skills);
+      
       if (gigData.skills?.professional) {
         gigData.skills.professional.forEach((skill: any) => {
-          if (skill.skill?.$oid) {
-            professionalIds.push(skill.skill.$oid);
+          console.log('🔍 Professional skill object:', skill);
+          // Try different possible structures
+          const skillId = skill.skill?.$oid || skill.skill?._id || skill.skill || skill._id;
+          if (skillId) {
+            professionalIds.push(skillId);
+            console.log('✅ Added professional skill ID:', skillId);
+          } else {
+            console.warn('⚠️ Could not extract professional skill ID from:', skill);
           }
         });
       }
       
       if (gigData.skills?.technical) {
         gigData.skills.technical.forEach((skill: any) => {
-          if (skill.skill?.$oid) {
-            technicalIds.push(skill.skill.$oid);
+          console.log('🔍 Technical skill object:', skill);
+          // Try different possible structures
+          const skillId = skill.skill?.$oid || skill.skill?._id || skill.skill || skill._id;
+          if (skillId) {
+            technicalIds.push(skillId);
+            console.log('✅ Added technical skill ID:', skillId);
+          } else {
+            console.warn('⚠️ Could not extract technical skill ID from:', skill);
           }
         });
       }
       
       if (gigData.skills?.soft) {
         gigData.skills.soft.forEach((skill: any) => {
-          if (skill.skill?.$oid) {
-            softIds.push(skill.skill.$oid);
+          console.log('🔍 Soft skill object:', skill);
+          // Try different possible structures
+          const skillId = skill.skill?.$oid || skill.skill?._id || skill.skill || skill._id;
+          if (skillId) {
+            softIds.push(skillId);
+            console.log('✅ Added soft skill ID:', skillId);
+          } else {
+            console.warn('⚠️ Could not extract soft skill ID from:', skill);
           }
         });
       }
@@ -823,11 +843,11 @@ const ApprovalPublishing = () => {
                 <span className="text-sm font-medium text-gray-500">Professional Skills:</span>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {currentGigData.skills?.professional?.map((skill: any, index: number) => {
-                    const skillId = skill.skill?.$oid;
-                    const skillName = skillsData[skillId]?.name || `Skill ${skillId}`;
+                    const skillId = skill.skill?.$oid || skill.skill?._id || skill.skill || skill._id;
+                    const skillName = skillsData[skillId]?.name || `Skill ${skillId || 'Unknown'}`;
                     return (
                       <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        {skillName} (Level {skill.level})
+                        {skillName} (Level {skill.level || 'N/A'})
                       </span>
                     );
                   }) || <span className="text-sm text-gray-500">No professional skills specified</span>}
@@ -837,11 +857,11 @@ const ApprovalPublishing = () => {
                 <span className="text-sm font-medium text-gray-500">Technical Skills:</span>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {currentGigData.skills?.technical?.map((skill: any, index: number) => {
-                    const skillId = skill.skill?.$oid;
-                    const skillName = skillsData[skillId]?.name || `Skill ${skillId}`;
+                    const skillId = skill.skill?.$oid || skill.skill?._id || skill.skill || skill._id;
+                    const skillName = skillsData[skillId]?.name || `Skill ${skillId || 'Unknown'}`;
                     return (
                       <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                        {skillName} (Level {skill.level})
+                        {skillName} (Level {skill.level || 'N/A'})
                       </span>
                     );
                   }) || <span className="text-sm text-gray-500">No technical skills specified</span>}
@@ -851,11 +871,11 @@ const ApprovalPublishing = () => {
                 <span className="text-sm font-medium text-gray-500">Soft Skills:</span>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {currentGigData.skills?.soft?.map((skill: any, index: number) => {
-                    const skillId = skill.skill?.$oid;
-                    const skillName = skillsData[skillId]?.name || `Skill ${skillId}`;
+                    const skillId = skill.skill?.$oid || skill.skill?._id || skill.skill || skill._id;
+                    const skillName = skillsData[skillId]?.name || `Skill ${skillId || 'Unknown'}`;
                     return (
                       <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
-                        {skillName} (Level {skill.level})
+                        {skillName} (Level {skill.level || 'N/A'})
                       </span>
                     );
                   }) || <span className="text-sm text-gray-500">No soft skills specified</span>}
