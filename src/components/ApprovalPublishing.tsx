@@ -61,6 +61,7 @@ const ApprovalPublishing = () => {
   const [currentView, setCurrentView] = useState<'main' | 'preview' | 'edit'>('main');
   const [currentGigData, setCurrentGigData] = useState<any>(null);
   const [skillsData, setSkillsData] = useState<{[key: string]: any}>({});
+  const [timezoneData, setTimezoneData] = useState<{[key: string]: any}>({});
 
   useEffect(() => {
     fetchGigs();
@@ -421,7 +422,7 @@ const ApprovalPublishing = () => {
       // Fetch professional skills
       if (professionalIds.length > 0) {
         try {
-          const response = await fetch(`${import.meta.env.VITE_SKILLS_API}/professional`);
+          const response = await fetch(`${import.meta.env.VITE_REP_API}/skills/professional`);
           if (response.ok) {
             const responseData = await response.json();
             console.log('✅ Fetched professional skills response:', responseData);
@@ -453,7 +454,7 @@ const ApprovalPublishing = () => {
       // Fetch technical skills
       if (technicalIds.length > 0) {
         try {
-          const response = await fetch(`${import.meta.env.VITE_SKILLS_API}/technical`);
+          const response = await fetch(`${import.meta.env.VITE_REP_API}/skills/technical`);
           if (response.ok) {
             const responseData = await response.json();
             console.log('✅ Fetched technical skills response:', responseData);
@@ -485,7 +486,7 @@ const ApprovalPublishing = () => {
       // Fetch soft skills
       if (softIds.length > 0) {
         try {
-          const response = await fetch(`${import.meta.env.VITE_SKILLS_API}/soft`);
+          const response = await fetch(`${import.meta.env.VITE_REP_API}/skills/soft`);
           if (response.ok) {
             const responseData = await response.json();
             console.log('✅ Fetched soft skills response:', responseData);
@@ -518,6 +519,52 @@ const ApprovalPublishing = () => {
       console.log('✅ All skills data fetched and set:', skillsDataMap);
     } catch (error) {
       console.error('❌ Error fetching skills data:', error);
+    }
+  };
+
+  const fetchTimezoneData = async (gigData: any) => {
+    try {
+      console.log('🌍 Fetching timezone data for gig');
+      
+      // Get timezone ID from gig data
+      const timezoneId = gigData.availability?.time_zone;
+      console.log('🔍 Timezone ID from gig:', timezoneId);
+      
+      if (!timezoneId) {
+        console.log('⚠️ No timezone ID found in gig data');
+        return;
+      }
+      
+      // Fetch timezone data from API
+      try {
+        const response = await fetch(`${import.meta.env.VITE_REP_API}/timezones`);
+        if (response.ok) {
+          const responseData = await response.json();
+          console.log('✅ Fetched timezones response:', responseData);
+          
+          if (responseData.success && responseData.data) {
+            const timezones = responseData.data;
+            console.log('✅ Timezones data:', timezones);
+            
+            // Find the matching timezone
+            const timezone = timezones.find((tz: any) => tz._id === timezoneId);
+            if (timezone) {
+              setTimezoneData({ [timezoneId]: timezone });
+              console.log(`✅ Matched timezone ${timezoneId}:`, timezone.zoneName);
+            } else {
+              console.warn(`⚠️ Timezone ${timezoneId} not found`);
+            }
+          } else {
+            console.warn('⚠️ Invalid response format for timezones');
+          }
+        } else {
+          console.warn('⚠️ Failed to fetch timezones');
+        }
+      } catch (error) {
+        console.warn('⚠️ Error fetching timezones:', error);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching timezone data:', error);
     }
   };
 
@@ -613,6 +660,9 @@ const ApprovalPublishing = () => {
       // Fetch skills data for this gig
       await fetchSkillsData(gigData.data);
       
+      // Fetch timezone data for this gig
+      await fetchTimezoneData(gigData.data);
+      
       setCurrentView('preview');
     } catch (error) {
       console.error('❌ Error previewing gig:', error);
@@ -660,6 +710,9 @@ const ApprovalPublishing = () => {
       
       // Fetch skills data for this gig
       await fetchSkillsData(gigData.data);
+      
+      // Fetch timezone data for this gig
+      await fetchTimezoneData(gigData.data);
       
       setCurrentView('edit');
     } catch (error) {
@@ -901,7 +954,13 @@ const ApprovalPublishing = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <span className="text-sm font-medium text-gray-500">Time Zone:</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.availability?.time_zone || 'Not specified'}</p>
+                  <p className="text-sm text-gray-900 mt-1">
+                    {(() => {
+                      const timezoneId = currentGigData.availability?.time_zone;
+                      const timezone = timezoneData[timezoneId];
+                      return timezone ? `${timezone.zoneName} (${timezone.countryName})` : (timezoneId || 'Not specified');
+                    })()}
+                  </p>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-500">Flexibility:</span>
