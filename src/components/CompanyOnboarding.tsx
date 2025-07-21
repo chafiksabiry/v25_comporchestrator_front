@@ -277,14 +277,23 @@ const CompanyOnboarding = () => {
         // If no gigs are active and step 13 was previously completed, mark it as in_progress
         else {
           try {
-            console.log('⚠️ No active gigs found - marking step 13 as in_progress');
+            console.log('⚠️ No active gigs found - updating phase and step statuses');
+            
+            // Mark step 13 as in_progress
             await axios.put(
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
               { status: 'in_progress' }
             );
+            
+            // Update current phase to 4
+            await axios.put(
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/current-phase`,
+              { phase: 4 }
+            );
+            
             // Update local state to remove the completed step
             setCompletedSteps(prev => prev.filter(step => step !== 13));
-            console.log('⚠️ Step 13 marked as in_progress');
+            console.log('⚠️ Step 13 removed from completed steps and marked as in_progress');
           } catch (error) {
             console.error('Error updating onboarding progress for step 13:', error);
           }

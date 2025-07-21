@@ -453,8 +453,10 @@ const ApprovalPublishing = () => {
       });
 
       if (!hasActiveGig) {
-        console.log('⚠️ No active gigs found - marking step 13 as in_progress');
-        const response = await fetch(
+        console.log('⚠️ No active gigs found - updating phase and step statuses');
+        
+        // Mark step 13 as in_progress
+        const stepResponse = await fetch(
           `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
           {
             method: 'PUT',
@@ -465,10 +467,25 @@ const ApprovalPublishing = () => {
           }
         );
 
-        if (response.ok) {
-          console.log('⚠️ Step 13 marked as in_progress successfully');
+        // Update current phase to 4
+        const phaseResponse = await fetch(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/current-phase`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ phase: 4 })
+          }
+        );
+
+        if (stepResponse.ok && phaseResponse.ok) {
+          console.log('⚠️ Step 13 and phase 4 statuses updated successfully');
         } else {
-          console.warn('⚠️ Failed to mark step 13 as in_progress:', response.status);
+          console.warn('⚠️ Failed to update step 13 or phase 4 status:', {
+            stepStatus: stepResponse.status,
+            phaseStatus: phaseResponse.status
+          });
         }
       }
     } catch (error) {
