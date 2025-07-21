@@ -271,6 +271,22 @@ const CompanyOnboarding = () => {
             console.error('Error updating onboarding progress for step 13:', error);
           }
         }
+        
+        // If no gigs are active and step 13 was previously completed, mark it as pending
+        if (!hasActiveGig && completedSteps.includes(13)) {
+          try {
+            console.log('⚠️ No active gigs found - marking step 13 as pending');
+            await axios.put(
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
+              { status: 'pending' }
+            );
+            // Update local state to remove the completed step
+            setCompletedSteps(prev => prev.filter(step => step !== 13));
+            console.log('⚠️ Step 13 marked as pending');
+          } catch (error) {
+            console.error('Error updating onboarding progress for step 13:', error);
+          }
+        }
       }
     } catch (error) {
       console.error('Error checking active gigs:', error);

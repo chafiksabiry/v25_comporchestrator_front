@@ -424,9 +424,55 @@ const ApprovalPublishing = () => {
       setGigs(prevGigs => prevGigs.map(gig => 
         gig._id === gigId ? { ...gig, status: 'inactive' } : gig
       ));
+
+      // Check if all gigs are now inactive and mark step 13 as pending if needed
+      await checkAndUpdateStep13Status();
     } catch (error) {
       console.error('❌ Error rejecting gig:', error);
       setError(error instanceof Error ? error.message : 'Failed to reject gig');
+    }
+  };
+
+  const checkAndUpdateStep13Status = async () => {
+    try {
+      const companyId = Cookies.get('companyId');
+      if (!companyId) {
+        console.warn('Company ID not found, cannot check step 13 status');
+        return;
+      }
+
+      // Check if any gigs are still active
+      const hasActiveGig = gigs.some(gig => 
+        gig.status === 'active' || gig.status === 'approved' || gig.status === 'published'
+      );
+
+      console.log('🔍 Checking step 13 status after gig status change:', { 
+        totalGigs: gigs.length, 
+        hasActiveGig, 
+        gigStatuses: gigs.map(g => g.status) 
+      });
+
+      if (!hasActiveGig) {
+        console.log('⚠️ No active gigs found - marking step 13 as pending');
+        const response = await fetch(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: 'pending' })
+          }
+        );
+
+        if (response.ok) {
+          console.log('⚠️ Step 13 marked as pending successfully');
+        } else {
+          console.warn('⚠️ Failed to mark step 13 as pending:', response.status);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error checking step 13 status:', error);
     }
   };
 
@@ -730,6 +776,9 @@ const ApprovalPublishing = () => {
       setGigs(prevGigs => prevGigs.map(gig => 
         gig._id === gigId ? { ...gig, status: 'archived' } : gig
       ));
+
+      // Check if all gigs are now inactive and mark step 13 as pending if needed
+      await checkAndUpdateStep13Status();
     } catch (error) {
       console.error('❌ Error archiving gig:', error);
       setError(error instanceof Error ? error.message : 'Failed to archive gig');
