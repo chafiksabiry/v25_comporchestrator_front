@@ -227,7 +227,7 @@ const ApprovalPublishing = () => {
   const formatStatus = (status: string) => {
     // Mapping des statuts pour l'affichage
     const statusMapping: { [key: string]: string } = {
-      'to_activate': 'Pending',
+      'to_activate': 'To active',
       'pending': 'Pending',
       'draft': 'Draft',
       'submitted': 'Submitted',
@@ -293,8 +293,10 @@ const ApprovalPublishing = () => {
       const responseData = await response.json();
       console.log('✅ Gig approved successfully:', responseData);
       
-      // Refresh the gigs list
-      await fetchGigs();
+      // Update the gig status locally instead of refreshing
+      setGigs(prevGigs => prevGigs.map(gig => 
+        gig._id === gigId ? { ...gig, status: 'active' } : gig
+      ));
     } catch (error) {
       console.error('❌ Error approving gig:', error);
       setError(error instanceof Error ? error.message : 'Failed to approve gig');
@@ -343,8 +345,10 @@ const ApprovalPublishing = () => {
       const responseData = await response.json();
       console.log('✅ Gig rejected successfully:', responseData);
       
-      // Refresh the gigs list
-      await fetchGigs();
+      // Update the gig status locally instead of refreshing
+      setGigs(prevGigs => prevGigs.map(gig => 
+        gig._id === gigId ? { ...gig, status: 'inactive' } : gig
+      ));
     } catch (error) {
       console.error('❌ Error rejecting gig:', error);
       setError(error instanceof Error ? error.message : 'Failed to reject gig');
@@ -926,18 +930,6 @@ const ApprovalPublishing = () => {
                             Reject
                           </button>
                         </>
-                      )}
-                      
-                      {(gig.status === 'approved' || gig.status === 'active') && (
-                        <button className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
-                          Publish Now
-                        </button>
-                      )}
-                      
-                      {(gig.status === 'rejected' || gig.status === 'inactive') && (
-                        <button className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
-                          Request Revision
-                        </button>
                       )}
                     </div>
                   </div>
