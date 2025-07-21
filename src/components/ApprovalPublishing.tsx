@@ -453,7 +453,7 @@ const ApprovalPublishing = () => {
       // Fetch technical skills
       if (technicalIds.length > 0) {
         try {
-          const response = await fetch(`${import.meta.env.VITE_SKILLS_API}/technial`);
+          const response = await fetch(`${import.meta.env.VITE_SKILLS_API}/technical`);
           if (response.ok) {
             const responseData = await response.json();
             console.log('✅ Fetched technical skills response:', responseData);
