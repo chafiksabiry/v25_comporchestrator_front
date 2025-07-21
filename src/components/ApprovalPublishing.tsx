@@ -360,13 +360,16 @@ const ApprovalPublishing = () => {
   const fetchSkillsData = async (gigData: any) => {
     try {
       console.log('🔍 Fetching skills data for gig');
-      const skillsIds: string[] = [];
       
-      // Collect all skill IDs from the gig
+      // Collect skill IDs by category
+      const professionalIds: string[] = [];
+      const technicalIds: string[] = [];
+      const softIds: string[] = [];
+      
       if (gigData.skills?.professional) {
         gigData.skills.professional.forEach((skill: any) => {
           if (skill.skill?.$oid) {
-            skillsIds.push(skill.skill.$oid);
+            professionalIds.push(skill.skill.$oid);
           }
         });
       }
@@ -374,7 +377,7 @@ const ApprovalPublishing = () => {
       if (gigData.skills?.technical) {
         gigData.skills.technical.forEach((skill: any) => {
           if (skill.skill?.$oid) {
-            skillsIds.push(skill.skill.$oid);
+            technicalIds.push(skill.skill.$oid);
           }
         });
       }
@@ -382,38 +385,96 @@ const ApprovalPublishing = () => {
       if (gigData.skills?.soft) {
         gigData.skills.soft.forEach((skill: any) => {
           if (skill.skill?.$oid) {
-            skillsIds.push(skill.skill.$oid);
+            softIds.push(skill.skill.$oid);
           }
         });
       }
       
-      console.log('📋 Skills IDs to fetch:', skillsIds);
+      console.log('📋 Skills IDs by category:', {
+        professional: professionalIds,
+        technical: technicalIds,
+        soft: softIds
+      });
       
-      if (skillsIds.length === 0) {
-        console.log('⚠️ No skills IDs found');
-        return;
-      }
-      
-      // Fetch skills data from API
       const skillsDataMap: {[key: string]: any} = {};
       
-      for (const skillId of skillsIds) {
+      // Fetch professional skills
+      if (professionalIds.length > 0) {
         try {
-          const response = await fetch(`${import.meta.env.VITE_SKILLS_API || 'http://localhost:3003'}/skills/${skillId}`);
+          const response = await fetch(`${import.meta.env.VITE_SKILLS_API}/professional`);
           if (response.ok) {
-            const skillData = await response.json();
-            skillsDataMap[skillId] = skillData;
-            console.log(`✅ Fetched skill ${skillId}:`, skillData.name);
+            const professionalSkills = await response.json();
+            console.log('✅ Fetched professional skills:', professionalSkills);
+            
+            professionalIds.forEach(skillId => {
+              const skill = professionalSkills.find((s: any) => s._id === skillId);
+              if (skill) {
+                skillsDataMap[skillId] = skill;
+                console.log(`✅ Matched professional skill ${skillId}:`, skill.name);
+              } else {
+                console.warn(`⚠️ Professional skill ${skillId} not found`);
+              }
+            });
           } else {
-            console.warn(`⚠️ Failed to fetch skill ${skillId}`);
+            console.warn('⚠️ Failed to fetch professional skills');
           }
         } catch (error) {
-          console.warn(`⚠️ Error fetching skill ${skillId}:`, error);
+          console.warn('⚠️ Error fetching professional skills:', error);
+        }
+      }
+      
+      // Fetch technical skills
+      if (technicalIds.length > 0) {
+        try {
+          const response = await fetch(`${import.meta.env.VITE_SKILLS_API}/technial`);
+          if (response.ok) {
+            const technicalSkills = await response.json();
+            console.log('✅ Fetched technical skills:', technicalSkills);
+            
+            technicalIds.forEach(skillId => {
+              const skill = technicalSkills.find((s: any) => s._id === skillId);
+              if (skill) {
+                skillsDataMap[skillId] = skill;
+                console.log(`✅ Matched technical skill ${skillId}:`, skill.name);
+              } else {
+                console.warn(`⚠️ Technical skill ${skillId} not found`);
+              }
+            });
+          } else {
+            console.warn('⚠️ Failed to fetch technical skills');
+          }
+        } catch (error) {
+          console.warn('⚠️ Error fetching technical skills:', error);
+        }
+      }
+      
+      // Fetch soft skills
+      if (softIds.length > 0) {
+        try {
+          const response = await fetch(`${import.meta.env.VITE_SKILLS_API}/soft`);
+          if (response.ok) {
+            const softSkills = await response.json();
+            console.log('✅ Fetched soft skills:', softSkills);
+            
+            softIds.forEach(skillId => {
+              const skill = softSkills.find((s: any) => s._id === skillId);
+              if (skill) {
+                skillsDataMap[skillId] = skill;
+                console.log(`✅ Matched soft skill ${skillId}:`, skill.name);
+              } else {
+                console.warn(`⚠️ Soft skill ${skillId} not found`);
+              }
+            });
+          } else {
+            console.warn('⚠️ Failed to fetch soft skills');
+          }
+        } catch (error) {
+          console.warn('⚠️ Error fetching soft skills:', error);
         }
       }
       
       setSkillsData(skillsDataMap);
-      console.log('✅ Skills data fetched and set:', skillsDataMap);
+      console.log('✅ All skills data fetched and set:', skillsDataMap);
     } catch (error) {
       console.error('❌ Error fetching skills data:', error);
     }
