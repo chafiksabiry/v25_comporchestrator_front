@@ -58,6 +58,8 @@ const ApprovalPublishing = () => {
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<'main' | 'preview' | 'edit'>('main');
+  const [currentGigData, setCurrentGigData] = useState<any>(null);
 
   useEffect(() => {
     fetchGigs();
@@ -222,6 +224,171 @@ const ApprovalPublishing = () => {
     return result;
   };
 
+  const formatStatus = (status: string) => {
+    // Mapping des statuts pour l'affichage
+    const statusMapping: { [key: string]: string } = {
+      'to_activate': 'Pending',
+      'pending': 'Pending',
+      'draft': 'Draft',
+      'submitted': 'Submitted',
+      'approved': 'Approved',
+      'active': 'Active',
+      'published': 'Published',
+      'rejected': 'Rejected',
+      'declined': 'Declined',
+      'cancelled': 'Cancelled'
+    };
+    
+    // Si le statut n'est pas dans le mapping, formater en remplaçant les underscores
+    if (statusMapping[status]) {
+      return statusMapping[status];
+    }
+    
+    // Fallback: remplacer les underscores par des espaces et capitaliser
+    return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // API Functions
+  const approveGig = async (gigId: string) => {
+    try {
+      console.log('🟢 Approving gig:', gigId);
+      const companyId = Cookies.get('companyId');
+      const userId = Cookies.get('userId');
+      
+      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${companyId}:${userId}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status: 'approved'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to approve gig');
+      }
+
+      console.log('✅ Gig approved successfully');
+      // Refresh the gigs list
+      await fetchGigs();
+    } catch (error) {
+      console.error('❌ Error approving gig:', error);
+      setError(error instanceof Error ? error.message : 'Failed to approve gig');
+    }
+  };
+
+  const rejectGig = async (gigId: string) => {
+    try {
+      console.log('🔴 Rejecting gig:', gigId);
+      const companyId = Cookies.get('companyId');
+      const userId = Cookies.get('userId');
+      
+      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${companyId}:${userId}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status: 'rejected'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reject gig');
+      }
+
+      console.log('✅ Gig rejected successfully');
+      // Refresh the gigs list
+      await fetchGigs();
+    } catch (error) {
+      console.error('❌ Error rejecting gig:', error);
+      setError(error instanceof Error ? error.message : 'Failed to reject gig');
+    }
+  };
+
+  const previewGig = async (gigId: string) => {
+    try {
+      console.log('👁️ Previewing gig:', gigId);
+      const companyId = Cookies.get('companyId');
+      const userId = Cookies.get('userId');
+      
+      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${companyId}:${userId}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch gig details');
+      }
+
+      const gigData = await response.json();
+      console.log('📋 Gig details for preview:', gigData);
+      
+      setCurrentGigData(gigData.data);
+      setCurrentView('preview');
+    } catch (error) {
+      console.error('❌ Error previewing gig:', error);
+      setError(error instanceof Error ? error.message : 'Failed to preview gig');
+    }
+  };
+
+  const editGig = async (gigId: string) => {
+    try {
+      console.log('✏️ Editing gig:', gigId);
+      const companyId = Cookies.get('companyId');
+      const userId = Cookies.get('userId');
+      
+      // First, get the current gig data
+      const getResponse = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${companyId}:${userId}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!getResponse.ok) {
+        throw new Error('Failed to fetch gig details for editing');
+      }
+
+      const gigData = await getResponse.json();
+      console.log('📋 Current gig data for editing:', gigData);
+      
+      setCurrentGigData(gigData.data);
+      setCurrentView('edit');
+    } catch (error) {
+      console.error('❌ Error editing gig:', error);
+      setError(error instanceof Error ? error.message : 'Failed to edit gig');
+    }
+  };
+
+  const approveSelectedGigs = async () => {
+    console.log('🟢 Approving selected gigs:', selectedGigs);
+    for (const gigId of selectedGigs) {
+      await approveGig(gigId);
+    }
+    setSelectedGigs([]);
+  };
+
+  const rejectSelectedGigs = async () => {
+    console.log('🔴 Rejecting selected gigs:', selectedGigs);
+    for (const gigId of selectedGigs) {
+      await rejectGig(gigId);
+    }
+    setSelectedGigs([]);
+  };
+
+  const backToMain = () => {
+    setCurrentView('main');
+    setCurrentGigData(null);
+  };
+
   if (isLoading) {
     console.log('⏳ Rendering loading state');
     return (
@@ -264,6 +431,177 @@ const ApprovalPublishing = () => {
 
   console.log('🎨 Rendering main component with', gigs.length, 'gigs');
   
+  // Preview View
+  if (currentView === 'preview' && currentGigData) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={backToMain}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
+            >
+              <ArrowLeft size={16} />
+              Back to Approval
+            </button>
+            <div className="h-6 w-px bg-gray-300"></div>
+            <h1 className="text-2xl font-bold text-gray-900">Preview: {currentGigData.title}</h1>
+          </div>
+        </div>
+        
+        <div className="rounded-lg bg-white shadow p-6">
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">{currentGigData.title}</h2>
+              <p className="text-gray-600">{currentGigData.description}</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Gig Details</h3>
+                <div className="space-y-2">
+                  <div>
+                    <span className="text-sm text-gray-500">Category:</span>
+                    <span className="ml-2 text-sm font-medium">{currentGigData.category || 'Not specified'}</span>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-500">Budget:</span>
+                    <span className="ml-2 text-sm font-medium">{currentGigData.commission?.baseAmount ? `$${currentGigData.commission.baseAmount}` : 'Not specified'}</span>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-500">Status:</span>
+                    <span className="ml-2 text-sm font-medium capitalize">{currentGigData.status}</span>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-500">Created:</span>
+                    <span className="ml-2 text-sm font-medium">{formatDate(currentGigData.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Company Information</h3>
+                <div className="space-y-2">
+                  <div>
+                    <span className="text-sm text-gray-500">Company:</span>
+                    <span className="ml-2 text-sm font-medium">{currentGigData.companyName || company?.name || 'Not specified'}</span>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-500">Submitted by:</span>
+                    <span className="ml-2 text-sm font-medium">{currentGigData.submittedBy || 'Not specified'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {currentGigData.issues && currentGigData.issues.length > 0 && (
+              <div className="rounded-md bg-yellow-50 p-4">
+                <h3 className="text-sm font-medium text-yellow-800 mb-2">Issues Requiring Attention</h3>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-yellow-700">
+                  {currentGigData.issues.map((issue: string, index: number) => (
+                    <li key={index}>{issue}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Edit View
+  if (currentView === 'edit' && currentGigData) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={backToMain}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
+            >
+              <ArrowLeft size={16} />
+              Back to Approval
+            </button>
+            <div className="h-6 w-px bg-gray-300"></div>
+            <h1 className="text-2xl font-bold text-gray-900">Edit: {currentGigData.title}</h1>
+          </div>
+        </div>
+        
+        <div className="rounded-lg bg-white shadow p-6">
+          <form className="space-y-6">
+            <div>
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                Gig Title
+              </label>
+              <input
+                type="text"
+                id="title"
+                defaultValue={currentGigData.title}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                Description
+              </label>
+              <textarea
+                id="description"
+                rows={4}
+                defaultValue={currentGigData.description}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+                  Category
+                </label>
+                <input
+                  type="text"
+                  id="category"
+                  defaultValue={currentGigData.category}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="budget" className="block text-sm font-medium text-gray-700 mb-2">
+                  Budget
+                </label>
+                <input
+                  type="text"
+                  id="budget"
+                  defaultValue={currentGigData.commission?.baseAmount || ''}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={backToMain}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+              >
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // Main View
   return (
     <div className="space-y-6">
       {/* Back to Onboarding Button */}
@@ -287,14 +625,14 @@ const ApprovalPublishing = () => {
           <button 
             className={`rounded-lg px-4 py-2 ${selectedGigs.length > 0 ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
             disabled={selectedGigs.length === 0}
-            onClick={() => console.log('🟢 Approve Selected clicked, selected gigs:', selectedGigs)}
+            onClick={approveSelectedGigs}
           >
             Approve Selected
           </button>
           <button 
             className={`rounded-lg px-4 py-2 ${selectedGigs.length > 0 ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
             disabled={selectedGigs.length === 0}
-            onClick={() => console.log('🔴 Reject Selected clicked, selected gigs:', selectedGigs)}
+            onClick={rejectSelectedGigs}
           >
             Reject Selected
           </button>
@@ -407,19 +745,19 @@ const ApprovalPublishing = () => {
                       {(gig.status === 'pending' || gig.status === 'to_activate' || gig.status === 'draft' || gig.status === 'submitted') && (
                         <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
                           <Clock className="mr-1 h-3 w-3" />
-                          {gig.status === 'to_activate' ? 'To Activate' : gig.status === 'draft' ? 'Draft' : gig.status === 'submitted' ? 'Submitted' : 'Pending'}
+                          {formatStatus(gig.status)}
                         </span>
                       )}
                       {(gig.status === 'approved' || gig.status === 'active' || gig.status === 'published') && (
                         <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
                           <CheckCircle className="mr-1 h-3 w-3" />
-                          {gig.status === 'active' ? 'Active' : gig.status === 'published' ? 'Published' : 'Approved'}
+                          {formatStatus(gig.status)}
                         </span>
                       )}
                       {(gig.status === 'rejected' || gig.status === 'declined' || gig.status === 'cancelled') && (
                         <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
                           <XCircle className="mr-1 h-3 w-3" />
-                          {gig.status === 'declined' ? 'Declined' : gig.status === 'cancelled' ? 'Cancelled' : 'Rejected'}
+                          {formatStatus(gig.status)}
                         </span>
                       )}
                       {expandedGig === gig._id ? (
@@ -476,11 +814,17 @@ const ApprovalPublishing = () => {
                     )}
                     
                     <div className="flex space-x-3">
-                      <button className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                      <button 
+                        onClick={() => previewGig(gig._id)}
+                        className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                      >
                         <Eye className="mr-2 h-4 w-4" />
                         Preview
                       </button>
-                      <button className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
+                      <button 
+                        onClick={() => editGig(gig._id)}
+                        className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                      >
                         <Edit className="mr-2 h-4 w-4" />
                         Edit
                       </button>
@@ -491,11 +835,17 @@ const ApprovalPublishing = () => {
                       
                       {(gig.status === 'pending' || gig.status === 'to_activate' || gig.status === 'draft' || gig.status === 'submitted') && (
                         <>
-                          <button className="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700">
+                          <button 
+                            onClick={() => approveGig(gig._id)}
+                            className="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
+                          >
                             <CheckCircle className="mr-2 h-4 w-4" />
                             Approve
                           </button>
-                          <button className="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700">
+                          <button 
+                            onClick={() => rejectGig(gig._id)}
+                            className="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700"
+                          >
                             <XCircle className="mr-2 h-4 w-4" />
                             Reject
                           </button>
