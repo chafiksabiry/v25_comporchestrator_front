@@ -42,59 +42,86 @@ const ApprovalPublishing = () => {
   }, []);
 
   const fetchGigs = async () => {
+    console.log('🔄 Starting fetchGigs...');
     setIsLoading(true);
     setError(null);
     
     try {
       const companyId = Cookies.get('companyId');
+      const gigId = Cookies.get('gigId');
+      const userId = Cookies.get('userId');
+      
+      console.log('📋 Cookies found:', { companyId, gigId, userId });
+      
       if (!companyId) {
+        console.error('❌ Company ID not found in cookies');
         throw new Error('Company ID not found');
       }
 
-      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`, {
+      const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`;
+      console.log('🌐 Fetching from API:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
         headers: {
-          'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`,
+          'Authorization': `Bearer ${gigId}:${userId}`,
           'Content-Type': 'application/json'
         }
       });
 
+      console.log('📡 API Response status:', response.status);
+      console.log('📡 API Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
+        console.error('❌ API request failed:', response.status, response.statusText);
         throw new Error('Failed to fetch gigs');
       }
 
       const data = await response.json();
+      console.log('📦 Raw API data:', data);
       
       if (data.data) {
+        console.log('📊 Found gigs data, transforming...');
         // Transformer les données pour correspondre à l'interface attendue
-        const transformedGigs = data.data.map((gig: any) => ({
-          _id: gig._id,
-          title: gig.title,
-          description: gig.description,
-          status: gig.status || 'pending',
-          category: gig.category,
-          budget: gig.commission?.baseAmount ? `$${gig.commission.baseAmount}` : 'N/A',
-          companyId: gig.companyId,
-          createdAt: gig.createdAt,
-          updatedAt: gig.updatedAt,
-          submittedBy: gig.submittedBy || 'Unknown',
-          issues: gig.issues || []
-        }));
+        const transformedGigs = data.data.map((gig: any) => {
+          const transformed = {
+            _id: gig._id,
+            title: gig.title,
+            description: gig.description,
+            status: gig.status || 'pending',
+            category: gig.category,
+            budget: gig.commission?.baseAmount ? `$${gig.commission.baseAmount}` : 'N/A',
+            companyId: gig.companyId,
+            createdAt: gig.createdAt,
+            updatedAt: gig.updatedAt,
+            submittedBy: gig.submittedBy || 'Unknown',
+            issues: gig.issues || []
+          };
+          console.log('🔄 Transformed gig:', transformed);
+          return transformed;
+        });
         
+        console.log('✅ Setting gigs state with', transformedGigs.length, 'gigs');
         setGigs(transformedGigs);
+      } else {
+        console.warn('⚠️ No data property in API response');
+        setGigs([]);
       }
     } catch (err) {
-      console.error('Error fetching gigs:', err);
+      console.error('❌ Error fetching gigs:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch gigs');
     } finally {
+      console.log('🏁 fetchGigs completed, setting loading to false');
       setIsLoading(false);
     }
   };
 
   const toggleGig = (id: string) => {
+    console.log('🔄 Toggling gig expansion:', id, 'Current expanded:', expandedGig);
     setExpandedGig(expandedGig === id ? null : id);
   };
 
   const toggleSelectGig = (id: string) => {
+    console.log('🔄 Toggling gig selection:', id, 'Currently selected:', selectedGigs);
     if (selectedGigs.includes(id)) {
       setSelectedGigs(selectedGigs.filter(gigId => gigId !== id));
     } else {
@@ -103,6 +130,7 @@ const ApprovalPublishing = () => {
   };
 
   const selectAllGigs = () => {
+    console.log('🔄 Selecting all gigs. Current selected:', selectedGigs.length, 'Total filtered:', filteredGigs.length);
     if (selectedGigs.length === filteredGigs.length) {
       setSelectedGigs([]);
     } else {
@@ -114,21 +142,35 @@ const ApprovalPublishing = () => {
     if (filter === 'all') return true;
     return gig.status === filter;
   });
+  
+  console.log('🔍 Filtered gigs:', { 
+    filter, 
+    totalGigs: gigs.length, 
+    filteredCount: filteredGigs.length,
+    gigs: filteredGigs.map(g => ({ id: g._id, title: g.title, status: g.status }))
+  });
 
   const formatDate = (dateString: string) => {
+    console.log('📅 Formatting date:', dateString);
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
-    if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    let result;
+    if (diffInHours < 1) result = 'Just now';
+    else if (diffInHours < 24) result = `${diffInHours} hours ago`;
+    else {
+      const diffInDays = Math.floor(diffInHours / 24);
+      if (diffInDays === 1) result = '1 day ago';
+      else result = `${diffInDays} days ago`;
+    }
     
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays === 1) return '1 day ago';
-    return `${diffInDays} days ago`;
+    console.log('📅 Formatted result:', result);
+    return result;
   };
 
   if (isLoading) {
+    console.log('⏳ Rendering loading state');
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -145,6 +187,7 @@ const ApprovalPublishing = () => {
   }
 
   if (error) {
+    console.log('❌ Rendering error state:', error);
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -166,6 +209,8 @@ const ApprovalPublishing = () => {
     );
   }
 
+  console.log('🎨 Rendering main component with', gigs.length, 'gigs');
+  
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -174,12 +219,14 @@ const ApprovalPublishing = () => {
           <button 
             className={`rounded-lg px-4 py-2 ${selectedGigs.length > 0 ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
             disabled={selectedGigs.length === 0}
+            onClick={() => console.log('🟢 Approve Selected clicked, selected gigs:', selectedGigs)}
           >
             Approve Selected
           </button>
           <button 
             className={`rounded-lg px-4 py-2 ${selectedGigs.length > 0 ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
             disabled={selectedGigs.length === 0}
+            onClick={() => console.log('🔴 Reject Selected clicked, selected gigs:', selectedGigs)}
           >
             Reject Selected
           </button>
@@ -192,7 +239,10 @@ const ApprovalPublishing = () => {
           className={`flex-1 rounded-md py-2 text-sm font-medium ${
             filter === 'all' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
           }`}
-          onClick={() => setFilter('all')}
+          onClick={() => {
+            console.log('🔍 Filter changed to: all');
+            setFilter('all');
+          }}
         >
           All
         </button>
@@ -200,7 +250,10 @@ const ApprovalPublishing = () => {
           className={`flex-1 rounded-md py-2 text-sm font-medium ${
             filter === 'pending' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
           }`}
-          onClick={() => setFilter('pending')}
+          onClick={() => {
+            console.log('🔍 Filter changed to: pending');
+            setFilter('pending');
+          }}
         >
           Pending
         </button>
@@ -208,7 +261,10 @@ const ApprovalPublishing = () => {
           className={`flex-1 rounded-md py-2 text-sm font-medium ${
             filter === 'approved' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
           }`}
-          onClick={() => setFilter('approved')}
+          onClick={() => {
+            console.log('🔍 Filter changed to: approved');
+            setFilter('approved');
+          }}
         >
           Approved
         </button>
@@ -216,7 +272,10 @@ const ApprovalPublishing = () => {
           className={`flex-1 rounded-md py-2 text-sm font-medium ${
             filter === 'rejected' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
           }`}
-          onClick={() => setFilter('rejected')}
+          onClick={() => {
+            console.log('🔍 Filter changed to: rejected');
+            setFilter('rejected');
+          }}
         >
           Rejected
         </button>
