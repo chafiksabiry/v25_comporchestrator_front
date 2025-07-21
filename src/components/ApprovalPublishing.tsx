@@ -735,7 +735,7 @@ const ApprovalPublishing = () => {
             setFilter('pending');
           }}
         >
-          Pending
+          To active
         </button>
         <button
           className={`flex-1 rounded-md py-2 text-sm font-medium ${
@@ -746,7 +746,7 @@ const ApprovalPublishing = () => {
             setFilter('approved');
           }}
         >
-          Approved
+          Active
         </button>
         <button
           className={`flex-1 rounded-md py-2 text-sm font-medium ${
@@ -757,7 +757,7 @@ const ApprovalPublishing = () => {
             setFilter('rejected');
           }}
         >
-          Rejected
+          Inactive
         </button>
       </div>
 
@@ -819,7 +819,7 @@ const ApprovalPublishing = () => {
                       {(gig.status === 'pending' || gig.status === 'to_activate' || gig.status === 'draft' || gig.status === 'submitted') && (
                         <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
                           <Clock className="mr-1 h-3 w-3" />
-                          {formatStatus(gig.status)}
+                          {gig.status === 'to_activate' ? 'To active' : formatStatus(gig.status)}
                         </span>
                       )}
                       {(gig.status === 'approved' || gig.status === 'active' || gig.status === 'published') && (
