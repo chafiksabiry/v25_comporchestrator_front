@@ -977,7 +977,72 @@ const ApprovalPublishing = () => {
                         Comment
                       </button>
                       
+                      {/* Boutons d'action selon le statut actuel */}
                       {(gig.status === 'pending' || gig.status === 'to_activate' || gig.status === 'draft' || gig.status === 'submitted') && (
+                        <>
+                          <button 
+                            onClick={() => approveGig(gig._id)}
+                            className="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
+                          >
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            Active
+                          </button>
+                          <button 
+                            onClick={() => rejectGig(gig._id)}
+                            className="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700"
+                          >
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Inactive
+                          </button>
+                          <button 
+                            onClick={() => archiveGig(gig._id)}
+                            className="inline-flex items-center rounded-md bg-gray-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700"
+                          >
+                            <Clock className="mr-2 h-4 w-4" />
+                            Archived
+                          </button>
+                        </>
+                      )}
+                      
+                      {(gig.status === 'approved' || gig.status === 'active' || gig.status === 'published') && (
+                        <>
+                          <button 
+                            onClick={() => rejectGig(gig._id)}
+                            className="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700"
+                          >
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Inactive
+                          </button>
+                          <button 
+                            onClick={() => archiveGig(gig._id)}
+                            className="inline-flex items-center rounded-md bg-gray-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700"
+                          >
+                            <Clock className="mr-2 h-4 w-4" />
+                            Archived
+                          </button>
+                        </>
+                      )}
+                      
+                      {(gig.status === 'rejected' || gig.status === 'declined' || gig.status === 'cancelled' || gig.status === 'inactive') && (
+                        <>
+                          <button 
+                            onClick={() => approveGig(gig._id)}
+                            className="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
+                          >
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            Active
+                          </button>
+                          <button 
+                            onClick={() => archiveGig(gig._id)}
+                            className="inline-flex items-center rounded-md bg-gray-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700"
+                          >
+                            <Clock className="mr-2 h-4 w-4" />
+                            Archived
+                          </button>
+                        </>
+                      )}
+                      
+                      {gig.status === 'archived' && (
                         <>
                           <button 
                             onClick={() => approveGig(gig._id)}
@@ -995,14 +1060,6 @@ const ApprovalPublishing = () => {
                           </button>
                         </>
                       )}
-                      
-                      <button 
-                        onClick={() => archiveGig(gig._id)}
-                        className="inline-flex items-center rounded-md bg-gray-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700"
-                      >
-                        <Clock className="mr-2 h-4 w-4" />
-                        Archived
-                      </button>
                     </div>
                   </div>
                 )}
