@@ -23,6 +23,7 @@ interface Gig {
   category?: string;
   budget?: string;
   companyId: string;
+  companyName?: string;
   createdAt: string;
   updatedAt: string;
   submittedBy?: string;
@@ -89,12 +90,13 @@ const ApprovalPublishing = () => {
             description: gig.description,
             status: gig.status || 'pending',
             category: gig.category,
-            budget: gig.commission?.baseAmount ? `$${gig.commission.baseAmount}` : 'N/A',
-            companyId: gig.companyId,
-            createdAt: gig.createdAt,
-            updatedAt: gig.updatedAt,
-            submittedBy: gig.submittedBy || 'Unknown',
-            issues: gig.issues || []
+            budget: gig.commission?.baseAmount && gig.commission.baseAmount !== '0' ? `$${gig.commission.baseAmount}` : null,
+                      companyId: gig.companyId,
+          companyName: gig.companyName || gig.company?.name || 'Company',
+          createdAt: gig.createdAt,
+          updatedAt: gig.updatedAt,
+          submittedBy: gig.submittedBy || gig.companyName || gig.company?.name || 'Company',
+          issues: gig.issues || []
           };
           console.log('🔄 Transformed gig:', transformed);
           return transformed;
@@ -342,7 +344,10 @@ const ApprovalPublishing = () => {
                       </div>
                       <div>
                         <h3 className="text-base font-medium text-gray-900">{gig.title}</h3>
-                        <p className="text-sm text-gray-500">{gig.category || 'No category'} • {gig.budget}</p>
+                        <p className="text-sm text-gray-500">
+                          {gig.category || 'No category'}
+                          {gig.budget && ` • ${gig.budget}`}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
@@ -377,11 +382,11 @@ const ApprovalPublishing = () => {
                   <div className="border-t border-gray-100 bg-gray-50 p-4">
                     <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                       <div>
-                        <p className="text-xs font-medium text-gray-500">Submitted By</p>
+                        <p className="text-xs font-medium text-gray-500">Company</p>
                         <p className="text-sm font-medium text-gray-900">{gig.submittedBy}</p>
                       </div>
                       <div>
-                        <p className="text-xs font-medium text-gray-500">Submitted</p>
+                        <p className="text-xs font-medium text-gray-500">Created</p>
                         <p className="text-sm font-medium text-gray-900">{formatDate(gig.createdAt)}</p>
                       </div>
                       <div>
