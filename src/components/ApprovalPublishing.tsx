@@ -873,13 +873,7 @@ const ApprovalPublishing = () => {
                 <div>
                   <span className="text-sm font-medium text-gray-500">Destination Zone:</span>
                   <p className="text-sm text-gray-900 mt-1">
-                    {(() => {
-                      const destinationZoneData = timezoneData.destinationZone;
-                      if (destinationZoneData) {
-                        return `${currentGigData.destination_zone} (${destinationZoneData.zoneName}, ${destinationZoneData.countryName})`;
-                      }
-                      return currentGigData.destination_zone || 'Not specified';
-                    })()}
+                    {timezoneData[0].countryName}
                   </p>
                 </div>
               </div>
