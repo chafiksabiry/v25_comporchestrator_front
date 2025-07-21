@@ -26,7 +26,11 @@ import {
   Clock as ClockIcon,
   TrendingUp,
   FileText,
-  Settings
+  Settings,
+  Sun,
+  Sunrise,
+  Moon,
+  Trash2
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 
@@ -75,6 +79,11 @@ const ApprovalPublishing = () => {
   const [currentGigData, setCurrentGigData] = useState<any>(null);
   const [skillsData, setSkillsData] = useState<{[key: string]: any}>({});
   const [timezoneData, setTimezoneData] = useState<{[key: string]: any}>({});
+  const [selectedDays, setSelectedDays] = useState<string[]>(['Monday', 'Tuesday']);
+  const [workingHours, setWorkingHours] = useState({ start: '09:00', end: '17:00' });
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState<any>(null);
 
   useEffect(() => {
     fetchGigs();
@@ -786,6 +795,10 @@ const ApprovalPublishing = () => {
 
       const gigData = await getResponse.json();
       console.log('📋 Current gig data for editing:', gigData);
+      console.log('📅 Date fields:', {
+        createdAt: gigData.data?.createdAt,
+        updatedAt: gigData.data?.updatedAt
+      });
       
       setCurrentGigData(gigData.data);
       
@@ -830,6 +843,85 @@ const ApprovalPublishing = () => {
     console.log('➕ Adding commission option');
     // Cette fonction peut être étendue pour ajouter de nouvelles options de commission
     // Pour l'instant, elle affiche juste un log
+  };
+
+  const toggleDay = (day: string) => {
+    setSelectedDays(prev => 
+      prev.includes(day) 
+        ? prev.filter(d => d !== day)
+        : [...prev, day]
+    );
+  };
+
+  const setPresetHours = (preset: string) => {
+    switch (preset) {
+      case '9-5':
+        setWorkingHours({ start: '09:00', end: '17:00' });
+        break;
+      case 'early':
+        setWorkingHours({ start: '06:00', end: '14:00' });
+        break;
+      case 'late':
+        setWorkingHours({ start: '14:00', end: '22:00' });
+        break;
+      case 'evening':
+        setWorkingHours({ start: '18:00', end: '02:00' });
+        break;
+    }
+  };
+
+  const addSchedule = () => {
+    if (selectedDays.length === 0) return;
+    
+    const newSchedule = {
+      id: Date.now(),
+      days: [...selectedDays],
+      startTime: workingHours.start,
+      endTime: workingHours.end,
+      displayText: `${selectedDays.join(' et ')} de ${workingHours.start} jusqu'à ${workingHours.end}`
+    };
+    
+    setSchedules(prev => [...prev, newSchedule]);
+    setSelectedDays(['Monday', 'Tuesday']);
+    setWorkingHours({ start: '09:00', end: '17:00' });
+    setShowScheduleForm(false);
+  };
+
+  const editSchedule = (schedule: any) => {
+    setEditingSchedule(schedule);
+    setSelectedDays(schedule.days);
+    setWorkingHours({ start: schedule.startTime, end: schedule.endTime });
+    setShowScheduleForm(true);
+  };
+
+  const updateSchedule = () => {
+    if (!editingSchedule || selectedDays.length === 0) return;
+    
+    const updatedSchedule = {
+      ...editingSchedule,
+      days: [...selectedDays],
+      startTime: workingHours.start,
+      endTime: workingHours.end,
+      displayText: `${selectedDays.join(' et ')} de ${workingHours.start} jusqu'à ${workingHours.end}`
+    };
+    
+    setSchedules(prev => prev.map(s => s.id === editingSchedule.id ? updatedSchedule : s));
+    setEditingSchedule(null);
+    setSelectedDays(['Monday', 'Tuesday']);
+    setWorkingHours({ start: '09:00', end: '17:00' });
+    setShowScheduleForm(false);
+  };
+
+  const deleteSchedule = (scheduleId: number) => {
+    setSchedules(prev => prev.filter(s => s.id !== scheduleId));
+  };
+
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${displayHour}:${minutes} ${ampm}`;
   };
 
   if (isLoading) {
@@ -1286,58 +1378,79 @@ const ApprovalPublishing = () => {
         
         <div className="space-y-6">
           {/* Basic Information */}
-          <div className="rounded-lg bg-white shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                  Gig Title
-                </label>
+          <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <FileText className="h-6 w-6 text-blue-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Basic Information</h2>
+            </div>
+            <div className="space-y-6">
+              <div className="bg-white rounded-lg p-4 border border-blue-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <Target className="h-4 w-4 text-blue-500" />
+                  <label htmlFor="title" className="text-sm font-semibold text-gray-700">
+                    Gig Title
+                  </label>
+                </div>
                 <input
                   type="text"
                   id="title"
                   defaultValue={currentGigData.title}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter gig title"
                 />
               </div>
               
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
+              <div className="bg-white rounded-lg p-4 border border-blue-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText className="h-4 w-4 text-blue-500" />
+                  <label htmlFor="description" className="text-sm font-semibold text-gray-700">
+                    Description
+                  </label>
+                </div>
                 <textarea
                   id="description"
                   rows={4}
                   defaultValue={currentGigData.description}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter gig description"
                 />
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-                    Category
-                  </label>
+                <div className="bg-white rounded-lg p-4 border border-blue-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Award className="h-4 w-4 text-purple-500" />
+                    <label htmlFor="category" className="text-sm font-semibold text-gray-700">
+                      Category
+                    </label>
+                  </div>
                   <input
                     type="text"
                     id="category"
                     defaultValue={currentGigData.category}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter category"
                   />
                 </div>
                 
-                <div>
-                  <label htmlFor="destination_zone" className="block text-sm font-medium text-gray-700 mb-2">
-                    Destination Zone
-                  </label>
+                <div className="bg-white rounded-lg p-4 border border-blue-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Globe className="h-4 w-4 text-indigo-500" />
+                    <label htmlFor="destination_zone" className="text-sm font-semibold text-gray-700">
+                      Destination Zone
+                    </label>
+                  </div>
                   <input
                     type="text"
                     id="destination_zone"
                     defaultValue={currentGigData.destination_zone}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter destination zone"
                   />
                   {timezoneData[0] && (
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-2 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">
                       Country: {timezoneData[0].countryName}
                     </p>
                   )}
@@ -1347,46 +1460,67 @@ const ApprovalPublishing = () => {
           </div>
 
           {/* Activities & Industries */}
-          <div className="rounded-lg bg-white shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Activities & Industries</h2>
+          <div className="rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Target className="h-6 w-6 text-green-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Activities & Industries</h2>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="activities" className="block text-sm font-medium text-gray-700 mb-2">
-                  Activities (comma separated)
-                </label>
+              <div className="bg-white rounded-lg p-4 border border-green-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="h-4 w-4 text-green-500" />
+                  <label htmlFor="activities" className="text-sm font-semibold text-gray-700">
+                    Activities
+                  </label>
+                </div>
                 <input
                   type="text"
                   id="activities"
                   defaultValue={currentGigData.activities?.join(', ')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  placeholder="Enter activities (comma separated)"
                 />
               </div>
-              <div>
-                <label htmlFor="industries" className="block text-sm font-medium text-gray-700 mb-2">
-                  Industries (comma separated)
-                </label>
+              <div className="bg-white rounded-lg p-4 border border-green-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <Building className="h-4 w-4 text-emerald-500" />
+                  <label htmlFor="industries" className="text-sm font-semibold text-gray-700">
+                    Industries
+                  </label>
+                </div>
                 <input
                   type="text"
                   id="industries"
                   defaultValue={currentGigData.industries?.join(', ')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  placeholder="Enter industries (comma separated)"
                 />
               </div>
             </div>
           </div>
 
           {/* Seniority */}
-          <div className="rounded-lg bg-white shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Seniority Requirements</h2>
+          <div className="rounded-xl bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-100 shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Award className="h-6 w-6 text-purple-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Seniority Requirements</h2>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="seniority_level" className="block text-sm font-medium text-gray-700 mb-2">
-                  Seniority Level
-                </label>
+              <div className="bg-white rounded-lg p-4 border border-purple-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <Target className="h-4 w-4 text-purple-500" />
+                  <label htmlFor="seniority_level" className="text-sm font-semibold text-gray-700">
+                    Seniority Level
+                  </label>
+                </div>
                 <select
                   id="seniority_level"
                   defaultValue={currentGigData.seniority?.level}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 >
                   <option value="">Select level</option>
                   <option value="Entry-Level">Entry-Level</option>
@@ -1395,87 +1529,147 @@ const ApprovalPublishing = () => {
                   <option value="Expert">Expert</option>
                 </select>
               </div>
-              <div>
-                <label htmlFor="years_experience" className="block text-sm font-medium text-gray-700 mb-2">
-                  Years of Experience
-                </label>
+              <div className="bg-white rounded-lg p-4 border border-purple-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <ClockIcon className="h-4 w-4 text-violet-500" />
+                  <label htmlFor="years_experience" className="text-sm font-semibold text-gray-700">
+                    Years of Experience
+                  </label>
+                </div>
                 <input
                   type="number"
                   id="years_experience"
                   defaultValue={currentGigData.seniority?.yearsExperience}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  placeholder="Enter years of experience"
                 />
               </div>
             </div>
           </div>
 
           {/* Commission */}
-          <div className="rounded-lg bg-white shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Commission & Compensation</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Base Commission */}
+            <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 shadow-lg p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <DollarSign className="h-6 w-6 text-blue-600" />
+                </div>
                 <div>
-                  <label htmlFor="base_type" className="block text-sm font-medium text-gray-700 mb-2">
+                  <h2 className="text-xl font-bold text-gray-900">Base Commission</h2>
+                  <p className="text-sm text-gray-600">Set the fixed base rate and requirements</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="base_amount" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Base Amount
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 sm:text-sm">$</span>
+                    </div>
+                    <input
+                      type="text"
+                      id="base_amount"
+                      defaultValue={currentGigData.commission?.baseAmount}
+                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter base amount"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="base_type" className="block text-sm font-semibold text-gray-700 mb-2">
                     Base Type
                   </label>
                   <select
                     id="base_type"
                     defaultValue={currentGigData.commission?.base}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="">Select base type...</option>
+                    <option value="">Select type</option>
                     <option value="Fixed Salary">Fixed Salary</option>
                     <option value="Base + Commission">Base + Commission</option>
                   </select>
                 </div>
-                <div>
-                  <label htmlFor="base_amount" className="block text-sm font-medium text-gray-700 mb-2">
-                    Base Amount
-                  </label>
-                  <input
-                    type="text"
-                    id="base_amount"
-                    defaultValue={currentGigData.commission?.baseAmount}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
+              </div>
+              
+              {/* Minimum Requirements Card */}
+              <div className="mt-6 bg-white rounded-lg p-4 border border-blue-100">
+                <div className="flex items-center gap-2 mb-4">
+                  <Target className="h-4 w-4 text-blue-500" />
+                  <h3 className="text-sm font-semibold text-gray-700">Minimum Requirements</h3>
                 </div>
-                <div>
-                  <label htmlFor="bonus_type" className="block text-sm font-medium text-gray-700 mb-2">
-                    Bonus Type
-                  </label>
-                  <select
-                    id="bonus_type"
-                    defaultValue={currentGigData.commission?.bonus}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="">Select bonus type...</option>
-                    <option value="Performance Bonus">Performance Bonus</option>
-                    <option value="Team Bonus">Team Bonus</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="bonus_amount" className="block text-sm font-medium text-gray-700 mb-2">
-                    Bonus Amount
-                  </label>
-                  <input
-                    type="text"
-                    id="bonus_amount"
-                    defaultValue={currentGigData.commission?.bonusAmount}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label htmlFor="target_amount" className="block text-xs font-medium text-gray-500 mb-1">
+                      Target Amount
+                    </label>
+                    <input
+                      type="number"
+                      id="target_amount"
+                      defaultValue={currentGigData.commission?.minimumVolume?.amount}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter target"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="unit_type" className="block text-xs font-medium text-gray-500 mb-1">
+                      Unit
+                    </label>
+                    <select
+                      id="unit_type"
+                      defaultValue={currentGigData.commission?.unitType}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select unit</option>
+                      <option value="Calls">Calls</option>
+                      <option value="Sales">Sales</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="period" className="block text-xs font-medium text-gray-500 mb-1">
+                      Period
+                    </label>
+                    <select
+                      id="period"
+                      defaultValue={currentGigData.commission?.period}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select period</option>
+                      <option value="Daily">Daily</option>
+                      <option value="Weekly">Weekly</option>
+                      <option value="Monthly">Monthly</option>
+                    </select>
+                  </div>
                 </div>
               </div>
-              <div className="space-y-4">
+            </div>
+
+            {/* Transaction Commission */}
+            <div className="rounded-xl bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-100 shadow-lg p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <TrendingUp className="h-6 w-6 text-purple-600" />
+                </div>
                 <div>
-                  <label htmlFor="commission_type" className="block text-sm font-medium text-gray-700 mb-2">
+                  <h2 className="text-xl font-bold text-gray-900">Transaction Commission</h2>
+                  <p className="text-sm text-gray-600">Define per-transaction rewards</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="commission_type" className="block text-sm font-semibold text-gray-700 mb-2">
                     Commission Type
                   </label>
                   <select
                     id="commission_type"
                     defaultValue={currentGigData.commission?.transactionCommission?.type}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                   >
-                    <option value="">Select commission type...</option>
+                    <option value="">Select type</option>
                     <option value="Fixed Amount">Fixed Amount</option>
                     <option value="Percentage">Percentage</option>
                     <option value="Tiered Amount">Tiered Amount</option>
@@ -1484,142 +1678,348 @@ const ApprovalPublishing = () => {
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="commission_amount" className="block text-sm font-medium text-gray-700 mb-2">
-                    Commission Amount
+                  <label htmlFor="commission_amount" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Amount/Percentage
                   </label>
-                  <input
-                    type="text"
-                    id="commission_amount"
-                    defaultValue={currentGigData.commission?.transactionCommission?.amount}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-2">
-                    Currency
-                  </label>
-                  <select
-                    id="currency"
-                    defaultValue={currentGigData.commission?.currency}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="">Select currency</option>
-                    <option value="EUR">EUR (€)</option>
-                    <option value="USD">USD ($)</option>
-                    <option value="GBP">GBP (£)</option>
-                    <option value="CAD">CAD (C$)</option>
-                    <option value="AUD">AUD (A$)</option>
-                  </select>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 sm:text-sm">$</span>
+                    </div>
+                    <input
+                      type="text"
+                      id="commission_amount"
+                      defaultValue={currentGigData.commission?.transactionCommission?.amount}
+                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      placeholder="Enter amount"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-            
-            {/* Additional Commission Fields */}
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label htmlFor="unit_type" className="block text-sm font-medium text-gray-700 mb-2">
-                  Unit Type
+
+            {/* Performance Bonus */}
+            <div className="rounded-xl bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-100 shadow-lg p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <Award className="h-6 w-6 text-amber-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Performance Bonus</h2>
+                  <p className="text-sm text-gray-600">Set additional performance-based rewards</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="bonus_type" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Bonus Type
+                  </label>
+                  <select
+                    id="bonus_type"
+                    defaultValue={currentGigData.commission?.bonus}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  >
+                    <option value="">Select bonus type</option>
+                    <option value="Performance Bonus">Performance Bonus</option>
+                    <option value="Team Bonus">Team Bonus</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="bonus_amount" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Bonus Amount
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-500 sm:text-sm">$</span>
+                    </div>
+                    <input
+                      type="text"
+                      id="bonus_amount"
+                      defaultValue={currentGigData.commission?.bonusAmount}
+                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                      placeholder="Enter bonus amount"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Currency Selection */}
+            <div className="rounded-xl bg-gradient-to-br from-gray-50 to-slate-50 border border-gray-100 shadow-lg p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gray-100 rounded-lg">
+                  <Globe className="h-6 w-6 text-gray-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Currency Settings</h2>
+                  <p className="text-sm text-gray-600">Select the currency for all commission calculations</p>
+                </div>
+              </div>
+              
+              <div className="max-w-md">
+                <label htmlFor="currency" className="block text-sm font-semibold text-gray-700 mb-2">
+                  Currency
                 </label>
                 <select
-                  id="unit_type"
-                  defaultValue={currentGigData.commission?.unitType}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  id="currency"
+                  defaultValue={currentGigData.commission?.currency}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
                 >
-                  <option value="">Select unit...</option>
-                  <option value="Calls">Calls</option>
-                  <option value="Sales">Sales</option>
+                  <option value="">Select currency</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="GBP">GBP (£)</option>
+                  <option value="CAD">CAD (C$)</option>
+                  <option value="AUD">AUD (A$)</option>
                 </select>
-              </div>
-              <div>
-                <label htmlFor="period" className="block text-sm font-medium text-gray-700 mb-2">
-                  Period
-                </label>
-                <select
-                  id="period"
-                  defaultValue={currentGigData.commission?.period}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">Select period...</option>
-                  <option value="Daily">Daily</option>
-                  <option value="Weekly">Weekly</option>
-                  <option value="Monthly">Monthly</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="minimum_volume" className="block text-sm font-medium text-gray-700 mb-2">
-                  Minimum Volume
-                </label>
-                <input
-                  type="number"
-                  id="minimum_volume"
-                  defaultValue={currentGigData.commission?.minimumVolume?.amount}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Enter minimum volume"
-                />
               </div>
             </div>
           </div>
 
           {/* Team */}
-          <div className="rounded-lg bg-white shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Team Structure</h2>
+          <div className="rounded-xl bg-gradient-to-br from-pink-50 to-rose-50 border border-pink-100 shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-pink-100 rounded-lg">
+                <Users className="h-6 w-6 text-pink-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Team Structure</h2>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="team_size" className="block text-sm font-medium text-gray-700 mb-2">
-                  Team Size
-                </label>
+              <div className="bg-white rounded-lg p-4 border border-pink-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="h-4 w-4 text-pink-500" />
+                  <label htmlFor="team_size" className="text-sm font-semibold text-gray-700">
+                    Team Size
+                  </label>
+                </div>
                 <input
                   type="number"
                   id="team_size"
                   defaultValue={currentGigData.team?.size}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  placeholder="Enter team size"
                 />
               </div>
-              <div>
-                <label htmlFor="territories" className="block text-sm font-medium text-gray-700 mb-2">
-                  Territories (comma separated)
-                </label>
+              <div className="bg-white rounded-lg p-4 border border-pink-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <MapPin className="h-4 w-4 text-rose-500" />
+                  <label htmlFor="territories" className="text-sm font-semibold text-gray-700">
+                    Territories
+                  </label>
+                </div>
                 <input
                   type="text"
                   id="territories"
                   defaultValue={currentGigData.team?.territories?.join(', ')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                  placeholder="Enter territories (comma separated)"
                 />
               </div>
             </div>
           </div>
 
           {/* Schedule */}
-          <div className="rounded-lg bg-white shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Schedule & Availability</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 mb-2">
-                  Time Zone
-                </label>
+          <div className="rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 border border-cyan-100 shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-cyan-100 rounded-lg">
+                <ClockIcon className="h-6 w-6 text-cyan-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Schedule & Availability</h2>
+            </div>
+            
+            {/* Time Zone and Flexibility */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="bg-white rounded-lg p-4 border border-cyan-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <Globe className="h-4 w-4 text-cyan-500" />
+                  <label htmlFor="timezone" className="text-sm font-semibold text-gray-700">
+                    Time Zone
+                  </label>
+                </div>
                 <input
                   type="text"
                   id="timezone"
                   defaultValue={currentGigData.availability?.time_zone}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  placeholder="Enter timezone"
                 />
               </div>
-              <div>
-                <label htmlFor="flexibility" className="block text-sm font-medium text-gray-700 mb-2">
-                  Flexibility (comma separated)
-                </label>
+              <div className="bg-white rounded-lg p-4 border border-cyan-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <Settings className="h-4 w-4 text-blue-500" />
+                  <label htmlFor="flexibility" className="text-sm font-semibold text-gray-700">
+                    Flexibility
+                  </label>
+                </div>
                 <input
                   type="text"
                   id="flexibility"
                   defaultValue={currentGigData.availability?.flexibility?.join(', ')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  placeholder="Enter flexibility options (comma separated)"
                 />
               </div>
             </div>
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Minimum Hours
-              </label>
+
+            {/* Working Days and Hours */}
+            <div className="bg-white rounded-lg p-6 border border-cyan-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Working Days</h3>
+              <div className="flex flex-wrap gap-2 mb-6">
+                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
+                  <button
+                    key={day}
+                    onClick={() => toggleDay(day)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      selectedDays.includes(day)
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {day}
+                  </button>
+                ))}
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <ClockIcon className="h-4 w-4 text-blue-500" />
+                  <h4 className="text-sm font-semibold text-gray-700">Working Hours</h4>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Building className="h-4 w-4 text-orange-500" />
+                      <label className="text-xs font-medium text-gray-500">Start Time</label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold text-gray-900">{workingHours.start}</span>
+                      <ClockIcon className="h-4 w-4 text-gray-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Building className="h-4 w-4 text-purple-500" />
+                      <label className="text-xs font-medium text-gray-500">End Time</label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold text-gray-900">{workingHours.end}</span>
+                      <ClockIcon className="h-4 w-4 text-gray-400" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-100 rounded-lg px-3 py-2 flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Working Hours:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-gray-900">
+                      {formatTime(workingHours.start)} - {formatTime(workingHours.end)}
+                    </span>
+                    <ClockIcon className="h-4 w-4 text-gray-400" />
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setPresetHours('9-5')}
+                    className="flex flex-col items-center p-3 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-colors"
+                  >
+                    <Sun className="h-5 w-5 text-orange-500 mb-1" />
+                    <span className="text-xs font-medium text-gray-700">9-5</span>
+                  </button>
+                  <button
+                    onClick={() => setPresetHours('early')}
+                    className="flex flex-col items-center p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                  >
+                    <Sunrise className="h-5 w-5 text-blue-500 mb-1" />
+                    <span className="text-xs font-medium text-gray-700">Early</span>
+                  </button>
+                  <button
+                    onClick={() => setPresetHours('late')}
+                    className="flex flex-col items-center p-3 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-colors"
+                  >
+                    <ClockIcon className="h-5 w-5 text-purple-500 mb-1" />
+                    <span className="text-xs font-medium text-gray-700">Late</span>
+                  </button>
+                  <button
+                    onClick={() => setPresetHours('evening')}
+                    className="flex flex-col items-center p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                  >
+                    <Moon className="h-5 w-5 text-blue-600 mb-1" />
+                    <span className="text-xs font-medium text-gray-700">Evening</span>
+                  </button>
+                </div>
+
+                <div className="mt-4 flex gap-2">
+                  {editingSchedule ? (
+                    <>
+                      <button
+                        onClick={updateSchedule}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                      >
+                        Update Schedule
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingSchedule(null);
+                          setSelectedDays(['Monday', 'Tuesday']);
+                          setWorkingHours({ start: '09:00', end: '17:00' });
+                          setShowScheduleForm(false);
+                        }}
+                        className="px-4 py-2 bg-gray-500 text-white rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={addSchedule}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                    >
+                      Add Schedule
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Existing Schedules */}
+            {schedules.length > 0 && (
+              <div className="mt-6 bg-white rounded-lg p-4 border border-cyan-100">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Schedules</h3>
+                <div className="space-y-3">
+                  {schedules.map((schedule) => (
+                    <div key={schedule.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <ClockIcon className="h-4 w-4 text-cyan-500" />
+                        <span className="text-sm font-medium text-gray-900">{schedule.displayText}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => editSchedule(schedule)}
+                          className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => deleteSchedule(schedule.id)}
+                          className="p-1 text-red-600 hover:bg-red-50 rounded"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Minimum Hours */}
+            <div className="mt-6 bg-white rounded-lg p-4 border border-cyan-100">
+              <div className="flex items-center gap-2 mb-4">
+                <ClockIcon className="h-4 w-4 text-cyan-500" />
+                <h3 className="text-sm font-semibold text-gray-700">Minimum Hours</h3>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label htmlFor="min_hours_daily" className="block text-xs font-medium text-gray-500 mb-1">
@@ -1629,7 +2029,8 @@ const ApprovalPublishing = () => {
                     type="number"
                     id="min_hours_daily"
                     defaultValue={currentGigData.availability?.minimumHours?.daily}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    placeholder="Hours"
                   />
                 </div>
                 <div>
@@ -1640,7 +2041,8 @@ const ApprovalPublishing = () => {
                     type="number"
                     id="min_hours_weekly"
                     defaultValue={currentGigData.availability?.minimumHours?.weekly}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    placeholder="Hours"
                   />
                 </div>
                 <div>
@@ -1651,7 +2053,8 @@ const ApprovalPublishing = () => {
                     type="number"
                     id="min_hours_monthly"
                     defaultValue={currentGigData.availability?.minimumHours?.monthly}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    placeholder="Hours"
                   />
                 </div>
               </div>
