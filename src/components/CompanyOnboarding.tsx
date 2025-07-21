@@ -329,6 +329,21 @@ const CompanyOnboarding = () => {
         return;
       }
       
+      // Special handling for Gig Activation step (step 13) - redirect to Approval & Publishing
+      if (stepId === 13) {
+        // Set the active tab to approval-publishing in the parent App component
+        if (window.parent && window.parent !== window) {
+          // If we're in an iframe, communicate with parent
+          window.parent.postMessage({ type: 'SET_ACTIVE_TAB', tab: 'approval-publishing' }, '*');
+        } else {
+          // If we're in the main window, use localStorage to communicate with App component
+          localStorage.setItem('activeTab', 'approval-publishing');
+          // Trigger a custom event to notify the App component
+          window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'approval-publishing' } }));
+        }
+        return;
+      }
+      
       if (step?.component) {
         if (stepId === 4 && completedSteps.includes(stepId)) {
           setShowGigDetails(true);
