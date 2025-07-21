@@ -187,7 +187,8 @@ const ApprovalPublishing = () => {
     const statusMapping: { [key: string]: string[] } = {
       'pending': ['pending', 'to_activate', 'draft', 'submitted'],
       'approved': ['approved', 'active', 'published'],
-      'rejected': ['rejected', 'declined', 'cancelled', 'inactive']
+      'rejected': ['rejected', 'declined', 'cancelled', 'inactive'],
+      'archived': ['archived']
     };
     
     const validStatuses = statusMapping[filter] || [filter];
@@ -352,6 +353,58 @@ const ApprovalPublishing = () => {
     } catch (error) {
       console.error('❌ Error rejecting gig:', error);
       setError(error instanceof Error ? error.message : 'Failed to reject gig');
+    }
+  };
+
+  const archiveGig = async (gigId: string) => {
+    try {
+      console.log('📦 Archiving gig:', gigId);
+      const companyId = Cookies.get('companyId');
+      const userId = Cookies.get('userId');
+      const gigIdCookie = Cookies.get('gigId');
+      
+      console.log('🔑 Auth tokens:', { companyId, userId, gigId: gigIdCookie });
+      
+      if (!companyId || !userId) {
+        throw new Error('Missing authentication tokens');
+      }
+
+      const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
+      console.log('🌐 API URL:', apiUrl);
+      
+      const requestBody = {
+        status: 'archived'
+      };
+      console.log('📦 Request body:', requestBody);
+      
+      const response = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${gigIdCookie}:${userId}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ API Error response:', errorText);
+        throw new Error(`Failed to archive gig: ${response.status} ${response.statusText}`);
+      }
+
+      const responseData = await response.json();
+      console.log('✅ Gig archived successfully:', responseData);
+      
+      // Update the gig status locally instead of refreshing
+      setGigs(prevGigs => prevGigs.map(gig => 
+        gig._id === gigId ? { ...gig, status: 'archived' } : gig
+      ));
+    } catch (error) {
+      console.error('❌ Error archiving gig:', error);
+      setError(error instanceof Error ? error.message : 'Failed to archive gig');
     }
   };
 
@@ -759,6 +812,17 @@ const ApprovalPublishing = () => {
         >
           Inactive
         </button>
+        <button
+          className={`flex-1 rounded-md py-2 text-sm font-medium ${
+            filter === 'archived' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
+          }`}
+          onClick={() => {
+            console.log('🔍 Filter changed to: archived');
+            setFilter('archived');
+          }}
+        >
+          Archived
+        </button>
       </div>
 
       {/* Gigs for Approval */}
@@ -920,17 +984,25 @@ const ApprovalPublishing = () => {
                             className="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
                           >
                             <CheckCircle className="mr-2 h-4 w-4" />
-                            Approve
+                            Active
                           </button>
                           <button 
                             onClick={() => rejectGig(gig._id)}
                             className="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700"
                           >
                             <XCircle className="mr-2 h-4 w-4" />
-                            Reject
+                            Inactive
                           </button>
                         </>
                       )}
+                      
+                      <button 
+                        onClick={() => archiveGig(gig._id)}
+                        className="inline-flex items-center rounded-md bg-gray-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700"
+                      >
+                        <Clock className="mr-2 h-4 w-4" />
+                        Archived
+                      </button>
                     </div>
                   </div>
                 )}
