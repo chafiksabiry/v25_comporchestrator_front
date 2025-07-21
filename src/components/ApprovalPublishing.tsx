@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { 
   CheckCircle, 
   XCircle, 
@@ -43,6 +44,12 @@ interface Company {
   };
 }
 
+interface CompanyResponse {
+  success: boolean;
+  message: string;
+  data: Company;
+}
+
 const ApprovalPublishing = () => {
   const [expandedGig, setExpandedGig] = useState<string | null>(null);
   const [selectedGigs, setSelectedGigs] = useState<string[]>([]);
@@ -65,14 +72,9 @@ const ApprovalPublishing = () => {
         return;
       }
 
-      const response = await fetch(`${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/details`);
-      if (response.ok) {
-        const data = await response.json();
-        console.log('🏢 Company details fetched:', data.data);
-        setCompany(data.data);
-      } else {
-        console.error('❌ Failed to fetch company details:', response.status);
-      }
+      const response = await axios.get<CompanyResponse>(`${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/details`);
+      console.log('🏢 Company details fetched:', response.data.data);
+      setCompany(response.data.data);
     } catch (err) {
       console.error('❌ Error fetching company details:', err);
     }
@@ -434,7 +436,7 @@ const ApprovalPublishing = () => {
                     <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                       <div>
                         <p className="text-xs font-medium text-gray-500">Company</p>
-                        <p className="text-sm font-medium text-gray-900">{gig.submittedBy}</p>
+                        <p className="text-sm font-medium text-gray-900">{company?.name || gig.submittedBy || 'Company'}</p>
                       </div>
                       <div>
                         <p className="text-xs font-medium text-gray-500">Created</p>
