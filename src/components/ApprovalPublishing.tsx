@@ -2172,8 +2172,16 @@ const ApprovalPublishing = () => {
           <button
             onClick={() => {
               console.log('⬅️ Back to onboarding clicked');
-              // Navigation logic would go here
-              window.history.back();
+              // Navigate back to onboarding interface
+              if (window.parent && window.parent !== window) {
+                // If we're in an iframe, communicate with parent
+                window.parent.postMessage({ type: 'SET_ACTIVE_TAB', tab: 'company-onboarding' }, '*');
+              } else {
+                // If we're in the main window, use localStorage to communicate with App component
+                localStorage.setItem('activeTab', 'company-onboarding');
+                // Trigger a custom event to notify the App component
+                window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } }));
+              }
             }}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
           >
