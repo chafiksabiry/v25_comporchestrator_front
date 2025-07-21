@@ -254,23 +254,43 @@ const ApprovalPublishing = () => {
       console.log('🟢 Approving gig:', gigId);
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
+      const gigIdCookie = Cookies.get('gigId');
       
-      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${companyId}:${userId}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          status: 'approved'
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to approve gig');
+      console.log('🔑 Auth tokens:', { companyId, userId, gigId: gigIdCookie });
+      
+      if (!companyId || !userId) {
+        throw new Error('Missing authentication tokens');
       }
 
-      console.log('✅ Gig approved successfully');
+      const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
+      console.log('🌐 API URL:', apiUrl);
+      
+      const requestBody = {
+        status: 'approved'
+      };
+      console.log('📦 Request body:', requestBody);
+      
+      const response = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${gigIdCookie}:${userId}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ API Error response:', errorText);
+        throw new Error(`Failed to approve gig: ${response.status} ${response.statusText}`);
+      }
+
+      const responseData = await response.json();
+      console.log('✅ Gig approved successfully:', responseData);
+      
       // Refresh the gigs list
       await fetchGigs();
     } catch (error) {
@@ -284,23 +304,43 @@ const ApprovalPublishing = () => {
       console.log('🔴 Rejecting gig:', gigId);
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
+      const gigIdCookie = Cookies.get('gigId');
       
-      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${companyId}:${userId}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          status: 'rejected'
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to reject gig');
+      console.log('🔑 Auth tokens:', { companyId, userId, gigId: gigIdCookie });
+      
+      if (!companyId || !userId) {
+        throw new Error('Missing authentication tokens');
       }
 
-      console.log('✅ Gig rejected successfully');
+      const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
+      console.log('🌐 API URL:', apiUrl);
+      
+      const requestBody = {
+        status: 'rejected'
+      };
+      console.log('📦 Request body:', requestBody);
+      
+      const response = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${gigIdCookie}:${userId}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ API Error response:', errorText);
+        throw new Error(`Failed to reject gig: ${response.status} ${response.statusText}`);
+      }
+
+      const responseData = await response.json();
+      console.log('✅ Gig rejected successfully:', responseData);
+      
       // Refresh the gigs list
       await fetchGigs();
     } catch (error) {
@@ -314,17 +354,31 @@ const ApprovalPublishing = () => {
       console.log('👁️ Previewing gig:', gigId);
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
+      const gigIdCookie = Cookies.get('gigId');
       
-      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`, {
+      console.log('🔑 Auth tokens:', { companyId, userId, gigId: gigIdCookie });
+      
+      if (!companyId || !userId) {
+        throw new Error('Missing authentication tokens');
+      }
+
+      const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
+      console.log('🌐 API URL:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${companyId}:${userId}`,
+          'Authorization': `Bearer ${gigIdCookie}:${userId}`,
           'Content-Type': 'application/json'
         }
       });
 
+      console.log('📡 Response status:', response.status);
+
       if (!response.ok) {
-        throw new Error('Failed to fetch gig details');
+        const errorText = await response.text();
+        console.error('❌ API Error response:', errorText);
+        throw new Error(`Failed to fetch gig details: ${response.status} ${response.statusText}`);
       }
 
       const gigData = await response.json();
@@ -343,18 +397,32 @@ const ApprovalPublishing = () => {
       console.log('✏️ Editing gig:', gigId);
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
+      const gigIdCookie = Cookies.get('gigId');
+      
+      console.log('🔑 Auth tokens:', { companyId, userId, gigId: gigIdCookie });
+      
+      if (!companyId || !userId) {
+        throw new Error('Missing authentication tokens');
+      }
+
+      const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
+      console.log('🌐 API URL:', apiUrl);
       
       // First, get the current gig data
-      const getResponse = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`, {
+      const getResponse = await fetch(apiUrl, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${companyId}:${userId}`,
+          'Authorization': `Bearer ${gigIdCookie}:${userId}`,
           'Content-Type': 'application/json'
         }
       });
 
+      console.log('📡 Response status:', getResponse.status);
+
       if (!getResponse.ok) {
-        throw new Error('Failed to fetch gig details for editing');
+        const errorText = await getResponse.text();
+        console.error('❌ API Error response:', errorText);
+        throw new Error(`Failed to fetch gig details for editing: ${getResponse.status} ${getResponse.statusText}`);
       }
 
       const gigData = await getResponse.json();
