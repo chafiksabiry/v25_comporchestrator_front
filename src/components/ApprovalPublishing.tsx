@@ -70,7 +70,7 @@ interface CompanyResponse {
 const ApprovalPublishing = () => {
   const [expandedGig, setExpandedGig] = useState<string | null>(null);
   const [selectedGigs, setSelectedGigs] = useState<string[]>([]);
-  const [filter, setFilter] = useState('pending');
+  const [filter, setFilter] = useState('all');
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -2238,17 +2238,6 @@ const ApprovalPublishing = () => {
           }}
         >
           All
-        </button>
-        <button
-          className={`flex-1 rounded-md py-2 text-sm font-medium ${
-            filter === 'pending' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
-          }`}
-          onClick={() => {
-            console.log('🔍 Filter changed to: pending');
-            setFilter('pending');
-          }}
-        >
-          To active
         </button>
         <button
           className={`flex-1 rounded-md py-2 text-sm font-medium ${
