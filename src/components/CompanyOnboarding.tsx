@@ -32,7 +32,6 @@ import Cookies from 'js-cookie';
 import axios from 'axios';
 import GigDetails from './onboarding/GigDetails';
 import KnowledgeBase from './onboarding/KnowledgeBase';
-import GigActivation from './GigActivation';
 import ZohoService from '../services/zohoService';
 
 interface BaseStep {
@@ -568,8 +567,7 @@ const CompanyOnboarding = () => {
           id: 13,
           title: 'Gig Activation',
           description: 'Launch multi-channel operations',
-          status: 'pending',
-          component: GigActivation
+          status: 'pending'
         }
       ]
     }
