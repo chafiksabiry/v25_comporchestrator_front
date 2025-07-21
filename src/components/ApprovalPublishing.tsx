@@ -187,7 +187,7 @@ const ApprovalPublishing = () => {
     const statusMapping: { [key: string]: string[] } = {
       'pending': ['pending', 'to_activate', 'draft', 'submitted'],
       'approved': ['approved', 'active', 'published'],
-      'rejected': ['rejected', 'declined', 'cancelled']
+      'rejected': ['rejected', 'declined', 'cancelled', 'inactive']
     };
     
     const validStatuses = statusMapping[filter] || [filter];
@@ -236,7 +236,9 @@ const ApprovalPublishing = () => {
       'published': 'Published',
       'rejected': 'Rejected',
       'declined': 'Declined',
-      'cancelled': 'Cancelled'
+      'cancelled': 'Cancelled',
+      'inactive': 'Inactive',
+      'archived': 'Archived'
     };
     
     // Si le statut n'est pas dans le mapping, formater en remplaçant les underscores
@@ -266,7 +268,7 @@ const ApprovalPublishing = () => {
       console.log('🌐 API URL:', apiUrl);
       
       const requestBody = {
-        status: 'approved'
+        status: 'active'
       };
       console.log('📦 Request body:', requestBody);
       
@@ -316,7 +318,7 @@ const ApprovalPublishing = () => {
       console.log('🌐 API URL:', apiUrl);
       
       const requestBody = {
-        status: 'rejected'
+        status: 'inactive'
       };
       console.log('📦 Request body:', requestBody);
       
@@ -822,9 +824,15 @@ const ApprovalPublishing = () => {
                           {formatStatus(gig.status)}
                         </span>
                       )}
-                      {(gig.status === 'rejected' || gig.status === 'declined' || gig.status === 'cancelled') && (
+                      {(gig.status === 'rejected' || gig.status === 'declined' || gig.status === 'cancelled' || gig.status === 'inactive') && (
                         <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
                           <XCircle className="mr-1 h-3 w-3" />
+                          {formatStatus(gig.status)}
+                        </span>
+                      )}
+                      {gig.status === 'archived' && (
+                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                          <Clock className="mr-1 h-3 w-3" />
                           {formatStatus(gig.status)}
                         </span>
                       )}
@@ -920,13 +928,13 @@ const ApprovalPublishing = () => {
                         </>
                       )}
                       
-                      {gig.status === 'approved' && (
+                      {(gig.status === 'approved' || gig.status === 'active') && (
                         <button className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
                           Publish Now
                         </button>
                       )}
                       
-                      {gig.status === 'rejected' && (
+                      {(gig.status === 'rejected' || gig.status === 'inactive') && (
                         <button className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
                           Request Revision
                         </button>
