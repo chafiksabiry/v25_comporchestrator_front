@@ -576,62 +576,271 @@ const ApprovalPublishing = () => {
           </div>
         </div>
         
-        <div className="rounded-lg bg-white shadow p-6">
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">{currentGigData.title}</h2>
-              <p className="text-gray-600">{currentGigData.description}</p>
+        <div className="space-y-6">
+          {/* Basic Information */}
+          <div className="rounded-lg bg-white shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Title:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.title}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Category:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.category || 'Not specified'}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Status:</span>
+                  <p className="text-sm text-gray-900 mt-1 capitalize">{currentGigData.status}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Destination Zone:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.destination_zone || 'Not specified'}</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Company:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.companyName || company?.name || 'Not specified'}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Created:</span>
+                  <p className="text-sm text-gray-900 mt-1">{formatDate(currentGigData.createdAt)}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Updated:</span>
+                  <p className="text-sm text-gray-900 mt-1">{formatDate(currentGigData.updatedAt)}</p>
+                </div>
+              </div>
             </div>
-            
+            <div className="mt-4">
+              <span className="text-sm font-medium text-gray-500">Description:</span>
+              <p className="text-sm text-gray-900 mt-1">{currentGigData.description}</p>
+            </div>
+          </div>
+
+          {/* Activities & Industries */}
+          <div className="rounded-lg bg-white shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Activities & Industries</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Gig Details</h3>
-                <div className="space-y-2">
-                  <div>
-                    <span className="text-sm text-gray-500">Category:</span>
-                    <span className="ml-2 text-sm font-medium">{currentGigData.category || 'Not specified'}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-500">Budget:</span>
-                    <span className="ml-2 text-sm font-medium">{currentGigData.commission?.baseAmount ? `$${currentGigData.commission.baseAmount}` : 'Not specified'}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-500">Status:</span>
-                    <span className="ml-2 text-sm font-medium capitalize">{currentGigData.status}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-500">Created:</span>
-                    <span className="ml-2 text-sm font-medium">{formatDate(currentGigData.createdAt)}</span>
-                  </div>
+                <span className="text-sm font-medium text-gray-500">Activities:</span>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {currentGigData.activities?.map((activity: string, index: number) => (
+                    <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {activity}
+                    </span>
+                  )) || <span className="text-sm text-gray-500">No activities specified</span>}
                 </div>
               </div>
-              
               <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Company Information</h3>
-                <div className="space-y-2">
-                  <div>
-                    <span className="text-sm text-gray-500">Company:</span>
-                    <span className="ml-2 text-sm font-medium">{currentGigData.companyName || company?.name || 'Not specified'}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm text-gray-500">Submitted by:</span>
-                    <span className="ml-2 text-sm font-medium">{currentGigData.submittedBy || 'Not specified'}</span>
-                  </div>
+                <span className="text-sm font-medium text-gray-500">Industries:</span>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {currentGigData.industries?.map((industry: string, index: number) => (
+                    <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      {industry}
+                    </span>
+                  )) || <span className="text-sm text-gray-500">No industries specified</span>}
                 </div>
               </div>
             </div>
-            
-            {currentGigData.issues && currentGigData.issues.length > 0 && (
-              <div className="rounded-md bg-yellow-50 p-4">
-                <h3 className="text-sm font-medium text-yellow-800 mb-2">Issues Requiring Attention</h3>
-                <ul className="list-disc space-y-1 pl-5 text-sm text-yellow-700">
-                  {currentGigData.issues.map((issue: string, index: number) => (
-                    <li key={index}>{issue}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
+
+          {/* Seniority */}
+          <div className="rounded-lg bg-white shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Seniority Requirements</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <span className="text-sm font-medium text-gray-500">Level:</span>
+                <p className="text-sm text-gray-900 mt-1">{currentGigData.seniority?.level || 'Not specified'}</p>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-gray-500">Years of Experience:</span>
+                <p className="text-sm text-gray-900 mt-1">{currentGigData.seniority?.yearsExperience || 'Not specified'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Skills */}
+          <div className="rounded-lg bg-white shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Skills & Languages</h2>
+            <div className="space-y-4">
+              <div>
+                <span className="text-sm font-medium text-gray-500">Professional Skills:</span>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {currentGigData.skills?.professional?.map((skill: any, index: number) => (
+                    <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      Level {skill.level}
+                    </span>
+                  )) || <span className="text-sm text-gray-500">No professional skills specified</span>}
+                </div>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-gray-500">Technical Skills:</span>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {currentGigData.skills?.technical?.map((skill: any, index: number) => (
+                    <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                      Level {skill.level}
+                    </span>
+                  )) || <span className="text-sm text-gray-500">No technical skills specified</span>}
+                </div>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-gray-500">Soft Skills:</span>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {currentGigData.skills?.soft?.map((skill: any, index: number) => (
+                    <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
+                      Level {skill.level}
+                    </span>
+                  )) || <span className="text-sm text-gray-500">No soft skills specified</span>}
+                </div>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-gray-500">Languages:</span>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {currentGigData.skills?.languages?.map((lang: any, index: number) => (
+                    <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                      {lang.language} ({lang.proficiency})
+                    </span>
+                  )) || <span className="text-sm text-gray-500">No languages specified</span>}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Schedule */}
+          <div className="rounded-lg bg-white shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Schedule & Availability</h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Time Zone:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.availability?.time_zone || 'Not specified'}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Flexibility:</span>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {currentGigData.availability?.flexibility?.map((flex: string, index: number) => (
+                      <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        {flex}
+                      </span>
+                    )) || <span className="text-sm text-gray-500">No flexibility options specified</span>}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-gray-500">Weekly Schedule:</span>
+                <div className="mt-2 space-y-2">
+                  {currentGigData.availability?.schedule?.map((day: any, index: number) => (
+                    <div key={index} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
+                      <span className="text-sm font-medium text-gray-900">{day.day}</span>
+                      <span className="text-sm text-gray-600">{day.hours.start} - {day.hours.end}</span>
+                    </div>
+                  )) || <span className="text-sm text-gray-500">No schedule specified</span>}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Minimum Hours (Daily):</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.availability?.minimumHours?.daily || 'Not specified'}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Minimum Hours (Weekly):</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.availability?.minimumHours?.weekly || 'Not specified'}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Minimum Hours (Monthly):</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.availability?.minimumHours?.monthly || 'Not specified'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Commission */}
+          <div className="rounded-lg bg-white shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Commission & Compensation</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Base:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.base || 'Not specified'}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Base Amount:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.baseAmount ? `${currentGigData.commission.currency} ${currentGigData.commission.baseAmount}` : 'Not specified'}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Bonus:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.bonus || 'Not specified'}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Bonus Amount:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.bonusAmount ? `${currentGigData.commission.currency} ${currentGigData.commission.bonusAmount}` : 'Not specified'}</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Transaction Commission:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.transactionCommission?.type || 'Not specified'}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Commission Amount:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.transactionCommission?.amount ? `${currentGigData.commission.currency} ${currentGigData.commission.transactionCommission.amount}` : 'Not specified'}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Minimum Volume:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.minimumVolume?.amount ? `${currentGigData.commission.minimumVolume.amount} ${currentGigData.commission.minimumVolume.unit} ${currentGigData.commission.minimumVolume.period}` : 'Not specified'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Team */}
+          <div className="rounded-lg bg-white shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Team Structure</h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Team Size:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.team?.size || 'Not specified'}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-gray-500">Territories:</span>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {currentGigData.team?.territories?.map((territory: string, index: number) => (
+                      <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        {territory}
+                      </span>
+                    )) || <span className="text-sm text-gray-500">No territories specified</span>}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <span className="text-sm font-medium text-gray-500">Team Structure:</span>
+                <div className="mt-2 space-y-2">
+                  {currentGigData.team?.structure?.map((role: any, index: number) => (
+                    <div key={index} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
+                      <span className="text-sm font-medium text-gray-900">{role.roleId} ({role.count})</span>
+                      <span className="text-sm text-gray-600">{role.seniority?.level} - {role.seniority?.yearsExperience} years</span>
+                    </div>
+                  )) || <span className="text-sm text-gray-500">No team structure specified</span>}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Issues */}
+          {currentGigData.issues && currentGigData.issues.length > 0 && (
+            <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-6">
+              <h2 className="text-lg font-semibold text-yellow-800 mb-4">Issues Requiring Attention</h2>
+              <ul className="list-disc space-y-1 pl-5 text-sm text-yellow-700">
+                {currentGigData.issues.map((issue: string, index: number) => (
+                  <li key={index}>{issue}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -655,74 +864,331 @@ const ApprovalPublishing = () => {
           </div>
         </div>
         
-        <div className="rounded-lg bg-white shadow p-6">
-          <form className="space-y-6">
-            <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                Gig Title
-              </label>
-              <input
-                type="text"
-                id="title"
-                defaultValue={currentGigData.title}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
-              <textarea
-                id="description"
-                rows={4}
-                defaultValue={currentGigData.description}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          {/* Basic Information */}
+          <div className="rounded-lg bg-white shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
+            <div className="space-y-4">
               <div>
-                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-                  Category
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                  Gig Title
                 </label>
                 <input
                   type="text"
-                  id="category"
-                  defaultValue={currentGigData.category}
+                  id="title"
+                  defaultValue={currentGigData.title}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
               
               <div>
-                <label htmlFor="budget" className="block text-sm font-medium text-gray-700 mb-2">
-                  Budget
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  rows={4}
+                  defaultValue={currentGigData.description}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+                    Category
+                  </label>
+                  <input
+                    type="text"
+                    id="category"
+                    defaultValue={currentGigData.category}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="destination_zone" className="block text-sm font-medium text-gray-700 mb-2">
+                    Destination Zone
+                  </label>
+                  <input
+                    type="text"
+                    id="destination_zone"
+                    defaultValue={currentGigData.destination_zone}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Activities & Industries */}
+          <div className="rounded-lg bg-white shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Activities & Industries</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="activities" className="block text-sm font-medium text-gray-700 mb-2">
+                  Activities (comma separated)
                 </label>
                 <input
                   type="text"
-                  id="budget"
-                  defaultValue={currentGigData.commission?.baseAmount || ''}
+                  id="activities"
+                  defaultValue={currentGigData.activities?.join(', ')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="industries" className="block text-sm font-medium text-gray-700 mb-2">
+                  Industries (comma separated)
+                </label>
+                <input
+                  type="text"
+                  id="industries"
+                  defaultValue={currentGigData.industries?.join(', ')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
             </div>
-            
-            <div className="flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={backToMain}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
-              >
-                Save Changes
-              </button>
+          </div>
+
+          {/* Seniority */}
+          <div className="rounded-lg bg-white shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Seniority Requirements</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="seniority_level" className="block text-sm font-medium text-gray-700 mb-2">
+                  Seniority Level
+                </label>
+                <select
+                  id="seniority_level"
+                  defaultValue={currentGigData.seniority?.level}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Select level</option>
+                  <option value="Entry-Level">Entry-Level</option>
+                  <option value="Mid-Level">Mid-Level</option>
+                  <option value="Senior">Senior</option>
+                  <option value="Expert">Expert</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="years_experience" className="block text-sm font-medium text-gray-700 mb-2">
+                  Years of Experience
+                </label>
+                <input
+                  type="number"
+                  id="years_experience"
+                  defaultValue={currentGigData.seniority?.yearsExperience}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
             </div>
-          </form>
+          </div>
+
+          {/* Commission */}
+          <div className="rounded-lg bg-white shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Commission & Compensation</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="base_type" className="block text-sm font-medium text-gray-700 mb-2">
+                    Base Type
+                  </label>
+                  <input
+                    type="text"
+                    id="base_type"
+                    defaultValue={currentGigData.commission?.base}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="base_amount" className="block text-sm font-medium text-gray-700 mb-2">
+                    Base Amount
+                  </label>
+                  <input
+                    type="text"
+                    id="base_amount"
+                    defaultValue={currentGigData.commission?.baseAmount}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="bonus_type" className="block text-sm font-medium text-gray-700 mb-2">
+                    Bonus Type
+                  </label>
+                  <input
+                    type="text"
+                    id="bonus_type"
+                    defaultValue={currentGigData.commission?.bonus}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="bonus_amount" className="block text-sm font-medium text-gray-700 mb-2">
+                    Bonus Amount
+                  </label>
+                  <input
+                    type="text"
+                    id="bonus_amount"
+                    defaultValue={currentGigData.commission?.bonusAmount}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="commission_type" className="block text-sm font-medium text-gray-700 mb-2">
+                    Commission Type
+                  </label>
+                  <input
+                    type="text"
+                    id="commission_type"
+                    defaultValue={currentGigData.commission?.transactionCommission?.type}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="commission_amount" className="block text-sm font-medium text-gray-700 mb-2">
+                    Commission Amount
+                  </label>
+                  <input
+                    type="text"
+                    id="commission_amount"
+                    defaultValue={currentGigData.commission?.transactionCommission?.amount}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-2">
+                    Currency
+                  </label>
+                  <select
+                    id="currency"
+                    defaultValue={currentGigData.commission?.currency}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="">Select currency</option>
+                    <option value="EUR">EUR</option>
+                    <option value="USD">USD</option>
+                    <option value="GBP">GBP</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Team */}
+          <div className="rounded-lg bg-white shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Team Structure</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="team_size" className="block text-sm font-medium text-gray-700 mb-2">
+                  Team Size
+                </label>
+                <input
+                  type="number"
+                  id="team_size"
+                  defaultValue={currentGigData.team?.size}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="territories" className="block text-sm font-medium text-gray-700 mb-2">
+                  Territories (comma separated)
+                </label>
+                <input
+                  type="text"
+                  id="territories"
+                  defaultValue={currentGigData.team?.territories?.join(', ')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Schedule */}
+          <div className="rounded-lg bg-white shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Schedule & Availability</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 mb-2">
+                  Time Zone
+                </label>
+                <input
+                  type="text"
+                  id="timezone"
+                  defaultValue={currentGigData.availability?.time_zone}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="flexibility" className="block text-sm font-medium text-gray-700 mb-2">
+                  Flexibility (comma separated)
+                </label>
+                <input
+                  type="text"
+                  id="flexibility"
+                  defaultValue={currentGigData.availability?.flexibility?.join(', ')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Minimum Hours
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="min_hours_daily" className="block text-xs font-medium text-gray-500 mb-1">
+                    Daily
+                  </label>
+                  <input
+                    type="number"
+                    id="min_hours_daily"
+                    defaultValue={currentGigData.availability?.minimumHours?.daily}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="min_hours_weekly" className="block text-xs font-medium text-gray-500 mb-1">
+                    Weekly
+                  </label>
+                  <input
+                    type="number"
+                    id="min_hours_weekly"
+                    defaultValue={currentGigData.availability?.minimumHours?.weekly}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="min_hours_monthly" className="block text-xs font-medium text-gray-500 mb-1">
+                    Monthly
+                  </label>
+                  <input
+                    type="number"
+                    id="min_hours_monthly"
+                    defaultValue={currentGigData.availability?.minimumHours?.monthly}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={backToMain}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+            >
+              Save Changes
+            </button>
+          </div>
         </div>
       </div>
     );
