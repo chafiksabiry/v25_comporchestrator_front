@@ -352,29 +352,29 @@ const ApprovalPublishing = () => {
     try {
       const companyId = Cookies.get('companyId');
       if (!companyId) {
-        console.warn('Company ID not found, cannot mark step 13 as completed');
+        console.warn('Company ID not found, cannot complete last phase and step');
         return;
       }
 
-      console.log('🎯 Marking step 13 (phase 4) as completed due to active gig');
+      console.log('🎯 Completing last phase and step due to active gig');
       const response = await fetch(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/complete-last`,
         {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ status: 'completed' })
+          }
         }
       );
 
       if (response.ok) {
-        console.log('✅ Step 13 marked as completed successfully');
+        const responseData = await response.json();
+        console.log('✅ Last phase and step completed successfully:', responseData);
       } else {
-        console.warn('⚠️ Failed to mark step 13 as completed:', response.status);
+        console.warn('⚠️ Failed to complete last phase and step:', response.status);
       }
     } catch (error) {
-      console.error('❌ Error marking step 13 as completed:', error);
+      console.error('❌ Error completing last phase and step:', error);
     }
   };
 

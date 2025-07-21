@@ -256,19 +256,21 @@ const CompanyOnboarding = () => {
           gigStatuses: gigs.map((g: any) => g.status) 
         });
         
-        // If at least one gig is active, mark step 13 (phase 4) as completed
+        // If at least one gig is active, complete the last phase and step
         if (hasActiveGig) {
           try {
-            console.log('✅ Found active gig - marking step 13 as completed');
-            await axios.put(
-              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
-              { status: 'completed' }
+            console.log('✅ Found active gig - completing last phase and step');
+            const completeResponse = await axios.put(
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/complete-last`
             );
-            // Update local state to reflect the completed step
-            setCompletedSteps(prev => [...prev, 13]);
-            console.log('✅ Step 13 marked as completed');
+            
+            if (completeResponse.data) {
+              console.log('✅ Last phase and step completed successfully:', completeResponse.data);
+              // Reload progress to reflect the changes
+              await loadCompanyProgress();
+            }
           } catch (error) {
-            console.error('Error updating onboarding progress for step 13:', error);
+            console.error('Error completing last phase and step:', error);
           }
         }
         
