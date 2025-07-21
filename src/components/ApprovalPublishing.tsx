@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle, 
   XCircle, 
@@ -13,70 +13,88 @@ import {
   CheckSquare,
   Square
 } from 'lucide-react';
+import Cookies from 'js-cookie';
+
+interface Gig {
+  _id: string;
+  title: string;
+  description?: string;
+  status: string;
+  category?: string;
+  budget?: string;
+  companyId: string;
+  createdAt: string;
+  updatedAt: string;
+  submittedBy?: string;
+  issues?: string[];
+}
 
 const ApprovalPublishing = () => {
-  const [expandedGig, setExpandedGig] = useState<number | null>(1);
-  const [selectedGigs, setSelectedGigs] = useState<number[]>([]);
+  const [expandedGig, setExpandedGig] = useState<string | null>(null);
+  const [selectedGigs, setSelectedGigs] = useState<string[]>([]);
   const [filter, setFilter] = useState('pending');
+  const [gigs, setGigs] = useState<Gig[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const gigs = [
-    { 
-      id: 1, 
-      title: 'Web Development Project', 
-      client: 'XYZ Corp', 
-      budget: '$2,500', 
-      status: 'pending',
-      submittedBy: 'John Smith',
-      submittedAt: '2 hours ago',
-      issues: []
-    },
-    { 
-      id: 2, 
-      title: 'Digital Marketing Campaign', 
-      client: 'ABC Inc', 
-      budget: '$1,800', 
-      status: 'pending',
-      submittedBy: 'Sarah Johnson',
-      submittedAt: '5 hours ago',
-      issues: ['Missing target audience information', 'Budget details incomplete']
-    },
-    { 
-      id: 3, 
-      title: 'Mobile App Development', 
-      client: 'Tech Startup', 
-      budget: '$5,000', 
-      status: 'approved',
-      submittedBy: 'Michael Brown',
-      submittedAt: '1 day ago',
-      issues: []
-    },
-    { 
-      id: 4, 
-      title: 'Content Creation for Blog', 
-      client: 'Marketing Agency', 
-      budget: '$800', 
-      status: 'rejected',
-      submittedBy: 'Emily Davis',
-      submittedAt: '2 days ago',
-      issues: ['Scope of work unclear', 'Timeline not specified', 'Budget too low for requirements']
-    },
-    { 
-      id: 5, 
-      title: 'UI/UX Design for Website', 
-      client: 'E-commerce Store', 
-      budget: '$1,200', 
-      status: 'approved',
-      submittedBy: 'David Wilson',
-      submittedAt: '3 days ago',
-      issues: []
-    },
-  ];
+  useEffect(() => {
+    fetchGigs();
+  }, []);
 
-  const toggleGig = (id: number) => {
+  const fetchGigs = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const companyId = Cookies.get('companyId');
+      if (!companyId) {
+        throw new Error('Company ID not found');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`, {
+        headers: {
+          'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch gigs');
+      }
+
+      const data = await response.json();
+      
+      if (data.data) {
+        // Transformer les données pour correspondre à l'interface attendue
+        const transformedGigs = data.data.map((gig: any) => ({
+          _id: gig._id,
+          title: gig.title,
+          description: gig.description,
+          status: gig.status || 'pending',
+          category: gig.category,
+          budget: gig.commission?.baseAmount ? `$${gig.commission.baseAmount}` : 'N/A',
+          companyId: gig.companyId,
+          createdAt: gig.createdAt,
+          updatedAt: gig.updatedAt,
+          submittedBy: gig.submittedBy || 'Unknown',
+          issues: gig.issues || []
+        }));
+        
+        setGigs(transformedGigs);
+      }
+    } catch (err) {
+      console.error('Error fetching gigs:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch gigs');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const toggleGig = (id: string) => {
     setExpandedGig(expandedGig === id ? null : id);
   };
 
-  const toggleSelectGig = (id: number) => {
+  const toggleSelectGig = (id: string) => {
     if (selectedGigs.includes(id)) {
       setSelectedGigs(selectedGigs.filter(gigId => gigId !== id));
     } else {
@@ -88,7 +106,7 @@ const ApprovalPublishing = () => {
     if (selectedGigs.length === filteredGigs.length) {
       setSelectedGigs([]);
     } else {
-      setSelectedGigs(filteredGigs.map(gig => gig.id));
+      setSelectedGigs(filteredGigs.map(gig => gig._id));
     }
   };
 
@@ -96,6 +114,57 @@ const ApprovalPublishing = () => {
     if (filter === 'all') return true;
     return gig.status === filter;
   });
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays === 1) return '1 day ago';
+    return `${diffInDays} days ago`;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">Approval & Publishing</h1>
+        </div>
+        <div className="rounded-lg bg-white shadow p-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+            <p className="mt-2 text-gray-500">Loading gigs...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">Approval & Publishing</h1>
+        </div>
+        <div className="rounded-lg bg-white shadow p-8">
+          <div className="text-center">
+            <AlertTriangle className="h-8 w-8 text-red-500 mx-auto" />
+            <p className="mt-2 text-red-600">{error}</p>
+            <button 
+              onClick={fetchGigs}
+              className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -180,11 +249,11 @@ const ApprovalPublishing = () => {
         ) : (
           <div className="divide-y divide-gray-200">
             {filteredGigs.map((gig) => (
-              <div key={gig.id} className="hover:bg-gray-50">
+              <div key={gig._id} className="hover:bg-gray-50">
                 <div className="flex items-center p-4">
                   <div className="mr-3">
-                    <button onClick={() => toggleSelectGig(gig.id)}>
-                      {selectedGigs.includes(gig.id) ? (
+                    <button onClick={() => toggleSelectGig(gig._id)}>
+                      {selectedGigs.includes(gig._id) ? (
                         <CheckSquare className="h-5 w-5 text-indigo-600" />
                       ) : (
                         <Square className="h-5 w-5 text-gray-400" />
@@ -193,7 +262,7 @@ const ApprovalPublishing = () => {
                   </div>
                   <div 
                     className="flex flex-1 cursor-pointer items-center justify-between"
-                    onClick={() => toggleGig(gig.id)}
+                    onClick={() => toggleGig(gig._id)}
                   >
                     <div className="flex items-center space-x-3">
                       <div className="h-10 w-10 flex-shrink-0 rounded-full bg-indigo-100 flex items-center justify-center">
@@ -201,7 +270,7 @@ const ApprovalPublishing = () => {
                       </div>
                       <div>
                         <h3 className="text-base font-medium text-gray-900">{gig.title}</h3>
-                        <p className="text-sm text-gray-500">{gig.client} • {gig.budget}</p>
+                        <p className="text-sm text-gray-500">{gig.category || 'No category'} • {gig.budget}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
@@ -223,7 +292,7 @@ const ApprovalPublishing = () => {
                           Rejected
                         </span>
                       )}
-                      {expandedGig === gig.id ? (
+                      {expandedGig === gig._id ? (
                         <ChevronUp className="h-5 w-5 text-gray-400" />
                       ) : (
                         <ChevronDown className="h-5 w-5 text-gray-400" />
@@ -232,7 +301,7 @@ const ApprovalPublishing = () => {
                   </div>
                 </div>
                 
-                {expandedGig === gig.id && (
+                {expandedGig === gig._id && (
                   <div className="border-t border-gray-100 bg-gray-50 p-4">
                     <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                       <div>
@@ -241,7 +310,7 @@ const ApprovalPublishing = () => {
                       </div>
                       <div>
                         <p className="text-xs font-medium text-gray-500">Submitted</p>
-                        <p className="text-sm font-medium text-gray-900">{gig.submittedAt}</p>
+                        <p className="text-sm font-medium text-gray-900">{formatDate(gig.createdAt)}</p>
                       </div>
                       <div>
                         <p className="text-xs font-medium text-gray-500">Status</p>
@@ -249,7 +318,14 @@ const ApprovalPublishing = () => {
                       </div>
                     </div>
                     
-                    {gig.issues.length > 0 && (
+                    {gig.description && (
+                      <div className="mb-4">
+                        <p className="text-xs font-medium text-gray-500">Description</p>
+                        <p className="text-sm text-gray-900 mt-1">{gig.description}</p>
+                      </div>
+                    )}
+                    
+                    {gig.issues && gig.issues.length > 0 && (
                       <div className="mb-4 rounded-md bg-yellow-50 p-3">
                         <div className="flex">
                           <div className="flex-shrink-0">
