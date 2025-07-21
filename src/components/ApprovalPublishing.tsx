@@ -568,6 +568,50 @@ const ApprovalPublishing = () => {
     }
   };
 
+  const fetchDestinationZoneData = async (gigData: any) => {
+    try {
+      console.log('🌍 Fetching destination zone data for gig');
+      
+      // Get destination zone from gig data
+      const destinationZone = gigData.destination_zone;
+      console.log('🔍 Destination zone from gig:', destinationZone);
+      
+      if (!destinationZone) {
+        console.log('⚠️ No destination zone found in gig data');
+        return;
+      }
+      
+      // Fetch timezone data for the destination zone (using country code)
+      try {
+        // For now, we'll use FR as default, but this could be enhanced to map destination zones to country codes
+        const countryCode = 'FR'; // This could be dynamic based on destination zone mapping
+        const response = await fetch(`${import.meta.env.VITE_REP_API}/timezones/country/${countryCode}`);
+        if (response.ok) {
+          const responseData = await response.json();
+          console.log('✅ Fetched destination zone timezones response:', responseData);
+          
+          if (responseData.success && responseData.data && responseData.data.length > 0) {
+            // Use the first element as specified
+            const timezone = responseData.data[0];
+            setTimezoneData(prev => ({ 
+              ...prev, 
+              destinationZone: timezone 
+            }));
+            console.log(`✅ Set destination zone timezone:`, timezone.zoneName);
+          } else {
+            console.warn('⚠️ Invalid response format for destination zone timezones');
+          }
+        } else {
+          console.warn('⚠️ Failed to fetch destination zone timezones');
+        }
+      } catch (error) {
+        console.warn('⚠️ Error fetching destination zone timezones:', error);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching destination zone data:', error);
+    }
+  };
+
   const archiveGig = async (gigId: string) => {
     try {
       console.log('📦 Archiving gig:', gigId);
@@ -663,6 +707,9 @@ const ApprovalPublishing = () => {
       // Fetch timezone data for this gig
       await fetchTimezoneData(gigData.data);
       
+      // Fetch destination zone data for this gig
+      await fetchDestinationZoneData(gigData.data);
+      
       setCurrentView('preview');
     } catch (error) {
       console.error('❌ Error previewing gig:', error);
@@ -713,6 +760,9 @@ const ApprovalPublishing = () => {
       
       // Fetch timezone data for this gig
       await fetchTimezoneData(gigData.data);
+      
+      // Fetch destination zone data for this gig
+      await fetchDestinationZoneData(gigData.data);
       
       setCurrentView('edit');
     } catch (error) {
@@ -822,7 +872,15 @@ const ApprovalPublishing = () => {
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-500">Destination Zone:</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.destination_zone || 'Not specified'}</p>
+                  <p className="text-sm text-gray-900 mt-1">
+                    {(() => {
+                      const destinationZoneData = timezoneData.destinationZone;
+                      if (destinationZoneData) {
+                        return `${currentGigData.destination_zone} (${destinationZoneData.zoneName}, ${destinationZoneData.countryName})`;
+                      }
+                      return currentGigData.destination_zone || 'Not specified';
+                    })()}
+                  </p>
                 </div>
               </div>
               <div className="space-y-3">
@@ -1160,6 +1218,11 @@ const ApprovalPublishing = () => {
                     defaultValue={currentGigData.destination_zone}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
+                  {timezoneData.destinationZone && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      Timezone: {timezoneData.destinationZone.zoneName} ({timezoneData.destinationZone.countryName})
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
