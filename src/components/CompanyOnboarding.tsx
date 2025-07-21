@@ -257,7 +257,7 @@ const CompanyOnboarding = () => {
         });
         
         // If at least one gig is active, mark step 13 (phase 4) as completed
-        if (hasActiveGig && !completedSteps.includes(13)) {
+        if (hasActiveGig) {
           try {
             console.log('✅ Found active gig - marking step 13 as completed');
             await axios.put(
@@ -273,7 +273,7 @@ const CompanyOnboarding = () => {
         }
         
         // If no gigs are active and step 13 was previously completed, mark it as in_progress
-        if (!hasActiveGig && completedSteps.includes(13)) {
+        else {
           try {
             console.log('⚠️ No active gigs found - marking step 13 as in_progress');
             await axios.put(
