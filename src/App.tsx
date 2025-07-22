@@ -30,6 +30,7 @@ function App() {
 
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [companyId, setCompanyId] = useState<string | null>(null);
 
   // Vérifier si nous sommes sur une page spéciale
   const isZohoCallback = window.location.pathname === '/zoho-callback';
@@ -54,12 +55,9 @@ function App() {
     }
 
     // Récupérer et stocker le dernier gig dans les cookies
-    const fetchAndStoreLastGig = async () => {
+    const fetchAndStoreLastGig = async (currentCompanyId: string) => {
       try {
-        // Récupérer le companyId depuis les cookies ou localStorage
-        const companyId = Cookies.get('companyId') || localStorage.getItem('companyId');
-        
-        if (!companyId) {
+        if (!currentCompanyId) {
           console.log('CompanyId not found, skipping last gig fetch');
           return;
         }
@@ -71,7 +69,7 @@ function App() {
           return;
         }
 
-        const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}/last`);
+        const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/company/${currentCompanyId}/last`);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -89,7 +87,13 @@ function App() {
       }
     };
 
-    fetchAndStoreLastGig();
+    // Récupérer le companyId initial
+    const initialCompanyId = Cookies.get('companyId') || localStorage.getItem('companyId');
+    setCompanyId(initialCompanyId);
+    
+    if (initialCompanyId) {
+      fetchAndStoreLastGig(initialCompanyId);
+    }
 
     // Listen for tab change events from CompanyOnboarding
     const handleTabChange = (event: CustomEvent) => {
@@ -120,6 +124,49 @@ function App() {
       window.removeEventListener('message', handleMessage);
     };
   }, []);
+
+  // Surveiller les changements du companyId pour récupérer le lastGigId
+  useEffect(() => {
+    const checkCompanyIdAndFetchLastGig = () => {
+      const currentCompanyId = Cookies.get('companyId') || localStorage.getItem('companyId');
+      
+      // Si le companyId a changé ou si on n'a pas de lastGigId
+      if (currentCompanyId && currentCompanyId !== companyId) {
+        console.log('CompanyId changed, fetching last gig for:', currentCompanyId);
+        setCompanyId(currentCompanyId);
+        
+        // Supprimer l'ancien lastGigId s'il existe
+        Cookies.remove('lastGigId');
+        
+        // Récupérer le nouveau lastGigId
+        const fetchAndStoreLastGig = async () => {
+          try {
+            const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/company/${currentCompanyId}/last`);
+            
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.data && result.data._id) {
+              Cookies.set('lastGigId', result.data._id, { expires: 30 });
+              console.log('New last gig ID stored in cookies:', result.data._id);
+            }
+          } catch (error) {
+            console.error('Error fetching last gig:', error);
+          }
+        };
+        
+        fetchAndStoreLastGig();
+      }
+    };
+
+    // Vérifier toutes les 2 secondes si le companyId a changé
+    const interval = setInterval(checkCompanyIdAndFetchLastGig, 2000);
+
+    return () => clearInterval(interval);
+  }, [companyId]);
 
 
   const handleLogout = () => {
