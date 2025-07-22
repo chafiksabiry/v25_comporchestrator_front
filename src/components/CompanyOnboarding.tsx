@@ -400,11 +400,13 @@ const CompanyOnboarding = () => {
       
       // Special handling for Knowledge Base step
       if (stepId === 7) {
-        if (completedSteps.includes(stepId)) {
           window.location.replace(import.meta.env.VITE_KNOWLEDGE_BASE_URL);
-        } else {
-          window.location.replace(`${import.meta.env.VITE_KNOWLEDGE_BASE_URL}/upload`);
-        }
+        return;
+      }
+      
+      // Special handling for Call Script step
+      if (stepId === 8) {
+          window.location.replace(import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL);
         return;
       }
       
@@ -593,8 +595,7 @@ const CompanyOnboarding = () => {
           title: 'Call Script',
           description: 'Define script and conversation flows',
           status: 'pending',
-          component: CallScript,
-          disabled: true
+          component: CallScript
         },
         {
           id: 9,
@@ -627,14 +628,14 @@ const CompanyOnboarding = () => {
           component: RepOnboarding,
           disabled: true
         },
-        {
-          id: 12,
-          title: 'Session Planning',
-          description: 'Schedule call slots and prioritize leads',
-          status: 'pending',
-          component: SessionPlanning,
-          disabled: true
-        }
+        // {
+        //   id: 12,
+        //   title: 'Session Planning',
+        //   description: 'Schedule call slots and prioritize leads',
+        //   status: 'pending',
+        //   component: SessionPlanning,
+        //   disabled: true
+        // }
       ]
     },
     {
@@ -722,9 +723,24 @@ const CompanyOnboarding = () => {
           console.log('Redirecting to review page:', baseUrl);
           window.location.replace(baseUrl);
         } else {
-          console.log('Redirecting to upload page:', `${baseUrl}/upload`);
-          window.location.replace(`${baseUrl}/upload`);
+          console.log('Redirecting to upload page:', `${baseUrl}`);
+          window.location.replace(`${baseUrl}`);
         }
+      }
+      return;
+    }
+
+    // Pour Call Script
+    if (stepId === 8) {
+      console.log('Call Script step clicked');
+      console.log('All previous completed:', allPreviousCompleted);
+      console.log('Step completed:', completedSteps.includes(stepId));
+      console.log('Script Generation URL:', import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL);
+      
+      if (allPreviousCompleted) {
+        const baseUrl = import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL;
+        console.log('Redirecting to script generation:', baseUrl);
+        window.location.replace(baseUrl);
       }
       return;
     }
