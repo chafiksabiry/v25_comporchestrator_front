@@ -64,6 +64,13 @@ function App() {
           return;
         }
 
+        // Vérifier si on a déjà un lastGigId en cache
+        const existingLastGigId = Cookies.get('lastGigId');
+        if (existingLastGigId) {
+          console.log('Last gig ID already exists in cookies:', existingLastGigId);
+          return;
+        }
+
         const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}/last`);
         
         if (!response.ok) {
@@ -126,7 +133,13 @@ function App() {
       // Rediriger vers /app2
       window.location.href = '/app1';
     } else {
-      console.log('Logout disabled in development mode');
+      // En mode développement, supprimer seulement les cookies d'authentification
+      // mais garder le lastGigId pour les tests
+      const authCookies = ['companyId', 'userId', 'sessionToken']; // Ajoutez ici les cookies d'auth
+      authCookies.forEach(cookieName => {
+        Cookies.remove(cookieName);
+      });
+      console.log('Logout disabled in development mode - only auth cookies removed');
     }
   };
 
