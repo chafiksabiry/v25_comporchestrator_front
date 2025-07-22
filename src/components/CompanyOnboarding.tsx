@@ -32,6 +32,7 @@ import Cookies from 'js-cookie';
 import axios from 'axios';
 import GigDetails from './onboarding/GigDetails';
 import KnowledgeBase from './onboarding/KnowledgeBase';
+import ApprovalPublishing from './ApprovalPublishing';
 import ZohoService from '../services/zohoService';
 
 interface BaseStep {
@@ -96,6 +97,17 @@ interface CompanyResponse {
   };
 }
 
+interface GigResponse {
+  success: boolean;
+  message: string;
+  data: Array<{
+    _id: string;
+    title: string;
+    status: string;
+    // Add other gig fields as needed
+  }>;
+}
+
 const CompanyOnboarding = () => {
   const [currentPhase, setCurrentPhase] = useState(1);
   const [displayedPhase, setDisplayedPhase] = useState(1);
@@ -149,6 +161,7 @@ const CompanyOnboarding = () => {
   // Load company progress and check gigs when company ID is available
   useEffect(() => {
     if (companyId) {
+      console.log('🔄 Company ID available, loading progress and checking gigs...');
       loadCompanyProgress();
       checkCompanyGigs();
       
@@ -156,6 +169,18 @@ const CompanyOnboarding = () => {
       checkZohoConnection();
     }
   }, [companyId]);
+
+  // Recharger les données périodiquement pour détecter les changements
+  // Désactivé car cause trop de rafraîchissements
+  // useEffect(() => {
+  //   if (!companyId) return;
+
+  //   const interval = setInterval(() => {
+  //     loadCompanyProgress();
+  //   }, 5000); // Recharger toutes les 5 secondes
+
+  //   return () => clearInterval(interval);
+  // }, [companyId]);
 
   // Si l'URL contient ?startStep=6 ou si on est sur l'URL spécifique avec session, on lance handleStartStep(6)
   useEffect(() => {
@@ -214,16 +239,83 @@ const CompanyOnboarding = () => {
     }
   };
 
+  const checkActiveGigs = async () => {
+    try {
+      console.log('🔍 Checking for active gigs...');
+      const response = await axios.get<GigResponse>(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`);
+      
+      if (response.data && response.data.data) {
+        const gigs = response.data.data;
+        const hasActiveGig = gigs.some((gig: any) => 
+          gig.status === 'active' || gig.status === 'approved' || gig.status === 'published'
+        );
+        
+        console.log('🔍 Active gigs check:', { 
+          totalGigs: gigs.length, 
+          hasActiveGig, 
+          gigStatuses: gigs.map((g: any) => g.status) 
+        });
+        
+        // If at least one gig is active, complete the last phase and step
+        if (hasActiveGig) {
+          try {
+            console.log('✅ Found active gig - completing last phase and step');
+            const completeResponse = await axios.put(
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/complete-last`
+            );
+            
+            if (completeResponse.data) {
+              console.log('✅ Last phase and step completed successfully:', completeResponse.data);
+              // Reload progress to reflect the changes
+              await loadCompanyProgress();
+            }
+          } catch (error) {
+            console.error('Error completing last phase and step:', error);
+          }
+        }
+        
+        // If no gigs are active and step 13 was previously completed, mark it as in_progress
+        else {
+          try {
+            console.log('⚠️ No active gigs found - updating phase and step statuses');
+            
+            // Mark step 13 as in_progress
+            await axios.put(
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
+              { status: 'in_progress' }
+            );
+            
+            // Update current phase to 4
+            await axios.put(
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/current-phase`,
+              { phase: 4 }
+            );
+            
+            // Update local state to remove the completed step
+            setCompletedSteps(prev => prev.filter(step => step !== 13));
+            console.log('⚠️ Step 13 removed from completed steps and marked as in_progress');
+          } catch (error) {
+            console.error('Error updating onboarding progress for step 13:', error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking active gigs:', error);
+    }
+  };
+
   // Real-time leads checking
   useEffect(() => {
     if (!companyId) return;
 
     // Initial check
     checkCompanyLeads();
+    checkActiveGigs();
 
     // Set up real-time checking every 30 seconds
     const intervalId = setInterval(() => {
       checkCompanyLeads();
+      checkActiveGigs();
     }, 30000); // Check every 30 seconds
 
     // Cleanup interval on component unmount or when companyId changes
@@ -237,22 +329,24 @@ const CompanyOnboarding = () => {
     try {
       const response = await axios.get<OnboardingProgressResponse>(`${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`);
       const progress = response.data;
-      console.log('progress', response.data);
+      console.log('🔄 API Response:', response.data);
+      console.log('🔄 currentPhase from API:', progress.currentPhase);
+      console.log('🔄 completedSteps from API:', progress.completedSteps);
       
       // Store the progress in cookies
       Cookies.set('companyOnboardingProgress', JSON.stringify(progress));
       
-      // Check if all non-disabled steps in Phase 2 are completed before advancing to phase 3
-      const phase2Steps = phases[1].steps.filter(step => !step.disabled);
-      const allPhase2Completed = phase2Steps.every(step => progress.completedSteps.includes(step.id));
-      
-      if (allPhase2Completed) {
+      // Check if step 7 is completed and automatically advance to phase 3
+      // BUT only if we're not already in phase 4 or beyond
+      if (progress.completedSteps.includes(7) && progress.currentPhase < 4) {
         const validPhase = 3;
+        console.log('🔄 Forcing phase to 3 because step 7 is completed and currentPhase < 4');
         setCurrentPhase(validPhase);
         setDisplayedPhase(validPhase);
       } else {
         // Vérifier que la phase est valide (entre 1 et 4)
         const validPhase = Math.max(1, Math.min(4, progress.currentPhase));
+        console.log('🔄 Setting phase to:', validPhase, 'from API currentPhase:', progress.currentPhase);
         setCurrentPhase(validPhase);
         setDisplayedPhase(validPhase);
       }
@@ -313,6 +407,21 @@ const CompanyOnboarding = () => {
       // Special handling for Call Script step
       if (stepId === 8) {
           window.location.replace(import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL);
+        return;
+      }
+      
+      // Special handling for Gig Activation step (step 13) - redirect to Approval & Publishing
+      if (stepId === 13) {
+        // Set the active tab to approval-publishing in the parent App component
+        if (window.parent && window.parent !== window) {
+          // If we're in an iframe, communicate with parent
+          window.parent.postMessage({ type: 'SET_ACTIVE_TAB', tab: 'approval-publishing' }, '*');
+        } else {
+          // If we're in the main window, use localStorage to communicate with App component
+          localStorage.setItem('activeTab', 'approval-publishing');
+          // Trigger a custom event to notify the App component
+          window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'approval-publishing' } }));
+        }
         return;
       }
       
@@ -540,8 +649,7 @@ const CompanyOnboarding = () => {
           title: 'Gig Activation',
           description: 'Launch multi-channel operations',
           status: 'pending',
-          // component: GigActivation,
-          disabled: true
+          component: ApprovalPublishing
         }
       ]
     }
@@ -728,8 +836,20 @@ const CompanyOnboarding = () => {
         {phases.map((phase) => {
           const PhaseIcon = phase.icon;
           const isActive = displayedPhase === phase.id;
-          const isCompleted = currentPhase > phase.id;
+          const isCompleted = isPhaseCompleted(phase.id);
           const isAccessible = isPhaseAccessible(phase.id);
+          
+          // Debug pour la Phase 3
+          if (phase.id === 3) {
+            console.log('Phase 3 Debug:', {
+              isActive,
+              isCompleted,
+              isAccessible,
+              currentPhase,
+              displayedPhase,
+              completedSteps
+            });
+          }
           
           return (
             <div
@@ -793,6 +913,19 @@ const CompanyOnboarding = () => {
                 .every(s => s.disabled || completedSteps.includes(s.id));
             const canAccessStep = isPhaseAccessible(displayedPhaseData.id);
 
+            // Debug pour l'étape 13
+            if (step.id === 13) {
+              console.log('Step 13 Debug:', {
+                isClickable,
+                isCompleted,
+                isCurrentStep,
+                canAccessStep,
+                stepDisabled: step.disabled,
+                completedSteps,
+                displayedPhaseData: displayedPhaseData.id
+              });
+            }
+
 
             return (
               <div
@@ -803,8 +936,8 @@ const CompanyOnboarding = () => {
                   isCompleted ? 'border-green-200 bg-green-50' :
                   isCurrentStep ? 'border-indigo-200 bg-indigo-50 ring-2 ring-indigo-500' :
                   'border-gray-200 bg-white'
-                } ${(isClickable && !step.disabled && canAccessStep && (isCompleted || isCurrentStep)) ? 'cursor-pointer hover:border-indigo-300' : ''}`}
-                onClick={() => isClickable && !step.disabled && canAccessStep && (isCompleted || isCurrentStep) && handleStepClick(step.id)}
+                } ${(isClickable && !step.disabled && canAccessStep) ? 'cursor-pointer hover:border-indigo-300' : ''}`}
+                onClick={() => isClickable && !step.disabled && canAccessStep && handleStepClick(step.id)}
               >
                 <div className="flex items-start space-x-4">
                   <div className={`rounded-full p-2 ${
@@ -844,7 +977,7 @@ const CompanyOnboarding = () => {
                       )}
                     </div>
                     <p className="mt-1 text-sm text-gray-500">{step.description}</p>
-                    {isClickable && !step.disabled && canAccessStep && (isCompleted || isCurrentStep) && (
+                    {isClickable && !step.disabled && canAccessStep && (
                       <button 
                         className="mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-500"
                         onClick={() => handleStartStep(step.id)}
