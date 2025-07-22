@@ -62,12 +62,8 @@ function App() {
           return;
         }
 
-        // Vérifier si on a déjà un lastGigId en cache
-        const existingLastGigId = Cookies.get('lastGigId');
-        if (existingLastGigId) {
-          console.log('Last gig ID already exists in cookies:', existingLastGigId);
-          return;
-        }
+        // Toujours récupérer le dernier gig pour s'assurer qu'il est à jour
+        console.log('Fetching latest gig for company:', currentCompanyId);
 
         const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/company/${currentCompanyId}/last`);
         
@@ -125,6 +121,41 @@ function App() {
     };
   }, []);
 
+  // Fonction utilitaire pour mettre à jour le lastGigId
+  const updateLastGigId = async () => {
+    const currentCompanyId = Cookies.get('companyId') || localStorage.getItem('companyId');
+    if (!currentCompanyId) {
+      console.log('CompanyId not found, cannot update last gig ID');
+      return;
+    }
+
+    try {
+      console.log('Updating last gig ID for company:', currentCompanyId);
+      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/company/${currentCompanyId}/last`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.data && result.data._id) {
+        Cookies.set('lastGigId', result.data._id, { expires: 30 });
+        console.log('Last gig ID updated in cookies:', result.data._id);
+      }
+    } catch (error) {
+      console.error('Error updating last gig ID:', error);
+    }
+  };
+
+  // Exposer la fonction globalement pour qu'elle puisse être appelée depuis d'autres composants
+  useEffect(() => {
+    (window as any).updateLastGigId = updateLastGigId;
+    return () => {
+      delete (window as any).updateLastGigId;
+    };
+  }, []);
+
   // Surveiller les changements du companyId pour récupérer le lastGigId
   useEffect(() => {
     const checkCompanyIdAndFetchLastGig = () => {
@@ -167,6 +198,37 @@ function App() {
 
     return () => clearInterval(interval);
   }, [companyId]);
+
+  // Vérifier périodiquement si le lastGigId est à jour (toutes les 30 secondes)
+  useEffect(() => {
+    const checkLastGigIdIsUpToDate = async () => {
+      const currentCompanyId = Cookies.get('companyId') || localStorage.getItem('companyId');
+      if (!currentCompanyId) return;
+
+      try {
+        const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/company/${currentCompanyId}/last`);
+        
+        if (!response.ok) return;
+        
+        const result = await response.json();
+        
+        if (result.data && result.data._id) {
+          const currentLastGigId = Cookies.get('lastGigId');
+          if (currentLastGigId !== result.data._id) {
+            console.log('Last gig ID outdated, updating...');
+            Cookies.set('lastGigId', result.data._id, { expires: 30 });
+            console.log('Last gig ID updated to:', result.data._id);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking last gig ID:', error);
+      }
+    };
+
+    const interval = setInterval(checkLastGigIdIsUpToDate, 30000); // 30 secondes
+
+    return () => clearInterval(interval);
+  }, []);
 
 
   const handleLogout = () => {
