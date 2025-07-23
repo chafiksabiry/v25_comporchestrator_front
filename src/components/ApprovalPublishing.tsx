@@ -1463,7 +1463,7 @@ const ApprovalPublishing = () => {
                 <div className="flex flex-wrap gap-2">
                   {currentGigData.skills?.languages?.map((lang: any, index: number) => (
                     <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-800 border border-indigo-200">
-                      {lang.language} ({lang.proficiency})
+                      {getLanguageName(lang.language)} ({lang.proficiency})
                     </span>
                   )) || <span className="text-sm text-gray-500 italic">No languages specified</span>}
                 </div>
