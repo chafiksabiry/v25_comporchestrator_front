@@ -100,6 +100,23 @@ interface IndustriesResponse {
   message: string;
 }
 
+interface Language {
+  _id: string;
+  code: string;
+  name: string;
+  nativeName: string;
+  createdAt: string;
+  lastUpdated: string;
+  updatedAt: string;
+}
+
+interface LanguagesResponse {
+  success: boolean;
+  data: Language[];
+  pagination: any;
+  message: string;
+}
+
 const ApprovalPublishing = () => {
   const [expandedGig, setExpandedGig] = useState<string | null>(null);
   const [selectedGigs, setSelectedGigs] = useState<string[]>([]);
@@ -119,12 +136,14 @@ const ApprovalPublishing = () => {
   const [editingSchedule, setEditingSchedule] = useState<any>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [industries, setIndustries] = useState<Industry[]>([]);
+  const [languages, setLanguages] = useState<Language[]>([]);
 
   useEffect(() => {
     fetchGigs();
     fetchCompanyDetails();
     fetchActivities();
     fetchIndustries();
+    fetchLanguages();
   }, []);
 
     const fetchCompanyDetails = async () => {
@@ -163,6 +182,16 @@ const ApprovalPublishing = () => {
     }
   };
 
+  const fetchLanguages = async () => {
+    try {
+      const response = await axios.get<LanguagesResponse>(`${import.meta.env.VITE_REP_API}/languages`);
+      console.log('🗣️ Languages fetched:', response.data.data);
+      setLanguages(response.data.data);
+    } catch (err) {
+      console.error('❌ Error fetching languages:', err);
+    }
+  };
+
   const getActivityName = (activityId: string): string => {
     const activity = activities.find(a => a._id === activityId);
     return activity ? activity.name : activityId;
@@ -171,6 +200,11 @@ const ApprovalPublishing = () => {
   const getIndustryName = (industryId: string): string => {
     const industry = industries.find(i => i._id === industryId);
     return industry ? industry.name : industryId;
+  };
+
+  const getLanguageName = (languageId: string): string => {
+    const language = languages.find(l => l._id === languageId);
+    return language ? language.name : languageId;
   };
 
   const fetchGigs = async () => {
@@ -1092,12 +1126,14 @@ const ApprovalPublishing = () => {
 
   const handleSaveChanges = async () => {
     try {
-      // Get the selected activities and industries from the form
+      // Get the selected activities, industries, and languages from the form
       const activitiesSelect = document.getElementById('activities') as HTMLSelectElement;
       const industriesSelect = document.getElementById('industries') as HTMLSelectElement;
+      const languagesSelect = document.getElementById('languages') as HTMLSelectElement;
       
       const selectedActivities = Array.from(activitiesSelect?.selectedOptions || []).map(option => option.value);
       const selectedIndustries = Array.from(industriesSelect?.selectedOptions || []).map(option => option.value);
+      const selectedLanguages = Array.from(languagesSelect?.selectedOptions || []).map(option => option.value);
 
       // Get other form values
       const seniorityLevel = (document.getElementById('seniority_level') as HTMLSelectElement)?.value;
@@ -1107,6 +1143,7 @@ const ApprovalPublishing = () => {
       const updateData = {
         activities: selectedActivities,
         industries: selectedIndustries,
+        languages: selectedLanguages,
         seniority: {
           level: seniorityLevel,
           yearsExperience: parseInt(yearsExperience) || 0
