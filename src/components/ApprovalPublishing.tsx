@@ -67,6 +67,56 @@ interface CompanyResponse {
   data: Company;
 }
 
+interface Activity {
+  _id: string;
+  name: string;
+  description: string;
+  category: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Industry {
+  _id: string;
+  name: string;
+  description: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ActivitiesResponse {
+  success: boolean;
+  data: Activity[];
+  pagination: any;
+  message: string;
+}
+
+interface IndustriesResponse {
+  success: boolean;
+  data: Industry[];
+  pagination: any;
+  message: string;
+}
+
+interface Language {
+  _id: string;
+  code: string;
+  name: string;
+  nativeName: string;
+  createdAt: string;
+  lastUpdated: string;
+  updatedAt: string;
+}
+
+interface LanguagesResponse {
+  success: boolean;
+  data: Language[];
+  pagination: any;
+  message: string;
+}
+
 const ApprovalPublishing = () => {
   const [expandedGig, setExpandedGig] = useState<string | null>(null);
   const [selectedGigs, setSelectedGigs] = useState<string[]>([]);
@@ -84,10 +134,16 @@ const ApprovalPublishing = () => {
   const [schedules, setSchedules] = useState<any[]>([]);
   const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<any>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [industries, setIndustries] = useState<Industry[]>([]);
+  const [languages, setLanguages] = useState<Language[]>([]);
 
   useEffect(() => {
     fetchGigs();
     fetchCompanyDetails();
+    fetchActivities();
+    fetchIndustries();
+    fetchLanguages();
   }, []);
 
     const fetchCompanyDetails = async () => {
@@ -104,6 +160,51 @@ const ApprovalPublishing = () => {
     } catch (err) {
       console.error('❌ Error fetching company details:', err);
     }
+  };
+
+  const fetchActivities = async () => {
+    try {
+      const response = await axios.get<ActivitiesResponse>(`${import.meta.env.VITE_REP_API}/activities`);
+      console.log('📋 Activities fetched:', response.data.data);
+      setActivities(response.data.data);
+    } catch (err) {
+      console.error('❌ Error fetching activities:', err);
+    }
+  };
+
+  const fetchIndustries = async () => {
+    try {
+      const response = await axios.get<IndustriesResponse>(`${import.meta.env.VITE_REP_API}/industries`);
+      console.log('🏭 Industries fetched:', response.data.data);
+      setIndustries(response.data.data);
+    } catch (err) {
+      console.error('❌ Error fetching industries:', err);
+    }
+  };
+
+  const fetchLanguages = async () => {
+    try {
+      const response = await axios.get<LanguagesResponse>(`${import.meta.env.VITE_REP_API}/languages`);
+      console.log('🗣️ Languages fetched:', response.data.data);
+      setLanguages(response.data.data);
+    } catch (err) {
+      console.error('❌ Error fetching languages:', err);
+    }
+  };
+
+  const getActivityName = (activityId: string): string => {
+    const activity = activities.find(a => a._id === activityId);
+    return activity ? activity.name : activityId;
+  };
+
+  const getIndustryName = (industryId: string): string => {
+    const industry = industries.find(i => i._id === industryId);
+    return industry ? industry.name : industryId;
+  };
+
+  const getLanguageName = (languageId: string): string => {
+    const language = languages.find(l => l._id === languageId);
+    return language ? language.name : languageId;
   };
 
   const fetchGigs = async () => {
@@ -1023,6 +1124,62 @@ const ApprovalPublishing = () => {
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
+  const handleSaveChanges = async () => {
+    try {
+      // Get the selected activities, industries, and languages from the form
+      const activitiesSelect = document.getElementById('activities') as HTMLSelectElement;
+      const industriesSelect = document.getElementById('industries') as HTMLSelectElement;
+      const languagesSelect = document.getElementById('languages') as HTMLSelectElement;
+      
+      const selectedActivities = Array.from(activitiesSelect?.selectedOptions || []).map(option => option.value);
+      const selectedIndustries = Array.from(industriesSelect?.selectedOptions || []).map(option => option.value);
+      const selectedLanguages = Array.from(languagesSelect?.selectedOptions || []).map(option => option.value);
+
+      // Get other form values
+      const seniorityLevel = (document.getElementById('seniority_level') as HTMLSelectElement)?.value;
+      const yearsExperience = (document.getElementById('years_experience') as HTMLInputElement)?.value;
+
+      // Prepare the update data
+      const updateData = {
+        activities: selectedActivities,
+        industries: selectedIndustries,
+        languages: selectedLanguages,
+        seniority: {
+          level: seniorityLevel,
+          yearsExperience: parseInt(yearsExperience) || 0
+        }
+      };
+
+      console.log('💾 Saving gig changes:', updateData);
+
+      // Make API call to update the gig
+      const response = await axios.put<{success: boolean; message?: string}>(
+        `${import.meta.env.VITE_GIGS_API}/gigs/${currentGigData._id}`,
+        updateData,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        console.log('✅ Gig updated successfully');
+        // Update the local state
+        setCurrentGigData({
+          ...currentGigData,
+          ...updateData
+        });
+        // Go back to preview mode
+        setCurrentView('preview');
+      } else {
+        console.error('❌ Failed to update gig:', response.data.message);
+      }
+    } catch (error) {
+      console.error('❌ Error saving changes:', error);
+    }
+  };
+
   if (isLoading) {
     console.log('⏳ Rendering loading state');
     return (
@@ -1187,7 +1344,7 @@ const ApprovalPublishing = () => {
                 <div className="flex flex-wrap gap-2">
                   {currentGigData.activities?.map((activity: string, index: number) => (
                     <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200">
-                      {activity}
+                      {getActivityName(activity)}
                     </span>
                   )) || <span className="text-sm text-gray-500 italic">No activities specified</span>}
                 </div>
@@ -1200,7 +1357,7 @@ const ApprovalPublishing = () => {
                 <div className="flex flex-wrap gap-2">
                   {currentGigData.industries?.map((industry: string, index: number) => (
                     <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 border border-emerald-200">
-                      {industry}
+                      {getIndustryName(industry)}
                     </span>
                   )) || <span className="text-sm text-gray-500 italic">No industries specified</span>}
                 </div>
@@ -1306,7 +1463,7 @@ const ApprovalPublishing = () => {
                 <div className="flex flex-wrap gap-2">
                   {currentGigData.skills?.languages?.map((lang: any, index: number) => (
                     <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-800 border border-indigo-200">
-                      {lang.language} ({lang.proficiency})
+                      {getLanguageName(lang.language)} ({lang.proficiency})
                     </span>
                   )) || <span className="text-sm text-gray-500 italic">No languages specified</span>}
                 </div>
@@ -1574,13 +1731,19 @@ const ApprovalPublishing = () => {
                     Activities
                   </label>
                 </div>
-                <input
-                  type="text"
+                <select
                   id="activities"
-                  defaultValue={currentGigData.activities?.join(', ')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  placeholder="Enter activities (comma separated)"
-                />
+                  multiple
+                  defaultValue={currentGigData.activities || []}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 min-h-[120px]"
+                >
+                  {activities.map((activity) => (
+                    <option key={activity._id} value={activity._id}>
+                      {activity.name} - {activity.category}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple activities</p>
               </div>
               <div className="bg-white rounded-lg p-4 border border-green-100">
                 <div className="flex items-center gap-2 mb-3">
@@ -1589,13 +1752,19 @@ const ApprovalPublishing = () => {
                     Industries
                   </label>
                 </div>
-                <input
-                  type="text"
+                <select
                   id="industries"
-                  defaultValue={currentGigData.industries?.join(', ')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  placeholder="Enter industries (comma separated)"
-                />
+                  multiple
+                  defaultValue={currentGigData.industries || []}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 min-h-[120px]"
+                >
+                  {industries.map((industry) => (
+                    <option key={industry._id} value={industry._id}>
+                      {industry.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple industries</p>
               </div>
             </div>
           </div>
@@ -2169,7 +2338,8 @@ const ApprovalPublishing = () => {
               Cancel
             </button>
             <button
-              type="submit"
+              type="button"
+              onClick={handleSaveChanges}
               className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
             >
               Save Changes
