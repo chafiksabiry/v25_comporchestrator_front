@@ -154,30 +154,37 @@ const UploadContacts = React.memo(() => {
       };
     }
     
-    // Restore parsed leads if they exist
-    const savedParsedLeads = localStorage.getItem('parsedLeads');
-    const savedValidationResults = localStorage.getItem('validationResults');
-    
-    if (savedParsedLeads && !parsedLeads.length) {
-      try {
-        const leads = JSON.parse(savedParsedLeads);
-        setParsedLeads(leads);
-        console.log('🔄 Restored parsed leads from localStorage:', leads.length);
-      } catch (error) {
-        console.error('Error restoring parsed leads:', error);
+    // Restore parsed leads if they exist and we haven't already restored them
+    if (!dataRestoredRef.current) {
+      const savedParsedLeads = localStorage.getItem('parsedLeads');
+      const savedValidationResults = localStorage.getItem('validationResults');
+      
+      if (savedParsedLeads && !parsedLeads.length) {
+        try {
+          const leads = JSON.parse(savedParsedLeads);
+          setParsedLeads(leads);
+          console.log('🔄 Restored parsed leads from localStorage:', leads.length);
+        } catch (error) {
+          console.error('Error restoring parsed leads:', error);
+        }
       }
-    }
-    
-    if (savedValidationResults && !validationResults) {
-      try {
-        const validation = JSON.parse(savedValidationResults);
-        setValidationResults(validation);
-        console.log('🔄 Restored validation results from localStorage');
-      } catch (error) {
-        console.error('Error restoring validation results:', error);
+      
+      if (savedValidationResults && !validationResults) {
+        try {
+          const validation = JSON.parse(savedValidationResults);
+          setValidationResults(validation);
+          console.log('🔄 Restored validation results from localStorage');
+        } catch (error) {
+          console.error('Error restoring validation results:', error);
+        }
       }
+      
+      dataRestoredRef.current = true;
     }
   }, []);
+
+  // Add a ref to track if we've already restored data to prevent multiple restorations
+  const dataRestoredRef = useRef(false);
 
   const channels = [
     { id: 'all', name: 'All Channels', icon: Globe },
@@ -1066,6 +1073,11 @@ Return only the JSON response, no additional text.
     }
 
     if (!selectedGigId) {
+      // Don't clear leads if we have parsed leads from file upload
+      if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads')) {
+        console.log('⏸️ Skipping leads clear in fetchLeads - parsed leads exist');
+        return;
+      }
       console.log('No gig selected, clearing leads');
       setLeads([]);
       setTotalPages(0);
@@ -1148,7 +1160,7 @@ Return only the JSON response, no additional text.
       setTotalPages(0);
       setCurrentPage(1);
     }
-  }, [selectedGigId, isProcessing, parsedLeads.length]);
+  }, [selectedGigId, isProcessing]);
 
   useEffect(() => {
     // Skip this effect if we're currently processing a file
