@@ -439,11 +439,12 @@ const UploadContacts = React.memo(() => {
       }
     }
     
-    console.log(`✅ Large file processing complete:`);
-    console.log(`   - Total leads processed: ${allLeads.length}`);
-    console.log(`   - Successful chunks: ${successfulChunks}`);
-    console.log(`   - Failed chunks: ${failedChunks}`);
-    console.log(`   - Expected leads: ${dataLines.length}`);
+          console.log(`✅ Large file processing complete:`);
+      console.log(`   - Total leads processed: ${allLeads.length}`);
+      console.log(`   - Successful chunks: ${successfulChunks}`);
+      console.log(`   - Failed chunks: ${failedChunks}`);
+      console.log(`   - Expected leads: ${dataLines.length}`);
+      console.log(`   - Note: All leads including duplicates are preserved`);
     
     return {
       leads: allLeads,
@@ -636,7 +637,7 @@ Return ONLY valid JSON in this format:
     {
       "userId": {"$oid": "6887492e1cfb37a7b60eb697"},
       "companyId": {"$oid": "6887497635cccbcdd975954d"},
-      "gigId": {"$oid": "68874eb589a519df44e28a8d"},
+      "gId": {"$oid": "68874eb589a519df44e28a8d"},
       "Last_Activity_Time": null,
       "Deal_Name": "Lead Name",
       "Email_1": "email@example.com",
@@ -654,14 +655,22 @@ Return ONLY valid JSON in this format:
   }
 }
 
+CRITICAL INSTRUCTIONS:
+- Process ALL ${lines.length - 1} rows exactly as they appear
+- DO NOT remove duplicates or deduplicate
+- Keep every single row from the file
+- If you see the same email multiple times, create separate lead objects for each
+- The goal is to preserve ALL data, including duplicates
+
 Rules:
 1. Extract emails from "Email" column, clean prefixes like "Nor "
 2. Extract phones from "Téléphone 1" column
 3. Use Deal_Name if available, otherwise use email
 4. Set defaults: Stage="New", Pipeline="Sales Pipeline"
-5. Process ALL ${lines.length - 1} rows
+5. Process ALL ${lines.length - 1} rows - DO NOT remove duplicates
 6. Use placeholder values for missing emails/phones
-7. Use exact MongoDB ObjectId format with "$oid"`;
+7. Use exact MongoDB ObjectId format with "$oid"
+8. IMPORTANT: Keep ALL rows including duplicates - do not deduplicate`;
 
       // Log request details for debugging
       console.log('Sending request to OpenAI with:', {
@@ -855,18 +864,39 @@ Rules:
         return;
       }
       
-      // Add processing indicator to prevent refresh
-      document.body.setAttribute('data-processing', 'true');
-      processingRef.current = true;
-      localStorage.setItem('uploadProcessing', 'true');
-      sessionStorage.setItem('uploadProcessing', 'true');
+      // Reset state for new file upload
+      console.log('🔄 Starting new file upload, resetting state...');
+      setSelectedFile(null);
+      setUploadError(null);
+      setUploadSuccess(false);
+      setIsProcessing(false);
+      setUploadProgress(0);
+      setParsedLeads([]);
+      setValidationResults(null);
       
+      // Clear localStorage
+      localStorage.removeItem('parsedLeads');
+      localStorage.removeItem('validationResults');
+      localStorage.removeItem('uploadProcessing');
+      sessionStorage.removeItem('uploadProcessing');
+      
+      // Remove processing indicators
+      document.body.removeAttribute('data-processing');
+      processingRef.current = false;
+      
+      // Now set the new file and start processing
       setSelectedFile(file);
       setUploadError(null);
       setUploadSuccess(false);
       setIsProcessing(true);
       setUploadProgress(10);
       setParsedLeads([]);
+      
+      // Add processing indicator to prevent refresh
+      document.body.setAttribute('data-processing', 'true');
+      processingRef.current = true;
+      localStorage.setItem('uploadProcessing', 'true');
+      sessionStorage.setItem('uploadProcessing', 'true');
       
       try {
         // Read the file content
