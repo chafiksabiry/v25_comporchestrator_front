@@ -574,8 +574,7 @@ const UploadContacts = React.memo(() => {
 File content (${lines.length} lines):
 ${truncatedContent}
 
-IMPORTANT: Return ONLY valid JSON. No explanations or text outside the JSON.
-
+Return ONLY valid JSON in this format:
 {
   "leads": [
     {
@@ -600,20 +599,19 @@ IMPORTANT: Return ONLY valid JSON. No explanations or text outside the JSON.
 }
 
 Rules:
-1. Extract emails from "Email" or "Bloctel 1" columns, clean prefixes like "Nor "
+1. Extract emails from "Email" column, clean prefixes like "Nor "
 2. Extract phones from "Téléphone 1" column
 3. Use Deal_Name if available, otherwise use email
 4. Set defaults: Stage="New", Pipeline="Sales Pipeline"
 5. Process ALL ${lines.length - 1} rows
 6. Use placeholder values for missing emails/phones
-7. Use exact MongoDB ObjectId format with "$oid"
-8. Ensure JSON is complete and properly closed`;
+7. Use exact MongoDB ObjectId format with "$oid"`;
 
       // Log request details for debugging
       console.log('Sending request to OpenAI with:', {
         model: 'gpt-3.5-turbo',
         promptLength: prompt.length,
-        maxTokens: 8000
+        maxTokens: 'unlimited (using model maximum)'
       });
 
       // Check prompt size to avoid token limit issues
@@ -637,8 +635,8 @@ Rules:
             content: finalPrompt
           }
         ],
-        temperature: 0.1,
-        max_tokens: 8000
+        temperature: 0.1
+        // Removed max_tokens to use model's maximum limit
       };
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
