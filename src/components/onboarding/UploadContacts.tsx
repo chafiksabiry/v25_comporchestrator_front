@@ -1547,9 +1547,10 @@ Rules:
     setIsLoadingLeads(true);
     setError(null);
     try {
-      const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=${pageSize}`;
+      // Fetch leads with pagination (50 per page)
+      const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=50`;
       console.log('API URL:', apiUrl);
-      console.log('Fetching leads for gig:', selectedGigId);
+      console.log('Fetching leads for gig:', selectedGigId, 'page:', page);
       const response = await fetch(apiUrl, {
         headers: {
           'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`,
@@ -1573,6 +1574,7 @@ Rules:
       }
 
       console.log('Setting leads:', responseData.data);
+      console.log('Total leads on this page:', responseData.data.length);
       setLeads(responseData.data);
       setFilteredLeads(responseData.data); // Initialiser les leads filtrés
       setTotalPages(responseData.totalPages);
@@ -2470,13 +2472,13 @@ Rules:
                             <div className="mt-2">
                 {selectedGigId ? (
                   <div className="text-sm text-gray-600">
-                    {leads.length > 0 ? (
-                                          <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium">
-                      Showing {filteredLeads.length} of {leads.length} leads {searchQuery && `(filtered by "${searchQuery}")`}
-                    </span>
-                    ) : parsedLeads.length > 0 ? (
+                    {parsedLeads.length > 0 ? (
                       <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
                         {parsedLeads.length} leads ready to save
+                      </span>
+                    ) : leads.length > 0 ? (
+                      <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium">
+                        Showing {filteredLeads.length} of {leads.length} leads {searchQuery && `(filtered by "${searchQuery}")`}
                       </span>
                     ) : (
                       <span className="bg-gray-50 text-gray-600 px-3 py-1 rounded-full text-xs font-medium">
@@ -2631,24 +2633,40 @@ Rules:
         {filteredLeads.length > 0 && (
           <div className="bg-white px-4 py-3 border-t border-gray-200">
             <div className="flex items-center justify-between">
-                              <div className="flex items-center text-sm text-gray-700">
-                  <span>
-                    Showing <span className="font-medium">{filteredLeads.length}</span> of{' '}
-                    <span className="font-medium">{leads.length}</span> leads
-                    {searchQuery && (
-                      <span className="text-indigo-600"> (filtered by "{searchQuery}")</span>
-                    )}
-                  </span>
-                </div>
-                              <div className="flex items-center space-x-2">
+              <div className="flex items-center text-sm text-gray-700">
+                <span>
+                  Showing <span className="font-medium">{filteredLeads.length}</span> of{' '}
+                  <span className="font-medium">{totalCount}</span> leads
+                  {searchQuery && (
+                    <span className="text-indigo-600"> (filtered by "{searchQuery}")</span>
+                  )}
+                </span>
+              </div>
+              
+              {/* Pagination Buttons */}
+              {totalPages > 1 && (
+                <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => setSearchQuery('')}
-                    className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                    onClick={() => fetchLeads(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <X className="h-4 w-4 mr-1" />
-                    Clear Search
+                    Previous
+                  </button>
+                  
+                  <div className="flex items-center space-x-1">
+                    {renderPaginationButtons()}
+                  </div>
+                  
+                  <button
+                    onClick={() => fetchLeads(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="relative inline-flex items-center px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
                   </button>
                 </div>
+              )}
             </div>
           </div>
         )}
