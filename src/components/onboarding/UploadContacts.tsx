@@ -149,7 +149,20 @@ const UploadContacts = React.memo(() => {
   // Check if we're currently processing on component mount
   useEffect(() => {
     const isCurrentlyProcessing = localStorage.getItem('uploadProcessing') === 'true';
-    if (isCurrentlyProcessing) {
+    const hasSelectedFile = selectedFile !== null;
+    const hasParsedLeads = parsedLeads.length > 0;
+    
+    // If we have processing state but no file and no leads, clean it up
+    if (isCurrentlyProcessing && !hasSelectedFile && !hasParsedLeads) {
+      console.log('🧹 Cleaning up stale processing state - no file selected and no leads');
+      setIsProcessing(false);
+      processingRef.current = false;
+      localStorage.removeItem('uploadProcessing');
+      sessionStorage.removeItem('uploadProcessing');
+      return;
+    }
+    
+    if (isCurrentlyProcessing && (hasSelectedFile || hasParsedLeads)) {
       processingRef.current = true;
       setIsProcessing(true);
       console.log('🔄 Restoring processing state from localStorage');
@@ -218,6 +231,21 @@ const UploadContacts = React.memo(() => {
       }
     };
   }, [parsedLeads]);
+
+  // Clean up processing state when component mounts without file
+  useEffect(() => {
+    // If no file is selected and no leads are parsed, ensure processing state is clean
+    if (!selectedFile && parsedLeads.length === 0) {
+      const isCurrentlyProcessing = localStorage.getItem('uploadProcessing') === 'true';
+      if (isCurrentlyProcessing) {
+        console.log('🧹 Cleaning up processing state on mount - no file selected');
+        setIsProcessing(false);
+        processingRef.current = false;
+        localStorage.removeItem('uploadProcessing');
+        sessionStorage.removeItem('uploadProcessing');
+      }
+    }
+  }, [selectedFile, parsedLeads.length]);
 
 
   const channels = [
