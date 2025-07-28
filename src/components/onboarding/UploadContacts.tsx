@@ -398,12 +398,39 @@ const UploadContacts = React.memo(() => {
     const dataLines = lines.slice(1);
     
     console.log(`📊 Total data lines to process: ${dataLines.length}`);
+    console.log(`📋 Header line: ${header.substring(0, 100)}...`);
+    
+    // Analyser les lignes pour comprendre la structure
+    console.log('🔍 Analyzing data lines structure:');
+    dataLines.forEach((line, index) => {
+      if (index < 5) { // Afficher les 5 premières lignes
+        console.log(`   Line ${index + 1}: ${line.substring(0, 100)}...`);
+      }
+    });
     
     const chunkSize = 25; // Reduced chunk size for better reliability
     const allLeads: any[] = [];
     let totalProcessed = 0;
     let successfulChunks = 0;
     let failedChunks = 0;
+    let emptyLines = 0;
+    let headerDuplicates = 0;
+    
+    // Compter les lignes vides et les doublons d'en-tête
+    dataLines.forEach((line, index) => {
+      if (line.trim() === '') {
+        emptyLines++;
+        console.log(`⚠️ Empty line found at position ${index + 1}`);
+      } else if (line.includes('Identifiant,Type,Statut')) {
+        headerDuplicates++;
+        console.log(`⚠️ Header duplicate found at position ${index + 1}: ${line.substring(0, 50)}...`);
+      }
+    });
+    
+    console.log(`📊 Analysis results:`);
+    console.log(`   - Empty lines: ${emptyLines}`);
+    console.log(`   - Header duplicates: ${headerDuplicates}`);
+    console.log(`   - Valid data lines: ${dataLines.length - emptyLines - headerDuplicates}`);
     
     for (let i = 0; i < dataLines.length; i += chunkSize) {
       const chunk = dataLines.slice(i, i + chunkSize);
@@ -439,19 +466,34 @@ const UploadContacts = React.memo(() => {
       }
     }
     
-          console.log(`✅ Large file processing complete:`);
-      console.log(`   - Total leads processed: ${allLeads.length}`);
-      console.log(`   - Successful chunks: ${successfulChunks}`);
-      console.log(`   - Failed chunks: ${failedChunks}`);
-      console.log(`   - Expected leads: ${dataLines.length}`);
-      console.log(`   - Note: All leads including duplicates are preserved`);
+    console.log(`✅ Large file processing complete:`);
+    console.log(`   - Total leads processed: ${allLeads.length}`);
+    console.log(`   - Successful chunks: ${successfulChunks}`);
+    console.log(`   - Failed chunks: ${failedChunks}`);
+    console.log(`   - Expected leads: ${dataLines.length}`);
+    console.log(`   - Empty lines found: ${emptyLines}`);
+    console.log(`   - Header duplicates found: ${headerDuplicates}`);
+    console.log(`   - Actual valid data lines: ${dataLines.length - emptyLines - headerDuplicates}`);
+    console.log(`   - Note: All leads including duplicates are preserved`);
+    
+    const actualValidLines = dataLines.length - emptyLines - headerDuplicates;
+    const invalidRows = Math.max(0, dataLines.length - allLeads.length);
+    
+    console.log(`📊 Final calculation:`);
+    console.log(`   - Total rows in file: ${dataLines.length}`);
+    console.log(`   - Empty lines: ${emptyLines}`);
+    console.log(`   - Header duplicates: ${headerDuplicates}`);
+    console.log(`   - Actual valid data lines: ${actualValidLines}`);
+    console.log(`   - Leads successfully processed: ${allLeads.length}`);
+    console.log(`   - Invalid rows (difference): ${invalidRows}`);
+    console.log(`   - Reason for invalid rows: ${emptyLines + headerDuplicates} structural issues + ${Math.max(0, actualValidLines - allLeads.length)} processing failures`);
     
     return {
       leads: allLeads,
       validation: {
         totalRows: dataLines.length,
         validRows: allLeads.length,
-        invalidRows: Math.max(0, dataLines.length - allLeads.length),
+        invalidRows: invalidRows,
         errors: failedChunks > 0 ? [`${failedChunks} chunks failed to process`] : []
       }
     };
@@ -572,6 +614,8 @@ const UploadContacts = React.memo(() => {
   };
 
   const processFileWithOpenAI = async (fileContent: string, fileType: string, isOptimized: boolean = false): Promise<{leads: any[], validation: any}> => {
+    console.log(`🔍 Starting processFileWithOpenAI - isOptimized: ${isOptimized}`);
+    
     try {
       const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
       if (!openaiApiKey) {
@@ -606,6 +650,15 @@ const UploadContacts = React.memo(() => {
       
       // Count the number of lines
       const lines = cleanedFileContent.split('\n');
+      console.log(`📊 Lines in this chunk: ${lines.length}`);
+      
+      // Log first few lines to understand content
+      if (lines.length > 0) {
+        console.log(`📋 First line: ${lines[0].substring(0, 100)}...`);
+        if (lines.length > 1) {
+          console.log(`📋 Second line: ${lines[1].substring(0, 100)}...`);
+        }
+      }
       
       // Check if content is too large or has many lines - use chunks for better processing
       if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 50)) {
@@ -762,10 +815,20 @@ Rules:
       // Parse the JSON response with recovery for incomplete JSON
       let parsedData;
       
+      console.log(`📊 OpenAI response length: ${content.length}`);
+      console.log(`📋 OpenAI response preview: ${content.substring(0, 200)}...`);
+      
       // Check if JSON appears complete
       const trimmedContent = content.trim();
       const isCompleteJSON = trimmedContent.startsWith('{') && trimmedContent.endsWith('}') && 
                             trimmedContent.includes('"leads"') && trimmedContent.includes('"validation"');
+      
+      console.log(`🔍 JSON completeness check:`);
+      console.log(`   - Starts with { : ${trimmedContent.startsWith('{')}`);
+      console.log(`   - Ends with } : ${trimmedContent.endsWith('}')}`);
+      console.log(`   - Contains "leads" : ${trimmedContent.includes('"leads"')}`);
+      console.log(`   - Contains "validation" : ${trimmedContent.includes('"validation"')}`);
+      console.log(`   - Is complete JSON : ${isCompleteJSON}`);
       
       if (!isCompleteJSON) {
         console.warn('⚠️ OpenAI returned incomplete JSON, attempting recovery...');
@@ -773,21 +836,23 @@ Rules:
         if (recoveredData) {
           console.log('✅ Successfully recovered JSON with', recoveredData.leads.length, 'leads');
           parsedData = recoveredData;
-          } else {
-                return {
-          leads: [],
-          validation: {
-            totalRows: 0,
-            validRows: 0,
-            invalidRows: 0,
+        } else {
+          console.error('❌ Failed to recover incomplete JSON');
+          return {
+            leads: [],
+            validation: {
+              totalRows: 0,
+              validRows: 0,
+              invalidRows: 0,
               errors: ['OpenAI returned incomplete JSON that could not be recovered']
-          }
-        };
-      }
+            }
+          };
+        }
       } else {
         try {
-        parsedData = JSON.parse(content);
-      } catch (parseError: unknown) {
+          parsedData = JSON.parse(content);
+          console.log('✅ Successfully parsed complete JSON');
+        } catch (parseError: unknown) {
           console.error('❌ Failed to parse OpenAI response:', parseError);
           console.log('Raw content length:', content.length);
           console.log('Content preview:', content.substring(0, 500) + '...');
@@ -812,12 +877,19 @@ Rules:
       }
       
       if (!parsedData.leads || !Array.isArray(parsedData.leads)) {
+        console.error('❌ Invalid response format from OpenAI - no leads array');
+        console.log('Parsed data structure:', Object.keys(parsedData));
         throw new Error('Invalid response format from OpenAI');
       }
 
+      console.log(`📊 Parsed data analysis:`);
+      console.log(`   - Leads array length: ${parsedData.leads.length}`);
+      console.log(`   - Validation object:`, parsedData.validation);
+      console.log(`   - Expected lines: ${lines.length - 1}`);
+
       // Add required fields to each lead
-      const processedLeads = parsedData.leads.map((lead: any) => {
-        return {
+      const processedLeads = parsedData.leads.map((lead: any, index: number) => {
+        const processedLead = {
           ...lead,
           userId: lead.userId || { "$oid": userId },
           companyId: lead.companyId || { "$oid": companyId },
@@ -832,7 +904,23 @@ Rules:
           Telephony: lead.Telephony || '',
           Project_Tags: lead.Project_Tags || []
         };
+        
+        if (index < 3) { // Log first 3 leads for debugging
+          console.log(`📋 Lead ${index + 1}:`, {
+            Email_1: processedLead.Email_1,
+            Phone: processedLead.Phone,
+            Deal_Name: processedLead.Deal_Name
+          });
+        }
+        
+        return processedLead;
       });
+
+      console.log(`✅ Final processing results:`);
+      console.log(`   - Processed leads: ${processedLeads.length}`);
+      console.log(`   - Validation totalRows: ${parsedData.validation?.totalRows || 'undefined'}`);
+      console.log(`   - Validation validRows: ${parsedData.validation?.validRows || 'undefined'}`);
+      console.log(`   - Validation invalidRows: ${parsedData.validation?.invalidRows || 'undefined'}`);
 
       return {
         leads: processedLeads,
