@@ -137,6 +137,7 @@ const UploadContacts = () => {
   const [showLeadsPreview, setShowLeadsPreview] = useState(true);
   const [validationResults, setValidationResults] = useState<any>(null);
   const [editingLeadIndex, setEditingLeadIndex] = useState<number | null>(null);
+  const urlParamsProcessedRef = useRef(false);
 
   const channels = [
     { id: 'all', name: 'All Channels', icon: Globe },
@@ -182,13 +183,38 @@ const UploadContacts = () => {
 
     // Function to clean email addresses by removing prefixes and invalid characters
   const cleanEmailAddresses = (content: string): string => {
-    // Remove common prefixes like "Nor " from email addresses
-    const cleanedContent = content.replace(/Nor\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, '$1');
+    console.log('🧹 Cleaning email addresses...');
     
-    // Also remove other common prefixes that might appear
-    const additionalCleaning = cleanedContent.replace(/(?:Prefix|Label|Tag)\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, '$1');
+    // First, identify the "Email" column (last column) and clean emails there specifically
+    const lines = content.split('\n');
+    const cleanedLines = lines.map((line, index) => {
+      if (index === 0) {
+        // Header row - keep as is
+        return line;
+      }
+      
+      const columns = line.split(',');
+      if (columns.length >= 24) { // "Email" is the last column (position 24, 0-indexed = 23)
+        const emailColumn = columns[23]; // Index 23 for "Email" (last column)
+        if (emailColumn && emailColumn.includes('@')) {
+          // Clean the email in "Email" column
+          const cleanedEmail = emailColumn.replace(/^Nor\s+/, '').trim();
+          columns[23] = cleanedEmail;
+          console.log(`🧹 Cleaned email in row ${index + 1}: "${emailColumn}" -> "${cleanedEmail}"`);
+        }
+      }
+      
+      return columns.join(',');
+    });
     
-    return additionalCleaning;
+    const cleanedContent = cleanedLines.join('\n');
+    
+    // Also apply general cleaning for any other email columns
+    const generalCleaned = cleanedContent.replace(/Nor\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, '$1');
+    const finalCleaned = generalCleaned.replace(/(?:Prefix|Label|Tag)\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, '$1');
+    
+    console.log('🧹 Email cleaning completed');
+    return finalCleaned;
   };
 
   const processFileWithOpenAI = async (fileContent: string, fileType: string) => {
@@ -254,10 +280,11 @@ Please process this data and return a JSON array of lead objects with the follow
 
 Rules:
 1. Extract email addresses and validate their format
+   - Look for emails in the "Email" column (last column) first, then "Bloctel 1" column
    - Remove any prefixes like "Nor " from email addresses before validation
    - Clean email addresses by removing extra spaces and invalid characters
    - Only keep valid email format (user@domain.com)
-2. Extract phone numbers and standardize them (always include Phone field)
+2. Extract phone numbers from "Téléphone 1" column and standardize them (always include Phone field)
 3. Use Deal_Name if available, otherwise use email as Deal_Name
 4. Set default Stage to "New" if not provided
 5. Set default Pipeline to "Sales Pipeline" if not provided
@@ -270,6 +297,7 @@ Rules:
 12. Provide detailed validation feedback
 13. IMPORTANT: Use the provided userId, companyId, and gigId values exactly as shown above
 14. CRITICAL: Clean email addresses by removing prefixes like "Nor " and any other non-email text
+15. IMPORTANT: The "Email" column contains email addresses with "Nor " prefix - clean these first
 
 Return only the JSON response, no additional text.
 `;
@@ -752,37 +780,46 @@ Return only the JSON response, no additional text.
   };
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    const state = urlParams.get('state');
-    const location = urlParams.get('location');
-    const accountsServer = urlParams.get('accounts-server');
-    
-    const params = new URLSearchParams(window.location.search);
-    // Vérifier si l'URL contient le paramètre startStep=6
-    if (params.get('session') === 'someGeneratedSessionId') {
+    // Only run this effect once on mount, not on every render
+    const runOnce = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const state = urlParams.get('state');
+      const location = urlParams.get('location');
+      const accountsServer = urlParams.get('accounts-server');
+      
+      const params = new URLSearchParams(window.location.search);
+      // Vérifier si l'URL contient le paramètre startStep=6
+      if (params.get('session') === 'someGeneratedSessionId') {
 
-      // Nettoyer l'URL pour éviter de relancer à chaque render
-      params.delete('session');
-      const newSearch = params.toString();
-      window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
-    }
-
-    console.log('URL Params:', {
-      code,
-      state,
-      location,
-      accountsServer
-    });
-    
-    if (code) {
-      if (!state) {
-        console.error('No state parameter found in URL');
-        toast.error('Authentication state not found. Please try connecting again.');
-        return;
+        // Nettoyer l'URL pour éviter de relancer à chaque render
+        params.delete('session');
+        const newSearch = params.toString();
+        window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
       }
-  
-      handleOAuthCallback(code, state, location || undefined, accountsServer || undefined);
+
+      console.log('URL Params:', {
+        code,
+        state,
+        location,
+        accountsServer
+      });
+      
+      if (code) {
+        if (!state) {
+          console.error('No state parameter found in URL');
+          toast.error('Authentication state not found. Please try connecting again.');
+          return;
+      }
+    
+        handleOAuthCallback(code, state, location || undefined, accountsServer || undefined);
+      }
+    };
+
+    // Use a ref to ensure this only runs once
+    if (!urlParamsProcessedRef.current) {
+      urlParamsProcessedRef.current = true;
+      runOnce();
     }
   }, []);
 
@@ -833,13 +870,19 @@ Return only the JSON response, no additional text.
   };
 
   useEffect(() => {
+    // Skip this effect if we're currently processing a file
+    if (isProcessing) {
+      console.log('⏸️ Skipping hasZohoConfig effect - file processing in progress');
+      return;
+    }
+    
     console.log('📊 État actuel de hasZohoConfig:', hasZohoConfig);
     if (!hasZohoConfig) {
       console.log('⚠️ Configuration Zoho non trouvée - Affichage de la modal');
     } else {
       console.log('✅ Configuration Zoho trouvée - Pas besoin d\'afficher la modal');
     }
-  }, [hasZohoConfig]);
+  }, [hasZohoConfig, isProcessing]);
 
   // Ajout d'une fonction utilitaire pour fetch Zoho avec refresh automatique
   const fetchZohoWithAutoRefresh = async (url: string, options: RequestInit = {}) => {
@@ -938,6 +981,12 @@ Return only the JSON response, no additional text.
   };
 
   const fetchLeads = async (page = currentPage) => {
+    // Skip fetching leads if we're currently processing a file
+    if (isProcessing) {
+      console.log('⏸️ Skipping fetchLeads - file processing in progress');
+      return;
+    }
+
     if (!selectedGigId) {
       console.log('No gig selected, clearing leads');
       setLeads([]);
@@ -992,6 +1041,12 @@ Return only the JSON response, no additional text.
   };
 
   useEffect(() => {
+    // Skip this effect if we're currently processing a file
+    if (isProcessing) {
+      console.log('⏸️ Skipping selectedGigId effect - file processing in progress');
+      return;
+    }
+
     if (selectedGigId) {
       console.log('Selected gig changed, fetching leads for:', selectedGigId);
       fetchLeads().catch(error => {
@@ -1004,7 +1059,7 @@ Return only the JSON response, no additional text.
       setTotalPages(0);
       setCurrentPage(1);
     }
-  }, [selectedGigId]);
+  }, [selectedGigId, isProcessing]);
 
   useEffect(() => {
     if (leads.length === 0) {
