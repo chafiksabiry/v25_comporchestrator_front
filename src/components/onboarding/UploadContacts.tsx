@@ -250,14 +250,7 @@ const UploadContacts = React.memo(() => {
 
   const channels = [
     { id: 'all', name: 'All Channels', icon: Globe },
-    { id: 'voice', name: 'Voice Calls', icon: Phone },
-    { id: 'email', name: 'Email', icon: Mail },
-    { id: 'chat', name: 'Live Chat', icon: MessageSquare },
-    { id: 'facebook', name: 'Facebook', icon: Facebook },
-    { id: 'twitter', name: 'Twitter', icon: Twitter },
-    { id: 'instagram', name: 'Instagram', icon: Instagram },
-    { id: 'linkedin', name: 'LinkedIn', icon: Linkedin },
-    { id: 'youtube', name: 'YouTube', icon: Youtube }
+    { id: 'voice', name: 'Voice Calls', icon: Phone }
   ];
 
   const contacts = [
@@ -389,8 +382,8 @@ const UploadContacts = React.memo(() => {
   const processOptimizedContent = async (optimizedContent: string, fileType: string): Promise<{leads: any[], validation: any}> => {
     console.log('🔄 Processing optimized content...');
     
-    // Use the same processing logic but with optimized content
-    const result: {leads: any[], validation: any} = await processFileWithOpenAI(optimizedContent, fileType);
+    // Use the same processing logic but with optimized content and isOptimized flag
+    const result: {leads: any[], validation: any} = await processFileWithOpenAI(optimizedContent, fileType, true);
     
     console.log(`🔄 Optimized processing complete: ${result.leads.length} leads`);
     return result;
@@ -398,7 +391,7 @@ const UploadContacts = React.memo(() => {
 
 
 
-  const processFileWithOpenAI = async (fileContent: string, fileType: string): Promise<{leads: any[], validation: any}> => {
+  const processFileWithOpenAI = async (fileContent: string, fileType: string, isOptimized: boolean = false): Promise<{leads: any[], validation: any}> => {
     try {
       const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
       if (!openaiApiKey) {
@@ -431,8 +424,8 @@ const UploadContacts = React.memo(() => {
       // Count the number of lines to verify we have all expected leads
       const lines = cleanedFileContent.split('\n');
       
-      // Check if content was truncated or if file is very large
-      if (cleanedFileContent.length > maxContentLength || lines.length > 50) {
+      // Check if content was truncated or if file is very large (but skip if already optimized)
+      if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 50)) {
         console.warn(`⚠️ Warning: File is very large (${lines.length} lines, ${cleanedFileContent.length} characters)`);
         console.warn('Attempting aggressive optimization to reduce size...');
         
