@@ -101,6 +101,9 @@ interface ApiResponse {
 const UploadContacts = React.memo(() => {
   // Add a ref to track if the component has been initialized
   const componentInitializedRef = useRef(false);
+  
+  // Add a ref to track if we should prevent re-mounting
+  const preventRemountRef = useRef(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
@@ -196,6 +199,25 @@ const UploadContacts = React.memo(() => {
     }
   });
 
+  // Add a protection effect to prevent component re-mounting
+  useEffect(() => {
+    // If we have parsed leads, prevent re-mounting
+    if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads')) {
+      preventRemountRef.current = true;
+      console.log('🛡️ Preventing component re-mount - parsed leads exist');
+    }
+  }, [parsedLeads.length]);
+
+  // Add a cleanup protection to prevent data loss on unmount
+  useEffect(() => {
+    return () => {
+      // If we're unmounting but have parsed leads, save them
+      if (parsedLeads.length > 0) {
+        localStorage.setItem('parsedLeads', JSON.stringify(parsedLeads));
+        console.log('🛡️ Component unmounting - saved parsed leads to localStorage:', parsedLeads.length);
+      }
+    };
+  }, [parsedLeads]);
 
 
   const channels = [
@@ -1213,17 +1235,23 @@ Return only the JSON response, no additional text.
       return;
     }
 
-    // If we have leads in localStorage but not in state, restore them
-    if (savedParsedLeads && parsedLeads.length === 0) {
-      try {
-        const leads = JSON.parse(savedParsedLeads);
-        setParsedLeads(leads);
-        console.log('🔄 Restored parsed leads from localStorage during render:', leads.length);
-        return;
-      } catch (error) {
-        console.error('Error restoring parsed leads during render:', error);
-      }
+      // If we have leads in localStorage but not in state, restore them
+  if (savedParsedLeads && parsedLeads.length === 0) {
+    try {
+      const leads = JSON.parse(savedParsedLeads);
+      setParsedLeads(leads);
+      console.log('🔄 Restored parsed leads from localStorage during render:', leads.length);
+      return;
+    } catch (error) {
+      console.error('Error restoring parsed leads during render:', error);
     }
+  }
+
+  // If we have parsed leads, force the display to show them
+  if (parsedLeads.length > 0) {
+    console.log('📋 Forcing display of parsed leads:', parsedLeads.length);
+    return;
+  }
 
     if (leads.length === 0) {
       console.log('No leads to display');
