@@ -415,7 +415,7 @@ const UploadContacts = React.memo(() => {
       const cleanedFileContent = cleanEmailAddresses(fileContent);
       
       // Limit the content size to avoid token limits
-      const maxContentLength = 25000; // Increased significantly to handle complex CSV files
+      const maxContentLength = 50000; // Increased significantly to handle large CSV files (87+ lines)
       
       console.log('Original file content length:', fileContent.length);
       console.log('Cleaned file content length:', cleanedFileContent.length);
@@ -442,33 +442,31 @@ const UploadContacts = React.memo(() => {
         }
       }
       
-      // Count the number of lines to verify we have all 25 leads
+      // Count the number of lines to verify we have all expected leads
       const lines = cleanedFileContent.split('\n');
       console.log('📊 Total lines in file:', lines.length);
-      console.log('📊 Expected: 26 lines (1 header + 25 leads)');
+      console.log(`📊 Expected: ${lines.length} lines (1 header + ${lines.length - 1} leads)`);
       
-      if (lines.length < 25) {
+      if (lines.length < 10) {
         console.warn('⚠️ Warning: File seems to have fewer lines than expected');
       }
 
       const truncatedContent = cleanedFileContent.length > maxContentLength 
         ? cleanedFileContent.substring(0, maxContentLength) + '\n... [content truncated due to size]'
         : cleanedFileContent;
-
-      const expectedLeads = lines.length - 1; // Exclude header row
       
       const prompt = `
 You are a data processing expert. Extract lead information from this ${fileType} file.
 
 CRITICAL INSTRUCTIONS:
-- This file contains EXACTLY ${lines.length} lines (1 header + ${expectedLeads} leads)
-- You MUST process ALL ${expectedLeads} leads, not just the first 25
-- Return exactly ${expectedLeads} lead objects in the JSON array
+- This file contains EXACTLY ${lines.length} lines (1 header + ${lines.length - 1} leads)
+- You MUST process ALL ${lines.length - 1} leads, not just the first 25
+- Return exactly ${lines.length - 1} lead objects in the JSON array
 - Do NOT stop processing after the first few rows
 - Process every single row from the file
-- IMPORTANT: The file has ${lines.length} total lines, so you must return ${expectedLeads} leads
+- IMPORTANT: The file has ${lines.length} total lines, so you must return ${lines.length - 1} leads
 - Do NOT truncate or stop early - process ALL rows in the file
-- If you cannot process all rows due to complexity, process as many as possible but prioritize getting ALL ${expectedLeads} leads
+- If you cannot process all rows due to complexity, process as many as possible but prioritize getting ALL ${lines.length - 1} leads
 
 File content (${truncatedContent.length} characters):
 ${truncatedContent}
@@ -517,9 +515,9 @@ Rules:
 13. IMPORTANT: Use the provided userId, companyId, and gigId values exactly as shown above
 14. CRITICAL: Clean email addresses by removing prefixes like "Nor " and any other non-email text
 15. IMPORTANT: The "Email" column contains email addresses with "Nor " prefix - clean these first
-16. CRITICAL: Process ALL ${expectedLeads}+ rows from the file, not just the first few
+16. CRITICAL: Process ALL ${lines.length - 1}+ rows from the file, not just the first few
 17. If a row has missing email or phone, still include it with placeholder values
-18. MANDATORY: You must return at least ${expectedLeads} leads from this file
+18. MANDATORY: You must return at least ${lines.length - 1} leads from this file
 19. DO NOT stop processing after the first few rows - continue until all rows are processed
 
 Return only the JSON response, no additional text.
