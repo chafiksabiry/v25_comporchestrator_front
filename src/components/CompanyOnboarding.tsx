@@ -277,7 +277,7 @@ const CompanyOnboarding = () => {
         // If no gigs are active and step 13 was previously completed, mark it as in_progress
         else {
           try {
-            console.log('⚠️ No active gigs found - updating phase and step statuses');
+            console.log('⚠️ No active gigs found - updating step 13 status');
             
             // Mark step 13 as in_progress
             await axios.put(
@@ -285,15 +285,12 @@ const CompanyOnboarding = () => {
               { status: 'in_progress' }
             );
             
-            // Update current phase to 4
-            await axios.put(
-              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/current-phase`,
-              { phase: 4 }
-            );
-            
             // Update local state to remove the completed step
             setCompletedSteps(prev => prev.filter(step => step !== 13));
             console.log('⚠️ Step 13 removed from completed steps and marked as in_progress');
+            
+            // Reload progress to get the correct phase from the API
+            await loadCompanyProgress();
           } catch (error) {
             console.error('Error updating onboarding progress for step 13:', error);
           }
@@ -345,7 +342,29 @@ const CompanyOnboarding = () => {
         setDisplayedPhase(validPhase);
       } else {
         // Vérifier que la phase est valide (entre 1 et 4)
-        const validPhase = Math.max(1, Math.min(4, progress.currentPhase));
+        let validPhase = Math.max(1, Math.min(4, progress.currentPhase));
+        
+        // Si l'API retourne phase 1 mais que step 13 est complété, 
+        // cela signifie qu'on devrait être en phase 4
+        if (progress.currentPhase === 1 && progress.completedSteps.includes(13)) {
+          console.log('🔄 API returned phase 1 but step 13 is completed - setting phase to 4');
+          validPhase = 4;
+        }
+        
+        // Si l'API retourne phase 1 mais qu'on a des étapes complétées des phases 2 et 3,
+        // on détermine la phase appropriée
+        if (progress.currentPhase === 1) {
+          if (progress.completedSteps.includes(10)) {
+            // Si step 10 (Match HARX REPS) est complété, on devrait être en phase 3
+            console.log('🔄 API returned phase 1 but step 10 is completed - setting phase to 3');
+            validPhase = 3;
+          } else if (progress.completedSteps.includes(7)) {
+            // Si step 7 (Knowledge Base) est complété, on devrait être en phase 2
+            console.log('🔄 API returned phase 1 but step 7 is completed - setting phase to 2');
+            validPhase = 2;
+          }
+        }
+        
         console.log('🔄 Setting phase to:', validPhase, 'from API currentPhase:', progress.currentPhase);
         setCurrentPhase(validPhase);
         setDisplayedPhase(validPhase);
