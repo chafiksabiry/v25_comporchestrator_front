@@ -1176,6 +1176,14 @@ Rules:
             // Show validation results
             if (result.validation) {
               const { totalRows, validRows, invalidRows, errors } = result.validation;
+              
+              console.log('🔍 Validation analysis:');
+              console.log('   - result.validation:', result.validation);
+              console.log('   - totalRows:', totalRows);
+              console.log('   - validRows:', validRows);
+              console.log('   - invalidRows:', invalidRows);
+              console.log('   - result.leads.length:', result.leads.length);
+              
               setValidationResults(result.validation);
               
               if (invalidRows > 0) {
@@ -1183,7 +1191,9 @@ Rules:
                 console.log('Validation errors:', errors);
               }
               
-              toast.success(`Successfully processed ${validRows} out of ${totalRows} rows`);
+              // Use actual leads count if validRows is undefined or 0
+              const actualValidRows = validRows || result.leads.length;
+              toast.success(`Successfully processed ${actualValidRows} out of ${totalRows} rows`);
             }
 
             console.log('Leads processed with OpenAI:', result.leads);
@@ -2451,24 +2461,30 @@ Rules:
               {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
                 <div className="mt-4 space-y-4">
                   {validationResults && (
-                                      <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3">
-                    <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
-                      <Info className="mr-2 h-4 w-4" />
-                      AI Processing Results
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-blue-600 font-medium">Total Rows:</span> {validationResults.totalRows}
-                      </div>
-                      <div>
-                        <span className="text-green-600 font-medium">Valid Rows:</span> {validationResults.validRows}
-                      </div>
-                      {validationResults.invalidRows > 0 && (
-                        <div className="col-span-2">
-                          <span className="text-red-600 font-medium">Invalid Rows:</span> {validationResults.invalidRows}
+                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3">
+                      <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                        <Info className="mr-2 h-4 w-4" />
+                        AI Processing Results
+                      </h4>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-blue-600 font-medium">Total Rows:</span> {validationResults.totalRows}
                         </div>
-                      )}
-                    </div>
+                        <div>
+                          <span className="text-green-600 font-medium">Valid Rows:</span> {validationResults.validRows > 0 ? validationResults.validRows : parsedLeads.length}
+                        </div>
+                        {validationResults.invalidRows > 0 && (
+                          <div className="col-span-2">
+                            <span className="text-red-600 font-medium">Invalid Rows:</span> {validationResults.invalidRows}
+                          </div>
+                        )}
+                      </div>
+                      {/* Debug information */}
+                      <div className="mt-2 text-xs text-gray-600">
+                        <div>Debug: parsedLeads.length = {parsedLeads.length}</div>
+                        <div>Debug: validationResults.validRows = {validationResults.validRows}</div>
+                        <div>Debug: validationResults.invalidRows = {validationResults.invalidRows}</div>
+                      </div>
                     {validationResults.errors && validationResults.errors.length > 0 && (
                       <div className="mt-3">
                         <details className="text-xs">
