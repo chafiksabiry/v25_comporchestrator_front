@@ -793,6 +793,9 @@ const CompanyOnboarding = () => {
   } else if (showTelephonySetup) {
     activeComponent = <TelephonySetup />;
     onBack = () => setShowTelephonySetup(false);
+  } else if (showUploadContacts) {
+    activeComponent = <UploadContacts />;
+    onBack = () => setShowUploadContacts(false);
   } else if (ActiveStepComponent) {
     activeComponent = <ActiveStepComponent />;
     onBack = handleBackToOnboarding;

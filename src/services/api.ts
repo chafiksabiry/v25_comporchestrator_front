@@ -33,7 +33,7 @@ const api = axios.create({
 export const phoneNumberService = {
   listPhoneNumbers: async (): Promise<PhoneNumber[]> => {
     try {
-      const url = `${import.meta.env.VITE_PHONE_API}/phone-numbers`;
+      const url = `${import.meta.env.VITE_API_BASE_URL}/phone-numbers`;
       console.log('Fetching phone numbers from:', url);
       const response = await axios.get<PhoneNumber[]>(url);
       return response.data;
