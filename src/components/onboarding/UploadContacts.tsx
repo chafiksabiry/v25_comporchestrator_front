@@ -359,6 +359,9 @@ Return only the JSON response, no additional text.
         return;
       }
       
+      // Add processing indicator to prevent refresh
+      document.body.setAttribute('data-processing', 'true');
+      
       setSelectedFile(file);
       setUploadError(null);
       setUploadSuccess(false);
@@ -439,6 +442,9 @@ Return only the JSON response, no additional text.
             setIsProcessing(false);
             setUploadProgress(100);
             
+            // Remove processing indicator
+            document.body.removeAttribute('data-processing');
+            
           } catch (error: any) {
             console.error('Error processing file:', error);
             let errorMessage = 'Error processing file';
@@ -457,6 +463,9 @@ Return only the JSON response, no additional text.
             toast.error(errorMessage);
             setUploadProgress(0);
             setIsProcessing(false);
+            
+            // Remove processing indicator on error
+            document.body.removeAttribute('data-processing');
           }
         };
 
