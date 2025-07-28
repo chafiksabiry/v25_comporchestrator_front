@@ -169,7 +169,10 @@ const GigDetails = () => {
         <div className="flex items-center gap-4">
           <button
             className="flex items-center gap-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold px-5 py-2 rounded-full shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            onClick={() => { window.location.href = '/app6'; }}
+                          onClick={() => { 
+                // DISABLED: window.location.href = '/app6';
+                console.log('🔄 Gig details navigation disabled - would have gone to /app6');
+              }}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />

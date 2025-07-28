@@ -38,9 +38,7 @@ export default defineConfig(({ mode }) => {
       port: 5183,
       cors: true,
       hmr: false,
-      watch: {
-        ignored: ['**/node_modules/**', '**/dist/**']
-      },
+      watch: false, // Disable file watching completely
       fs: {
         strict: true, // Ensure static assets are correctly resolved
       },

@@ -134,7 +134,8 @@ const CompanyOnboarding = () => {
 
       if (!userId) {
         console.error('User ID not found in cookies');
-        window.location.href = '/auth';
+        // DISABLED: window.location.href = '/auth';
+        console.log('🔄 Company onboarding auth navigation disabled - no userId');
         return;
       }
 
@@ -146,12 +147,14 @@ const CompanyOnboarding = () => {
           Cookies.set('companyId', response.data.data._id);
         } else {
           // Redirect to /auth if no company data is found
-          window.location.href = '/auth';
+          // DISABLED: window.location.href = '/auth';
+          console.log('🔄 Company onboarding auth navigation disabled - no company data');
         }
       } catch (error) {
         console.error('Error fetching company ID:', error);
         // Redirect to /auth on error
-        window.location.href = '/auth';
+        // DISABLED: window.location.href = '/auth';
+        console.log('🔄 Company onboarding auth navigation disabled - error fetching company ID');
       }
     };
 
@@ -527,7 +530,8 @@ const CompanyOnboarding = () => {
     const newPhase = Math.min(4, displayedPhase + 1);
     // Rediriger seulement si on est déjà en phase 4
     if (displayedPhase === 4) {
-      window.location.href = '/company';
+      // DISABLED: window.location.href = '/company';
+      console.log('🔄 Company navigation disabled - would have gone to /company');
     } else {
       handlePhaseChange(newPhase);
     }
@@ -715,16 +719,19 @@ const CompanyOnboarding = () => {
       if (completedSteps.includes(stepId)) {
         setShowGigDetails(true);
       } else if (hasGigs) {
-        window.location.href = '/app11';
+        // DISABLED: window.location.href = '/app11';
+        console.log('🔄 App11 navigation disabled - would have gone to /app11');
       } else {
-        window.location.href = '/app6';
+        // DISABLED: window.location.href = '/app6';
+        console.log('🔄 App6 navigation disabled - would have gone to /app6');
       }
       return;
     }
 
     // Redirection spéciale pour Match HARX REPS
     if (stepId === 10) {
-      window.location.href = '/app12';
+      // DISABLED: window.location.href = '/app12';
+      console.log('🔄 App12 navigation disabled - would have gone to /app12');
       return;
     }
 
@@ -739,10 +746,12 @@ const CompanyOnboarding = () => {
         const baseUrl = import.meta.env.VITE_KNOWLEDGE_BASE_URL;
         if (completedSteps.includes(stepId)) {
           console.log('Redirecting to review page:', baseUrl);
-          window.location.replace(baseUrl);
+          // DISABLED: window.location.replace(baseUrl);
+          console.log('🔄 Knowledge base navigation disabled - would have gone to:', baseUrl);
         } else {
           console.log('Redirecting to upload page:', `${baseUrl}/upload`);
-          window.location.replace(`${baseUrl}/upload`);
+          // DISABLED: window.location.replace(`${baseUrl}/upload`);
+          console.log('🔄 Knowledge base upload navigation disabled - would have gone to:', `${baseUrl}/upload`);
         }
       }
       return;

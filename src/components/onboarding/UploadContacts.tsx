@@ -761,7 +761,8 @@ Return only the JSON response, no additional text.
   
       const redirectUrl = new URL(data.authUrl);
       redirectUrl.searchParams.set('state', userId);
-      window.location.href = redirectUrl.toString();
+      // DISABLED: window.location.href = redirectUrl.toString();
+      console.log('🔄 Navigation disabled - would have gone to:', redirectUrl.toString());
     } catch (error) {
       console.error('Error in handleZohoConnect:', error);
       toast.error((error as any)?.message || 'Failed to initiate Zoho authentication');
@@ -846,7 +847,8 @@ Return only the JSON response, no additional text.
         // Nettoyer l'URL pour éviter de relancer à chaque render
         params.delete('session');
         const newSearch = params.toString();
-        window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
+        // DISABLED: window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
+      console.log('🔄 History replace disabled - would have updated URL');
       }
 
       console.log('URL Params:', {

@@ -18,7 +18,8 @@ const ZohoAuth = () => {
         if (response.ok) {
           const data = await response.json();
           // Rediriger vers l'URL d'autorisation Zoho
-          window.location.href = data.authUrl;
+          // DISABLED: window.location.href = data.authUrl;
+        console.log('🔄 Zoho auth navigation disabled - would have gone to:', data.authUrl);
         } else {
           throw new Error('Failed to get Zoho auth URL');
         }
@@ -48,7 +49,10 @@ const ZohoAuth = () => {
         </p>
         {!isLoading && (
           <button
-            onClick={() => window.location.reload()}
+                          onClick={() => {
+                // DISABLED: window.location.reload()
+                console.log('🔄 Page reload disabled');
+              }}
             className="mt-4 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
           >
             Try Again
