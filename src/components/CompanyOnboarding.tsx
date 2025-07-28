@@ -116,13 +116,28 @@ const CompanyOnboarding = () => {
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
   const [showUploadContacts, setShowUploadContacts] = useState(false);
   
-  // Maintain showUploadContacts state if we have parsed leads
+  // Maintain showUploadContacts state if we have parsed leads, but respect current phase
   useEffect(() => {
     if (localStorage.getItem('parsedLeads') && !showUploadContacts && !userClickedBackRef.current) {
-      setShowUploadContacts(true);
-      console.log('🔄 Restoring UploadContacts view - parsed leads exist');
+      // Only restore if we're in a phase that should show UploadContacts
+      const shouldShowUploadContacts = displayedPhase >= 2; // UploadContacts is typically in phase 2+
+      if (shouldShowUploadContacts) {
+        setShowUploadContacts(true);
+        console.log('🔄 Restoring UploadContacts view - parsed leads exist and phase allows it');
+      } else {
+        console.log('⏸️ Skipping UploadContacts restore - current phase:', displayedPhase);
+      }
     }
-  }, [showUploadContacts]);
+  }, [showUploadContacts, displayedPhase]);
+
+  // Clean up parsed leads if we're in a phase that shouldn't show UploadContacts
+  useEffect(() => {
+    if (localStorage.getItem('parsedLeads') && displayedPhase < 2) {
+      console.log('🧹 Cleaning parsed leads - current phase too early:', displayedPhase);
+      localStorage.removeItem('parsedLeads');
+      setShowUploadContacts(false);
+    }
+  }, [displayedPhase]);
 
   // Add a ref to track if user manually clicked back
   const userClickedBackRef = useRef(false);
@@ -831,8 +846,8 @@ const CompanyOnboarding = () => {
       setShowUploadContacts(false);
       console.log('👤 User clicked back - preventing auto-restore');
     };
-  } else if (localStorage.getItem('parsedLeads') && showUploadContacts) {
-    // If we have parsed leads in localStorage AND showUploadContacts is true, show UploadContacts
+  } else if (localStorage.getItem('parsedLeads') && showUploadContacts && !userClickedBackRef.current) {
+    // If we have parsed leads in localStorage AND showUploadContacts is true AND user didn't click back, show UploadContacts
     activeComponent = <UploadContacts />;
     onBack = () => {
       setShowUploadContacts(false);

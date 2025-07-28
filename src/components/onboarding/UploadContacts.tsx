@@ -774,8 +774,14 @@ Return only the JSON response, no additional text.
           await fetchLeads();
         }
         
-        // Reset all states after a short delay
+        // Reset all states after a short delay, but preserve parsed leads
         setTimeout(() => {
+          // Don't reset if we have parsed leads
+          if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads')) {
+            console.log('🛡️ Skipping state reset - parsed leads exist');
+            return;
+          }
+          
           setSelectedFile(null);
           setUploadProgress(0);
           setUploadSuccess(false);
@@ -785,10 +791,13 @@ Return only the JSON response, no additional text.
           setIsProcessing(false);
           setShowSaveButton(true);
           setShowFileName(true);
-          toast('File has been reset. You can upload a new file.', {
-            icon: '🔄',
-            duration: 2000
-          });
+          // Only show reset message if we don't have parsed leads
+          if (!parsedLeads.length && !localStorage.getItem('parsedLeads')) {
+            toast('File has been reset. You can upload a new file.', {
+              icon: '🔄',
+              duration: 2000
+            });
+          }
         }, 1200);
       }
     } catch (error: any) {
