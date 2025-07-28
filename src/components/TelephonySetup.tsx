@@ -28,6 +28,9 @@ import { phoneNumberService } from '../services/api';
 import type { AvailablePhoneNumber } from '../services/api';
 
 const gigId = import.meta.env.VITE_NODE_ENV === 'development' ? '683083e7af226bea2d459372' : Cookies.get('lastGigId');
+console.log('lastGigId', Cookies.get('lastGigId'));
+console.log('gigId', gigId);
+console.log('import.meta.env.VITE_NODE_ENV', import.meta.env.VITE_NODE_ENV);
 const companyId = Cookies.get('companyId');
 
 interface PhoneNumber {
