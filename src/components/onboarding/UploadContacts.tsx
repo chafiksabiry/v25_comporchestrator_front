@@ -658,6 +658,23 @@ const UploadContacts = React.memo(() => {
         if (lines.length > 1) {
           console.log(`📋 Second line: ${lines[1].substring(0, 100)}...`);
         }
+        if (lines.length > 2) {
+          console.log(`📋 Third line: ${lines[2].substring(0, 100)}...`);
+        }
+        if (lines.length > 3) {
+          console.log(`📋 Fourth line: ${lines[3].substring(0, 100)}...`);
+        }
+        if (lines.length > 4) {
+          console.log(`📋 Fifth line: ${lines[4].substring(0, 100)}...`);
+        }
+      }
+      
+      // Log the last few lines to see if there are any issues
+      if (lines.length > 5) {
+        console.log(`📋 Last line: ${lines[lines.length - 1].substring(0, 100)}...`);
+        if (lines.length > 6) {
+          console.log(`📋 Second to last line: ${lines[lines.length - 2].substring(0, 100)}...`);
+        }
       }
       
       // Check if content is too large or has many lines - use chunks for better processing
@@ -886,6 +903,17 @@ Rules:
       console.log(`   - Leads array length: ${parsedData.leads.length}`);
       console.log(`   - Validation object:`, parsedData.validation);
       console.log(`   - Expected lines: ${lines.length - 1}`);
+      console.log(`   - Lines in chunk: ${lines.length}`);
+      console.log(`   - Data lines (excluding header): ${lines.length - 1}`);
+      console.log(`   - Processing efficiency: ${parsedData.leads.length}/${lines.length - 1} (${Math.round((parsedData.leads.length / (lines.length - 1)) * 100)}%)`);
+      
+      // Log sample of processed leads to see what was extracted
+      if (parsedData.leads.length > 0) {
+        console.log(`📋 Sample of processed leads:`);
+        parsedData.leads.slice(0, 3).forEach((lead: any, index: number) => {
+          console.log(`   Lead ${index + 1}: ${lead.Email_1} | ${lead.Phone} | ${lead.Deal_Name}`);
+        });
+      }
 
       // Add required fields to each lead
       const processedLeads = parsedData.leads.map((lead: any, index: number) => {
