@@ -1176,6 +1176,14 @@ Rules:
             // Show validation results
             if (result.validation) {
               const { totalRows, validRows, invalidRows, errors } = result.validation;
+              
+              console.log('🔍 Validation analysis:');
+              console.log('   - result.validation:', result.validation);
+              console.log('   - totalRows:', totalRows);
+              console.log('   - validRows:', validRows);
+              console.log('   - invalidRows:', invalidRows);
+              console.log('   - result.leads.length:', result.leads.length);
+              
               setValidationResults(result.validation);
               
               if (invalidRows > 0) {
@@ -1183,7 +1191,9 @@ Rules:
                 console.log('Validation errors:', errors);
               }
               
-              toast.success(`Successfully processed ${validRows} out of ${totalRows} rows`);
+              // Use actual leads count if validRows is undefined or 0
+              const actualValidRows = validRows || result.leads.length;
+              toast.success(`Successfully processed ${actualValidRows} out of ${totalRows} rows`);
             }
 
             console.log('Leads processed with OpenAI:', result.leads);
@@ -2451,24 +2461,25 @@ Rules:
               {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
                 <div className="mt-4 space-y-4">
                   {validationResults && (
-                                      <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3">
-                    <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
-                      <Info className="mr-2 h-4 w-4" />
-                      AI Processing Results
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-blue-600 font-medium">Total Rows:</span> {validationResults.totalRows}
-                      </div>
-                      <div>
-                        <span className="text-green-600 font-medium">Valid Rows:</span> {validationResults.validRows}
-                      </div>
-                      {validationResults.invalidRows > 0 && (
-                        <div className="col-span-2">
-                          <span className="text-red-600 font-medium">Invalid Rows:</span> {validationResults.invalidRows}
+                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3">
+                      <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                        <Info className="mr-2 h-4 w-4" />
+                        AI Processing Results
+                      </h4>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-blue-600 font-medium">Total Rows:</span> {validationResults.totalRows}
                         </div>
-                      )}
-                    </div>
+                        <div>
+                          <span className="text-green-600 font-medium">Valid Rows:</span> {validationResults.validRows > 0 ? validationResults.validRows : parsedLeads.length}
+                        </div>
+                        {validationResults.invalidRows > 0 && (
+                          <div className="col-span-2">
+                            <span className="text-red-600 font-medium">Invalid Rows:</span> {validationResults.invalidRows}
+                          </div>
+                        )}
+                      </div>
+
                     {validationResults.errors && validationResults.errors.length > 0 && (
                       <div className="mt-3">
                         <details className="text-xs">
@@ -2624,58 +2635,23 @@ Rules:
                     )}
                   </div>
                   
-                                <div className="flex space-x-3">
-                <button
-                  className="flex-1 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-white font-bold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                  onClick={handleSaveLeads}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <div className="flex items-center justify-center">
-                      <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-                      Saving Contacts...
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center">
-                      <UserPlus className="mr-2 h-5 w-5" />
-                      Save {parsedLeads.length} Contacts
-                    </div>
-                  )}
-                </button>
-                
-                <button
-                  className="px-4 py-3 rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white font-bold hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                  onClick={() => {
-                    // Clear all data and force refresh
-                    console.log('🧹 Clearing all data and forcing refresh...');
-                    setSelectedFile(null);
-                    setUploadError(null);
-                    setUploadSuccess(false);
-                    setIsProcessing(false);
-                    setUploadProgress(0);
-                    setParsedLeads([]);
-                    setValidationResults(null);
-                    setLeads([]);
-                    setFilteredLeads([]);
-                    
-                    // Clear all storage
-                    localStorage.clear();
-                    sessionStorage.clear();
-                    
-                    // Remove processing indicators
-                    document.body.removeAttribute('data-processing');
-                    processingRef.current = false;
-                    
-                    toast.success('All data cleared. You can now upload a new file.');
-                  }}
-                  disabled={isProcessing}
-                >
+                                <button
+                className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-white font-bold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                onClick={handleSaveLeads}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
                   <div className="flex items-center justify-center">
-                    <Trash2 className="mr-2 h-5 w-5" />
-                    Clear All
+                    <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                    Saving Contacts...
                   </div>
-                </button>
-              </div>
+                ) : (
+                  <div className="flex items-center justify-center">
+                    <UserPlus className="mr-2 h-5 w-5" />
+                    Save {parsedLeads.length} Contacts
+                  </div>
+                )}
+              </button>
                 </div>
               )}
             </div>
