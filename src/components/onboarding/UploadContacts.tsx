@@ -389,6 +389,48 @@ const UploadContacts = React.memo(() => {
     return result;
   };
 
+  // Function to process large files in chunks
+  const processLargeFileInChunks = async (fileContent: string, fileType: string): Promise<{leads: any[], validation: any}> => {
+    console.log('🔄 Processing large file in chunks...');
+    
+    const lines = fileContent.split('\n');
+    const header = lines[0];
+    const dataLines = lines.slice(1);
+    
+    const chunkSize = 50; // Process 50 leads at a time
+    const allLeads: any[] = [];
+    let totalProcessed = 0;
+    
+    for (let i = 0; i < dataLines.length; i += chunkSize) {
+      const chunk = dataLines.slice(i, i + chunkSize);
+      const chunkContent = [header, ...chunk].join('\n');
+      
+      console.log(`🔄 Processing chunk ${Math.floor(i/chunkSize) + 1}/${Math.ceil(dataLines.length/chunkSize)} (${chunk.length} leads)`);
+      
+      try {
+        const chunkResult = await processFileWithOpenAI(chunkContent, fileType, true);
+        allLeads.push(...chunkResult.leads);
+        totalProcessed += chunkResult.leads.length;
+        
+        console.log(`✅ Chunk processed: ${chunkResult.leads.length} leads`);
+      } catch (error) {
+        console.error(`❌ Error processing chunk ${Math.floor(i/chunkSize) + 1}:`, error);
+      }
+    }
+    
+    console.log(`✅ Large file processing complete: ${allLeads.length} total leads`);
+    
+    return {
+      leads: allLeads,
+      validation: {
+        totalRows: dataLines.length,
+        validRows: allLeads.length,
+        invalidRows: Math.max(0, dataLines.length - allLeads.length),
+        errors: []
+      }
+    };
+  };
+
 
 
   // Helper function to recover incomplete JSON from OpenAI responses
@@ -540,7 +582,7 @@ const UploadContacts = React.memo(() => {
       const lines = cleanedFileContent.split('\n');
       
       // Check if content is too large and optimize
-      if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 30)) {
+      if (!isOptimized && cleanedFileContent.length > maxContentLength) {
         console.warn(`⚠️ File is large (${lines.length} lines, ${cleanedFileContent.length} characters)`);
         
         // Optimize content by keeping only essential columns
@@ -551,14 +593,12 @@ const UploadContacts = React.memo(() => {
           console.log('✅ Using optimized version');
           return await processOptimizedContent(optimizedContent, fileType);
         } else {
-          // For very large files, process only the first 30 lines
-          const fileLinesArray = cleanedFileContent.split('\n');
-          const limitedContent = fileLinesArray.slice(0, 31).join('\n');
-          console.log(`🔄 Processing limited content: ${limitedContent.split('\n').length - 1} leads`);
-          return await processFileWithOpenAI(limitedContent, fileType);
+          // For very large files, process in chunks
+          console.log(`🔄 File too large, processing in chunks...`);
+          return await processLargeFileInChunks(cleanedFileContent, fileType);
         }
       }
-      
+
       const truncatedContent = cleanedFileContent.length > maxContentLength 
         ? cleanedFileContent.substring(0, maxContentLength) + '\n... [content truncated]'
         : cleanedFileContent;
@@ -625,13 +665,13 @@ Rules:
 
       const requestBody = {
         model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'system',
+          messages: [
+            {
+              role: 'system',
             content: 'You are a data processing expert. Return ONLY valid JSON. Never return text explanations.'
-          },
-          {
-            role: 'user',
+            },
+            {
+              role: 'user',
             content: finalPrompt
           }
         ],
@@ -708,21 +748,21 @@ Rules:
         if (recoveredData) {
           console.log('✅ Successfully recovered JSON with', recoveredData.leads.length, 'leads');
           parsedData = recoveredData;
-        } else {
-          return {
-            leads: [],
-            validation: {
-              totalRows: 0,
-              validRows: 0,
-              invalidRows: 0,
+          } else {
+                return {
+          leads: [],
+          validation: {
+            totalRows: 0,
+            validRows: 0,
+            invalidRows: 0,
               errors: ['OpenAI returned incomplete JSON that could not be recovered']
-            }
-          };
-        }
+          }
+        };
+      }
       } else {
         try {
-          parsedData = JSON.parse(content);
-        } catch (parseError: unknown) {
+        parsedData = JSON.parse(content);
+      } catch (parseError: unknown) {
           console.error('❌ Failed to parse OpenAI response:', parseError);
           console.log('Raw content length:', content.length);
           console.log('Content preview:', content.substring(0, 500) + '...');
@@ -734,14 +774,14 @@ Rules:
             parsedData = recoveredData;
           } else {
             return {
-              leads: [],
-              validation: {
-                totalRows: 0,
-                validRows: 0,
-                invalidRows: 0,
-                errors: [`JSON Parse Error: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`]
-              }
-            };
+          leads: [],
+          validation: {
+            totalRows: 0,
+            validRows: 0,
+            invalidRows: 0,
+            errors: [`JSON Parse Error: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`]
+          }
+        };
           }
         }
       }
