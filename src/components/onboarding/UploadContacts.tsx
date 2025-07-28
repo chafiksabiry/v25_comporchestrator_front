@@ -590,36 +590,35 @@ Return only the JSON response, no additional text.
         
         // Remove ellipsis and close the JSON properly
         if (fixedContent.includes('...')) {
-          // Find the last complete object before ellipsis
-          const lastCompleteObjectIndex = fixedContent.lastIndexOf('},');
-          if (lastCompleteObjectIndex !== -1) {
-            // Close the leads array and validation object
-            fixedContent = fixedContent.substring(0, lastCompleteObjectIndex + 1) + 
-              '],' +
-              '"validation": {' +
-              '"totalRows": 87,' +
-              '"validRows": 86,' +
-              '"invalidRows": 1,' +
-              '"errors": ["JSON was truncated by OpenAI"]' +
-              '}' +
-              '}';
+          // Find all complete lead objects before the ellipsis (simpler regex)
+          const leadObjects = fixedContent.match(/\{[^}]*"userId"[^}]*"Email_1"[^}]*"Phone"[^}]*\}/g);
+          
+          if (leadObjects && leadObjects.length > 0) {
+            console.log('🔄 Found', leadObjects.length, 'complete lead objects, attempting to reconstruct JSON...');
+            
+            // Reconstruct the JSON with complete leads
+            const reconstructedLeads = leadObjects.map((obj: string) => obj.trim()).join(',\n    ');
+            fixedContent = '{\n  "leads": [\n    ' + reconstructedLeads + '\n  ],\n  "validation": {\n    "totalRows": ' + (leadObjects.length + 1) + ',\n    "validRows": ' + leadObjects.length + ',\n    "invalidRows": 1,\n    "errors": ["JSON was truncated by OpenAI but leads were recovered"]\n  }\n}';
             
             console.log('🔄 Attempting to fix truncated JSON...');
             try {
               const parsedData = JSON.parse(fixedContent);
-              console.log('✅ Successfully fixed truncated JSON');
+              console.log('✅ Successfully fixed truncated JSON with', leadObjects.length, 'leads');
               return {
                 leads: parsedData.leads || [],
                 validation: parsedData.validation || {
-                  totalRows: 0,
-                  validRows: 0,
-                  invalidRows: 0,
-                  errors: ["JSON was truncated but partially recovered"]
+                  totalRows: leadObjects.length,
+                  validRows: leadObjects.length,
+                  invalidRows: 1,
+                  errors: ["JSON was truncated by OpenAI but leads were recovered"]
                 }
               };
             } catch (fixError) {
               console.error('❌ Failed to fix truncated JSON:', fixError);
+              console.log('Attempted fixed content:', fixedContent.substring(0, 500) + '...');
             }
+          } else {
+            console.warn('⚠️ No complete lead objects found in truncated JSON');
           }
         }
       }
