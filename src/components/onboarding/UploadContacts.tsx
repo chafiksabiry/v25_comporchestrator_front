@@ -510,12 +510,21 @@ const UploadContacts = React.memo(() => {
         throw new Error('OpenAI API key not configured');
       }
 
+      // Validate API key format
+      if (!openaiApiKey.startsWith('sk-')) {
+        throw new Error('Invalid OpenAI API key format');
+      }
+
       const userId = Cookies.get('userId');
       const gigId = selectedGigId;
       const companyId = Cookies.get('companyId');
 
       if (!gigId) {
         throw new Error('Please select a gig first');
+      }
+
+      if (!userId || !companyId) {
+        throw new Error('Missing user or company information');
       }
 
       // Clean the file content before sending to OpenAI
@@ -553,6 +562,11 @@ const UploadContacts = React.memo(() => {
       const truncatedContent = cleanedFileContent.length > maxContentLength 
         ? cleanedFileContent.substring(0, maxContentLength) + '\n... [content truncated]'
         : cleanedFileContent;
+      
+      // Validate content before sending to OpenAI
+      if (!truncatedContent || truncatedContent.trim().length === 0) {
+        throw new Error('No valid content to process');
+      }
       
       // Optimized prompt with better JSON formatting instructions
       const prompt = `Extract lead information from this ${fileType} file.
@@ -595,32 +609,66 @@ Rules:
 7. Use exact MongoDB ObjectId format with "$oid"
 8. Ensure JSON is complete and properly closed`;
 
+      // Log request details for debugging
+      console.log('Sending request to OpenAI with:', {
+        model: 'gpt-3.5-turbo',
+        promptLength: prompt.length,
+        maxTokens: 8000
+      });
+
+      // Check prompt size to avoid token limit issues
+      let finalPrompt = prompt;
+      if (prompt.length > 150000) { // Conservative limit for GPT-3.5-turbo
+        console.warn('⚠️ Prompt is very large, truncating content...');
+        const maxPromptLength = 100000;
+        finalPrompt = prompt.substring(0, maxPromptLength) + '\n... [content truncated due to size]';
+        console.log('Using truncated prompt with length:', finalPrompt.length);
+      }
+
+      const requestBody = {
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a data processing expert. Return ONLY valid JSON. Never return text explanations.'
+          },
+          {
+            role: 'user',
+            content: finalPrompt
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 8000
+      };
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${openaiApiKey}`
         },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo', // Faster than GPT-4
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a data processing expert. Return ONLY valid JSON. Never return text explanations.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          temperature: 0.1,
-          max_tokens: 8000, // Increased for larger responses
-          timeout: 30000 // 30 second timeout
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.statusText}`);
+        // Get detailed error information
+        let errorMessage = `OpenAI API error: ${response.status} ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.error) {
+            errorMessage += ` - ${errorData.error.message || errorData.error.type || 'Unknown error'}`;
+          }
+        } catch (e) {
+          // If we can't parse the error response, use the status text
+        }
+        
+        console.error('OpenAI API Error Details:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorMessage
+        });
+        
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
