@@ -267,7 +267,7 @@ const CompanyOnboarding = () => {
             if (completeResponse.data) {
               console.log('✅ Last phase and step completed successfully:', completeResponse.data);
               // Only reload progress if we're not processing a file
-              if (localStorage.getItem('uploadProcessing') !== 'true') {
+              if (localStorage.getItem('uploadProcessing') !== 'true' && sessionStorage.getItem('uploadProcessing') !== 'true') {
                 await loadCompanyProgress();
               } else {
                 console.log('⏸️ Skipping progress reload - file processing in progress');
@@ -294,7 +294,7 @@ const CompanyOnboarding = () => {
             console.log('⚠️ Step 13 removed from completed steps and marked as in_progress');
             
             // Only reload progress if we're not processing a file
-            if (localStorage.getItem('uploadProcessing') !== 'true') {
+            if (localStorage.getItem('uploadProcessing') !== 'true' && sessionStorage.getItem('uploadProcessing') !== 'true') {
               await loadCompanyProgress();
             } else {
               console.log('⏸️ Skipping progress reload - file processing in progress');
@@ -320,7 +320,7 @@ const CompanyOnboarding = () => {
     // Set up real-time checking every 30 seconds
     const intervalId = setInterval(() => {
       // Skip checks if we're processing a file
-      if (localStorage.getItem('uploadProcessing') === 'true') {
+      if (localStorage.getItem('uploadProcessing') === 'true' || sessionStorage.getItem('uploadProcessing') === 'true') {
         console.log('⏸️ Skipping real-time checks - file processing in progress');
         return;
       }

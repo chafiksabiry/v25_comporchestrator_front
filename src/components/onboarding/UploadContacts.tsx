@@ -254,6 +254,9 @@ const UploadContacts = React.memo(() => {
     const finalCleaned = generalCleaned.replace(/(?:Prefix|Label|Tag)\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, '$1');
     
     console.log('🧹 Email cleaning completed');
+    console.log('🧹 Total lines processed:', lines.length);
+    console.log('🧹 Sample of cleaned content:', finalCleaned.substring(0, 1000));
+    
     return finalCleaned;
   };
 
@@ -281,6 +284,8 @@ const UploadContacts = React.memo(() => {
 
       const prompt = `
 You are a data processing expert. Analyze the following ${fileType} file content and extract lead information.
+
+IMPORTANT: This file contains 25+ leads. You MUST process ALL rows, not just the first few.
 
 File content:
 ${cleanedFileContent}
@@ -329,7 +334,7 @@ Rules:
 4. Set default Stage to "New" if not provided
 5. Set default Pipeline to "Sales Pipeline" if not provided
 6. Split Project_Tags by semicolon if multiple tags
-7. Only include leads that have at least email OR phone
+7. Process ALL rows in the file, even if some have missing fields
 8. Always include Phone field (use "no-phone@placeholder.com" if no phone provided)
 9. Always include Email_1 field (use "no-email@placeholder.com" if no email provided)
 10. Use the exact MongoDB ObjectId format with "$oid" for userId, companyId, and gigId
@@ -338,6 +343,10 @@ Rules:
 13. IMPORTANT: Use the provided userId, companyId, and gigId values exactly as shown above
 14. CRITICAL: Clean email addresses by removing prefixes like "Nor " and any other non-email text
 15. IMPORTANT: The "Email" column contains email addresses with "Nor " prefix - clean these first
+16. CRITICAL: Process ALL 25+ rows from the file, not just the first few
+17. If a row has missing email or phone, still include it with placeholder values
+18. MANDATORY: You must return at least 25 leads from this file
+19. DO NOT stop processing after the first few rows - continue until all rows are processed
 
 Return only the JSON response, no additional text.
 `;
@@ -431,6 +440,7 @@ Return only the JSON response, no additional text.
       document.body.setAttribute('data-processing', 'true');
       processingRef.current = true;
       localStorage.setItem('uploadProcessing', 'true');
+      sessionStorage.setItem('uploadProcessing', 'true');
       
       setSelectedFile(file);
       setUploadError(null);
@@ -508,6 +518,15 @@ Return only the JSON response, no additional text.
             }
 
             console.log('Leads processed with OpenAI:', result.leads);
+            console.log('📊 Total leads processed:', result.leads.length);
+            
+            // Verify we got all 25+ leads
+            if (result.leads.length < 20) {
+              console.warn('⚠️ Warning: Only', result.leads.length, 'leads processed. Expected 25+ leads.');
+            } else {
+              console.log('✅ Successfully processed', result.leads.length, 'leads');
+            }
+            
             setParsedLeads(result.leads);
             
             // Store results in localStorage to prevent loss
@@ -521,6 +540,7 @@ Return only the JSON response, no additional text.
             document.body.removeAttribute('data-processing');
             processingRef.current = false;
             localStorage.removeItem('uploadProcessing');
+            sessionStorage.removeItem('uploadProcessing');
             
           } catch (error: any) {
             console.error('Error processing file:', error);
@@ -545,6 +565,7 @@ Return only the JSON response, no additional text.
             document.body.removeAttribute('data-processing');
             processingRef.current = false;
             localStorage.removeItem('uploadProcessing');
+            sessionStorage.removeItem('uploadProcessing');
           }
         };
 
@@ -1105,7 +1126,7 @@ Return only the JSON response, no additional text.
     }
 
     // Also skip if we have parsed leads that should be preserved
-    if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads')) {
+    if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads') || sessionStorage.getItem('parsedLeads')) {
       console.log('⏸️ Skipping selectedGigId effect - parsed leads exist');
       return;
     }
@@ -1118,7 +1139,7 @@ Return only the JSON response, no additional text.
       });
     } else {
       // Don't clear leads if we're processing or have parsed leads
-      if (processingRef.current || localStorage.getItem('uploadProcessing') === 'true' || parsedLeads.length > 0) {
+      if (processingRef.current || localStorage.getItem('uploadProcessing') === 'true' || sessionStorage.getItem('uploadProcessing') === 'true' || parsedLeads.length > 0) {
         console.log('⏸️ Skipping leads clear - file processing in progress or parsed leads exist');
         return;
       }
