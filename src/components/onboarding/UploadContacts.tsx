@@ -366,19 +366,23 @@ const UploadContacts = React.memo(() => {
       }
 
       // Limit the content size to avoid token limits
-      const maxContentLength = 8000; // Reduced from previous size
+      const maxContentLength = 15000; // Increased to handle more lines
       const truncatedContent = cleanedFileContent.length > maxContentLength 
         ? cleanedFileContent.substring(0, maxContentLength) + '\n... [content truncated due to size]'
         : cleanedFileContent;
 
+      const expectedLeads = lines.length - 1; // Exclude header row
+      
       const prompt = `
 You are a data processing expert. Extract lead information from this ${fileType} file.
 
 CRITICAL INSTRUCTIONS:
-- Process the first 15-20 leads (not all 25 to avoid token limits)
-- Return a valid JSON array with the processed leads
-- Keep JSON compact and complete
-- Do NOT truncate strings or leave incomplete JSON
+- This file contains EXACTLY ${lines.length} lines (1 header + ${expectedLeads} leads)
+- You MUST process ALL ${expectedLeads} leads, not just the first 25
+- Return exactly ${expectedLeads} lead objects in the JSON array
+- Do NOT stop processing after the first few rows
+- Process every single row from the file
+- If the file is too complex, process as many leads as possible but prioritize completeness
 
 File content (${truncatedContent.length} characters):
 ${truncatedContent}
@@ -566,8 +570,20 @@ Return only the JSON response, no additional text.
         leads: processedLeads,
         validation: parsedData.validation
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing with OpenAI:', error);
+      
+      // Handle rate limiting (429 error)
+      if (error.message?.includes('429') || error.status === 429) {
+        console.error('❌ Rate limit exceeded (429). Please wait a moment before trying again.');
+        throw new Error('Rate limit exceeded. Please wait a moment before trying again.');
+      }
+      
+      // Handle other OpenAI errors
+      if (error.message?.includes('OpenAI') || error.message?.includes('API')) {
+        throw new Error(`OpenAI API error: ${error.message}`);
+      }
+      
       throw error;
     }
   };
@@ -665,11 +681,13 @@ Return only the JSON response, no additional text.
             console.log('Leads processed with OpenAI:', result.leads);
             console.log('📊 Total leads processed:', result.leads.length);
             
-            // Verify we got all 25+ leads
-            if (result.leads.length < 20) {
-              console.warn('⚠️ Warning: Only', result.leads.length, 'leads processed. Expected 25+ leads.');
+            // Verify we got all expected leads
+            const fileLines = fileContent.split('\n').filter((line: string) => line.trim());
+            const expectedLeads = fileLines.length - 1; // Exclude header row
+            if (result.leads.length < expectedLeads) {
+              console.warn(`⚠️ Warning: Only ${result.leads.length} leads processed. Expected ${expectedLeads} leads from ${fileLines.length} total lines.`);
             } else {
-              console.log('✅ Successfully processed', result.leads.length, 'leads');
+              console.log(`✅ Successfully processed ${result.leads.length} leads (expected ${expectedLeads})`);
             }
             
             setParsedLeads(result.leads);
@@ -691,7 +709,9 @@ Return only the JSON response, no additional text.
             console.error('Error processing file:', error);
             let errorMessage = 'Error processing file';
             
-            if (error.message.includes('OpenAI API key not configured')) {
+            if (error.message.includes('Rate limit exceeded')) {
+              errorMessage = 'Rate limit exceeded. Please wait a moment before trying again.';
+            } else if (error.message.includes('OpenAI API key not configured')) {
               errorMessage = 'OpenAI API key not configured. Please check your environment variables.';
             } else if (error.message.includes('OpenAI API error')) {
               errorMessage = 'OpenAI API error. Please check your API key and try again.';
