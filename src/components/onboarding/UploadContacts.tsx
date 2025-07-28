@@ -346,6 +346,7 @@ CRITICAL INSTRUCTIONS:
 - Return exactly 25 lead objects in the JSON array
 - Do NOT stop processing after the first few rows
 - Process every single row from the file
+- If the file is too complex, process as many leads as possible
 
 File content (${cleanedFileContent.length} characters):
 ${cleanedFileContent}
@@ -422,7 +423,7 @@ Return only the JSON response, no additional text.
           messages: [
             {
               role: 'system',
-              content: 'You are a data processing expert that returns only valid JSON responses.'
+              content: 'You are a data processing expert. You MUST return ONLY valid JSON. Never return text like "I\'m sorry" or explanations. If you cannot process the data, return a JSON with empty leads array and an error message in validation.'
             },
             {
               role: 'user',
@@ -445,8 +446,50 @@ Return only the JSON response, no additional text.
         throw new Error('No response from OpenAI');
       }
 
+      // Check if OpenAI returned an error message instead of JSON
+      if (content.trim().toLowerCase().startsWith('i\'m sorry') || 
+          content.trim().toLowerCase().startsWith('sorry') ||
+          content.trim().toLowerCase().includes('cannot') ||
+          content.trim().toLowerCase().includes('unable')) {
+        console.warn('⚠️ OpenAI returned an error message instead of JSON:', content);
+        
+        // Return a fallback response
+        const fallbackResult = {
+          leads: [],
+          validation: {
+            totalRows: 0,
+            validRows: 0,
+            invalidRows: 0,
+            errors: [`OpenAI Error: ${content.substring(0, 100)}...`]
+          }
+        };
+        
+        console.log('Using fallback result:', fallbackResult);
+        return fallbackResult;
+      }
+
       // Parse the JSON response
-      const parsedData = JSON.parse(content);
+      let parsedData;
+      try {
+        parsedData = JSON.parse(content);
+      } catch (parseError: unknown) {
+        console.error('❌ Failed to parse OpenAI response as JSON:', content);
+        console.error('Parse error:', parseError);
+        
+        // Return a fallback response
+        const fallbackResult = {
+          leads: [],
+          validation: {
+            totalRows: 0,
+            validRows: 0,
+            invalidRows: 0,
+            errors: [`JSON Parse Error: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`]
+          }
+        };
+        
+        console.log('Using fallback result due to parse error:', fallbackResult);
+        return fallbackResult;
+      }
       
       if (!parsedData.leads || !Array.isArray(parsedData.leads)) {
         throw new Error('Invalid response format from OpenAI');
