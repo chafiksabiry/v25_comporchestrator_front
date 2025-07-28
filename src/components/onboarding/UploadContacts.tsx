@@ -347,6 +347,9 @@ const UploadContacts = React.memo(() => {
       // Clean the file content before sending to OpenAI
       const cleanedFileContent = cleanEmailAddresses(fileContent);
       
+      // Limit the content size to avoid token limits
+      const maxContentLength = 25000; // Increased significantly to handle complex CSV files
+      
       console.log('Original file content length:', fileContent.length);
       console.log('Cleaned file content length:', cleanedFileContent.length);
       console.log('Sample of cleaned content:', cleanedFileContent.substring(0, 500));
@@ -354,6 +357,12 @@ const UploadContacts = React.memo(() => {
       // Verify we have the complete content
       if (cleanedFileContent.length < 4000) {
         console.warn('⚠️ Warning: File content seems too short. Expected ~4800 characters, got:', cleanedFileContent.length);
+      }
+      
+      // Check if content was truncated
+      if (cleanedFileContent.length > maxContentLength) {
+        console.warn(`⚠️ Warning: File content was truncated from ${cleanedFileContent.length} to ${maxContentLength} characters`);
+        console.warn('This may cause incomplete processing. Consider reducing file size or complexity.');
       }
       
       // Count the number of lines to verify we have all 25 leads
@@ -365,8 +374,6 @@ const UploadContacts = React.memo(() => {
         console.warn('⚠️ Warning: File seems to have fewer lines than expected');
       }
 
-      // Limit the content size to avoid token limits
-      const maxContentLength = 15000; // Increased to handle more lines
       const truncatedContent = cleanedFileContent.length > maxContentLength 
         ? cleanedFileContent.substring(0, maxContentLength) + '\n... [content truncated due to size]'
         : cleanedFileContent;
@@ -382,7 +389,9 @@ CRITICAL INSTRUCTIONS:
 - Return exactly ${expectedLeads} lead objects in the JSON array
 - Do NOT stop processing after the first few rows
 - Process every single row from the file
-- If the file is too complex, process as many leads as possible but prioritize completeness
+- IMPORTANT: The file has ${lines.length} total lines, so you must return ${expectedLeads} leads
+- Do NOT truncate or stop early - process ALL rows in the file
+- If you cannot process all rows due to complexity, process as many as possible but prioritize getting ALL ${expectedLeads} leads
 
 File content (${truncatedContent.length} characters):
 ${truncatedContent}
