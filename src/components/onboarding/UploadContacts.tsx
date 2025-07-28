@@ -591,7 +591,9 @@ Return only the JSON response, no additional text.
         // Remove ellipsis and close the JSON properly
         if (fixedContent.includes('...')) {
           // Find all complete lead objects before the ellipsis (simpler regex)
-          const leadObjects = fixedContent.match(/\{[^}]*"userId"[^}]*"Email_1"[^}]*"Phone"[^}]*\}/g);
+          // First, remove the ellipsis to get clean content
+          const cleanContent = fixedContent.replace(/\.\.\./g, '');
+          const leadObjects = cleanContent.match(/\{[^}]*"userId"[^}]*"Email_1"[^}]*"Phone"[^}]*\}/g);
           
           if (leadObjects && leadObjects.length > 0) {
             console.log('🔄 Found', leadObjects.length, 'complete lead objects, attempting to reconstruct JSON...');
@@ -619,6 +621,46 @@ Return only the JSON response, no additional text.
             }
           } else {
             console.warn('⚠️ No complete lead objects found in truncated JSON');
+            
+            // Try alternative approach: extract objects by finding patterns
+            console.log('🔄 Trying alternative extraction method...');
+            const alternativeObjects = [];
+            
+            // Split by "}," to find individual objects
+            const parts = cleanContent.split('},');
+            for (const part of parts) {
+              if (part.includes('"userId"') && part.includes('"Email_1"') && part.includes('"Phone"')) {
+                // This looks like a lead object, add closing brace
+                const objectStr = part.trim() + '}';
+                if (objectStr.startsWith('{')) {
+                  alternativeObjects.push(objectStr);
+                }
+              }
+            }
+            
+            if (alternativeObjects.length > 0) {
+              console.log('🔄 Found', alternativeObjects.length, 'objects using alternative method');
+              
+              // Reconstruct the JSON
+              const reconstructedLeads = alternativeObjects.join(',\n    ');
+              const fixedContentAlt = '{\n  "leads": [\n    ' + reconstructedLeads + '\n  ],\n  "validation": {\n    "totalRows": ' + (alternativeObjects.length + 1) + ',\n    "validRows": ' + alternativeObjects.length + ',\n    "invalidRows": 1,\n    "errors": ["JSON was truncated by OpenAI but leads were recovered using alternative method"]\n  }\n}';
+              
+              try {
+                const parsedData = JSON.parse(fixedContentAlt);
+                console.log('✅ Successfully recovered', alternativeObjects.length, 'leads using alternative method');
+                return {
+                  leads: parsedData.leads || [],
+                  validation: parsedData.validation || {
+                    totalRows: alternativeObjects.length,
+                    validRows: alternativeObjects.length,
+                    invalidRows: 1,
+                    errors: ["JSON was truncated by OpenAI but leads were recovered using alternative method"]
+                  }
+                };
+              } catch (fixError) {
+                console.error('❌ Alternative method also failed:', fixError);
+              }
+            }
           }
         }
       }
