@@ -396,6 +396,8 @@ const UploadContacts = React.memo(() => {
     return result;
   };
 
+
+
   const processFileWithOpenAI = async (fileContent: string, fileType: string): Promise<{leads: any[], validation: any}> => {
     try {
       const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
@@ -426,10 +428,13 @@ const UploadContacts = React.memo(() => {
         console.warn('⚠️ Warning: File content seems too short. Expected ~4800 characters, got:', cleanedFileContent.length);
       }
       
-      // Check if content was truncated
-      if (cleanedFileContent.length > maxContentLength) {
-        console.warn(`⚠️ Warning: File content was truncated from ${cleanedFileContent.length} to ${maxContentLength} characters`);
-        console.warn('This may cause incomplete processing. Consider reducing file size or complexity.');
+      // Count the number of lines to verify we have all expected leads
+      const lines = cleanedFileContent.split('\n');
+      
+      // Check if content was truncated or if file is very large
+      if (cleanedFileContent.length > maxContentLength || lines.length > 50) {
+        console.warn(`⚠️ Warning: File is very large (${lines.length} lines, ${cleanedFileContent.length} characters)`);
+        console.warn('Attempting aggressive optimization to reduce size...');
         
         // Try to optimize the content by keeping only essential columns
         console.log('🔄 Attempting to optimize content by reducing columns...');
@@ -439,11 +444,15 @@ const UploadContacts = React.memo(() => {
         if (optimizedContent.length <= maxContentLength) {
           console.log('✅ Content optimization successful - using optimized version');
           return await processOptimizedContent(optimizedContent, fileType);
+        } else {
+          console.warn('⚠️ Even optimized content is too large. Using fallback processing...');
+          // For very large files, process only the first 50 lines
+          const fileLinesArray = cleanedFileContent.split('\n');
+          const limitedContent = fileLinesArray.slice(0, 51).join('\n'); // Header + 50 data lines
+          console.log(`🔄 Processing limited content: ${limitedContent.split('\n').length - 1} leads`);
+          return await processFileWithOpenAI(limitedContent, fileType);
         }
       }
-      
-      // Count the number of lines to verify we have all expected leads
-      const lines = cleanedFileContent.split('\n');
       console.log('📊 Total lines in file:', lines.length);
       console.log(`📊 Expected: ${lines.length} lines (1 header + ${lines.length - 1} leads)`);
       
@@ -671,6 +680,8 @@ Return only the JSON response, no additional text.
       throw error;
     }
   };
+
+
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
