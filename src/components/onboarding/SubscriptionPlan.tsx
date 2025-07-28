@@ -55,8 +55,7 @@ const SubscriptionPlan = () => {
       
       
       // Recharger la page pour mettre à jour l'interface
-              // DISABLED: window.location.reload();
-        console.log('🔄 Subscription plan reload disabled');
+      window.location.reload();
       
     } catch (error: any) {
       console.error('Error details:', error);

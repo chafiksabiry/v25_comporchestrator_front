@@ -240,8 +240,7 @@ function App() {
       });
 
       // Rediriger vers /app2
-              // DISABLED: window.location.href = '/app1';
-        console.log('🔄 App1 navigation disabled');
+      window.location.href = '/app1';
     } else {
       // En mode développement, supprimer seulement les cookies d'authentification
       // mais garder le lastGigId pour les tests

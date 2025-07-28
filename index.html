@@ -19,39 +19,6 @@
             return e.returnValue;
           }
         });
-        
-        // Disable all navigation and refresh
-        const originalLocation = window.location;
-        Object.defineProperty(window, 'location', {
-          get: function() {
-            return originalLocation;
-          },
-          set: function(value) {
-            console.log('🔄 Navigation blocked:', value);
-            return false;
-          }
-        });
-        
-        // Disable reload
-        const originalReload = window.location.reload;
-        window.location.reload = function() {
-          console.log('🔄 Page reload blocked');
-          return false;
-        };
-        
-        // Disable history methods
-        const originalPushState = history.pushState;
-        const originalReplaceState = history.replaceState;
-        
-        history.pushState = function() {
-          console.log('🔄 History pushState blocked');
-          return false;
-        };
-        
-        history.replaceState = function() {
-          console.log('🔄 History replaceState blocked');
-          return false;
-        };
       }
     </script>
   </body>

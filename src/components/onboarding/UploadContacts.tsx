@@ -98,7 +98,7 @@ interface ApiResponse {
   data: Lead[];
 }
 
-const UploadContacts = () => {
+const UploadContacts = React.memo(() => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
@@ -761,8 +761,7 @@ Return only the JSON response, no additional text.
   
       const redirectUrl = new URL(data.authUrl);
       redirectUrl.searchParams.set('state', userId);
-      // DISABLED: window.location.href = redirectUrl.toString();
-      console.log('🔄 Navigation disabled - would have gone to:', redirectUrl.toString());
+      window.location.href = redirectUrl.toString();
     } catch (error) {
       console.error('Error in handleZohoConnect:', error);
       toast.error((error as any)?.message || 'Failed to initiate Zoho authentication');
@@ -847,8 +846,7 @@ Return only the JSON response, no additional text.
         // Nettoyer l'URL pour éviter de relancer à chaque render
         params.delete('session');
         const newSearch = params.toString();
-        // DISABLED: window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
-      console.log('🔄 History replace disabled - would have updated URL');
+        window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
       }
 
       console.log('URL Params:', {
@@ -1106,6 +1104,12 @@ Return only the JSON response, no additional text.
       return;
     }
 
+    // Also skip if we have parsed leads that should be preserved
+    if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads')) {
+      console.log('⏸️ Skipping selectedGigId effect - parsed leads exist');
+      return;
+    }
+
     if (selectedGigId) {
       console.log('Selected gig changed, fetching leads for:', selectedGigId);
       fetchLeads().catch(error => {
@@ -1113,9 +1117,9 @@ Return only the JSON response, no additional text.
         setError('Failed to load leads');
       });
     } else {
-      // Don't clear leads if we're processing
-      if (processingRef.current || localStorage.getItem('uploadProcessing') === 'true') {
-        console.log('⏸️ Skipping leads clear - file processing in progress');
+      // Don't clear leads if we're processing or have parsed leads
+      if (processingRef.current || localStorage.getItem('uploadProcessing') === 'true' || parsedLeads.length > 0) {
+        console.log('⏸️ Skipping leads clear - file processing in progress or parsed leads exist');
         return;
       }
       console.log('No gig selected, clearing leads');
@@ -1123,7 +1127,7 @@ Return only the JSON response, no additional text.
       setTotalPages(0);
       setCurrentPage(1);
     }
-  }, [selectedGigId, isProcessing]);
+  }, [selectedGigId, isProcessing, parsedLeads.length]);
 
   useEffect(() => {
     // Skip this effect if we're currently processing a file
@@ -1132,12 +1136,18 @@ Return only the JSON response, no additional text.
       return;
     }
 
+    // If we have parsed leads, don't show empty leads list
+    if (parsedLeads.length > 0) {
+      console.log('📋 Showing parsed leads instead of empty leads list');
+      return;
+    }
+
     if (leads.length === 0) {
       console.log('No leads to display');
     } else {
       console.log('Rendering leads:', leads);
     }
-  }, [leads]);
+  }, [leads, parsedLeads.length]);
 
   const renderPaginationButtons = () => {
     const buttons = [];
@@ -1948,6 +1958,10 @@ Return only the JSON response, no additional text.
                                           <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium">
                       Showing {filteredLeads.length} of {leads.length} leads {searchQuery && `(filtered by "${searchQuery}")`}
                     </span>
+                    ) : parsedLeads.length > 0 ? (
+                      <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
+                        {parsedLeads.length} leads ready to save
+                      </span>
                     ) : (
                       <span className="bg-gray-50 text-gray-600 px-3 py-1 rounded-full text-xs font-medium">
                         No leads found
@@ -2211,6 +2225,6 @@ Return only the JSON response, no additional text.
       )}
     </div>
   );
-};
+});
 
 export default UploadContacts;

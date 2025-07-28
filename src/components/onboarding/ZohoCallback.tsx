@@ -58,16 +58,14 @@ const ZohoCallback = () => {
         toast.success('Successfully connected to Zoho CRM');
 
         setTimeout(() => {
-          // DISABLED: window.location.href = '/app11?startStep=6';
-        console.log('🔄 Zoho callback navigation disabled - would have gone to /app11?startStep=6');
+          window.location.href = '/app11?startStep=6';
         }, 3000);
 
       } catch (error: any) {
         console.error('Error handling Zoho callback:', error);
         toast.error(error.message || 'Failed to complete Zoho authentication');
         setTimeout(() => {
-          // DISABLED: window.location.href = '/app11';
-        console.log('🔄 Zoho callback navigation disabled - would have gone to /app11');
+          window.location.href = '/app11';
         }, 2000);
       }
     };
