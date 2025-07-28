@@ -139,6 +139,45 @@ const UploadContacts = () => {
   const [editingLeadIndex, setEditingLeadIndex] = useState<number | null>(null);
   const urlParamsProcessedRef = useRef(false);
   const processingRef = useRef(false);
+  
+  // Check if we're currently processing on component mount
+  useEffect(() => {
+    const isCurrentlyProcessing = localStorage.getItem('uploadProcessing') === 'true';
+    if (isCurrentlyProcessing) {
+      processingRef.current = true;
+      setIsProcessing(true);
+      console.log('🔄 Restoring processing state from localStorage');
+      
+      // Prevent any other effects from running during processing
+      return () => {
+        // Cleanup function to prevent interference
+      };
+    }
+    
+    // Restore parsed leads if they exist
+    const savedParsedLeads = localStorage.getItem('parsedLeads');
+    const savedValidationResults = localStorage.getItem('validationResults');
+    
+    if (savedParsedLeads && !parsedLeads.length) {
+      try {
+        const leads = JSON.parse(savedParsedLeads);
+        setParsedLeads(leads);
+        console.log('🔄 Restored parsed leads from localStorage:', leads.length);
+      } catch (error) {
+        console.error('Error restoring parsed leads:', error);
+      }
+    }
+    
+    if (savedValidationResults && !validationResults) {
+      try {
+        const validation = JSON.parse(savedValidationResults);
+        setValidationResults(validation);
+        console.log('🔄 Restored validation results from localStorage');
+      } catch (error) {
+        console.error('Error restoring validation results:', error);
+      }
+    }
+  }, []);
 
   const channels = [
     { id: 'all', name: 'All Channels', icon: Globe },
@@ -391,6 +430,7 @@ Return only the JSON response, no additional text.
       // Add processing indicator to prevent refresh
       document.body.setAttribute('data-processing', 'true');
       processingRef.current = true;
+      localStorage.setItem('uploadProcessing', 'true');
       
       setSelectedFile(file);
       setUploadError(null);
@@ -469,12 +509,18 @@ Return only the JSON response, no additional text.
 
             console.log('Leads processed with OpenAI:', result.leads);
             setParsedLeads(result.leads);
+            
+            // Store results in localStorage to prevent loss
+            localStorage.setItem('parsedLeads', JSON.stringify(result.leads));
+            localStorage.setItem('validationResults', JSON.stringify(result.validation));
+            
             setIsProcessing(false);
             setUploadProgress(100);
             
             // Remove processing indicator
             document.body.removeAttribute('data-processing');
             processingRef.current = false;
+            localStorage.removeItem('uploadProcessing');
             
           } catch (error: any) {
             console.error('Error processing file:', error);
@@ -498,6 +544,7 @@ Return only the JSON response, no additional text.
             // Remove processing indicator on error
             document.body.removeAttribute('data-processing');
             processingRef.current = false;
+            localStorage.removeItem('uploadProcessing');
           }
         };
 
@@ -991,6 +1038,12 @@ Return only the JSON response, no additional text.
       return;
     }
 
+    // Also check localStorage for processing state
+    if (localStorage.getItem('uploadProcessing') === 'true') {
+      console.log('⏸️ Skipping fetchLeads - processing state in localStorage');
+      return;
+    }
+
     if (!selectedGigId) {
       console.log('No gig selected, clearing leads');
       setLeads([]);
@@ -1058,6 +1111,11 @@ Return only the JSON response, no additional text.
         setError('Failed to load leads');
       });
     } else {
+      // Don't clear leads if we're processing
+      if (processingRef.current || localStorage.getItem('uploadProcessing') === 'true') {
+        console.log('⏸️ Skipping leads clear - file processing in progress');
+        return;
+      }
       console.log('No gig selected, clearing leads');
       setLeads([]);
       setTotalPages(0);
