@@ -329,7 +329,74 @@ const UploadContacts = React.memo(() => {
     return finalCleaned;
   };
 
-  const processFileWithOpenAI = async (fileContent: string, fileType: string) => {
+  // Function to optimize CSV content by keeping only essential columns
+  const optimizeCSVContent = (content: string): string => {
+    console.log('🔄 Optimizing CSV content...');
+    
+    const lines = content.split('\n');
+    if (lines.length === 0) return content;
+    
+    // Parse header to find essential columns
+    const header = lines[0];
+    const headerColumns = header.split(',');
+    
+    // Define essential columns (adjust based on your CSV structure)
+    const essentialColumns = [
+      'Email', 'Téléphone 1', 'Prénom', 'Nom', 'Deal_Name', 'Stage', 'Pipeline'
+    ];
+    
+    // Find indices of essential columns
+    const essentialIndices: number[] = [];
+    headerColumns.forEach((col, index) => {
+      const cleanCol = col.trim().replace(/"/g, '');
+      if (essentialColumns.some(essential => 
+        cleanCol.toLowerCase().includes(essential.toLowerCase()) ||
+        cleanCol.toLowerCase().includes('email') ||
+        cleanCol.toLowerCase().includes('téléphone') ||
+        cleanCol.toLowerCase().includes('prénom') ||
+        cleanCol.toLowerCase().includes('nom')
+      )) {
+        essentialIndices.push(index);
+      }
+    });
+    
+    // If no essential columns found, keep all columns
+    if (essentialIndices.length === 0) {
+      console.log('⚠️ No essential columns found, keeping all columns');
+      return content;
+    }
+    
+    // Create optimized content with only essential columns
+    const optimizedLines = lines.map((line, lineIndex) => {
+      if (lineIndex === 0) {
+        // Optimize header
+        return essentialIndices.map(index => headerColumns[index]).join(',');
+      }
+      
+      // Optimize data rows
+      const columns = line.split(',');
+      return essentialIndices.map(index => columns[index] || '').join(',');
+    });
+    
+    const optimizedContent = optimizedLines.join('\n');
+    console.log(`🔄 Content optimized: ${content.length} -> ${optimizedContent.length} characters`);
+    console.log(`🔄 Kept ${essentialIndices.length} essential columns out of ${headerColumns.length}`);
+    
+    return optimizedContent;
+  };
+
+  // Function to process optimized content
+  const processOptimizedContent = async (optimizedContent: string, fileType: string): Promise<{leads: any[], validation: any}> => {
+    console.log('🔄 Processing optimized content...');
+    
+    // Use the same processing logic but with optimized content
+    const result: {leads: any[], validation: any} = await processFileWithOpenAI(optimizedContent, fileType);
+    
+    console.log(`🔄 Optimized processing complete: ${result.leads.length} leads`);
+    return result;
+  };
+
+  const processFileWithOpenAI = async (fileContent: string, fileType: string): Promise<{leads: any[], validation: any}> => {
     try {
       const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
       if (!openaiApiKey) {
@@ -363,6 +430,16 @@ const UploadContacts = React.memo(() => {
       if (cleanedFileContent.length > maxContentLength) {
         console.warn(`⚠️ Warning: File content was truncated from ${cleanedFileContent.length} to ${maxContentLength} characters`);
         console.warn('This may cause incomplete processing. Consider reducing file size or complexity.');
+        
+        // Try to optimize the content by keeping only essential columns
+        console.log('🔄 Attempting to optimize content by reducing columns...');
+        const optimizedContent = optimizeCSVContent(cleanedFileContent);
+        console.log('Optimized content length:', optimizedContent.length);
+        
+        if (optimizedContent.length <= maxContentLength) {
+          console.log('✅ Content optimization successful - using optimized version');
+          return await processOptimizedContent(optimizedContent, fileType);
+        }
       }
       
       // Count the number of lines to verify we have all 25 leads
@@ -440,9 +517,9 @@ Rules:
 13. IMPORTANT: Use the provided userId, companyId, and gigId values exactly as shown above
 14. CRITICAL: Clean email addresses by removing prefixes like "Nor " and any other non-email text
 15. IMPORTANT: The "Email" column contains email addresses with "Nor " prefix - clean these first
-16. CRITICAL: Process ALL 25+ rows from the file, not just the first few
+16. CRITICAL: Process ALL ${expectedLeads}+ rows from the file, not just the first few
 17. If a row has missing email or phone, still include it with placeholder values
-18. MANDATORY: You must return at least 25 leads from this file
+18. MANDATORY: You must return at least ${expectedLeads} leads from this file
 19. DO NOT stop processing after the first few rows - continue until all rows are processed
 
 Return only the JSON response, no additional text.
