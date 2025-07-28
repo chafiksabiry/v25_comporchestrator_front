@@ -115,6 +115,14 @@ const CompanyOnboarding = () => {
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
   const [showUploadContacts, setShowUploadContacts] = useState(false);
+  
+  // Maintain showUploadContacts state if we have parsed leads
+  useEffect(() => {
+    if (localStorage.getItem('parsedLeads') && !showUploadContacts) {
+      setShowUploadContacts(true);
+      console.log('🔄 Restoring UploadContacts view - parsed leads exist');
+    }
+  }, [showUploadContacts]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasGigs, setHasGigs] = useState(false);
   const [hasLeads, setHasLeads] = useState(false);
@@ -324,6 +332,13 @@ const CompanyOnboarding = () => {
         console.log('⏸️ Skipping real-time checks - file processing in progress');
         return;
       }
+      
+      // Skip checks if we have parsed leads to prevent re-renders
+      if (localStorage.getItem('parsedLeads')) {
+        console.log('⏸️ Skipping real-time checks - parsed leads exist');
+        return;
+      }
+      
       checkCompanyLeads();
       checkActiveGigs();
     }, 30000); // Check every 30 seconds
@@ -809,6 +824,13 @@ const CompanyOnboarding = () => {
   } else if (showUploadContacts) {
     activeComponent = <UploadContacts />;
     onBack = () => setShowUploadContacts(false);
+  } else if (localStorage.getItem('parsedLeads')) {
+    // If we have parsed leads in localStorage, show UploadContacts
+    activeComponent = <UploadContacts />;
+    onBack = () => {
+      setShowUploadContacts(false);
+      localStorage.removeItem('parsedLeads');
+    };
   } else if (ActiveStepComponent) {
     activeComponent = <ActiveStepComponent />;
     onBack = handleBackToOnboarding;
