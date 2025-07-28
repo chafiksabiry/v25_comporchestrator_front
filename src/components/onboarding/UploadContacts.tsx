@@ -138,6 +138,7 @@ const UploadContacts = () => {
   const [validationResults, setValidationResults] = useState<any>(null);
   const [editingLeadIndex, setEditingLeadIndex] = useState<number | null>(null);
   const urlParamsProcessedRef = useRef(false);
+  const processingRef = useRef(false);
 
   const channels = [
     { id: 'all', name: 'All Channels', icon: Globe },
@@ -389,6 +390,7 @@ Return only the JSON response, no additional text.
       
       // Add processing indicator to prevent refresh
       document.body.setAttribute('data-processing', 'true');
+      processingRef.current = true;
       
       setSelectedFile(file);
       setUploadError(null);
@@ -472,6 +474,7 @@ Return only the JSON response, no additional text.
             
             // Remove processing indicator
             document.body.removeAttribute('data-processing');
+            processingRef.current = false;
             
           } catch (error: any) {
             console.error('Error processing file:', error);
@@ -494,6 +497,7 @@ Return only the JSON response, no additional text.
             
             // Remove processing indicator on error
             document.body.removeAttribute('data-processing');
+            processingRef.current = false;
           }
         };
 
@@ -871,7 +875,7 @@ Return only the JSON response, no additional text.
 
   useEffect(() => {
     // Skip this effect if we're currently processing a file
-    if (isProcessing) {
+    if (isProcessing || processingRef.current) {
       console.log('⏸️ Skipping hasZohoConfig effect - file processing in progress');
       return;
     }
@@ -982,7 +986,7 @@ Return only the JSON response, no additional text.
 
   const fetchLeads = async (page = currentPage) => {
     // Skip fetching leads if we're currently processing a file
-    if (isProcessing) {
+    if (isProcessing || processingRef.current) {
       console.log('⏸️ Skipping fetchLeads - file processing in progress');
       return;
     }
@@ -1042,7 +1046,7 @@ Return only the JSON response, no additional text.
 
   useEffect(() => {
     // Skip this effect if we're currently processing a file
-    if (isProcessing) {
+    if (isProcessing || processingRef.current) {
       console.log('⏸️ Skipping selectedGigId effect - file processing in progress');
       return;
     }
@@ -1062,6 +1066,12 @@ Return only the JSON response, no additional text.
   }, [selectedGigId, isProcessing]);
 
   useEffect(() => {
+    // Skip this effect if we're currently processing a file
+    if (processingRef.current) {
+      console.log('⏸️ Skipping leads effect - file processing in progress');
+      return;
+    }
+
     if (leads.length === 0) {
       console.log('No leads to display');
     } else {
