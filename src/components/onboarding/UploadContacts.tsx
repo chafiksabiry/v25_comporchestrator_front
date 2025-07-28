@@ -627,24 +627,65 @@ Return only the JSON response, no additional text.
       // Parse the JSON response
       let parsedData;
       try {
-        // Check if the JSON is complete (ends with proper closing braces)
-        const trimmedContent = content.trim();
-        if (!trimmedContent.endsWith('}') || !trimmedContent.includes('"leads"')) {
-          console.warn('⚠️ OpenAI returned incomplete JSON:', trimmedContent.substring(trimmedContent.length - 100));
+              // Check if the JSON is complete (ends with proper closing braces)
+      const trimmedContent = content.trim();
+      if (!trimmedContent.endsWith('}') || !trimmedContent.includes('"leads"')) {
+        console.warn('⚠️ OpenAI returned incomplete JSON:', trimmedContent.substring(trimmedContent.length - 100));
+        
+        // Try to fix incomplete JSON by finding the last complete lead object
+        if (trimmedContent.includes('"leads"') && trimmedContent.includes('"userId"')) {
+          console.log('🔄 Attempting to fix incomplete JSON...');
           
-          const fallbackResult = {
-            leads: [],
-            validation: {
-              totalRows: 0,
-              validRows: 0,
-              invalidRows: 0,
-              errors: ['OpenAI returned incomplete JSON - content was truncated']
+          // Find the last complete lead object
+          const leadObjects = trimmedContent.match(/\{[^}]*"userId"[^}]*\}/g);
+          if (leadObjects && leadObjects.length > 0) {
+            const lastCompleteLead = leadObjects[leadObjects.length - 1];
+            const lastLeadIndex = trimmedContent.lastIndexOf(lastCompleteLead);
+            
+            if (lastLeadIndex !== -1) {
+              // Reconstruct the JSON with complete leads
+              const fixedContent = trimmedContent.substring(0, lastLeadIndex + lastCompleteLead.length) + 
+                '],' +
+                '"validation": {' +
+                '"totalRows": ' + (leadObjects.length + 1) + ',' +
+                '"validRows": ' + leadObjects.length + ',' +
+                '"invalidRows": 1,' +
+                '"errors": ["JSON was incomplete but leads were recovered"]' +
+                '}' +
+                '}';
+              
+              try {
+                const parsedData = JSON.parse(fixedContent);
+                console.log('✅ Successfully fixed incomplete JSON with', leadObjects.length, 'leads');
+                return {
+                  leads: parsedData.leads || [],
+                  validation: parsedData.validation || {
+                    totalRows: leadObjects.length,
+                    validRows: leadObjects.length,
+                    invalidRows: 1,
+                    errors: ["JSON was incomplete but leads were recovered"]
+                  }
+                };
+              } catch (fixError) {
+                console.error('❌ Failed to fix incomplete JSON:', fixError);
+              }
             }
-          };
-          
-          console.log('Using fallback result due to incomplete JSON:', fallbackResult);
-          return fallbackResult;
+          }
         }
+        
+        const fallbackResult = {
+          leads: [],
+          validation: {
+            totalRows: 0,
+            validRows: 0,
+            invalidRows: 0,
+            errors: ['OpenAI returned incomplete JSON - content was truncated']
+          }
+        };
+        
+        console.log('Using fallback result due to incomplete JSON:', fallbackResult);
+        return fallbackResult;
+      }
         
         parsedData = JSON.parse(content);
       } catch (parseError: unknown) {
