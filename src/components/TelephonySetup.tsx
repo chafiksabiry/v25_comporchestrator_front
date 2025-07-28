@@ -27,7 +27,10 @@ import Cookies from 'js-cookie';
 import { phoneNumberService } from '../services/api';
 import type { AvailablePhoneNumber } from '../services/api';
 
-const gigId = import.meta.env.MODE === 'development' ? '683083e7af226bea2d459372' : Cookies.get('lastGigId');
+const gigId = import.meta.env.VITE_NODE_ENV === 'development' ? '683083e7af226bea2d459372' : Cookies.get('lastGigId');
+console.log('lastGigId', Cookies.get('lastGigId'));
+console.log('gigId', gigId);
+console.log('import.meta.env.VITE_NODE_ENV', import.meta.env.VITE_NODE_ENV);
 const companyId = Cookies.get('companyId');
 
 interface PhoneNumber {
@@ -60,6 +63,7 @@ const TelephonySetup = () => {
   const [purchasedNumber, setPurchasedNumber] = useState('');
   const [purchasedCountry, setPurchasedCountry] = useState('');
   const [purchasedPhoneInfo, setPurchasedPhoneInfo] = useState<PhoneNumber | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const providers = [
     { id: 'twilio', name: 'Twilio', logo: Phone },
@@ -149,12 +153,22 @@ const TelephonySetup = () => {
     }
     
     setIsLoading(true);
+    setSearchError(null); // Clear previous errors
+    
     try {
       const data = await phoneNumberService.searchPhoneNumbers(destinationZone, provider);
       setAvailableNumbers(Array.isArray(data) ? data : []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error searching numbers:', error);
-      setAvailableNumbers([]);
+      
+      // Handle Twilio specific error for no numbers available
+      if (error.response?.status === 404 && error.response?.data?.error === 'no_numbers_available') {
+        setSearchError(error.response.data.message);
+        setAvailableNumbers([]);
+      } else {
+        setSearchError(`Twilio ne propose pas de numéros de téléphone pour (${destinationZone}). Veuillez essayer un autre fournisseur.`);
+        setAvailableNumbers([]);
+      }
     }
     setIsLoading(false);
   };
@@ -166,7 +180,15 @@ const TelephonySetup = () => {
     }
 
     try {
-      await phoneNumberService.purchasePhoneNumber(phoneNumber, provider, gigId);
+      try {
+        await phoneNumberService.purchasePhoneNumber(phoneNumber, provider, gigId);
+      } catch (error: any) {
+        if (error.response?.status === 400 && error.response?.data?.error === 'This gig already has a phone number assigned') {
+          alert('Ce gig possède déjà un numéro de téléphone assigné.');
+          return;
+        }
+        throw error; // Re-throw other errors to be caught by outer catch block
+      }
       fetchExistingNumbers(); // Refresh the list after purchase 
       fetchPurchasedPhoneNumber(); // Refresh purchased phone info
       setIsSearchOpen(false); // Close the search
@@ -364,7 +386,12 @@ const TelephonySetup = () => {
                       ? 'border-indigo-500 bg-indigo-50' 
                       : 'border-gray-200 hover:bg-gray-50'
                 }`}
-                onClick={() => !isVonage && setProvider(p.id)}
+                onClick={() => {
+                  if (!isVonage) {
+                    setProvider(p.id);
+                    setSearchError(null); // Clear error when changing provider
+                  }
+                }}
                 disabled={isVonage}
               >
                 <Logo className={`mr-2 h-5 w-5 ${isVonage ? 'text-gray-400' : 'text-indigo-600'}`} />
@@ -408,6 +435,23 @@ const TelephonySetup = () => {
                 {isLoading ? 'Searching...' : 'Search Numbers'}
               </button>
             </div>
+
+            {/* Error Message */}
+            {searchError && (
+              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800">Information</h3>
+                    <div className="mt-2 text-sm text-red-700">
+                      <p>{searchError}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Available Numbers List */}
             {Array.isArray(availableNumbers) && availableNumbers.length > 0 && (
