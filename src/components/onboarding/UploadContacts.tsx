@@ -26,7 +26,7 @@
  * @component
  * @returns {JSX.Element} Le composant UploadContacts
  */
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   Upload,
   FileText,
@@ -186,6 +186,15 @@ const UploadContacts = React.memo(() => {
       componentInitializedRef.current = true;
     }
   }, []);
+
+  // Add a protection effect that runs on every render to prevent data loss
+  useEffect(() => {
+    // If we have parsed leads in state but they're about to be lost, save them
+    if (parsedLeads.length > 0) {
+      localStorage.setItem('parsedLeads', JSON.stringify(parsedLeads));
+      console.log('💾 Auto-saving parsed leads to localStorage:', parsedLeads.length);
+    }
+  });
 
 
 
@@ -1195,6 +1204,25 @@ Return only the JSON response, no additional text.
     if (parsedLeads.length > 0) {
       console.log('📋 Showing parsed leads instead of empty leads list');
       return;
+    }
+
+    // Also check localStorage for parsed leads
+    const savedParsedLeads = localStorage.getItem('parsedLeads');
+    if (savedParsedLeads) {
+      console.log('📋 Found parsed leads in localStorage, skipping empty leads display');
+      return;
+    }
+
+    // If we have leads in localStorage but not in state, restore them
+    if (savedParsedLeads && parsedLeads.length === 0) {
+      try {
+        const leads = JSON.parse(savedParsedLeads);
+        setParsedLeads(leads);
+        console.log('🔄 Restored parsed leads from localStorage during render:', leads.length);
+        return;
+      } catch (error) {
+        console.error('Error restoring parsed leads during render:', error);
+      }
     }
 
     if (leads.length === 0) {
