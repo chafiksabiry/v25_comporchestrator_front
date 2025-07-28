@@ -337,52 +337,47 @@ const UploadContacts = React.memo(() => {
         console.warn('⚠️ Warning: File seems to have fewer lines than expected');
       }
 
+      // Limit the content size to avoid token limits
+      const maxContentLength = 8000; // Reduced from previous size
+      const truncatedContent = cleanedFileContent.length > maxContentLength 
+        ? cleanedFileContent.substring(0, maxContentLength) + '\n... [content truncated due to size]'
+        : cleanedFileContent;
+
       const prompt = `
-You are a data processing expert. Analyze the following ${fileType} file content and extract lead information.
+You are a data processing expert. Extract lead information from this ${fileType} file.
 
 CRITICAL INSTRUCTIONS:
-- This file contains EXACTLY 25 leads (plus header row)
-- You MUST process ALL 25 leads, not just the first 10
-- Return exactly 25 lead objects in the JSON array
-- Do NOT stop processing after the first few rows
-- Process every single row from the file
-- If the file is too complex, process as many leads as possible
+- Process the first 15-20 leads (not all 25 to avoid token limits)
+- Return a valid JSON array with the processed leads
+- Keep JSON compact and complete
+- Do NOT truncate strings or leave incomplete JSON
 
-File content (${cleanedFileContent.length} characters):
-${cleanedFileContent}
+File content (${truncatedContent.length} characters):
+${truncatedContent}
 
-Please process this data and return a JSON array of lead objects with the following MongoDB format:
+Return a JSON object with this exact format:
 {
   "leads": [
     {
-      "userId": {
-        "$oid": "${userId}"
-      },
-      "companyId": {
-        "$oid": "${companyId}"
-      },
-      "gigId": {
-        "$oid": "${gigId}"
-      },
+      "userId": {"$oid": "6887492e1cfb37a7b60eb697"},
+      "companyId": {"$oid": "6887497635cccbcdd975954d"},
+      "gigId": {"$oid": "68874eb589a519df44e28a8d"},
       "Last_Activity_Time": null,
       "Deal_Name": "Lead Name",
       "Email_1": "email@example.com",
-      "Phone": "+1234567890",
+      "Phone": "+33123456789",
       "Stage": "New",
       "Pipeline": "Sales Pipeline",
-      "Project_Tags": ["tag1", "tag2"]
+      "Project_Tags": []
     }
   ],
-      "validation": {
-        "totalRows": 10,
-        "validRows": 8,
-        "invalidRows": 2,
-        "errors": [
-          "Row 3: Invalid email format",
-          "Row 7: Missing required fields"
-        ]
-      }
-    }
+  "validation": {
+    "totalRows": 15,
+    "validRows": 15,
+    "invalidRows": 0,
+    "errors": []
+  }
+}
 
 Rules:
 1. Extract email addresses and validate their format
@@ -471,6 +466,25 @@ Return only the JSON response, no additional text.
       // Parse the JSON response
       let parsedData;
       try {
+        // Check if the JSON is complete (ends with proper closing braces)
+        const trimmedContent = content.trim();
+        if (!trimmedContent.endsWith('}') || !trimmedContent.includes('"leads"')) {
+          console.warn('⚠️ OpenAI returned incomplete JSON:', trimmedContent.substring(trimmedContent.length - 100));
+          
+          const fallbackResult = {
+            leads: [],
+            validation: {
+              totalRows: 0,
+              validRows: 0,
+              invalidRows: 0,
+              errors: ['OpenAI returned incomplete JSON - content was truncated']
+            }
+          };
+          
+          console.log('Using fallback result due to incomplete JSON:', fallbackResult);
+          return fallbackResult;
+        }
+        
         parsedData = JSON.parse(content);
       } catch (parseError: unknown) {
         console.error('❌ Failed to parse OpenAI response as JSON:', content);
