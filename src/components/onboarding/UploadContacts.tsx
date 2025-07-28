@@ -488,6 +488,30 @@ const UploadContacts = React.memo(() => {
     console.log(`   - Invalid rows (difference): ${invalidRows}`);
     console.log(`   - Reason for invalid rows: ${emptyLines + headerDuplicates} structural issues + ${Math.max(0, actualValidLines - allLeads.length)} processing failures`);
     
+    // Show detailed analysis of invalid lines
+    if (allLeads.length < actualValidLines) {
+      console.log(`🔍 Detailed invalid lines analysis:`);
+      const processedEmails = allLeads.map((lead: any) => lead.Email_1?.toLowerCase());
+      
+      dataLines.forEach((line, index) => {
+        if (line.trim() && !line.includes('Identifiant,Type,Statut')) {
+          // Try to extract email from the line
+          const emailMatch = line.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+          const email = emailMatch ? emailMatch[0].toLowerCase() : null;
+          
+          if (email && !processedEmails.includes(email)) {
+            console.log(`❌ Line ${index + 1} NOT processed: ${line.substring(0, 80)}...`);
+            console.log(`   Email: ${email} - Not found in processed leads`);
+          } else if (!email) {
+            console.log(`❌ Line ${index + 1} NOT processed: ${line.substring(0, 80)}...`);
+            console.log(`   Reason: No valid email found in line`);
+          }
+        }
+      });
+    } else {
+      console.log(`✅ All valid lines were processed successfully!`);
+    }
+    
     return {
       leads: allLeads,
       validation: {
@@ -950,9 +974,52 @@ Rules:
       console.log(`   - Validation validRows: ${parsedData.validation?.validRows || 'undefined'}`);
       console.log(`   - Validation invalidRows: ${parsedData.validation?.invalidRows || 'undefined'}`);
 
+      // Ensure validation object has correct values
+      const finalValidation = {
+        totalRows: parsedData.validation?.totalRows || lines.length - 1,
+        validRows: parsedData.validation?.validRows || processedLeads.length,
+        invalidRows: parsedData.validation?.invalidRows || Math.max(0, (lines.length - 1) - processedLeads.length),
+        errors: parsedData.validation?.errors || []
+      };
+
+      // Log invalid lines analysis
+      console.log(`🔍 Analyzing invalid lines:`);
+      console.log(`   - Total lines in chunk: ${lines.length}`);
+      console.log(`   - Header line: ${lines[0] ? 'Yes' : 'No'}`);
+      console.log(`   - Data lines: ${lines.length - 1}`);
+      console.log(`   - Successfully processed: ${processedLeads.length}`);
+      console.log(`   - Invalid lines count: ${Math.max(0, (lines.length - 1) - processedLeads.length)}`);
+      
+      // Show which lines were not processed
+      if (processedLeads.length < lines.length - 1) {
+        console.log(`❌ Lines that were NOT processed:`);
+        const processedEmails = processedLeads.map((lead: any) => lead.Email_1?.toLowerCase());
+        
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i];
+          if (line.trim()) { // Skip empty lines
+            // Try to extract email from the line
+            const emailMatch = line.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+            const email = emailMatch ? emailMatch[0].toLowerCase() : null;
+            
+            if (email && !processedEmails.includes(email)) {
+              console.log(`   Line ${i + 1}: ${line.substring(0, 100)}...`);
+              console.log(`   ❌ Email not found in processed leads: ${email}`);
+            } else if (!email) {
+              console.log(`   Line ${i + 1}: ${line.substring(0, 100)}...`);
+              console.log(`   ❌ No valid email found in line`);
+            }
+          } else {
+            console.log(`   Line ${i + 1}: <empty line>`);
+          }
+        }
+      } else {
+        console.log(`✅ All lines were processed successfully!`);
+      }
+
       return {
         leads: processedLeads,
-        validation: parsedData.validation
+        validation: finalValidation
       };
     } catch (error: any) {
       console.error('Error processing with OpenAI:', error);
