@@ -26,7 +26,7 @@
  * @component
  * @returns {JSX.Element} Le composant UploadContacts
  */
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Upload,
   FileText,
@@ -99,6 +99,8 @@ interface ApiResponse {
 }
 
 const UploadContacts = React.memo(() => {
+  // Add a ref to track if the component has been initialized
+  const componentInitializedRef = useRef(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
@@ -139,6 +141,7 @@ const UploadContacts = React.memo(() => {
   const [editingLeadIndex, setEditingLeadIndex] = useState<number | null>(null);
   const urlParamsProcessedRef = useRef(false);
   const processingRef = useRef(false);
+  const dataRestoredRef = useRef(false);
   
   // Check if we're currently processing on component mount
   useEffect(() => {
@@ -155,7 +158,7 @@ const UploadContacts = React.memo(() => {
     }
     
     // Restore parsed leads if they exist and we haven't already restored them
-    if (!dataRestoredRef.current) {
+    if (!dataRestoredRef.current && !componentInitializedRef.current) {
       const savedParsedLeads = localStorage.getItem('parsedLeads');
       const savedValidationResults = localStorage.getItem('validationResults');
       
@@ -180,11 +183,11 @@ const UploadContacts = React.memo(() => {
       }
       
       dataRestoredRef.current = true;
+      componentInitializedRef.current = true;
     }
   }, []);
 
-  // Add a ref to track if we've already restored data to prevent multiple restorations
-  const dataRestoredRef = useRef(false);
+
 
   const channels = [
     { id: 'all', name: 'All Channels', icon: Globe },
@@ -288,13 +291,32 @@ const UploadContacts = React.memo(() => {
       console.log('Original file content length:', fileContent.length);
       console.log('Cleaned file content length:', cleanedFileContent.length);
       console.log('Sample of cleaned content:', cleanedFileContent.substring(0, 500));
+      
+      // Verify we have the complete content
+      if (cleanedFileContent.length < 4000) {
+        console.warn('⚠️ Warning: File content seems too short. Expected ~4800 characters, got:', cleanedFileContent.length);
+      }
+      
+      // Count the number of lines to verify we have all 25 leads
+      const lines = cleanedFileContent.split('\n');
+      console.log('📊 Total lines in file:', lines.length);
+      console.log('📊 Expected: 26 lines (1 header + 25 leads)');
+      
+      if (lines.length < 25) {
+        console.warn('⚠️ Warning: File seems to have fewer lines than expected');
+      }
 
       const prompt = `
 You are a data processing expert. Analyze the following ${fileType} file content and extract lead information.
 
-IMPORTANT: This file contains 25+ leads. You MUST process ALL rows, not just the first few.
+CRITICAL INSTRUCTIONS:
+- This file contains EXACTLY 25 leads (plus header row)
+- You MUST process ALL 25 leads, not just the first 10
+- Return exactly 25 lead objects in the JSON array
+- Do NOT stop processing after the first few rows
+- Process every single row from the file
 
-File content:
+File content (${cleanedFileContent.length} characters):
 ${cleanedFileContent}
 
 Please process this data and return a JSON array of lead objects with the following MongoDB format:
