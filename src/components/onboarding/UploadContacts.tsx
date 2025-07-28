@@ -982,6 +982,8 @@ Rules:
       
       // Reset state for new file upload
       console.log('🔄 Starting new file upload, resetting state...');
+      
+      // Force complete reset of all state
       setSelectedFile(null);
       setUploadError(null);
       setUploadSuccess(false);
@@ -989,16 +991,28 @@ Rules:
       setUploadProgress(0);
       setParsedLeads([]);
       setValidationResults(null);
+      setLeads([]);
+      setFilteredLeads([]);
+      setTotalPages(1);
+      setCurrentPage(1);
+      setTotalCount(0);
       
-      // Clear localStorage
+      // Clear ALL localStorage and sessionStorage items
+      console.log('🧹 Clearing all storage items...');
       localStorage.removeItem('parsedLeads');
       localStorage.removeItem('validationResults');
       localStorage.removeItem('uploadProcessing');
+      localStorage.removeItem('hasSeenImportChoiceModal');
       sessionStorage.removeItem('uploadProcessing');
+      sessionStorage.removeItem('parsedLeads');
+      sessionStorage.removeItem('validationResults');
       
       // Remove processing indicators
       document.body.removeAttribute('data-processing');
       processingRef.current = false;
+      
+      // Force component refresh by clearing any cached data
+      console.log('🔄 Forcing component refresh...');
       
       // Now set the new file and start processing
       setSelectedFile(file);
@@ -2523,23 +2537,58 @@ Rules:
                     )}
                   </div>
                   
-                  <button
-                    className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-white font-bold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                    onClick={handleSaveLeads}
-                    disabled={isProcessing}
-                  >
-                    {isProcessing ? (
-                      <div className="flex items-center justify-center">
-                        <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-                        Saving Contacts...
-                      </div>
-                    ) : (
-                                              <div className="flex items-center justify-center">
-                          <UserPlus className="mr-2 h-5 w-5" />
-                          Save {parsedLeads.length} Contacts
-                        </div>
-                    )}
-                  </button>
+                                <div className="flex space-x-3">
+                <button
+                  className="flex-1 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-white font-bold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  onClick={handleSaveLeads}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <div className="flex items-center justify-center">
+                      <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                      Saving Contacts...
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center">
+                      <UserPlus className="mr-2 h-5 w-5" />
+                      Save {parsedLeads.length} Contacts
+                    </div>
+                  )}
+                </button>
+                
+                <button
+                  className="px-4 py-3 rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white font-bold hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  onClick={() => {
+                    // Clear all data and force refresh
+                    console.log('🧹 Clearing all data and forcing refresh...');
+                    setSelectedFile(null);
+                    setUploadError(null);
+                    setUploadSuccess(false);
+                    setIsProcessing(false);
+                    setUploadProgress(0);
+                    setParsedLeads([]);
+                    setValidationResults(null);
+                    setLeads([]);
+                    setFilteredLeads([]);
+                    
+                    // Clear all storage
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    
+                    // Remove processing indicators
+                    document.body.removeAttribute('data-processing');
+                    processingRef.current = false;
+                    
+                    toast.success('All data cleared. You can now upload a new file.');
+                  }}
+                  disabled={isProcessing}
+                >
+                  <div className="flex items-center justify-center">
+                    <Trash2 className="mr-2 h-5 w-5" />
+                    Clear All
+                  </div>
+                </button>
+              </div>
                 </div>
               )}
             </div>
