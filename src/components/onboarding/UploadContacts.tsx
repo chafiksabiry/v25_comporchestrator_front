@@ -391,6 +391,118 @@ const UploadContacts = React.memo(() => {
 
 
 
+  // Helper function to recover incomplete JSON from OpenAI responses
+  const tryRecoverIncompleteJSON = (content: string, expectedLeads: number): any | null => {
+    try {
+      console.log('🔄 Attempting to recover incomplete JSON...');
+      
+      // Method 1: Try to find complete lead objects and reconstruct
+      const leadPattern = /\{[^}]*"userId"[^}]*"Email_1"[^}]*"Phone"[^}]*\}/g;
+      const leadMatches = content.match(leadPattern);
+      
+      if (leadMatches && leadMatches.length > 0) {
+        console.log('Found', leadMatches.length, 'complete lead objects');
+        
+        // Reconstruct JSON with found leads
+        const leadsJson = leadMatches.map(obj => obj.trim()).join(',\n    ');
+        const reconstructedJson = `{
+  "leads": [
+    ${leadsJson}
+  ],
+  "validation": {
+    "totalRows": ${expectedLeads},
+    "validRows": ${leadMatches.length},
+    "invalidRows": ${Math.max(0, expectedLeads - leadMatches.length)},
+    "errors": ["JSON was incomplete but leads were recovered"]
+  }
+}`;
+        
+        try {
+          const parsed = JSON.parse(reconstructedJson);
+          return parsed;
+        } catch (e) {
+          console.log('Method 1 failed, trying method 2...');
+        }
+      }
+      
+      // Method 2: Try to fix common JSON issues
+      let fixedContent = content;
+      
+      // Remove trailing commas before closing braces
+      fixedContent = fixedContent.replace(/,(\s*[}\]])/g, '$1');
+      
+      // Add missing closing braces if needed
+      const openBraces = (fixedContent.match(/\{/g) || []).length;
+      const closeBraces = (fixedContent.match(/\}/g) || []).length;
+      const openBrackets = (fixedContent.match(/\[/g) || []).length;
+      const closeBrackets = (fixedContent.match(/\]/g) || []).length;
+      
+      if (openBraces > closeBraces) {
+        fixedContent += '}'.repeat(openBraces - closeBraces);
+      }
+      if (openBrackets > closeBrackets) {
+        fixedContent += ']'.repeat(openBrackets - closeBrackets);
+      }
+      
+      // Try to parse the fixed content
+      try {
+        const parsed = JSON.parse(fixedContent);
+        if (parsed.leads && Array.isArray(parsed.leads)) {
+          return parsed;
+        }
+      } catch (e) {
+        console.log('Method 2 failed, trying method 3...');
+      }
+      
+      // Method 3: Extract partial leads and create minimal valid JSON
+      const partialLeads = [];
+      const leadStartPattern = /\{[^}]*"userId"[^}]*/g;
+      let match;
+      
+      while ((match = leadStartPattern.exec(content)) !== null) {
+        const startPos = match.index;
+        const endPos = content.indexOf('}', startPos);
+        
+        if (endPos > startPos) {
+          const leadStr = content.substring(startPos, endPos + 1);
+          try {
+            const leadObj = JSON.parse(leadStr);
+            if (leadObj.userId && leadObj.Email_1) {
+              partialLeads.push(leadObj);
+            }
+          } catch (e) {
+            // Skip invalid lead objects
+          }
+        }
+      }
+      
+      if (partialLeads.length > 0) {
+        console.log('Found', partialLeads.length, 'partial lead objects');
+        
+        const minimalJson = `{
+  "leads": ${JSON.stringify(partialLeads)},
+  "validation": {
+    "totalRows": ${expectedLeads},
+    "validRows": ${partialLeads.length},
+    "invalidRows": ${Math.max(0, expectedLeads - partialLeads.length)},
+    "errors": ["JSON was incomplete but partial leads were recovered"]
+  }
+}`;
+        
+        try {
+          return JSON.parse(minimalJson);
+        } catch (e) {
+          console.log('Method 3 also failed');
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error in JSON recovery:', error);
+      return null;
+    }
+  };
+
   const processFileWithOpenAI = async (fileContent: string, fileType: string, isOptimized: boolean = false): Promise<{leads: any[], validation: any}> => {
     try {
       const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
@@ -399,7 +511,7 @@ const UploadContacts = React.memo(() => {
       }
 
       const userId = Cookies.get('userId');
-      const gigId = selectedGigId; // Use selected gig ID instead of cookie
+      const gigId = selectedGigId;
       const companyId = Cookies.get('companyId');
 
       if (!gigId) {
@@ -409,71 +521,47 @@ const UploadContacts = React.memo(() => {
       // Clean the file content before sending to OpenAI
       const cleanedFileContent = cleanEmailAddresses(fileContent);
       
-      // Limit the content size to avoid token limits
-      const maxContentLength = 50000; // Increased significantly to handle large CSV files (87+ lines)
+      // Reduce content size for faster processing
+      const maxContentLength = 25000; // Reduced from 50000
       
       console.log('Original file content length:', fileContent.length);
       console.log('Cleaned file content length:', cleanedFileContent.length);
-      console.log('Sample of cleaned content:', cleanedFileContent.substring(0, 500));
       
-      // Verify we have the complete content
-      if (cleanedFileContent.length < 4000) {
-        console.warn('⚠️ Warning: File content seems too short. Expected ~4800 characters, got:', cleanedFileContent.length);
-      }
-      
-      // Count the number of lines to verify we have all expected leads
+      // Count the number of lines
       const lines = cleanedFileContent.split('\n');
       
-      // Check if content was truncated or if file is very large (but skip if already optimized)
-      if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 50)) {
-        console.warn(`⚠️ Warning: File is very large (${lines.length} lines, ${cleanedFileContent.length} characters)`);
-        console.warn('Attempting aggressive optimization to reduce size...');
+      // Check if content is too large and optimize
+      if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 30)) {
+        console.warn(`⚠️ File is large (${lines.length} lines, ${cleanedFileContent.length} characters)`);
         
-        // Try to optimize the content by keeping only essential columns
-        console.log('🔄 Attempting to optimize content by reducing columns...');
+        // Optimize content by keeping only essential columns
         const optimizedContent = optimizeCSVContent(cleanedFileContent);
         console.log('Optimized content length:', optimizedContent.length);
         
         if (optimizedContent.length <= maxContentLength) {
-          console.log('✅ Content optimization successful - using optimized version');
+          console.log('✅ Using optimized version');
           return await processOptimizedContent(optimizedContent, fileType);
         } else {
-          console.warn('⚠️ Even optimized content is too large. Using fallback processing...');
-          // For very large files, process only the first 50 lines
+          // For very large files, process only the first 30 lines
           const fileLinesArray = cleanedFileContent.split('\n');
-          const limitedContent = fileLinesArray.slice(0, 51).join('\n'); // Header + 50 data lines
+          const limitedContent = fileLinesArray.slice(0, 31).join('\n');
           console.log(`🔄 Processing limited content: ${limitedContent.split('\n').length - 1} leads`);
           return await processFileWithOpenAI(limitedContent, fileType);
         }
       }
-      console.log('📊 Total lines in file:', lines.length);
-      console.log(`📊 Expected: ${lines.length} lines (1 header + ${lines.length - 1} leads)`);
       
-      if (lines.length < 10) {
-        console.warn('⚠️ Warning: File seems to have fewer lines than expected');
-      }
-
       const truncatedContent = cleanedFileContent.length > maxContentLength 
-        ? cleanedFileContent.substring(0, maxContentLength) + '\n... [content truncated due to size]'
+        ? cleanedFileContent.substring(0, maxContentLength) + '\n... [content truncated]'
         : cleanedFileContent;
       
-      const prompt = `
-You are a data processing expert. Extract lead information from this ${fileType} file.
+      // Optimized prompt with better JSON formatting instructions
+      const prompt = `Extract lead information from this ${fileType} file.
 
-CRITICAL INSTRUCTIONS:
-- This file contains EXACTLY ${lines.length} lines (1 header + ${lines.length - 1} leads)
-- You MUST process ALL ${lines.length - 1} leads, not just the first 25
-- Return exactly ${lines.length - 1} lead objects in the JSON array
-- Do NOT stop processing after the first few rows
-- Process every single row from the file
-- IMPORTANT: The file has ${lines.length} total lines, so you must return ${lines.length - 1} leads
-- Do NOT truncate or stop early - process ALL rows in the file
-- If you cannot process all rows due to complexity, process as many as possible but prioritize getting ALL ${lines.length - 1} leads
-
-File content (${truncatedContent.length} characters):
+File content (${lines.length} lines):
 ${truncatedContent}
 
-Return a JSON object with this exact format:
+IMPORTANT: Return ONLY valid JSON. No explanations or text outside the JSON.
+
 {
   "leads": [
     {
@@ -490,40 +578,22 @@ Return a JSON object with this exact format:
     }
   ],
   "validation": {
-    "totalRows": 15,
-    "validRows": 15,
+    "totalRows": ${lines.length - 1},
+    "validRows": 0,
     "invalidRows": 0,
     "errors": []
   }
 }
 
 Rules:
-1. Extract email addresses and validate their format
-   - Look for emails in the "Email" column (last column) first, then "Bloctel 1" column
-   - Remove any prefixes like "Nor " from email addresses before validation
-   - Clean email addresses by removing extra spaces and invalid characters
-   - Only keep valid email format (user@domain.com)
-2. Extract phone numbers from "Téléphone 1" column and standardize them (always include Phone field)
-3. Use Deal_Name if available, otherwise use email as Deal_Name
-4. Set default Stage to "New" if not provided
-5. Set default Pipeline to "Sales Pipeline" if not provided
-6. Split Project_Tags by semicolon if multiple tags
-7. Process ALL rows in the file, even if some have missing fields
-8. Always include Phone field (use "no-phone@placeholder.com" if no phone provided)
-9. Always include Email_1 field (use "no-email@placeholder.com" if no email provided)
-10. Use the exact MongoDB ObjectId format with "$oid" for userId, companyId, and gigId
-11. Set Last_Activity_Time to null
-12. Provide detailed validation feedback
-13. IMPORTANT: Use the provided userId, companyId, and gigId values exactly as shown above
-14. CRITICAL: Clean email addresses by removing prefixes like "Nor " and any other non-email text
-15. IMPORTANT: The "Email" column contains email addresses with "Nor " prefix - clean these first
-16. CRITICAL: Process ALL ${lines.length - 1}+ rows from the file, not just the first few
-17. If a row has missing email or phone, still include it with placeholder values
-18. MANDATORY: You must return at least ${lines.length - 1} leads from this file
-19. DO NOT stop processing after the first few rows - continue until all rows are processed
-
-Return only the JSON response, no additional text.
-`;
+1. Extract emails from "Email" or "Bloctel 1" columns, clean prefixes like "Nor "
+2. Extract phones from "Téléphone 1" column
+3. Use Deal_Name if available, otherwise use email
+4. Set defaults: Stage="New", Pipeline="Sales Pipeline"
+5. Process ALL ${lines.length - 1} rows
+6. Use placeholder values for missing emails/phones
+7. Use exact MongoDB ObjectId format with "$oid"
+8. Ensure JSON is complete and properly closed`;
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -532,11 +602,11 @@ Return only the JSON response, no additional text.
           'Authorization': `Bearer ${openaiApiKey}`
         },
         body: JSON.stringify({
-          model: 'gpt-4',
+          model: 'gpt-3.5-turbo', // Faster than GPT-4
           messages: [
             {
               role: 'system',
-              content: 'You are a data processing expert. You MUST return ONLY valid JSON. Never return text like "I\'m sorry" or explanations. If you cannot process the data, return a JSON with empty leads array and an error message in validation.'
+              content: 'You are a data processing expert. Return ONLY valid JSON. Never return text explanations.'
             },
             {
               role: 'user',
@@ -544,7 +614,8 @@ Return only the JSON response, no additional text.
             }
           ],
           temperature: 0.1,
-          max_tokens: 4000
+          max_tokens: 8000, // Increased for larger responses
+          timeout: 30000 // 30 second timeout
         })
       });
 
@@ -559,15 +630,14 @@ Return only the JSON response, no additional text.
         throw new Error('No response from OpenAI');
       }
 
-      // Check if OpenAI returned an error message instead of JSON
+      // Simplified error handling
       if (content.trim().toLowerCase().startsWith('i\'m sorry') || 
           content.trim().toLowerCase().startsWith('sorry') ||
           content.trim().toLowerCase().includes('cannot') ||
           content.trim().toLowerCase().includes('unable')) {
-        console.warn('⚠️ OpenAI returned an error message instead of JSON:', content);
+        console.warn('⚠️ OpenAI returned an error message:', content);
         
-        // Return a fallback response
-        const fallbackResult = {
+        return {
           leads: [],
           validation: {
             totalRows: 0,
@@ -576,195 +646,71 @@ Return only the JSON response, no additional text.
             errors: [`OpenAI Error: ${content.substring(0, 100)}...`]
           }
         };
-        
-        console.log('Using fallback result:', fallbackResult);
-        return fallbackResult;
       }
 
-      // Check if OpenAI returned truncated JSON with ellipsis
-      if (content.includes('...') && content.includes('"leads"')) {
-        console.warn('⚠️ OpenAI returned truncated JSON with ellipsis:', content.substring(content.length - 200));
-        
-        // Try to fix the JSON by removing the ellipsis and closing properly
-        let fixedContent = content;
-        
-        // Remove ellipsis and close the JSON properly
-        if (fixedContent.includes('...')) {
-          // Find all complete lead objects before the ellipsis (simpler regex)
-          // First, remove the ellipsis to get clean content
-          const cleanContent = fixedContent.replace(/\.\.\./g, '');
-          const leadObjects = cleanContent.match(/\{[^}]*"userId"[^}]*"Email_1"[^}]*"Phone"[^}]*\}/g);
-          
-          if (leadObjects && leadObjects.length > 0) {
-            console.log('🔄 Found', leadObjects.length, 'complete lead objects, attempting to reconstruct JSON...');
-            
-            // Reconstruct the JSON with complete leads
-            const reconstructedLeads = leadObjects.map((obj: string) => obj.trim()).join(',\n    ');
-            fixedContent = '{\n  "leads": [\n    ' + reconstructedLeads + '\n  ],\n  "validation": {\n    "totalRows": ' + (leadObjects.length + 1) + ',\n    "validRows": ' + leadObjects.length + ',\n    "invalidRows": 1,\n    "errors": ["JSON was truncated by OpenAI but leads were recovered"]\n  }\n}';
-            
-            console.log('🔄 Attempting to fix truncated JSON...');
-            try {
-              const parsedData = JSON.parse(fixedContent);
-              console.log('✅ Successfully fixed truncated JSON with', leadObjects.length, 'leads');
-              return {
-                leads: parsedData.leads || [],
-                validation: parsedData.validation || {
-                  totalRows: leadObjects.length,
-                  validRows: leadObjects.length,
-                  invalidRows: 1,
-                  errors: ["JSON was truncated by OpenAI but leads were recovered"]
-                }
-              };
-            } catch (fixError) {
-              console.error('❌ Failed to fix truncated JSON:', fixError);
-              console.log('Attempted fixed content:', fixedContent.substring(0, 500) + '...');
-            }
-          } else {
-            console.warn('⚠️ No complete lead objects found in truncated JSON');
-            
-            // Try alternative approach: extract objects by finding patterns
-            console.log('🔄 Trying alternative extraction method...');
-            const alternativeObjects = [];
-            
-            // Split by "}," to find individual objects
-            const parts = cleanContent.split('},');
-            for (const part of parts) {
-              if (part.includes('"userId"') && part.includes('"Email_1"') && part.includes('"Phone"')) {
-                // This looks like a lead object, add closing brace
-                const objectStr = part.trim() + '}';
-                if (objectStr.startsWith('{')) {
-                  alternativeObjects.push(objectStr);
-                }
-              }
-            }
-            
-            if (alternativeObjects.length > 0) {
-              console.log('🔄 Found', alternativeObjects.length, 'objects using alternative method');
-              
-              // Reconstruct the JSON
-              const reconstructedLeads = alternativeObjects.join(',\n    ');
-              const fixedContentAlt = '{\n  "leads": [\n    ' + reconstructedLeads + '\n  ],\n  "validation": {\n    "totalRows": ' + (alternativeObjects.length + 1) + ',\n    "validRows": ' + alternativeObjects.length + ',\n    "invalidRows": 1,\n    "errors": ["JSON was truncated by OpenAI but leads were recovered using alternative method"]\n  }\n}';
-              
-              try {
-                const parsedData = JSON.parse(fixedContentAlt);
-                console.log('✅ Successfully recovered', alternativeObjects.length, 'leads using alternative method');
-                return {
-                  leads: parsedData.leads || [],
-                  validation: parsedData.validation || {
-                    totalRows: alternativeObjects.length,
-                    validRows: alternativeObjects.length,
-                    invalidRows: 1,
-                    errors: ["JSON was truncated by OpenAI but leads were recovered using alternative method"]
-                  }
-                };
-              } catch (fixError) {
-                console.error('❌ Alternative method also failed:', fixError);
-              }
-            }
-          }
-        }
-      }
-
-      // Parse the JSON response
+      // Parse the JSON response with recovery for incomplete JSON
       let parsedData;
-      try {
-              // Check if the JSON is complete (ends with proper closing braces)
+      
+      // Check if JSON appears complete
       const trimmedContent = content.trim();
-      if (!trimmedContent.endsWith('}') || !trimmedContent.includes('"leads"')) {
-        console.warn('⚠️ OpenAI returned incomplete JSON:', trimmedContent.substring(trimmedContent.length - 100));
-        
-        // Try to fix incomplete JSON by finding the last complete lead object
-        if (trimmedContent.includes('"leads"') && trimmedContent.includes('"userId"')) {
-          console.log('🔄 Attempting to fix incomplete JSON...');
-          
-          // Find the last complete lead object
-          const leadObjects = trimmedContent.match(/\{[^}]*"userId"[^}]*\}/g);
-          if (leadObjects && leadObjects.length > 0) {
-            const lastCompleteLead = leadObjects[leadObjects.length - 1];
-            const lastLeadIndex = trimmedContent.lastIndexOf(lastCompleteLead);
-            
-            if (lastLeadIndex !== -1) {
-              // Reconstruct the JSON with complete leads
-              const fixedContent = trimmedContent.substring(0, lastLeadIndex + lastCompleteLead.length) + 
-                '],' +
-                '"validation": {' +
-                '"totalRows": ' + (leadObjects.length + 1) + ',' +
-                '"validRows": ' + leadObjects.length + ',' +
-                '"invalidRows": 1,' +
-                '"errors": ["JSON was incomplete but leads were recovered"]' +
-                '}' +
-                '}';
-              
-              try {
-                const parsedData = JSON.parse(fixedContent);
-                console.log('✅ Successfully fixed incomplete JSON with', leadObjects.length, 'leads');
-                return {
-                  leads: parsedData.leads || [],
-                  validation: parsedData.validation || {
-                    totalRows: leadObjects.length,
-                    validRows: leadObjects.length,
-                    invalidRows: 1,
-                    errors: ["JSON was incomplete but leads were recovered"]
-                  }
-                };
-              } catch (fixError) {
-                console.error('❌ Failed to fix incomplete JSON:', fixError);
-              }
+      const isCompleteJSON = trimmedContent.startsWith('{') && trimmedContent.endsWith('}') && 
+                            trimmedContent.includes('"leads"') && trimmedContent.includes('"validation"');
+      
+      if (!isCompleteJSON) {
+        console.warn('⚠️ OpenAI returned incomplete JSON, attempting recovery...');
+        const recoveredData = tryRecoverIncompleteJSON(content, lines.length - 1);
+        if (recoveredData) {
+          console.log('✅ Successfully recovered JSON with', recoveredData.leads.length, 'leads');
+          parsedData = recoveredData;
+        } else {
+          return {
+            leads: [],
+            validation: {
+              totalRows: 0,
+              validRows: 0,
+              invalidRows: 0,
+              errors: ['OpenAI returned incomplete JSON that could not be recovered']
             }
+          };
+        }
+      } else {
+        try {
+          parsedData = JSON.parse(content);
+        } catch (parseError: unknown) {
+          console.error('❌ Failed to parse OpenAI response:', parseError);
+          console.log('Raw content length:', content.length);
+          console.log('Content preview:', content.substring(0, 500) + '...');
+          
+          // Try to recover incomplete JSON
+          const recoveredData = tryRecoverIncompleteJSON(content, lines.length - 1);
+          if (recoveredData) {
+            console.log('✅ Successfully recovered JSON with', recoveredData.leads.length, 'leads');
+            parsedData = recoveredData;
+          } else {
+            return {
+              leads: [],
+              validation: {
+                totalRows: 0,
+                validRows: 0,
+                invalidRows: 0,
+                errors: [`JSON Parse Error: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`]
+              }
+            };
           }
         }
-        
-        const fallbackResult = {
-          leads: [],
-          validation: {
-            totalRows: 0,
-            validRows: 0,
-            invalidRows: 0,
-            errors: ['OpenAI returned incomplete JSON - content was truncated']
-          }
-        };
-        
-        console.log('Using fallback result due to incomplete JSON:', fallbackResult);
-        return fallbackResult;
-      }
-        
-        parsedData = JSON.parse(content);
-      } catch (parseError: unknown) {
-        console.error('❌ Failed to parse OpenAI response as JSON:', content);
-        console.error('Parse error:', parseError);
-        
-        // Return a fallback response
-        const fallbackResult = {
-          leads: [],
-          validation: {
-            totalRows: 0,
-            validRows: 0,
-            invalidRows: 0,
-            errors: [`JSON Parse Error: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`]
-          }
-        };
-        
-        console.log('Using fallback result due to parse error:', fallbackResult);
-        return fallbackResult;
       }
       
       if (!parsedData.leads || !Array.isArray(parsedData.leads)) {
         throw new Error('Invalid response format from OpenAI');
       }
 
-      // Add required fields to each lead with MongoDB ObjectId format
+      // Add required fields to each lead
       const processedLeads = parsedData.leads.map((lead: any) => {
-        const userId = Cookies.get('userId');
-        const gigId = selectedGigId; // Use selected gig ID instead of cookie
-        const companyId = Cookies.get('companyId');
-        
         return {
           ...lead,
-          // Use the MongoDB ObjectId format from OpenAI response, or create it if not present
           userId: lead.userId || { "$oid": userId },
           companyId: lead.companyId || { "$oid": companyId },
           gigId: lead.gigId || { "$oid": gigId },
-          // Ensure these fields are always present
           Last_Activity_Time: lead.Last_Activity_Time || null,
           Email_1: lead.Email_1 || "no-email@placeholder.com",
           Phone: lead.Phone || "no-phone@placeholder.com",
@@ -784,13 +730,10 @@ Return only the JSON response, no additional text.
     } catch (error: any) {
       console.error('Error processing with OpenAI:', error);
       
-      // Handle rate limiting (429 error)
       if (error.message?.includes('429') || error.status === 429) {
-        console.error('❌ Rate limit exceeded (429). Please wait a moment before trying again.');
         throw new Error('Rate limit exceeded. Please wait a moment before trying again.');
       }
       
-      // Handle other OpenAI errors
       if (error.message?.includes('OpenAI') || error.message?.includes('API')) {
         throw new Error(`OpenAI API error: ${error.message}`);
       }
@@ -866,7 +809,10 @@ Return only the JSON response, no additional text.
             
             // Process with OpenAI
             console.log('Processing file with OpenAI...');
+            const startTime = Date.now();
             const result = await processFileWithOpenAI(fileContent, fileType);
+            const processingTime = Date.now() - startTime;
+            console.log(`✅ OpenAI processing completed in ${processingTime}ms`);
             
             setUploadProgress(80);
 
