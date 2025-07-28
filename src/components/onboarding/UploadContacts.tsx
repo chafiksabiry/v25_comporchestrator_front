@@ -738,7 +738,9 @@ Return ONLY valid JSON in this format:
       "Phone": "+33123456789",
       "Stage": "New",
       "Pipeline": "Sales Pipeline",
-      "Project_Tags": []
+      "Project_Tags": [],
+      "Prénom": "John",
+      "Nom": "Doe"
     }
   ],
   "validation": {
@@ -759,12 +761,14 @@ CRITICAL INSTRUCTIONS:
 Rules:
 1. Extract emails from "Email" column, clean prefixes like "Nor "
 2. Extract phones from "Téléphone 1" column
-3. Use Deal_Name if available, otherwise use email
-4. Set defaults: Stage="New", Pipeline="Sales Pipeline"
-5. Process ALL ${lines.length - 1} rows - DO NOT remove duplicates
-6. Use placeholder values for missing emails/phones
-7. Use exact MongoDB ObjectId format with "$oid"
-8. IMPORTANT: Keep ALL rows including duplicates - do not deduplicate`;
+3. Extract "Prénom" and "Nom" columns if they exist
+4. Use Deal_Name if available, otherwise use email
+5. Set defaults: Stage="New", Pipeline="Sales Pipeline"
+6. Process ALL ${lines.length - 1} rows - DO NOT remove duplicates
+7. Use placeholder values for missing emails/phones
+8. Use exact MongoDB ObjectId format with "$oid"
+9. IMPORTANT: Keep ALL rows including duplicates - do not deduplicate
+10. ALWAYS extract Prénom and Nom fields if they exist in the file`;
 
       // Log request details for debugging
       console.log('Sending request to OpenAI with:', {
@@ -941,6 +945,20 @@ Rules:
 
       // Add required fields to each lead
       const processedLeads = parsedData.leads.map((lead: any, index: number) => {
+        // Create Deal_Name from Prénom + Nom if both exist
+        let dealName = lead.Deal_Name || "Unnamed Lead";
+        
+        if (lead.Prénom && lead.Nom) {
+          dealName = `${lead.Prénom} ${lead.Nom}`.trim();
+          console.log(`📝 Created Deal_Name from Prénom + Nom: "${lead.Prénom} ${lead.Nom}"`);
+        } else if (lead.Prénom && !lead.Nom) {
+          dealName = lead.Prénom;
+          console.log(`📝 Using Prénom as Deal_Name: "${lead.Prénom}"`);
+        } else if (!lead.Prénom && lead.Nom) {
+          dealName = lead.Nom;
+          console.log(`📝 Using Nom as Deal_Name: "${lead.Nom}"`);
+        }
+        
         const processedLead = {
           ...lead,
           userId: lead.userId || { "$oid": userId },
@@ -949,7 +967,7 @@ Rules:
           Last_Activity_Time: lead.Last_Activity_Time || null,
           Email_1: lead.Email_1 || "no-email@placeholder.com",
           Phone: lead.Phone || "no-phone@placeholder.com",
-          Deal_Name: lead.Deal_Name || "Unnamed Lead",
+          Deal_Name: dealName,
           Stage: lead.Stage || "New",
           Pipeline: lead.Pipeline || "Sales Pipeline",
           Activity_Tag: lead.Activity_Tag || '',
@@ -961,7 +979,9 @@ Rules:
           console.log(`📋 Lead ${index + 1}:`, {
             Email_1: processedLead.Email_1,
             Phone: processedLead.Phone,
-            Deal_Name: processedLead.Deal_Name
+            Deal_Name: processedLead.Deal_Name,
+            Prénom: lead.Prénom,
+            Nom: lead.Nom
           });
         }
         
