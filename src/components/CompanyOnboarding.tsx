@@ -266,8 +266,12 @@ const CompanyOnboarding = () => {
             
             if (completeResponse.data) {
               console.log('✅ Last phase and step completed successfully:', completeResponse.data);
-              // Reload progress to reflect the changes
-              await loadCompanyProgress();
+              // Only reload progress if we're not processing a file
+              if (localStorage.getItem('uploadProcessing') !== 'true') {
+                await loadCompanyProgress();
+              } else {
+                console.log('⏸️ Skipping progress reload - file processing in progress');
+              }
             }
           } catch (error) {
             console.error('Error completing last phase and step:', error);
@@ -289,8 +293,12 @@ const CompanyOnboarding = () => {
             setCompletedSteps(prev => prev.filter(step => step !== 13));
             console.log('⚠️ Step 13 removed from completed steps and marked as in_progress');
             
-            // Reload progress to get the correct phase from the API
-            await loadCompanyProgress();
+            // Only reload progress if we're not processing a file
+            if (localStorage.getItem('uploadProcessing') !== 'true') {
+              await loadCompanyProgress();
+            } else {
+              console.log('⏸️ Skipping progress reload - file processing in progress');
+            }
           } catch (error) {
             console.error('Error updating onboarding progress for step 13:', error);
           }
@@ -311,6 +319,11 @@ const CompanyOnboarding = () => {
 
     // Set up real-time checking every 30 seconds
     const intervalId = setInterval(() => {
+      // Skip checks if we're processing a file
+      if (localStorage.getItem('uploadProcessing') === 'true') {
+        console.log('⏸️ Skipping real-time checks - file processing in progress');
+        return;
+      }
       checkCompanyLeads();
       checkActiveGigs();
     }, 30000); // Check every 30 seconds
