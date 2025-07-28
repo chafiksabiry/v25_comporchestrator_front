@@ -9,5 +9,17 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Prevent accidental refreshes during development
+      if (window.location.href.includes('localhost') || window.location.href.includes('127.0.0.1') || window.location.href.includes('harx.ai')) {
+        window.addEventListener('beforeunload', function(e) {
+          if (document.querySelector('[data-processing="true"]')) {
+            e.preventDefault();
+            e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+            return e.returnValue;
+          }
+        });
+      }
+    </script>
   </body>
 </html>

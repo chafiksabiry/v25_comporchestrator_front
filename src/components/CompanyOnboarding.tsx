@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Building2,
   Shield,
@@ -115,6 +115,32 @@ const CompanyOnboarding = () => {
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
   const [showUploadContacts, setShowUploadContacts] = useState(false);
+  
+  // Maintain showUploadContacts state if we have parsed leads, but respect current phase
+  useEffect(() => {
+    if (localStorage.getItem('parsedLeads') && !showUploadContacts && !userClickedBackRef.current) {
+      // Only restore if we're in a phase that should show UploadContacts
+      const shouldShowUploadContacts = displayedPhase >= 2; // UploadContacts is typically in phase 2+
+      if (shouldShowUploadContacts) {
+        setShowUploadContacts(true);
+        console.log('🔄 Restoring UploadContacts view - parsed leads exist and phase allows it');
+      } else {
+        console.log('⏸️ Skipping UploadContacts restore - current phase:', displayedPhase);
+      }
+    }
+  }, [showUploadContacts, displayedPhase]);
+
+  // Clean up parsed leads if we're in a phase that shouldn't show UploadContacts
+  useEffect(() => {
+    if (localStorage.getItem('parsedLeads') && displayedPhase < 2) {
+      console.log('🧹 Cleaning parsed leads - current phase too early:', displayedPhase);
+      localStorage.removeItem('parsedLeads');
+      setShowUploadContacts(false);
+    }
+  }, [displayedPhase]);
+
+  // Add a ref to track if user manually clicked back
+  const userClickedBackRef = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasGigs, setHasGigs] = useState(false);
   const [hasLeads, setHasLeads] = useState(false);
@@ -266,8 +292,12 @@ const CompanyOnboarding = () => {
             
             if (completeResponse.data) {
               console.log('✅ Last phase and step completed successfully:', completeResponse.data);
-              // Reload progress to reflect the changes
-              await loadCompanyProgress();
+              // Only reload progress if we're not processing a file
+              if (localStorage.getItem('uploadProcessing') !== 'true' && sessionStorage.getItem('uploadProcessing') !== 'true') {
+                await loadCompanyProgress();
+              } else {
+                console.log('⏸️ Skipping progress reload - file processing in progress');
+              }
             }
           } catch (error) {
             console.error('Error completing last phase and step:', error);
@@ -289,8 +319,12 @@ const CompanyOnboarding = () => {
             setCompletedSteps(prev => prev.filter(step => step !== 13));
             console.log('⚠️ Step 13 removed from completed steps and marked as in_progress');
             
-            // Reload progress to get the correct phase from the API
-            await loadCompanyProgress();
+            // Only reload progress if we're not processing a file
+            if (localStorage.getItem('uploadProcessing') !== 'true' && sessionStorage.getItem('uploadProcessing') !== 'true') {
+              await loadCompanyProgress();
+            } else {
+              console.log('⏸️ Skipping progress reload - file processing in progress');
+            }
           } catch (error) {
             console.error('Error updating onboarding progress for step 13:', error);
           }
@@ -311,6 +345,18 @@ const CompanyOnboarding = () => {
 
     // Set up real-time checking every 30 seconds
     const intervalId = setInterval(() => {
+      // Skip checks if we're processing a file
+      if (localStorage.getItem('uploadProcessing') === 'true' || sessionStorage.getItem('uploadProcessing') === 'true') {
+        console.log('⏸️ Skipping real-time checks - file processing in progress');
+        return;
+      }
+      
+      // Skip checks if we have parsed leads to prevent re-renders
+      if (localStorage.getItem('parsedLeads')) {
+        console.log('⏸️ Skipping real-time checks - parsed leads exist');
+        return;
+      }
+      
       checkCompanyLeads();
       checkActiveGigs();
     }, 30000); // Check every 30 seconds
@@ -809,6 +855,20 @@ const CompanyOnboarding = () => {
   } else if (showTelephonySetup) {
     activeComponent = <TelephonySetup />;
     onBack = () => setShowTelephonySetup(false);
+  } else if (showUploadContacts) {
+    activeComponent = <UploadContacts />;
+    onBack = () => {
+      userClickedBackRef.current = true;
+      setShowUploadContacts(false);
+      console.log('👤 User clicked back - preventing auto-restore');
+    };
+  } else if (localStorage.getItem('parsedLeads') && showUploadContacts && !userClickedBackRef.current) {
+    // If we have parsed leads in localStorage AND showUploadContacts is true AND user didn't click back, show UploadContacts
+    activeComponent = <UploadContacts />;
+    onBack = () => {
+      setShowUploadContacts(false);
+      localStorage.removeItem('parsedLeads');
+    };
   } else if (ActiveStepComponent) {
     activeComponent = <ActiveStepComponent />;
     onBack = handleBackToOnboarding;
