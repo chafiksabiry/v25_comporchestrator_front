@@ -180,7 +180,18 @@ const UploadContacts = () => {
     }
   ];
 
-    const processFileWithOpenAI = async (fileContent: string, fileType: string) => {
+    // Function to clean email addresses by removing prefixes and invalid characters
+  const cleanEmailAddresses = (content: string): string => {
+    // Remove common prefixes like "Nor " from email addresses
+    const cleanedContent = content.replace(/Nor\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, '$1');
+    
+    // Also remove other common prefixes that might appear
+    const additionalCleaning = cleanedContent.replace(/(?:Prefix|Label|Tag)\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, '$1');
+    
+    return additionalCleaning;
+  };
+
+  const processFileWithOpenAI = async (fileContent: string, fileType: string) => {
     try {
       const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
       if (!openaiApiKey) {
@@ -195,11 +206,18 @@ const UploadContacts = () => {
         throw new Error('Please select a gig first');
       }
 
+      // Clean the file content before sending to OpenAI
+      const cleanedFileContent = cleanEmailAddresses(fileContent);
+      
+      console.log('Original file content length:', fileContent.length);
+      console.log('Cleaned file content length:', cleanedFileContent.length);
+      console.log('Sample of cleaned content:', cleanedFileContent.substring(0, 500));
+
       const prompt = `
 You are a data processing expert. Analyze the following ${fileType} file content and extract lead information.
 
 File content:
-${fileContent}
+${cleanedFileContent}
 
 Please process this data and return a JSON array of lead objects with the following MongoDB format:
 {
@@ -236,6 +254,9 @@ Please process this data and return a JSON array of lead objects with the follow
 
 Rules:
 1. Extract email addresses and validate their format
+   - Remove any prefixes like "Nor " from email addresses before validation
+   - Clean email addresses by removing extra spaces and invalid characters
+   - Only keep valid email format (user@domain.com)
 2. Extract phone numbers and standardize them (always include Phone field)
 3. Use Deal_Name if available, otherwise use email as Deal_Name
 4. Set default Stage to "New" if not provided
@@ -248,6 +269,7 @@ Rules:
 11. Set Last_Activity_Time to null
 12. Provide detailed validation feedback
 13. IMPORTANT: Use the provided userId, companyId, and gigId values exactly as shown above
+14. CRITICAL: Clean email addresses by removing prefixes like "Nor " and any other non-email text
 
 Return only the JSON response, no additional text.
 `;
