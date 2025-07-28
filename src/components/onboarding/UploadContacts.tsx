@@ -397,9 +397,13 @@ const UploadContacts = React.memo(() => {
     const header = lines[0];
     const dataLines = lines.slice(1);
     
-    const chunkSize = 50; // Process 50 leads at a time
+    console.log(`📊 Total data lines to process: ${dataLines.length}`);
+    
+    const chunkSize = 25; // Reduced chunk size for better reliability
     const allLeads: any[] = [];
     let totalProcessed = 0;
+    let successfulChunks = 0;
+    let failedChunks = 0;
     
     for (let i = 0; i < dataLines.length; i += chunkSize) {
       const chunk = dataLines.slice(i, i + chunkSize);
@@ -411,14 +415,35 @@ const UploadContacts = React.memo(() => {
         const chunkResult = await processFileWithOpenAI(chunkContent, fileType, true);
         allLeads.push(...chunkResult.leads);
         totalProcessed += chunkResult.leads.length;
+        successfulChunks++;
         
-        console.log(`✅ Chunk processed: ${chunkResult.leads.length} leads`);
+        console.log(`✅ Chunk ${Math.floor(i/chunkSize) + 1} processed: ${chunkResult.leads.length} leads`);
       } catch (error) {
         console.error(`❌ Error processing chunk ${Math.floor(i/chunkSize) + 1}:`, error);
+        failedChunks++;
+        
+        // Try to process individual lines if chunk fails
+        console.log(`🔄 Attempting to process individual lines for failed chunk...`);
+        for (const line of chunk) {
+          try {
+            const singleLineContent = [header, line].join('\n');
+            const singleResult = await processFileWithOpenAI(singleLineContent, fileType, true);
+            if (singleResult.leads.length > 0) {
+              allLeads.push(...singleResult.leads);
+              totalProcessed += singleResult.leads.length;
+            }
+          } catch (singleError) {
+            console.error(`❌ Failed to process individual line:`, line.substring(0, 50));
+          }
+        }
       }
     }
     
-    console.log(`✅ Large file processing complete: ${allLeads.length} total leads`);
+    console.log(`✅ Large file processing complete:`);
+    console.log(`   - Total leads processed: ${allLeads.length}`);
+    console.log(`   - Successful chunks: ${successfulChunks}`);
+    console.log(`   - Failed chunks: ${failedChunks}`);
+    console.log(`   - Expected leads: ${dataLines.length}`);
     
     return {
       leads: allLeads,
@@ -426,7 +451,7 @@ const UploadContacts = React.memo(() => {
         totalRows: dataLines.length,
         validRows: allLeads.length,
         invalidRows: Math.max(0, dataLines.length - allLeads.length),
-        errors: []
+        errors: failedChunks > 0 ? [`${failedChunks} chunks failed to process`] : []
       }
     };
   };
@@ -581,22 +606,13 @@ const UploadContacts = React.memo(() => {
       // Count the number of lines
       const lines = cleanedFileContent.split('\n');
       
-      // Check if content is too large and optimize
-      if (!isOptimized && cleanedFileContent.length > maxContentLength) {
-        console.warn(`⚠️ File is large (${lines.length} lines, ${cleanedFileContent.length} characters)`);
+      // Check if content is too large or has many lines - use chunks for better processing
+      if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 50)) {
+        console.warn(`⚠️ File is large (${lines.length} lines, ${cleanedFileContent.length} characters) - using chunks for better processing`);
         
-        // Optimize content by keeping only essential columns
-        const optimizedContent = optimizeCSVContent(cleanedFileContent);
-        console.log('Optimized content length:', optimizedContent.length);
-        
-        if (optimizedContent.length <= maxContentLength) {
-          console.log('✅ Using optimized version');
-          return await processOptimizedContent(optimizedContent, fileType);
-        } else {
-          // For very large files, process in chunks
-          console.log(`🔄 File too large, processing in chunks...`);
-          return await processLargeFileInChunks(cleanedFileContent, fileType);
-        }
+        // Always use chunks for files with more than 50 lines to avoid OpenAI token limits
+        console.log(`🔄 Processing in chunks for ${lines.length} lines...`);
+        return await processLargeFileInChunks(cleanedFileContent, fileType);
       }
 
       const truncatedContent = cleanedFileContent.length > maxContentLength 
