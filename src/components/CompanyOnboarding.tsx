@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Building2,
   Shield,
@@ -118,11 +118,14 @@ const CompanyOnboarding = () => {
   
   // Maintain showUploadContacts state if we have parsed leads
   useEffect(() => {
-    if (localStorage.getItem('parsedLeads') && !showUploadContacts) {
+    if (localStorage.getItem('parsedLeads') && !showUploadContacts && !userClickedBackRef.current) {
       setShowUploadContacts(true);
       console.log('🔄 Restoring UploadContacts view - parsed leads exist');
     }
   }, [showUploadContacts]);
+
+  // Add a ref to track if user manually clicked back
+  const userClickedBackRef = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasGigs, setHasGigs] = useState(false);
   const [hasLeads, setHasLeads] = useState(false);
@@ -823,9 +826,13 @@ const CompanyOnboarding = () => {
     onBack = () => setShowTelephonySetup(false);
   } else if (showUploadContacts) {
     activeComponent = <UploadContacts />;
-    onBack = () => setShowUploadContacts(false);
-  } else if (localStorage.getItem('parsedLeads')) {
-    // If we have parsed leads in localStorage, show UploadContacts
+    onBack = () => {
+      userClickedBackRef.current = true;
+      setShowUploadContacts(false);
+      console.log('👤 User clicked back - preventing auto-restore');
+    };
+  } else if (localStorage.getItem('parsedLeads') && showUploadContacts) {
+    // If we have parsed leads in localStorage AND showUploadContacts is true, show UploadContacts
     activeComponent = <UploadContacts />;
     onBack = () => {
       setShowUploadContacts(false);
