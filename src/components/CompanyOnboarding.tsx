@@ -255,13 +255,64 @@ const CompanyOnboarding = () => {
             { status: 'completed' }
           );
           // Update local state to reflect the completed step
-          setCompletedSteps(prev => [...prev, 6]);
+          setCompletedSteps(prev => {
+            const newSteps = [...prev];
+            if (!newSteps.includes(6)) {
+              newSteps.push(6);
+            }
+            return newSteps;
+          });
+          
+          // Mettre à jour les cookies avec le nouveau progrès
+          const currentProgress = {
+            currentPhase: currentPhase,
+            completedSteps: [...completedSteps, 6]
+          };
+          Cookies.set('companyOnboardingProgress', JSON.stringify(currentProgress));
+          
+          console.log('✅ Step 6 marked as completed - company has leads');
         } catch (error) {
           console.error('Error updating onboarding progress:', error);
         }
+      } else {
+        // Si l'entreprise n'a pas de leads, s'assurer que le step 6 n'est pas marqué comme complété
+        setCompletedSteps(prev => prev.filter(step => step !== 6));
+        console.log('⚠️ Step 6 marked as not completed - company has no leads');
       }
     } catch (error) {
       console.error('Error checking company leads:', error);
+    }
+  };
+
+  // Fonction utilitaire pour mettre à jour l'état d'onboarding sans recharger tout le projet
+  const updateOnboardingState = async () => {
+    if (!companyId) return;
+    
+    try {
+      // Vérifier les leads
+      await checkCompanyLeads();
+      
+      // Vérifier les gigs actifs
+      await checkActiveGigs();
+      
+      // Mettre à jour la phase courante si nécessaire
+      const newCompletedSteps = [...completedSteps];
+      
+      // Si step 6 est complété (leads), s'assurer qu'on est au moins en phase 2
+      if (newCompletedSteps.includes(6) && currentPhase < 2) {
+        setCurrentPhase(2);
+        setDisplayedPhase(2);
+      }
+      
+      // Si step 13 est complété (gigs actifs), s'assurer qu'on est en phase 4
+      if (newCompletedSteps.includes(13) && currentPhase < 4) {
+        setCurrentPhase(4);
+        setDisplayedPhase(4);
+      }
+      
+      console.log('✅ Onboarding state updated successfully');
+    } catch (error) {
+      console.error('Error updating onboarding state:', error);
     }
   };
 
@@ -292,12 +343,23 @@ const CompanyOnboarding = () => {
             
             if (completeResponse.data) {
               console.log('✅ Last phase and step completed successfully:', completeResponse.data);
-              // Only reload progress if we're not processing a file
-              if (localStorage.getItem('uploadProcessing') !== 'true' && sessionStorage.getItem('uploadProcessing') !== 'true') {
-                await loadCompanyProgress();
-              } else {
-                console.log('⏸️ Skipping progress reload - file processing in progress');
+                          // Update local state without reloading the entire project
+            setCompletedSteps(prev => {
+              const newSteps = [...prev];
+              if (!newSteps.includes(13)) {
+                newSteps.push(13);
               }
+              return newSteps;
+            });
+            
+            // Mettre à jour les cookies avec le nouveau progrès
+            const currentProgress = {
+              currentPhase: 4, // Phase 4 car step 13 est dans la phase 4
+              completedSteps: [...completedSteps, 13]
+            };
+            Cookies.set('companyOnboardingProgress', JSON.stringify(currentProgress));
+            
+            console.log('✅ Step 13 marked as completed - active gig found');
             }
           } catch (error) {
             console.error('Error completing last phase and step:', error);
@@ -319,12 +381,17 @@ const CompanyOnboarding = () => {
             setCompletedSteps(prev => prev.filter(step => step !== 13));
             console.log('⚠️ Step 13 removed from completed steps and marked as in_progress');
             
-            // Only reload progress if we're not processing a file
-            if (localStorage.getItem('uploadProcessing') !== 'true' && sessionStorage.getItem('uploadProcessing') !== 'true') {
-              await loadCompanyProgress();
-            } else {
-              console.log('⏸️ Skipping progress reload - file processing in progress');
-            }
+            // Update local state without reloading the entire project
+            setCompletedSteps(prev => prev.filter(step => step !== 13));
+            
+            // Mettre à jour les cookies avec le nouveau progrès
+            const currentProgress = {
+              currentPhase: 3, // Retour à la phase 3 car step 13 n'est plus complété
+              completedSteps: completedSteps.filter(step => step !== 13)
+            };
+            Cookies.set('companyOnboardingProgress', JSON.stringify(currentProgress));
+            
+            console.log('⚠️ Step 13 marked as in_progress - no active gigs found');
           } catch (error) {
             console.error('Error updating onboarding progress for step 13:', error);
           }
@@ -841,17 +908,23 @@ const CompanyOnboarding = () => {
     onBack = () => setShowTelephonySetup(false);
   } else if (showUploadContacts) {
     activeComponent = <UploadContacts />;
-    onBack = () => {
+    onBack = async () => {
       userClickedBackRef.current = true;
       setShowUploadContacts(false);
-      console.log('👤 User clicked back - preventing auto-restore');
+      console.log('👤 User clicked back - updating onboarding state');
+      
+      // Mettre à jour l'état d'onboarding sans recharger tout le projet
+      await updateOnboardingState();
     };
   } else if (localStorage.getItem('parsedLeads') && showUploadContacts && !userClickedBackRef.current) {
     // If we have parsed leads in localStorage AND showUploadContacts is true AND user didn't click back, show UploadContacts
     activeComponent = <UploadContacts />;
-    onBack = () => {
+    onBack = async () => {
       setShowUploadContacts(false);
       localStorage.removeItem('parsedLeads');
+      
+      // Mettre à jour l'état d'onboarding sans recharger tout le projet
+      await updateOnboardingState();
     };
   } else if (ActiveStepComponent) {
     activeComponent = <ActiveStepComponent />;

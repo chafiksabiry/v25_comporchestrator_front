@@ -729,9 +729,9 @@ Return ONLY valid JSON in this format:
 {
   "leads": [
     {
-      "userId": {"$oid": "6887492e1cfb37a7b60eb697"},
-      "companyId": {"$oid": "6887497635cccbcdd975954d"},
-      "gId": {"$oid": "68874eb589a519df44e28a8d"},
+      "userId": {"$oid": "${userId}"},
+      "companyId": {"$oid": "${companyId}"},
+      "gId": {"$oid": "${gigId}"},
       "Last_Activity_Time": null,
       "Deal_Name": "Lead Name",
       "Email_1": "email@example.com",
@@ -1397,6 +1397,20 @@ Rules:
           await fetchLeads();
         }
         
+        // Déclencher une mise à jour de l'état d'onboarding pour marquer le step 6 comme complété
+        try {
+          const companyId = Cookies.get('companyId');
+          if (companyId) {
+            await axios.put(
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
+              { status: 'completed' }
+            );
+            console.log('✅ Step 6 marked as completed after saving leads');
+          }
+        } catch (error) {
+          console.error('Error updating onboarding progress after saving leads:', error);
+        }
+        
         // Reset all states after a short delay, but preserve parsed leads
         setTimeout(() => {
           // Don't reset if we have parsed leads
@@ -1736,6 +1750,22 @@ Rules:
       setRealtimeLeads(leadsFromApi);
       setParsedLeads(leadsFromApi);
       await fetchLeads();
+      
+      // Déclencher une mise à jour de l'état d'onboarding pour marquer le step 6 comme complété
+      if (leadsFromApi.length > 0) {
+        try {
+          const companyId = Cookies.get('companyId');
+          if (companyId) {
+            await axios.put(
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
+              { status: 'completed' }
+            );
+            console.log('✅ Step 6 marked as completed after Zoho import');
+          }
+        } catch (error) {
+          console.error('Error updating onboarding progress after Zoho import:', error);
+        }
+      }
     } catch (error: any) {
       console.error('Error in handleImportFromZoho:', error);
       toast.error(error.message || 'Une erreur est survenue lors de l\'importation');
