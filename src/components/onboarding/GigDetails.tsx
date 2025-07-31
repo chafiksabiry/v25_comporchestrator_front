@@ -322,9 +322,12 @@ const GigDetails = () => {
                     </div>
                     
                     <button 
-                      className="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200"
-                      onClick={() => {
+                      className="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 relative z-10"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         console.log('View Details clicked for gig:', gig);
+                        console.log('Setting selectedGig to:', gig);
                         setSelectedGig(gig);
                       }}
                     >
@@ -334,7 +337,7 @@ const GigDetails = () => {
                 </div>
                 
                 {/* Hover Effect Overlay */}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300"></div>
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 pointer-events-none"></div>
               </div>
             );
           })}
