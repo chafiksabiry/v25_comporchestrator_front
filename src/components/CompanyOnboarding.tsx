@@ -160,7 +160,7 @@ const CompanyOnboarding = () => {
 
       if (!userId) {
         console.error('User ID not found in cookies');
-        window.location.href = '/auth';
+        // Ne pas rediriger immédiatement, laisser l'utilisateur voir l'interface
         return;
       }
 
@@ -170,14 +170,14 @@ const CompanyOnboarding = () => {
           setCompanyId(response.data.data._id);
           // Store company ID in cookie for backward compatibility
           Cookies.set('companyId', response.data.data._id);
+          console.log('✅ Company ID fetched and stored:', response.data.data._id);
         } else {
-          // Redirect to /auth if no company data is found
-          window.location.href = '/auth';
+          console.error('No company data found for user:', userId);
+          // Ne pas rediriger immédiatement, afficher un message d'erreur à la place
         }
       } catch (error) {
         console.error('Error fetching company ID:', error);
-        // Redirect to /auth on error
-        window.location.href = '/auth';
+        // Ne pas rediriger immédiatement, afficher un message d'erreur à la place
       }
     };
 
@@ -219,6 +219,12 @@ const CompanyOnboarding = () => {
 
   const checkCompanyGigs = async () => {
     try {
+      // Vérifier que companyId est disponible
+      if (!companyId) {
+        console.error('❌ Company ID not available for checking gigs');
+        return;
+      }
+      
       const response = await axios.get<HasGigsResponse>(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}/has-gigs`);
       const hasGigs = response.data.data.hasGigs;
       setHasGigs(hasGigs);
@@ -234,15 +240,23 @@ const CompanyOnboarding = () => {
           setCompletedSteps(prev => [...prev, 4]);
         } catch (error) {
           console.error('Error updating onboarding progress:', error);
+          // Ne pas faire échouer toute la fonction si cette mise à jour échoue
         }
       }
     } catch (error) {
       console.error('Error checking company gigs:', error);
+      // Ne pas faire échouer toute la fonction si cette vérification échoue
     }
   };
 
   const checkCompanyLeads = async () => {
     try {
+      // Vérifier que companyId est disponible
+      if (!companyId) {
+        console.error('❌ Company ID not available for checking leads');
+        return;
+      }
+      
       const response = await axios.get<HasLeadsResponse>(`${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads`);
       const hasLeads = response.data.hasLeads;
       setHasLeads(hasLeads);
@@ -273,6 +287,7 @@ const CompanyOnboarding = () => {
           console.log('✅ Step 6 marked as completed - company has leads');
         } catch (error) {
           console.error('Error updating onboarding progress:', error);
+          // Ne pas faire échouer toute la fonction si cette mise à jour échoue
         }
       } else {
         // Si l'entreprise n'a pas de leads, s'assurer que le step 6 n'est pas marqué comme complété
@@ -281,12 +296,16 @@ const CompanyOnboarding = () => {
       }
     } catch (error) {
       console.error('Error checking company leads:', error);
+      // Ne pas faire échouer toute la fonction si cette vérification échoue
     }
   };
 
   // Fonction utilitaire pour mettre à jour l'état d'onboarding sans recharger tout le projet
   const updateOnboardingState = async () => {
-    if (!companyId) return;
+    if (!companyId) {
+      console.error('❌ Company ID not available for updating onboarding state');
+      return;
+    }
     
     try {
       // Vérifier les leads
@@ -373,12 +392,20 @@ const CompanyOnboarding = () => {
       console.log('✅ Onboarding state updated successfully');
     } catch (error) {
       console.error('Error updating onboarding state:', error);
+      // Ne pas faire échouer toute la fonction si cette mise à jour échoue
     }
   };
 
   const checkActiveGigs = async () => {
     try {
       console.log('🔍 Checking for active gigs...');
+      
+      // Vérifier que companyId est disponible
+      if (!companyId) {
+        console.error('❌ Company ID not available for checking active gigs');
+        return;
+      }
+      
       const response = await axios.get<GigResponse>(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`);
       
       if (response.data && response.data.data) {
@@ -403,26 +430,27 @@ const CompanyOnboarding = () => {
             
             if (completeResponse.data) {
               console.log('✅ Last phase and step completed successfully:', completeResponse.data);
-                          // Update local state without reloading the entire project
-            setCompletedSteps(prev => {
-              const newSteps = [...prev];
-              if (!newSteps.includes(13)) {
-                newSteps.push(13);
-              }
-              return newSteps;
-            });
-            
-            // Mettre à jour les cookies avec le nouveau progrès
-            const currentProgress = {
-              currentPhase: 4, // Phase 4 car step 13 est dans la phase 4
-              completedSteps: [...completedSteps, 13]
-            };
-            Cookies.set('companyOnboardingProgress', JSON.stringify(currentProgress));
-            
-            console.log('✅ Step 13 marked as completed - active gig found');
+              // Update local state without reloading the entire project
+              setCompletedSteps(prev => {
+                const newSteps = [...prev];
+                if (!newSteps.includes(13)) {
+                  newSteps.push(13);
+                }
+                return newSteps;
+              });
+              
+              // Mettre à jour les cookies avec le nouveau progrès
+              const currentProgress = {
+                currentPhase: 4, // Phase 4 car step 13 est dans la phase 4
+                completedSteps: [...completedSteps, 13]
+              };
+              Cookies.set('companyOnboardingProgress', JSON.stringify(currentProgress));
+              
+              console.log('✅ Step 13 marked as completed - active gig found');
             }
           } catch (error) {
             console.error('Error completing last phase and step:', error);
+            // Ne pas faire échouer toute la fonction si cette mise à jour échoue
           }
         }
         
@@ -431,18 +459,17 @@ const CompanyOnboarding = () => {
           try {
             console.log('⚠️ No active gigs found - updating step 13 status');
             
-            // Mark step 13 as in_progress
-            await axios.put(
-              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
-              { status: 'in_progress' }
-            );
+            // Mark step 13 as in_progress - seulement si on est en phase 4
+            if (currentPhase >= 4) {
+              await axios.put(
+                `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
+                { status: 'in_progress' }
+              );
+            }
             
             // Update local state to remove the completed step
             setCompletedSteps(prev => prev.filter(step => step !== 13));
             console.log('⚠️ Step 13 removed from completed steps and marked as in_progress');
-            
-            // Update local state without reloading the entire project
-            setCompletedSteps(prev => prev.filter(step => step !== 13));
             
             // Mettre à jour les cookies avec le nouveau progrès
             const currentProgress = {
@@ -454,11 +481,13 @@ const CompanyOnboarding = () => {
             console.log('⚠️ Step 13 marked as in_progress - no active gigs found');
           } catch (error) {
             console.error('Error updating onboarding progress for step 13:', error);
+            // Ne pas faire échouer toute la fonction si cette mise à jour échoue
           }
         }
       }
     } catch (error) {
       console.error('Error checking active gigs:', error);
+      // Ne pas rediriger vers /auth pour cette erreur, juste la logger
     }
   };
 
@@ -497,6 +526,13 @@ const CompanyOnboarding = () => {
   const loadCompanyProgress = async () => {
     setIsLoading(true);
     try {
+      // Vérifier que companyId est disponible
+      if (!companyId) {
+        console.error('❌ Company ID not available for loading progress');
+        setIsLoading(false);
+        return;
+      }
+      
       const response = await axios.get<OnboardingProgressResponse>(`${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`);
       const progress = response.data;
       console.log('🔄 API Response:', response.data);
@@ -580,6 +616,10 @@ const CompanyOnboarding = () => {
       setCompletedSteps(progress.completedSteps);
     } catch (error) {
       console.error('Error loading company progress:', error);
+      // En cas d'erreur, utiliser les valeurs par défaut
+      setCurrentPhase(1);
+      setDisplayedPhase(1);
+      setCompletedSteps([]);
     } finally {
       setIsLoading(false);
     }
