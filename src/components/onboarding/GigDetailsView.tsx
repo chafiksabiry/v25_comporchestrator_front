@@ -344,39 +344,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
           </div>
         )}
 
-        {/* Timeline */}
-        <div className="rounded-xl bg-gradient-to-br from-gray-50 to-slate-50 border border-gray-100 shadow-lg p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-gray-100 rounded-lg">
-              <ClockIcon className="h-6 w-6 text-gray-600" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-900">Timeline</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg p-4 border border-gray-100">
-              <div className="flex items-center gap-2 mb-3">
-                <ClockIcon className="h-4 w-4 text-gray-500" />
-                <label className="text-sm font-semibold text-gray-700">
-                  Created
-                </label>
-              </div>
-              <p className="text-gray-900 font-medium">
-                {gig.createdAt ? new Date(gig.createdAt).toLocaleDateString() : 'Unknown'}
-              </p>
-            </div>
-            <div className="bg-white rounded-lg p-4 border border-gray-100">
-              <div className="flex items-center gap-2 mb-3">
-                <ClockIcon className="h-4 w-4 text-gray-500" />
-                <label className="text-sm font-semibold text-gray-700">
-                  Last Updated
-                </label>
-              </div>
-              <p className="text-gray-900 font-medium">
-                {gig.updatedAt ? new Date(gig.updatedAt).toLocaleDateString() : 'Unknown'}
-              </p>
-            </div>
-          </div>
-        </div>
+
       </div>
     </div>
   );
