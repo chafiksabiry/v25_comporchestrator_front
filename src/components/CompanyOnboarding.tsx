@@ -196,6 +196,36 @@ const CompanyOnboarding = () => {
     }
   }, [companyId]);
 
+  // Add listener for step completion messages from child components
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'STEP_COMPLETED') {
+        console.log('Received step completion message:', event.data);
+        const { stepId, phaseId, data } = event.data;
+        
+        // Update local state
+        setCompletedSteps(prev => {
+          if (!prev.includes(stepId)) {
+            return [...prev, stepId];
+          }
+          return prev;
+        });
+        
+        // Refresh onboarding progress
+        loadCompanyProgress();
+        
+        // Show success message
+        console.log(`✅ Step ${stepId} completed successfully`);
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
+
   // Recharger les données périodiquement pour détecter les changements
   // Désactivé car cause trop de rafraîchissements
   // useEffect(() => {
@@ -261,38 +291,11 @@ const CompanyOnboarding = () => {
       const hasLeads = response.data.hasLeads;
       setHasLeads(hasLeads);
       
-      // If company has leads, update the onboarding progress for step 6
+      // Log the status but don't auto-complete step 6
       if (hasLeads) {
-        try {
-          await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
-            { status: 'completed' }
-          );
-          // Update local state to reflect the completed step
-          setCompletedSteps(prev => {
-            const newSteps = [...prev];
-            if (!newSteps.includes(6)) {
-              newSteps.push(6);
-            }
-            return newSteps;
-          });
-          
-          // Mettre à jour les cookies avec le nouveau progrès
-          const currentProgress = {
-            currentPhase: currentPhase,
-            completedSteps: [...completedSteps, 6]
-          };
-          Cookies.set('companyOnboardingProgress', JSON.stringify(currentProgress));
-          
-          console.log('✅ Step 6 marked as completed - company has leads');
-        } catch (error) {
-          console.error('Error updating onboarding progress:', error);
-          // Ne pas faire échouer toute la fonction si cette mise à jour échoue
-        }
+        console.log('✅ Company has leads - step 6 can be completed manually');
       } else {
-        // Si l'entreprise n'a pas de leads, s'assurer que le step 6 n'est pas marqué comme complété
-        setCompletedSteps(prev => prev.filter(step => step !== 6));
-        console.log('⚠️ Step 6 marked as not completed - company has no leads');
+        console.log('⚠️ Company has no leads - step 6 needs manual completion');
       }
     } catch (error) {
       console.error('Error checking company leads:', error);
@@ -632,12 +635,9 @@ const CompanyOnboarding = () => {
       const zohoService = ZohoService.getInstance();
       const isConfigured = zohoService.isConfigured();
       
-      // Si Zoho est configuré et que l'utilisateur vient de revenir de la connexion,
-      // afficher automatiquement le composant UploadContacts
+      // Log the status but don't auto-show UploadContacts
       if (isConfigured) {
-        console.log('✅ Zoho est configuré - Affichage automatique du composant UploadContacts');
-        setShowUploadContacts(true);
-        setActiveStep(6); // Step 6 est Upload Contacts
+        console.log('✅ Zoho est configuré - ready for manual upload');
       }
     } catch (error) {
       console.error('Error checking Zoho connection:', error);
@@ -1100,16 +1100,6 @@ const CompanyOnboarding = () => {
       userClickedBackRef.current = true;
       setShowUploadContacts(false);
       console.log('👤 User clicked back - updating onboarding state');
-      
-      // Mettre à jour l'état d'onboarding sans recharger tout le projet
-      await updateOnboardingState();
-    };
-  } else if (localStorage.getItem('parsedLeads') && showUploadContacts && !userClickedBackRef.current) {
-    // If we have parsed leads in localStorage AND showUploadContacts is true AND user didn't click back, show UploadContacts
-    activeComponent = <UploadContacts />;
-    onBack = async () => {
-      setShowUploadContacts(false);
-      localStorage.removeItem('parsedLeads');
       
       // Mettre à jour l'état d'onboarding sans recharger tout le projet
       await updateOnboardingState();
