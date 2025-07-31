@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import GigDetailsView from './GigDetailsView';
 
 interface Gig {
   _id: string;
@@ -51,6 +52,7 @@ const GigDetails = () => {
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
   const companyId = Cookies.get('companyId');
 
   useEffect(() => {
@@ -159,6 +161,16 @@ const GigDetails = () => {
           {error}
         </div>
       </div>
+    );
+  }
+
+  // If a gig is selected, show the details view
+  if (selectedGig) {
+    return (
+      <GigDetailsView 
+        gig={selectedGig} 
+        onBack={() => setSelectedGig(null)} 
+      />
     );
   }
 
@@ -282,7 +294,10 @@ const GigDetails = () => {
                       {gig.createdAt ? new Date(gig.createdAt).toLocaleDateString() : 'Date unknown'}
                     </div>
                     
-                    <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-lg text-xs font-medium">
+                    <button 
+                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-lg text-xs font-medium"
+                      onClick={() => setSelectedGig(gig)}
+                    >
                       View Details
                     </button>
                   </div>
