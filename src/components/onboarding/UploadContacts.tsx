@@ -1070,7 +1070,11 @@ Rules:
       // Reset state for new file upload
       console.log('🔄 Starting new file upload, resetting state...');
       
-      // Force complete reset of all state
+      // Store current leads before resetting
+      const currentLeads = [...leads];
+      const currentFilteredLeads = [...filteredLeads];
+      
+      // Reset file processing state only (keep existing leads)
       setSelectedFile(null);
       setUploadError(null);
       setUploadSuccess(false);
@@ -1078,11 +1082,7 @@ Rules:
       setUploadProgress(0);
       setParsedLeads([]);
       setValidationResults(null);
-      setLeads([]);
-      setFilteredLeads([]);
-      setTotalPages(1);
-      setCurrentPage(1);
-      setTotalCount(0);
+      // Don't clear existing leads - they will be restored after processing
       setShowSaveButton(true);
       setShowFileName(true);
       
@@ -1221,6 +1221,13 @@ Rules:
             // Store results in localStorage to prevent loss
             localStorage.setItem('parsedLeads', JSON.stringify(result.leads));
             localStorage.setItem('validationResults', JSON.stringify(result.validation));
+            
+            // Restore existing leads after processing
+            if (currentLeads.length > 0) {
+              console.log('🔄 Restoring existing leads after file processing');
+              setLeads(currentLeads);
+              setFilteredLeads(currentFilteredLeads);
+            }
             
             setIsProcessing(false);
             setUploadProgress(100);
@@ -1484,7 +1491,7 @@ Rules:
   const handleResetUpload = () => {
     console.log('🔄 Forcing complete reset for new upload...');
     
-    // Reset all states
+    // Reset file processing states only (keep existing leads)
     setSelectedFile(null);
     setUploadProgress(0);
     setUploadSuccess(false);
@@ -1862,11 +1869,14 @@ Rules:
         console.log('⏸️ Skipping leads clear in fetchLeads - parsed leads exist');
         return;
       }
-      console.log('No gig selected, clearing leads');
-      setLeads([]);
-      setTotalPages(0);
-      setCurrentPage(1);
-      setTotalCount(0);
+      // Only clear leads if we're not in the middle of file processing
+      if (!processingRef.current && localStorage.getItem('uploadProcessing') !== 'true') {
+        console.log('No gig selected, clearing leads');
+        setLeads([]);
+        setTotalPages(0);
+        setCurrentPage(1);
+        setTotalCount(0);
+      }
       return;
     }
 
@@ -1941,10 +1951,13 @@ Rules:
         console.log('⏸️ Skipping leads clear - file processing in progress or parsed leads exist');
         return;
       }
-      console.log('No gig selected, clearing leads');
-      setLeads([]);
-      setTotalPages(0);
-      setCurrentPage(1);
+      // Only clear leads if we're not in the middle of file processing
+      if (!processingRef.current && localStorage.getItem('uploadProcessing') !== 'true') {
+        console.log('No gig selected, clearing leads');
+        setLeads([]);
+        setTotalPages(0);
+        setCurrentPage(1);
+      }
     }
   }, [selectedGigId, isProcessing]);
 
@@ -3014,14 +3027,14 @@ Rules:
           </div>
           <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
             <div className="min-w-full divide-y divide-gray-200">
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 sticky top-0">
-            <div className="grid grid-cols-4 px-6 py-3">
-              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Email</div>
-              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Téléphone</div>
-              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Lead</div>
-              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Stage</div>
-            </div>
-          </div>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 sticky top-0">
+                <div className="grid grid-cols-4 px-6 py-3">
+                  <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Email</div>
+                  <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Téléphone</div>
+                  <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Lead</div>
+                  <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Stage</div>
+                </div>
+              </div>
               <div className="bg-white divide-y divide-gray-100">
                 {realtimeLeads.map((lead, index) => (
                   <div key={index} className="grid grid-cols-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
@@ -3029,9 +3042,9 @@ Rules:
                     <div className="text-sm text-gray-700">{lead.Phone || 'N/A'}</div>
                     <div className="text-sm text-gray-700">{lead.Deal_Name || 'N/A'}</div>
                     <div className="text-sm">
-                                        <span className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-800 px-2.5 py-0.5 text-xs font-medium">
-                    {lead.Stage || 'N/A'}
-                  </span>
+                      <span className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-800 px-2.5 py-0.5 text-xs font-medium">
+                        {lead.Stage || 'N/A'}
+                      </span>
                     </div>
                   </div>
                 ))}
