@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import CompanyOnboarding from './CompanyOnboarding';
 import {
   Phone,
   Settings,
@@ -40,7 +39,11 @@ interface PhoneNumber {
   provider?: string;
 }
 
-const TelephonySetup = () => {
+interface TelephonySetupProps {
+  onBackToOnboarding?: () => void;
+}
+
+const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
   const [provider, setProvider] = useState('telnyx');
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [destinationZone, setDestinationZone] = useState('');
@@ -52,7 +55,6 @@ const TelephonySetup = () => {
   const [availableNumbers, setAvailableNumbers] = useState<AvailablePhoneNumber[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-  const [showCompanyOnboarding, setShowCompanyOnboarding] = useState(false);
   const [recordingSetting, setRecordingSetting] = useState('record-all');
   const [securitySettings, setSecuritySettings] = useState({
     encryption: true,
@@ -219,10 +221,34 @@ const TelephonySetup = () => {
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
         { status: 'completed' }
       );
+      
       // Update local state to reflect the completed step
       setCompletedSteps(prev => [...prev, 5]);
-      // Show CompanyOnboarding component
-      setShowCompanyOnboarding(true);
+      
+      // Force update the onboarding progress in localStorage/cookies
+      const currentProgress = {
+        currentPhase: 2,
+        completedSteps: [...completedSteps, 5]
+      };
+      localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+      
+      // Return to CompanyOnboarding without page refresh
+      if (onBackToOnboarding) {
+        // Use the callback if provided
+        onBackToOnboarding();
+      } else {
+        // Fallback: use history API
+        if (window.history && window.history.pushState) {
+          window.history.pushState({}, '', '/app11');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        } else {
+          // Fallback: trigger a custom event to notify parent component
+          window.dispatchEvent(new CustomEvent('telephonySetupCompleted', { 
+            detail: { stepId: 5, status: 'completed' } 
+          }));
+        }
+      }
+      
     } catch (error) {
       console.error('Error updating onboarding progress:', error);
       // Afficher un message d'erreur plus informatif
@@ -234,9 +260,7 @@ const TelephonySetup = () => {
     }
   };
 
-  if (showCompanyOnboarding) {
-    return <CompanyOnboarding />;
-  }
+
 
   return (
     <div className="space-y-6">

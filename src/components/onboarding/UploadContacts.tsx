@@ -19,6 +19,9 @@
  * - Gestion des gigs (projets) associés aux leads
  * - Filtrage et recherche des contacts
  * - Pagination des résultats
+ * - Auto-complétion de l'étape 6 d'onboarding quand des leads sont importés
+ * - Préservation des leads existants lors de nouveaux uploads
+ * - Gestion des erreurs et validation des données
  * - Édition en ligne des données
  * - Validation des données avant import
  * - Interface utilisateur responsive
@@ -1070,7 +1073,11 @@ Rules:
       // Reset state for new file upload
       console.log('🔄 Starting new file upload, resetting state...');
       
-      // Force complete reset of all state
+      // Store current leads before resetting
+      const currentLeads = [...leads];
+      const currentFilteredLeads = [...filteredLeads];
+      
+      // Reset file processing state only (keep existing leads)
       setSelectedFile(null);
       setUploadError(null);
       setUploadSuccess(false);
@@ -1078,11 +1085,9 @@ Rules:
       setUploadProgress(0);
       setParsedLeads([]);
       setValidationResults(null);
-      setLeads([]);
-      setFilteredLeads([]);
-      setTotalPages(1);
-      setCurrentPage(1);
-      setTotalCount(0);
+      // Don't clear existing leads - they will be restored after processing
+      setShowSaveButton(true);
+      setShowFileName(true);
       
       // Clear ALL localStorage and sessionStorage items
       console.log('🧹 Clearing all storage items...');
@@ -1097,6 +1102,12 @@ Rules:
       // Remove processing indicators
       document.body.removeAttribute('data-processing');
       processingRef.current = false;
+      
+      // Reset file input to allow re-upload of same file
+      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
       
       // Force component refresh by clearing any cached data
       console.log('🔄 Forcing component refresh...');
@@ -1213,6 +1224,13 @@ Rules:
             // Store results in localStorage to prevent loss
             localStorage.setItem('parsedLeads', JSON.stringify(result.leads));
             localStorage.setItem('validationResults', JSON.stringify(result.validation));
+            
+            // Restore existing leads after processing
+            if (currentLeads.length > 0) {
+              console.log('🔄 Restoring existing leads after file processing');
+              setLeads(currentLeads);
+              setFilteredLeads(currentFilteredLeads);
+            }
             
             setIsProcessing(false);
             setUploadProgress(100);
@@ -1401,24 +1419,30 @@ Rules:
         try {
           const companyId = Cookies.get('companyId');
           if (companyId) {
-            await axios.put(
+            const response = await axios.put(
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
               { status: 'completed' }
             );
-            console.log('✅ Step 6 marked as completed after saving leads');
+            console.log('✅ Step 6 marked as completed after saving leads:', response.data);
+            
+            // Notifier le parent component que l'étape est complétée
+            if (window.parent) {
+              window.parent.postMessage({
+                type: 'STEP_COMPLETED',
+                stepId: 6,
+                phaseId: 2,
+                data: response.data
+              }, '*');
+            }
           }
         } catch (error) {
           console.error('Error updating onboarding progress after saving leads:', error);
+          toast.error('Failed to update onboarding progress');
         }
         
-        // Reset all states after a short delay, but preserve parsed leads
+        // Reset all states after a short delay
         setTimeout(() => {
-          // Don't reset if we have parsed leads
-          if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads')) {
-            console.log('🛡️ Skipping state reset - parsed leads exist');
-            return;
-          }
-          
+          // Force complete reset for new upload
           setSelectedFile(null);
           setUploadProgress(0);
           setUploadSuccess(false);
@@ -1428,13 +1452,29 @@ Rules:
           setIsProcessing(false);
           setShowSaveButton(true);
           setShowFileName(true);
-          // Only show reset message if we don't have parsed leads
-          if (!parsedLeads.length && !localStorage.getItem('parsedLeads')) {
-            toast('File has been reset. You can upload a new file.', {
-              icon: '🔄',
-              duration: 2000
-            });
+          
+          // Clear all storage items
+          localStorage.removeItem('parsedLeads');
+          localStorage.removeItem('validationResults');
+          localStorage.removeItem('uploadProcessing');
+          sessionStorage.removeItem('uploadProcessing');
+          sessionStorage.removeItem('parsedLeads');
+          sessionStorage.removeItem('validationResults');
+          
+          // Remove processing indicators
+          document.body.removeAttribute('data-processing');
+          processingRef.current = false;
+          
+          // Reset file input
+          const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+          if (fileInput) {
+            fileInput.value = '';
           }
+          
+          toast('Upload form has been reset. You can upload a new file.', {
+            icon: '🔄',
+            duration: 2000
+          });
         }, 1200);
       }
     } catch (error: any) {
@@ -1448,6 +1488,45 @@ Rules:
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  // Fonction pour forcer la réinitialisation complète
+  const handleResetUpload = () => {
+    console.log('🔄 Forcing complete reset for new upload...');
+    
+    // Reset file processing states only (keep existing leads)
+    setSelectedFile(null);
+    setUploadProgress(0);
+    setUploadSuccess(false);
+    setParsedLeads([]);
+    setUploadError(null);
+    setValidationResults(null);
+    setIsProcessing(false);
+    setShowSaveButton(true);
+    setShowFileName(true);
+    
+    // Clear all storage items
+    localStorage.removeItem('parsedLeads');
+    localStorage.removeItem('validationResults');
+    localStorage.removeItem('uploadProcessing');
+    sessionStorage.removeItem('uploadProcessing');
+    sessionStorage.removeItem('parsedLeads');
+    sessionStorage.removeItem('validationResults');
+    
+    // Remove processing indicators
+    document.body.removeAttribute('data-processing');
+    processingRef.current = false;
+    
+    // Reset file input
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+    
+    toast('Upload form has been reset. You can upload a new file.', {
+      icon: '🔄',
+      duration: 2000
+    });
   };
 
   const handleZohoConnect = async () => {
@@ -1793,11 +1872,14 @@ Rules:
         console.log('⏸️ Skipping leads clear in fetchLeads - parsed leads exist');
         return;
       }
-      console.log('No gig selected, clearing leads');
-      setLeads([]);
-      setTotalPages(0);
-      setCurrentPage(1);
-      setTotalCount(0);
+      // Only clear leads if we're not in the middle of file processing
+      if (!processingRef.current && localStorage.getItem('uploadProcessing') !== 'true') {
+        console.log('No gig selected, clearing leads');
+        setLeads([]);
+        setTotalPages(0);
+        setCurrentPage(1);
+        setTotalCount(0);
+      }
       return;
     }
 
@@ -1872,10 +1954,13 @@ Rules:
         console.log('⏸️ Skipping leads clear - file processing in progress or parsed leads exist');
         return;
       }
-      console.log('No gig selected, clearing leads');
-      setLeads([]);
-      setTotalPages(0);
-      setCurrentPage(1);
+      // Only clear leads if we're not in the middle of file processing
+      if (!processingRef.current && localStorage.getItem('uploadProcessing') !== 'true') {
+        console.log('No gig selected, clearing leads');
+        setLeads([]);
+        setTotalPages(0);
+        setCurrentPage(1);
+      }
     }
   }, [selectedGigId, isProcessing]);
 
@@ -2130,12 +2215,11 @@ Rules:
     checkZohoConfig();
   }, []);
 
-  // Show import choice modal on first visit
+  // Show import choice modal on first visit - DISABLED
   useEffect(() => {
-    const hasSeenModal = localStorage.getItem('hasSeenImportChoiceModal');
-    if (!hasSeenModal) {
-      setShowImportChoiceModal(true);
-    }
+    // Modal disabled - always mark as seen
+    localStorage.setItem('hasSeenImportChoiceModal', 'true');
+    setShowImportChoiceModal(false);
   }, []);
 
   const handleImportChoice = (choice: 'zoho' | 'file') => {
@@ -2682,6 +2766,8 @@ Rules:
                   </div>
                 )}
               </button>
+              
+
                 </div>
               )}
             </div>
@@ -2944,14 +3030,14 @@ Rules:
           </div>
           <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
             <div className="min-w-full divide-y divide-gray-200">
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 sticky top-0">
-            <div className="grid grid-cols-4 px-6 py-3">
-              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Email</div>
-              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Téléphone</div>
-              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Lead</div>
-              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Stage</div>
-            </div>
-          </div>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 sticky top-0">
+                <div className="grid grid-cols-4 px-6 py-3">
+                  <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Email</div>
+                  <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Téléphone</div>
+                  <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Lead</div>
+                  <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Stage</div>
+                </div>
+              </div>
               <div className="bg-white divide-y divide-gray-100">
                 {realtimeLeads.map((lead, index) => (
                   <div key={index} className="grid grid-cols-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
@@ -2959,9 +3045,9 @@ Rules:
                     <div className="text-sm text-gray-700">{lead.Phone || 'N/A'}</div>
                     <div className="text-sm text-gray-700">{lead.Deal_Name || 'N/A'}</div>
                     <div className="text-sm">
-                                        <span className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-800 px-2.5 py-0.5 text-xs font-medium">
-                    {lead.Stage || 'N/A'}
-                  </span>
+                      <span className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-800 px-2.5 py-0.5 text-xs font-medium">
+                        {lead.Stage || 'N/A'}
+                      </span>
                     </div>
                   </div>
                 ))}
