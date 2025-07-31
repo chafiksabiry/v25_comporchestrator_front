@@ -19,6 +19,9 @@
  * - Gestion des gigs (projets) associés aux leads
  * - Filtrage et recherche des contacts
  * - Pagination des résultats
+ * - Auto-complétion de l'étape 6 d'onboarding quand des leads sont importés
+ * - Préservation des leads existants lors de nouveaux uploads
+ * - Gestion des erreurs et validation des données
  * - Édition en ligne des données
  * - Validation des données avant import
  * - Interface utilisateur responsive

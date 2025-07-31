@@ -246,13 +246,8 @@ const CompanyOnboarding = () => {
     const interval = setInterval(() => {
       // Vérifier si la company a des leads mais que l'étape 6 n'est pas marquée comme complétée
       if (hasLeads && !completedSteps.includes(6)) {
-        console.log('🔄 Company has leads but step 6 not completed - marking locally...');
-        setCompletedSteps(prev => {
-          if (!prev.includes(6)) {
-            return [...prev, 6];
-          }
-          return prev;
-        });
+        console.log('🔄 Company has leads but step 6 not completed - auto-completing...');
+        checkCompanyLeads();
       }
     }, 10000); // Vérifier toutes les 10 secondes
 
@@ -312,17 +307,26 @@ const CompanyOnboarding = () => {
       const hasLeads = response.data.hasLeads;
       setHasLeads(hasLeads);
       
-      // Auto-complete step 6 if company has leads (local state only)
-      if (hasLeads && !completedSteps.includes(6)) {
-        console.log('✅ Company has leads - marking step 6 as completed locally');
-        setCompletedSteps(prev => {
-          if (!prev.includes(6)) {
-            return [...prev, 6];
-          }
-          return prev;
-        });
-        console.log('✅ Step 6 marked as completed in local state');
-      } else if (!hasLeads) {
+      // Auto-complete step 6 if company has leads
+      if (hasLeads) {
+        console.log('✅ Company has leads - auto-completing step 6');
+        try {
+          await axios.put(
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
+            { status: 'completed' }
+          );
+          // Update local state to reflect the completed step
+          setCompletedSteps(prev => {
+            if (!prev.includes(6)) {
+              return [...prev, 6];
+            }
+            return prev;
+          });
+          console.log('✅ Step 6 auto-completed successfully');
+        } catch (error) {
+          console.error('Error auto-completing step 6:', error);
+        }
+      } else {
         console.log('⚠️ Company has no leads - step 6 needs manual completion');
       }
     } catch (error) {
