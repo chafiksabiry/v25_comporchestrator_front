@@ -190,6 +190,7 @@ const CompanyOnboarding = () => {
       console.log('🔄 Company ID available, loading progress and checking gigs...');
       loadCompanyProgress();
       checkCompanyGigs();
+      checkCompanyLeads();
       
       // Vérifier si l'utilisateur vient de se connecter à Zoho
       checkZohoConnection();
@@ -237,6 +238,21 @@ const CompanyOnboarding = () => {
 
   //   return () => clearInterval(interval);
   // }, [companyId]);
+
+  // Vérifier périodiquement si l'étape 6 doit être marquée comme complétée
+  useEffect(() => {
+    if (!companyId) return;
+
+    const interval = setInterval(() => {
+      // Vérifier si la company a des leads mais que l'étape 6 n'est pas marquée comme complétée
+      if (hasLeads && !completedSteps.includes(6)) {
+        console.log('🔄 Company has leads but step 6 not completed - auto-completing...');
+        checkCompanyLeads();
+      }
+    }, 10000); // Vérifier toutes les 10 secondes
+
+    return () => clearInterval(interval);
+  }, [companyId, hasLeads, completedSteps]);
 
   // Si l'URL contient ?startStep=6 ou si on est sur l'URL spécifique avec session, on lance handleStartStep(6)
   useEffect(() => {
@@ -291,9 +307,25 @@ const CompanyOnboarding = () => {
       const hasLeads = response.data.hasLeads;
       setHasLeads(hasLeads);
       
-      // Log the status but don't auto-complete step 6
+      // Auto-complete step 6 if company has leads
       if (hasLeads) {
-        console.log('✅ Company has leads - step 6 can be completed manually');
+        console.log('✅ Company has leads - auto-completing step 6');
+        try {
+          await axios.put(
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
+            { status: 'completed' }
+          );
+          // Update local state to reflect the completed step
+          setCompletedSteps(prev => {
+            if (!prev.includes(6)) {
+              return [...prev, 6];
+            }
+            return prev;
+          });
+          console.log('✅ Step 6 auto-completed successfully');
+        } catch (error) {
+          console.error('Error auto-completing step 6:', error);
+        }
       } else {
         console.log('⚠️ Company has no leads - step 6 needs manual completion');
       }
