@@ -167,8 +167,31 @@ const TelephonySetup = () => {
       // Update local state to reflect the completed step
       setCompletedSteps(prev => [...prev, 5]);
       
-      // Return to CompanyOnboarding after successful save
-      window.location.href = '/app11';
+      // Update companyOnboardingProgress cookie
+      const currentProgress = Cookies.get('companyOnboardingProgress');
+      if (currentProgress) {
+        try {
+          const progress = JSON.parse(currentProgress);
+          const updatedProgress = {
+            ...progress,
+            completedSteps: [...(progress.completedSteps || []), 5]
+          };
+          Cookies.set('companyOnboardingProgress', JSON.stringify(updatedProgress));
+        } catch (error) {
+          console.error('Error updating progress cookie:', error);
+        }
+      }
+      
+      // Return to CompanyOnboarding without page refresh
+      // Use window.history to go back or trigger a custom event
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        // If no history, trigger a custom event to notify parent component
+        window.dispatchEvent(new CustomEvent('telephonySetupCompleted', { 
+          detail: { stepId: 5, status: 'completed' } 
+        }));
+      }
       
     } catch (error) {
       console.error('Error updating onboarding progress:', error);
