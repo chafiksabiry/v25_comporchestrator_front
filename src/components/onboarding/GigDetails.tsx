@@ -170,34 +170,10 @@ const GigDetails = () => {
   if (selectedGig) {
     console.log('Rendering GigDetailsView with gig:', selectedGig);
     return (
-      <div className="p-6 bg-white rounded-xl shadow-lg">
-        <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={() => setSelectedGig(null)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to Gigs
-          </button>
-          <div className="text-sm text-gray-500">Gig Details</div>
-        </div>
-        
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">{selectedGig.title}</h1>
-        <p className="text-gray-700 mb-4">{selectedGig.description}</p>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <span className="text-sm text-gray-600">Status:</span>
-            <p className="font-medium">{selectedGig.status}</p>
-          </div>
-          <div>
-            <span className="text-sm text-gray-600">Category:</span>
-            <p className="font-medium">{selectedGig.category}</p>
-          </div>
-        </div>
-      </div>
+      <GigDetailsView 
+        gig={selectedGig} 
+        onBack={() => setSelectedGig(null)} 
+      />
     );
   }
 
