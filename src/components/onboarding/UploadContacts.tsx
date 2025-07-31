@@ -2188,12 +2188,11 @@ Rules:
     checkZohoConfig();
   }, []);
 
-  // Show import choice modal on first visit
+  // Show import choice modal on first visit - DISABLED
   useEffect(() => {
-    const hasSeenModal = localStorage.getItem('hasSeenImportChoiceModal');
-    if (!hasSeenModal) {
-      setShowImportChoiceModal(true);
-    }
+    // Modal disabled - always mark as seen
+    localStorage.setItem('hasSeenImportChoiceModal', 'true');
+    setShowImportChoiceModal(false);
   }, []);
 
   const handleImportChoice = (choice: 'zoho' | 'file') => {
@@ -2543,15 +2542,7 @@ Rules:
               )}
               {uploadSuccess && (
                 <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-600">
-                  <div className="flex items-center justify-between">
-                    <span>File uploaded successfully!</span>
-                    <button
-                      onClick={handleResetUpload}
-                      className="ml-2 px-3 py-1 text-xs font-medium text-green-700 bg-green-200 hover:bg-green-300 rounded-lg transition-colors duration-200"
-                    >
-                      Upload New File
-                    </button>
-                  </div>
+                  File uploaded successfully!
                 </div>
               )}
               {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
@@ -2749,16 +2740,7 @@ Rules:
                 )}
               </button>
               
-              {/* Upload New File Button */}
-              <button
-                className="w-full mt-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-4 py-3 text-white font-bold hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                onClick={handleResetUpload}
-              >
-                <div className="flex items-center justify-center">
-                  <Upload className="mr-2 h-5 w-5" />
-                  Upload New File
-                </div>
-              </button>
+
                 </div>
               )}
             </div>

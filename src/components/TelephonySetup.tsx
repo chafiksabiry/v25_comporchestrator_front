@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import CompanyOnboarding from './CompanyOnboarding';
 import {
   Phone,
   Settings,
@@ -48,7 +47,6 @@ const TelephonySetup = () => {
   const [availableNumbers, setAvailableNumbers] = useState<AvailablePhoneNumber[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-  const [showCompanyOnboarding, setShowCompanyOnboarding] = useState(false);
   const [recordingSetting, setRecordingSetting] = useState('record-all');
   const [securitySettings, setSecuritySettings] = useState({
     encryption: true,
@@ -165,10 +163,15 @@ const TelephonySetup = () => {
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
         { status: 'completed' }
       );
+      
       // Update local state to reflect the completed step
       setCompletedSteps(prev => [...prev, 5]);
-      // Show CompanyOnboarding component
-      setShowCompanyOnboarding(true);
+      
+             // Configuration saved successfully - no alert needed
+      
+      // Optionally, you can trigger a callback to parent component if needed
+      // But don't show CompanyOnboarding here as it resets the state
+      
     } catch (error) {
       console.error('Error updating onboarding progress:', error);
       // Afficher un message d'erreur plus informatif
@@ -180,9 +183,7 @@ const TelephonySetup = () => {
     }
   };
 
-  if (showCompanyOnboarding) {
-    return <CompanyOnboarding />;
-  }
+
 
   return (
     <div className="space-y-6">
