@@ -1086,7 +1086,13 @@ const CompanyOnboarding = () => {
     activeComponent = <GigDetails />;
     onBack = () => setShowGigDetails(false);
   } else if (showTelephonySetup) {
-    activeComponent = <TelephonySetup onBackToOnboarding={() => setShowTelephonySetup(false)} />;
+    activeComponent = <TelephonySetup onBackToOnboarding={() => {
+      setShowTelephonySetup(false);
+      // Force reload onboarding state after telephony setup completion
+      if (companyId) {
+        loadCompanyProgress();
+      }
+    }} />;
     onBack = () => setShowTelephonySetup(false);
   } else if (showUploadContacts) {
     activeComponent = <UploadContacts />;

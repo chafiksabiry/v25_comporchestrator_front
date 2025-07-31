@@ -171,6 +171,13 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       // Update local state to reflect the completed step
       setCompletedSteps(prev => [...prev, 5]);
       
+      // Force update the onboarding progress in localStorage/cookies
+      const currentProgress = {
+        currentPhase: 2,
+        completedSteps: [...completedSteps, 5]
+      };
+      localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+      
       // Return to CompanyOnboarding without page refresh
       if (onBackToOnboarding) {
         // Use the callback if provided
