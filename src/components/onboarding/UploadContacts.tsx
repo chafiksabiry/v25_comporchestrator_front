@@ -1083,6 +1083,8 @@ Rules:
       setTotalPages(1);
       setCurrentPage(1);
       setTotalCount(0);
+      setShowSaveButton(true);
+      setShowFileName(true);
       
       // Clear ALL localStorage and sessionStorage items
       console.log('🧹 Clearing all storage items...');
@@ -1097,6 +1099,12 @@ Rules:
       // Remove processing indicators
       document.body.removeAttribute('data-processing');
       processingRef.current = false;
+      
+      // Reset file input to allow re-upload of same file
+      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
       
       // Force component refresh by clearing any cached data
       console.log('🔄 Forcing component refresh...');
@@ -1411,14 +1419,9 @@ Rules:
           console.error('Error updating onboarding progress after saving leads:', error);
         }
         
-        // Reset all states after a short delay, but preserve parsed leads
+        // Reset all states after a short delay
         setTimeout(() => {
-          // Don't reset if we have parsed leads
-          if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads')) {
-            console.log('🛡️ Skipping state reset - parsed leads exist');
-            return;
-          }
-          
+          // Force complete reset for new upload
           setSelectedFile(null);
           setUploadProgress(0);
           setUploadSuccess(false);
@@ -1428,13 +1431,29 @@ Rules:
           setIsProcessing(false);
           setShowSaveButton(true);
           setShowFileName(true);
-          // Only show reset message if we don't have parsed leads
-          if (!parsedLeads.length && !localStorage.getItem('parsedLeads')) {
-            toast('File has been reset. You can upload a new file.', {
-              icon: '🔄',
-              duration: 2000
-            });
+          
+          // Clear all storage items
+          localStorage.removeItem('parsedLeads');
+          localStorage.removeItem('validationResults');
+          localStorage.removeItem('uploadProcessing');
+          sessionStorage.removeItem('uploadProcessing');
+          sessionStorage.removeItem('parsedLeads');
+          sessionStorage.removeItem('validationResults');
+          
+          // Remove processing indicators
+          document.body.removeAttribute('data-processing');
+          processingRef.current = false;
+          
+          // Reset file input
+          const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+          if (fileInput) {
+            fileInput.value = '';
           }
+          
+          toast('Upload form has been reset. You can upload a new file.', {
+            icon: '🔄',
+            duration: 2000
+          });
         }, 1200);
       }
     } catch (error: any) {
@@ -1448,6 +1467,45 @@ Rules:
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  // Fonction pour forcer la réinitialisation complète
+  const handleResetUpload = () => {
+    console.log('🔄 Forcing complete reset for new upload...');
+    
+    // Reset all states
+    setSelectedFile(null);
+    setUploadProgress(0);
+    setUploadSuccess(false);
+    setParsedLeads([]);
+    setUploadError(null);
+    setValidationResults(null);
+    setIsProcessing(false);
+    setShowSaveButton(true);
+    setShowFileName(true);
+    
+    // Clear all storage items
+    localStorage.removeItem('parsedLeads');
+    localStorage.removeItem('validationResults');
+    localStorage.removeItem('uploadProcessing');
+    sessionStorage.removeItem('uploadProcessing');
+    sessionStorage.removeItem('parsedLeads');
+    sessionStorage.removeItem('validationResults');
+    
+    // Remove processing indicators
+    document.body.removeAttribute('data-processing');
+    processingRef.current = false;
+    
+    // Reset file input
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+    
+    toast('Upload form has been reset. You can upload a new file.', {
+      icon: '🔄',
+      duration: 2000
+    });
   };
 
   const handleZohoConnect = async () => {
@@ -2485,7 +2543,15 @@ Rules:
               )}
               {uploadSuccess && (
                 <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-600">
-                  File uploaded successfully!
+                  <div className="flex items-center justify-between">
+                    <span>File uploaded successfully!</span>
+                    <button
+                      onClick={handleResetUpload}
+                      className="ml-2 px-3 py-1 text-xs font-medium text-green-700 bg-green-200 hover:bg-green-300 rounded-lg transition-colors duration-200"
+                    >
+                      Upload New File
+                    </button>
+                  </div>
                 </div>
               )}
               {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
@@ -2681,6 +2747,17 @@ Rules:
                     Save {parsedLeads.length} Contacts
                   </div>
                 )}
+              </button>
+              
+              {/* Upload New File Button */}
+              <button
+                className="w-full mt-3 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-4 py-3 text-white font-bold hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                onClick={handleResetUpload}
+              >
+                <div className="flex items-center justify-center">
+                  <Upload className="mr-2 h-5 w-5" />
+                  Upload New File
+                </div>
               </button>
                 </div>
               )}
