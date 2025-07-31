@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Building2,
   Shield,
@@ -32,6 +32,7 @@ import Cookies from 'js-cookie';
 import axios from 'axios';
 import GigDetails from './onboarding/GigDetails';
 import KnowledgeBase from './onboarding/KnowledgeBase';
+import ApprovalPublishing from './ApprovalPublishing';
 import ZohoService from '../services/zohoService';
 
 interface BaseStep {
@@ -96,6 +97,17 @@ interface CompanyResponse {
   };
 }
 
+interface GigResponse {
+  success: boolean;
+  message: string;
+  data: Array<{
+    _id: string;
+    title: string;
+    status: string;
+    // Add other gig fields as needed
+  }>;
+}
+
 const CompanyOnboarding = () => {
   const [currentPhase, setCurrentPhase] = useState(1);
   const [displayedPhase, setDisplayedPhase] = useState(1);
@@ -103,6 +115,32 @@ const CompanyOnboarding = () => {
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
   const [showUploadContacts, setShowUploadContacts] = useState(false);
+  
+  // Maintain showUploadContacts state if we have parsed leads, but respect current phase
+  useEffect(() => {
+    if (localStorage.getItem('parsedLeads') && !showUploadContacts && !userClickedBackRef.current) {
+      // Only restore if we're in a phase that should show UploadContacts
+      const shouldShowUploadContacts = displayedPhase >= 2; // UploadContacts is typically in phase 2+
+      if (shouldShowUploadContacts) {
+        setShowUploadContacts(true);
+        console.log('🔄 Restoring UploadContacts view - parsed leads exist and phase allows it');
+      } else {
+        console.log('⏸️ Skipping UploadContacts restore - current phase:', displayedPhase);
+      }
+    }
+  }, [showUploadContacts, displayedPhase]);
+
+  // Clean up parsed leads if we're in a phase that shouldn't show UploadContacts
+  useEffect(() => {
+    if (localStorage.getItem('parsedLeads') && displayedPhase < 2) {
+      console.log('🧹 Cleaning parsed leads - current phase too early:', displayedPhase);
+      localStorage.removeItem('parsedLeads');
+      setShowUploadContacts(false);
+    }
+  }, [displayedPhase]);
+
+  // Add a ref to track if user manually clicked back
+  const userClickedBackRef = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasGigs, setHasGigs] = useState(false);
   const [hasLeads, setHasLeads] = useState(false);
@@ -122,7 +160,7 @@ const CompanyOnboarding = () => {
 
       if (!userId) {
         console.error('User ID not found in cookies');
-        window.location.href = '/app4';
+        window.location.href = '/auth';
         return;
       }
 
@@ -133,13 +171,13 @@ const CompanyOnboarding = () => {
           // Store company ID in cookie for backward compatibility
           Cookies.set('companyId', response.data.data._id);
         } else {
-          // Redirect to /app4 if no company data is found
-          window.location.href = '/app4';
+          // Redirect to /auth if no company data is found
+          window.location.href = '/auth';
         }
       } catch (error) {
         console.error('Error fetching company ID:', error);
-        // Redirect to /app4 on error
-        window.location.href = '/app4';
+        // Redirect to /auth on error
+        window.location.href = '/auth';
       }
     };
 
@@ -149,6 +187,7 @@ const CompanyOnboarding = () => {
   // Load company progress and check gigs when company ID is available
   useEffect(() => {
     if (companyId) {
+      console.log('🔄 Company ID available, loading progress and checking gigs...');
       loadCompanyProgress();
       checkCompanyGigs();
       
@@ -157,11 +196,23 @@ const CompanyOnboarding = () => {
     }
   }, [companyId]);
 
+  // Recharger les données périodiquement pour détecter les changements
+  // Désactivé car cause trop de rafraîchissements
+  // useEffect(() => {
+  //   if (!companyId) return;
+
+  //   const interval = setInterval(() => {
+  //     loadCompanyProgress();
+  //   }, 5000); // Recharger toutes les 5 secondes
+
+  //   return () => clearInterval(interval);
+  // }, [companyId]);
+
   // Si l'URL contient ?startStep=6 ou si on est sur l'URL spécifique avec session, on lance handleStartStep(6)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     // Vérifier si l'URL contient le paramètre startStep=6
-    if (params.get('session') === 'someGeneratedSessionId') {
+    if (params.get('session') === 'someGeneratedSessionId' && companyId) {
       handleStartStep(6);
     }
   }, [companyId]);
@@ -204,13 +255,210 @@ const CompanyOnboarding = () => {
             { status: 'completed' }
           );
           // Update local state to reflect the completed step
-          setCompletedSteps(prev => [...prev, 6]);
+          setCompletedSteps(prev => {
+            const newSteps = [...prev];
+            if (!newSteps.includes(6)) {
+              newSteps.push(6);
+            }
+            return newSteps;
+          });
+          
+          // Mettre à jour les cookies avec le nouveau progrès
+          const currentProgress = {
+            currentPhase: currentPhase,
+            completedSteps: [...completedSteps, 6]
+          };
+          Cookies.set('companyOnboardingProgress', JSON.stringify(currentProgress));
+          
+          console.log('✅ Step 6 marked as completed - company has leads');
         } catch (error) {
           console.error('Error updating onboarding progress:', error);
         }
+      } else {
+        // Si l'entreprise n'a pas de leads, s'assurer que le step 6 n'est pas marqué comme complété
+        setCompletedSteps(prev => prev.filter(step => step !== 6));
+        console.log('⚠️ Step 6 marked as not completed - company has no leads');
       }
     } catch (error) {
       console.error('Error checking company leads:', error);
+    }
+  };
+
+  // Fonction utilitaire pour mettre à jour l'état d'onboarding sans recharger tout le projet
+  const updateOnboardingState = async () => {
+    if (!companyId) return;
+    
+    try {
+      // Vérifier les leads
+      await checkCompanyLeads();
+      
+      // Vérifier les gigs actifs
+      await checkActiveGigs();
+      
+      // Fonction pour vérifier si toutes les étapes non-désactivées d'une phase sont complétées
+      const isPhaseFullyCompleted = (phaseId: number) => {
+        const phase = phases[phaseId - 1];
+        if (!phase) return false;
+        
+        const nonDisabledSteps = phase.steps.filter(step => !step.disabled);
+        return nonDisabledSteps.every(step => completedSteps.includes(step.id));
+      };
+      
+      // Déterminer la phase valide en vérifiant que toutes les phases précédentes sont complétées
+      let validPhase = 1;
+      
+      // Vérifier chaque phase séquentiellement
+      for (let phaseId = 1; phaseId <= 4; phaseId++) {
+        if (phaseId === 1) {
+          // Phase 1 est toujours accessible
+          validPhase = 1;
+        } else {
+          // Pour les phases 2, 3, 4, vérifier que la phase précédente est complétée
+          const previousPhaseCompleted = isPhaseFullyCompleted(phaseId - 1);
+          
+          if (previousPhaseCompleted) {
+            validPhase = phaseId;
+            console.log(`✅ Phase ${phaseId - 1} is fully completed, allowing access to phase ${phaseId}`);
+          } else {
+            console.log(`⚠️ Phase ${phaseId - 1} is not fully completed, stopping at phase ${validPhase}`);
+            break; // Arrêter ici, ne pas avancer plus loin
+          }
+        }
+      }
+      
+      // Vérifications spéciales pour les cas particuliers
+      if (completedSteps.includes(7) && validPhase < 3) {
+        // Si step 7 (Knowledge Base) est complété, on peut aller en phase 3
+        // MAIS seulement si la phase 2 est complétée
+        if (isPhaseFullyCompleted(2)) {
+          validPhase = 3;
+          console.log('🔄 Step 7 completed and phase 2 is fully completed - setting phase to 3');
+        } else {
+          console.log('⚠️ Step 7 completed but phase 2 is not fully completed - staying in phase 2');
+          validPhase = 2;
+        }
+      }
+      
+      if (completedSteps.includes(10) && validPhase < 4) {
+        // Si step 10 (Match HARX REPS) est complété, on peut aller en phase 4
+        // MAIS seulement si la phase 3 est complétée
+        if (isPhaseFullyCompleted(3)) {
+          validPhase = 4;
+          console.log('🔄 Step 10 completed and phase 3 is fully completed - setting phase to 4');
+        } else {
+          console.log('⚠️ Step 10 completed but phase 3 is not fully completed - staying in phase 3');
+          validPhase = 3;
+        }
+      }
+      
+      if (completedSteps.includes(13) && validPhase < 4) {
+        // Si step 13 (Gig Activation) est complété, on peut aller en phase 4
+        // MAIS seulement si la phase 3 est complétée
+        if (isPhaseFullyCompleted(3)) {
+          validPhase = 4;
+          console.log('🔄 Step 13 completed and phase 3 is fully completed - setting phase to 4');
+        } else {
+          console.log('⚠️ Step 13 completed but phase 3 is not fully completed - staying in phase 3');
+          validPhase = 3;
+        }
+      }
+      
+      // Mettre à jour la phase seulement si elle a changé
+      if (validPhase !== currentPhase) {
+        console.log('🔄 Updating phase from', currentPhase, 'to', validPhase);
+        setCurrentPhase(validPhase);
+        setDisplayedPhase(validPhase);
+      }
+      
+      console.log('✅ Onboarding state updated successfully');
+    } catch (error) {
+      console.error('Error updating onboarding state:', error);
+    }
+  };
+
+  const checkActiveGigs = async () => {
+    try {
+      console.log('🔍 Checking for active gigs...');
+      const response = await axios.get<GigResponse>(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`);
+      
+      if (response.data && response.data.data) {
+        const gigs = response.data.data;
+        const hasActiveGig = gigs.some((gig: any) => 
+          gig.status === 'active' || gig.status === 'approved' || gig.status === 'published'
+        );
+        
+        console.log('🔍 Active gigs check:', { 
+          totalGigs: gigs.length, 
+          hasActiveGig, 
+          gigStatuses: gigs.map((g: any) => g.status) 
+        });
+        
+        // If at least one gig is active, complete the last phase and step
+        if (hasActiveGig) {
+          try {
+            console.log('✅ Found active gig - completing last phase and step');
+            const completeResponse = await axios.put(
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/complete-last`
+            );
+            
+            if (completeResponse.data) {
+              console.log('✅ Last phase and step completed successfully:', completeResponse.data);
+                          // Update local state without reloading the entire project
+            setCompletedSteps(prev => {
+              const newSteps = [...prev];
+              if (!newSteps.includes(13)) {
+                newSteps.push(13);
+              }
+              return newSteps;
+            });
+            
+            // Mettre à jour les cookies avec le nouveau progrès
+            const currentProgress = {
+              currentPhase: 4, // Phase 4 car step 13 est dans la phase 4
+              completedSteps: [...completedSteps, 13]
+            };
+            Cookies.set('companyOnboardingProgress', JSON.stringify(currentProgress));
+            
+            console.log('✅ Step 13 marked as completed - active gig found');
+            }
+          } catch (error) {
+            console.error('Error completing last phase and step:', error);
+          }
+        }
+        
+        // If no gigs are active and step 13 was previously completed, mark it as in_progress
+        else {
+          try {
+            console.log('⚠️ No active gigs found - updating step 13 status');
+            
+            // Mark step 13 as in_progress
+            await axios.put(
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
+              { status: 'in_progress' }
+            );
+            
+            // Update local state to remove the completed step
+            setCompletedSteps(prev => prev.filter(step => step !== 13));
+            console.log('⚠️ Step 13 removed from completed steps and marked as in_progress');
+            
+            // Update local state without reloading the entire project
+            setCompletedSteps(prev => prev.filter(step => step !== 13));
+            
+            // Mettre à jour les cookies avec le nouveau progrès
+            const currentProgress = {
+              currentPhase: 3, // Retour à la phase 3 car step 13 n'est plus complété
+              completedSteps: completedSteps.filter(step => step !== 13)
+            };
+            Cookies.set('companyOnboardingProgress', JSON.stringify(currentProgress));
+            
+            console.log('⚠️ Step 13 marked as in_progress - no active gigs found');
+          } catch (error) {
+            console.error('Error updating onboarding progress for step 13:', error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking active gigs:', error);
     }
   };
 
@@ -220,10 +468,24 @@ const CompanyOnboarding = () => {
 
     // Initial check
     checkCompanyLeads();
+    checkActiveGigs();
 
     // Set up real-time checking every 30 seconds
     const intervalId = setInterval(() => {
+      // Skip checks if we're processing a file
+      if (localStorage.getItem('uploadProcessing') === 'true' || sessionStorage.getItem('uploadProcessing') === 'true') {
+        console.log('⏸️ Skipping real-time checks - file processing in progress');
+        return;
+      }
+      
+      // Skip checks if we have parsed leads to prevent re-renders
+      if (localStorage.getItem('parsedLeads')) {
+        console.log('⏸️ Skipping real-time checks - parsed leads exist');
+        return;
+      }
+      
       checkCompanyLeads();
+      checkActiveGigs();
     }, 30000); // Check every 30 seconds
 
     // Cleanup interval on component unmount or when companyId changes
@@ -237,26 +499,84 @@ const CompanyOnboarding = () => {
     try {
       const response = await axios.get<OnboardingProgressResponse>(`${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`);
       const progress = response.data;
-      console.log('progress', response.data);
+      console.log('🔄 API Response:', response.data);
+      console.log('🔄 currentPhase from API:', progress.currentPhase);
+      console.log('🔄 completedSteps from API:', progress.completedSteps);
       
       // Store the progress in cookies
       Cookies.set('companyOnboardingProgress', JSON.stringify(progress));
       
-      // Check if all non-disabled steps in Phase 2 are completed before advancing to phase 3
-      const phase2Steps = phases[1].steps.filter(step => !step.disabled);
-      const allPhase2Completed = phase2Steps.every(step => progress.completedSteps.includes(step.id));
+      // Fonction pour vérifier si toutes les étapes non-désactivées d'une phase sont complétées
+      const isPhaseFullyCompleted = (phaseId: number) => {
+        const phase = phases[phaseId - 1];
+        if (!phase) return false;
+        
+        const nonDisabledSteps = phase.steps.filter(step => !step.disabled);
+        return nonDisabledSteps.every(step => progress.completedSteps.includes(step.id));
+      };
       
-      if (allPhase2Completed) {
-        const validPhase = 3;
-        setCurrentPhase(validPhase);
-        setDisplayedPhase(validPhase);
-      } else {
-        // Vérifier que la phase est valide (entre 1 et 4)
-        const validPhase = Math.max(1, Math.min(4, progress.currentPhase));
-        setCurrentPhase(validPhase);
-        setDisplayedPhase(validPhase);
+      // Déterminer la phase valide en vérifiant que toutes les phases précédentes sont complétées
+      let validPhase = 1;
+      
+      // Vérifier chaque phase séquentiellement
+      for (let phaseId = 1; phaseId <= 4; phaseId++) {
+        if (phaseId === 1) {
+          // Phase 1 est toujours accessible
+          validPhase = 1;
+        } else {
+          // Pour les phases 2, 3, 4, vérifier que la phase précédente est complétée
+          const previousPhaseCompleted = isPhaseFullyCompleted(phaseId - 1);
+          
+          if (previousPhaseCompleted) {
+            validPhase = phaseId;
+            console.log(`✅ Phase ${phaseId - 1} is fully completed, allowing access to phase ${phaseId}`);
+          } else {
+            console.log(`⚠️ Phase ${phaseId - 1} is not fully completed, stopping at phase ${validPhase}`);
+            break; // Arrêter ici, ne pas avancer plus loin
+          }
+        }
       }
       
+      // Vérifications spéciales pour les cas particuliers
+      if (progress.completedSteps.includes(7) && validPhase < 3) {
+        // Si step 7 (Knowledge Base) est complété, on peut aller en phase 3
+        // MAIS seulement si la phase 2 est complétée
+        if (isPhaseFullyCompleted(2)) {
+          validPhase = 3;
+          console.log('🔄 Step 7 completed and phase 2 is fully completed - setting phase to 3');
+        } else {
+          console.log('⚠️ Step 7 completed but phase 2 is not fully completed - staying in phase 2');
+          validPhase = 2;
+        }
+      }
+      
+      if (progress.completedSteps.includes(10) && validPhase < 4) {
+        // Si step 10 (Match HARX REPS) est complété, on peut aller en phase 4
+        // MAIS seulement si la phase 3 est complétée
+        if (isPhaseFullyCompleted(3)) {
+          validPhase = 4;
+          console.log('🔄 Step 10 completed and phase 3 is fully completed - setting phase to 4');
+        } else {
+          console.log('⚠️ Step 10 completed but phase 3 is not fully completed - staying in phase 3');
+          validPhase = 3;
+        }
+      }
+      
+      if (progress.completedSteps.includes(13) && validPhase < 4) {
+        // Si step 13 (Gig Activation) est complété, on peut aller en phase 4
+        // MAIS seulement si la phase 3 est complétée
+        if (isPhaseFullyCompleted(3)) {
+          validPhase = 4;
+          console.log('🔄 Step 13 completed and phase 3 is fully completed - setting phase to 4');
+        } else {
+          console.log('⚠️ Step 13 completed but phase 3 is not fully completed - staying in phase 3');
+          validPhase = 3;
+        }
+      }
+      
+      console.log('🔄 Final valid phase determined:', validPhase, 'from API currentPhase:', progress.currentPhase);
+      setCurrentPhase(validPhase);
+      setDisplayedPhase(validPhase);
       setCompletedSteps(progress.completedSteps);
     } catch (error) {
       console.error('Error loading company progress:', error);
@@ -285,7 +605,10 @@ const CompanyOnboarding = () => {
   };
 
   const handleStartStep = async (stepId: number) => {
-    if (!companyId) return;
+    if (!companyId) {
+      console.error('Company ID not available for starting step');
+      return;
+    }
 
     try {
       // Mettre à jour le statut de l'étape à "in_progress"
@@ -313,6 +636,21 @@ const CompanyOnboarding = () => {
         return;
       }
       
+      // Special handling for Gig Activation step (step 13) - redirect to Approval & Publishing
+      if (stepId === 13) {
+        // Set the active tab to approval-publishing in the parent App component
+        if (window.parent && window.parent !== window) {
+          // If we're in an iframe, communicate with parent
+          window.parent.postMessage({ type: 'SET_ACTIVE_TAB', tab: 'approval-publishing' }, '*');
+        } else {
+          // If we're in the main window, use localStorage to communicate with App component
+          localStorage.setItem('activeTab', 'approval-publishing');
+          // Trigger a custom event to notify the App component
+          window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'approval-publishing' } }));
+        }
+        return;
+      }
+      
       if (step?.component) {
         if (stepId === 4 && completedSteps.includes(stepId)) {
           setShowGigDetails(true);
@@ -324,12 +662,19 @@ const CompanyOnboarding = () => {
       }
     } catch (error) {
       console.error('Error updating step status:', error);
+      // Afficher un message d'erreur plus informatif
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+      }
     }
   };
 
 
   const handleStepComplete = async (stepId: number) => {
-    if (!companyId) return;
+    if (!companyId) {
+      console.error('Company ID not available for step completion');
+      return;
+    }
 
     try {
       const phaseId = phases.findIndex(phase => 
@@ -344,29 +689,63 @@ const CompanyOnboarding = () => {
       setCompletedSteps(prev => [...prev, stepId]);
     } catch (error) {
       console.error('Error completing step:', error);
+      // Afficher un message d'erreur plus informatif
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+      }
     }
   };
 
   const handlePhaseChange = async (newPhase: number) => {
     if (!companyId) return;
 
-    // Mettre à jour seulement la phase affichée
-    setDisplayedPhase(newPhase);
+    // Fonction pour vérifier si toutes les étapes non-désactivées d'une phase sont complétées
+    const isPhaseFullyCompleted = (phaseId: number) => {
+      const phase = phases[phaseId - 1];
+      if (!phase) return false;
+      
+      const nonDisabledSteps = phase.steps.filter(step => !step.disabled);
+      return nonDisabledSteps.every(step => completedSteps.includes(step.id));
+    };
 
-    // On ne met à jour l'API que si:
-    // 1. La nouvelle phase est accessible
-    // 2. La nouvelle phase est inférieure à la phase actuelle
-    // 3. La phase n'est pas déjà complétée (currentPhase > newPhase)
-    if (isPhaseAccessible(newPhase) && newPhase <= currentPhase && !isPhaseCompleted(newPhase)) {
-      try {
-        await axios.put(
-          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/current-phase`,
-          { phase: newPhase }
-        );
-        setCurrentPhase(newPhase);
-      } catch (error) {
-        console.error('Error updating phase:', error);
+    // Vérifier si on peut accéder à la nouvelle phase
+    let canAccessPhase = true;
+    
+    if (newPhase > 1) {
+      // Vérifier que toutes les phases précédentes sont complétées
+      for (let phaseId = 1; phaseId < newPhase; phaseId++) {
+        if (!isPhaseFullyCompleted(phaseId)) {
+          console.log(`⚠️ Cannot access phase ${newPhase} - phase ${phaseId} is not fully completed`);
+          canAccessPhase = false;
+          break;
+        }
       }
+    }
+
+    if (canAccessPhase) {
+      // Mettre à jour seulement la phase affichée
+      setDisplayedPhase(newPhase);
+
+      // On ne met à jour l'API que si:
+      // 1. La nouvelle phase est accessible
+      // 2. La nouvelle phase est inférieure ou égale à la phase actuelle
+      // 3. La phase n'est pas déjà complétée (currentPhase > newPhase)
+      if (isPhaseAccessible(newPhase) && newPhase <= currentPhase && !isPhaseCompleted(newPhase)) {
+        try {
+          await axios.put(
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/current-phase`,
+            { phase: newPhase }
+          );
+          setCurrentPhase(newPhase);
+          console.log(`✅ Successfully changed to phase ${newPhase}`);
+        } catch (error) {
+          console.error('Error updating phase:', error);
+        }
+      }
+    } else {
+      console.log(`❌ Cannot change to phase ${newPhase} - previous phases not completed`);
+      // Optionnel : afficher un message d'erreur à l'utilisateur
+      alert(`Vous devez compléter toutes les étapes de la phase précédente avant d'accéder à la phase ${newPhase}`);
     }
   };
 
@@ -385,11 +764,29 @@ const CompanyOnboarding = () => {
 
   const handleNextPhase = () => {
     const newPhase = Math.min(4, displayedPhase + 1);
-    // Rediriger seulement si on est déjà en phase 4
-    if (displayedPhase === 4) {
+    
+    // Fonction pour vérifier si toutes les étapes non-désactivées d'une phase sont complétées
+    const isPhaseFullyCompleted = (phaseId: number) => {
+      const phase = phases[phaseId - 1];
+      if (!phase) return false;
+      
+      const nonDisabledSteps = phase.steps.filter(step => !step.disabled);
+      return nonDisabledSteps.every(step => completedSteps.includes(step.id));
+    };
+
+    // Vérifier si la phase actuelle est complétée avant d'avancer
+    if (displayedPhase < 4) {
+      if (isPhaseFullyCompleted(displayedPhase)) {
+        console.log(`✅ Phase ${displayedPhase} is fully completed, proceeding to phase ${newPhase}`);
+        handlePhaseChange(newPhase);
+      } else {
+        console.log(`⚠️ Cannot proceed to phase ${newPhase} - current phase ${displayedPhase} is not fully completed`);
+        alert(`Vous devez compléter toutes les étapes de la phase ${displayedPhase} avant de passer à la phase suivante`);
+        return;
+      }
+    } else if (displayedPhase === 4) {
+      // Rediriger seulement si on est déjà en phase 4
       window.location.href = '/company';
-    } else {
-      handlePhaseChange(newPhase);
     }
   };
 
@@ -472,7 +869,8 @@ const CompanyOnboarding = () => {
           title: 'Call Script',
           description: 'Define script and conversation flows',
           status: 'pending',
-          component: CallScript
+          component: CallScript,
+          // disabled: true
         },
         {
           id: 9,
@@ -526,8 +924,7 @@ const CompanyOnboarding = () => {
           title: 'Gig Activation',
           description: 'Launch multi-channel operations',
           status: 'pending',
-          // component: GigActivation,
-          disabled: true
+          component: ApprovalPublishing
         }
       ]
     }
@@ -668,6 +1065,26 @@ const CompanyOnboarding = () => {
   } else if (showTelephonySetup) {
     activeComponent = <TelephonySetup />;
     onBack = () => setShowTelephonySetup(false);
+  } else if (showUploadContacts) {
+    activeComponent = <UploadContacts />;
+    onBack = async () => {
+      userClickedBackRef.current = true;
+      setShowUploadContacts(false);
+      console.log('👤 User clicked back - updating onboarding state');
+      
+      // Mettre à jour l'état d'onboarding sans recharger tout le projet
+      await updateOnboardingState();
+    };
+  } else if (localStorage.getItem('parsedLeads') && showUploadContacts && !userClickedBackRef.current) {
+    // If we have parsed leads in localStorage AND showUploadContacts is true AND user didn't click back, show UploadContacts
+    activeComponent = <UploadContacts />;
+    onBack = async () => {
+      setShowUploadContacts(false);
+      localStorage.removeItem('parsedLeads');
+      
+      // Mettre à jour l'état d'onboarding sans recharger tout le projet
+      await updateOnboardingState();
+    };
   } else if (ActiveStepComponent) {
     activeComponent = <ActiveStepComponent />;
     onBack = handleBackToOnboarding;
@@ -714,8 +1131,20 @@ const CompanyOnboarding = () => {
         {phases.map((phase) => {
           const PhaseIcon = phase.icon;
           const isActive = displayedPhase === phase.id;
-          const isCompleted = currentPhase > phase.id;
+          const isCompleted = isPhaseCompleted(phase.id);
           const isAccessible = isPhaseAccessible(phase.id);
+          
+          // Debug pour la Phase 3
+          if (phase.id === 3) {
+            console.log('Phase 3 Debug:', {
+              isActive,
+              isCompleted,
+              isAccessible,
+              currentPhase,
+              displayedPhase,
+              completedSteps
+            });
+          }
           
           return (
             <div
@@ -779,6 +1208,19 @@ const CompanyOnboarding = () => {
                 .every(s => s.disabled || completedSteps.includes(s.id));
             const canAccessStep = isPhaseAccessible(displayedPhaseData.id);
 
+            // Debug pour l'étape 13
+            if (step.id === 13) {
+              console.log('Step 13 Debug:', {
+                isClickable,
+                isCompleted,
+                isCurrentStep,
+                canAccessStep,
+                stepDisabled: step.disabled,
+                completedSteps,
+                displayedPhaseData: displayedPhaseData.id
+              });
+            }
+
 
             return (
               <div
@@ -789,8 +1231,8 @@ const CompanyOnboarding = () => {
                   isCompleted ? 'border-green-200 bg-green-50' :
                   isCurrentStep ? 'border-indigo-200 bg-indigo-50 ring-2 ring-indigo-500' :
                   'border-gray-200 bg-white'
-                } ${(isClickable && !step.disabled && canAccessStep && (isCompleted || isCurrentStep)) ? 'cursor-pointer hover:border-indigo-300' : ''}`}
-                onClick={() => isClickable && !step.disabled && canAccessStep && (isCompleted || isCurrentStep) && handleStepClick(step.id)}
+                } ${(isClickable && !step.disabled && canAccessStep) ? 'cursor-pointer hover:border-indigo-300' : ''}`}
+                onClick={() => isClickable && !step.disabled && canAccessStep && handleStepClick(step.id)}
               >
                 <div className="flex items-start space-x-4">
                   <div className={`rounded-full p-2 ${
@@ -830,7 +1272,7 @@ const CompanyOnboarding = () => {
                       )}
                     </div>
                     <p className="mt-1 text-sm text-gray-500">{step.description}</p>
-                    {isClickable && !step.disabled && canAccessStep && (isCompleted || isCurrentStep) && (
+                    {isClickable && !step.disabled && canAccessStep && (
                       <button 
                         className="mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-500"
                         onClick={() => handleStartStep(step.id)}

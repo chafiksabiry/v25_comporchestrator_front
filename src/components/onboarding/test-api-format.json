@@ -1,0 +1,14 @@
+{
+  "userId": "685abed9c8feb663b492e50e",
+  "companyId": "685abf28641398dc582f4c95",
+  "gigId": "685bc91cf38bd37aba8b3d9b",
+  "Last_Activity_Time": null,
+  "Deal_Name": "Test API Format",
+  "Email_1": "test-api@example.com",
+  "Phone": "+1-555-123-4567",
+  "Stage": "New",
+  "Pipeline": "Sales Pipeline",
+  "Activity_Tag": "",
+  "Telephony": "",
+  "Project_Tags": ["test", "api"]
+} 

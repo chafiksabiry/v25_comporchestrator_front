@@ -116,6 +116,16 @@ class ZohoService {
       return null;
     }
   }
+
+  public resetConfiguration(): void {
+    this.config = {
+      accessToken: null,
+      refreshToken: null,
+      tokenExpiry: null,
+      isConfigured: false
+    };
+    console.debug('ZohoService: Configuration reset');
+  }
 }
 
 export default ZohoService; 
