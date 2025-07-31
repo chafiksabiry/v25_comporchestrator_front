@@ -196,34 +196,6 @@ const CompanyOnboarding = () => {
     }
   }, [companyId]);
 
-  // Listen for telephony setup completion event
-  useEffect(() => {
-    const handleTelephonySetupCompleted = (event: CustomEvent) => {
-      const { stepId, status } = event.detail;
-      console.log('🔄 Telephony setup completed:', { stepId, status });
-      
-      // Update local state
-      setCompletedSteps(prev => {
-        const newSteps = [...prev];
-        if (!newSteps.includes(stepId)) {
-          newSteps.push(stepId);
-        }
-        return newSteps;
-      });
-      
-      // Reload progress to ensure consistency
-      if (companyId) {
-        loadCompanyProgress();
-      }
-    };
-
-    window.addEventListener('telephonySetupCompleted', handleTelephonySetupCompleted as EventListener);
-    
-    return () => {
-      window.removeEventListener('telephonySetupCompleted', handleTelephonySetupCompleted as EventListener);
-    };
-  }, [companyId]);
-
   // Recharger les données périodiquement pour détecter les changements
   // Désactivé car cause trop de rafraîchissements
   // useEffect(() => {
@@ -1114,7 +1086,7 @@ const CompanyOnboarding = () => {
     activeComponent = <GigDetails />;
     onBack = () => setShowGigDetails(false);
   } else if (showTelephonySetup) {
-    activeComponent = <TelephonySetup />;
+    activeComponent = <TelephonySetup onBackToOnboarding={() => setShowTelephonySetup(false)} />;
     onBack = () => setShowTelephonySetup(false);
   } else if (showUploadContacts) {
     activeComponent = <UploadContacts />;

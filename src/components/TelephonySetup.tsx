@@ -34,7 +34,11 @@ interface PhoneNumber {
   features: string[];
 }
 
-const TelephonySetup = () => {
+interface TelephonySetupProps {
+  onBackToOnboarding?: () => void;
+}
+
+const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
   const [provider, setProvider] = useState('telnyx');
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [destinationZone, setDestinationZone] = useState('');
@@ -167,30 +171,21 @@ const TelephonySetup = () => {
       // Update local state to reflect the completed step
       setCompletedSteps(prev => [...prev, 5]);
       
-      // Update companyOnboardingProgress cookie
-      const currentProgress = Cookies.get('companyOnboardingProgress');
-      if (currentProgress) {
-        try {
-          const progress = JSON.parse(currentProgress);
-          const updatedProgress = {
-            ...progress,
-            completedSteps: [...(progress.completedSteps || []), 5]
-          };
-          Cookies.set('companyOnboardingProgress', JSON.stringify(updatedProgress));
-        } catch (error) {
-          console.error('Error updating progress cookie:', error);
-        }
-      }
-      
       // Return to CompanyOnboarding without page refresh
-      // Use window.history to go back or trigger a custom event
-      if (window.history.length > 1) {
-        window.history.back();
+      if (onBackToOnboarding) {
+        // Use the callback if provided
+        onBackToOnboarding();
       } else {
-        // If no history, trigger a custom event to notify parent component
-        window.dispatchEvent(new CustomEvent('telephonySetupCompleted', { 
-          detail: { stepId: 5, status: 'completed' } 
-        }));
+        // Fallback: use history API
+        if (window.history && window.history.pushState) {
+          window.history.pushState({}, '', '/app11');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        } else {
+          // Fallback: trigger a custom event to notify parent component
+          window.dispatchEvent(new CustomEvent('telephonySetupCompleted', { 
+            detail: { stepId: 5, status: 'completed' } 
+          }));
+        }
       }
       
     } catch (error) {
