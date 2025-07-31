@@ -167,10 +167,8 @@ const TelephonySetup = () => {
       // Update local state to reflect the completed step
       setCompletedSteps(prev => [...prev, 5]);
       
-             // Configuration saved successfully - no alert needed
-      
-      // Optionally, you can trigger a callback to parent component if needed
-      // But don't show CompanyOnboarding here as it resets the state
+      // Return to CompanyOnboarding after successful save
+      window.location.href = '/app11';
       
     } catch (error) {
       console.error('Error updating onboarding progress:', error);
