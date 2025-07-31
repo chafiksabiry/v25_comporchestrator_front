@@ -1,21 +1,5 @@
 import React from 'react';
-import { 
-  ArrowLeft,
-  FileText,
-  Target,
-  Award,
-  TrendingUp,
-  Building,
-  Calendar,
-  Clock,
-  Globe,
-  DollarSign,
-  Users,
-  MapPin,
-  Sun,
-  CheckCircle,
-  AlertTriangle
-} from 'lucide-react';
+import { ArrowLeft, FileText, Target, Award, DollarSign, TrendingUp, Users, MapPin, ClockIcon, Globe, Building, Settings } from 'lucide-react';
 
 interface Gig {
   _id: string;
@@ -105,7 +89,6 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
@@ -116,16 +99,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
             Back to Gigs
           </button>
           <div className="h-6 w-px bg-gray-300"></div>
-          <h1 className="text-2xl font-bold text-gray-900">Gig Details: {gig.title}</h1>
-        </div>
-        <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold border ${
-          gig.status === 'active' || gig.status === 'approved' 
-            ? 'bg-green-100 text-green-800 border-green-200' 
-            : gig.status === 'pending' || gig.status === 'to_activate'
-            ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
-            : 'bg-red-100 text-red-800 border-red-200'
-        }`}>
-          {gig.status}
+          <h1 className="text-2xl font-bold text-gray-900">View: {gig.title}</h1>
         </div>
       </div>
       
@@ -138,65 +112,52 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
             </div>
             <h2 className="text-xl font-bold text-gray-900">Basic Information</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="bg-white rounded-lg p-4 border border-blue-100">
-                <div className="flex items-center gap-2 mb-2">
-                  <Target className="h-4 w-4 text-blue-500" />
-                  <span className="text-sm font-semibold text-gray-700">Title</span>
-                </div>
-                <p className="text-sm text-gray-900 font-medium">{gig.title}</p>
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg p-4 border border-blue-100">
+              <div className="flex items-center gap-2 mb-3">
+                <Target className="h-4 w-4 text-blue-500" />
+                <label className="text-sm font-semibold text-gray-700">
+                  Gig Title
+                </label>
               </div>
+              <p className="text-gray-900 font-medium">{gig.title}</p>
+            </div>
+            
+            <div className="bg-white rounded-lg p-4 border border-blue-100">
+              <div className="flex items-center gap-2 mb-3">
+                <FileText className="h-4 w-4 text-blue-500" />
+                <label className="text-sm font-semibold text-gray-700">
+                  Description
+                </label>
+              </div>
+              <p className="text-gray-700 leading-relaxed">
+                {gig.description || 'No description available'}
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white rounded-lg p-4 border border-blue-100">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-3">
                   <Award className="h-4 w-4 text-purple-500" />
-                  <span className="text-sm font-semibold text-gray-700">Category</span>
+                  <label className="text-sm font-semibold text-gray-700">
+                    Category
+                  </label>
                 </div>
-                <p className="text-sm text-gray-900 font-medium">{gig.category || 'Not specified'}</p>
+                <p className="text-gray-900 font-medium">{gig.category || 'Not specified'}</p>
               </div>
+              
               <div className="bg-white rounded-lg p-4 border border-blue-100">
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="h-4 w-4 text-emerald-500" />
-                  <span className="text-sm font-semibold text-gray-700">Created</span>
+                <div className="flex items-center gap-2 mb-3">
+                  <Globe className="h-4 w-4 text-indigo-500" />
+                  <label className="text-sm font-semibold text-gray-700">
+                    Status
+                  </label>
                 </div>
-                <p className="text-sm text-gray-900 font-medium">
-                  {gig.createdAt ? new Date(gig.createdAt).toLocaleDateString() : 'Not available'}
-                </p>
-              </div>
-              <div className="bg-white rounded-lg p-4 border border-blue-100">
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock className="h-4 w-4 text-cyan-500" />
-                  <span className="text-sm font-semibold text-gray-700">Updated</span>
-                </div>
-                <p className="text-sm text-gray-900 font-medium">
-                  {gig.updatedAt ? new Date(gig.updatedAt).toLocaleDateString() : 'Not available'}
-                </p>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div className="bg-white rounded-lg p-4 border border-blue-100">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="h-4 w-4 text-green-500" />
-                  <span className="text-sm font-semibold text-gray-700">Status</span>
-                </div>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  gig.status === 'active' || gig.status === 'approved' 
-                    ? 'bg-green-100 text-green-800' 
-                    : gig.status === 'pending' || gig.status === 'to_activate'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-red-100 text-red-800'
-                }`}>
+                <div className={`inline-block px-3 py-1 rounded-full text-sm font-semibold border ${getStatusColor(gig.status)}`}>
                   {gig.status}
-                </span>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="mt-6 bg-white rounded-lg p-4 border border-blue-100">
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="h-4 w-4 text-blue-500" />
-              <span className="text-sm font-semibold text-gray-700">Description</span>
-            </div>
-            <p className="text-sm text-gray-900 leading-relaxed">{gig.description || 'No description available'}</p>
           </div>
         </div>
 
@@ -211,22 +172,22 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white rounded-lg p-4 border border-purple-100">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-3">
                   <Target className="h-4 w-4 text-purple-500" />
-                  <span className="text-sm font-semibold text-gray-700">Level</span>
+                  <label className="text-sm font-semibold text-gray-700">
+                    Seniority Level
+                  </label>
                 </div>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-100 to-violet-100 text-purple-800 border border-purple-200">
-                  {gig.seniority.level || 'Not specified'}
-                </span>
+                <p className="text-gray-900 font-medium">{gig.seniority.level || 'Not specified'}</p>
               </div>
               <div className="bg-white rounded-lg p-4 border border-purple-100">
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock className="h-4 w-4 text-violet-500" />
-                  <span className="text-sm font-semibold text-gray-700">Years of Experience</span>
+                <div className="flex items-center gap-2 mb-3">
+                  <ClockIcon className="h-4 w-4 text-violet-500" />
+                  <label className="text-sm font-semibold text-gray-700">
+                    Years of Experience
+                  </label>
                 </div>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-violet-100 to-purple-100 text-violet-800 border border-violet-200">
-                  {gig.seniority.yearsExperience || 'Not specified'}
-                </span>
+                <p className="text-gray-900 font-medium">{gig.seniority.yearsExperience || '0'} years</p>
               </div>
             </div>
           </div>
@@ -234,109 +195,188 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
 
         {/* Commission */}
         {gig.commission && (
-          <div className="rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 shadow-lg p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <DollarSign className="h-6 w-6 text-green-600" />
+          <div className="space-y-6">
+            {/* Base Commission */}
+            <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 shadow-lg p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <DollarSign className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Commission Structure</h2>
+                  <p className="text-sm text-gray-600">Commission details and structure</p>
+                </div>
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Commission Structure</h2>
-            </div>
-            <div className="bg-white rounded-lg p-4 border border-green-100">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="h-4 w-4 text-green-500" />
-                <span className="text-sm font-semibold text-gray-700">Details</span>
+              
+              <div className="bg-white rounded-lg p-4 border border-blue-100">
+                <div className="space-y-3">
+                  {gig.commission.base && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Base Type:</span>
+                      <span className="font-medium text-gray-900">{gig.commission.base}</span>
+                    </div>
+                  )}
+                  {gig.commission.baseAmount && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Base Amount:</span>
+                      <span className="font-medium text-gray-900">{gig.commission.baseAmount} {gig.commission.currency || 'EUR'}</span>
+                    </div>
+                  )}
+                  {gig.commission.bonus && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Bonus Type:</span>
+                      <span className="font-medium text-gray-900">{gig.commission.bonus}</span>
+                    </div>
+                  )}
+                  {gig.commission.bonusAmount && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Bonus Amount:</span>
+                      <span className="font-medium text-gray-900">{gig.commission.bonusAmount} {gig.commission.currency || 'EUR'}</span>
+                    </div>
+                  )}
+                  {gig.commission.transactionCommission?.amount && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Transaction Commission:</span>
+                      <span className="font-medium text-gray-900">{gig.commission.transactionCommission.amount} {gig.commission.currency || 'EUR'}</span>
+                    </div>
+                  )}
+                  {gig.commission.structure && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Structure:</span>
+                      <span className="font-medium text-gray-900">{gig.commission.structure}</span>
+                    </div>
+                  )}
+                </div>
               </div>
-              <p className="text-sm text-gray-900 leading-relaxed">{formatCommission(gig.commission)}</p>
             </div>
           </div>
         )}
 
-        {/* Availability */}
-        {gig.availability && (
-          <div className="rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 shadow-lg p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <Sun className="h-6 w-6 text-orange-600" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">Availability</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {gig.availability.schedule && gig.availability.schedule.length > 0 && (
-                <div className="bg-white rounded-lg p-4 border border-orange-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="h-4 w-4 text-orange-500" />
-                    <span className="text-sm font-semibold text-gray-700">Schedule</span>
-                  </div>
-                  <p className="text-sm text-gray-900 font-medium">{formatSchedule(gig.availability.schedule)}</p>
-                </div>
-              )}
-              {gig.availability.timeZone && (
-                <div className="bg-white rounded-lg p-4 border border-orange-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Globe className="h-4 w-4 text-amber-500" />
-                    <span className="text-sm font-semibold text-gray-700">Time Zone</span>
-                  </div>
-                  <p className="text-sm text-gray-900 font-medium">{gig.availability.timeZone}</p>
-                </div>
-              )}
-              {gig.availability.flexibility && gig.availability.flexibility.length > 0 && (
-                <div className="bg-white rounded-lg p-4 border border-orange-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Clock className="h-4 w-4 text-orange-500" />
-                    <span className="text-sm font-semibold text-gray-700">Flexibility</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {gig.availability.flexibility.map((item, index) => (
-                      <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 border border-orange-200">
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Team Information */}
+        {/* Team */}
         {gig.team && (
-          <div className="rounded-xl bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100 shadow-lg p-6">
+          <div className="rounded-xl bg-gradient-to-br from-pink-50 to-rose-50 border border-pink-100 shadow-lg p-6">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-indigo-100 rounded-lg">
-                <Users className="h-6 w-6 text-indigo-600" />
+              <div className="p-2 bg-pink-100 rounded-lg">
+                <Users className="h-6 w-6 text-pink-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Team Information</h2>
+              <h2 className="text-xl font-bold text-gray-900">Team Structure</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {gig.team.size && (
-                <div className="bg-white rounded-lg p-4 border border-indigo-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Users className="h-4 w-4 text-indigo-500" />
-                    <span className="text-sm font-semibold text-gray-700">Team Size</span>
+                <div className="bg-white rounded-lg p-4 border border-pink-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Users className="h-4 w-4 text-pink-500" />
+                    <label className="text-sm font-semibold text-gray-700">
+                      Team Size
+                    </label>
                   </div>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-800 border border-indigo-200">
-                    {gig.team.size} members
-                  </span>
+                  <p className="text-gray-900 font-medium">{gig.team.size} members</p>
                 </div>
               )}
               {gig.team.territories && gig.team.territories.length > 0 && (
-                <div className="bg-white rounded-lg p-4 border border-indigo-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="h-4 w-4 text-blue-500" />
-                    <span className="text-sm font-semibold text-gray-700">Territories</span>
+                <div className="bg-white rounded-lg p-4 border border-pink-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <MapPin className="h-4 w-4 text-rose-500" />
+                    <label className="text-sm font-semibold text-gray-700">
+                      Territories
+                    </label>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {gig.team.territories.map((territory, index) => (
-                      <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border border-blue-200">
-                        {territory}
-                      </span>
-                    ))}
-                  </div>
+                  <p className="text-gray-900 font-medium">{gig.team.territories.join(', ')}</p>
                 </div>
               )}
             </div>
           </div>
         )}
+
+        {/* Schedule */}
+        {gig.availability && (
+          <div className="rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 border border-cyan-100 shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-cyan-100 rounded-lg">
+                <ClockIcon className="h-6 w-6 text-cyan-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Schedule & Availability</h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {gig.availability.timeZone && (
+                <div className="bg-white rounded-lg p-4 border border-cyan-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Globe className="h-4 w-4 text-cyan-500" />
+                    <label className="text-sm font-semibold text-gray-700">
+                      Time Zone
+                    </label>
+                  </div>
+                  <p className="text-gray-900 font-medium">{gig.availability.timeZone}</p>
+                </div>
+              )}
+              {gig.availability.flexibility && gig.availability.flexibility.length > 0 && (
+                <div className="bg-white rounded-lg p-4 border border-cyan-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Settings className="h-4 w-4 text-blue-500" />
+                    <label className="text-sm font-semibold text-gray-700">
+                      Flexibility
+                    </label>
+                  </div>
+                  <p className="text-gray-900 font-medium">{gig.availability.flexibility.join(', ')}</p>
+                </div>
+              )}
+            </div>
+
+            {gig.availability.schedule && gig.availability.schedule.length > 0 && (
+              <div className="bg-white rounded-lg p-4 border border-cyan-100">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Working Schedule</h3>
+                <div className="space-y-3">
+                  {gig.availability.schedule.map((item, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <ClockIcon className="h-4 w-4 text-cyan-500" />
+                        <span className="text-sm font-medium text-gray-900">{item.day}</span>
+                      </div>
+                      <span className="text-sm text-gray-600">
+                        {item.hours.start} - {item.hours.end}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Timeline */}
+        <div className="rounded-xl bg-gradient-to-br from-gray-50 to-slate-50 border border-gray-100 shadow-lg p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-gray-100 rounded-lg">
+              <ClockIcon className="h-6 w-6 text-gray-600" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900">Timeline</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white rounded-lg p-4 border border-gray-100">
+              <div className="flex items-center gap-2 mb-3">
+                <ClockIcon className="h-4 w-4 text-gray-500" />
+                <label className="text-sm font-semibold text-gray-700">
+                  Created
+                </label>
+              </div>
+              <p className="text-gray-900 font-medium">
+                {gig.createdAt ? new Date(gig.createdAt).toLocaleDateString() : 'Unknown'}
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-gray-100">
+              <div className="flex items-center gap-2 mb-3">
+                <ClockIcon className="h-4 w-4 text-gray-500" />
+                <label className="text-sm font-semibold text-gray-700">
+                  Last Updated
+                </label>
+              </div>
+              <p className="text-gray-900 font-medium">
+                {gig.updatedAt ? new Date(gig.updatedAt).toLocaleDateString() : 'Unknown'}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
