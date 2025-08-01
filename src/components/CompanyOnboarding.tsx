@@ -1215,6 +1215,9 @@ const CompanyOnboarding = () => {
     onBack = () => {
       console.log('🛑 Back clicked - returning to onboarding');
       
+      // Remove parsed leads from localStorage to prevent auto-restore
+      localStorage.removeItem('parsedLeads');
+      
       // Close the component immediately
       setShowUploadContacts(false);
     };
