@@ -1468,18 +1468,6 @@ Rules:
             } catch (error: any) {
               console.log('⚠️ Could not update current phase to 3:', error.response?.data || error.message);
             }
-            
-            // Try alternative format
-            try {
-              const phaseResponse = await axios.put(
-                `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/current-phase`,
-                { phase: 3 }
-              );
-              console.log('✅ Current phase updated to 3 (alternative format):', phaseResponse.data);
-            } catch (altError: any) {
-              console.log('⚠️ Could not update current phase with alternative format:', altError.response?.data || altError.message);
-            }
-            
             // Notifier le parent component que l'étape est complétée
             if (window.parent) {
               window.parent.postMessage({
