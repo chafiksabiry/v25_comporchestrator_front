@@ -1037,6 +1037,8 @@ const CompanyOnboarding = () => {
         (window as any).cancelUploadProcessing();
       }
       
+      // Remove parsed leads from localStorage to prevent auto-restore
+      localStorage.removeItem('parsedLeads');
       setShowUploadContacts(false);
       return;
     }
@@ -1232,6 +1234,8 @@ const CompanyOnboarding = () => {
         (window as any).cancelUploadProcessing();
       }
       
+      // Remove parsed leads from localStorage to prevent auto-restore
+      localStorage.removeItem('parsedLeads');
       setShowUploadContacts(false);
     };
   } else if (ActiveStepComponent) {
