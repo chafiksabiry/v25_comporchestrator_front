@@ -535,9 +535,12 @@ const CompanyOnboarding = () => {
   useEffect(() => {
     if (!companyId) return;
 
-    // Initial check
-    checkCompanyLeads();
-    checkActiveGigs();
+    // Skip initial checks if user just clicked back
+    if (!userClickedBackRef.current) {
+      // Initial check
+      checkCompanyLeads();
+      checkActiveGigs();
+    }
 
     // Set up real-time checking every 30 seconds
     const intervalId = setInterval(() => {
@@ -550,6 +553,12 @@ const CompanyOnboarding = () => {
       // Skip checks if we have parsed leads to prevent re-renders
       if (localStorage.getItem('parsedLeads')) {
         console.log('⏸️ Skipping real-time checks - parsed leads exist');
+        return;
+      }
+      
+      // Skip checks if user just clicked back
+      if (userClickedBackRef.current) {
+        console.log('⏸️ Skipping real-time checks - user just clicked back');
         return;
       }
       
@@ -1232,10 +1241,10 @@ const CompanyOnboarding = () => {
             localStorage.removeItem('parsedLeads');
           }} />;
     onBack = () => {
-      console.log('🛑 Back clicked - cancelling processing and returning to onboarding');
-      
-      // Set flag to prevent auto-completion
+      // Set flag immediately to prevent any auto-completion
       userClickedBackRef.current = true;
+      
+      console.log('🛑 Back clicked - cancelling processing and returning to onboarding');
       
       // Call the cancel processing function if it exists
       if ((window as any).cancelUploadProcessing) {
@@ -1244,6 +1253,8 @@ const CompanyOnboarding = () => {
       
       // Remove parsed leads from localStorage to prevent auto-restore
       localStorage.removeItem('parsedLeads');
+      
+      // Close the component immediately without waiting for any checks
       setShowUploadContacts(false);
       
       // Reset the flag after a delay to allow normal operation
