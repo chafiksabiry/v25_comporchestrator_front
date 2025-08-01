@@ -1028,14 +1028,6 @@ const CompanyOnboarding = () => {
   };
 
   const handleBackToOnboarding = () => {
-    // Prevent multiple clicks while processing
-    if (userClickedBackRef.current) {
-      console.log('⚠️ Back button already clicked, ignoring duplicate click');
-      return;
-    }
-    
-    userClickedBackRef.current = true;
-    
     // If UploadContacts is showing, cancel processing and return immediately
     if (showUploadContacts) {
       console.log('🛑 Back to onboarding clicked while UploadContacts is active - cancelling processing');
@@ -1046,14 +1038,16 @@ const CompanyOnboarding = () => {
       }
       
       setShowUploadContacts(false);
-      
-      // Reset the flag after a short delay
-      setTimeout(() => {
-        userClickedBackRef.current = false;
-      }, 500);
       return;
     }
     
+    // Prevent multiple clicks while processing for other cases
+    if (userClickedBackRef.current) {
+      console.log('⚠️ Back button already clicked, ignoring duplicate click');
+      return;
+    }
+    
+    userClickedBackRef.current = true;
     setActiveStep(null);
     
     // Reset the flag after a short delay
@@ -1231,20 +1225,14 @@ const CompanyOnboarding = () => {
             setShowUploadContacts(false);
           }} />;
     onBack = () => {
-      // Prevent multiple clicks while processing
-      if (userClickedBackRef.current) {
-        console.log('⚠️ Back button already clicked, ignoring duplicate click');
-        return;
+      console.log('🛑 Back clicked - cancelling processing and returning to onboarding');
+      
+      // Call the cancel processing function if it exists
+      if ((window as any).cancelUploadProcessing) {
+        (window as any).cancelUploadProcessing();
       }
       
-      userClickedBackRef.current = true;
-      console.log('🛑 Back clicked - cancelling processing and returning to onboarding');
       setShowUploadContacts(false);
-      
-      // Reset the flag after a short delay
-      setTimeout(() => {
-        userClickedBackRef.current = false;
-      }, 500);
     };
   } else if (ActiveStepComponent) {
     activeComponent = <ActiveStepComponent />;
