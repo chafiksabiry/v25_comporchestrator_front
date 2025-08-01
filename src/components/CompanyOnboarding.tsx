@@ -308,8 +308,8 @@ const CompanyOnboarding = () => {
       const hasLeads = response.data.hasLeads;
       setHasLeads(hasLeads);
       
-      // Auto-complete step 6 if company has leads
-      if (hasLeads) {
+      // Auto-complete step 6 if company has leads, but not if user just clicked back
+      if (hasLeads && !userClickedBackRef.current) {
         console.log('✅ Company has leads - auto-completing step 6');
         try {
           await axios.put(
@@ -327,6 +327,8 @@ const CompanyOnboarding = () => {
         } catch (error) {
           console.error('Error auto-completing step 6:', error);
         }
+      } else if (hasLeads && userClickedBackRef.current) {
+        console.log('⏸️ Skipping step 6 auto-completion - user just clicked back');
       } else {
         console.log('⚠️ Company has no leads - step 6 needs manual completion');
       }
@@ -1230,6 +1232,9 @@ const CompanyOnboarding = () => {
     onBack = () => {
       console.log('🛑 Back clicked - cancelling processing and returning to onboarding');
       
+      // Set flag to prevent auto-completion
+      userClickedBackRef.current = true;
+      
       // Call the cancel processing function if it exists
       if ((window as any).cancelUploadProcessing) {
         (window as any).cancelUploadProcessing();
@@ -1238,6 +1243,11 @@ const CompanyOnboarding = () => {
       // Remove parsed leads from localStorage to prevent auto-restore
       localStorage.removeItem('parsedLeads');
       setShowUploadContacts(false);
+      
+      // Reset the flag after a delay to allow normal operation
+      setTimeout(() => {
+        userClickedBackRef.current = false;
+      }, 2000);
     };
   } else if (ActiveStepComponent) {
     activeComponent = <ActiveStepComponent />;
