@@ -2741,7 +2741,7 @@ const ApprovalPublishing = () => {
       </div>
 
       {/* Publishing Settings */}
-      <div className="rounded-lg bg-white p-6 shadow">
+      {/* <div className="rounded-lg bg-white p-6 shadow">
         <h2 className="mb-4 text-lg font-semibold text-gray-900">Publishing Settings</h2>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div>
@@ -2851,7 +2851,7 @@ const ApprovalPublishing = () => {
             Save Settings
           </button>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };
