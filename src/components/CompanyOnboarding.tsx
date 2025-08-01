@@ -1196,7 +1196,7 @@ const CompanyOnboarding = () => {
     };
   } else if (showUploadContacts) {
     activeComponent = <UploadContacts />;
-    onBack = async () => {
+    onBack = () => {
       // Prevent multiple clicks while processing
       if (userClickedBackRef.current) {
         console.log('⚠️ Back button already clicked, ignoring duplicate click');
@@ -1205,19 +1205,12 @@ const CompanyOnboarding = () => {
       
       userClickedBackRef.current = true;
       setShowUploadContacts(false);
-      console.log('👤 User clicked back - updating onboarding state');
+      console.log('👤 User clicked back - returning to onboarding');
       
-      try {
-        // Mettre à jour l'état d'onboarding sans recharger tout le projet
-        await updateOnboardingState();
-      } catch (error) {
-        console.error('❌ Error updating onboarding state:', error);
-      } finally {
-        // Reset the flag after a short delay to allow for UI updates
-        setTimeout(() => {
-          userClickedBackRef.current = false;
-        }, 1000);
-      }
+      // Reset the flag after a short delay
+      setTimeout(() => {
+        userClickedBackRef.current = false;
+      }, 500);
     };
   } else if (ActiveStepComponent) {
     activeComponent = <ActiveStepComponent />;
