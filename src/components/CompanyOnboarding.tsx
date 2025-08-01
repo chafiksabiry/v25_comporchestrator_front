@@ -1035,6 +1035,25 @@ const CompanyOnboarding = () => {
     }
     
     userClickedBackRef.current = true;
+    
+    // If UploadContacts is showing, cancel processing and return immediately
+    if (showUploadContacts) {
+      console.log('🛑 Back to onboarding clicked while UploadContacts is active - cancelling processing');
+      
+      // Call the cancel processing function if it exists
+      if ((window as any).cancelUploadProcessing) {
+        (window as any).cancelUploadProcessing();
+      }
+      
+      setShowUploadContacts(false);
+      
+      // Reset the flag after a short delay
+      setTimeout(() => {
+        userClickedBackRef.current = false;
+      }, 500);
+      return;
+    }
+    
     setActiveStep(null);
     
     // Reset the flag after a short delay
@@ -1206,8 +1225,11 @@ const CompanyOnboarding = () => {
         userClickedBackRef.current = false;
       }, 500);
     };
-  } else if (showUploadContacts) {
-    activeComponent = <UploadContacts />;
+          } else if (showUploadContacts) {
+          activeComponent = <UploadContacts onCancelProcessing={() => {
+            console.log('🛑 Processing cancelled by user, returning to onboarding');
+            setShowUploadContacts(false);
+          }} />;
     onBack = () => {
       // Prevent multiple clicks while processing
       if (userClickedBackRef.current) {
@@ -1216,8 +1238,8 @@ const CompanyOnboarding = () => {
       }
       
       userClickedBackRef.current = true;
+      console.log('🛑 Back clicked - cancelling processing and returning to onboarding');
       setShowUploadContacts(false);
-      console.log('👤 User clicked back - returning to onboarding');
       
       // Reset the flag after a short delay
       setTimeout(() => {
@@ -1245,7 +1267,7 @@ const CompanyOnboarding = () => {
             <ChevronRight className={`h-5 w-5 rotate-180 ${
               userClickedBackRef.current ? 'animate-pulse' : ''
             }`} />
-            <span>Back to Onboarding</span>
+            <span>{userClickedBackRef.current ? 'Processing...' : 'Back to Onboarding'}</span>
           </button>
         </div>
         {activeComponent}

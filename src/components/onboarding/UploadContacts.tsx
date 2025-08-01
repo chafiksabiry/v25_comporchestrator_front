@@ -101,7 +101,39 @@ interface ApiResponse {
   data: Lead[];
 }
 
-const UploadContacts = React.memo(() => {
+interface UploadContactsProps {
+  onCancelProcessing?: () => void;
+}
+
+const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) => {
+  // Function to cancel processing
+  const cancelProcessing = () => {
+    console.log('🛑 Cancelling processing...');
+    setIsProcessing(false);
+    processingRef.current = false;
+    setUploadProgress(0);
+    setUploadError(null);
+    localStorage.removeItem('uploadProcessing');
+    sessionStorage.removeItem('uploadProcessing');
+    document.body.removeAttribute('data-processing');
+    
+    // Call the parent callback if provided
+    if (onCancelProcessing) {
+      onCancelProcessing();
+    }
+  };
+
+  // Expose cancelProcessing function to parent component
+  useEffect(() => {
+    if (onCancelProcessing) {
+      // Store the cancel function in a way that parent can access
+      (window as any).cancelUploadProcessing = cancelProcessing;
+    }
+    
+    return () => {
+      delete (window as any).cancelUploadProcessing;
+    };
+  }, [onCancelProcessing]);
   // Add a ref to track if the component has been initialized
   const componentInitializedRef = useRef(false);
   
@@ -2496,7 +2528,14 @@ Rules:
                 <div className="flex items-center justify-center space-x-3">
                   <FileSpreadsheet className="h-6 w-6 text-white" />
                   <span className="text-base font-semibold text-white group-hover:text-blue-100 transition-colors duration-200">
-                    Click to upload or drag and drop
+                    {isProcessing ? (
+                      <div className="flex items-center">
+                        <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                        Processing...
+                      </div>
+                    ) : (
+                      'Click to upload or drag and drop'
+                    )}
                   </span>
                 </div>
                 <input
