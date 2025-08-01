@@ -37,6 +37,14 @@ function App() {
   const isZohoAuth = window.location.pathname === '/zoho-auth';
 
   useEffect(() => {
+    // Vérifier si l'utilisateur est authentifié
+    const userId = Cookies.get('userId');
+    if (!userId && !isZohoCallback && !isZohoAuth) {
+      console.log('User ID not found, redirecting to /auth');
+      window.location.href = '/auth';
+      return;
+    }
+
     // Initialize Zoho configuration
     const initializeZoho = async () => {
       const zohoService = ZohoService.getInstance();
