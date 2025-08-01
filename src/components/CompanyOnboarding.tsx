@@ -1213,24 +1213,10 @@ const CompanyOnboarding = () => {
             localStorage.removeItem('parsedLeads');
           }} />;
     onBack = () => {
-      // Set flag immediately to prevent any auto-completion
-      userClickedBackRef.current = true;
-      
-      // console.log('🛑 Back clicked - cancelling processing and returning to onboarding');
-      
-      // Remove parsed leads from localStorage to prevent auto-restore
-      // localStorage.removeItem('parsedLeads');
+      console.log('🛑 Back clicked - returning to onboarding');
       
       // Close the component immediately
       setShowUploadContacts(false);
-      
-      // Note: cancelUploadProcessing is handled by the UploadContacts component itself
-      // No need to call it here as the component will be unmounted
-      
-      // Reset the flag after a short delay to allow normal operation
-      setTimeout(() => {
-        userClickedBackRef.current = false;
-      }, 500);
     };
   } else if (ActiveStepComponent) {
     activeComponent = <ActiveStepComponent />;
