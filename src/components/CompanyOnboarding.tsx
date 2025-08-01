@@ -647,9 +647,16 @@ const CompanyOnboarding = () => {
       }
       
       console.log('🔄 Final valid phase determined:', validPhase, 'from API currentPhase:', progress.currentPhase);
+      console.log('🔄 Setting completed steps:', progress.completedSteps);
       setCurrentPhase(validPhase);
       setDisplayedPhase(validPhase);
       setCompletedSteps(progress.completedSteps);
+      
+      // Force a re-render to ensure the UI updates
+      setTimeout(() => {
+        console.log('🔄 Forcing re-render after state update');
+        setCurrentPhase(prev => prev); // This will trigger a re-render
+      }, 50);
     } catch (error) {
       console.error('Error loading company progress:', error);
       // En cas d'erreur, utiliser les valeurs par défaut
@@ -1159,7 +1166,7 @@ const CompanyOnboarding = () => {
       }, 500);
     };
   } else if (showTelephonySetup) {
-    activeComponent = <TelephonySetup onBackToOnboarding={() => {
+    activeComponent = <TelephonySetup onBackToOnboarding={async () => {
       // Prevent multiple clicks while processing
       if (userClickedBackRef.current) {
         console.log('⚠️ Back button already clicked, ignoring duplicate click');
@@ -1171,7 +1178,12 @@ const CompanyOnboarding = () => {
       
       // Force reload onboarding state after telephony setup completion
       if (companyId) {
-        loadCompanyProgress();
+        try {
+          await loadCompanyProgress();
+          console.log('✅ Onboarding state reloaded successfully');
+        } catch (error) {
+          console.error('❌ Error reloading onboarding state:', error);
+        }
       }
       
       // Reset the flag after a short delay

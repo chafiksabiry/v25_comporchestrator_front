@@ -163,10 +163,12 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
         throw new Error('Company ID not found. Please refresh the page and try again.');
       }
 
-      await axios.put(
+      const response = await axios.put(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
         { status: 'completed' }
       );
+      
+      console.log('✅ Telephony setup step 5 marked as completed:', response.data);
       
       // Update local state to reflect the completed step
       setCompletedSteps(prev => [...prev, 5]);
@@ -178,10 +180,16 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       };
       localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
       
+      // Wait a moment to ensure the API call is fully processed
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       // Return to CompanyOnboarding without page refresh
       if (onBackToOnboarding) {
         // Use the callback if provided
-        onBackToOnboarding();
+        // Add a small delay to ensure the API call is processed
+        setTimeout(() => {
+          onBackToOnboarding();
+        }, 100);
       } else {
         // Fallback: use history API
         if (window.history && window.history.pushState) {
