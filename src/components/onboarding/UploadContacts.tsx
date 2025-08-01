@@ -2496,14 +2496,7 @@ Rules:
                 <div className="flex items-center justify-center space-x-3">
                   <FileSpreadsheet className="h-6 w-6 text-white" />
                   <span className="text-base font-semibold text-white group-hover:text-blue-100 transition-colors duration-200">
-                    {isProcessing ? (
-                      <div className="flex items-center">
-                        <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-                        Processing...
-                      </div>
-                    ) : (
-                      'Click to upload or drag and drop'
-                    )}
+                    Click to upload or drag and drop
                   </span>
                 </div>
                 <input

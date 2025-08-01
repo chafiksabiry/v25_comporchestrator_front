@@ -1245,7 +1245,7 @@ const CompanyOnboarding = () => {
             <ChevronRight className={`h-5 w-5 rotate-180 ${
               userClickedBackRef.current ? 'animate-pulse' : ''
             }`} />
-            <span>{userClickedBackRef.current ? 'Processing...' : 'Back to Onboarding'}</span>
+            <span>Back to Onboarding</span>
           </button>
         </div>
         {activeComponent}
