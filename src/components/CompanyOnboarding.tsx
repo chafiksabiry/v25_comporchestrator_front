@@ -1223,8 +1223,9 @@ const CompanyOnboarding = () => {
     };
           } else if (showUploadContacts) {
           activeComponent = <UploadContacts onCancelProcessing={() => {
-            console.log('🛑 Processing cancelled by user, returning to onboarding');
-            setShowUploadContacts(false);
+            console.log('🛑 Processing cancelled by user');
+            // Only clean up parsed leads, don't close the component here
+            localStorage.removeItem('parsedLeads');
           }} />;
     onBack = () => {
       console.log('🛑 Back clicked - cancelling processing and returning to onboarding');
