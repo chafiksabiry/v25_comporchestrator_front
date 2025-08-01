@@ -2405,29 +2405,9 @@ const ApprovalPublishing = () => {
   // Main View
   return (
     <div className="space-y-6">
-      {/* Back to Onboarding Button */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => {
-              console.log('⬅️ Back to onboarding clicked');
-              // Navigate back to onboarding interface
-              if (window.parent && window.parent !== window) {
-                // If we're in an iframe, communicate with parent
-                window.parent.postMessage({ type: 'SET_ACTIVE_TAB', tab: 'company-onboarding' }, '*');
-              } else {
-                // If we're in the main window, use localStorage to communicate with App component
-                localStorage.setItem('activeTab', 'company-onboarding');
-                // Trigger a custom event to notify the App component
-                window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } }));
-              }
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft size={16} />
-            Back to Onboarding
-          </button>
-          <div className="h-6 w-px bg-gray-300"></div>
           <h1 className="text-2xl font-bold text-gray-900">Approval & Publishing</h1>
         </div>
         <div className="flex space-x-2">
@@ -2741,7 +2721,7 @@ const ApprovalPublishing = () => {
       </div>
 
       {/* Publishing Settings */}
-      <div className="rounded-lg bg-white p-6 shadow">
+      {/* <div className="rounded-lg bg-white p-6 shadow">
         <h2 className="mb-4 text-lg font-semibold text-gray-900">Publishing Settings</h2>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div>
@@ -2851,7 +2831,7 @@ const ApprovalPublishing = () => {
             Save Settings
           </button>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

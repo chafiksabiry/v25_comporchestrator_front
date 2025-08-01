@@ -647,9 +647,16 @@ const CompanyOnboarding = () => {
       }
       
       console.log('🔄 Final valid phase determined:', validPhase, 'from API currentPhase:', progress.currentPhase);
+      console.log('🔄 Setting completed steps:', progress.completedSteps);
       setCurrentPhase(validPhase);
       setDisplayedPhase(validPhase);
       setCompletedSteps(progress.completedSteps);
+      
+      // Force a re-render to ensure the UI updates
+      setTimeout(() => {
+        console.log('🔄 Forcing re-render after state update');
+        setCurrentPhase(prev => prev); // This will trigger a re-render
+      }, 50);
     } catch (error) {
       console.error('Error loading company progress:', error);
       // En cas d'erreur, utiliser les valeurs par défaut
@@ -1023,7 +1030,19 @@ const CompanyOnboarding = () => {
   };
 
   const handleBackToOnboarding = () => {
+    // Prevent multiple clicks while processing
+    if (userClickedBackRef.current) {
+      console.log('⚠️ Back button already clicked, ignoring duplicate click');
+      return;
+    }
+    
+    userClickedBackRef.current = true;
     setActiveStep(null);
+    
+    // Reset the flag after a short delay
+    setTimeout(() => {
+      userClickedBackRef.current = false;
+    }, 500);
   };
 
   const handleStepClick = (stepId: number) => {
@@ -1148,25 +1167,79 @@ const CompanyOnboarding = () => {
 
   if (showGigDetails) {
     activeComponent = <GigDetails />;
-    onBack = () => setShowGigDetails(false);
+    onBack = () => {
+      // Prevent multiple clicks while processing
+      if (userClickedBackRef.current) {
+        console.log('⚠️ Back button already clicked, ignoring duplicate click');
+        return;
+      }
+      
+      userClickedBackRef.current = true;
+      setShowGigDetails(false);
+      
+      // Reset the flag after a short delay
+      setTimeout(() => {
+        userClickedBackRef.current = false;
+      }, 500);
+    };
   } else if (showTelephonySetup) {
-    activeComponent = <TelephonySetup onBackToOnboarding={() => {
+    activeComponent = <TelephonySetup onBackToOnboarding={async () => {
+      // Prevent multiple clicks while processing
+      if (userClickedBackRef.current) {
+        console.log('⚠️ Back button already clicked, ignoring duplicate click');
+        return;
+      }
+      
+      userClickedBackRef.current = true;
       setShowTelephonySetup(false);
+      
       // Force reload onboarding state after telephony setup completion
       if (companyId) {
-        loadCompanyProgress();
+        try {
+          await loadCompanyProgress();
+          console.log('✅ Onboarding state reloaded successfully');
+        } catch (error) {
+          console.error('❌ Error reloading onboarding state:', error);
+        }
       }
+      
+      // Reset the flag after a short delay
+      setTimeout(() => {
+        userClickedBackRef.current = false;
+      }, 500);
     }} />;
-    onBack = () => setShowTelephonySetup(false);
+    onBack = () => {
+      // Prevent multiple clicks while processing
+      if (userClickedBackRef.current) {
+        console.log('⚠️ Back button already clicked, ignoring duplicate click');
+        return;
+      }
+      
+      userClickedBackRef.current = true;
+      setShowTelephonySetup(false);
+      
+      // Reset the flag after a short delay
+      setTimeout(() => {
+        userClickedBackRef.current = false;
+      }, 500);
+    };
   } else if (showUploadContacts) {
     activeComponent = <UploadContacts />;
-    onBack = async () => {
+    onBack = () => {
+      // Prevent multiple clicks while processing
+      if (userClickedBackRef.current) {
+        console.log('⚠️ Back button already clicked, ignoring duplicate click');
+        return;
+      }
+      
       userClickedBackRef.current = true;
       setShowUploadContacts(false);
-      console.log('👤 User clicked back - updating onboarding state');
+      console.log('👤 User clicked back - returning to onboarding');
       
-      // Mettre à jour l'état d'onboarding sans recharger tout le projet
-      await updateOnboardingState();
+      // Reset the flag after a short delay
+      setTimeout(() => {
+        userClickedBackRef.current = false;
+      }, 500);
     };
   } else if (ActiveStepComponent) {
     activeComponent = <ActiveStepComponent />;
@@ -1179,10 +1252,17 @@ const CompanyOnboarding = () => {
         <div className="flex items-center space-x-4">
           <button
             onClick={onBack}
-            className="flex items-center text-gray-600 hover:text-gray-900"
+            disabled={userClickedBackRef.current}
+            className={`flex items-center transition-colors ${
+              userClickedBackRef.current 
+                ? 'text-gray-400 cursor-not-allowed' 
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
           >
-            <ChevronRight className="h-5 w-5 rotate-180" />
-            <span>Back to Onboarding</span>
+            <ChevronRight className={`h-5 w-5 rotate-180 ${
+              userClickedBackRef.current ? 'animate-pulse' : ''
+            }`} />
+            <span>{userClickedBackRef.current ? 'Processing...' : 'Back to Onboarding'}</span>
           </button>
         </div>
         {activeComponent}
