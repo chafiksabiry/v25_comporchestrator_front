@@ -18,6 +18,7 @@ ENV VITE_NODE_ENV=preprod
 ENV VITE_API_BASE_URL=https://preprod-api-comp-orchestrator.harx.ai/api
 ENV VITE_COMPANY_API_URL=https://preprod-api-companysearchwizard.harx.ai/api
 ENV VITE_DASHBOARD_API=https://preprod-api-dashboard.harx.ai/api
+ENV VITE_REP_API=https://preprod-api-repcreationwizard.harx.ai/api
 
 ENV VITE_GOOGLE_API_KEY=AIzaSyCHEKiraViKIrgvloZI-ZBIJqtDMeBuQD0
 ENV VITE_KNOWLEDGE_BASE_URL=/knowledgebase/upload
