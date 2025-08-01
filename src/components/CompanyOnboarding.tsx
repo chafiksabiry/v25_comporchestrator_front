@@ -191,7 +191,7 @@ const CompanyOnboarding = () => {
       console.log('🔄 Company ID available, loading progress and checking gigs...');
       loadCompanyProgress();
       checkCompanyGigs();
-      checkCompanyLeads();
+      // checkCompanyLeads();
       
       // Vérifier si l'utilisateur vient de se connecter à Zoho
       checkZohoConnection();
@@ -539,7 +539,7 @@ const CompanyOnboarding = () => {
 
     // Only do initial checks if user hasn't clicked back
     // if (!userClickedBackRef.current) {
-      checkCompanyLeads();
+      // checkCompanyLeads();
       checkActiveGigs();
     // }
   }, [companyId]);
