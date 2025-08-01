@@ -165,44 +165,71 @@ const ApprovalPublishing = () => {
   const fetchActivities = async () => {
     try {
       const response = await axios.get<ActivitiesResponse>(`${import.meta.env.VITE_REP_API}/activities`);
-      console.log('📋 Activities fetched:', response.data.data);
-      setActivities(response.data.data);
+      if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        console.log('📋 Activities fetched:', response.data.data);
+        setActivities(response.data.data);
+      } else {
+        console.warn('⚠️ Invalid activities response format');
+        setActivities([]);
+      }
     } catch (err) {
       console.error('❌ Error fetching activities:', err);
+      setActivities([]);
     }
   };
 
   const fetchIndustries = async () => {
     try {
       const response = await axios.get<IndustriesResponse>(`${import.meta.env.VITE_REP_API}/industries`);
-      console.log('🏭 Industries fetched:', response.data.data);
-      setIndustries(response.data.data);
+      if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        console.log('🏭 Industries fetched:', response.data.data);
+        setIndustries(response.data.data);
+      } else {
+        console.warn('⚠️ Invalid industries response format');
+        setIndustries([]);
+      }
     } catch (err) {
       console.error('❌ Error fetching industries:', err);
+      setIndustries([]);
     }
   };
 
   const fetchLanguages = async () => {
     try {
       const response = await axios.get<LanguagesResponse>(`${import.meta.env.VITE_REP_API}/languages`);
-      console.log('🗣️ Languages fetched:', response.data.data);
-      setLanguages(response.data.data);
+      if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        console.log('🗣️ Languages fetched:', response.data.data);
+        setLanguages(response.data.data);
+      } else {
+        console.warn('⚠️ Invalid languages response format');
+        setLanguages([]);
+      }
     } catch (err) {
       console.error('❌ Error fetching languages:', err);
+      setLanguages([]);
     }
   };
 
   const getActivityName = (activityId: string): string => {
+    if (!activities || !Array.isArray(activities)) {
+      return activityId;
+    }
     const activity = activities.find(a => a._id === activityId);
     return activity ? activity.name : activityId;
   };
 
   const getIndustryName = (industryId: string): string => {
+    if (!industries || !Array.isArray(industries)) {
+      return industryId;
+    }
     const industry = industries.find(i => i._id === industryId);
     return industry ? industry.name : industryId;
   };
 
   const getLanguageName = (languageId: string): string => {
+    if (!languages || !Array.isArray(languages)) {
+      return languageId;
+    }
     const language = languages.find(l => l._id === languageId);
     return language ? language.name : languageId;
   };
@@ -660,27 +687,32 @@ const ApprovalPublishing = () => {
         try {
           const response = await fetch(`${import.meta.env.VITE_REP_API}/skills/professional`);
           if (response.ok) {
-            const responseData = await response.json();
-            console.log('✅ Fetched professional skills response:', responseData);
-            
-            if (responseData.success && responseData.data) {
-              const professionalSkills = responseData.data;
-              console.log('✅ Professional skills data:', professionalSkills);
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const responseData = await response.json();
+              console.log('✅ Fetched professional skills response:', responseData);
               
-              professionalIds.forEach(skillId => {
-                const skill = professionalSkills.find((s: any) => s._id === skillId);
-                if (skill) {
-                  skillsDataMap[skillId] = skill;
-                  console.log(`✅ Matched professional skill ${skillId}:`, skill.name);
-                } else {
-                  console.warn(`⚠️ Professional skill ${skillId} not found`);
-                }
-              });
+              if (responseData.success && responseData.data && Array.isArray(responseData.data)) {
+                const professionalSkills = responseData.data;
+                console.log('✅ Professional skills data:', professionalSkills);
+                
+                professionalIds.forEach(skillId => {
+                  const skill = professionalSkills.find((s: any) => s._id === skillId);
+                  if (skill) {
+                    skillsDataMap[skillId] = skill;
+                    console.log(`✅ Matched professional skill ${skillId}:`, skill.name);
+                  } else {
+                    console.warn(`⚠️ Professional skill ${skillId} not found`);
+                  }
+                });
+              } else {
+                console.warn('⚠️ Invalid response format for professional skills');
+              }
             } else {
-              console.warn('⚠️ Invalid response format for professional skills');
+              console.warn('⚠️ Response is not JSON for professional skills');
             }
           } else {
-            console.warn('⚠️ Failed to fetch professional skills');
+            console.warn('⚠️ Failed to fetch professional skills:', response.status, response.statusText);
           }
         } catch (error) {
           console.warn('⚠️ Error fetching professional skills:', error);
@@ -692,27 +724,32 @@ const ApprovalPublishing = () => {
         try {
           const response = await fetch(`${import.meta.env.VITE_REP_API}/skills/technical`);
           if (response.ok) {
-            const responseData = await response.json();
-            console.log('✅ Fetched technical skills response:', responseData);
-            
-            if (responseData.success && responseData.data) {
-              const technicalSkills = responseData.data;
-              console.log('✅ Technical skills data:', technicalSkills);
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const responseData = await response.json();
+              console.log('✅ Fetched technical skills response:', responseData);
               
-              technicalIds.forEach(skillId => {
-                const skill = technicalSkills.find((s: any) => s._id === skillId);
-                if (skill) {
-                  skillsDataMap[skillId] = skill;
-                  console.log(`✅ Matched technical skill ${skillId}:`, skill.name);
-                } else {
-                  console.warn(`⚠️ Technical skill ${skillId} not found`);
-                }
-              });
+              if (responseData.success && responseData.data && Array.isArray(responseData.data)) {
+                const technicalSkills = responseData.data;
+                console.log('✅ Technical skills data:', technicalSkills);
+                
+                technicalIds.forEach(skillId => {
+                  const skill = technicalSkills.find((s: any) => s._id === skillId);
+                  if (skill) {
+                    skillsDataMap[skillId] = skill;
+                    console.log(`✅ Matched technical skill ${skillId}:`, skill.name);
+                  } else {
+                    console.warn(`⚠️ Technical skill ${skillId} not found`);
+                  }
+                });
+              } else {
+                console.warn('⚠️ Invalid response format for technical skills');
+              }
             } else {
-              console.warn('⚠️ Invalid response format for technical skills');
+              console.warn('⚠️ Response is not JSON for technical skills');
             }
           } else {
-            console.warn('⚠️ Failed to fetch technical skills');
+            console.warn('⚠️ Failed to fetch technical skills:', response.status, response.statusText);
           }
         } catch (error) {
           console.warn('⚠️ Error fetching technical skills:', error);
@@ -724,27 +761,32 @@ const ApprovalPublishing = () => {
         try {
           const response = await fetch(`${import.meta.env.VITE_REP_API}/skills/soft`);
           if (response.ok) {
-            const responseData = await response.json();
-            console.log('✅ Fetched soft skills response:', responseData);
-            
-            if (responseData.success && responseData.data) {
-              const softSkills = responseData.data;
-              console.log('✅ Soft skills data:', softSkills);
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const responseData = await response.json();
+              console.log('✅ Fetched soft skills response:', responseData);
               
-              softIds.forEach(skillId => {
-                const skill = softSkills.find((s: any) => s._id === skillId);
-                if (skill) {
-                  skillsDataMap[skillId] = skill;
-                  console.log(`✅ Matched soft skill ${skillId}:`, skill.name);
-                } else {
-                  console.warn(`⚠️ Soft skill ${skillId} not found`);
-                }
-              });
+              if (responseData.success && responseData.data && Array.isArray(responseData.data)) {
+                const softSkills = responseData.data;
+                console.log('✅ Soft skills data:', softSkills);
+                
+                softIds.forEach(skillId => {
+                  const skill = softSkills.find((s: any) => s._id === skillId);
+                  if (skill) {
+                    skillsDataMap[skillId] = skill;
+                    console.log(`✅ Matched soft skill ${skillId}:`, skill.name);
+                  } else {
+                    console.warn(`⚠️ Soft skill ${skillId} not found`);
+                  }
+                });
+              } else {
+                console.warn('⚠️ Invalid response format for soft skills');
+              }
             } else {
-              console.warn('⚠️ Invalid response format for soft skills');
+              console.warn('⚠️ Response is not JSON for soft skills');
             }
           } else {
-            console.warn('⚠️ Failed to fetch soft skills');
+            console.warn('⚠️ Failed to fetch soft skills:', response.status, response.statusText);
           }
         } catch (error) {
           console.warn('⚠️ Error fetching soft skills:', error);
@@ -775,26 +817,31 @@ const ApprovalPublishing = () => {
       try {
         const response = await fetch(`${import.meta.env.VITE_REP_API}/timezones`);
         if (response.ok) {
-          const responseData = await response.json();
-          console.log('✅ Fetched timezones response:', responseData);
-          
-          if (responseData.success && responseData.data) {
-            const timezones = responseData.data;
-            console.log('✅ Timezones data:', timezones);
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const responseData = await response.json();
+            console.log('✅ Fetched timezones response:', responseData);
             
-            // Find the matching timezone
-            const timezone = timezones.find((tz: any) => tz._id === timezoneId);
-            if (timezone) {
-              setTimezoneData({ [timezoneId]: timezone });
-              console.log(`✅ Matched timezone ${timezoneId}:`, timezone.zoneName);
+            if (responseData.success && responseData.data && Array.isArray(responseData.data)) {
+              const timezones = responseData.data;
+              console.log('✅ Timezones data:', timezones);
+              
+              // Find the matching timezone
+              const timezone = timezones.find((tz: any) => tz._id === timezoneId);
+              if (timezone) {
+                setTimezoneData({ [timezoneId]: timezone });
+                console.log(`✅ Matched timezone ${timezoneId}:`, timezone.zoneName);
+              } else {
+                console.warn(`⚠️ Timezone ${timezoneId} not found`);
+              }
             } else {
-              console.warn(`⚠️ Timezone ${timezoneId} not found`);
+              console.warn('⚠️ Invalid response format for timezones');
             }
           } else {
-            console.warn('⚠️ Invalid response format for timezones');
+            console.warn('⚠️ Response is not JSON for timezones');
           }
         } else {
-          console.warn('⚠️ Failed to fetch timezones');
+          console.warn('⚠️ Failed to fetch timezones:', response.status, response.statusText);
         }
       } catch (error) {
         console.warn('⚠️ Error fetching timezones:', error);
@@ -823,22 +870,27 @@ const ApprovalPublishing = () => {
         const countryCode = 'FR'; // This could be dynamic based on destination zone mapping
         const response = await fetch(`${import.meta.env.VITE_REP_API}/timezones/country/${countryCode}`);
         if (response.ok) {
-          const responseData = await response.json();
-          console.log('✅ Fetched destination zone timezones response:', responseData);
-          
-          if (responseData.success && responseData.data && responseData.data.length > 0) {
-            // Use the first element as specified
-            const timezone = responseData.data[0];
-            setTimezoneData(prev => ({ 
-              ...prev, 
-              0: timezone // Store as index 0 for easy access
-            }));
-            console.log(`✅ Set destination zone timezone:`, timezone.countryName);
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const responseData = await response.json();
+            console.log('✅ Fetched destination zone timezones response:', responseData);
+            
+            if (responseData.success && responseData.data && Array.isArray(responseData.data) && responseData.data.length > 0) {
+              // Use the first element as specified
+              const timezone = responseData.data[0];
+              setTimezoneData(prev => ({ 
+                ...prev, 
+                0: timezone // Store as index 0 for easy access
+              }));
+              console.log(`✅ Set destination zone timezone:`, timezone.countryName);
+            } else {
+              console.warn('⚠️ Invalid response format for destination zone timezones');
+            }
           } else {
-            console.warn('⚠️ Invalid response format for destination zone timezones');
+            console.warn('⚠️ Response is not JSON for destination zone timezones');
           }
         } else {
-          console.warn('⚠️ Failed to fetch destination zone timezones');
+          console.warn('⚠️ Failed to fetch destination zone timezones:', response.status, response.statusText);
         }
       } catch (error) {
         console.warn('⚠️ Error fetching destination zone timezones:', error);
@@ -1411,11 +1463,11 @@ const ApprovalPublishing = () => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {currentGigData.skills?.professional?.map((skill: any, index: number) => {
-                    const skillId = skill.skill?.$oid || skill.skill?._id || skill.skill || skill._id;
-                    const skillName = skillsData[skillId]?.name || `Skill ${skillId || 'Unknown'}`;
+                    const skillId = skill?.skill?.$oid || skill?.skill?._id || skill?.skill || skill?._id;
+                    const skillName = skillId && skillsData[skillId]?.name ? skillsData[skillId].name : `Skill ${skillId || 'Unknown'}`;
                     return (
                       <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-100 to-violet-100 text-purple-800 border border-purple-200">
-                        {skillName} (Level {skill.level || 'N/A'})
+                        {skillName} (Level {skill?.level || 'N/A'})
                       </span>
                     );
                   }) || <span className="text-sm text-gray-500 italic">No professional skills specified</span>}
@@ -1428,11 +1480,11 @@ const ApprovalPublishing = () => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {currentGigData.skills?.technical?.map((skill: any, index: number) => {
-                    const skillId = skill.skill?.$oid || skill.skill?._id || skill.skill || skill._id;
-                    const skillName = skillsData[skillId]?.name || `Skill ${skillId || 'Unknown'}`;
+                    const skillId = skill?.skill?.$oid || skill?.skill?._id || skill?.skill || skill?._id;
+                    const skillName = skillId && skillsData[skillId]?.name ? skillsData[skillId].name : `Skill ${skillId || 'Unknown'}`;
                     return (
                       <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 border border-orange-200">
-                        {skillName} (Level {skill.level || 'N/A'})
+                        {skillName} (Level {skill?.level || 'N/A'})
                       </span>
                     );
                   }) || <span className="text-sm text-gray-500 italic">No technical skills specified</span>}
@@ -1445,11 +1497,11 @@ const ApprovalPublishing = () => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {currentGigData.skills?.soft?.map((skill: any, index: number) => {
-                    const skillId = skill.skill?.$oid || skill.skill?._id || skill.skill || skill._id;
-                    const skillName = skillsData[skillId]?.name || `Skill ${skillId || 'Unknown'}`;
+                    const skillId = skill?.skill?.$oid || skill?.skill?._id || skill?.skill || skill?._id;
+                    const skillName = skillId && skillsData[skillId]?.name ? skillsData[skillId].name : `Skill ${skillId || 'Unknown'}`;
                     return (
                       <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-pink-100 to-rose-100 text-pink-800 border border-pink-200">
-                        {skillName} (Level {skill.level || 'N/A'})
+                        {skillName} (Level {skill?.level || 'N/A'})
                       </span>
                     );
                   }) || <span className="text-sm text-gray-500 italic">No soft skills specified</span>}
@@ -1463,7 +1515,7 @@ const ApprovalPublishing = () => {
                 <div className="flex flex-wrap gap-2">
                   {currentGigData.skills?.languages?.map((lang: any, index: number) => (
                     <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-800 border border-indigo-200">
-                      {getLanguageName(lang.language)} ({lang.proficiency})
+                      {getLanguageName(lang?.language)} ({lang?.proficiency || 'N/A'})
                     </span>
                   )) || <span className="text-sm text-gray-500 italic">No languages specified</span>}
                 </div>
@@ -1502,8 +1554,8 @@ const ApprovalPublishing = () => {
                 <div className="mt-2 space-y-2">
                   {currentGigData.availability?.schedule?.map((day: any, index: number) => (
                     <div key={index} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
-                      <span className="text-sm font-medium text-gray-900">{day.day}</span>
-                      <span className="text-sm text-gray-600">{day.hours.start} - {day.hours.end}</span>
+                      <span className="text-sm font-medium text-gray-900">{day?.day || 'Unknown'}</span>
+                      <span className="text-sm text-gray-600">{day?.hours?.start || 'N/A'} - {day?.hours?.end || 'N/A'}</span>
                     </div>
                   )) || <span className="text-sm text-gray-500">No schedule specified</span>}
                 </div>
@@ -1554,7 +1606,7 @@ const ApprovalPublishing = () => {
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-500">Commission Amount:</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.transactionCommission?.amount ? `${currentGigData.commission.currency} ${currentGigData.commission.transactionCommission.amount}` : 'Not specified'}</p>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.transactionCommission?.amount ? `${currentGigData.commission?.currency || ''} ${currentGigData.commission.transactionCommission.amount}` : 'Not specified'}</p>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-500">Minimum Volume:</span>
@@ -1589,8 +1641,8 @@ const ApprovalPublishing = () => {
                 <div className="mt-2 space-y-2">
                   {currentGigData.team?.structure?.map((role: any, index: number) => (
                     <div key={index} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
-                      <span className="text-sm font-medium text-gray-900">{role.roleId} ({role.count})</span>
-                      <span className="text-sm text-gray-600">{role.seniority?.level} - {role.seniority?.yearsExperience} years</span>
+                      <span className="text-sm font-medium text-gray-900">{role?.roleId || 'Unknown'} ({role?.count || 0})</span>
+                      <span className="text-sm text-gray-600">{role?.seniority?.level || 'N/A'} - {role?.seniority?.yearsExperience || 'N/A'} years</span>
                     </div>
                   )) || <span className="text-sm text-gray-500">No team structure specified</span>}
                 </div>

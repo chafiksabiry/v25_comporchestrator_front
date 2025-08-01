@@ -146,7 +146,7 @@ const CompanyOnboarding = () => {
   const [hasLeads, setHasLeads] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [showGigDetails, setShowGigDetails] = useState(false);
-  const userId = Cookies.get('userId') || '68308337cf52e87c3ad15982';
+  const userId = Cookies.get('userId');
 
   // Fetch company ID using user ID
   useEffect(() => {
@@ -160,7 +160,8 @@ const CompanyOnboarding = () => {
 
       if (!userId) {
         console.error('User ID not found in cookies');
-        // Ne pas rediriger immédiatement, laisser l'utilisateur voir l'interface
+        // Rediriger vers /auth si pas d'userId
+        window.location.href = '/auth';
         return;
       }
 
@@ -1113,6 +1114,20 @@ const CompanyOnboarding = () => {
       setActiveStep(stepId);
     }
   };
+
+  // Vérifier si l'utilisateur est authentifié
+  if (!userId) {
+    console.log('User ID not found, redirecting to /auth');
+    window.location.href = '/auth';
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Redirecting to authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Find the active step component
   const ActiveStepComponent = activeStep 
