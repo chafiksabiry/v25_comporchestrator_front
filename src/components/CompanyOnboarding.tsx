@@ -187,7 +187,7 @@ const CompanyOnboarding = () => {
 
   // Load company progress and check gigs when company ID is available
   useEffect(() => {
-    if (companyId) {
+    if (companyId && !userClickedBackRef.current) {
       console.log('🔄 Company ID available, loading progress and checking gigs...');
       loadCompanyProgress();
       checkCompanyGigs();
@@ -195,6 +195,8 @@ const CompanyOnboarding = () => {
       
       // Vérifier si l'utilisateur vient de se connecter à Zoho
       checkZohoConnection();
+    } else if (companyId && userClickedBackRef.current) {
+      console.log('⏸️ Skipping company progress loading - user just clicked back');
     }
   }, [companyId]);
 
@@ -1241,10 +1243,10 @@ const CompanyOnboarding = () => {
             localStorage.removeItem('parsedLeads');
           }} />;
     onBack = () => {
-      console.log('🛑 Back clicked - cancelling processing and returning to onboarding');
-      
       // Set flag immediately to prevent any auto-completion
       userClickedBackRef.current = true;
+      
+      console.log('🛑 Back clicked - cancelling processing and returning to onboarding');
       
       // Remove parsed leads from localStorage to prevent auto-restore
       localStorage.removeItem('parsedLeads');
@@ -1253,9 +1255,13 @@ const CompanyOnboarding = () => {
       setShowUploadContacts(false);
       
       // Call the cancel processing function if it exists (but don't wait for it)
-      if ((window as any).cancelUploadProcessing) {
+      if ((window as any).cancelUploadProcessing && typeof (window as any).cancelUploadProcessing === 'function') {
         setTimeout(() => {
-          (window as any).cancelUploadProcessing();
+          try {
+            (window as any).cancelUploadProcessing();
+          } catch (error) {
+            console.log('⚠️ Error calling cancelUploadProcessing:', error);
+          }
         }, 0);
       }
       
