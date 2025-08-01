@@ -1458,6 +1458,13 @@ Rules:
             );
             console.log('✅ Step 6 marked as completed after saving leads:', response.data);
             
+            // Update current phase to 3
+            const phaseResponse = await axios.put(
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/current-phase`,
+              { phase: 3 }
+            );
+            console.log('✅ Current phase updated to 3:', phaseResponse.data);
+            
             // Notifier le parent component que l'étape est complétée
             if (window.parent) {
               window.parent.postMessage({
