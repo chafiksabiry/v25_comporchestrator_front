@@ -1254,16 +1254,8 @@ const CompanyOnboarding = () => {
       // Close the component immediately
       setShowUploadContacts(false);
       
-      // Call the cancel processing function if it exists (but don't wait for it)
-      if ((window as any).cancelUploadProcessing && typeof (window as any).cancelUploadProcessing === 'function') {
-        setTimeout(() => {
-          try {
-            (window as any).cancelUploadProcessing();
-          } catch (error) {
-            console.log('⚠️ Error calling cancelUploadProcessing:', error);
-          }
-        }, 0);
-      }
+      // Note: cancelUploadProcessing is handled by the UploadContacts component itself
+      // No need to call it here as the component will be unmounted
       
       // Reset the flag after a delay to allow normal operation
       setTimeout(() => {
