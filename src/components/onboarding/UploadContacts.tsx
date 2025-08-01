@@ -1184,7 +1184,7 @@ Rules:
               return;
             }
 
-            // Show validation results
+            // Show validation results (suppressed error popups as requested by user)
             if (result.validation) {
               const { totalRows, validRows, invalidRows, errors } = result.validation;
               
@@ -1197,8 +1197,8 @@ Rules:
               
               setValidationResults(result.validation);
               
+              // Completely suppressed validation error popups as requested by user
               if (invalidRows > 0) {
-                // Suppressed validation error popup as requested by user
                 console.log(`${invalidRows} rows had validation errors. Check the console for details.`);
                 console.log('Validation errors:', errors);
               }
@@ -1471,11 +1471,6 @@ Rules:
           if (fileInput) {
             fileInput.value = '';
           }
-          
-          toast('Upload form has been reset. You can upload a new file.', {
-            icon: '🔄',
-            duration: 2000
-          });
         }, 1200);
       }
     } catch (error: any) {
@@ -1523,11 +1518,6 @@ Rules:
     if (fileInput) {
       fileInput.value = '';
     }
-    
-    toast('Upload form has been reset. You can upload a new file.', {
-      icon: '🔄',
-      duration: 2000
-    });
   };
 
   const handleZohoConnect = async () => {
