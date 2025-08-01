@@ -533,45 +533,15 @@ const CompanyOnboarding = () => {
     }
   };
 
-  // Real-time leads checking
+  // Initial leads and gigs checking (no real-time updates)
   useEffect(() => {
     if (!companyId) return;
 
-    // Skip initial checks if user just clicked back
-    if (!userClickedBackRef.current) {
-      // Initial check
+    // Only do initial checks if user hasn't clicked back
+    // if (!userClickedBackRef.current) {
       checkCompanyLeads();
       checkActiveGigs();
-    }
-
-    // Set up real-time checking every 30 seconds
-    const intervalId = setInterval(() => {
-      // Skip checks if we're processing a file
-      if (localStorage.getItem('uploadProcessing') === 'true' || sessionStorage.getItem('uploadProcessing') === 'true') {
-        console.log('⏸️ Skipping real-time checks - file processing in progress');
-        return;
-      }
-      
-      // Skip checks if we have parsed leads to prevent re-renders
-      // if (localStorage.getItem('parsedLeads')) {
-      //   console.log('⏸️ Skipping real-time checks - parsed leads exist');
-      //   return;
-      // }
-      
-      // Skip checks if user just clicked back
-      if (userClickedBackRef.current) {
-        console.log('⏸️ Skipping real-time checks - user just clicked back');
-        return;
-      }
-      
-      checkCompanyLeads();
-      checkActiveGigs();
-    }, 30000); // Check every 30 seconds
-
-    // Cleanup interval on component unmount or when companyId changes
-    return () => {
-      clearInterval(intervalId);
-    };
+    // }
   }, [companyId]);
 
   const loadCompanyProgress = async () => {
