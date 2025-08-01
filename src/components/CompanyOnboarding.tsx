@@ -822,8 +822,8 @@ const CompanyOnboarding = () => {
       }
     } else {
       console.log(`❌ Cannot change to phase ${newPhase} - previous phases not completed`);
-      // Optionnel : afficher un message d'erreur à l'utilisateur
-      alert(`Vous devez compléter toutes les étapes de la phase précédente avant d'accéder à la phase ${newPhase}`);
+      // Suppressed popup as requested by user
+      console.log(`Vous devez compléter toutes les étapes de la phase précédente avant d'accéder à la phase ${newPhase}`);
     }
   };
 
@@ -859,7 +859,7 @@ const CompanyOnboarding = () => {
         handlePhaseChange(newPhase);
       } else {
         console.log(`⚠️ Cannot proceed to phase ${newPhase} - current phase ${displayedPhase} is not fully completed`);
-        alert(`Vous devez compléter toutes les étapes de la phase ${displayedPhase} avant de passer à la phase suivante`);
+        console.log(`Vous devez compléter toutes les étapes de la phase ${displayedPhase} avant de passer à la phase suivante`);
         return;
       }
     } else if (displayedPhase === 4) {

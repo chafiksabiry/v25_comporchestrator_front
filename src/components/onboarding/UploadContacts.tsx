@@ -1198,7 +1198,8 @@ Rules:
               setValidationResults(result.validation);
               
               if (invalidRows > 0) {
-                toast.error(`${invalidRows} rows had validation errors. Check the console for details.`);
+                // Suppressed validation error popup as requested by user
+                console.log(`${invalidRows} rows had validation errors. Check the console for details.`);
                 console.log('Validation errors:', errors);
               }
               
