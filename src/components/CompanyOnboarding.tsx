@@ -1256,7 +1256,17 @@ const CompanyOnboarding = () => {
       <div className="space-y-6">
         <div className="flex items-center space-x-4">
           <button
-            onClick={onBack}
+            onClick={() => {
+              // If UploadContacts is processing, cancel it immediately
+              if (showUploadContacts && (window as any).cancelUploadProcessing) {
+                console.log('🛑 Back button clicked - cancelling processing immediately');
+                (window as any).cancelUploadProcessing();
+                setShowUploadContacts(false);
+                return;
+              }
+              // Otherwise, use the normal onBack function
+              onBack();
+            }}
             disabled={userClickedBackRef.current}
             className={`flex items-center transition-colors ${
               userClickedBackRef.current 
