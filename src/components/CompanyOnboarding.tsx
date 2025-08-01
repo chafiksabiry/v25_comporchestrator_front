@@ -1241,21 +1241,23 @@ const CompanyOnboarding = () => {
             localStorage.removeItem('parsedLeads');
           }} />;
     onBack = () => {
-      // Set flag immediately to prevent any auto-completion
-      userClickedBackRef.current = true;
-      
       console.log('🛑 Back clicked - cancelling processing and returning to onboarding');
       
-      // Call the cancel processing function if it exists
-      if ((window as any).cancelUploadProcessing) {
-        (window as any).cancelUploadProcessing();
-      }
+      // Set flag immediately to prevent any auto-completion
+      userClickedBackRef.current = true;
       
       // Remove parsed leads from localStorage to prevent auto-restore
       localStorage.removeItem('parsedLeads');
       
-      // Close the component immediately without waiting for any checks
+      // Close the component immediately
       setShowUploadContacts(false);
+      
+      // Call the cancel processing function if it exists (but don't wait for it)
+      if ((window as any).cancelUploadProcessing) {
+        setTimeout(() => {
+          (window as any).cancelUploadProcessing();
+        }, 0);
+      }
       
       // Reset the flag after a delay to allow normal operation
       setTimeout(() => {
@@ -1275,17 +1277,10 @@ const CompanyOnboarding = () => {
             onClick={() => {
               onBack();
             }}
-            disabled={userClickedBackRef.current}
-            className={`flex items-center transition-colors ${
-              userClickedBackRef.current 
-                ? 'text-gray-400 cursor-not-allowed' 
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
+            className="flex items-center transition-colors text-gray-600 hover:text-gray-900"
           >
-            <ChevronRight className={`h-5 w-5 rotate-180 ${
-              userClickedBackRef.current ? 'animate-pulse' : ''
-            }`} />
-            <span>{userClickedBackRef.current ? 'Processing...' : 'Back to Onboarding'}</span>
+            <ChevronRight className="h-5 w-5 rotate-180" />
+            <span>Back to Onboarding</span>
           </button>
         </div>
         {activeComponent}
