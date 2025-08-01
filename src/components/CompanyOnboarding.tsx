@@ -248,10 +248,10 @@ const CompanyOnboarding = () => {
 
     const interval = setInterval(() => {
       // Vérifier si la company a des leads mais que l'étape 6 n'est pas marquée comme complétée
-      if (hasLeads && !completedSteps.includes(6)) {
-        console.log('🔄 Company has leads but step 6 not completed - auto-completing...');
-        checkCompanyLeads();
-      }
+      // if (hasLeads && !completedSteps.includes(6)) {
+      //   console.log('🔄 Company has leads but step 6 not completed - auto-completing...');
+      //   checkCompanyLeads();
+      // }
     }, 10000); // Vérifier toutes les 10 secondes
 
     return () => clearInterval(interval);
@@ -349,7 +349,7 @@ const CompanyOnboarding = () => {
     
     try {
       // Vérifier les leads
-      await checkCompanyLeads();
+      // await checkCompanyLeads();
       
       // Vérifier les gigs actifs
       await checkActiveGigs();
@@ -539,7 +539,7 @@ const CompanyOnboarding = () => {
 
     // Only do initial checks if user hasn't clicked back
     // if (!userClickedBackRef.current) {
-      // checkCompanyLeads();
+      checkCompanyLeads();
       checkActiveGigs();
     // }
   }, [companyId]);
