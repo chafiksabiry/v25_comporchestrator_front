@@ -1028,8 +1028,8 @@ const CompanyOnboarding = () => {
       return;
     }
     
-    // Prevent multiple clicks while processing for other cases
-    if (userClickedBackRef.current) {
+    // Prevent multiple clicks while processing for other cases (but not for UploadContacts)
+    if (userClickedBackRef.current && !showUploadContacts) {
       console.log('⚠️ Back button already clicked, ignoring duplicate click');
       return;
     }
@@ -1040,7 +1040,7 @@ const CompanyOnboarding = () => {
     // Reset the flag after a short delay
     setTimeout(() => {
       userClickedBackRef.current = false;
-    }, 500);
+    }, 300);
   };
 
   const handleStepClick = (stepId: number) => {
@@ -1227,10 +1227,10 @@ const CompanyOnboarding = () => {
       // Note: cancelUploadProcessing is handled by the UploadContacts component itself
       // No need to call it here as the component will be unmounted
       
-      // Reset the flag after a delay to allow normal operation
+      // Reset the flag after a short delay to allow normal operation
       setTimeout(() => {
         userClickedBackRef.current = false;
-      }, 2000);
+      }, 500);
     };
   } else if (ActiveStepComponent) {
     activeComponent = <ActiveStepComponent />;
