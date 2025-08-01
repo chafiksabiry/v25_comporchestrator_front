@@ -146,7 +146,7 @@ const CompanyOnboarding = () => {
   const [hasLeads, setHasLeads] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [showGigDetails, setShowGigDetails] = useState(false);
-  const userId = Cookies.get('userId') || '68308337cf52e87c3ad15982';
+  const userId = Cookies.get('userId');
 
   // Fetch company ID using user ID
   useEffect(() => {
