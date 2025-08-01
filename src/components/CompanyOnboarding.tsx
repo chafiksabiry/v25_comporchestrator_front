@@ -553,10 +553,10 @@ const CompanyOnboarding = () => {
       }
       
       // Skip checks if we have parsed leads to prevent re-renders
-      if (localStorage.getItem('parsedLeads')) {
-        console.log('⏸️ Skipping real-time checks - parsed leads exist');
-        return;
-      }
+      // if (localStorage.getItem('parsedLeads')) {
+      //   console.log('⏸️ Skipping real-time checks - parsed leads exist');
+      //   return;
+      // }
       
       // Skip checks if user just clicked back
       if (userClickedBackRef.current) {
