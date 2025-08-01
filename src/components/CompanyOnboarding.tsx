@@ -458,8 +458,8 @@ const CompanyOnboarding = () => {
           gigStatuses: gigs.map((g: any) => g.status) 
         });
         
-        // If at least one gig is active, complete the last phase and step
-        if (hasActiveGig) {
+        // If at least one gig is active, complete the last phase and step, but not if user just clicked back
+        if (hasActiveGig && !userClickedBackRef.current) {
           try {
             console.log('✅ Found active gig - completing last phase and step');
             const completeResponse = await axios.put(
@@ -490,6 +490,8 @@ const CompanyOnboarding = () => {
             console.error('Error completing last phase and step:', error);
             // Ne pas faire échouer toute la fonction si cette mise à jour échoue
           }
+        } else if (hasActiveGig && userClickedBackRef.current) {
+          console.log('⏸️ Skipping last phase and step auto-completion - user just clicked back');
         }
         
         // If no gigs are active and step 13 was previously completed, mark it as in_progress
