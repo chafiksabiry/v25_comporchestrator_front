@@ -1246,10 +1246,10 @@ const CompanyOnboarding = () => {
       // Set flag immediately to prevent any auto-completion
       userClickedBackRef.current = true;
       
-      console.log('🛑 Back clicked - cancelling processing and returning to onboarding');
+      // console.log('🛑 Back clicked - cancelling processing and returning to onboarding');
       
       // Remove parsed leads from localStorage to prevent auto-restore
-      localStorage.removeItem('parsedLeads');
+      // localStorage.removeItem('parsedLeads');
       
       // Close the component immediately
       setShowUploadContacts(false);
