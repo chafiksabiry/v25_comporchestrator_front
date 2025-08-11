@@ -732,29 +732,11 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       // Prepare content for OpenAI (using the fileContent parameter)
       const truncatedContent = fileContent;
       
-      // Ultra-aggressive prompt to force processing of ALL rows
-      const prompt = `Extract ${lines.length - 1} leads from ${fileType} file. Return JSON only:
+      // Ultra-minimal prompt for maximum speed
+      const prompt = `Extract ${lines.length - 1} leads. Return JSON only:
+{"leads":[{"Email_1":"","Phone":"","Deal_Name":"","Prénom":"","Nom":""}]}
 
-{
-  "leads": [
-    {
-      "userId": {"$oid": "${userId}"},
-      "companyId": {"$oid": "${companyId}"},
-      "gId": {"$oid": "${gigId}"},
-      "Last_Activity_Time": null,
-      "Deal_Name": "",
-      "Email_1": "",
-      "Phone": "",
-      "Stage": "New",
-      "Pipeline": "Sales Pipeline",
-      "Project_Tags": [],
-      "Prénom": "",
-      "Nom": ""
-    }
-  ]
-}
-
-Rules: Email→Email_1, Phone→Phone, use email as Deal_Name. Process ALL rows.
+Rules: Email→Email_1, Phone→Phone, use email as Deal_Name.
 
 Data:
 ${truncatedContent}`;
@@ -1005,10 +987,10 @@ ${truncatedContent}`;
   const processLargeFileInChunks = async (fileContent: string, fileType: string, lines: string[]): Promise<{leads: any[], validation: any}> => {
     console.log(`🔄 Processing large file in chunks: ${lines.length} lines`);
     
-    // Calculate optimal chunk size based on OpenAI's token limit
-    const maxTokensPerChunk = 14000; // Optimized limit (16,385 - safe buffer)
-    const estimatedTokensPerLine = 20; // Optimized estimate for Excel data
-    const optimalChunkSize = Math.min(150, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 150 lines per chunk
+    // Calculate ultra-aggressive chunk size for maximum speed
+    const maxTokensPerChunk = 15000; // Maximum limit (16,385 - safe buffer)
+    const estimatedTokensPerLine = 15; // Conservative estimate for Excel data
+    const optimalChunkSize = Math.min(300, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 300 lines per chunk
     
     console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk (ultra-aggressive)`);
     
@@ -1040,9 +1022,9 @@ ${truncatedContent}`;
           console.warn(`⚠️ Chunk ${chunkIndex + 1} returned no leads`);
         }
         
-        // Small delay to avoid rate limiting
+        // Ultra-minimal delay to avoid rate limiting
         if (chunkIndex < totalChunks - 1) {
-          await new Promise(resolve => setTimeout(resolve, 200)); // Reduced delay for faster processing
+          await new Promise(resolve => setTimeout(resolve, 50)); // Ultra-fast processing
         }
         
       } catch (error) {
