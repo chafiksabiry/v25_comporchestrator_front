@@ -1028,8 +1028,8 @@ ${truncatedContent}`;
     console.log(`🔄 Processing large file in chunks: ${lines.length} lines`);
     
     // Calculate ultra-conservative chunk size based on OpenAI's token limit
-    const maxTokensPerChunk = 3000; // Ultra-conservative limit (16,385 - very large buffer)
-    const estimatedTokensPerLine = 15; // Ultra-conservative estimate
+    const maxTokensPerChunk = 2000; // Ultra-conservative limit (16,385 - very large buffer)
+    const estimatedTokensPerLine = 10; // Ultra-conservative estimate
     const optimalChunkSize = Math.floor(maxTokensPerChunk / estimatedTokensPerLine);
     
     console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk (ultra-conservative)`);
