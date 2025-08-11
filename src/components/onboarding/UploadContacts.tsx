@@ -223,6 +223,17 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       isProcessing: true
     });
   };
+
+  // Function to update real progress during OpenAI processing
+  const updateRealProgress = (progress: number, status: string) => {
+    setUploadProgress(progress);
+    setProcessingProgress({
+      current: progress,
+      total: 100,
+      status,
+      isProcessing: true
+    });
+  };
   
   // Check if we're currently processing on component mount
   useEffect(() => {
@@ -382,7 +393,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           columns[23] = cleanedEmail;
           // Log only first few rows for performance
           if (index <= 5) {
-            console.log(`🧹 Cleaned email in row ${index + 1}: "${emailColumn}" -> "${cleanedEmail}"`);
+          console.log(`🧹 Cleaned email in row ${index + 1}: "${emailColumn}" -> "${cleanedEmail}"`);
           }
         }
       }
@@ -633,14 +644,23 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         console.log(`🔄 Processing entire file in single batch for ${lines.length} lines...`);
         showProcessingStatus(`Traitement du fichier complet (${lines.length} lignes)...`);
         
+        // Start real progress updates
+        updateRealProgress(20, 'Analyse du fichier...');
+        
         // Increase the content limit for large files
         const largeFileMaxLength = 500000; // Increased from 100000 to 500000 for 1000+ line files
         const finalContent = cleanedFileContent.length > largeFileMaxLength 
           ? cleanedFileContent.substring(0, largeFileMaxLength) + '\n... [content truncated due to size]'
           : cleanedFileContent;
         
+        updateRealProgress(40, 'Envoi à OpenAI...');
+        
         // Use the same processing logic but with the full content
-        return await processFileWithOpenAI(finalContent, fileType, true);
+        const result = await processFileWithOpenAI(finalContent, fileType, true);
+        
+        updateRealProgress(100, 'Traitement terminé !');
+        
+        return result;
       }
 
       const truncatedContent = cleanedFileContent.length > maxContentLength 
@@ -698,6 +718,11 @@ ${truncatedContent}`;
         promptLength: prompt.length,
         maxTokens: 'unlimited (using model maximum)'
       });
+
+      // Update progress for OpenAI request
+      if (isOptimized) {
+        updateRealProgress(60, 'Traitement par OpenAI...');
+      }
 
       // Check prompt size to avoid token limit issues
       let finalPrompt = prompt;
@@ -759,6 +784,11 @@ ${truncatedContent}`;
       
       if (!content) {
         throw new Error('No response from OpenAI');
+      }
+
+      // Update progress for response processing
+      if (isOptimized) {
+        updateRealProgress(80, 'Analyse de la réponse OpenAI...');
       }
 
       // Simplified error handling
@@ -868,6 +898,11 @@ ${truncatedContent}`;
       console.log(`   - Validation totalRows: ${totalRows}`);
       console.log(`   - Validation validRows: ${validRows}`);
       console.log(`   - Validation invalidRows: ${invalidRows}`);
+
+      // Update final progress
+      if (isOptimized) {
+        updateRealProgress(95, 'Finalisation du traitement...');
+      }
 
       return {
         leads: processedLeads,
@@ -2375,251 +2410,241 @@ ${truncatedContent}`;
                 <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
                   <div
                     className={`h-3 rounded-full transition-all duration-500 ${
-                      uploadError ? 'bg-red-500' : uploadSuccess ? 'bg-green-500' : 'bg-gradient-to-r from-green-500 to-emerald-500'
+                      uploadError ? 'bg-red-500' : uploadSuccess ? 'bg-green-500' : 'bg-gradient-to-r from-blue-500 to-indigo-500'
                     }`}
-                    style={{ width: `${uploadProgress}%` }}
+                    style={{ 
+                      width: `${uploadProgress}%`,
+                      background: isProcessing && !uploadError && !uploadSuccess ? 'linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%)' : undefined
+                    }}
                   />
                 </div>
               </div>
               <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                <span>{uploadProgress}% complete</span>
+                <span>
+                  {isProcessing && !uploadError && !uploadSuccess 
+                    ? 'Traitement en cours...' 
+                    : `${uploadProgress}% complete`
+                  }
+                </span>
                 <span>{Math.round(selectedFile.size / 1024)} KB</span>
               </div>
               
-              {/* OpenAI Processing Progress */}
-              {processingProgress.isProcessing && (
-                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-blue-800">Traitement OpenAI en cours...</span>
-                    <span className="text-xs text-blue-600">
-                      {processingProgress.current}/{processingProgress.total}
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <div className="h-2 rounded-full bg-blue-200 overflow-hidden">
-                      <div
-                        className="h-2 rounded-full bg-blue-500 transition-all duration-300"
-                        style={{ 
-                          width: `${processingProgress.total > 0 ? (processingProgress.current / processingProgress.total) * 100 : 0}%` 
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-2 text-xs text-blue-600">
-                    {processingProgress.status}
-                  </div>
-                </div>
-              )}
-              
-              {uploadError && (
-                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-                  {uploadError}
-                </div>
-              )}
-              {uploadSuccess && (
-                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-600">
-                  File uploaded successfully!
-                </div>
-              )}
-              {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
-                <div className="mt-4 space-y-4">
-                  {validationResults && (
-                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3">
-                      <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
-                        <Info className="mr-2 h-4 w-4" />
-                        AI Processing Results
-                      </h4>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-blue-600 font-medium">Total Rows:</span> {validationResults.totalRows}
-                        </div>
-                        <div>
-                          <span className="text-green-600 font-medium">Valid Rows:</span> {validationResults.validRows > 0 ? validationResults.validRows : parsedLeads.length}
-                        </div>
-                        {validationResults.invalidRows > 0 && (
-                          <div className="col-span-2">
-                            <span className="text-red-600 font-medium">Invalid Rows:</span> {validationResults.invalidRows}
-                          </div>
-                        )}
-                      </div>
-
-                    {validationResults.errors && validationResults.errors.length > 0 && (
-                      <div className="mt-3">
-                        <details className="text-xs">
-                          <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
-                            View validation errors ({validationResults.errors.length})
-                          </summary>
-                            <div className="mt-2 space-y-1">
-                              {validationResults.errors.map((error: string, index: number) => (
-                                <div key={index} className="text-red-600 bg-red-50 p-2 rounded">
-                                  {error}
-                                </div>
-                              ))}
-                            </div>
-                          </details>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* Preview Section */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center">
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        <h4 className="text-sm font-semibold text-gray-800">
-                          Confirm & Edit Leads ({parsedLeads.length})
-                        </h4>
-                      </div>
-                      <button
-                        onClick={() => setShowLeadsPreview(!showLeadsPreview)}
-                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200"
-                        title={showLeadsPreview ? "Hide leads preview" : "Show leads preview"}
-                      >
-                        {showLeadsPreview ? (
-                          <ChevronUp className="h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                    {showLeadsPreview && (
-                      <>
-                        <p className="text-xs text-gray-600 mb-3">Review and edit your leads before saving. Click the edit icon to modify any field.</p>
-                        <div className="max-h-60 overflow-y-auto">
-                          <div className="space-y-2">
-                            {parsedLeads.map((lead: any, index: number) => (
-                                                          <div key={index} className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-lg p-3 border border-gray-200 hover:border-slate-300 transition-all duration-200">
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center space-x-3">
-                                  <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
-                                    <span className="text-xs font-bold text-slate-600">{index + 1}</span>
-                                  </div>
-                                    <span className="text-sm font-semibold text-gray-900">
-                                      {lead.Deal_Name || 'Unnamed Lead'}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <button
-                                      onClick={() => setEditingLeadIndex(editingLeadIndex === index ? null : index)}
-                                      className="text-slate-600 hover:text-slate-800 p-2 rounded-md hover:bg-slate-50 transition-colors duration-200"
-                                      title="Edit lead"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        const newLeads = [...parsedLeads];
-                                        newLeads.splice(index, 1);
-                                        setParsedLeads(newLeads);
-                                        toast.success('Lead removed');
-                                      }}
-                                      className="text-red-500 hover:text-red-700 p-2 rounded-md hover:bg-red-50 transition-colors duration-200"
-                                      title="Delete lead"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </button>
-                                  </div>
-                                </div>
-                                
-                                {editingLeadIndex === index ? (
-                                  <div className="space-y-3 bg-white rounded-lg p-3 border border-slate-200 shadow-sm">
-                                    <div className="grid grid-cols-1 gap-3">
-                                      <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
-                                        <input
-                                          type="text"
-                                          value={lead.Deal_Name || ''}
-                                          onChange={(e) => handleEditLead(index, 'Deal_Name', e.target.value)}
-                                          placeholder="Enter lead name"
-                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
-                                        <input
-                                          type="email"
-                                          value={lead.Email_1 || ''}
-                                          onChange={(e) => handleEditLead(index, 'Email_1', e.target.value)}
-                                          placeholder="Enter email address"
-                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
-                                        <input
-                                          type="tel"
-                                          value={lead.Phone || ''}
-                                          onChange={(e) => handleEditLead(index, 'Phone', e.target.value)}
-                                          placeholder="Enter phone number"
-                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="flex justify-end space-x-2 pt-2 border-t border-gray-100">
-                                      <button
-                                        onClick={() => setEditingLeadIndex(null)}
-                                        className="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 border border-gray-300"
-                                      >
-                                        Cancel
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          setEditingLeadIndex(null);
-                                          toast.success('Lead updated');
-                                        }}
-                                        className="px-3 py-1 text-sm font-medium text-white bg-gradient-to-r from-slate-700 to-slate-900 rounded-lg hover:from-slate-800 hover:to-slate-950 transition-all duration-200 shadow-sm"
-                                      >
-                                        Save Changes
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="grid grid-cols-1 gap-2 text-sm">
-                                    <div className="flex items-center space-x-2">
-                                      <Mail className="h-4 w-4 text-gray-400" />
-                                      <span className="text-gray-600">
-                                        <span className="font-medium">Email:</span> {lead.Email_1 || 'No email'}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                      <Phone className="h-4 w-4 text-gray-400" />
-                                      <span className="text-gray-600">
-                                        <span className="font-medium">Phone:</span> {lead.Phone || 'No phone'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  
-                                <button
-                className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-white font-bold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                onClick={handleSaveLeads}
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <div className="flex items-center justify-center">
-                    <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-                    Saving Contacts...
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center">
-                    <UserPlus className="mr-2 h-5 w-5" />
-                    Save {parsedLeads.length} Contacts
-                  </div>
-                )}
-              </button>
-              
-
+              {/* Single Real Progress Bar for OpenAI Processing */}
+              {isProcessing && !uploadError && !uploadSuccess && (
+                <div className="mt-2 text-xs text-blue-600">
+                  {processingProgress.status || 'Traitement OpenAI en cours...'}
                 </div>
               )}
             </div>
+            
+            {uploadError && (
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                {uploadError}
+              </div>
+            )}
+            {uploadSuccess && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-600">
+                File uploaded successfully!
+              </div>
+            )}
+            {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
+              <div className="mt-4 space-y-4">
+                {validationResults && (
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3">
+                    <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                      <Info className="mr-2 h-4 w-4" />
+                      AI Processing Results
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-blue-600 font-medium">Total Rows:</span> {validationResults.totalRows}
+                      </div>
+                      <div>
+                        <span className="text-green-600 font-medium">Valid Rows:</span> {validationResults.validRows > 0 ? validationResults.validRows : parsedLeads.length}
+                      </div>
+                      {validationResults.invalidRows > 0 && (
+                        <div className="col-span-2">
+                          <span className="text-red-600 font-medium">Invalid Rows:</span> {validationResults.invalidRows}
+                        </div>
+                      )}
+                    </div>
+
+                  {validationResults.errors && validationResults.errors.length > 0 && (
+                    <div className="mt-3">
+                      <details className="text-xs">
+                        <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
+                          View validation errors ({validationResults.errors.length})
+                        </summary>
+                          <div className="mt-2 space-y-1">
+                            {validationResults.errors.map((error: string, index: number) => (
+                              <div key={index} className="text-red-600 bg-red-50 p-2 rounded">
+                                {error}
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Preview Section */}
+                <div className="bg-white border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center">
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      <h4 className="text-sm font-semibold text-gray-800">
+                        Confirm & Edit Leads ({parsedLeads.length})
+                      </h4>
+                    </div>
+                    <button
+                      onClick={() => setShowLeadsPreview(!showLeadsPreview)}
+                      className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                      title={showLeadsPreview ? "Hide leads preview" : "Show leads preview"}
+                    >
+                      {showLeadsPreview ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  {showLeadsPreview && (
+                    <>
+                      <p className="text-xs text-gray-600 mb-3">Review and edit your leads before saving. Click the edit icon to modify any field.</p>
+                      <div className="max-h-60 overflow-y-auto">
+                        <div className="space-y-2">
+                          {parsedLeads.map((lead: any, index: number) => (
+                                                        <div key={index} className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-lg p-3 border border-gray-200 hover:border-slate-300 transition-all duration-200">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
+                                  <span className="text-xs font-bold text-slate-600">{index + 1}</span>
+                                </div>
+                                  <span className="text-sm font-semibold text-gray-900">
+                                    {lead.Deal_Name || 'Unnamed Lead'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    onClick={() => setEditingLeadIndex(editingLeadIndex === index ? null : index)}
+                                    className="text-slate-600 hover:text-slate-800 p-2 rounded-md hover:bg-slate-50 transition-colors duration-200"
+                                    title="Edit lead"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      const newLeads = [...parsedLeads];
+                                      newLeads.splice(index, 1);
+                                      setParsedLeads(newLeads);
+                                      toast.success('Lead removed');
+                                    }}
+                                    className="text-red-500 hover:text-red-700 p-2 rounded-md hover:bg-red-50 transition-colors duration-200"
+                                    title="Delete lead"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              {editingLeadIndex === index ? (
+                                <div className="space-y-3 bg-white rounded-lg p-3 border border-slate-200 shadow-sm">
+                                  <div className="grid grid-cols-1 gap-3">
+                                    <div>
+                                      <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
+                                      <input
+                                        type="text"
+                                        value={lead.Deal_Name || ''}
+                                        onChange={(e) => handleEditLead(index, 'Deal_Name', e.target.value)}
+                                        placeholder="Enter lead name"
+                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                                      <input
+                                        type="email"
+                                        value={lead.Email_1 || ''}
+                                        onChange={(e) => handleEditLead(index, 'Email_1', e.target.value)}
+                                        placeholder="Enter email address"
+                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
+                                      <input
+                                        type="tel"
+                                        value={lead.Phone || ''}
+                                        onChange={(e) => handleEditLead(index, 'Phone', e.target.value)}
+                                        placeholder="Enter phone number"
+                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="flex justify-end space-x-2 pt-2 border-t border-gray-100">
+                                    <button
+                                      onClick={() => setEditingLeadIndex(null)}
+                                      className="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 border border-gray-300"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setEditingLeadIndex(null);
+                                        toast.success('Lead updated');
+                                      }}
+                                      className="px-3 py-1 text-sm font-medium text-white bg-gradient-to-r from-slate-700 to-slate-900 rounded-lg hover:from-slate-800 hover:to-slate-950 transition-all duration-200 shadow-sm"
+                                    >
+                                      Save Changes
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-1 gap-2 text-sm">
+                                  <div className="flex items-center space-x-2">
+                                    <Mail className="h-4 w-4 text-gray-400" />
+                                    <span className="text-gray-600">
+                                      <span className="font-medium">Email:</span> {lead.Email_1 || 'No email'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Phone className="h-4 w-4 text-gray-400" />
+                                    <span className="text-gray-600">
+                                      <span className="font-medium">Phone:</span> {lead.Phone || 'No phone'}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+                
+                                <button
+              className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-white font-bold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              onClick={handleSaveLeads}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <div className="flex items-center justify-center">
+                  <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                  Saving Contacts...
+                </div>
+              ) : (
+                <div className="flex items-center justify-center">
+                  <UserPlus className="mr-2 h-5 w-5" />
+                  Save {parsedLeads.length} Contacts
+                </div>
+              )}
+            </button>
+            
+
+              </div>
+            )}
           </div>
         )}
       </div>
