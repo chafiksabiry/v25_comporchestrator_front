@@ -1027,12 +1027,12 @@ ${truncatedContent}`;
   const processLargeFileInChunks = async (fileContent: string, fileType: string, lines: string[]): Promise<{leads: any[], validation: any}> => {
     console.log(`🔄 Processing large file in chunks: ${lines.length} lines`);
     
-    // Calculate optimal chunk size based on OpenAI's token limit
-    const maxTokensPerChunk = 8000; // Very conservative limit (16,385 - large buffer)
-    const estimatedTokensPerLine = 30; // Reduced estimate for shorter prompt
+    // Calculate ultra-conservative chunk size based on OpenAI's token limit
+    const maxTokensPerChunk = 5000; // Very conservative limit (16,385 - large buffer)
+    const estimatedTokensPerLine = 20; // Ultra-conservative estimate
     const optimalChunkSize = Math.floor(maxTokensPerChunk / estimatedTokensPerLine);
     
-    console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk (conservative)`);
+    console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk (ultra-conservative)`);
     
     const allLeads: any[] = [];
     const totalChunks = Math.ceil((lines.length - 1) / optimalChunkSize);
