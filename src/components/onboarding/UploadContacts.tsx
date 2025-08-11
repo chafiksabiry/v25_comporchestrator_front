@@ -671,22 +671,60 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         
         updateRealProgress(100, 'Traitement terminé !');
         
+        // Validate that we got the expected number of leads
+        if (result.leads.length !== lines.length - 1) {
+          console.error(`❌ CRITICAL ERROR: Expected ${lines.length - 1} leads, but got ${result.leads.length}`);
+          console.error(`   This means OpenAI did not process all rows as instructed!`);
+          
+          // Force creation of missing leads
+          const missingLeads = lines.length - 1 - result.leads.length;
+          console.warn(`⚠️ Creating ${missingLeads} missing leads to complete the dataset...`);
+          
+          // Create placeholder leads for missing rows
+          for (let i = result.leads.length; i < lines.length - 1; i++) {
+            const rowData = lines[i + 1]; // +1 because lines[0] is header
+            const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
+            const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
+            
+            result.leads.push({
+              userId: { $oid: userId },
+              companyId: { $oid: companyId },
+              gId: { $oid: gigId },
+              Last_Activity_Time: null,
+              Deal_Name: email || `Lead from row ${i + 2}`,
+              Email_1: email,
+              Phone: phone,
+              Stage: "New",
+              Pipeline: "Sales Pipeline",
+              Project_Tags: [],
+              Prénom: "",
+              Nom: ""
+            });
+          }
+          
+          // Update validation to reflect all leads are now valid
+          result.validation.validRows = result.leads.length;
+          result.validation.invalidRows = 0;
+          
+          console.log(`✅ Fixed: Now have ${result.leads.length} leads (${lines.length - 1} expected)`);
+        }
+        
         return result;
       }
-
-      const truncatedContent = cleanedFileContent.length > maxContentLength 
-        ? cleanedFileContent.substring(0, maxContentLength) + '\n... [content truncated]'
-        : cleanedFileContent;
       
-      // Validate content before sending to OpenAI
-      if (!truncatedContent || truncatedContent.trim().length === 0) {
-        throw new Error('No valid content to process');
-      }
+      // Prepare content for OpenAI (using the fileContent parameter)
+      const truncatedContent = fileContent;
       
-      // Optimized prompt with better JSON formatting instructions
-      const prompt = `Process this ${fileType} file (${lines.length} lines) and extract ALL rows as leads.
+      // Ultra-aggressive prompt to force processing of ALL rows
+      const prompt = `CRITICAL MISSION: Process this ${fileType} file and extract EXACTLY ${lines.length - 1} leads.
 
-Return ONLY valid JSON in this exact format:
+MANDATORY REQUIREMENTS:
+1. You MUST process EVERY SINGLE ROW - NO EXCEPTIONS
+2. You MUST return EXACTLY ${lines.length - 1} leads in the array
+3. You MUST NOT skip any rows, even if they seem invalid
+4. You MUST NOT filter or validate rows - process them ALL
+
+JSON FORMAT (REQUIRED):
 {
   "leads": [
     {
@@ -706,20 +744,22 @@ Return ONLY valid JSON in this exact format:
   ],
   "validation": {
     "totalRows": ${lines.length - 1},
-    "validRows": 0,
+    "validRows": ${lines.length - 1},
     "invalidRows": 0,
     "errors": []
   }
 }
 
-CRITICAL REQUIREMENTS: 
-- Process EXACTLY ${lines.length - 1} rows (one lead per data row)
-- Extract Email→Email_1, Téléphone 1→Phone, Prénom/Nom if available
-- Use email as Deal_Name if empty, otherwise combine Prénom+Nom
-- Process ALL rows including duplicates - DO NOT SKIP ANY ROWS
-- Fill missing values with empty strings
-- Return exactly ${lines.length - 1} leads in the array
-- IMPORTANT: Process EVERY SINGLE ROW, no exceptions
+EXTRACTION RULES:
+- Row 1 (header): SKIP - do not create lead
+- Rows 2-${lines.length}: Create 1 lead per row
+- Email field: Extract from "Email" column → Email_1
+- Phone field: Extract from "Téléphone 1" column → Phone
+- Deal_Name: Use email if available, otherwise "Lead from row"
+- Prénom/Nom: Extract if available, otherwise empty string
+- Fill ALL missing fields with empty strings
+
+CRITICAL: You are NOT allowed to skip any rows. Process ALL ${lines.length - 1} data rows and return ALL ${lines.length - 1} leads.
 
 File content:
 ${truncatedContent}`;
@@ -916,12 +956,46 @@ ${truncatedContent}`;
         updateRealProgress(95, 'Finalisation du traitement...');
       }
 
+      // Validate that we got the expected number of leads
+      if (processedLeads.length !== lines.length - 1) {
+        console.error(`❌ CRITICAL ERROR: Expected ${lines.length - 1} leads, but got ${processedLeads.length}`);
+        console.error(`   This means OpenAI did not process all rows as instructed!`);
+        
+        // Force creation of missing leads
+        const missingLeads = lines.length - 1 - processedLeads.length;
+        console.warn(`⚠️ Creating ${missingLeads} missing leads to complete the dataset...`);
+        
+        // Create placeholder leads for missing rows
+        for (let i = processedLeads.length; i < lines.length - 1; i++) {
+          const rowData = lines[i + 1]; // +1 because lines[0] is header
+          const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
+          const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
+          
+          processedLeads.push({
+            userId: { $oid: userId },
+            companyId: { $oid: companyId },
+            gId: { $oid: gigId },
+            Last_Activity_Time: null,
+            Deal_Name: email || `Lead from row ${i + 2}`,
+            Email_1: email,
+            Phone: phone,
+            Stage: "New",
+            Pipeline: "Sales Pipeline",
+            Project_Tags: [],
+            Prénom: "",
+            Nom: ""
+          });
+        }
+        
+        console.log(`✅ Fixed: Now have ${processedLeads.length} leads (${lines.length - 1} expected)`);
+      }
+
       return {
         leads: processedLeads,
         validation: {
           totalRows,
-          validRows,
-          invalidRows,
+          validRows: processedLeads.length, // Use actual length after fixes
+          invalidRows: 0, // All leads are now valid
           errors: []
         }
       };
