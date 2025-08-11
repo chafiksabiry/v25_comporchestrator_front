@@ -634,7 +634,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         showProcessingStatus(`Traitement du fichier complet (${lines.length} lignes)...`);
         
         // Increase the content limit for large files
-        const largeFileMaxLength = 100000; // Increased limit for large files
+        const largeFileMaxLength = 500000; // Increased from 100000 to 500000 for 1000+ line files
         const finalContent = cleanedFileContent.length > largeFileMaxLength 
           ? cleanedFileContent.substring(0, largeFileMaxLength) + '\n... [content truncated due to size]'
           : cleanedFileContent;
@@ -681,12 +681,13 @@ Return ONLY valid JSON in this exact format:
   }
 }
 
-IMPORTANT: 
+CRITICAL REQUIREMENTS: 
+- Process EXACTLY ${lines.length - 1} rows (one lead per data row)
 - Extract Email→Email_1, Téléphone 1→Phone, Prénom/Nom if available
 - Use email as Deal_Name if empty, otherwise combine Prénom+Nom
-- Process ALL rows including duplicates
+- Process ALL rows including duplicates - DO NOT SKIP ANY ROWS
 - Fill missing values with empty strings
-- Return exactly ${lines.length - 1} leads (one per data row)
+- Return exactly ${lines.length - 1} leads in the array
 
 File content:
 ${truncatedContent}`;
