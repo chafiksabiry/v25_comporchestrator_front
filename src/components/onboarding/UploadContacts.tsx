@@ -733,15 +733,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const truncatedContent = fileContent;
       
       // Ultra-aggressive prompt to force processing of ALL rows
-      const prompt = `CRITICAL MISSION: Process this ${fileType} file and extract EXACTLY ${lines.length - 1} leads.
+      const prompt = `Extract ${lines.length - 1} leads from ${fileType} file. Return JSON only:
 
-MANDATORY REQUIREMENTS:
-1. You MUST process EVERY SINGLE ROW - NO EXCEPTIONS
-2. You MUST return EXACTLY ${lines.length - 1} leads in the array
-3. You MUST NOT skip any rows, even if they seem invalid
-4. You MUST NOT filter or validate rows - process them ALL
-
-JSON FORMAT (REQUIRED):
 {
   "leads": [
     {
@@ -758,27 +751,12 @@ JSON FORMAT (REQUIRED):
       "Prénom": "",
       "Nom": ""
     }
-  ],
-  "validation": {
-    "totalRows": ${lines.length - 1},
-    "validRows": ${lines.length - 1},
-    "invalidRows": 0,
-    "errors": []
-  }
+  ]
 }
 
-EXTRACTION RULES:
-- Row 1 (header): SKIP - do not create lead
-- Rows 2-${lines.length}: Create 1 lead per row
-- Email field: Extract from "Email" column → Email_1
-- Phone field: Extract from "Téléphone 1" column → Phone
-- Deal_Name: Use email if available, otherwise "Lead from row"
-- Prénom/Nom: Extract if available, otherwise empty string
-- Fill ALL missing fields with empty strings
+Rules: Email→Email_1, Phone→Phone, use email as Deal_Name. Process ALL rows.
 
-CRITICAL: You are NOT allowed to skip any rows. Process ALL ${lines.length - 1} data rows and return ALL ${lines.length - 1} leads.
-
-File content:
+Data:
 ${truncatedContent}`;
 
       // Log request details for debugging (simplified)
@@ -886,7 +864,7 @@ ${truncatedContent}`;
       // Check if JSON appears complete
       const trimmedContent = content.trim();
       const isCompleteJSON = trimmedContent.startsWith('{') && trimmedContent.endsWith('}') && 
-                            trimmedContent.includes('"leads"') && trimmedContent.includes('"validation"');
+                            trimmedContent.includes('"leads"');
       
       if (!isCompleteJSON) {
         console.warn('⚠️ OpenAI returned incomplete JSON, attempting recovery...');
@@ -1027,10 +1005,10 @@ ${truncatedContent}`;
   const processLargeFileInChunks = async (fileContent: string, fileType: string, lines: string[]): Promise<{leads: any[], validation: any}> => {
     console.log(`🔄 Processing large file in chunks: ${lines.length} lines`);
     
-    // Calculate ultra-aggressive chunk size based on OpenAI's token limit
-    const maxTokensPerChunk = 1500; // Ultra-secure limit (16,385 - very large buffer)
-    const estimatedTokensPerLine = 8; // Realistic estimate for minimal prompt
-    const optimalChunkSize = Math.min(25, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 25 lines per chunk
+    // Calculate optimal chunk size based on OpenAI's token limit
+    const maxTokensPerChunk = 14000; // Optimized limit (16,385 - safe buffer)
+    const estimatedTokensPerLine = 20; // Optimized estimate for Excel data
+    const optimalChunkSize = Math.min(150, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 150 lines per chunk
     
     console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk (ultra-aggressive)`);
     
@@ -1064,7 +1042,7 @@ ${truncatedContent}`;
         
         // Small delay to avoid rate limiting
         if (chunkIndex < totalChunks - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 200)); // Reduced delay for faster processing
         }
         
       } catch (error) {
