@@ -187,14 +187,16 @@ const CompanyOnboarding = () => {
 
   // Load company progress and check gigs when company ID is available
   useEffect(() => {
-    if (companyId) {
+    if (companyId && !userClickedBackRef.current) {
       console.log('🔄 Company ID available, loading progress and checking gigs...');
       loadCompanyProgress();
       checkCompanyGigs();
-      checkCompanyLeads();
+      // checkCompanyLeads();
       
       // Vérifier si l'utilisateur vient de se connecter à Zoho
       checkZohoConnection();
+    } else if (companyId && userClickedBackRef.current) {
+      console.log('⏸️ Skipping company progress loading - user just clicked back');
     }
   }, [companyId]);
 
@@ -246,10 +248,10 @@ const CompanyOnboarding = () => {
 
     const interval = setInterval(() => {
       // Vérifier si la company a des leads mais que l'étape 6 n'est pas marquée comme complétée
-      if (hasLeads && !completedSteps.includes(6)) {
-        console.log('🔄 Company has leads but step 6 not completed - auto-completing...');
-        checkCompanyLeads();
-      }
+      // if (hasLeads && !completedSteps.includes(6)) {
+      //   console.log('🔄 Company has leads but step 6 not completed - auto-completing...');
+      //   checkCompanyLeads();
+      // }
     }, 10000); // Vérifier toutes les 10 secondes
 
     return () => clearInterval(interval);
@@ -308,8 +310,8 @@ const CompanyOnboarding = () => {
       const hasLeads = response.data.hasLeads;
       setHasLeads(hasLeads);
       
-      // Auto-complete step 6 if company has leads
-      if (hasLeads) {
+      // Auto-complete step 6 if company has leads, but not if user just clicked back
+      if (hasLeads && !userClickedBackRef.current) {
         console.log('✅ Company has leads - auto-completing step 6');
         try {
           await axios.put(
@@ -327,6 +329,8 @@ const CompanyOnboarding = () => {
         } catch (error) {
           console.error('Error auto-completing step 6:', error);
         }
+      } else if (hasLeads && userClickedBackRef.current) {
+        console.log('⏸️ Skipping step 6 auto-completion - user just clicked back');
       } else {
         console.log('⚠️ Company has no leads - step 6 needs manual completion');
       }
@@ -345,7 +349,7 @@ const CompanyOnboarding = () => {
     
     try {
       // Vérifier les leads
-      await checkCompanyLeads();
+      // await checkCompanyLeads();
       
       // Vérifier les gigs actifs
       await checkActiveGigs();
@@ -456,8 +460,8 @@ const CompanyOnboarding = () => {
           gigStatuses: gigs.map((g: any) => g.status) 
         });
         
-        // If at least one gig is active, complete the last phase and step
-        if (hasActiveGig) {
+        // If at least one gig is active, complete the last phase and step, but not if user just clicked back
+        if (hasActiveGig && !userClickedBackRef.current) {
           try {
             console.log('✅ Found active gig - completing last phase and step');
             const completeResponse = await axios.put(
@@ -488,6 +492,8 @@ const CompanyOnboarding = () => {
             console.error('Error completing last phase and step:', error);
             // Ne pas faire échouer toute la fonction si cette mise à jour échoue
           }
+        } else if (hasActiveGig && userClickedBackRef.current) {
+          console.log('⏸️ Skipping last phase and step auto-completion - user just clicked back');
         }
         
         // If no gigs are active and step 13 was previously completed, mark it as in_progress
@@ -527,36 +533,15 @@ const CompanyOnboarding = () => {
     }
   };
 
-  // Real-time leads checking
+  // Initial leads and gigs checking (no real-time updates)
   useEffect(() => {
     if (!companyId) return;
 
-    // Initial check
-    checkCompanyLeads();
-    checkActiveGigs();
-
-    // Set up real-time checking every 30 seconds
-    const intervalId = setInterval(() => {
-      // Skip checks if we're processing a file
-      if (localStorage.getItem('uploadProcessing') === 'true' || sessionStorage.getItem('uploadProcessing') === 'true') {
-        console.log('⏸️ Skipping real-time checks - file processing in progress');
-        return;
-      }
-      
-      // Skip checks if we have parsed leads to prevent re-renders
-      if (localStorage.getItem('parsedLeads')) {
-        console.log('⏸️ Skipping real-time checks - parsed leads exist');
-        return;
-      }
-      
+    // Only do initial checks if user hasn't clicked back
+    // if (!userClickedBackRef.current) {
       checkCompanyLeads();
       checkActiveGigs();
-    }, 30000); // Check every 30 seconds
-
-    // Cleanup interval on component unmount or when companyId changes
-    return () => {
-      clearInterval(intervalId);
-    };
+    // }
   }, [companyId]);
 
   const loadCompanyProgress = async () => {
@@ -824,8 +809,8 @@ const CompanyOnboarding = () => {
       }
     } else {
       console.log(`❌ Cannot change to phase ${newPhase} - previous phases not completed`);
-      // Optionnel : afficher un message d'erreur à l'utilisateur
-      alert(`Vous devez compléter toutes les étapes de la phase précédente avant d'accéder à la phase ${newPhase}`);
+      // Suppressed popup as requested by user
+      console.log(`Vous devez compléter toutes les étapes de la phase précédente avant d'accéder à la phase ${newPhase}`);
     }
   };
 
@@ -861,7 +846,7 @@ const CompanyOnboarding = () => {
         handlePhaseChange(newPhase);
       } else {
         console.log(`⚠️ Cannot proceed to phase ${newPhase} - current phase ${displayedPhase} is not fully completed`);
-        alert(`Vous devez compléter toutes les étapes de la phase ${displayedPhase} avant de passer à la phase suivante`);
+        console.log(`Vous devez compléter toutes les étapes de la phase ${displayedPhase} avant de passer à la phase suivante`);
         return;
       }
     } else if (displayedPhase === 4) {
@@ -1030,8 +1015,23 @@ const CompanyOnboarding = () => {
   };
 
   const handleBackToOnboarding = () => {
-    // Prevent multiple clicks while processing
-    if (userClickedBackRef.current) {
+    // If UploadContacts is showing, cancel processing and return immediately
+    if (showUploadContacts) {
+      console.log('🛑 Back to onboarding clicked while UploadContacts is active - cancelling processing');
+      
+      // Call the cancel processing function if it exists
+      if ((window as any).cancelUploadProcessing) {
+        (window as any).cancelUploadProcessing();
+      }
+      
+      // Remove parsed leads from localStorage to prevent auto-restore
+      localStorage.removeItem('parsedLeads');
+      setShowUploadContacts(false);
+      return;
+    }
+    
+    // Prevent multiple clicks while processing for other cases (but not for UploadContacts)
+    if (userClickedBackRef.current && !showUploadContacts) {
       console.log('⚠️ Back button already clicked, ignoring duplicate click');
       return;
     }
@@ -1042,7 +1042,7 @@ const CompanyOnboarding = () => {
     // Reset the flag after a short delay
     setTimeout(() => {
       userClickedBackRef.current = false;
-    }, 500);
+    }, 300);
   };
 
   const handleStepClick = (stepId: number) => {
@@ -1223,23 +1223,20 @@ const CompanyOnboarding = () => {
         userClickedBackRef.current = false;
       }, 500);
     };
-  } else if (showUploadContacts) {
-    activeComponent = <UploadContacts />;
+          } else if (showUploadContacts) {
+          activeComponent = <UploadContacts onCancelProcessing={() => {
+            console.log('🛑 Processing cancelled by user');
+            // Only clean up parsed leads, don't close the component here
+            localStorage.removeItem('parsedLeads');
+          }} />;
     onBack = () => {
-      // Prevent multiple clicks while processing
-      if (userClickedBackRef.current) {
-        console.log('⚠️ Back button already clicked, ignoring duplicate click');
-        return;
-      }
+      console.log('🛑 Back clicked - returning to onboarding');
       
-      userClickedBackRef.current = true;
+      // Remove parsed leads from localStorage to prevent auto-restore
+      localStorage.removeItem('parsedLeads');
+      
+      // Close the component immediately
       setShowUploadContacts(false);
-      console.log('👤 User clicked back - returning to onboarding');
-      
-      // Reset the flag after a short delay
-      setTimeout(() => {
-        userClickedBackRef.current = false;
-      }, 500);
     };
   } else if (ActiveStepComponent) {
     activeComponent = <ActiveStepComponent />;
@@ -1251,18 +1248,13 @@ const CompanyOnboarding = () => {
       <div className="space-y-6">
         <div className="flex items-center space-x-4">
           <button
-            onClick={onBack}
-            disabled={userClickedBackRef.current}
-            className={`flex items-center transition-colors ${
-              userClickedBackRef.current 
-                ? 'text-gray-400 cursor-not-allowed' 
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
+            onClick={() => {
+              onBack();
+            }}
+            className="flex items-center transition-colors text-gray-600 hover:text-gray-900"
           >
-            <ChevronRight className={`h-5 w-5 rotate-180 ${
-              userClickedBackRef.current ? 'animate-pulse' : ''
-            }`} />
-            <span>{userClickedBackRef.current ? 'Processing...' : 'Back to Onboarding'}</span>
+            <ChevronRight className="h-5 w-5 rotate-180" />
+            <span>Back to Onboarding</span>
           </button>
         </div>
         {activeComponent}
