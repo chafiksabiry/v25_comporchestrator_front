@@ -1027,23 +1027,26 @@ ${truncatedContent}`;
   const processLargeFileInChunks = async (fileContent: string, fileType: string, lines: string[]): Promise<{leads: any[], validation: any}> => {
     console.log(`🔄 Processing large file in chunks: ${lines.length} lines`);
     
-    // Calculate ultra-conservative chunk size based on OpenAI's token limit
-    const maxTokensPerChunk = 2000; // Ultra-conservative limit (16,385 - very large buffer)
-    const estimatedTokensPerLine = 10; // Ultra-conservative estimate
-    const optimalChunkSize = Math.floor(maxTokensPerChunk / estimatedTokensPerLine);
+    // Calculate ultra-aggressive chunk size based on OpenAI's token limit
+    const maxTokensPerChunk = 1500; // Ultra-secure limit (16,385 - very large buffer)
+    const estimatedTokensPerLine = 8; // Realistic estimate for minimal prompt
+    const optimalChunkSize = Math.min(50, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 50 lines per chunk
     
-    console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk (ultra-conservative)`);
+    console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk (ultra-aggressive)`);
     
     const allLeads: any[] = [];
     const totalChunks = Math.ceil((lines.length - 1) / optimalChunkSize);
+    
+
     
     for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
       const startLine = chunkIndex * optimalChunkSize + 1; // +1 to skip header
       const endLine = Math.min((chunkIndex + 1) * optimalChunkSize, lines.length - 1);
       const chunkLines = lines.slice(0, 1).concat(lines.slice(startLine, endLine + 1)); // Include header + chunk
       
-      console.log(`📦 Processing chunk ${chunkIndex + 1}/${totalChunks}: lines ${startLine}-${endLine}`);
+      console.log(`📦 Preparing chunk ${chunkIndex + 1}/${totalChunks}: lines ${startLine}-${endLine}`);
       
+      // Process this chunk with the existing function but smaller chunks
       try {
         // Update progress for chunk processing
         const chunkProgress = 40 + (chunkIndex / totalChunks) * 40; // 40% to 80%
