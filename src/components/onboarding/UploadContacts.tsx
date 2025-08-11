@@ -213,6 +213,16 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       isProcessing: false
     });
   };
+
+  // Function to show processing status
+  const showProcessingStatus = (status: string) => {
+    setProcessingProgress({
+      current: 1,
+      total: 1,
+      status,
+      isProcessing: true
+    });
+  };
   
   // Check if we're currently processing on component mount
   useEffect(() => {
@@ -455,98 +465,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     // Use the same processing logic but with optimized content and isOptimized flag
     const result: {leads: any[], validation: any} = await processFileWithOpenAI(optimizedContent, fileType, true);
     
-    console.log(`🔄 Optimized processing complete: ${result.leads.length} leads`);
     return result;
   };
-
-  // Function to process large files in chunks
-  const processLargeFileInChunks = async (fileContent: string, fileType: string): Promise<{leads: any[], validation: any}> => {
-    console.log('🔄 Processing large file in chunks...');
-    
-    const lines = fileContent.split('\n');
-    const header = lines[0];
-    const dataLines = lines.slice(1);
-    
-    console.log(`📊 Total data lines to process: ${dataLines.length}`);
-    
-    // Analyser les lignes pour comprendre la structure
-    const emptyLines = dataLines.filter(line => line.trim() === '').length;
-    const headerDuplicates = dataLines.filter(line => line.includes('Identifiant,Type,Statut')).length;
-    const validDataLines = dataLines.length - emptyLines - headerDuplicates;
-    
-    console.log(`📊 Analysis results: ${validDataLines} valid lines, ${emptyLines} empty, ${headerDuplicates} headers`);
-    
-    // Optimisation : utiliser une taille de chunk plus grande et éviter les doublons
-    const chunkSize = Math.min(100, Math.ceil(validDataLines / 3)); // 3 chunks max au lieu de 6
-    const allLeads: any[] = [];
-    let successfulChunks = 0;
-    let failedChunks = 0;
-    
-    // Mettre à jour le progrès initial
-    const totalChunks = Math.ceil(dataLines.length / chunkSize);
-    updateProgress(0, totalChunks, 'Début du traitement des chunks...');
-    
-    // Traiter en chunks plus grands pour réduire les appels API
-    for (let i = 0; i < dataLines.length; i += chunkSize) {
-      const chunk = dataLines.slice(i, i + chunkSize);
-      const chunkContent = [header, ...chunk].join('\n');
-      const currentChunk = Math.floor(i/chunkSize) + 1;
-      
-      console.log(`🔄 Processing chunk ${currentChunk}/${Math.ceil(dataLines.length/chunkSize)} (${chunk.length} leads)`);
-      updateProgress(currentChunk, totalChunks, `Traitement du chunk ${currentChunk}/${totalChunks}...`);
-      
-      try {
-        const chunkResult = await processFileWithOpenAI(chunkContent, fileType, true);
-        allLeads.push(...chunkResult.leads);
-        successfulChunks++;
-        
-        console.log(`✅ Chunk ${currentChunk} processed: ${chunkResult.leads.length} leads`);
-      } catch (error) {
-        console.error(`❌ Error processing chunk ${currentChunk}:`, error);
-        failedChunks++;
-        
-        // En cas d'échec, essayer de traiter ligne par ligne seulement pour ce chunk
-        console.log(`🔄 Attempting to process individual lines for failed chunk...`);
-        updateProgress(currentChunk, totalChunks, `Récupération des lignes échouées du chunk ${currentChunk}...`);
-        
-        for (const line of chunk) {
-          if (line.trim() && !line.includes('Identifiant,Type,Statut')) {
-            try {
-              const singleLineContent = [header, line].join('\n');
-              const singleResult = await processFileWithOpenAI(singleLineContent, fileType, true);
-              if (singleResult.leads.length > 0) {
-                allLeads.push(...singleResult.leads);
-              }
-            } catch (singleError) {
-              console.error(`❌ Failed to process individual line:`, line.substring(0, 50));
-            }
-          }
-        }
-      }
-    }
-    
-    console.log(`✅ Large file processing complete: ${allLeads.length} leads from ${successfulChunks} chunks`);
-    updateProgress(totalChunks, totalChunks, 'Traitement terminé !');
-    
-    const actualValidLines = validDataLines;
-    const invalidRows = Math.max(0, actualValidLines - allLeads.length);
-    
-    if (allLeads.length < actualValidLines) {
-      console.log(`⚠️ Some lines failed to process: ${invalidRows} out of ${actualValidLines}`);
-    }
-    
-    return {
-      leads: allLeads,
-      validation: {
-        totalRows: actualValidLines,
-        validRows: allLeads.length,
-        invalidRows: invalidRows,
-        errors: []
-      }
-    };
-  };
-
-
 
   // Helper function to recover incomplete JSON from OpenAI responses
   const tryRecoverIncompleteJSON = (content: string, expectedLeads: number): any | null => {
@@ -706,11 +626,21 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       
       // Check if content is too large or has many lines - use chunks for better processing
       if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 50)) {
-        console.warn(`⚠️ File is large (${lines.length} lines, ${cleanedFileContent.length} characters) - using chunks for better processing`);
+        console.warn(`⚠️ File is large (${lines.length} lines, ${cleanedFileContent.length} characters) - processing in single batch like ChatGPT`);
         
-        // Always use chunks for files with more than 50 lines to avoid OpenAI token limits
-        console.log(`🔄 Processing in chunks for ${lines.length} lines...`);
-        return await processLargeFileInChunks(cleanedFileContent, fileType);
+        // Instead of chunks, process the entire file at once for better performance
+        // This mimics how ChatGPT processes large files efficiently
+        console.log(`🔄 Processing entire file in single batch for ${lines.length} lines...`);
+        showProcessingStatus(`Traitement du fichier complet (${lines.length} lignes)...`);
+        
+        // Increase the content limit for large files
+        const largeFileMaxLength = 100000; // Increased limit for large files
+        const finalContent = cleanedFileContent.length > largeFileMaxLength 
+          ? cleanedFileContent.substring(0, largeFileMaxLength) + '\n... [content truncated due to size]'
+          : cleanedFileContent;
+        
+        // Use the same processing logic but with the full content
+        return await processFileWithOpenAI(finalContent, fileType, true);
       }
 
       const truncatedContent = cleanedFileContent.length > maxContentLength 
@@ -723,9 +653,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       }
       
       // Optimized prompt with better JSON formatting instructions
-      const prompt = `Analyze this ${fileType} file (${lines.length} lines) and extract ALL rows as leads.
+      const prompt = `Process this ${fileType} file (${lines.length} lines) and extract ALL rows as leads.
 
-Return ONLY this JSON format:
+Return ONLY valid JSON in this exact format:
 {
   "leads": [
     {
@@ -751,7 +681,12 @@ Return ONLY this JSON format:
   }
 }
 
-Rules: Extract Email→Email_1, Téléphone 1→Phone, Prénom/Nom if available. Use email as Deal_Name if empty. Keep ALL rows including duplicates. Fill missing values with empty strings.
+IMPORTANT: 
+- Extract Email→Email_1, Téléphone 1→Phone, Prénom/Nom if available
+- Use email as Deal_Name if empty, otherwise combine Prénom+Nom
+- Process ALL rows including duplicates
+- Fill missing values with empty strings
+- Return exactly ${lines.length - 1} leads (one per data row)
 
 File content:
 ${truncatedContent}`;
