@@ -763,14 +763,14 @@ ${truncatedContent}`;
       }
 
       const requestBody = {
-        model: 'gpt-3.5-turbo',
-          messages: [
-            {
-              role: 'system',
+        model: 'gpt-4o', // More powerful model with higher token limits
+        messages: [
+          {
+            role: 'system',
             content: 'You are a data processing expert. Return ONLY valid JSON. Never return text explanations.'
-            },
-            {
-              role: 'user',
+          },
+          {
+            role: 'user',
             content: finalPrompt
           }
         ],
@@ -987,12 +987,12 @@ ${truncatedContent}`;
   const processLargeFileInChunks = async (fileContent: string, fileType: string, lines: string[]): Promise<{leads: any[], validation: any}> => {
     console.log(`🔄 Processing large file in chunks: ${lines.length} lines`);
     
-    // Calculate ultra-aggressive chunk size for maximum speed
-    const maxTokensPerChunk = 15000; // Maximum limit (16,385 - safe buffer)
-    const estimatedTokensPerLine = 15; // Conservative estimate for Excel data
-    const optimalChunkSize = Math.min(300, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 300 lines per chunk
+    // Calculate optimal chunk size for GPT-4o (much higher token limits)
+    const maxTokensPerChunk = 100000; // GPT-4o can handle much larger chunks
+    const estimatedTokensPerLine = 25; // Conservative estimate for Excel data
+    const optimalChunkSize = Math.min(800, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 800 lines per chunk
     
-    console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk (ultra-aggressive)`);
+    console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk (ultra-conservative)`);
     
     const allLeads: any[] = [];
     const totalChunks = Math.ceil((lines.length - 1) / optimalChunkSize);
