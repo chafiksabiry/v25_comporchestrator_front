@@ -635,12 +635,29 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         }
       }
       
-      // Check if content is too large or has many lines - use chunks for better processing
+      // Check if content is too large or has many lines - use smart chunking for very large files
+      if (!isOptimized && (cleanedFileContent.length > 100000 || lines.length > 200)) {
+        console.warn(`⚠️ File is very large (${lines.length} lines, ${cleanedFileContent.length} characters) - using smart chunking`);
+        
+        // Use smart chunking for very large files to avoid token limit issues
+        console.log(`🔄 Processing very large file with smart chunking for ${lines.length} lines...`);
+        showProcessingStatus(`Traitement par lots intelligents (${lines.length} lignes)...`);
+        
+        // Start real progress updates
+        updateRealProgress(20, 'Analyse du fichier volumineux...');
+        
+        // Use smart chunking to process the file in manageable pieces
+        const result = await processLargeFileInChunks(cleanedFileContent, fileType, lines);
+        
+        updateRealProgress(100, 'Traitement terminé !');
+        return result;
+      }
+      
+      // For smaller files, use single batch processing
       if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 50)) {
         console.warn(`⚠️ File is large (${lines.length} lines, ${cleanedFileContent.length} characters) - processing in single batch like ChatGPT`);
         
-        // Instead of chunks, process the entire file at once for better performance
-        // This mimics how ChatGPT processes large files efficiently
+        // Process the entire file at once for better performance
         console.log(`🔄 Processing entire file in single batch for ${lines.length} lines...`);
         showProcessingStatus(`Traitement du fichier complet (${lines.length} lignes)...`);
         
@@ -648,7 +665,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         updateRealProgress(20, 'Analyse du fichier...');
         
         // Increase the content limit for large files
-        const largeFileMaxLength = 1000000; // Increased from 500000 to 1000000 for very large files
+        const largeFileMaxLength = 100000; // Reduced to avoid token limit issues
         const finalContent = cleanedFileContent.length > largeFileMaxLength 
           ? cleanedFileContent.substring(0, largeFileMaxLength) + '\n... [content truncated due to size]'
           : cleanedFileContent;
@@ -1006,7 +1023,65 @@ ${truncatedContent}`;
     }
   };
 
-
+  // Smart chunking function for large files
+  const processLargeFileInChunks = async (fileContent: string, fileType: string, lines: string[]): Promise<{leads: any[], validation: any}> => {
+    console.log(`🔄 Processing large file in chunks: ${lines.length} lines`);
+    
+    // Calculate optimal chunk size based on OpenAI's token limit
+    const maxTokensPerChunk = 12000; // Conservative limit (16,385 - buffer)
+    const estimatedTokensPerLine = 50; // Average tokens per line
+    const optimalChunkSize = Math.floor(maxTokensPerChunk / estimatedTokensPerLine);
+    
+    console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk`);
+    
+    const allLeads: any[] = [];
+    const totalChunks = Math.ceil((lines.length - 1) / optimalChunkSize);
+    
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      const startLine = chunkIndex * optimalChunkSize + 1; // +1 to skip header
+      const endLine = Math.min((chunkIndex + 1) * optimalChunkSize, lines.length - 1);
+      const chunkLines = lines.slice(0, 1).concat(lines.slice(startLine, endLine + 1)); // Include header + chunk
+      
+      console.log(`📦 Processing chunk ${chunkIndex + 1}/${totalChunks}: lines ${startLine}-${endLine}`);
+      
+      try {
+        // Update progress for chunk processing
+        const chunkProgress = 40 + (chunkIndex / totalChunks) * 40; // 40% to 80%
+        updateRealProgress(chunkProgress, `Traitement du lot ${chunkIndex + 1}/${totalChunks}...`);
+        
+        // Process this chunk
+        const chunkResult = await processFileWithOpenAI(chunkLines.join('\n'), fileType, true);
+        
+        if (chunkResult.leads && chunkResult.leads.length > 0) {
+          allLeads.push(...chunkResult.leads);
+          console.log(`✅ Chunk ${chunkIndex + 1} processed: ${chunkResult.leads.length} leads`);
+        } else {
+          console.warn(`⚠️ Chunk ${chunkIndex + 1} returned no leads`);
+        }
+        
+        // Small delay to avoid rate limiting
+        if (chunkIndex < totalChunks - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
+      } catch (error) {
+        console.error(`❌ Error processing chunk ${chunkIndex + 1}:`, error);
+        // Continue with next chunk instead of failing completely
+      }
+    }
+    
+    console.log(`🎯 Total leads from all chunks: ${allLeads.length}`);
+    
+    return {
+      leads: allLeads,
+      validation: {
+        totalRows: lines.length - 1,
+        validRows: allLeads.length,
+        invalidRows: Math.max(0, (lines.length - 1) - allLeads.length),
+        errors: []
+      }
+    };
+  };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
