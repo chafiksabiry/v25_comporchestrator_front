@@ -1030,7 +1030,7 @@ ${truncatedContent}`;
     // Calculate ultra-aggressive chunk size based on OpenAI's token limit
     const maxTokensPerChunk = 1500; // Ultra-secure limit (16,385 - very large buffer)
     const estimatedTokensPerLine = 8; // Realistic estimate for minimal prompt
-    const optimalChunkSize = Math.min(50, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 50 lines per chunk
+    const optimalChunkSize = Math.min(25, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 25 lines per chunk
     
     console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk (ultra-aggressive)`);
     
@@ -1173,9 +1173,41 @@ ${truncatedContent}`;
               const workbook = XLSX.read(data, { type: 'array' });
               const sheetName = workbook.SheetNames[0];
               const worksheet = workbook.Sheets[sheetName];
-              const json: unknown[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-              const rows = (json as any[]).map((row: any) => Array.isArray(row) ? row.join(',') : Object.values(row).join(','));
-              fileContent = rows.join('\n');
+              
+              // Read Excel as JSON with headers to preserve column structure
+              const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+              
+              // Convert to structured format preserving column names
+              const headers = jsonData[0] as string[];
+              const dataRows = jsonData.slice(1) as any[][];
+              
+              console.log(`📊 Excel file structure: ${headers.length} columns, ${dataRows.length} data rows`);
+              console.log(`📋 Column headers:`, headers);
+              
+              // Convert to structured format for OpenAI processing
+              const structuredRows = dataRows.map((row, rowIndex) => {
+                const rowObj: any = {};
+                headers.forEach((header, colIndex) => {
+                  if (header && colIndex < row.length) {
+                    // Clean column name and value
+                    const cleanHeader = header.toString().trim().replace(/[^\w\s]/g, '');
+                    const value = row[colIndex] || '';
+                    rowObj[cleanHeader] = value.toString();
+                  }
+                });
+                return rowObj;
+              });
+              
+              // Convert structured data to readable format for OpenAI
+              const csvFormat = [
+                headers.join(','),
+                ...dataRows.map(row => row.map(cell => `"${cell || ''}"`).join(','))
+              ].join('\n');
+              
+              fileContent = csvFormat;
+              
+              console.log(`✅ Excel file converted: ${dataRows.length} rows with ${headers.length} columns`);
+              console.log(`📏 Final content size: ${fileContent.length} characters`);
             } else if (fileExtension === 'csv') {
               fileType = 'CSV';
               fileContent = e.target?.result as string;
