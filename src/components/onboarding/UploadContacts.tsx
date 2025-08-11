@@ -648,10 +648,21 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         updateRealProgress(20, 'Analyse du fichier...');
         
         // Increase the content limit for large files
-        const largeFileMaxLength = 500000; // Increased from 100000 to 500000 for 1000+ line files
+        const largeFileMaxLength = 1000000; // Increased from 500000 to 1000000 for very large files
         const finalContent = cleanedFileContent.length > largeFileMaxLength 
           ? cleanedFileContent.substring(0, largeFileMaxLength) + '\n... [content truncated due to size]'
           : cleanedFileContent;
+        
+        // Log content size to verify no truncation
+        console.log(`📏 Content size check:`);
+        console.log(`   - Original: ${cleanedFileContent.length} characters`);
+        console.log(`   - Final: ${finalContent.length} characters`);
+        console.log(`   - Truncated: ${cleanedFileContent.length > largeFileMaxLength ? 'YES' : 'NO'}`);
+        
+        if (cleanedFileContent.length > largeFileMaxLength) {
+          console.warn(`⚠️ WARNING: File content was truncated! Only processing first ${largeFileMaxLength} characters`);
+          console.warn(`   This may result in incomplete processing. Consider splitting very large files.`);
+        }
         
         updateRealProgress(40, 'Envoi à OpenAI...');
         
@@ -708,6 +719,7 @@ CRITICAL REQUIREMENTS:
 - Process ALL rows including duplicates - DO NOT SKIP ANY ROWS
 - Fill missing values with empty strings
 - Return exactly ${lines.length - 1} leads in the array
+- IMPORTANT: Process EVERY SINGLE ROW, no exceptions
 
 File content:
 ${truncatedContent}`;
