@@ -755,12 +755,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       }
       
       // Optimized prompt with better JSON formatting instructions
-      const prompt = `Extract lead information from this ${fileType} file.
+      const prompt = `Analyze this ${fileType} file (${lines.length} lines) and extract ALL rows as leads.
 
-File content (${lines.length} lines):
-${truncatedContent}
-
-Return ONLY valid JSON in this format:
+Return ONLY this JSON format:
 {
   "leads": [
     {
@@ -768,14 +765,14 @@ Return ONLY valid JSON in this format:
       "companyId": {"$oid": "${companyId}"},
       "gId": {"$oid": "${gigId}"},
       "Last_Activity_Time": null,
-      "Deal_Name": "Lead Name",
-      "Email_1": "email@example.com",
-      "Phone": "+33123456789",
+      "Deal_Name": "",
+      "Email_1": "",
+      "Phone": "",
       "Stage": "New",
       "Pipeline": "Sales Pipeline",
       "Project_Tags": [],
-      "Prénom": "John",
-      "Nom": "Doe"
+      "Prénom": "",
+      "Nom": ""
     }
   ],
   "validation": {
@@ -786,24 +783,10 @@ Return ONLY valid JSON in this format:
   }
 }
 
-CRITICAL INSTRUCTIONS:
-- Process ALL ${lines.length - 1} rows exactly as they appear
-- DO NOT remove duplicates or deduplicate
-- Keep every single row from the file
-- If you see the same email multiple times, create separate lead objects for each
-- The goal is to preserve ALL data, including duplicates
+Rules: Extract Email→Email_1, Téléphone 1→Phone, Prénom/Nom if available. Use email as Deal_Name if empty. Keep ALL rows including duplicates. Fill missing values with empty strings.
 
-Rules:
-1. Extract emails from "Email" column, clean prefixes like "Nor "
-2. Extract phones from "Téléphone 1" column
-3. Extract "Prénom" and "Nom" columns if they exist
-4. Use Deal_Name if available, otherwise use email
-5. Set defaults: Stage="New", Pipeline="Sales Pipeline"
-6. Process ALL ${lines.length - 1} rows - DO NOT remove duplicates
-7. Use placeholder values for missing emails/phones
-8. Use exact MongoDB ObjectId format with "$oid"
-9. IMPORTANT: Keep ALL rows including duplicates - do not deduplicate
-10. ALWAYS extract Prénom and Nom fields if they exist in the file`;
+File content:
+${truncatedContent}`;
 
       // Log request details for debugging
       console.log('Sending request to OpenAI with:', {
