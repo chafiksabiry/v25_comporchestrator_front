@@ -65,9 +65,9 @@ const SubscriptionPlan = () => {
           data: error.response.data,
           url: error.config?.url
         });
-        alert(`Erreur lors de l'activation du plan: ${error.response.data?.message || error.message}`);
+        console.log(`Erreur lors de l'activation du plan: ${error.response.data?.message || error.message}`);
       } else {
-        alert('Une erreur est survenue lors de l\'activation du plan');
+        console.log('Une erreur est survenue lors de l\'activation du plan');
       }
     }
   };

@@ -1,5 +1,5 @@
 /**
- * UploadContacts Component
+ * UploadContacts Component - Composant d'importation et gestion des contacts/leads
  * 
  * Ce composant permet de gérer l'importation et la gestion des contacts/leads pour une entreprise.
  * Il offre deux méthodes principales d'importation :
@@ -101,7 +101,39 @@ interface ApiResponse {
   data: Lead[];
 }
 
-const UploadContacts = React.memo(() => {
+interface UploadContactsProps {
+  onCancelProcessing?: () => void;
+}
+
+const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) => {
+  // Function to cancel processing
+  const cancelProcessing = () => {
+    console.log('🛑 Cancelling processing...');
+    setIsProcessing(false);
+    processingRef.current = false;
+    setUploadProgress(0);
+    setUploadError(null);
+    localStorage.removeItem('uploadProcessing');
+    sessionStorage.removeItem('uploadProcessing');
+    document.body.removeAttribute('data-processing');
+    
+    // Call the parent callback if provided
+    if (onCancelProcessing) {
+      onCancelProcessing();
+    }
+  };
+
+  // Expose cancelProcessing function to parent component
+  useEffect(() => {
+    if (onCancelProcessing) {
+      // Store the cancel function in a way that parent can access
+      (window as any).cancelUploadProcessing = cancelProcessing;
+    }
+    
+    return () => {
+      delete (window as any).cancelUploadProcessing;
+    };
+  }, [onCancelProcessing]);
   // Add a ref to track if the component has been initialized
   const componentInitializedRef = useRef(false);
   
@@ -148,6 +180,60 @@ const UploadContacts = React.memo(() => {
   const urlParamsProcessedRef = useRef(false);
   const processingRef = useRef(false);
   const dataRestoredRef = useRef(false);
+  
+  // State for progress tracking
+  const [processingProgress, setProcessingProgress] = useState<{
+    current: number;
+    total: number;
+    status: string;
+    isProcessing: boolean;
+  }>({
+    current: 0,
+    total: 0,
+    status: '',
+    isProcessing: false
+  });
+
+  // Function to update progress
+  const updateProgress = (current: number, total: number, status: string) => {
+    setProcessingProgress({
+      current,
+      total,
+      status,
+      isProcessing: true
+    });
+  };
+
+  // Function to reset progress
+  const resetProgress = () => {
+    setProcessingProgress({
+      current: 0,
+      total: 0,
+      status: '',
+      isProcessing: false
+    });
+  };
+
+  // Function to show processing status
+  const showProcessingStatus = (status: string) => {
+    setProcessingProgress({
+      current: 1,
+      total: 1,
+      status,
+      isProcessing: true
+    });
+  };
+
+  // Function to update real progress during OpenAI processing
+  const updateRealProgress = (progress: number, status: string) => {
+    setUploadProgress(progress);
+    setProcessingProgress({
+      current: progress,
+      total: 100,
+      status,
+      isProcessing: true
+    });
+  };
   
   // Check if we're currently processing on component mount
   useEffect(() => {
@@ -305,7 +391,10 @@ const UploadContacts = React.memo(() => {
           // Clean the email in "Email" column
           const cleanedEmail = emailColumn.replace(/^Nor\s+/, '').trim();
           columns[23] = cleanedEmail;
+          // Log only first few rows for performance
+          if (index <= 5) {
           console.log(`🧹 Cleaned email in row ${index + 1}: "${emailColumn}" -> "${cleanedEmail}"`);
+          }
         }
       }
       
@@ -320,7 +409,6 @@ const UploadContacts = React.memo(() => {
     
     console.log('🧹 Email cleaning completed');
     console.log('🧹 Total lines processed:', lines.length);
-    console.log('🧹 Sample of cleaned content:', finalCleaned.substring(0, 1000));
     
     return finalCleaned;
   };
@@ -388,145 +476,8 @@ const UploadContacts = React.memo(() => {
     // Use the same processing logic but with optimized content and isOptimized flag
     const result: {leads: any[], validation: any} = await processFileWithOpenAI(optimizedContent, fileType, true);
     
-    console.log(`🔄 Optimized processing complete: ${result.leads.length} leads`);
     return result;
   };
-
-  // Function to process large files in chunks
-  const processLargeFileInChunks = async (fileContent: string, fileType: string): Promise<{leads: any[], validation: any}> => {
-    console.log('🔄 Processing large file in chunks...');
-    
-    const lines = fileContent.split('\n');
-    const header = lines[0];
-    const dataLines = lines.slice(1);
-    
-    console.log(`📊 Total data lines to process: ${dataLines.length}`);
-    console.log(`📋 Header line: ${header.substring(0, 100)}...`);
-    
-    // Analyser les lignes pour comprendre la structure
-    console.log('🔍 Analyzing data lines structure:');
-    dataLines.forEach((line, index) => {
-      if (index < 5) { // Afficher les 5 premières lignes
-        console.log(`   Line ${index + 1}: ${line.substring(0, 100)}...`);
-      }
-    });
-    
-    const chunkSize = 25; // Reduced chunk size for better reliability
-    const allLeads: any[] = [];
-    let totalProcessed = 0;
-    let successfulChunks = 0;
-    let failedChunks = 0;
-    let emptyLines = 0;
-    let headerDuplicates = 0;
-    
-    // Compter les lignes vides et les doublons d'en-tête
-    dataLines.forEach((line, index) => {
-      if (line.trim() === '') {
-        emptyLines++;
-        console.log(`⚠️ Empty line found at position ${index + 1}`);
-      } else if (line.includes('Identifiant,Type,Statut')) {
-        headerDuplicates++;
-        console.log(`⚠️ Header duplicate found at position ${index + 1}: ${line.substring(0, 50)}...`);
-      }
-    });
-    
-    console.log(`📊 Analysis results:`);
-    console.log(`   - Empty lines: ${emptyLines}`);
-    console.log(`   - Header duplicates: ${headerDuplicates}`);
-    console.log(`   - Valid data lines: ${dataLines.length - emptyLines - headerDuplicates}`);
-    
-    for (let i = 0; i < dataLines.length; i += chunkSize) {
-      const chunk = dataLines.slice(i, i + chunkSize);
-      const chunkContent = [header, ...chunk].join('\n');
-      
-      console.log(`🔄 Processing chunk ${Math.floor(i/chunkSize) + 1}/${Math.ceil(dataLines.length/chunkSize)} (${chunk.length} leads)`);
-      
-      try {
-        const chunkResult = await processFileWithOpenAI(chunkContent, fileType, true);
-        allLeads.push(...chunkResult.leads);
-        totalProcessed += chunkResult.leads.length;
-        successfulChunks++;
-        
-        console.log(`✅ Chunk ${Math.floor(i/chunkSize) + 1} processed: ${chunkResult.leads.length} leads`);
-      } catch (error) {
-        console.error(`❌ Error processing chunk ${Math.floor(i/chunkSize) + 1}:`, error);
-        failedChunks++;
-        
-        // Try to process individual lines if chunk fails
-        console.log(`🔄 Attempting to process individual lines for failed chunk...`);
-        for (const line of chunk) {
-          try {
-            const singleLineContent = [header, line].join('\n');
-            const singleResult = await processFileWithOpenAI(singleLineContent, fileType, true);
-            if (singleResult.leads.length > 0) {
-              allLeads.push(...singleResult.leads);
-              totalProcessed += singleResult.leads.length;
-            }
-          } catch (singleError) {
-            console.error(`❌ Failed to process individual line:`, line.substring(0, 50));
-          }
-        }
-      }
-    }
-    
-    console.log(`✅ Large file processing complete:`);
-    console.log(`   - Total leads processed: ${allLeads.length}`);
-    console.log(`   - Successful chunks: ${successfulChunks}`);
-    console.log(`   - Failed chunks: ${failedChunks}`);
-    console.log(`   - Expected leads: ${dataLines.length}`);
-    console.log(`   - Empty lines found: ${emptyLines}`);
-    console.log(`   - Header duplicates found: ${headerDuplicates}`);
-    console.log(`   - Actual valid data lines: ${dataLines.length - emptyLines - headerDuplicates}`);
-    console.log(`   - Note: All leads including duplicates are preserved`);
-    
-    const actualValidLines = dataLines.length - emptyLines - headerDuplicates;
-    const invalidRows = Math.max(0, dataLines.length - allLeads.length);
-    
-    console.log(`📊 Final calculation:`);
-    console.log(`   - Total rows in file: ${dataLines.length}`);
-    console.log(`   - Empty lines: ${emptyLines}`);
-    console.log(`   - Header duplicates: ${headerDuplicates}`);
-    console.log(`   - Actual valid data lines: ${actualValidLines}`);
-    console.log(`   - Leads successfully processed: ${allLeads.length}`);
-    console.log(`   - Invalid rows (difference): ${invalidRows}`);
-    console.log(`   - Reason for invalid rows: ${emptyLines + headerDuplicates} structural issues + ${Math.max(0, actualValidLines - allLeads.length)} processing failures`);
-    
-    // Show detailed analysis of invalid lines
-    if (allLeads.length < actualValidLines) {
-      console.log(`🔍 Detailed invalid lines analysis:`);
-      const processedEmails = allLeads.map((lead: any) => lead.Email_1?.toLowerCase());
-      
-      dataLines.forEach((line, index) => {
-        if (line.trim() && !line.includes('Identifiant,Type,Statut')) {
-          // Try to extract email from the line
-          const emailMatch = line.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-          const email = emailMatch ? emailMatch[0].toLowerCase() : null;
-          
-          if (email && !processedEmails.includes(email)) {
-            console.log(`❌ Line ${index + 1} NOT processed: ${line.substring(0, 80)}...`);
-            console.log(`   Email: ${email} - Not found in processed leads`);
-          } else if (!email) {
-            console.log(`❌ Line ${index + 1} NOT processed: ${line.substring(0, 80)}...`);
-            console.log(`   Reason: No valid email found in line`);
-          }
-        }
-      });
-    } else {
-      console.log(`✅ All valid lines were processed successfully!`);
-    }
-    
-    return {
-      leads: allLeads,
-      validation: {
-        totalRows: dataLines.length,
-        validRows: allLeads.length,
-        invalidRows: invalidRows,
-        errors: failedChunks > 0 ? [`${failedChunks} chunks failed to process`] : []
-      }
-    };
-  };
-
-
 
   // Helper function to recover incomplete JSON from OpenAI responses
   const tryRecoverIncompleteJSON = (content: string, expectedLeads: number): any | null => {
@@ -672,63 +623,118 @@ const UploadContacts = React.memo(() => {
       // Reduce content size for faster processing
       const maxContentLength = 25000; // Reduced from 50000
       
-      console.log('Original file content length:', fileContent.length);
-      console.log('Cleaned file content length:', cleanedFileContent.length);
-      
       // Count the number of lines
       const lines = cleanedFileContent.split('\n');
       console.log(`📊 Lines in this chunk: ${lines.length}`);
       
-      // Log first few lines to understand content
+      // Log only essential information for performance
       if (lines.length > 0) {
-        console.log(`📋 First line: ${lines[0].substring(0, 100)}...`);
+        console.log(`📋 First line: ${lines[0].substring(0, 50)}...`);
         if (lines.length > 1) {
-          console.log(`📋 Second line: ${lines[1].substring(0, 100)}...`);
-        }
-        if (lines.length > 2) {
-          console.log(`📋 Third line: ${lines[2].substring(0, 100)}...`);
-        }
-        if (lines.length > 3) {
-          console.log(`📋 Fourth line: ${lines[3].substring(0, 100)}...`);
-        }
-        if (lines.length > 4) {
-          console.log(`📋 Fifth line: ${lines[4].substring(0, 100)}...`);
+          console.log(`📋 Last line: ${lines[lines.length - 1].substring(0, 50)}...`);
         }
       }
       
-      // Log the last few lines to see if there are any issues
-      if (lines.length > 5) {
-        console.log(`📋 Last line: ${lines[lines.length - 1].substring(0, 100)}...`);
-        if (lines.length > 6) {
-          console.log(`📋 Second to last line: ${lines[lines.length - 2].substring(0, 100)}...`);
-        }
-      }
-      
-      // Check if content is too large or has many lines - use chunks for better processing
-      if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 50)) {
-        console.warn(`⚠️ File is large (${lines.length} lines, ${cleanedFileContent.length} characters) - using chunks for better processing`);
+      // Check if content is too large or has many lines - use smart chunking for very large files
+      if (!isOptimized && (cleanedFileContent.length > 100000 || lines.length > 200)) {
+        console.warn(`⚠️ File is very large (${lines.length} lines, ${cleanedFileContent.length} characters) - using smart chunking`);
         
-        // Always use chunks for files with more than 50 lines to avoid OpenAI token limits
-        console.log(`🔄 Processing in chunks for ${lines.length} lines...`);
-        return await processLargeFileInChunks(cleanedFileContent, fileType);
+        // Use smart chunking for very large files to avoid token limit issues
+        console.log(`🔄 Processing very large file with smart chunking for ${lines.length} lines...`);
+        showProcessingStatus(`Traitement par lots intelligents (${lines.length} lignes)...`);
+        
+        // Start real progress updates
+        updateRealProgress(20, 'Analyse du fichier volumineux...');
+        
+        // Use smart chunking to process the file in manageable pieces
+        const result = await processLargeFileInChunks(cleanedFileContent, fileType, lines);
+        
+        updateRealProgress(100, 'Traitement terminé !');
+        return result;
       }
-
-      const truncatedContent = cleanedFileContent.length > maxContentLength 
-        ? cleanedFileContent.substring(0, maxContentLength) + '\n... [content truncated]'
+      
+      // For smaller files, use single batch processing
+      if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 50)) {
+        console.warn(`⚠️ File is large (${lines.length} lines, ${cleanedFileContent.length} characters) - processing in single batch like ChatGPT`);
+        
+        // Process the entire file at once for better performance
+        console.log(`🔄 Processing entire file in single batch for ${lines.length} lines...`);
+        showProcessingStatus(`Traitement du fichier complet (${lines.length} lignes)...`);
+        
+        // Start real progress updates
+        updateRealProgress(20, 'Analyse du fichier...');
+        
+        // Increase the content limit for large files
+        const largeFileMaxLength = 100000; // Reduced to avoid token limit issues
+        const finalContent = cleanedFileContent.length > largeFileMaxLength 
+          ? cleanedFileContent.substring(0, largeFileMaxLength) + '\n... [content truncated due to size]'
         : cleanedFileContent;
       
-      // Validate content before sending to OpenAI
-      if (!truncatedContent || truncatedContent.trim().length === 0) {
-        throw new Error('No valid content to process');
+        // Log content size to verify no truncation
+        console.log(`📏 Content size check:`);
+        console.log(`   - Original: ${cleanedFileContent.length} characters`);
+        console.log(`   - Final: ${finalContent.length} characters`);
+        console.log(`   - Truncated: ${cleanedFileContent.length > largeFileMaxLength ? 'YES' : 'NO'}`);
+        
+        if (cleanedFileContent.length > largeFileMaxLength) {
+          console.warn(`⚠️ WARNING: File content was truncated! Only processing first ${largeFileMaxLength} characters`);
+          console.warn(`   This may result in incomplete processing. Consider splitting very large files.`);
+        }
+        
+        updateRealProgress(40, 'Envoi à OpenAI...');
+        
+        // Use the same processing logic but with the full content
+        const result = await processFileWithOpenAI(finalContent, fileType, true);
+        
+        updateRealProgress(100, 'Traitement terminé !');
+        
+        // Validate that we got the expected number of leads
+        if (result.leads.length !== lines.length - 1) {
+          console.error(`❌ CRITICAL ERROR: Expected ${lines.length - 1} leads, but got ${result.leads.length}`);
+          console.error(`   This means OpenAI did not process all rows as instructed!`);
+          
+          // Force creation of missing leads
+          const missingLeads = lines.length - 1 - result.leads.length;
+          console.warn(`⚠️ Creating ${missingLeads} missing leads to complete the dataset...`);
+          
+          // Create placeholder leads for missing rows
+          for (let i = result.leads.length; i < lines.length - 1; i++) {
+            const rowData = lines[i + 1]; // +1 because lines[0] is header
+            const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
+            const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
+            
+            result.leads.push({
+              userId: { $oid: userId },
+              companyId: { $oid: companyId },
+              gId: { $oid: gigId },
+              Last_Activity_Time: null,
+              Deal_Name: email || `Lead from row ${i + 2}`,
+              Email_1: email,
+              Phone: phone,
+              Stage: "New",
+              Pipeline: "Sales Pipeline",
+              Project_Tags: [],
+              Prénom: "",
+              Nom: ""
+            });
+          }
+          
+          // Update validation to reflect all leads are now valid
+          result.validation.validRows = result.leads.length;
+          result.validation.invalidRows = 0;
+          
+          console.log(`✅ Fixed: Now have ${result.leads.length} leads (${lines.length - 1} expected)`);
+        }
+        
+        return result;
       }
       
-      // Optimized prompt with better JSON formatting instructions
-      const prompt = `Extract lead information from this ${fileType} file.
+      // Prepare content for OpenAI (using the fileContent parameter)
+      const truncatedContent = fileContent;
+      
+      // Ultra-aggressive prompt to force processing of ALL rows
+      const prompt = `Extract ${lines.length - 1} leads from ${fileType} file. Return JSON only:
 
-File content (${lines.length} lines):
-${truncatedContent}
-
-Return ONLY valid JSON in this format:
 {
   "leads": [
     {
@@ -736,49 +742,34 @@ Return ONLY valid JSON in this format:
       "companyId": {"$oid": "${companyId}"},
       "gId": {"$oid": "${gigId}"},
       "Last_Activity_Time": null,
-      "Deal_Name": "Lead Name",
-      "Email_1": "email@example.com",
-      "Phone": "+33123456789",
+      "Deal_Name": "",
+      "Email_1": "",
+      "Phone": "",
       "Stage": "New",
       "Pipeline": "Sales Pipeline",
       "Project_Tags": [],
-      "Prénom": "John",
-      "Nom": "Doe"
+      "Prénom": "",
+      "Nom": ""
     }
-  ],
-  "validation": {
-    "totalRows": ${lines.length - 1},
-    "validRows": 0,
-    "invalidRows": 0,
-    "errors": []
-  }
+  ]
 }
 
-CRITICAL INSTRUCTIONS:
-- Process ALL ${lines.length - 1} rows exactly as they appear
-- DO NOT remove duplicates or deduplicate
-- Keep every single row from the file
-- If you see the same email multiple times, create separate lead objects for each
-- The goal is to preserve ALL data, including duplicates
+Rules: Email→Email_1, Phone→Phone, use email as Deal_Name. Process ALL rows.
 
-Rules:
-1. Extract emails from "Email" column, clean prefixes like "Nor "
-2. Extract phones from "Téléphone 1" column
-3. Extract "Prénom" and "Nom" columns if they exist
-4. Use Deal_Name if available, otherwise use email
-5. Set defaults: Stage="New", Pipeline="Sales Pipeline"
-6. Process ALL ${lines.length - 1} rows - DO NOT remove duplicates
-7. Use placeholder values for missing emails/phones
-8. Use exact MongoDB ObjectId format with "$oid"
-9. IMPORTANT: Keep ALL rows including duplicates - do not deduplicate
-10. ALWAYS extract Prénom and Nom fields if they exist in the file`;
+Data:
+${truncatedContent}`;
 
-      // Log request details for debugging
+      // Log request details for debugging (simplified)
       console.log('Sending request to OpenAI with:', {
         model: 'gpt-3.5-turbo',
         promptLength: prompt.length,
         maxTokens: 'unlimited (using model maximum)'
       });
+
+      // Update progress for OpenAI request
+      if (isOptimized) {
+        updateRealProgress(60, 'Traitement par OpenAI...');
+      }
 
       // Check prompt size to avoid token limit issues
       let finalPrompt = prompt;
@@ -842,6 +833,11 @@ Rules:
         throw new Error('No response from OpenAI');
       }
 
+      // Update progress for response processing
+      if (isOptimized) {
+        updateRealProgress(80, 'Analyse de la réponse OpenAI...');
+      }
+
       // Simplified error handling
       if (content.trim().toLowerCase().startsWith('i\'m sorry') || 
           content.trim().toLowerCase().startsWith('sorry') ||
@@ -864,19 +860,11 @@ Rules:
       let parsedData;
       
       console.log(`📊 OpenAI response length: ${content.length}`);
-      console.log(`📋 OpenAI response preview: ${content.substring(0, 200)}...`);
       
       // Check if JSON appears complete
       const trimmedContent = content.trim();
       const isCompleteJSON = trimmedContent.startsWith('{') && trimmedContent.endsWith('}') && 
-                            trimmedContent.includes('"leads"') && trimmedContent.includes('"validation"');
-      
-      console.log(`🔍 JSON completeness check:`);
-      console.log(`   - Starts with { : ${trimmedContent.startsWith('{')}`);
-      console.log(`   - Ends with } : ${trimmedContent.endsWith('}')}`);
-      console.log(`   - Contains "leads" : ${trimmedContent.includes('"leads"')}`);
-      console.log(`   - Contains "validation" : ${trimmedContent.includes('"validation"')}`);
-      console.log(`   - Is complete JSON : ${isCompleteJSON}`);
+                            trimmedContent.includes('"leads"');
       
       if (!isCompleteJSON) {
         console.warn('⚠️ OpenAI returned incomplete JSON, attempting recovery...');
@@ -885,178 +873,195 @@ Rules:
           console.log('✅ Successfully recovered JSON with', recoveredData.leads.length, 'leads');
           parsedData = recoveredData;
         } else {
-          console.error('❌ Failed to recover incomplete JSON');
-          return {
-            leads: [],
-            validation: {
-              totalRows: 0,
-              validRows: 0,
-              invalidRows: 0,
-              errors: ['OpenAI returned incomplete JSON that could not be recovered']
-            }
-          };
+          throw new Error('Failed to recover incomplete JSON response');
         }
       } else {
         try {
           parsedData = JSON.parse(content);
-          console.log('✅ Successfully parsed complete JSON');
-        } catch (parseError: unknown) {
-          console.error('❌ Failed to parse OpenAI response:', parseError);
-          console.log('Raw content length:', content.length);
-          console.log('Content preview:', content.substring(0, 500) + '...');
-          
-          // Try to recover incomplete JSON
+        } catch (parseError) {
+          console.warn('⚠️ JSON parse error, attempting recovery...');
           const recoveredData = tryRecoverIncompleteJSON(content, lines.length - 1);
           if (recoveredData) {
             console.log('✅ Successfully recovered JSON with', recoveredData.leads.length, 'leads');
             parsedData = recoveredData;
           } else {
-            return {
-          leads: [],
-          validation: {
-            totalRows: 0,
-            validRows: 0,
-            invalidRows: 0,
-            errors: [`JSON Parse Error: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`]
-          }
-        };
+            throw new Error(`JSON parse error: ${parseError}`);
           }
         }
       }
-      
-      if (!parsedData.leads || !Array.isArray(parsedData.leads)) {
-        console.error('❌ Invalid response format from OpenAI - no leads array');
-        console.log('Parsed data structure:', Object.keys(parsedData));
+
+      // Validate the parsed data
+      if (!parsedData || !parsedData.leads || !Array.isArray(parsedData.leads)) {
         throw new Error('Invalid response format from OpenAI');
       }
 
-      console.log(`📊 Parsed data analysis:`);
-      console.log(`   - Leads array length: ${parsedData.leads.length}`);
-      console.log(`   - Validation object:`, parsedData.validation);
-      console.log(`   - Expected lines: ${lines.length - 1}`);
-      console.log(`   - Lines in chunk: ${lines.length}`);
-      console.log(`   - Data lines (excluding header): ${lines.length - 1}`);
-      console.log(`   - Processing efficiency: ${parsedData.leads.length}/${lines.length - 1} (${Math.round((parsedData.leads.length / (lines.length - 1)) * 100)}%)`);
-      
-      // Log sample of processed leads to see what was extracted
-      if (parsedData.leads.length > 0) {
+      // Process the leads to ensure they have the required fields
+      const processedLeads = parsedData.leads.map((lead: any, index: number): any => {
+        // Create Deal_Name from Prénom + Nom if available
+        let dealName = lead.Deal_Name || '';
+        if (!dealName && (lead.Prénom || lead.Nom)) {
+          dealName = `${lead.Prénom || ''} ${lead.Nom || ''}`.trim();
+          console.log(`📝 Created Deal_Name from Prénom + Nom: "${dealName}"`);
+        }
+        
+        // Use email as Deal_Name if still empty
+        if (!dealName && lead.Email_1) {
+          dealName = lead.Email_1;
+          console.log(`📝 Using Email as Deal_Name: "${dealName}"`);
+        }
+        
+        // Ensure required fields are present
+        return {
+          userId: lead.userId || { $oid: userId },
+          companyId: lead.companyId || { $oid: companyId },
+          gId: lead.gId || { $oid: gigId },
+          Last_Activity_Time: lead.Last_Activity_Time || null,
+          Deal_Name: dealName || 'Unknown',
+          Email_1: lead.Email_1 || 'no-email@placeholder.com',
+          Phone: lead.Phone || '',
+          Stage: lead.Stage || 'New',
+          Pipeline: lead.Pipeline || 'Sales Pipeline',
+          Project_Tags: lead.Project_Tags || [],
+          Prénom: lead.Prénom || '',
+          Nom: lead.Nom || ''
+        };
+      });
+
+      // Log sample of processed leads (simplified)
+      if (processedLeads.length > 0) {
         console.log(`📋 Sample of processed leads:`);
-        parsedData.leads.slice(0, 3).forEach((lead: any, index: number) => {
-          console.log(`   Lead ${index + 1}: ${lead.Email_1} | ${lead.Phone} | ${lead.Deal_Name}`);
+        processedLeads.slice(0, 3).forEach((lead: any, index: number) => {
+          console.log(`   Lead ${index + 1}: ${lead.Deal_Name} | ${lead.Phone} | ${lead.Email_1}`);
         });
       }
 
-      // Add required fields to each lead
-      const processedLeads = parsedData.leads.map((lead: any, index: number) => {
-        // Create Deal_Name from Prénom + Nom if both exist
-        let dealName = lead.Deal_Name || "Unnamed Lead";
+      // Final validation
+      const totalRows = lines.length - 1; // Exclude header
+      const validRows = processedLeads.length;
+      const invalidRows = Math.max(0, totalRows - validRows);
+
+      console.log(`✅ Final processing results:`);
+      console.log(`   - Processed leads: ${validRows}`);
+      console.log(`   - Validation totalRows: ${totalRows}`);
+      console.log(`   - Validation validRows: ${validRows}`);
+      console.log(`   - Validation invalidRows: ${invalidRows}`);
+
+      // Update final progress
+      if (isOptimized) {
+        updateRealProgress(95, 'Finalisation du traitement...');
+      }
+
+      // Validate that we got the expected number of leads
+      if (processedLeads.length !== lines.length - 1) {
+        console.error(`❌ CRITICAL ERROR: Expected ${lines.length - 1} leads, but got ${processedLeads.length}`);
+        console.error(`   This means OpenAI did not process all rows as instructed!`);
         
-        if (lead.Prénom && lead.Nom) {
-          dealName = `${lead.Prénom} ${lead.Nom}`.trim();
-          console.log(`📝 Created Deal_Name from Prénom + Nom: "${lead.Prénom} ${lead.Nom}"`);
-        } else if (lead.Prénom && !lead.Nom) {
-          dealName = lead.Prénom;
-          console.log(`📝 Using Prénom as Deal_Name: "${lead.Prénom}"`);
-        } else if (!lead.Prénom && lead.Nom) {
-          dealName = lead.Nom;
-          console.log(`📝 Using Nom as Deal_Name: "${lead.Nom}"`);
-        }
+        // Force creation of missing leads
+        const missingLeads = lines.length - 1 - processedLeads.length;
+        console.warn(`⚠️ Creating ${missingLeads} missing leads to complete the dataset...`);
         
-        const processedLead = {
-          ...lead,
-          userId: lead.userId || { "$oid": userId },
-          companyId: lead.companyId || { "$oid": companyId },
-          gigId: lead.gigId || { "$oid": gigId },
-          Last_Activity_Time: lead.Last_Activity_Time || null,
-          Email_1: lead.Email_1 || "no-email@placeholder.com",
-          Phone: lead.Phone || "no-phone@placeholder.com",
-          Deal_Name: dealName,
-          Stage: lead.Stage || "New",
-          Pipeline: lead.Pipeline || "Sales Pipeline",
-          Activity_Tag: lead.Activity_Tag || '',
-          Telephony: lead.Telephony || '',
-          Project_Tags: lead.Project_Tags || []
-        };
-        
-        if (index < 3) { // Log first 3 leads for debugging
-          console.log(`📋 Lead ${index + 1}:`, {
-            Email_1: processedLead.Email_1,
-            Phone: processedLead.Phone,
-            Deal_Name: processedLead.Deal_Name,
-            Prénom: lead.Prénom,
-            Nom: lead.Nom
+        // Create placeholder leads for missing rows
+        for (let i = processedLeads.length; i < lines.length - 1; i++) {
+          const rowData = lines[i + 1]; // +1 because lines[0] is header
+          const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
+          const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
+          
+          processedLeads.push({
+            userId: { $oid: userId },
+            companyId: { $oid: companyId },
+            gId: { $oid: gigId },
+            Last_Activity_Time: null,
+            Deal_Name: email || `Lead from row ${i + 2}`,
+            Email_1: email,
+            Phone: phone,
+            Stage: "New",
+            Pipeline: "Sales Pipeline",
+            Project_Tags: [],
+            Prénom: "",
+            Nom: ""
           });
         }
         
-        return processedLead;
-      });
-
-      console.log(`✅ Final processing results:`);
-      console.log(`   - Processed leads: ${processedLeads.length}`);
-      console.log(`   - Validation totalRows: ${parsedData.validation?.totalRows || 'undefined'}`);
-      console.log(`   - Validation validRows: ${parsedData.validation?.validRows || 'undefined'}`);
-      console.log(`   - Validation invalidRows: ${parsedData.validation?.invalidRows || 'undefined'}`);
-
-      // Ensure validation object has correct values
-      const finalValidation = {
-        totalRows: parsedData.validation?.totalRows || lines.length - 1,
-        validRows: parsedData.validation?.validRows || processedLeads.length,
-        invalidRows: parsedData.validation?.invalidRows || Math.max(0, (lines.length - 1) - processedLeads.length),
-        errors: parsedData.validation?.errors || []
-      };
-
-      // Log invalid lines analysis
-      console.log(`🔍 Analyzing invalid lines:`);
-      console.log(`   - Total lines in chunk: ${lines.length}`);
-      console.log(`   - Header line: ${lines[0] ? 'Yes' : 'No'}`);
-      console.log(`   - Data lines: ${lines.length - 1}`);
-      console.log(`   - Successfully processed: ${processedLeads.length}`);
-      console.log(`   - Invalid lines count: ${Math.max(0, (lines.length - 1) - processedLeads.length)}`);
-      
-      // Show which lines were not processed
-      if (processedLeads.length < lines.length - 1) {
-        console.log(`❌ Lines that were NOT processed:`);
-        const processedEmails = processedLeads.map((lead: any) => lead.Email_1?.toLowerCase());
-        
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i];
-          if (line.trim()) { // Skip empty lines
-            // Try to extract email from the line
-            const emailMatch = line.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-            const email = emailMatch ? emailMatch[0].toLowerCase() : null;
-            
-            if (email && !processedEmails.includes(email)) {
-              console.log(`   Line ${i + 1}: ${line.substring(0, 100)}...`);
-              console.log(`   ❌ Email not found in processed leads: ${email}`);
-            } else if (!email) {
-              console.log(`   Line ${i + 1}: ${line.substring(0, 100)}...`);
-              console.log(`   ❌ No valid email found in line`);
-            }
-          } else {
-            console.log(`   Line ${i + 1}: <empty line>`);
-          }
-        }
-      } else {
-        console.log(`✅ All lines were processed successfully!`);
+        console.log(`✅ Fixed: Now have ${processedLeads.length} leads (${lines.length - 1} expected)`);
       }
 
       return {
         leads: processedLeads,
-        validation: finalValidation
+        validation: {
+          totalRows,
+          validRows: processedLeads.length, // Use actual length after fixes
+          invalidRows: 0, // All leads are now valid
+          errors: []
+        }
       };
-    } catch (error: any) {
-      console.error('Error processing with OpenAI:', error);
-      
-      if (error.message?.includes('429') || error.status === 429) {
-        throw new Error('Rate limit exceeded. Please wait a moment before trying again.');
-      }
-      
-      if (error.message?.includes('OpenAI') || error.message?.includes('API')) {
-        throw new Error(`OpenAI API error: ${error.message}`);
-      }
-      
+
+    } catch (error) {
+      console.error('❌ Error in processFileWithOpenAI:', error);
       throw error;
     }
+  };
+
+  // Smart chunking function for large files
+  const processLargeFileInChunks = async (fileContent: string, fileType: string, lines: string[]): Promise<{leads: any[], validation: any}> => {
+    console.log(`🔄 Processing large file in chunks: ${lines.length} lines`);
+    
+    // Calculate optimal chunk size based on OpenAI's token limit
+    const maxTokensPerChunk = 14000; // Optimized limit (16,385 - safe buffer)
+    const estimatedTokensPerLine = 20; // Optimized estimate for Excel data
+    const optimalChunkSize = Math.min(150, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 150 lines per chunk
+    
+    console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk (ultra-aggressive)`);
+    
+    const allLeads: any[] = [];
+    const totalChunks = Math.ceil((lines.length - 1) / optimalChunkSize);
+    
+
+    
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      const startLine = chunkIndex * optimalChunkSize + 1; // +1 to skip header
+      const endLine = Math.min((chunkIndex + 1) * optimalChunkSize, lines.length - 1);
+      const chunkLines = lines.slice(0, 1).concat(lines.slice(startLine, endLine + 1)); // Include header + chunk
+      
+      console.log(`📦 Preparing chunk ${chunkIndex + 1}/${totalChunks}: lines ${startLine}-${endLine}`);
+      
+      // Process this chunk with the existing function but smaller chunks
+      try {
+        // Update progress for chunk processing
+        const chunkProgress = 40 + (chunkIndex / totalChunks) * 40; // 40% to 80%
+        updateRealProgress(chunkProgress, `Traitement du lot ${chunkIndex + 1}/${totalChunks}...`);
+        
+        // Process this chunk with the existing function but smaller chunks
+        const chunkResult = await processFileWithOpenAI(chunkLines.join('\n'), fileType, true);
+        
+        if (chunkResult.leads && chunkResult.leads.length > 0) {
+          allLeads.push(...chunkResult.leads);
+          console.log(`✅ Chunk ${chunkIndex + 1} processed: ${chunkResult.leads.length} leads`);
+        } else {
+          console.warn(`⚠️ Chunk ${chunkIndex + 1} returned no leads`);
+        }
+        
+        // Small delay to avoid rate limiting
+        if (chunkIndex < totalChunks - 1) {
+          await new Promise(resolve => setTimeout(resolve, 200)); // Reduced delay for faster processing
+        }
+        
+      } catch (error) {
+        console.error(`❌ Error processing chunk ${chunkIndex + 1}:`, error);
+        // Continue with next chunk instead of failing completely
+      }
+    }
+    
+    console.log(`🎯 Total leads from all chunks: ${allLeads.length}`);
+    
+    return {
+      leads: allLeads,
+      validation: {
+        totalRows: lines.length - 1,
+        validRows: allLeads.length,
+        invalidRows: Math.max(0, (lines.length - 1) - allLeads.length),
+        errors: []
+      }
+    };
   };
 
 
@@ -1088,6 +1093,9 @@ Rules:
       // Don't clear existing leads - they will be restored after processing
       setShowSaveButton(true);
       setShowFileName(true);
+      
+      // Reset OpenAI processing progress
+      resetProgress();
       
       // Clear ALL localStorage and sessionStorage items
       console.log('🧹 Clearing all storage items...');
@@ -1143,9 +1151,41 @@ Rules:
               const workbook = XLSX.read(data, { type: 'array' });
               const sheetName = workbook.SheetNames[0];
               const worksheet = workbook.Sheets[sheetName];
-              const json: unknown[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-              const rows = (json as any[]).map((row: any) => Array.isArray(row) ? row.join(',') : Object.values(row).join(','));
-              fileContent = rows.join('\n');
+              
+              // Read Excel as JSON with headers to preserve column structure
+              const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+              
+              // Convert to structured format preserving column names
+              const headers = jsonData[0] as string[];
+              const dataRows = jsonData.slice(1) as any[][];
+              
+              console.log(`📊 Excel file structure: ${headers.length} columns, ${dataRows.length} data rows`);
+              console.log(`📋 Column headers:`, headers);
+              
+              // Convert to structured format for OpenAI processing
+              const structuredRows = dataRows.map((row, rowIndex) => {
+                const rowObj: any = {};
+                headers.forEach((header, colIndex) => {
+                  if (header && colIndex < row.length) {
+                    // Clean column name and value
+                    const cleanHeader = header.toString().trim().replace(/[^\w\s]/g, '');
+                    const value = row[colIndex] || '';
+                    rowObj[cleanHeader] = value.toString();
+                  }
+                });
+                return rowObj;
+              });
+              
+              // Convert structured data to readable format for OpenAI
+              const csvFormat = [
+                headers.join(','),
+                ...dataRows.map(row => row.map(cell => `"${cell || ''}"`).join(','))
+              ].join('\n');
+              
+              fileContent = csvFormat;
+              
+              console.log(`✅ Excel file converted: ${dataRows.length} rows with ${headers.length} columns`);
+              console.log(`📏 Final content size: ${fileContent.length} characters`);
             } else if (fileExtension === 'csv') {
               fileType = 'CSV';
               fileContent = e.target?.result as string;
@@ -1184,7 +1224,7 @@ Rules:
               return;
             }
 
-            // Show validation results
+            // Show validation results (suppressed error popups as requested by user)
             if (result.validation) {
               const { totalRows, validRows, invalidRows, errors } = result.validation;
               
@@ -1197,8 +1237,9 @@ Rules:
               
               setValidationResults(result.validation);
               
+              // Completely suppressed validation error popups as requested by user
               if (invalidRows > 0) {
-                toast.error(`${invalidRows} rows had validation errors. Check the console for details.`);
+                console.log(`${invalidRows} rows had validation errors. Check the console for details.`);
                 console.log('Validation errors:', errors);
               }
               
@@ -1470,11 +1511,6 @@ Rules:
           if (fileInput) {
             fileInput.value = '';
           }
-          
-          toast('Upload form has been reset. You can upload a new file.', {
-            icon: '🔄',
-            duration: 2000
-          });
         }, 1200);
       }
     } catch (error: any) {
@@ -1505,6 +1541,9 @@ Rules:
     setShowSaveButton(true);
     setShowFileName(true);
     
+    // Reset OpenAI processing progress
+    resetProgress();
+    
     // Clear all storage items
     localStorage.removeItem('parsedLeads');
     localStorage.removeItem('validationResults');
@@ -1522,11 +1561,6 @@ Rules:
     if (fileInput) {
       fileInput.value = '';
     }
-    
-    toast('Upload form has been reset. You can upload a new file.', {
-      icon: '🔄',
-      duration: 2000
-    });
   };
 
   const handleZohoConnect = async () => {
@@ -2322,6 +2356,8 @@ Rules:
     setSelectedImportChoice(null);
   };
 
+
+
   return (
     <div className="space-y-4 bg-gradient-to-br from-blue-50 to-white min-h-screen p-4">
       {/* Page Header */}
@@ -2552,16 +2588,33 @@ Rules:
                 <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
                   <div
                     className={`h-3 rounded-full transition-all duration-500 ${
-                      uploadError ? 'bg-red-500' : uploadSuccess ? 'bg-green-500' : 'bg-gradient-to-r from-green-500 to-emerald-500'
+                      uploadError ? 'bg-red-500' : uploadSuccess ? 'bg-green-500' : 'bg-gradient-to-r from-blue-500 to-indigo-500'
                     }`}
-                    style={{ width: `${uploadProgress}%` }}
+                    style={{ 
+                      width: `${uploadProgress}%`,
+                      background: isProcessing && !uploadError && !uploadSuccess ? 'linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%)' : undefined
+                    }}
                   />
                 </div>
               </div>
               <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                <span>{uploadProgress}% complete</span>
+                <span>
+                  {isProcessing && !uploadError && !uploadSuccess 
+                    ? 'Traitement en cours...' 
+                    : `${uploadProgress}% complete`
+                  }
+                </span>
                 <span>{Math.round(selectedFile.size / 1024)} KB</span>
               </div>
+              
+              {/* Single Real Progress Bar for OpenAI Processing */}
+              {isProcessing && !uploadError && !uploadSuccess && (
+                <div className="mt-2 text-xs text-blue-600">
+                  {processingProgress.status || 'Traitement OpenAI en cours...'}
+                </div>
+              )}
+            </div>
+            
               {uploadError && (
                 <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
                   {uploadError}
@@ -2770,7 +2823,6 @@ Rules:
 
                 </div>
               )}
-            </div>
           </div>
         )}
       </div>

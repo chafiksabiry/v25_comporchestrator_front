@@ -93,7 +93,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
     // Vérifier que companyId est disponible
     if (!companyId) {
       console.error('Company ID not found in cookies');
-      alert('Company ID not found. Please refresh the page and try again.');
+      console.log('Company ID not found. Please refresh the page and try again.');
       return;
     }
 
@@ -259,11 +259,11 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       
     } catch (error) {
       console.error('Error updating onboarding progress:', error);
-      // Afficher un message d'erreur plus informatif
+      // Suppressed popup as requested by user
       if (error instanceof Error) {
-        alert(`Error: ${error.message}`);
+        console.log(`Error: ${error.message}`);
       } else {
-        alert('An error occurred while saving the configuration. Please try again.');
+        console.log('An error occurred while saving the configuration. Please try again.');
       }
     }
   };
