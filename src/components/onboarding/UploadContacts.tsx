@@ -1,5 +1,5 @@
 /**
- * UploadContacts Component
+ * UploadContacts Component - Composant d'importation et gestion des contacts/leads
  * 
  * Ce composant permet de gérer l'importation et la gestion des contacts/leads pour une entreprise.
  * Il offre deux méthodes principales d'importation :
@@ -761,7 +761,7 @@ ${truncatedContent}`;
 
       // Log request details for debugging (simplified)
       console.log('Sending request to OpenAI with:', {
-        model: 'gpt-4-turbo-preview',
+        model: 'gpt-3.5-turbo',
         promptLength: prompt.length,
         maxTokens: 'unlimited (using model maximum)'
       });
@@ -781,14 +781,14 @@ ${truncatedContent}`;
       }
 
       const requestBody = {
-        model: 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
+        model: 'gpt-3.5-turbo',
+          messages: [
+            {
+              role: 'system',
             content: 'You are a data processing expert. Return ONLY valid JSON. Never return text explanations.'
-          },
-          {
-            role: 'user',
+            },
+            {
+              role: 'user',
             content: finalPrompt
           }
         ],
@@ -1005,10 +1005,10 @@ ${truncatedContent}`;
   const processLargeFileInChunks = async (fileContent: string, fileType: string, lines: string[]): Promise<{leads: any[], validation: any}> => {
     console.log(`🔄 Processing large file in chunks: ${lines.length} lines`);
     
-    // Calculate optimal chunk size based on GPT-4-turbo's token limit
-    const maxTokensPerChunk = 80000; // Optimized for GPT-4-turbo (128K - safe buffer)
-    const estimatedTokensPerLine = 25; // Realistic estimate for Excel data
-    const optimalChunkSize = Math.min(500, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 500 lines per chunk
+    // Calculate optimal chunk size based on OpenAI's token limit
+    const maxTokensPerChunk = 14000; // Optimized limit (16,385 - safe buffer)
+    const estimatedTokensPerLine = 20; // Optimized estimate for Excel data
+    const optimalChunkSize = Math.min(150, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 150 lines per chunk
     
     console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk (ultra-aggressive)`);
     
