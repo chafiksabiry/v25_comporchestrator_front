@@ -1028,11 +1028,11 @@ ${truncatedContent}`;
     console.log(`🔄 Processing large file in chunks: ${lines.length} lines`);
     
     // Calculate optimal chunk size based on OpenAI's token limit
-    const maxTokensPerChunk = 12000; // Conservative limit (16,385 - buffer)
-    const estimatedTokensPerLine = 50; // Average tokens per line
+    const maxTokensPerChunk = 8000; // Very conservative limit (16,385 - large buffer)
+    const estimatedTokensPerLine = 30; // Reduced estimate for shorter prompt
     const optimalChunkSize = Math.floor(maxTokensPerChunk / estimatedTokensPerLine);
     
-    console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk`);
+    console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk (conservative)`);
     
     const allLeads: any[] = [];
     const totalChunks = Math.ceil((lines.length - 1) / optimalChunkSize);
@@ -1049,7 +1049,7 @@ ${truncatedContent}`;
         const chunkProgress = 40 + (chunkIndex / totalChunks) * 40; // 40% to 80%
         updateRealProgress(chunkProgress, `Traitement du lot ${chunkIndex + 1}/${totalChunks}...`);
         
-        // Process this chunk
+        // Process this chunk with the existing function but smaller chunks
         const chunkResult = await processFileWithOpenAI(chunkLines.join('\n'), fileType, true);
         
         if (chunkResult.leads && chunkResult.leads.length > 0) {
@@ -1082,6 +1082,8 @@ ${truncatedContent}`;
       }
     };
   };
+
+
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -2340,6 +2342,8 @@ ${truncatedContent}`;
     setShowImportChoiceModal(false);
     setSelectedImportChoice(null);
   };
+
+
 
   return (
     <div className="space-y-4 bg-gradient-to-br from-blue-50 to-white min-h-screen p-4">
