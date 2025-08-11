@@ -105,7 +105,10 @@ interface UploadContactsProps {
   onCancelProcessing?: () => void;
 }
 
-const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) => {
+const UploadContacts: React.FC<UploadContactsProps> = ({ onCancelProcessing }) => {
+  // Configuration OpenAI
+  const OPENAI_MODEL = 'gpt-4o-mini'; // Modèle OpenAI à utiliser (gpt-4o-mini, gpt-4-turbo, gpt-3.5-turbo)
+  
   // Function to cancel processing
   const cancelProcessing = () => {
     console.log('🛑 Cancelling processing...');
@@ -134,11 +137,14 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       delete (window as any).cancelUploadProcessing;
     };
   }, [onCancelProcessing]);
+  
   // Add a ref to track if the component has been initialized
   const componentInitializedRef = useRef(false);
   
   // Add a ref to track if we should prevent re-mounting
   const preventRemountRef = useRef(false);
+  
+  // State variables
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
@@ -147,9 +153,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [parsedLeads, setParsedLeads] = useState<Lead[]>([]);
-  const [showSaveButton, setShowSaveButton] = useState(true);
-  const [showFileName, setShowFileName] = useState(true);
+  const [parsedLeads, setParsedLeads] = useState<any[]>([]);
+  const [showSaveButton, setShowSaveButton] = useState(false);
+  const [showFileName, setShowFileName] = useState(false);
   const [hasZohoConfig, setHasZohoConfig] = useState(false);
   const [zohoConfig, setZohoConfig] = useState({
     clientId: '',
@@ -180,6 +186,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   const urlParamsProcessedRef = useRef(false);
   const processingRef = useRef(false);
   const dataRestoredRef = useRef(false);
+  const [selectedOpenAIModel, setSelectedOpenAIModel] = useState<string>(OPENAI_MODEL);
   
   // State for progress tracking
   const [processingProgress, setProcessingProgress] = useState<{
@@ -761,7 +768,7 @@ ${truncatedContent}`;
 
       // Log request details for debugging (simplified)
       console.log('Sending request to OpenAI with:', {
-        model: 'gpt-3.5-turbo',
+        model: OPENAI_MODEL,
         promptLength: prompt.length,
         maxTokens: 'unlimited (using model maximum)'
       });
@@ -773,7 +780,7 @@ ${truncatedContent}`;
 
       // Check prompt size to avoid token limit issues
       let finalPrompt = prompt;
-      if (prompt.length > 150000) { // Conservative limit for GPT-3.5-turbo
+      if (prompt.length > 150000) { // Conservative limit for OpenAI models
         console.warn('⚠️ Prompt is very large, truncating content...');
         const maxPromptLength = 100000;
         finalPrompt = prompt.substring(0, maxPromptLength) + '\n... [content truncated due to size]';
@@ -781,7 +788,7 @@ ${truncatedContent}`;
       }
 
       const requestBody = {
-        model: 'gpt-3.5-turbo',
+        model: selectedOpenAIModel,
           messages: [
             {
               role: 'system',
@@ -1008,9 +1015,9 @@ ${truncatedContent}`;
     // Calculate optimal chunk size based on OpenAI's token limit
     const maxTokensPerChunk = 14000; // Optimized limit (16,385 - safe buffer)
     const estimatedTokensPerLine = 20; // Optimized estimate for Excel data
-    const optimalChunkSize = Math.min(200, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 200 lines per chunk
+    const optimalChunkSize = Math.min(150, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 150 lines per chunk
     
-          console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk (optimized for speed)`);
+    console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk (ultra-aggressive)`);
     
     const allLeads: any[] = [];
     const totalChunks = Math.ceil((lines.length - 1) / optimalChunkSize);
@@ -2356,7 +2363,49 @@ ${truncatedContent}`;
     setSelectedImportChoice(null);
   };
 
+  // Test OpenAI connection with selected model
+  const testOpenAIConnectionWithModel = async () => {
+    try {
+      const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+      if (!openaiApiKey) {
+        toast.error('OpenAI API key not configured');
+        return;
+      }
 
+      toast.loading(`Testing connection with ${selectedOpenAIModel}...`);
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openaiApiKey}`
+        },
+        body: JSON.stringify({
+          model: selectedOpenAIModel,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a helpful assistant. Respond with "Connection successful!"'
+            },
+            {
+              role: 'user',
+              content: 'Test connection'
+            }
+          ],
+          max_tokens: 10
+        })
+      });
+
+      if (response.ok) {
+        toast.success(`✅ Connection successful with ${selectedOpenAIModel}!`);
+      } else {
+        const errorData = await response.json();
+        toast.error(`❌ Connection failed: ${errorData.error?.message || 'Unknown error'}`);
+      }
+    } catch (error: any) {
+      toast.error(`❌ Connection error: ${error.message}`);
+    }
+  };
 
   return (
     <div className="space-y-4 bg-gradient-to-br from-blue-50 to-white min-h-screen p-4">
@@ -2827,6 +2876,104 @@ ${truncatedContent}`;
         )}
       </div>
 
+      {/* OpenAI Model Selection */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
+        <div className="mb-4">
+          <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+            <Settings className="mr-2 h-5 w-5 text-blue-600" />
+            OpenAI Model Configuration
+          </h3>
+          <p className="mt-1 text-sm text-gray-600">Choose the AI model for processing your files. Different models offer different performance and cost trade-offs.</p>
+          
+          {/* Model Information */}
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="text-sm font-semibold text-blue-800 mb-2">📊 Model Comparison:</h4>
+            <div className="text-xs text-blue-700 space-y-1">
+              <div><strong>GPT-4o-mini:</strong> Fastest, most cost-effective, good quality (128K context)</div>
+              <div><strong>GPT-4-turbo:</strong> Best quality, balanced speed, higher cost (128K context)</div>
+              <div><strong>GPT-3.5-turbo:</strong> Legacy model, limited context (16K tokens), lowest cost</div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* GPT-4o-mini - Fast & Cost-effective */}
+          <div className={`border-2 rounded-xl p-4 cursor-pointer transition-all duration-200 ${
+            selectedOpenAIModel === 'gpt-4o-mini' 
+              ? 'border-blue-500 bg-blue-50 shadow-lg' 
+              : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+          }`} onClick={() => setSelectedOpenAIModel('gpt-4o-mini')}>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-semibold text-gray-900">GPT-4o-mini</h4>
+              {selectedOpenAIModel === 'gpt-4o-mini' && (
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              )}
+            </div>
+            <p className="text-sm text-gray-600 mb-2">Fast & Cost-effective</p>
+            <div className="text-xs text-gray-500">
+              <div>• Speed: ⚡⚡⚡⚡⚡</div>
+              <div>• Quality: ⭐⭐⭐⭐</div>
+              <div>• Cost: 💰💰</div>
+            </div>
+          </div>
+
+          {/* GPT-4-turbo - Balanced */}
+          <div className={`border-2 rounded-xl p-4 cursor-pointer transition-all duration-200 ${
+            selectedOpenAIModel === 'gpt-4-turbo' 
+              ? 'border-blue-500 bg-blue-50 shadow-lg' 
+              : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+          }`} onClick={() => setSelectedOpenAIModel('gpt-4-turbo')}>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-semibold text-gray-900">GPT-4-turbo</h4>
+              {selectedOpenAIModel === 'gpt-4-turbo' && (
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              )}
+            </div>
+            <p className="text-sm text-gray-600 mb-2">Balanced Performance</p>
+            <div className="text-xs text-gray-500">
+              <div>• Speed: ⚡⚡⚡⚡</div>
+              <div>• Quality: ⭐⭐⭐⭐⭐</div>
+              <div>• Cost: 💰💰💰</div>
+            </div>
+          </div>
+
+          {/* GPT-3.5-turbo - Legacy */}
+          <div className={`border-2 rounded-xl p-4 cursor-pointer transition-all duration-200 ${
+            selectedOpenAIModel === 'gpt-3.5-turbo' 
+              ? 'border-blue-500 bg-blue-50 shadow-lg' 
+              : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+          }`} onClick={() => setSelectedOpenAIModel('gpt-3.5-turbo')}>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-semibold text-gray-900">GPT-3.5-turbo</h4>
+              {selectedOpenAIModel === 'gpt-3.5-turbo' && (
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              )}
+            </div>
+            <p className="text-sm text-gray-600 mb-2">Legacy Model</p>
+            <div className="text-xs text-gray-500">
+              <div>• Speed: ⚡⚡⚡</div>
+              <div>• Quality: ⭐⭐⭐</div>
+              <div>• Cost: 💰</div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+          <p className="text-sm text-gray-600 mb-3">
+            <strong>Current Model:</strong> {selectedOpenAIModel}
+            {selectedOpenAIModel === 'gpt-4o-mini' && ' - Recommended for most use cases'}
+            {selectedOpenAIModel === 'gpt-4-turbo' && ' - Best quality, higher cost'}
+            {selectedOpenAIModel === 'gpt-3.5-turbo' && ' - Legacy model, limited context'}
+          </p>
+          <button
+            onClick={testOpenAIConnectionWithModel}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium py-2 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg"
+          >
+            🧪 Test Connection with {selectedOpenAIModel}
+          </button>
+        </div>
+      </div>
+
       {/* Channel Filter */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
                   <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
@@ -3155,6 +3302,6 @@ ${truncatedContent}`;
       )}
     </div>
   );
-});
+};
 
 export default UploadContacts;
