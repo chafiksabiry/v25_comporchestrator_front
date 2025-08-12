@@ -979,7 +979,7 @@ ${truncatedContent}`;
       // Update progress for chunk processing
       const chunkProgress = 30 + (chunkIndex / totalChunks) * 60; // 30% to 90%
       const currentChunkProgress = Math.round(chunkProgress);
-      updateRealProgress(currentChunkProgress, `Traitement du lot ${chunkIndex + 1}/${totalChunks} (lignes ${chunkIndex * 500 + 1}-${Math.min((chunkIndex + 1) * 500, chunkLines.length - 1)})...`);
+      updateRealProgress(currentChunkProgress, `Traitement du lot ${chunkIndex + 1}/${totalChunks} (lignes ${chunkIndex * 100 + 1}-${Math.min((chunkIndex + 1) * 100, chunkLines.length - 1)})...`);
       
       // Process this chunk
       const chunkResult = await processFileWithOpenAI(chunkLines.join('\n'), fileType, true);
@@ -1004,10 +1004,10 @@ ${truncatedContent}`;
   // Smart chunking function for large files
   const processLargeFileInChunks = async (fileContent: string, fileType: string, lines: string[]): Promise<{leads: any[], validation: any}> => {
     
-    // Calculate optimal chunk size for maximum speed
-    const maxTokensPerChunk = 14000; // Optimized limit (16,385 - safe buffer)
-    const estimatedTokensPerLine = 15; // Reduced estimate for faster processing
-    const optimalChunkSize = Math.min(500, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 500 lines per chunk for speed
+    // Calculate optimal chunk size to respect OpenAI token limits
+    const maxTokensPerChunk = 12000; // Conservative limit (16,385 - safe buffer)
+    const estimatedTokensPerLine = 25; // Realistic estimate for CSV data
+    const optimalChunkSize = Math.min(100, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 100 lines per chunk for safety
     
     
     const allLeads: any[] = [];
@@ -1017,7 +1017,7 @@ ${truncatedContent}`;
     updateRealProgress(30, `Début du traitement par lots (${totalChunks} lots à traiter)...`);
     
     // Process chunks in parallel for maximum speed
-    const maxConcurrent = 15; // Process 15 chunks simultaneously
+    const maxConcurrent = 20; // Process 20 chunks simultaneously to compensate for smaller chunks
     const chunkPromises: Promise<any>[] = [];
     
     for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
