@@ -123,32 +123,21 @@ const CompanyOnboarding = () => {
     const hasParsedLeads = localStorage.getItem("parsedLeads");
     const wasManuallyClosed = sessionStorage.getItem("uploadContactsManuallyClosed");
     
-    if (hasParsedLeads && !wasManuallyClosed) {
-      // Check if we're in a phase that should show UploadContacts
-      const shouldShowUploadContacts = displayedPhase >= 2;
-      
-      if (shouldShowUploadContacts && !showUploadContacts) {
-        // Restore UploadContacts view only once
-        console.log("🔄 Restoring UploadContacts view - parsed leads exist and phase allows it");
-        setShowUploadContacts(true);
-      } else if (!shouldShowUploadContacts) {
-        // Clean up if phase is too early
-        console.log("🧹 Cleaning parsed leads - current phase too early:", displayedPhase);
-        localStorage.removeItem("parsedLeads");
-        if (showUploadContacts) {
-          setShowUploadContacts(false);
-        }
-      }
+    // Only restore if we have leads AND we're not manually closed AND we're in the right phase
+    if (hasParsedLeads && !wasManuallyClosed && displayedPhase >= 2 && !showUploadContacts) {
+      console.log("🔄 Restoring UploadContacts view - parsed leads exist and phase allows it");
+      setShowUploadContacts(true);
     }
-  }, [displayedPhase]); // Remove showUploadContacts from dependencies to prevent loops
+  }, [displayedPhase]); // Remove showUploadContacts to prevent loops
 
-  // Prevent automatic restoration when manually closed
+  // Clean up parsed leads when phase changes and component is not showing
   useEffect(() => {
-    if (!showUploadContacts) {
-      // Add a flag to prevent auto-restoration
-      sessionStorage.setItem("uploadContactsManuallyClosed", "true");
+    if (displayedPhase < 2 && showUploadContacts) {
+      console.log("🧹 Cleaning parsed leads - current phase too early:", displayedPhase);
+      localStorage.removeItem("parsedLeads");
+      setShowUploadContacts(false);
     }
-  }, [showUploadContacts]);
+  }, [displayedPhase, showUploadContacts]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasGigs, setHasGigs] = useState(false);
   const [hasLeads, setHasLeads] = useState(false);
@@ -1398,17 +1387,7 @@ const CompanyOnboarding = () => {
           const isCompleted = isPhaseCompleted(phase.id);
           const isAccessible = isPhaseAccessible(phase.id);
 
-          // Debug pour la Phase 3
-          if (phase.id === 3) {
-            console.log("Phase 3 Debug:", {
-              isActive,
-              isCompleted,
-              isAccessible,
-              currentPhase,
-              displayedPhase,
-              completedSteps,
-            });
-          }
+
 
           return (
             <div
@@ -1488,19 +1467,6 @@ const CompanyOnboarding = () => {
                 )
                 .every((s) => s.disabled || completedSteps.includes(s.id));
             const canAccessStep = isPhaseAccessible(displayedPhaseData.id);
-
-            // Debug pour l'étape 13
-            if (step.id === 13) {
-              console.log("Step 13 Debug:", {
-                isClickable,
-                isCompleted,
-                isCurrentStep,
-                canAccessStep,
-                stepDisabled: step.disabled,
-                completedSteps,
-                displayedPhaseData: displayedPhaseData.id,
-              });
-            }
 
             return (
               <div
