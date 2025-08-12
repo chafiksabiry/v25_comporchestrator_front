@@ -741,20 +741,26 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       "userId": {"$oid": "${userId}"},
       "companyId": {"$oid": "${companyId}"},
       "gigId": {"$oid": "${gigId}"},
-      "Deal_Name": "",
-      "Email_1": "",
-      "Phone": "",
+      "Deal_Name": "Prénom Nom",
+      "Email_1": "email@exemple.com",
+      "Phone": "+33123456789",
       "Stage": "New",
       "Pipeline": "Sales Pipeline"
     }
   ]
 }
 
-Rules: 
+EXEMPLE: Si une ligne a Prénom="Jean" et Nom="Dupont", alors Deal_Name="Jean Dupont"
+EXEMPLE: Si une ligne a Prénom="Marie" et Nom="", alors Deal_Name="Marie Unknown"
+EXEMPLE: Si une ligne a Prénom="" et Nom="Martin", alors Deal_Name="Unknown Martin"
+
+CRITICAL RULES:
 1. Email→Email_1, Phone→Phone
-2. Deal_Name = Prénom + Nom (priorité absolue)
-3. Si pas de Prénom/Nom, alors Deal_Name = Email
-4. Process ALL rows - never skip any
+2. Deal_Name = Prénom + Nom (OBLIGATOIRE pour toutes les lignes)
+3. Si Prénom ou Nom manque, utilise "Unknown" pour la partie manquante
+4. JAMAIS utiliser l'email comme Deal_Name sauf si Prénom ET Nom sont vides
+5. Process ALL rows - never skip any
+6. Format Deal_Name: "Prénom Nom" (exemple: "Jean Dupont", "Marie Unknown", "Unknown Martin")
 
 Data:
 ${truncatedContent}`;
@@ -886,15 +892,19 @@ ${truncatedContent}`;
 
       // Process the leads to ensure they have the required fields
       const processedLeads = parsedData.leads.map((lead: any): any => {
-        // Create Deal_Name from Prénom + Nom if available
-        let dealName = lead.Deal_Name || '';
-        if (!dealName && (lead.Prénom || lead.Nom)) {
-          dealName = `${lead.Prénom || ''} ${lead.Nom || ''}`.trim();
-        }
+        // FORCE Deal_Name to be Prénom + Nom (never email)
+        let dealName = '';
         
-        // Use email as Deal_Name if still empty
-        if (!dealName && lead.Email_1) {
-          dealName = lead.Email_1;
+        // Extract Prénom and Nom from the lead data
+        const prenom = lead.Prénom || lead.prénom || lead.Prenom || lead.prenom || '';
+        const nom = lead.Nom || lead.nom || lead.Name || lead.name || '';
+        
+        // Always create Deal_Name from Prénom + Nom
+        if (prenom || nom) {
+          dealName = `${prenom} ${nom}`.trim();
+        } else {
+          // Only use email if absolutely no name data available
+          dealName = lead.Deal_Name || 'Unknown Lead';
         }
         
         // Ensure required fields are present
@@ -903,14 +913,14 @@ ${truncatedContent}`;
           companyId: lead.companyId || { $oid: companyId },
           gId: lead.gId || { $oid: gigId },
           Last_Activity_Time: lead.Last_Activity_Time || null,
-          Deal_Name: dealName || 'Unknown',
+          Deal_Name: dealName,
           Email_1: lead.Email_1 || 'no-email@placeholder.com',
           Phone: lead.Phone || '',
           Stage: lead.Stage || 'New',
           Pipeline: lead.Pipeline || 'Sales Pipeline',
           Project_Tags: lead.Project_Tags || [],
-          Prénom: lead.Prénom || '',
-          Nom: lead.Nom || ''
+          Prénom: prenom,
+          Nom: nom
         };
       });
 
@@ -1017,7 +1027,7 @@ ${truncatedContent}`;
     updateRealProgress(30, `Début du traitement par lots (${totalChunks} lots à traiter)...`);
     
     // Process chunks in parallel for maximum speed
-    const maxConcurrent = 20; // Process 20 chunks simultaneously to compensate for smaller chunks
+    const maxConcurrent = 25; // Process 25 chunks simultaneously for maximum speed
     const chunkPromises: Promise<any>[] = [];
     
     for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
