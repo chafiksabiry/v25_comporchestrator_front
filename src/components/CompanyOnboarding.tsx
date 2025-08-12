@@ -109,11 +109,7 @@ interface GigResponse {
 }
 
 const CompanyOnboarding = () => {
-  // Early return if user wants to go back
-  if ((window as any).userWantsToGoBack === true) {
-    console.log('⏸️ CompanyOnboarding component not rendering - userWantsToGoBack flag is true');
-    return null;
-  }
+  // Remove early return - we need to render the component to show onboarding interface
 
   const [currentPhase, setCurrentPhase] = useState(1);
   const [displayedPhase, setDisplayedPhase] = useState(1);
@@ -130,9 +126,9 @@ const CompanyOnboarding = () => {
       return;
     }
     
-    // Skip auto-restore if user wants to go back (window flag)
-    if ((window as any).userWantsToGoBack === true) {
-      console.log('⏸️ Skipping UploadContacts auto-restore - userWantsToGoBack flag is true');
+    // Skip auto-restore if user explicitly clicked back
+    if (userClickedBackRef.current) {
+      console.log('⏸️ Skipping UploadContacts auto-restore - user clicked back');
       return;
     }
     
@@ -1093,12 +1089,13 @@ const CompanyOnboarding = () => {
     if (showUploadContacts) {
       console.log('🛑 Back to onboarding clicked while UploadContacts is active - cancelling processing');
       
-      // Set the flag first to prevent auto-restore
-      userClickedBackRef.current = true;
+      // Prevent multiple clicks while processing
+      if (userClickedBackRef.current) {
+        console.log('⚠️ Back button already clicked, ignoring duplicate click');
+        return;
+      }
       
-      // Set a flag on window to tell UploadContacts component not to auto-restore
-      (window as any).userWantsToGoBack = true;
-      console.log('✅ Set userWantsToGoBack flag to true');
+      userClickedBackRef.current = true;
       
       // Call the cancel processing function if it exists
       if ((window as any).cancelUploadProcessing) {
@@ -1119,20 +1116,18 @@ const CompanyOnboarding = () => {
       console.log('✅ Set showUploadContacts to false');
       
       // Simply close UploadContacts and return to normal CompanyOnboarding state
-      // No need to navigate to App.tsx since we're already in the right tab
       console.log('✅ Closing UploadContacts and returning to normal onboarding state');
       
-      // Reset the flag after a longer delay to ensure navigation completes
+      // Reset the flag after a short delay
       setTimeout(() => {
         userClickedBackRef.current = false;
-        (window as any).userWantsToGoBack = false;
-        console.log('🔄 Reset userWantsToGoBack flag to false');
-      }, 1000);
+        console.log('🔄 Reset userClickedBackRef flag to false');
+      }, 500);
       return;
     }
     
-    // Prevent multiple clicks while processing for other cases (but not for UploadContacts)
-    if (userClickedBackRef.current && !showUploadContacts) {
+    // Prevent multiple clicks while processing for other cases
+    if (userClickedBackRef.current) {
       console.log('⚠️ Back button already clicked, ignoring duplicate click');
       return;
     }
@@ -1247,19 +1242,8 @@ const CompanyOnboarding = () => {
     );
   }
 
-  // Skip rendering if user wants to go back
-  if ((window as any).userWantsToGoBack === true) {
-    console.log('⏸️ Skipping CompanyOnboarding render - userWantsToGoBack flag is true');
-    // Return a loading state instead of null to prevent re-renders
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Returning to onboarding...</p>
-        </div>
-      </div>
-    );
-  }
+  // Don't skip rendering - allow component to render normally
+  // The userWantsToGoBack flag will be handled by the child components
 
   // Déterminer quel composant afficher
   let activeComponent = null;
@@ -1332,12 +1316,13 @@ const CompanyOnboarding = () => {
     onBack = () => {
       console.log('🛑 Back clicked - returning to onboarding');
       
-      // Set the flag first to prevent auto-restore
-      userClickedBackRef.current = true;
+      // Prevent multiple clicks while processing
+      if (userClickedBackRef.current) {
+        console.log('⚠️ Back button already clicked, ignoring duplicate click');
+        return;
+      }
       
-      // Set a flag on window to tell UploadContacts component not to auto-restore
-      (window as any).userWantsToGoBack = true;
-      console.log('✅ Set userWantsToGoBack flag to true in onBack');
+      userClickedBackRef.current = true;
       
       // Remove all storage items to prevent auto-restore
       localStorage.removeItem('parsedLeads');
@@ -1352,20 +1337,11 @@ const CompanyOnboarding = () => {
       setShowUploadContacts(false);
       console.log('✅ Set showUploadContacts to false in onBack');
       
-      // Navigate back to the main onboarding view by changing the active tab
-      // This will trigger a re-render of App.tsx and show the main onboarding interface
-      localStorage.setItem('activeTab', 'company-onboarding');
-      // Trigger a custom event to notify the App component
-      window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } }));
-      
-      console.log('✅ Triggered navigation back to main onboarding view');
-      
-      // Reset the flag after a delay to ensure navigation completes
+      // Reset the flag after a short delay
       setTimeout(() => {
         userClickedBackRef.current = false;
-        (window as any).userWantsToGoBack = false;
-        console.log('🔄 Reset userWantsToGoBack flag to false in onBack');
-      }, 1000);
+        console.log('🔄 Reset userClickedBackRef flag to false in onBack');
+      }, 500);
     };
   } else if (ActiveStepComponent) {
     activeComponent = <ActiveStepComponent />;
@@ -1391,11 +1367,7 @@ const CompanyOnboarding = () => {
     );
   }
 
-  // Skip rendering if user wants to go back
-  if ((window as any).userWantsToGoBack === true) {
-    console.log('⏸️ Skipping CompanyOnboarding main render - userWantsToGoBack flag is true');
-    return null;
-  }
+  // Allow normal rendering - userWantsToGoBack flag is handled by child components
 
   // Utiliser displayedPhase au lieu de currentPhase pour afficher les steps
   const displayedPhaseData = phases[displayedPhase - 1];
