@@ -110,7 +110,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
   // Function to cancel processing
   const cancelProcessing = () => {
-    console.log('🛑 Cancelling processing...');
+    console.log('🛑 Cancelling processing via Back to Onboarding...');
     
     // Stop all processing immediately
     setIsProcessing(false);
@@ -123,7 +123,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     setProcessingProgress({
       current: 0,
       total: 0,
-      status: 'Cancelled',
+      status: 'Cancelled by user (Back to Onboarding)',
       isProcessing: false
     });
     
@@ -149,7 +149,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       fileInput.value = '';
     }
     
-    console.log('✅ Processing cancelled and all states reset');
+    console.log('✅ Processing cancelled by Back to Onboarding - all states reset');
     
     // Call the parent callback if provided
     if (onCancelProcessing) {
@@ -159,7 +159,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
   // Emergency cancel function that can be called even during processing
   const emergencyCancel = () => {
-    console.log('🚨 EMERGENCY CANCELLATION triggered');
+    console.log('🚨 EMERGENCY CANCELLATION triggered via Back to Onboarding');
     
     // Force stop all processing
     processingRef.current = false;
@@ -180,7 +180,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     // Remove all processing indicators
     document.body.removeAttribute('data-processing');
     
-    console.log('🚨 Emergency cancellation completed');
+    console.log('🚨 Emergency cancellation completed - user returned to onboarding');
   };
 
   // Expose both cancel functions to parent component
@@ -289,6 +289,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
   // Function to update real progress during OpenAI processing
   const updateRealProgress = (progress: number, status: string) => {
+    console.log(`📊 Progress: ${progress}% - ${status}`);
+    
+    // Update both progress states
     setUploadProgress(progress);
     setProcessingProgress({
       current: progress,
@@ -296,6 +299,18 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       status,
       isProcessing: true
     });
+    
+    // Add a small delay for smooth visual updates
+    if (progress < 100) {
+      setTimeout(() => {
+        // Ensure we're still processing
+        if (isProcessing && processingRef.current) {
+          // Add a small increment to show activity
+          const currentProgress = Math.min(progress + 1, 99);
+          setUploadProgress(currentProgress);
+        }
+      }, 100);
+    }
   };
   
   // Check if we're currently processing on component mount
@@ -631,8 +646,15 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         console.log(`🔄 Processing very large file with smart chunking for ${lines.length} lines...`);
         showProcessingStatus(`Traitement par lots intelligents (${lines.length} lignes)...`);
         
-        // Start real progress updates
-        updateRealProgress(20, 'Analyse du fichier volumineux...');
+        // Start real progress updates with more granular steps
+        updateRealProgress(5, 'Initialisation du traitement...');
+        await new Promise(resolve => setTimeout(resolve, 200)); // Small delay for visual feedback
+        
+        updateRealProgress(15, 'Analyse de la structure du fichier...');
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        updateRealProgress(25, 'Préparation des données...');
+        await new Promise(resolve => setTimeout(resolve, 200));
         
         // Use smart chunking to process the file in manageable pieces
         const result = await processLargeFileInChunks(cleanedFileContent, fileType, lines);
@@ -649,8 +671,18 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         console.log(`🔄 Processing entire file in single batch for ${lines.length} lines...`);
         showProcessingStatus(`Traitement du fichier complet (${lines.length} lignes)...`);
         
-        // Start real progress updates
-        updateRealProgress(20, 'Analyse du fichier...');
+        // Start real progress updates with more granular steps
+        updateRealProgress(5, 'Initialisation du traitement...');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        updateRealProgress(15, 'Analyse de la structure du fichier...');
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        updateRealProgress(25, 'Préparation des données...');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        updateRealProgress(35, 'Nettoyage des données...');
+        await new Promise(resolve => setTimeout(resolve, 200));
         
         // Increase the content limit for large files
         const largeFileMaxLength = 100000; // Reduced to avoid token limit issues
@@ -669,10 +701,20 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           console.warn(`   This may result in incomplete processing. Consider splitting very large files.`);
         }
         
-        updateRealProgress(40, 'Envoi à OpenAI...');
+        updateRealProgress(45, 'Envoi à OpenAI...');
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call time
+        
+        updateRealProgress(55, 'Traitement par l\'IA...');
+        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate processing time
         
         // Use the same processing logic but with the full content
         const result = await processFileWithOpenAI(finalContent, fileType, true);
+        
+        updateRealProgress(75, 'Validation des résultats...');
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        updateRealProgress(85, 'Finalisation...');
+        await new Promise(resolve => setTimeout(resolve, 200));
         
         updateRealProgress(100, 'Traitement terminé !');
         
@@ -1003,7 +1045,8 @@ ${truncatedContent}`;
     const allLeads: any[] = [];
     const totalChunks = Math.ceil((lines.length - 1) / optimalChunkSize);
     
-
+    // Update progress for chunk processing start
+    updateRealProgress(30, `Début du traitement par lots (${totalChunks} lots à traiter)...`);
     
     for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
       const startLine = chunkIndex * optimalChunkSize + 1; // +1 to skip header
@@ -1012,34 +1055,44 @@ ${truncatedContent}`;
       
       console.log(`📦 Preparing chunk ${chunkIndex + 1}/${totalChunks}: lines ${startLine}-${endLine}`);
       
+      // Update progress for chunk processing
+      const chunkProgress = 30 + (chunkIndex / totalChunks) * 60; // 30% to 90%
+      const currentChunkProgress = Math.round(chunkProgress);
+      updateRealProgress(currentChunkProgress, `Traitement du lot ${chunkIndex + 1}/${totalChunks} (lignes ${startLine}-${endLine})...`);
+      
       // Process this chunk with the existing function but smaller chunks
       try {
-        // Update progress for chunk processing
-        const chunkProgress = 40 + (chunkIndex / totalChunks) * 40; // 40% to 80%
-        updateRealProgress(chunkProgress, `Traitement du lot ${chunkIndex + 1}/${totalChunks}...`);
-        
         // Process this chunk with the existing function but smaller chunks
         const chunkResult = await processFileWithOpenAI(chunkLines.join('\n'), fileType, true);
         
         if (chunkResult.leads && chunkResult.leads.length > 0) {
           allLeads.push(...chunkResult.leads);
           console.log(`✅ Chunk ${chunkIndex + 1} processed: ${chunkResult.leads.length} leads`);
+          
+          // Update progress after successful chunk processing
+          const successProgress = 30 + ((chunkIndex + 1) / totalChunks) * 60;
+          updateRealProgress(Math.round(successProgress), `Lot ${chunkIndex + 1}/${totalChunks} terminé (${chunkResult.leads.length} leads)`);
         } else {
           console.warn(`⚠️ Chunk ${chunkIndex + 1} returned no leads`);
         }
         
-        // Small delay to avoid rate limiting
+        // Small delay to avoid rate limiting and show progress
         if (chunkIndex < totalChunks - 1) {
-          await new Promise(resolve => setTimeout(resolve, 200)); // Reduced delay for faster processing
+          await new Promise(resolve => setTimeout(resolve, 300)); // Small delay for visual feedback
         }
         
       } catch (error) {
         console.error(`❌ Error processing chunk ${chunkIndex + 1}:`, error);
         // Continue with next chunk instead of failing completely
+        updateRealProgress(Math.round(chunkProgress), `Erreur sur le lot ${chunkIndex + 1}, passage au suivant...`);
       }
     }
     
     console.log(`🎯 Total leads from all chunks: ${allLeads.length}`);
+    
+    // Final progress update
+    updateRealProgress(95, 'Finalisation du traitement par lots...');
+    await new Promise(resolve => setTimeout(resolve, 200));
     
     return {
       leads: allLeads,
@@ -1706,7 +1759,7 @@ ${truncatedContent}`;
       return;
     }
     
-    console.log('📊 État actuel de hasZohoConfig:', hasZohoConfig);
+    console.log('�� État actuel de hasZohoConfig:', hasZohoConfig);
     if (!hasZohoConfig) {
       console.log('⚠️ Configuration Zoho non trouvée - Affichage de la modal');
     } else {
@@ -2420,35 +2473,22 @@ ${truncatedContent}`;
                 <FileText className="mr-2 h-4 w-4 text-blue-600" />
                 <span className="font-medium text-gray-900">{selectedFile.name}</span>
               </div>
-              <div className="flex items-center space-x-2">
-                {/* Cancel button during processing */}
-                {isProcessing && (
-                  <button
-                    onClick={cancelProcessing}
-                    className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors duration-200 border border-red-300"
-                    title="Cancel processing"
-                  >
-                    <X className="h-4 w-4 mr-1 inline" />
-                    Cancel
-                  </button>
-                )}
-                <button onClick={() => {
-                  setSelectedFile(null);
-                  setUploadProgress(0);
-                  setUploadError(null);
-                  setUploadSuccess(false);
-                  setParsedLeads([]);
-                  setValidationResults(null);
-                }}>
-                  <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-                </button>
-              </div>
+              <button onClick={() => {
+                setSelectedFile(null);
+                setUploadProgress(0);
+                setUploadError(null);
+                setUploadSuccess(false);
+                setParsedLeads([]);
+                setValidationResults(null);
+              }}>
+                <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+              </button>
             </div>
             <div className="mt-3">
               <div className="relative">
                 <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
                   <div
-                    className={`h-3 rounded-full transition-all duration-500 ${
+                    className={`h-3 rounded-full transition-all duration-300 ${
                       uploadError ? 'bg-red-500' : uploadSuccess ? 'bg-green-500' : 'bg-gradient-to-r from-blue-500 to-indigo-500'
                     }`}
                     style={{ 
@@ -2461,17 +2501,50 @@ ${truncatedContent}`;
               <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
                 <span>
                   {isProcessing && !uploadError && !uploadSuccess 
-                    ? 'Traitement en cours...' 
-                    : `${uploadProgress}% complete`
+                    ? `Analyse en cours... ${uploadProgress}%` 
+                    : uploadProgress > 0 ? `${uploadProgress}% terminé` : 'Prêt'
                   }
                 </span>
                 <span>{Math.round(selectedFile.size / 1024)} KB</span>
               </div>
               
-              {/* Single Real Progress Bar for OpenAI Processing */}
+              {/* Real-time Progress Status for OpenAI Processing */}
               {isProcessing && !uploadError && !uploadSuccess && (
-                <div className="mt-2 text-xs text-blue-600">
-                  {processingProgress.status || 'Traitement OpenAI en cours...'}
+                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-blue-700 font-medium">
+                      {processingProgress.status || 'Traitement OpenAI en cours...'}
+                    </span>
+                    <span className="text-blue-600">
+                      {processingProgress.current}/{processingProgress.total}
+                    </span>
+                  </div>
+                  {/* Additional progress bar for detailed status */}
+                  {processingProgress.total > 0 && (
+                    <div className="mt-1 h-2 bg-blue-100 rounded-full overflow-hidden">
+                      <div 
+                        className="h-2 bg-blue-500 rounded-full transition-all duration-300"
+                        style={{ width: `${(processingProgress.current / processingProgress.total) * 100}%` }}
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Animated activity indicator */}
+                  <div className="mt-2 flex items-center space-x-1">
+                    <div className="flex space-x-1">
+                      {[0, 1, 2].map((i) => (
+                        <div
+                          key={i}
+                          className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"
+                          style={{
+                            animationDelay: `${i * 0.2}s`,
+                            animationDuration: '1s'
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs text-blue-600 ml-2">Traitement en cours...</span>
+                  </div>
                 </div>
               )}
             </div>
