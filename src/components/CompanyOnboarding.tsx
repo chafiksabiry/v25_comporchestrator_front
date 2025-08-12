@@ -128,6 +128,15 @@ const CompanyOnboarding = () => {
       console.log("🔄 Restoring UploadContacts view - parsed leads exist and phase allows it");
       setShowUploadContacts(true);
     }
+    
+    // Debug: log the current state
+    console.log("🔍 UploadContacts restoration check:", {
+      hasParsedLeads: !!hasParsedLeads,
+      wasManuallyClosed: !!wasManuallyClosed,
+      displayedPhase,
+      showUploadContacts,
+      shouldRestore: hasParsedLeads && !wasManuallyClosed && displayedPhase >= 2 && !showUploadContacts
+    });
   }, [displayedPhase]); // Remove showUploadContacts to prevent loops
 
   // Clean up parsed leads when phase changes and component is not showing
@@ -138,6 +147,15 @@ const CompanyOnboarding = () => {
       setShowUploadContacts(false);
     }
   }, [displayedPhase, showUploadContacts]);
+
+  // Prevent any automatic restoration when manually closed
+  useEffect(() => {
+    if (!showUploadContacts) {
+      // Set the flag immediately when component is closed
+      sessionStorage.setItem("uploadContactsManuallyClosed", "true");
+      console.log("🚫 Set manual close flag - preventing auto-restoration");
+    }
+  }, [showUploadContacts]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasGigs, setHasGigs] = useState(false);
   const [hasLeads, setHasLeads] = useState(false);
@@ -1247,7 +1265,14 @@ const CompanyOnboarding = () => {
     // Pour Upload Contacts
     if (stepId === 6) {
       if (allPreviousCompleted) {
-        setShowUploadContacts(true);
+        // Check if UploadContacts was manually closed
+        const wasManuallyClosed = sessionStorage.getItem("uploadContactsManuallyClosed");
+        if (!wasManuallyClosed) {
+          setShowUploadContacts(true);
+          console.log("✅ Opening UploadContacts via step click");
+        } else {
+          console.log("🚫 UploadContacts was manually closed - not reopening");
+        }
       }
       return;
     }
