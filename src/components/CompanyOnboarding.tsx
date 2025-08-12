@@ -783,16 +783,10 @@ const CompanyOnboarding = () => {
       
       // Special handling for Gig Activation step (step 13) - redirect to Approval & Publishing
       if (stepId === 13) {
-        // Set the active tab to approval-publishing in the parent App component
-        if (window.parent && window.parent !== window) {
-          // If we're in an iframe, communicate with parent
-          window.parent.postMessage({ type: 'SET_ACTIVE_TAB', tab: 'approval-publishing' }, '*');
-        } else {
-          // If we're in the main window, use localStorage to communicate with App component
-          localStorage.setItem('activeTab', 'approval-publishing');
-          // Trigger a custom event to notify the App component
-          window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'approval-publishing' } }));
-        }
+        // Set the active tab to approval-publishing in the App component
+        localStorage.setItem('activeTab', 'approval-publishing');
+        // Trigger a custom event to notify the App component
+        window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'approval-publishing' } }));
         return;
       }
       
@@ -1124,19 +1118,9 @@ const CompanyOnboarding = () => {
       setShowUploadContacts(false);
       console.log('✅ Set showUploadContacts to false');
       
-      // Navigate back to the main onboarding view by changing the active tab
-      // This will trigger a re-render of App.tsx and show the main onboarding interface
-      if (window.parent && window.parent !== window) {
-        // If we're in an iframe, communicate with parent
-        window.parent.postMessage({ type: 'SET_ACTIVE_TAB', tab: 'company-onboarding' }, '*');
-      } else {
-        // If we're in the main window, use localStorage to communicate with App component
-        localStorage.setItem('activeTab', 'company-onboarding');
-        // Trigger a custom event to notify the App component
-        window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } }));
-      }
-      
-      console.log('✅ Triggered navigation back to main onboarding view');
+      // Simply close UploadContacts and return to normal CompanyOnboarding state
+      // No need to navigate to App.tsx since we're already in the right tab
+      console.log('✅ Closing UploadContacts and returning to normal onboarding state');
       
       // Reset the flag after a longer delay to ensure navigation completes
       setTimeout(() => {
@@ -1370,15 +1354,9 @@ const CompanyOnboarding = () => {
       
       // Navigate back to the main onboarding view by changing the active tab
       // This will trigger a re-render of App.tsx and show the main onboarding interface
-      if (window.parent && window.parent !== window) {
-        // If we're in an iframe, communicate with parent
-        window.parent.postMessage({ type: 'SET_ACTIVE_TAB', tab: 'company-onboarding' }, '*');
-      } else {
-        // If we're in the main window, use localStorage to communicate with App component
-        localStorage.setItem('activeTab', 'company-onboarding');
-        // Trigger a custom event to notify the App component
-        window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } }));
-      }
+      localStorage.setItem('activeTab', 'company-onboarding');
+      // Trigger a custom event to notify the App component
+      window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } }));
       
       console.log('✅ Triggered navigation back to main onboarding view');
       

@@ -1540,14 +1540,12 @@ ${truncatedContent}`;
             console.log('✅ Step 6 marked as completed after saving leads:', response.data);
             
             // Notifier le parent component que l'étape est complétée
-            if (window.parent) {
-              window.parent.postMessage({
-                type: 'STEP_COMPLETED',
-                stepId: 6,
-                phaseId: 2,
-                data: response.data
-              }, '*');
-            }
+            // Removed postMessage - using localStorage instead
+            localStorage.setItem('stepCompleted', JSON.stringify({
+              stepId: 6,
+              phaseId: 2,
+              data: response.data
+            }));
           }
         } catch (error) {
           console.error('Error updating onboarding progress after saving leads:', error);
