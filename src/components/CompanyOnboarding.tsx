@@ -126,12 +126,6 @@ const CompanyOnboarding = () => {
       return;
     }
     
-    // Skip auto-restore if user explicitly clicked back
-    if (userClickedBackRef.current) {
-      console.log('⏸️ Skipping UploadContacts auto-restore - user clicked back');
-      return;
-    }
-    
     if (localStorage.getItem('parsedLeads') && !showUploadContacts) {
       // Only restore if we're in a phase that should show UploadContacts
       const shouldShowUploadContacts = displayedPhase >= 2; // UploadContacts is typically in phase 2+
@@ -165,22 +159,20 @@ const CompanyOnboarding = () => {
     }
   }, [userClickedBackRef.current]);
 
-  // Clean up window flags when component unmounts
+  // Clean up when component unmounts
   useEffect(() => {
     return () => {
-      // Clean up any window flags we set
-      if ((window as any).userWantsToGoBack) {
-        delete (window as any).userWantsToGoBack;
-      }
+      // Clean up any refs we set
+      userClickedBackRef.current = false;
     };
   }, []);
 
-  // Clean up window flags when showUploadContacts changes
+  // Clean up when showUploadContacts changes
   useEffect(() => {
-    if (!showUploadContacts && (window as any).userWantsToGoBack) {
-      // Clean up the flag when UploadContacts is closed
-      console.log('🧹 Cleaning up userWantsToGoBack flag - UploadContacts closed');
-      delete (window as any).userWantsToGoBack;
+    if (!showUploadContacts) {
+      // Clean up when UploadContacts is closed
+      console.log('🧹 Cleaning up - UploadContacts closed');
+      userClickedBackRef.current = false;
     }
   }, [showUploadContacts]);
   const [isLoading, setIsLoading] = useState(true);
@@ -229,9 +221,9 @@ const CompanyOnboarding = () => {
 
   // Load company progress and check gigs when company ID is available
   useEffect(() => {
-    // Skip if user wants to go back
-    if ((window as any).userWantsToGoBack === true) {
-      console.log('⏸️ Skipping company progress loading - userWantsToGoBack flag is true');
+    // Skip if user explicitly clicked back
+    if (userClickedBackRef.current) {
+      console.log('⏸️ Skipping company progress loading - user clicked back');
       return;
     }
     
@@ -315,9 +307,9 @@ const CompanyOnboarding = () => {
   }, [companyId]);
 
   const checkCompanyGigs = async () => {
-    // Skip if user wants to go back
-    if ((window as any).userWantsToGoBack === true) {
-      console.log('⏸️ Skipping gigs check - userWantsToGoBack flag is true');
+    // Skip if user explicitly clicked back
+    if (userClickedBackRef.current) {
+      console.log('⏸️ Skipping gigs check - user clicked back');
       return;
     }
     
@@ -353,9 +345,9 @@ const CompanyOnboarding = () => {
   };
 
   const checkCompanyLeads = async () => {
-    // Skip if user wants to go back
-    if ((window as any).userWantsToGoBack === true) {
-      console.log('⏸️ Skipping leads check - userWantsToGoBack flag is true');
+    // Skip if user explicitly clicked back
+    if (userClickedBackRef.current) {
+      console.log('⏸️ Skipping leads check - user clicked back');
       return;
     }
     
@@ -497,9 +489,9 @@ const CompanyOnboarding = () => {
   };
 
   const checkActiveGigs = async () => {
-    // Skip if user wants to go back
-    if ((window as any).userWantsToGoBack === true) {
-      console.log('⏸️ Skipping active gigs check - userWantsToGoBack flag is true');
+    // Skip if user explicitly clicked back
+    if (userClickedBackRef.current) {
+      console.log('⏸️ Skipping active gigs check - user clicked back');
       return;
     }
     
@@ -599,27 +591,39 @@ const CompanyOnboarding = () => {
     }
   };
 
-  // Initial leads and gigs checking (no real-time updates)
+  // Initial check for leads and gigs when component mounts
   useEffect(() => {
-    if (!companyId) return;
-
-    // Skip if user wants to go back
-    if ((window as any).userWantsToGoBack === true) {
-      console.log('⏸️ Skipping initial leads and gigs check - userWantsToGoBack flag is true');
+    // Skip if user explicitly clicked back
+    if (userClickedBackRef.current) {
+      console.log('⏸️ Skipping initial leads and gigs check - user clicked back');
       return;
     }
-
-    // Only do initial checks if user hasn't clicked back
-    if (!userClickedBackRef.current) {
+    
+    if (companyId) {
+      console.log('🔄 Initial check for leads and gigs...');
       checkCompanyLeads();
       checkActiveGigs();
     }
   }, [companyId]);
 
+  // Load company progress when component mounts
+  useEffect(() => {
+    // Skip if user explicitly clicked back
+    if (userClickedBackRef.current) {
+      console.log('⏸️ Skipping company progress loading - user clicked back');
+      return;
+    }
+    
+    if (companyId) {
+      console.log('🔄 Loading company progress on mount...');
+      loadCompanyProgress();
+    }
+  }, [companyId]);
+
   const loadCompanyProgress = async () => {
-    // Skip if user wants to go back
-    if ((window as any).userWantsToGoBack === true) {
-      console.log('⏸️ Skipping company progress loading - userWantsToGoBack flag is true');
+    // Skip if user explicitly clicked back
+    if (userClickedBackRef.current) {
+      console.log('⏸️ Skipping company progress loading - user clicked back');
       return;
     }
     
@@ -1243,7 +1247,7 @@ const CompanyOnboarding = () => {
   }
 
   // Don't skip rendering - allow component to render normally
-  // The userWantsToGoBack flag will be handled by the child components
+  // The userClickedBackRef flag will be handled by the child components
 
   // Déterminer quel composant afficher
   let activeComponent = null;
@@ -1367,7 +1371,7 @@ const CompanyOnboarding = () => {
     );
   }
 
-  // Allow normal rendering - userWantsToGoBack flag is handled by child components
+  // Allow normal rendering - userClickedBackRef flag is handled by child components
 
   // Utiliser displayedPhase au lieu de currentPhase pour afficher les steps
   const displayedPhaseData = phases[displayedPhase - 1];
