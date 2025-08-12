@@ -307,8 +307,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   // Add a cleanup protection to prevent data loss on unmount
   useEffect(() => {
     return () => {
-      // If we're unmounting but have parsed leads, save them
-      if (parsedLeads.length > 0) {
+      // Only save leads if we're not intentionally closing the component
+      // Check if this is a manual close (onBackToOnboarding was called)
+      const isManualClose = !localStorage.getItem('parsedLeads');
+      if (parsedLeads.length > 0 && !isManualClose) {
         localStorage.setItem('parsedLeads', JSON.stringify(parsedLeads));
         console.log('🛡️ Component unmounting - saved parsed leads to localStorage:', parsedLeads.length);
       }

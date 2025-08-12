@@ -121,8 +121,9 @@ const CompanyOnboarding = () => {
   // Single useEffect to handle UploadContacts state and parsed leads cleanup
   useEffect(() => {
     const hasParsedLeads = localStorage.getItem("parsedLeads");
+    const wasManuallyClosed = sessionStorage.getItem("uploadContactsManuallyClosed");
     
-    if (hasParsedLeads) {
+    if (hasParsedLeads && !wasManuallyClosed) {
       // Check if we're in a phase that should show UploadContacts
       const shouldShowUploadContacts = displayedPhase >= 2;
       
@@ -140,6 +141,14 @@ const CompanyOnboarding = () => {
       }
     }
   }, [displayedPhase]); // Remove showUploadContacts from dependencies to prevent loops
+
+  // Prevent automatic restoration when manually closed
+  useEffect(() => {
+    if (!showUploadContacts) {
+      // Add a flag to prevent auto-restoration
+      sessionStorage.setItem("uploadContactsManuallyClosed", "true");
+    }
+  }, [showUploadContacts]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasGigs, setHasGigs] = useState(false);
   const [hasLeads, setHasLeads] = useState(false);
@@ -1332,6 +1341,7 @@ const CompanyOnboarding = () => {
       sessionStorage.removeItem("uploadProcessing");
       sessionStorage.removeItem("parsedLeads");
       sessionStorage.removeItem("validationResults");
+      sessionStorage.removeItem("uploadContactsManuallyClosed");
       console.log("🧹 Manual cleanup - UploadContacts closed");
       setShowUploadContacts(false);
     };
