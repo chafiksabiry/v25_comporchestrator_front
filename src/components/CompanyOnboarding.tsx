@@ -120,12 +120,7 @@ const CompanyOnboarding = () => {
   
   // Maintain showUploadContacts state if we have parsed leads, but respect current phase
   useEffect(() => {
-    // Skip auto-restore if user explicitly clicked back
-    if (userClickedBackRef.current) {
-      console.log('⏸️ Skipping UploadContacts auto-restore - user clicked back');
-      return;
-    }
-    
+    // Only restore if we're not currently showing UploadContacts
     if (localStorage.getItem('parsedLeads') && !showUploadContacts) {
       // Only restore if we're in a phase that should show UploadContacts
       const shouldShowUploadContacts = displayedPhase >= 2; // UploadContacts is typically in phase 2+
@@ -147,32 +142,11 @@ const CompanyOnboarding = () => {
     }
   }, [displayedPhase]);
 
-  // Add a ref to track if user manually clicked back
-  const userClickedBackRef = useRef(false);
-
-  // Clean up parsed leads when user explicitly wants to go back
+  // Clean up parsed leads when UploadContacts is closed
   useEffect(() => {
-    if (userClickedBackRef.current && localStorage.getItem('parsedLeads')) {
-      console.log('🧹 Cleaning parsed leads - user clicked back');
+    if (!showUploadContacts && localStorage.getItem('parsedLeads')) {
+      console.log('🧹 Cleaning parsed leads - UploadContacts closed');
       localStorage.removeItem('parsedLeads');
-      setShowUploadContacts(false);
-    }
-  }, [userClickedBackRef.current]);
-
-  // Clean up when component unmounts
-  useEffect(() => {
-    return () => {
-      // Clean up any refs we set
-      userClickedBackRef.current = false;
-    };
-  }, []);
-
-  // Clean up when showUploadContacts changes
-  useEffect(() => {
-    if (!showUploadContacts) {
-      // Clean up when UploadContacts is closed
-      console.log('🧹 Cleaning up - UploadContacts closed');
-      userClickedBackRef.current = false;
     }
   }, [showUploadContacts]);
   const [isLoading, setIsLoading] = useState(true);
@@ -221,13 +195,7 @@ const CompanyOnboarding = () => {
 
   // Load company progress and check gigs when company ID is available
   useEffect(() => {
-    // Skip if user explicitly clicked back
-    if (userClickedBackRef.current) {
-      console.log('⏸️ Skipping company progress loading - user clicked back');
-      return;
-    }
-    
-    if (companyId && !userClickedBackRef.current) {
+    if (companyId) {
       console.log('🔄 Company ID available, loading progress and checking gigs...');
       loadCompanyProgress();
       checkCompanyGigs();
@@ -235,8 +203,6 @@ const CompanyOnboarding = () => {
       
       // Vérifier si l'utilisateur vient de se connecter à Zoho
       checkZohoConnection();
-    } else if (companyId && userClickedBackRef.current) {
-      console.log('⏸️ Skipping company progress loading - user just clicked back');
     }
   }, [companyId]);
 
@@ -307,12 +273,6 @@ const CompanyOnboarding = () => {
   }, [companyId]);
 
   const checkCompanyGigs = async () => {
-    // Skip if user explicitly clicked back
-    if (userClickedBackRef.current) {
-      console.log('⏸️ Skipping gigs check - user clicked back');
-      return;
-    }
-    
     try {
       // Vérifier que companyId est disponible
       if (!companyId) {
@@ -345,12 +305,6 @@ const CompanyOnboarding = () => {
   };
 
   const checkCompanyLeads = async () => {
-    // Skip if user explicitly clicked back
-    if (userClickedBackRef.current) {
-      console.log('⏸️ Skipping leads check - user clicked back');
-      return;
-    }
-    
     try {
       // Vérifier que companyId est disponible
       if (!companyId) {
@@ -362,8 +316,8 @@ const CompanyOnboarding = () => {
       const hasLeads = response.data.hasLeads;
       setHasLeads(hasLeads);
       
-      // Auto-complete step 6 if company has leads, but not if user just clicked back
-      if (hasLeads && !userClickedBackRef.current) {
+      // Auto-complete step 6 if company has leads
+      if (hasLeads) {
         console.log('✅ Company has leads - auto-completing step 6');
         try {
           await axios.put(
@@ -381,8 +335,6 @@ const CompanyOnboarding = () => {
         } catch (error) {
           console.error('Error auto-completing step 6:', error);
         }
-      } else if (hasLeads && userClickedBackRef.current) {
-        console.log('⏸️ Skipping step 6 auto-completion - user just clicked back');
       } else {
         console.log('⚠️ Company has no leads - step 6 needs manual completion');
       }
@@ -489,12 +441,6 @@ const CompanyOnboarding = () => {
   };
 
   const checkActiveGigs = async () => {
-    // Skip if user explicitly clicked back
-    if (userClickedBackRef.current) {
-      console.log('⏸️ Skipping active gigs check - user clicked back');
-      return;
-    }
-    
     try {
       console.log('🔍 Checking for active gigs...');
       
@@ -518,8 +464,8 @@ const CompanyOnboarding = () => {
           gigStatuses: gigs.map((g: any) => g.status) 
         });
         
-        // If at least one gig is active, complete the last phase and step, but not if user just clicked back
-        if (hasActiveGig && !userClickedBackRef.current) {
+        // If at least one gig is active, complete the last phase and step
+        if (hasActiveGig) {
           try {
             console.log('✅ Found active gig - completing last phase and step');
             const completeResponse = await axios.put(
@@ -550,8 +496,6 @@ const CompanyOnboarding = () => {
             console.error('Error completing last phase and step:', error);
             // Ne pas faire échouer toute la fonction si cette mise à jour échoue
           }
-        } else if (hasActiveGig && userClickedBackRef.current) {
-          console.log('⏸️ Skipping last phase and step auto-completion - user just clicked back');
         }
         
         // If no gigs are active and step 13 was previously completed, mark it as in_progress
@@ -593,12 +537,6 @@ const CompanyOnboarding = () => {
 
   // Initial check for leads and gigs when component mounts
   useEffect(() => {
-    // Skip if user explicitly clicked back
-    if (userClickedBackRef.current) {
-      console.log('⏸️ Skipping initial leads and gigs check - user clicked back');
-      return;
-    }
-    
     if (companyId) {
       console.log('🔄 Initial check for leads and gigs...');
       checkCompanyLeads();
@@ -608,12 +546,6 @@ const CompanyOnboarding = () => {
 
   // Load company progress when component mounts
   useEffect(() => {
-    // Skip if user explicitly clicked back
-    if (userClickedBackRef.current) {
-      console.log('⏸️ Skipping company progress loading - user clicked back');
-      return;
-    }
-    
     if (companyId) {
       console.log('🔄 Loading company progress on mount...');
       loadCompanyProgress();
@@ -621,12 +553,6 @@ const CompanyOnboarding = () => {
   }, [companyId]);
 
   const loadCompanyProgress = async () => {
-    // Skip if user explicitly clicked back
-    if (userClickedBackRef.current) {
-      console.log('⏸️ Skipping company progress loading - user clicked back');
-      return;
-    }
-    
     setIsLoading(true);
     try {
       // Vérifier que companyId est disponible
@@ -1093,14 +1019,6 @@ const CompanyOnboarding = () => {
     if (showUploadContacts) {
       console.log('🛑 Back to onboarding clicked while UploadContacts is active - cancelling processing');
       
-      // Prevent multiple clicks while processing
-      if (userClickedBackRef.current) {
-        console.log('⚠️ Back button already clicked, ignoring duplicate click');
-        return;
-      }
-      
-      userClickedBackRef.current = true;
-      
       // Call the cancel processing function if it exists
       if ((window as any).cancelUploadProcessing) {
         (window as any).cancelUploadProcessing();
@@ -1121,28 +1039,11 @@ const CompanyOnboarding = () => {
       
       // Simply close UploadContacts and return to normal CompanyOnboarding state
       console.log('✅ Closing UploadContacts and returning to normal onboarding state');
-      
-      // Reset the flag after a short delay
-      setTimeout(() => {
-        userClickedBackRef.current = false;
-        console.log('🔄 Reset userClickedBackRef flag to false');
-      }, 500);
       return;
     }
     
-    // Prevent multiple clicks while processing for other cases
-    if (userClickedBackRef.current) {
-      console.log('⚠️ Back button already clicked, ignoring duplicate click');
-      return;
-    }
-    
-    userClickedBackRef.current = true;
+    // For other cases, just close the active step
     setActiveStep(null);
-    
-    // Reset the flag after a short delay
-    setTimeout(() => {
-      userClickedBackRef.current = false;
-    }, 300);
   };
 
   const handleStepClick = (stepId: number) => {
@@ -1247,7 +1148,7 @@ const CompanyOnboarding = () => {
   }
 
   // Don't skip rendering - allow component to render normally
-  // The userClickedBackRef flag will be handled by the child components
+  // Navigation will be handled directly by the child components
 
   // Déterminer quel composant afficher
   let activeComponent = null;
@@ -1256,29 +1157,10 @@ const CompanyOnboarding = () => {
   if (showGigDetails) {
     activeComponent = <GigDetails />;
     onBack = () => {
-      // Prevent multiple clicks while processing
-      if (userClickedBackRef.current) {
-        console.log('⚠️ Back button already clicked, ignoring duplicate click');
-        return;
-      }
-      
-      userClickedBackRef.current = true;
       setShowGigDetails(false);
-      
-      // Reset the flag after a short delay
-      setTimeout(() => {
-        userClickedBackRef.current = false;
-      }, 500);
     };
   } else if (showTelephonySetup) {
     activeComponent = <TelephonySetup onBackToOnboarding={async () => {
-      // Prevent multiple clicks while processing
-      if (userClickedBackRef.current) {
-        console.log('⚠️ Back button already clicked, ignoring duplicate click');
-        return;
-      }
-      
-      userClickedBackRef.current = true;
       setShowTelephonySetup(false);
       
       // Force reload onboarding state after telephony setup completion
@@ -1290,26 +1172,9 @@ const CompanyOnboarding = () => {
           console.error('❌ Error reloading onboarding state:', error);
         }
       }
-      
-      // Reset the flag after a short delay
-      setTimeout(() => {
-        userClickedBackRef.current = false;
-      }, 500);
     }} />;
     onBack = () => {
-      // Prevent multiple clicks while processing
-      if (userClickedBackRef.current) {
-        console.log('⚠️ Back button already clicked, ignoring duplicate click');
-        return;
-      }
-      
-      userClickedBackRef.current = true;
       setShowTelephonySetup(false);
-      
-      // Reset the flag after a short delay
-      setTimeout(() => {
-        userClickedBackRef.current = false;
-      }, 500);
     };
           } else if (showUploadContacts) {
           activeComponent = <UploadContacts onCancelProcessing={() => {
@@ -1319,14 +1184,6 @@ const CompanyOnboarding = () => {
           }} />;
     onBack = () => {
       console.log('🛑 Back clicked - returning to onboarding');
-      
-      // Prevent multiple clicks while processing
-      if (userClickedBackRef.current) {
-        console.log('⚠️ Back button already clicked, ignoring duplicate click');
-        return;
-      }
-      
-      userClickedBackRef.current = true;
       
       // Remove all storage items to prevent auto-restore
       localStorage.removeItem('parsedLeads');
@@ -1340,12 +1197,6 @@ const CompanyOnboarding = () => {
       // Close the component immediately
       setShowUploadContacts(false);
       console.log('✅ Set showUploadContacts to false in onBack');
-      
-      // Reset the flag after a short delay
-      setTimeout(() => {
-        userClickedBackRef.current = false;
-        console.log('🔄 Reset userClickedBackRef flag to false in onBack');
-      }, 500);
     };
   } else if (ActiveStepComponent) {
     activeComponent = <ActiveStepComponent />;
@@ -1371,7 +1222,7 @@ const CompanyOnboarding = () => {
     );
   }
 
-  // Allow normal rendering - userClickedBackRef flag is handled by child components
+  // Allow normal rendering - navigation is handled directly by child components
 
   // Utiliser displayedPhase au lieu de currentPhase pour afficher les steps
   const displayedPhaseData = phases[displayedPhase - 1];
