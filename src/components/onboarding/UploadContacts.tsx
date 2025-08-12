@@ -112,6 +112,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   const cancelProcessing = () => {
     console.log('🛑 Cancelling processing via Back to Onboarding...');
     
+    // Abort any ongoing OpenAI requests
+    if (abortControllerRef.current) {
+      console.log('🛑 Aborting ongoing OpenAI requests...');
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
     // Stop all processing immediately
     setIsProcessing(false);
     processingRef.current = false;
@@ -161,6 +168,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   const emergencyCancel = () => {
     console.log('🚨 EMERGENCY CANCELLATION triggered via Back to Onboarding');
     
+    // Force abort any ongoing requests
+    if (abortControllerRef.current) {
+      console.log('🚨 Force aborting all requests...');
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
     // Force stop all processing
     processingRef.current = false;
     setIsProcessing(false);
@@ -179,6 +193,14 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     
     // Remove all processing indicators
     document.body.removeAttribute('data-processing');
+    
+    // Force reset all progress
+    setProcessingProgress({
+      current: 0,
+      total: 0,
+      status: 'EMERGENCY CANCELLED',
+      isProcessing: false
+    });
     
     console.log('🚨 Emergency cancellation completed - user returned to onboarding');
   };
@@ -210,6 +232,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   
   // Add a ref to track if we should prevent re-mounting
   const preventRemountRef = useRef(false);
+  
+  // Add AbortController for cancelling OpenAI requests
+  const abortControllerRef = useRef<AbortController | null>(null);
+  
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
@@ -289,6 +315,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
   // Function to update real progress during OpenAI processing
   const updateRealProgress = (progress: number, status: string) => {
+    // Check if processing was cancelled
+    if (!processingRef.current) {
+      console.log('🛑 Progress update cancelled - processing was stopped');
+      return;
+    }
+    
     console.log(`📊 Progress: ${progress}% - ${status}`);
     
     // Update both progress states
@@ -598,6 +630,15 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     console.log(`🔍 Starting processFileWithOpenAI - isOptimized: ${isOptimized}`);
     
     try {
+      // Check if processing was cancelled
+      if (!processingRef.current) {
+        console.log('🛑 Processing was cancelled, aborting...');
+        throw new Error('Processing cancelled by user');
+      }
+      
+      // Create new AbortController for this request
+      abortControllerRef.current = new AbortController();
+      
       const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
       if (!openaiApiKey) {
         throw new Error('OpenAI API key not configured');
@@ -622,6 +663,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
       // Clean the file content before sending to OpenAI
       const cleanedFileContent = cleanEmailAddresses(fileContent);
+      
+      // Check if processing was cancelled after cleaning
+      if (!processingRef.current) {
+        console.log('🛑 Processing was cancelled after cleaning, aborting...');
+        throw new Error('Processing cancelled by user');
+      }
       
       // Reduce content size for faster processing
       const maxContentLength = 25000; // Reduced from 50000
@@ -650,11 +697,29 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         updateRealProgress(5, 'Initialisation du traitement...');
         await new Promise(resolve => setTimeout(resolve, 200)); // Small delay for visual feedback
         
+        // Check if cancelled
+        if (!processingRef.current) {
+          console.log('🛑 Processing cancelled during initialization');
+          throw new Error('Processing cancelled by user');
+        }
+        
         updateRealProgress(15, 'Analyse de la structure du fichier...');
         await new Promise(resolve => setTimeout(resolve, 300));
         
+        // Check if cancelled
+        if (!processingRef.current) {
+          console.log('🛑 Processing cancelled during structure analysis');
+          throw new Error('Processing cancelled by user');
+        }
+        
         updateRealProgress(25, 'Préparation des données...');
         await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Check if cancelled
+        if (!processingRef.current) {
+          console.log('🛑 Processing cancelled during data preparation');
+          throw new Error('Processing cancelled by user');
+        }
         
         // Use smart chunking to process the file in manageable pieces
         const result = await processLargeFileInChunks(cleanedFileContent, fileType, lines);
@@ -704,8 +769,20 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         updateRealProgress(45, 'Envoi à OpenAI...');
         await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call time
         
+        // Check if cancelled
+        if (!processingRef.current) {
+          console.log('🛑 Processing cancelled before OpenAI call');
+          throw new Error('Processing cancelled by user');
+        }
+        
         updateRealProgress(55, 'Traitement par l\'IA...');
         await new Promise(resolve => setTimeout(resolve, 800)); // Simulate processing time
+        
+        // Check if cancelled
+        if (!processingRef.current) {
+          console.log('🛑 Processing cancelled during AI processing');
+          throw new Error('Processing cancelled by user');
+        }
         
         // Use the same processing logic but with the full content
         const result = await processFileWithOpenAI(finalContent, fileType, true);
@@ -832,7 +909,8 @@ ${truncatedContent}`;
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${openaiApiKey}`
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        signal: abortControllerRef.current?.signal
       });
 
       if (!response.ok) {
@@ -1049,6 +1127,12 @@ ${truncatedContent}`;
     updateRealProgress(30, `Début du traitement par lots (${totalChunks} lots à traiter)...`);
     
     for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      // Check if processing was cancelled
+      if (!processingRef.current) {
+        console.log('🛑 Processing cancelled during chunk processing');
+        throw new Error('Processing cancelled by user');
+      }
+      
       const startLine = chunkIndex * optimalChunkSize + 1; // +1 to skip header
       const endLine = Math.min((chunkIndex + 1) * optimalChunkSize, lines.length - 1);
       const chunkLines = lines.slice(0, 1).concat(lines.slice(startLine, endLine + 1)); // Include header + chunk
@@ -1062,8 +1146,20 @@ ${truncatedContent}`;
       
       // Process this chunk with the existing function but smaller chunks
       try {
+        // Check again before processing chunk
+        if (!processingRef.current) {
+          console.log('🛑 Processing cancelled before chunk processing');
+          throw new Error('Processing cancelled by user');
+        }
+        
         // Process this chunk with the existing function but smaller chunks
         const chunkResult = await processFileWithOpenAI(chunkLines.join('\n'), fileType, true);
+        
+        // Check if cancelled after chunk processing
+        if (!processingRef.current) {
+          console.log('🛑 Processing cancelled after chunk processing');
+          throw new Error('Processing cancelled by user');
+        }
         
         if (chunkResult.leads && chunkResult.leads.length > 0) {
           allLeads.push(...chunkResult.leads);
@@ -1180,6 +1276,12 @@ ${truncatedContent}`;
         const reader = new FileReader();
         reader.onload = async (e) => {
           try {
+            // Check if processing was cancelled before starting
+            if (!processingRef.current) {
+              console.log('🛑 File processing cancelled before start');
+              return;
+            }
+            
             let fileContent = '';
             let fileType = '';
 
@@ -1235,6 +1337,12 @@ ${truncatedContent}`;
             }
 
             setUploadProgress(30);
+            
+            // Check if processing was cancelled before OpenAI call
+            if (!processingRef.current) {
+              console.log('🛑 File processing cancelled before OpenAI call');
+              return;
+            }
             
             // Process with OpenAI
             console.log('Processing file with OpenAI...');
