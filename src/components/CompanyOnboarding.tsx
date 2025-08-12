@@ -227,6 +227,12 @@ const CompanyOnboarding = () => {
 
   // Load company progress and check gigs when company ID is available
   useEffect(() => {
+    // Skip if user wants to go back
+    if ((window as any).userWantsToGoBack === true) {
+      console.log('⏸️ Skipping company progress loading - userWantsToGoBack flag is true');
+      return;
+    }
+    
     if (companyId && !userClickedBackRef.current) {
       console.log('🔄 Company ID available, loading progress and checking gigs...');
       loadCompanyProgress();
@@ -307,6 +313,12 @@ const CompanyOnboarding = () => {
   }, [companyId]);
 
   const checkCompanyGigs = async () => {
+    // Skip if user wants to go back
+    if ((window as any).userWantsToGoBack === true) {
+      console.log('⏸️ Skipping gigs check - userWantsToGoBack flag is true');
+      return;
+    }
+    
     try {
       // Vérifier que companyId est disponible
       if (!companyId) {
@@ -339,6 +351,12 @@ const CompanyOnboarding = () => {
   };
 
   const checkCompanyLeads = async () => {
+    // Skip if user wants to go back
+    if ((window as any).userWantsToGoBack === true) {
+      console.log('⏸️ Skipping leads check - userWantsToGoBack flag is true');
+      return;
+    }
+    
     try {
       // Vérifier que companyId est disponible
       if (!companyId) {
@@ -477,6 +495,12 @@ const CompanyOnboarding = () => {
   };
 
   const checkActiveGigs = async () => {
+    // Skip if user wants to go back
+    if ((window as any).userWantsToGoBack === true) {
+      console.log('⏸️ Skipping active gigs check - userWantsToGoBack flag is true');
+      return;
+    }
+    
     try {
       console.log('🔍 Checking for active gigs...');
       
@@ -577,14 +601,26 @@ const CompanyOnboarding = () => {
   useEffect(() => {
     if (!companyId) return;
 
+    // Skip if user wants to go back
+    if ((window as any).userWantsToGoBack === true) {
+      console.log('⏸️ Skipping initial leads and gigs check - userWantsToGoBack flag is true');
+      return;
+    }
+
     // Only do initial checks if user hasn't clicked back
-    // if (!userClickedBackRef.current) {
+    if (!userClickedBackRef.current) {
       checkCompanyLeads();
       checkActiveGigs();
-    // }
+    }
   }, [companyId]);
 
   const loadCompanyProgress = async () => {
+    // Skip if user wants to go back
+    if ((window as any).userWantsToGoBack === true) {
+      console.log('⏸️ Skipping company progress loading - userWantsToGoBack flag is true');
+      return;
+    }
+    
     setIsLoading(true);
     try {
       // Vérifier que companyId est disponible
