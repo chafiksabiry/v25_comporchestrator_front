@@ -103,9 +103,10 @@ interface ApiResponse {
 
 interface UploadContactsProps {
   onCancelProcessing?: () => void;
+  onBackToOnboarding?: () => void;
 }
 
-const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) => {
+const UploadContacts = React.memo(({ onCancelProcessing, onBackToOnboarding }: UploadContactsProps) => {
   // Component will render normally - no early return needed
 
   // Function to cancel processing
@@ -2366,16 +2367,25 @@ ${truncatedContent}`;
     <div className="space-y-4 bg-gradient-to-br from-blue-50 to-white min-h-screen p-4">
       {/* Page Header */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-        <div className="flex items-start space-x-6 mb-6">
+        <div className="flex items-start justify-between mb-6">
           <div className="flex-1">
-                      <h1 className="text-3xl font-bold text-gray-900 mb-3 flex items-center">
-            <UserPlus className="mr-3 h-8 w-8 text-blue-600" />
-            Upload Contacts
-          </h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-3 flex items-center">
+              <UserPlus className="mr-3 h-8 w-8 text-blue-600" />
+              Upload Contacts
+            </h1>
             <p className="text-lg text-gray-600">
               Import, manage, and organize your leads efficiently. Choose between connecting with your CRM system or uploading contact files directly.
             </p>
           </div>
+          {onBackToOnboarding && (
+            <button
+              onClick={onBackToOnboarding}
+              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span>Back to Onboarding</span>
+            </button>
+          )}
         </div>
       </div>
 
