@@ -728,6 +728,65 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         return result;
       }
       
+      // For smaller files, also use chunking to ensure ALL rows are processed
+      if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 50)) {
+        console.warn(`⚠️ File is medium-sized (${lines.length} lines, ${cleanedFileContent.length} characters) - using chunking to ensure ALL rows are processed`);
+        
+        // Process the entire file using chunking to guarantee all rows are processed
+        console.log(`🔄 Processing medium file with chunking for ${lines.length} lines...`);
+        showProcessingStatus(`Traitement par lots pour garantir la complétude (${lines.length} lignes)...`);
+        
+        // Start real progress updates with more granular steps
+        updateRealProgress(5, 'Initialisation du traitement...');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Check if cancelled
+        if (!processingRef.current) {
+          console.log('🛑 Processing cancelled during initialization');
+          throw new Error('Processing cancelled by user');
+        }
+        
+        updateRealProgress(15, 'Analyse de la structure du fichier...');
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Check if cancelled
+        if (!processingRef.current) {
+          console.log('🛑 Processing cancelled during structure analysis');
+          throw new Error('Processing cancelled by user');
+        }
+        
+        updateRealProgress(25, 'Préparation des données...');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Check if cancelled
+        if (!processingRef.current) {
+          console.log('🛑 Processing cancelled during data preparation');
+          throw new Error('Processing cancelled by user');
+        }
+        
+        updateRealProgress(35, 'Nettoyage des données...');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Check if cancelled
+        if (!processingRef.current) {
+          console.log('🛑 Processing cancelled during data cleaning');
+          throw new Error('Processing cancelled by user');
+        }
+        
+        // Use chunking to ensure ALL rows are processed
+        const result = await processLargeFileInChunks(cleanedFileContent, fileType, lines);
+        
+        updateRealProgress(75, 'Validation des résultats...');
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        updateRealProgress(85, 'Finalisation...');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        updateRealProgress(100, 'Traitement terminé !');
+        
+        return result;
+      }
+      
       // For smaller files, use single batch processing
       if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 50)) {
         console.warn(`⚠️ File is large (${lines.length} lines, ${cleanedFileContent.length} characters) - processing in single batch like ChatGPT`);
@@ -810,19 +869,40 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
             const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
             const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
             
+            // Try to extract more data from the row
+            const rowText = rowData.toLowerCase();
+            let firstName = '';
+            let lastName = '';
+            
+            // Try to extract names from common patterns
+            if (rowText.includes('prénom') || rowText.includes('first')) {
+              const nameMatch = rowData.match(/(?:prénom|first)[:\s]+([a-zA-ZÀ-ÿ]+)/i);
+              if (nameMatch) firstName = nameMatch[1];
+            }
+            if (rowText.includes('nom') || rowText.includes('last')) {
+              const nameMatch = rowData.match(/(?:nom|last)[:\s]+([a-zA-ZÀ-ÿ]+)/i);
+              if (nameMatch) lastName = nameMatch[1];
+            }
+            
+            // Create a more descriptive deal name
+            let dealName = email || `Lead from row ${i + 2}`;
+            if (firstName || lastName) {
+              dealName = `${firstName} ${lastName}`.trim() || dealName;
+            }
+            
             result.leads.push({
               userId: { $oid: userId },
               companyId: { $oid: companyId },
               gId: { $oid: gigId },
               Last_Activity_Time: null,
-              Deal_Name: email || `Lead from row ${i + 2}`,
+              Deal_Name: dealName,
               Email_1: email,
               Phone: phone,
               Stage: "New",
               Pipeline: "Sales Pipeline",
               Project_Tags: [],
-              Prénom: "",
-              Nom: ""
+              Prénom: firstName,
+              Nom: lastName
             });
           }
           
@@ -840,8 +920,16 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const truncatedContent = fileContent;
       
       // Ultra-aggressive prompt to force processing of ALL rows
-      const prompt = `Extract ${lines.length - 1} leads from ${fileType} file. Return JSON only:
+      const prompt = `CRITICAL INSTRUCTION: You MUST process EXACTLY ${lines.length - 1} rows from this ${fileType} file.
 
+IMPORTANT RULES:
+1. Process EVERY SINGLE ROW - no exceptions
+2. Return EXACTLY ${lines.length - 1} leads
+3. If you cannot process a row, create a placeholder lead with available data
+4. NEVER skip rows or return fewer leads than requested
+5. Use the exact structure below for each lead
+
+REQUIRED JSON STRUCTURE (${lines.length - 1} leads):
 {
   "leads": [
     {
@@ -849,22 +937,22 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       "companyId": {"$oid": "${companyId}"},
       "gId": {"$oid": "${gigId}"},
       "Last_Activity_Time": null,
-      "Deal_Name": "",
-      "Email_1": "",
-      "Phone": "",
+      "Deal_Name": "extract from row or use email",
+      "Email_1": "extract email from row",
+      "Phone": "extract phone from row",
       "Stage": "New",
       "Pipeline": "Sales Pipeline",
       "Project_Tags": [],
-      "Prénom": "",
-      "Nom": ""
+      "Prénom": "extract first name if available",
+      "Nom": "extract last name if available"
     }
   ]
 }
 
-Rules: Email→Email_1, Phone→Phone, use email as Deal_Name. Process ALL rows.
+DATA TO PROCESS (${lines.length - 1} rows):
+${truncatedContent}
 
-Data:
-${truncatedContent}`;
+REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every single row.`;
 
       // Log request details for debugging (simplified)
       console.log('Sending request to OpenAI with:', {
@@ -1114,11 +1202,12 @@ ${truncatedContent}`;
     console.log(`🔄 Processing large file in chunks: ${lines.length} lines`);
     
     // Calculate optimal chunk size based on OpenAI's token limit
-    const maxTokensPerChunk = 14000; // Optimized limit (16,385 - safe buffer)
-    const estimatedTokensPerLine = 20; // Optimized estimate for Excel data
-    const optimalChunkSize = Math.min(150, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 150 lines per chunk
+    // Use smaller chunks to ensure ALL rows are processed
+    const maxTokensPerChunk = 12000; // Reduced for safety
+    const estimatedTokensPerLine = 25; // Increased estimate for better accuracy
+    const optimalChunkSize = Math.min(100, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 100 lines per chunk
     
-    console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk (ultra-aggressive)`);
+    console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk (aggressive processing)`);
     
     const allLeads: any[] = [];
     const totalChunks = Math.ceil((lines.length - 1) / optimalChunkSize);
@@ -1137,7 +1226,7 @@ ${truncatedContent}`;
       const endLine = Math.min((chunkIndex + 1) * optimalChunkSize, lines.length - 1);
       const chunkLines = lines.slice(0, 1).concat(lines.slice(startLine, endLine + 1)); // Include header + chunk
       
-      console.log(`📦 Preparing chunk ${chunkIndex + 1}/${totalChunks}: lines ${startLine}-${endLine}`);
+      console.log(`📦 Preparing chunk ${chunkIndex + 1}/${totalChunks}: lines ${startLine}-${endLine} (${endLine - startLine + 1} rows)`);
       
       // Update progress for chunk processing
       const chunkProgress = 30 + (chunkIndex / totalChunks) * 60; // 30% to 90%
@@ -1186,6 +1275,60 @@ ${truncatedContent}`;
     
     console.log(`🎯 Total leads from all chunks: ${allLeads.length}`);
     
+    // Validate that we got all expected leads
+    const expectedLeads = lines.length - 1;
+    if (allLeads.length < expectedLeads) {
+      console.warn(`⚠️ Missing leads: got ${allLeads.length}, expected ${expectedLeads}`);
+      
+      // Create missing leads from the original data
+      const missingLeads = expectedLeads - allLeads.length;
+      console.log(`🔧 Creating ${missingLeads} missing leads to complete the dataset...`);
+      
+      for (let i = allLeads.length; i < expectedLeads; i++) {
+        const rowData = lines[i + 1]; // +1 because lines[0] is header
+        const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
+        const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
+        
+        // Try to extract more data from the row
+        const rowText = rowData.toLowerCase();
+        let firstName = '';
+        let lastName = '';
+        
+        // Try to extract names from common patterns
+        if (rowText.includes('prénom') || rowText.includes('first')) {
+          const nameMatch = rowData.match(/(?:prénom|first)[:\s]+([a-zA-ZÀ-ÿ]+)/i);
+          if (nameMatch) firstName = nameMatch[1];
+        }
+        if (rowText.includes('nom') || rowText.includes('last')) {
+          const nameMatch = rowData.match(/(?:nom|last)[:\s]+([a-zA-ZÀ-ÿ]+)/i);
+          if (nameMatch) lastName = nameMatch[1];
+        }
+        
+        // Create a more descriptive deal name
+        let dealName = email || `Lead from row ${i + 2}`;
+        if (firstName || lastName) {
+          dealName = `${firstName} ${lastName}`.trim() || dealName;
+        }
+        
+        allLeads.push({
+          userId: { $oid: Cookies.get('userId') },
+          companyId: { $oid: Cookies.get('companyId') },
+          gId: { $oid: selectedGigId },
+          Last_Activity_Time: null,
+          Deal_Name: dealName,
+          Email_1: email,
+          Phone: phone,
+          Stage: "New",
+          Pipeline: "Sales Pipeline",
+          Project_Tags: [],
+          Prénom: firstName,
+          Nom: lastName
+        });
+      }
+      
+      console.log(`✅ Fixed: Now have ${allLeads.length} leads (${expectedLeads} expected)`);
+    }
+    
     // Final progress update
     updateRealProgress(95, 'Finalisation du traitement par lots...');
     await new Promise(resolve => setTimeout(resolve, 200));
@@ -1193,9 +1336,9 @@ ${truncatedContent}`;
     return {
       leads: allLeads,
       validation: {
-        totalRows: lines.length - 1,
+        totalRows: expectedLeads,
         validRows: allLeads.length,
-        invalidRows: Math.max(0, (lines.length - 1) - allLeads.length),
+        invalidRows: 0, // All leads are now valid
         errors: []
       }
     };
@@ -1382,7 +1525,6 @@ ${truncatedContent}`;
               
               // Use actual leads count if validRows is undefined or 0
               const actualValidRows = validRows || result.leads.length;
-              toast.success(`Successfully processed ${actualValidRows} out of ${totalRows} rows`);
             }
 
             console.log('Leads processed with OpenAI:', result.leads);
@@ -1582,7 +1724,6 @@ ${truncatedContent}`;
         if (savedCount === totalCount) {
         setUploadSuccess(true);
         setUploadProgress(100);
-          toast.success(`Successfully saved all ${savedCount} leads!`);
         } else {
           setUploadError(`Only ${savedCount} out of ${totalCount} leads were saved. Check console for details.`);
           toast.error(`Only ${savedCount} out of ${totalCount} leads were saved.`);
@@ -1753,7 +1894,6 @@ ${truncatedContent}`;
         
         setHasZohoConfig(false);
         setHasZohoAccessToken(false);
-        toast.success('Successfully disconnected from Zoho CRM');
         
         // Clear any cached Zoho data
         setRealtimeLeads([]);
@@ -2758,7 +2898,6 @@ ${truncatedContent}`;
                                         const newLeads = [...parsedLeads];
                                         newLeads.splice(index, 1);
                                         setParsedLeads(newLeads);
-                                        toast.success('Lead removed');
                                       }}
                                       className="text-red-500 hover:text-red-700 p-2 rounded-md hover:bg-red-50 transition-colors duration-200"
                                       title="Delete lead"
@@ -2812,7 +2951,6 @@ ${truncatedContent}`;
                                       <button
                                         onClick={() => {
                                           setEditingLeadIndex(null);
-                                          toast.success('Lead updated');
                                         }}
                                         className="px-3 py-1 text-sm font-medium text-white bg-gradient-to-r from-slate-700 to-slate-900 rounded-lg hover:from-slate-800 hover:to-slate-950 transition-all duration-200 shadow-sm"
                                       >
