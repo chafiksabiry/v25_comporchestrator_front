@@ -118,45 +118,28 @@ const CompanyOnboarding = () => {
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
   const [showUploadContacts, setShowUploadContacts] = useState(false);
 
-  // Maintain showUploadContacts state if we have parsed leads, but respect current phase
+  // Single useEffect to handle UploadContacts state and parsed leads cleanup
   useEffect(() => {
-    // Only restore if we're not currently showing UploadContacts
-    if (localStorage.getItem("parsedLeads") && !showUploadContacts) {
-      // Only restore if we're in a phase that should show UploadContacts
-      const shouldShowUploadContacts = displayedPhase >= 2; // UploadContacts is typically in phase 2+
-      if (shouldShowUploadContacts) {
+    const hasParsedLeads = localStorage.getItem("parsedLeads");
+    
+    if (hasParsedLeads) {
+      // Check if we're in a phase that should show UploadContacts
+      const shouldShowUploadContacts = displayedPhase >= 2;
+      
+      if (shouldShowUploadContacts && !showUploadContacts) {
+        // Restore UploadContacts view only once
+        console.log("🔄 Restoring UploadContacts view - parsed leads exist and phase allows it");
         setShowUploadContacts(true);
-        console.log(
-          "🔄 Restoring UploadContacts view - parsed leads exist and phase allows it"
-        );
-      } else {
-        console.log(
-          "⏸️ Skipping UploadContacts restore - current phase:",
-          displayedPhase
-        );
+      } else if (!shouldShowUploadContacts) {
+        // Clean up if phase is too early
+        console.log("🧹 Cleaning parsed leads - current phase too early:", displayedPhase);
+        localStorage.removeItem("parsedLeads");
+        if (showUploadContacts) {
+          setShowUploadContacts(false);
+        }
       }
     }
-  }, [showUploadContacts, displayedPhase]);
-
-  // Clean up parsed leads if we're in a phase that shouldn't show UploadContacts
-  useEffect(() => {
-    if (localStorage.getItem("parsedLeads") && displayedPhase < 2) {
-      console.log(
-        "🧹 Cleaning parsed leads - current phase too early:",
-        displayedPhase
-      );
-      localStorage.removeItem("parsedLeads");
-      setShowUploadContacts(false);
-    }
-  }, [displayedPhase]);
-
-  // Clean up parsed leads when UploadContacts is closed
-  useEffect(() => {
-    if (!showUploadContacts && localStorage.getItem("parsedLeads")) {
-      console.log("🧹 Cleaning parsed leads - UploadContacts closed");
-      localStorage.removeItem("parsedLeads");
-    }
-  }, [showUploadContacts]);
+  }, [displayedPhase]); // Remove showUploadContacts from dependencies to prevent loops
   const [isLoading, setIsLoading] = useState(true);
   const [hasGigs, setHasGigs] = useState(false);
   const [hasLeads, setHasLeads] = useState(false);
@@ -1342,6 +1325,14 @@ const CompanyOnboarding = () => {
   } else if (showUploadContacts) {
     activeComponent = <UploadContacts />;
     onBack = () => {
+      // Clean up localStorage when manually closing UploadContacts
+      localStorage.removeItem("parsedLeads");
+      localStorage.removeItem("validationResults");
+      localStorage.removeItem("uploadProcessing");
+      sessionStorage.removeItem("uploadProcessing");
+      sessionStorage.removeItem("parsedLeads");
+      sessionStorage.removeItem("validationResults");
+      console.log("🧹 Manual cleanup - UploadContacts closed");
       setShowUploadContacts(false);
     };
   } else if (ActiveStepComponent) {

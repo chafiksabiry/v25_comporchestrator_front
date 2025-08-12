@@ -197,14 +197,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   });
 
   // Function to update progress
-  const updateProgress = (current: number, total: number, status: string) => {
-    setProcessingProgress({
-      current,
-      total,
-      status,
-      isProcessing: true
-    });
-  };
 
   // Function to reset progress
   const resetProgress = () => {
@@ -346,35 +338,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     { id: 'voice', name: 'Voice Calls', icon: Phone }
   ];
 
-  const contacts = [
-    {
-      id: 1,
-      name: 'John Smith',
-      email: 'john.smith@example.com',
-      phone: '+1 (555) 123-4567',
-      channels: ['voice', 'email'],
-      status: 'active',
-      lastContact: '2 hours ago'
-    },
-    {
-      id: 2,
-      name: 'Sarah Johnson',
-      email: 'sarah.j@example.com',
-      phone: '+1 (555) 234-5678',
-      channels: ['chat', 'email', 'facebook'],
-      status: 'inactive',
-      lastContact: '1 day ago'
-    },
-    {
-      id: 3,
-      name: 'Michael Brown',
-      email: 'michael.b@example.com',
-      phone: '+1 (555) 345-6789',
-      channels: ['voice', 'email', 'twitter'],
-      status: 'active',
-      lastContact: '3 hours ago'
-    }
-  ];
 
     // Function to clean email addresses by removing prefixes and invalid characters
   const cleanEmailAddresses = (content: string): string => {
@@ -418,70 +381,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   };
 
   // Function to optimize CSV content by keeping only essential columns
-  const optimizeCSVContent = (content: string): string => {
-    console.log('🔄 Optimizing CSV content...');
-    
-    const lines = content.split('\n');
-    if (lines.length === 0) return content;
-    
-    // Parse header to find essential columns
-    const header = lines[0];
-    const headerColumns = header.split(',');
-    
-    // Define essential columns (adjust based on your CSV structure)
-    const essentialColumns = [
-      'Email', 'Téléphone 1', 'Prénom', 'Nom', 'Deal_Name', 'Stage', 'Pipeline'
-    ];
-    
-    // Find indices of essential columns
-    const essentialIndices: number[] = [];
-    headerColumns.forEach((col, index) => {
-      const cleanCol = col.trim().replace(/"/g, '');
-      if (essentialColumns.some(essential => 
-        cleanCol.toLowerCase().includes(essential.toLowerCase()) ||
-        cleanCol.toLowerCase().includes('email') ||
-        cleanCol.toLowerCase().includes('téléphone') ||
-        cleanCol.toLowerCase().includes('prénom') ||
-        cleanCol.toLowerCase().includes('nom')
-      )) {
-        essentialIndices.push(index);
-      }
-    });
-    
-    // If no essential columns found, keep all columns
-    if (essentialIndices.length === 0) {
-      console.log('⚠️ No essential columns found, keeping all columns');
-      return content;
-    }
-    
-    // Create optimized content with only essential columns
-    const optimizedLines = lines.map((line, lineIndex) => {
-      if (lineIndex === 0) {
-        // Optimize header
-        return essentialIndices.map(index => headerColumns[index]).join(',');
-      }
-      
-      // Optimize data rows
-      const columns = line.split(',');
-      return essentialIndices.map(index => columns[index] || '').join(',');
-    });
-    
-    const optimizedContent = optimizedLines.join('\n');
-    console.log(`🔄 Content optimized: ${content.length} -> ${optimizedContent.length} characters`);
-    console.log(`🔄 Kept ${essentialIndices.length} essential columns out of ${headerColumns.length}`);
-    
-    return optimizedContent;
-  };
 
   // Function to process optimized content
-  const processOptimizedContent = async (optimizedContent: string, fileType: string): Promise<{leads: any[], validation: any}> => {
-    console.log('🔄 Processing optimized content...');
-    
-    // Use the same processing logic but with optimized content and isOptimized flag
-    const result: {leads: any[], validation: any} = await processFileWithOpenAI(optimizedContent, fileType, true);
-    
-    return result;
-  };
 
   // Helper function to recover incomplete JSON from OpenAI responses
   const tryRecoverIncompleteJSON = (content: string, expectedLeads: number): any | null => {
@@ -900,7 +801,7 @@ ${truncatedContent}`;
       }
 
       // Process the leads to ensure they have the required fields
-      const processedLeads = parsedData.leads.map((lead: any, index: number): any => {
+      const processedLeads = parsedData.leads.map((lead: any): any => {
         // Create Deal_Name from Prénom + Nom if available
         let dealName = lead.Deal_Name || '';
         if (!dealName && (lead.Prénom || lead.Nom)) {
@@ -1167,18 +1068,6 @@ ${truncatedContent}`;
               console.log(`📋 Column headers:`, headers);
               
               // Convert to structured format for OpenAI processing
-              const structuredRows = dataRows.map((row, rowIndex) => {
-                const rowObj: any = {};
-                headers.forEach((header, colIndex) => {
-                  if (header && colIndex < row.length) {
-                    // Clean column name and value
-                    const cleanHeader = header.toString().trim().replace(/[^\w\s]/g, '');
-                    const value = row[colIndex] || '';
-                    rowObj[cleanHeader] = value.toString();
-                  }
-                });
-                return rowObj;
-              });
               
               // Convert structured data to readable format for OpenAI
               const csvFormat = [
@@ -1529,41 +1418,6 @@ ${truncatedContent}`;
   };
 
   // Fonction pour forcer la réinitialisation complète
-  const handleResetUpload = () => {
-    console.log('🔄 Forcing complete reset for new upload...');
-    
-    // Reset file processing states only (keep existing leads)
-    setSelectedFile(null);
-    setUploadProgress(0);
-    setUploadSuccess(false);
-    setParsedLeads([]);
-    setUploadError(null);
-    setValidationResults(null);
-    setIsProcessing(false);
-    setShowSaveButton(true);
-    setShowFileName(true);
-    
-    // Reset OpenAI processing progress
-    resetProgress();
-    
-    // Clear all storage items
-    localStorage.removeItem('parsedLeads');
-    localStorage.removeItem('validationResults');
-    localStorage.removeItem('uploadProcessing');
-    sessionStorage.removeItem('uploadProcessing');
-    sessionStorage.removeItem('parsedLeads');
-    sessionStorage.removeItem('validationResults');
-    
-    // Remove processing indicators
-    document.body.removeAttribute('data-processing');
-    processingRef.current = false;
-    
-    // Reset file input
-    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
-    if (fileInput) {
-      fileInput.value = '';
-    }
-  };
 
   const handleZohoConnect = async () => {
     console.log('Starting Zoho connection process...');
@@ -2193,41 +2047,6 @@ ${truncatedContent}`;
     fetchGigs();
   }, []);
 
-  const handleGigChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newGigId = e.target.value;
-    setSelectedGigId(newGigId);
-    
-    // Update gigId in all parsed leads (keep as string for interface compatibility)
-    setParsedLeads(prevLeads => 
-      prevLeads.map(lead => ({
-        ...lead,
-        gigId: newGigId
-      }))
-    );
-
-    // Update gigId in existing leads
-    setLeads(prevLeads =>
-      prevLeads.map(lead => ({
-        ...lead,
-        gigId: newGigId
-      }))
-    );
-
-    // Update gigId in realtime leads
-    setRealtimeLeads(prevLeads =>
-      prevLeads.map(lead => ({
-        ...lead,
-        gigId: newGigId
-      }))
-    );
-
-    // Update the cookie with the new gigId for consistency
-    Cookies.set('gigId', newGigId);
-    
-    // Log the change for debugging
-    console.log('Gig changed to:', newGigId);
-    console.log('Updated parsedLeads with new gigId');
-  };
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -2260,67 +2079,8 @@ ${truncatedContent}`;
     setShowImportChoiceModal(false);
   }, []);
 
-  const handleImportChoice = (choice: 'zoho' | 'file') => {
-    setSelectedImportChoice(choice);
-  };
 
-  const handleConfirmChoice = () => {
-    if (selectedImportChoice) {
-      localStorage.setItem('hasSeenImportChoiceModal', 'true');
-      setShowImportChoiceModal(false);
-      
-      if (selectedImportChoice === 'zoho') {
-        // Focus on Zoho import section
-        const zohoButton = document.querySelector('[data-zoho-import]');
-        if (zohoButton) {
-          zohoButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      } else {
-        // Focus on file upload section
-        const uploadSection = document.querySelector('[data-file-upload]');
-        if (uploadSection) {
-          uploadSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }
-    }
-  };
 
-  const testOpenAIConnection = async () => {
-    try {
-      const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
-      if (!openaiApiKey) {
-        toast.error('OpenAI API key not configured');
-        return;
-      }
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openaiApiKey}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [
-            {
-              role: 'user',
-              content: 'Hello, this is a test message. Please respond with "Connection successful" if you can read this.'
-            }
-          ],
-          max_tokens: 10
-        })
-      });
-
-      if (response.ok) {
-        toast.success('OpenAI connection successful!');
-      } else {
-        toast.error('OpenAI connection failed. Please check your API key.');
-      }
-    } catch (error) {
-      console.error('OpenAI test error:', error);
-      toast.error('OpenAI connection test failed');
-    }
-  };
 
   const handleEditLead = (index: number, field: string, value: string) => {
     const newLeads = [...parsedLeads];
