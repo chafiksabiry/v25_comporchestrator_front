@@ -1340,23 +1340,7 @@ const CompanyOnboarding = () => {
       setShowTelephonySetup(false);
     };
   } else if (showUploadContacts) {
-    activeComponent = (
-      <UploadContacts
-          onBackToOnboarding={async () => {
-          setShowUploadContacts(false);
-
-          // Force reload onboarding state after upload contacts completion
-          if (companyId) {
-            try {
-              await loadCompanyProgress();
-              console.log("✅ Onboarding state reloaded successfully");
-            } catch (error) {
-              console.error("❌ Error reloading onboarding state:", error);
-            }
-          }
-        }}
-       />
-    );
+    activeComponent = <UploadContacts />;
     onBack = () => {
       setShowUploadContacts(false);
     };

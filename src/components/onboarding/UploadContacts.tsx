@@ -103,10 +103,9 @@ interface ApiResponse {
 
 interface UploadContactsProps {
   onCancelProcessing?: () => void;
-  onBackToOnboarding?: () => void;
 }
 
-const UploadContacts = React.memo(({ onCancelProcessing, onBackToOnboarding }: UploadContactsProps) => {
+const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) => {
   // Component will render normally - no early return needed
 
   // Function to cancel processing
@@ -2377,15 +2376,7 @@ ${truncatedContent}`;
               Import, manage, and organize your leads efficiently. Choose between connecting with your CRM system or uploading contact files directly.
             </p>
           </div>
-          {onBackToOnboarding && (
-            <button
-              onClick={onBackToOnboarding}
-              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span>Back to Onboarding</span>
-            </button>
-          )}
+
         </div>
       </div>
 
