@@ -757,25 +757,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       // Prepare content for OpenAI (using the fileContent parameter)
       const truncatedContent = fileContent;
       
-      // Natural, conversational prompt for better processing
-      const prompt = `
-Salut ChatGPT, j'ai un fichier avec ${lines.length - 1} lignes à traiter.
-
-Pour chaque ligne, crée un objet lead JSON avec ces champs :
-
-- userId, companyId, gigId : déjà connus (je te les donne).
-- Deal_Name : concatène Prénom + Nom (exemple: "Jean Dupont"). S'il manque prénom ou nom, mets "Unknown".
-- Email_1 : prends l'email, sinon "no-email@placeholder.com"
-- Phone : prends le téléphone, sinon "no-phone@placeholder.com"
-- Stage : "New"
-- Pipeline : "Sales Pipeline"
-- Last_Activity_Time : null
-- Activity_Tag : ""
-- Telephony : ""
-
-IMPORTANT :
-1. Traite TOUTES les ${lines.length - 1} lignes, sans en sauter aucune.
-2. Renvoie uniquement du JSON valide, dans ce format exact :
+      // Ultra-simple prompt to avoid JSON truncation
+      const prompt = `Process ${lines.length - 1} rows. Return ONLY valid JSON:
 
 {
   "leads": [
@@ -783,24 +766,19 @@ IMPORTANT :
       "userId": {"$oid": "${userId}"},
       "companyId": {"$oid": "${companyId}"},
       "gigId": {"$oid": "${gigId}"},
-      "Last_Activity_Time": null,
-      "Activity_Tag": "",
-      "Deal_Name": "Prénom Nom",
+      "Deal_Name": "",
+      "Email_1": "",
+      "Phone": "",
       "Stage": "New",
-      "Email_1": "email@exemple.com",
-      "Phone": "0123456789",
-      "Telephony": "",
-      "Pipeline": "Sales Pipeline",
-      "updatedAt": {"$date": "${new Date().toISOString()}" },
-      "__v": 0
-    },
-    ...
+      "Pipeline": "Sales Pipeline"
+    }
   ]
 }
 
-Voici les données à traiter (${lines.length - 1} lignes) :
-${truncatedContent}
-`;
+Rules: Email→Email_1, Phone→Phone, Deal_Name=Prénom+Nom or email. Process ALL rows.
+
+Data:
+${truncatedContent}`;
 
       // Update progress for OpenAI request
       if (isOptimized) {
