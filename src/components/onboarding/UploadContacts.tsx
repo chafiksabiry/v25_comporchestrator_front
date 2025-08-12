@@ -29,29 +29,17 @@
  * @component
  * @returns {JSX.Element} Le composant UploadContacts
  */
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
-  Upload,
   FileText,
-  Download,
   RefreshCw,
   Search,
   Trash2,
   Edit,
-  Users,
   Phone,
   Mail,
-  MessageSquare,
-  Facebook,
-  Twitter,
-  Instagram,
-  Linkedin,
-  Youtube,
   Globe,
   X,
-  Database,
-  ChevronLeft,
-  ChevronRight,
   ChevronUp,
   ChevronDown,
   UserPlus,
@@ -59,7 +47,6 @@ import {
   Cloud,
   Settings,
   CheckCircle,
-  AlertCircle,
   Info,
   LogOut
 } from 'lucide-react';
@@ -110,11 +97,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
   // Function to cancel processing
   const cancelProcessing = () => {
-    console.log('🛑 Cancelling processing via Back to Onboarding...');
     
     // Abort any ongoing OpenAI requests
     if (abortControllerRef.current) {
-      console.log('🛑 Aborting ongoing OpenAI requests...');
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
@@ -156,7 +141,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       fileInput.value = '';
     }
     
-    console.log('✅ Processing cancelled by Back to Onboarding - all states reset');
     
     // Call the parent callback if provided
     if (onCancelProcessing) {
@@ -166,11 +150,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
   // Emergency cancel function that can be called even during processing
   const emergencyCancel = () => {
-    console.log('🚨 EMERGENCY CANCELLATION triggered via Back to Onboarding');
     
     // Force abort any ongoing requests
     if (abortControllerRef.current) {
-      console.log('🚨 Force aborting all requests...');
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
@@ -202,7 +184,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       isProcessing: false
     });
     
-    console.log('🚨 Emergency cancellation completed - user returned to onboarding');
   };
 
   // Expose both cancel functions to parent component
@@ -210,20 +191,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     // Always expose the cancel function to window for parent access
     (window as any).cancelUploadProcessing = cancelProcessing;
     (window as any).emergencyCancelUpload = emergencyCancel;
-    
-    // Log that the functions are now available
-    console.log('🔧 cancelUploadProcessing and emergencyCancelUpload functions exposed to window');
-    
-    // Test function availability
-    console.log('🔍 Testing function availability:', {
-      cancelUploadProcessing: typeof (window as any).cancelUploadProcessing,
-      emergencyCancelUpload: typeof (window as any).emergencyCancelUpload
-    });
-    
     return () => {
       delete (window as any).cancelUploadProcessing;
       delete (window as any).emergencyCancelUpload;
-      console.log('🧹 Cancel functions removed from window');
     };
   }, []); // Remove onCancelProcessing dependency to always expose
 
@@ -317,11 +287,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   const updateRealProgress = (progress: number, status: string) => {
     // Check if processing was cancelled
     if (!processingRef.current) {
-      console.log('🛑 Progress update cancelled - processing was stopped');
       return;
     }
     
-    console.log(`📊 Progress: ${progress}% - ${status}`);
     
     // Update both progress states
     setUploadProgress(progress);
@@ -353,7 +321,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     
     // If we have processing state but no file and no leads, clean it up
     if (isCurrentlyProcessing && !hasSelectedFile && !hasParsedLeads) {
-      console.log('🧹 Cleaning up stale processing state - no file selected and no leads');
       setIsProcessing(false);
       processingRef.current = false;
       localStorage.removeItem('uploadProcessing');
@@ -364,7 +331,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     if (isCurrentlyProcessing && (hasSelectedFile || hasParsedLeads)) {
       processingRef.current = true;
       setIsProcessing(true);
-      console.log('🔄 Restoring processing state from localStorage');
       
       // Prevent any other effects from running during processing
       return () => {
@@ -381,7 +347,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         try {
           const leads = JSON.parse(savedParsedLeads);
           setParsedLeads(leads);
-          console.log('🔄 Restored parsed leads from localStorage:', leads.length);
         } catch (error) {
           console.error('Error restoring parsed leads:', error);
         }
@@ -391,7 +356,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         try {
           const validation = JSON.parse(savedValidationResults);
           setValidationResults(validation);
-          console.log('🔄 Restored validation results from localStorage');
         } catch (error) {
           console.error('Error restoring validation results:', error);
         }
@@ -407,19 +371,16 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     // If we have parsed leads in state but they're about to be lost, save them
     if (parsedLeads.length > 0) {
       localStorage.setItem('parsedLeads', JSON.stringify(parsedLeads));
-      console.log('💾 Auto-saving parsed leads to localStorage:', parsedLeads.length);
     }
     
     // Ensure cancelProcessing function is always available
     if (!(window as any).cancelUploadProcessing) {
       (window as any).cancelUploadProcessing = cancelProcessing;
-      console.log('🔧 Re-exposing cancelUploadProcessing function to window');
     }
     
     // Ensure emergency cancel function is always available
     if (!(window as any).emergencyCancelUpload) {
       (window as any).emergencyCancelUpload = emergencyCancel;
-      console.log('🔧 Re-exposing emergencyCancelUpload function to window');
     }
   });
 
@@ -428,7 +389,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     // If we have parsed leads, prevent re-mounting
     if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads')) {
       preventRemountRef.current = true;
-      console.log('🛡️ Preventing component re-mount - parsed leads exist');
     }
   }, [parsedLeads.length]);
 
@@ -440,7 +400,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const isManualClose = !localStorage.getItem('parsedLeads');
       if (parsedLeads.length > 0 && !isManualClose) {
         localStorage.setItem('parsedLeads', JSON.stringify(parsedLeads));
-        console.log('🛡️ Component unmounting - saved parsed leads to localStorage:', parsedLeads.length);
       }
     };
   }, [parsedLeads]);
@@ -453,7 +412,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     if (!selectedFile && parsedLeads.length === 0) {
       const isCurrentlyProcessing = localStorage.getItem('uploadProcessing') === 'true';
       if (isCurrentlyProcessing) {
-        console.log('🧹 Cleaning up processing state on mount - no file selected');
         setIsProcessing(false);
         processingRef.current = false;
         localStorage.removeItem('uploadProcessing');
@@ -471,7 +429,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
     // Function to clean email addresses by removing prefixes and invalid characters
   const cleanEmailAddresses = (content: string): string => {
-    console.log('🧹 Cleaning email addresses...');
     
     // First, identify the "Email" column (last column) and clean emails there specifically
     const lines = content.split('\n');
@@ -488,10 +445,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           // Clean the email in "Email" column
           const cleanedEmail = emailColumn.replace(/^Nor\s+/, '').trim();
           columns[23] = cleanedEmail;
-          // Log only first few rows for performance
-          if (index <= 5) {
-          console.log(`🧹 Cleaned email in row ${index + 1}: "${emailColumn}" -> "${cleanedEmail}"`);
-          }
         }
       }
       
@@ -504,9 +457,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     const generalCleaned = cleanedContent.replace(/Nor\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, '$1');
     const finalCleaned = generalCleaned.replace(/(?:Prefix|Label|Tag)\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, '$1');
     
-    console.log('🧹 Email cleaning completed');
-    console.log('🧹 Total lines processed:', lines.length);
-    
     return finalCleaned;
   };
 
@@ -517,14 +467,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   // Helper function to recover incomplete JSON from OpenAI responses
   const tryRecoverIncompleteJSON = (content: string, expectedLeads: number): any | null => {
     try {
-      console.log('🔄 Attempting to recover incomplete JSON...');
       
       // Method 1: Try to find complete lead objects and reconstruct
       const leadPattern = /\{[^}]*"userId"[^}]*"Email_1"[^}]*"Phone"[^}]*\}/g;
       const leadMatches = content.match(leadPattern);
       
       if (leadMatches && leadMatches.length > 0) {
-        console.log('Found', leadMatches.length, 'complete lead objects');
         
         // Reconstruct JSON with found leads
         const leadsJson = leadMatches.map(obj => obj.trim()).join(',\n    ');
@@ -544,7 +492,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           const parsed = JSON.parse(reconstructedJson);
           return parsed;
         } catch (e) {
-          console.log('Method 1 failed, trying method 2...');
         }
       }
       
@@ -574,7 +521,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           return parsed;
         }
       } catch (e) {
-        console.log('Method 2 failed, trying method 3...');
       }
       
       // Method 3: Extract partial leads and create minimal valid JSON
@@ -600,7 +546,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       }
       
       if (partialLeads.length > 0) {
-        console.log('Found', partialLeads.length, 'partial lead objects');
         
         const minimalJson = `{
   "leads": ${JSON.stringify(partialLeads)},
@@ -615,7 +560,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         try {
           return JSON.parse(minimalJson);
         } catch (e) {
-          console.log('Method 3 also failed');
         }
       }
       
@@ -627,12 +571,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   };
 
   const processFileWithOpenAI = async (fileContent: string, fileType: string, isOptimized: boolean = false): Promise<{leads: any[], validation: any}> => {
-    console.log(`🔍 Starting processFileWithOpenAI - isOptimized: ${isOptimized}`);
     
     try {
       // Check if processing was cancelled
       if (!processingRef.current) {
-        console.log('🛑 Processing was cancelled, aborting...');
         throw new Error('Processing cancelled by user');
       }
       
@@ -666,7 +608,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       
       // Check if processing was cancelled after cleaning
       if (!processingRef.current) {
-        console.log('🛑 Processing was cancelled after cleaning, aborting...');
         throw new Error('Processing cancelled by user');
       }
       
@@ -675,22 +616,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       
       // Count the number of lines
       const lines = cleanedFileContent.split('\n');
-      console.log(`📊 Lines in this chunk: ${lines.length}`);
-      
-      // Log only essential information for performance
-      if (lines.length > 0) {
-        console.log(`📋 First line: ${lines[0].substring(0, 50)}...`);
-        if (lines.length > 1) {
-          console.log(`📋 Last line: ${lines[lines.length - 1].substring(0, 50)}...`);
-        }
-      }
       
       // Check if content is too large or has many lines - use smart chunking for very large files
       if (!isOptimized && (cleanedFileContent.length > 100000 || lines.length > 200)) {
         console.warn(`⚠️ File is very large (${lines.length} lines, ${cleanedFileContent.length} characters) - using smart chunking`);
         
         // Use smart chunking for very large files to avoid token limit issues
-        console.log(`🔄 Processing very large file with smart chunking for ${lines.length} lines...`);
         showProcessingStatus(`Traitement par lots intelligents (${lines.length} lignes)...`);
         
         // Start real progress updates with more granular steps
@@ -699,7 +630,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         
         // Check if cancelled
         if (!processingRef.current) {
-          console.log('🛑 Processing cancelled during initialization');
           throw new Error('Processing cancelled by user');
         }
         
@@ -708,7 +638,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         
         // Check if cancelled
         if (!processingRef.current) {
-          console.log('🛑 Processing cancelled during structure analysis');
           throw new Error('Processing cancelled by user');
         }
         
@@ -717,7 +646,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         
         // Check if cancelled
         if (!processingRef.current) {
-          console.log('🛑 Processing cancelled during data preparation');
           throw new Error('Processing cancelled by user');
         }
         
@@ -728,71 +656,11 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         return result;
       }
       
-      // For smaller files, also use chunking to ensure ALL rows are processed
-      if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 50)) {
-        console.warn(`⚠️ File is medium-sized (${lines.length} lines, ${cleanedFileContent.length} characters) - using chunking to ensure ALL rows are processed`);
-        
-        // Process the entire file using chunking to guarantee all rows are processed
-        console.log(`🔄 Processing medium file with chunking for ${lines.length} lines...`);
-        showProcessingStatus(`Traitement par lots pour garantir la complétude (${lines.length} lignes)...`);
-        
-        // Start real progress updates with more granular steps
-        updateRealProgress(5, 'Initialisation du traitement...');
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Check if cancelled
-        if (!processingRef.current) {
-          console.log('🛑 Processing cancelled during initialization');
-          throw new Error('Processing cancelled by user');
-        }
-        
-        updateRealProgress(15, 'Analyse de la structure du fichier...');
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // Check if cancelled
-        if (!processingRef.current) {
-          console.log('🛑 Processing cancelled during structure analysis');
-          throw new Error('Processing cancelled by user');
-        }
-        
-        updateRealProgress(25, 'Préparation des données...');
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Check if cancelled
-        if (!processingRef.current) {
-          console.log('🛑 Processing cancelled during data preparation');
-          throw new Error('Processing cancelled by user');
-        }
-        
-        updateRealProgress(35, 'Nettoyage des données...');
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Check if cancelled
-        if (!processingRef.current) {
-          console.log('🛑 Processing cancelled during data cleaning');
-          throw new Error('Processing cancelled by user');
-        }
-        
-        // Use chunking to ensure ALL rows are processed
-        const result = await processLargeFileInChunks(cleanedFileContent, fileType, lines);
-        
-        updateRealProgress(75, 'Validation des résultats...');
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        updateRealProgress(85, 'Finalisation...');
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        updateRealProgress(100, 'Traitement terminé !');
-        
-        return result;
-      }
-      
       // For smaller files, use single batch processing
       if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 50)) {
         console.warn(`⚠️ File is large (${lines.length} lines, ${cleanedFileContent.length} characters) - processing in single batch like ChatGPT`);
         
         // Process the entire file at once for better performance
-        console.log(`🔄 Processing entire file in single batch for ${lines.length} lines...`);
         showProcessingStatus(`Traitement du fichier complet (${lines.length} lignes)...`);
         
         // Start real progress updates with more granular steps
@@ -814,12 +682,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           ? cleanedFileContent.substring(0, largeFileMaxLength) + '\n... [content truncated due to size]'
         : cleanedFileContent;
       
-        // Log content size to verify no truncation
-        console.log(`📏 Content size check:`);
-        console.log(`   - Original: ${cleanedFileContent.length} characters`);
-        console.log(`   - Final: ${finalContent.length} characters`);
-        console.log(`   - Truncated: ${cleanedFileContent.length > largeFileMaxLength ? 'YES' : 'NO'}`);
-        
         if (cleanedFileContent.length > largeFileMaxLength) {
           console.warn(`⚠️ WARNING: File content was truncated! Only processing first ${largeFileMaxLength} characters`);
           console.warn(`   This may result in incomplete processing. Consider splitting very large files.`);
@@ -830,7 +692,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         
         // Check if cancelled
         if (!processingRef.current) {
-          console.log('🛑 Processing cancelled before OpenAI call');
           throw new Error('Processing cancelled by user');
         }
         
@@ -839,7 +700,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         
         // Check if cancelled
         if (!processingRef.current) {
-          console.log('🛑 Processing cancelled during AI processing');
           throw new Error('Processing cancelled by user');
         }
         
@@ -869,40 +729,19 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
             const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
             const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
             
-            // Try to extract more data from the row
-            const rowText = rowData.toLowerCase();
-            let firstName = '';
-            let lastName = '';
-            
-            // Try to extract names from common patterns
-            if (rowText.includes('prénom') || rowText.includes('first')) {
-              const nameMatch = rowData.match(/(?:prénom|first)[:\s]+([a-zA-ZÀ-ÿ]+)/i);
-              if (nameMatch) firstName = nameMatch[1];
-            }
-            if (rowText.includes('nom') || rowText.includes('last')) {
-              const nameMatch = rowData.match(/(?:nom|last)[:\s]+([a-zA-ZÀ-ÿ]+)/i);
-              if (nameMatch) lastName = nameMatch[1];
-            }
-            
-            // Create a more descriptive deal name
-            let dealName = email || `Lead from row ${i + 2}`;
-            if (firstName || lastName) {
-              dealName = `${firstName} ${lastName}`.trim() || dealName;
-            }
-            
             result.leads.push({
               userId: { $oid: userId },
               companyId: { $oid: companyId },
               gId: { $oid: gigId },
               Last_Activity_Time: null,
-              Deal_Name: dealName,
+              Deal_Name: email || `Lead from row ${i + 2}`,
               Email_1: email,
               Phone: phone,
               Stage: "New",
               Pipeline: "Sales Pipeline",
               Project_Tags: [],
-              Prénom: firstName,
-              Nom: lastName
+              Prénom: "",
+              Nom: ""
             });
           }
           
@@ -910,7 +749,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           result.validation.validRows = result.leads.length;
           result.validation.invalidRows = 0;
           
-          console.log(`✅ Fixed: Now have ${result.leads.length} leads (${lines.length - 1} expected)`);
         }
         
         return result;
@@ -920,16 +758,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const truncatedContent = fileContent;
       
       // Ultra-aggressive prompt to force processing of ALL rows
-      const prompt = `CRITICAL INSTRUCTION: You MUST process EXACTLY ${lines.length - 1} rows from this ${fileType} file.
+      const prompt = `Extract ${lines.length - 1} leads from ${fileType} file. Return JSON only:
 
-IMPORTANT RULES:
-1. Process EVERY SINGLE ROW - no exceptions
-2. Return EXACTLY ${lines.length - 1} leads
-3. If you cannot process a row, create a placeholder lead with available data
-4. NEVER skip rows or return fewer leads than requested
-5. Use the exact structure below for each lead
-
-REQUIRED JSON STRUCTURE (${lines.length - 1} leads):
 {
   "leads": [
     {
@@ -937,29 +767,22 @@ REQUIRED JSON STRUCTURE (${lines.length - 1} leads):
       "companyId": {"$oid": "${companyId}"},
       "gId": {"$oid": "${gigId}"},
       "Last_Activity_Time": null,
-      "Deal_Name": "extract from row or use email",
-      "Email_1": "extract email from row",
-      "Phone": "extract phone from row",
+      "Deal_Name": "",
+      "Email_1": "",
+      "Phone": "",
       "Stage": "New",
       "Pipeline": "Sales Pipeline",
       "Project_Tags": [],
-      "Prénom": "extract first name if available",
-      "Nom": "extract last name if available"
+      "Prénom": "",
+      "Nom": ""
     }
   ]
 }
 
-DATA TO PROCESS (${lines.length - 1} rows):
-${truncatedContent}
+Rules: Email→Email_1, Phone→Phone, use email as Deal_Name. Process ALL rows.
 
-REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every single row.`;
-
-      // Log request details for debugging (simplified)
-      console.log('Sending request to OpenAI with:', {
-        model: 'gpt-3.5-turbo',
-        promptLength: prompt.length,
-        maxTokens: 'unlimited (using model maximum)'
-      });
+Data:
+${truncatedContent}`;
 
       // Update progress for OpenAI request
       if (isOptimized) {
@@ -972,7 +795,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
         console.warn('⚠️ Prompt is very large, truncating content...');
         const maxPromptLength = 100000;
         finalPrompt = prompt.substring(0, maxPromptLength) + '\n... [content truncated due to size]';
-        console.log('Using truncated prompt with length:', finalPrompt.length);
       }
 
       const requestBody = {
@@ -1055,8 +877,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
       // Parse the JSON response with recovery for incomplete JSON
       let parsedData;
       
-      console.log(`📊 OpenAI response length: ${content.length}`);
-      
       // Check if JSON appears complete
       const trimmedContent = content.trim();
       const isCompleteJSON = trimmedContent.startsWith('{') && trimmedContent.endsWith('}') && 
@@ -1066,7 +886,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
         console.warn('⚠️ OpenAI returned incomplete JSON, attempting recovery...');
         const recoveredData = tryRecoverIncompleteJSON(content, lines.length - 1);
         if (recoveredData) {
-          console.log('✅ Successfully recovered JSON with', recoveredData.leads.length, 'leads');
           parsedData = recoveredData;
         } else {
           throw new Error('Failed to recover incomplete JSON response');
@@ -1078,7 +897,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
           console.warn('⚠️ JSON parse error, attempting recovery...');
           const recoveredData = tryRecoverIncompleteJSON(content, lines.length - 1);
           if (recoveredData) {
-            console.log('✅ Successfully recovered JSON with', recoveredData.leads.length, 'leads');
             parsedData = recoveredData;
           } else {
             throw new Error(`JSON parse error: ${parseError}`);
@@ -1097,13 +915,11 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
         let dealName = lead.Deal_Name || '';
         if (!dealName && (lead.Prénom || lead.Nom)) {
           dealName = `${lead.Prénom || ''} ${lead.Nom || ''}`.trim();
-          console.log(`📝 Created Deal_Name from Prénom + Nom: "${dealName}"`);
         }
         
         // Use email as Deal_Name if still empty
         if (!dealName && lead.Email_1) {
           dealName = lead.Email_1;
-          console.log(`📝 Using Email as Deal_Name: "${dealName}"`);
         }
         
         // Ensure required fields are present
@@ -1123,24 +939,10 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
         };
       });
 
-      // Log sample of processed leads (simplified)
-      if (processedLeads.length > 0) {
-        console.log(`📋 Sample of processed leads:`);
-        processedLeads.slice(0, 3).forEach((lead: any, index: number) => {
-          console.log(`   Lead ${index + 1}: ${lead.Deal_Name} | ${lead.Phone} | ${lead.Email_1}`);
-        });
-      }
-
       // Final validation
       const totalRows = lines.length - 1; // Exclude header
       const validRows = processedLeads.length;
       const invalidRows = Math.max(0, totalRows - validRows);
-
-      console.log(`✅ Final processing results:`);
-      console.log(`   - Processed leads: ${validRows}`);
-      console.log(`   - Validation totalRows: ${totalRows}`);
-      console.log(`   - Validation validRows: ${validRows}`);
-      console.log(`   - Validation invalidRows: ${invalidRows}`);
 
       // Update final progress
       if (isOptimized) {
@@ -1178,7 +980,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
           });
         }
         
-        console.log(`✅ Fixed: Now have ${processedLeads.length} leads (${lines.length - 1} expected)`);
       }
 
       return {
@@ -1199,15 +1000,12 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
 
   // Smart chunking function for large files
   const processLargeFileInChunks = async (fileContent: string, fileType: string, lines: string[]): Promise<{leads: any[], validation: any}> => {
-    console.log(`🔄 Processing large file in chunks: ${lines.length} lines`);
     
     // Calculate optimal chunk size based on OpenAI's token limit
-    // Use smaller chunks to ensure ALL rows are processed
-    const maxTokensPerChunk = 12000; // Reduced for safety
-    const estimatedTokensPerLine = 25; // Increased estimate for better accuracy
-    const optimalChunkSize = Math.min(100, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 100 lines per chunk
+    const maxTokensPerChunk = 14000; // Optimized limit (16,385 - safe buffer)
+    const estimatedTokensPerLine = 20; // Optimized estimate for Excel data
+    const optimalChunkSize = Math.min(150, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 150 lines per chunk
     
-    console.log(`📊 Chunking strategy: ${optimalChunkSize} lines per chunk (aggressive processing)`);
     
     const allLeads: any[] = [];
     const totalChunks = Math.ceil((lines.length - 1) / optimalChunkSize);
@@ -1218,7 +1016,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
     for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
       // Check if processing was cancelled
       if (!processingRef.current) {
-        console.log('🛑 Processing cancelled during chunk processing');
         throw new Error('Processing cancelled by user');
       }
       
@@ -1226,7 +1023,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
       const endLine = Math.min((chunkIndex + 1) * optimalChunkSize, lines.length - 1);
       const chunkLines = lines.slice(0, 1).concat(lines.slice(startLine, endLine + 1)); // Include header + chunk
       
-      console.log(`📦 Preparing chunk ${chunkIndex + 1}/${totalChunks}: lines ${startLine}-${endLine} (${endLine - startLine + 1} rows)`);
       
       // Update progress for chunk processing
       const chunkProgress = 30 + (chunkIndex / totalChunks) * 60; // 30% to 90%
@@ -1237,7 +1033,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
       try {
         // Check again before processing chunk
         if (!processingRef.current) {
-          console.log('🛑 Processing cancelled before chunk processing');
           throw new Error('Processing cancelled by user');
         }
         
@@ -1246,13 +1041,11 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
         
         // Check if cancelled after chunk processing
         if (!processingRef.current) {
-          console.log('🛑 Processing cancelled after chunk processing');
           throw new Error('Processing cancelled by user');
         }
         
         if (chunkResult.leads && chunkResult.leads.length > 0) {
           allLeads.push(...chunkResult.leads);
-          console.log(`✅ Chunk ${chunkIndex + 1} processed: ${chunkResult.leads.length} leads`);
           
           // Update progress after successful chunk processing
           const successProgress = 30 + ((chunkIndex + 1) / totalChunks) * 60;
@@ -1273,61 +1066,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
       }
     }
     
-    console.log(`🎯 Total leads from all chunks: ${allLeads.length}`);
-    
-    // Validate that we got all expected leads
-    const expectedLeads = lines.length - 1;
-    if (allLeads.length < expectedLeads) {
-      console.warn(`⚠️ Missing leads: got ${allLeads.length}, expected ${expectedLeads}`);
-      
-      // Create missing leads from the original data
-      const missingLeads = expectedLeads - allLeads.length;
-      console.log(`🔧 Creating ${missingLeads} missing leads to complete the dataset...`);
-      
-      for (let i = allLeads.length; i < expectedLeads; i++) {
-        const rowData = lines[i + 1]; // +1 because lines[0] is header
-        const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
-        const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
-        
-        // Try to extract more data from the row
-        const rowText = rowData.toLowerCase();
-        let firstName = '';
-        let lastName = '';
-        
-        // Try to extract names from common patterns
-        if (rowText.includes('prénom') || rowText.includes('first')) {
-          const nameMatch = rowData.match(/(?:prénom|first)[:\s]+([a-zA-ZÀ-ÿ]+)/i);
-          if (nameMatch) firstName = nameMatch[1];
-        }
-        if (rowText.includes('nom') || rowText.includes('last')) {
-          const nameMatch = rowData.match(/(?:nom|last)[:\s]+([a-zA-ZÀ-ÿ]+)/i);
-          if (nameMatch) lastName = nameMatch[1];
-        }
-        
-        // Create a more descriptive deal name
-        let dealName = email || `Lead from row ${i + 2}`;
-        if (firstName || lastName) {
-          dealName = `${firstName} ${lastName}`.trim() || dealName;
-        }
-        
-        allLeads.push({
-          userId: { $oid: Cookies.get('userId') },
-          companyId: { $oid: Cookies.get('companyId') },
-          gId: { $oid: selectedGigId },
-          Last_Activity_Time: null,
-          Deal_Name: dealName,
-          Email_1: email,
-          Phone: phone,
-          Stage: "New",
-          Pipeline: "Sales Pipeline",
-          Project_Tags: [],
-          Prénom: firstName,
-          Nom: lastName
-        });
-      }
-      
-      console.log(`✅ Fixed: Now have ${allLeads.length} leads (${expectedLeads} expected)`);
-    }
     
     // Final progress update
     updateRealProgress(95, 'Finalisation du traitement par lots...');
@@ -1336,9 +1074,9 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
     return {
       leads: allLeads,
       validation: {
-        totalRows: expectedLeads,
+        totalRows: lines.length - 1,
         validRows: allLeads.length,
-        invalidRows: 0, // All leads are now valid
+        invalidRows: Math.max(0, (lines.length - 1) - allLeads.length),
         errors: []
       }
     };
@@ -1354,9 +1092,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
         toast.error('Please select a gig first before uploading a file');
         return;
       }
-      
-      // Reset state for new file upload
-      console.log('🔄 Starting new file upload, resetting state...');
       
       // Store current leads before resetting
       const currentLeads = [...leads];
@@ -1378,7 +1113,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
       resetProgress();
       
       // Clear ALL localStorage and sessionStorage items
-      console.log('🧹 Clearing all storage items...');
       localStorage.removeItem('parsedLeads');
       localStorage.removeItem('validationResults');
       localStorage.removeItem('uploadProcessing');
@@ -1396,9 +1130,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
       if (fileInput) {
         fileInput.value = '';
       }
-      
-      // Force component refresh by clearing any cached data
-      console.log('🔄 Forcing component refresh...');
       
       // Now set the new file and start processing
       setSelectedFile(file);
@@ -1421,7 +1152,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
           try {
             // Check if processing was cancelled before starting
             if (!processingRef.current) {
-              console.log('🛑 File processing cancelled before start');
               return;
             }
             
@@ -1445,11 +1175,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
               const headers = jsonData[0] as string[];
               const dataRows = jsonData.slice(1) as any[][];
               
-              console.log(`📊 Excel file structure: ${headers.length} columns, ${dataRows.length} data rows`);
-              console.log(`📋 Column headers:`, headers);
-              
-              // Convert to structured format for OpenAI processing
-              
               // Convert structured data to readable format for OpenAI
               const csvFormat = [
                 headers.join(','),
@@ -1457,9 +1182,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
               ].join('\n');
               
               fileContent = csvFormat;
-              
-              console.log(`✅ Excel file converted: ${dataRows.length} rows with ${headers.length} columns`);
-              console.log(`📏 Final content size: ${fileContent.length} characters`);
             } else if (fileExtension === 'csv') {
               fileType = 'CSV';
               fileContent = e.target?.result as string;
@@ -1483,16 +1205,13 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
             
             // Check if processing was cancelled before OpenAI call
             if (!processingRef.current) {
-              console.log('🛑 File processing cancelled before OpenAI call');
               return;
             }
             
             // Process with OpenAI
-            console.log('Processing file with OpenAI...');
             const startTime = Date.now();
             const result = await processFileWithOpenAI(fileContent, fileType);
             const processingTime = Date.now() - startTime;
-            console.log(`✅ OpenAI processing completed in ${processingTime}ms`);
             
             setUploadProgress(80);
 
@@ -1507,37 +1226,16 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
             // Show validation results (suppressed error popups as requested by user)
             if (result.validation) {
               const { totalRows, validRows, invalidRows, errors } = result.validation;
-              
-              console.log('🔍 Validation analysis:');
-              console.log('   - result.validation:', result.validation);
-              console.log('   - totalRows:', totalRows);
-              console.log('   - validRows:', validRows);
-              console.log('   - invalidRows:', invalidRows);
-              console.log('   - result.leads.length:', result.leads.length);
-              
+
               setValidationResults(result.validation);
-              
-              // Completely suppressed validation error popups as requested by user
-              if (invalidRows > 0) {
-                console.log(`${invalidRows} rows had validation errors. Check the console for details.`);
-                console.log('Validation errors:', errors);
-              }
               
               // Use actual leads count if validRows is undefined or 0
               const actualValidRows = validRows || result.leads.length;
             }
 
-            console.log('Leads processed with OpenAI:', result.leads);
-            console.log('📊 Total leads processed:', result.leads.length);
-            
             // Verify we got all expected leads
             const fileLines = fileContent.split('\n').filter((line: string) => line.trim());
             const expectedLeads = fileLines.length - 1; // Exclude header row
-            if (result.leads.length < expectedLeads) {
-              console.warn(`⚠️ Warning: Only ${result.leads.length} leads processed. Expected ${expectedLeads} leads from ${fileLines.length} total lines.`);
-            } else {
-              console.log(`✅ Successfully processed ${result.leads.length} leads (expected ${expectedLeads})`);
-            }
             
             setParsedLeads(result.leads);
             
@@ -1547,7 +1245,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
             
             // Restore existing leads after processing
             if (currentLeads.length > 0) {
-              console.log('🔄 Restoring existing leads after file processing');
               setLeads(currentLeads);
               setFilteredLeads(currentFilteredLeads);
             }
@@ -1652,12 +1349,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
       const currentGigId = selectedGigId; // Use selected gig ID instead of cookie
       const currentCompanyId = Cookies.get('companyId');
       
-      console.log('Current IDs for API:', {
-        userId: currentUserId,
-        gigId: currentGigId,
-        companyId: currentCompanyId
-      });
-      
       const leadsForAPI = parsedLeads.map((lead: any) => {
         // Use the selected gigId
         const finalGigId = selectedGigId;
@@ -1679,15 +1370,10 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
         };
       });
 
-      console.log('Saving leads with MongoDB format:', leadsForAPI);
-      console.log('Number of leads to save:', leadsForAPI.length);
-      console.log('API URL:', `${import.meta.env.VITE_DASHBOARD_API}/leads`);
-      
       // Envoyer chaque lead individuellement pour s'assurer qu'ils sont tous sauvegardés
       const savedLeads = [];
       for (let i = 0; i < leadsForAPI.length; i++) {
         const lead = leadsForAPI[i];
-        console.log(`Saving lead ${i + 1}/${leadsForAPI.length}:`, lead);
         
         // Mettre à jour la progression
         const progress = Math.round(((i + 1) / leadsForAPI.length) * 100);
@@ -1701,22 +1387,19 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
         }
       });
           
-          console.log(`Lead ${i + 1} response status:`, response.status);
-          console.log(`Lead ${i + 1} response data:`, response.data);
-          
           if (response.status === 200 || response.status === 201) {
             savedLeads.push(response.data);
-            console.log(`Lead ${i + 1} saved successfully:`, response.data);
           } else {
             console.error(`Failed to save lead ${i + 1}:`, response.statusText);
+            throw new Error(`Failed to save lead ${i + 1}: ${response.statusText}`);
           }
         } catch (error) {
           console.error(`Error saving lead ${i + 1}:`, error);
+          throw new Error(`Error saving lead ${i + 1}: ${error}`);
         }
       }
       
       const response = { status: 200, data: savedLeads };
-      console.log('Save response:', response.data);
       if (response.status === 200) {
         const savedCount = savedLeads.length;
         const totalCount = leadsForAPI.length;
@@ -1742,7 +1425,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
               { status: 'completed' }
             );
-            console.log('✅ Step 6 marked as completed after saving leads:', response.data);
             
             // Notifier le parent component que l'étape est complétée
             // Removed postMessage - using localStorage instead
@@ -1805,10 +1487,8 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
   // Fonction pour forcer la réinitialisation complète
 
   const handleZohoConnect = async () => {
-    console.log('Starting Zoho connection process...');
     try {
       const userId = Cookies.get('userId');
-      console.log('Retrieved userId from cookies:', userId);
   
       if (!userId) {
         console.error('No userId found in cookies');
@@ -1821,7 +1501,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
       const encodedState = encodeURIComponent(userId);
   
       const authUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth?redirect_uri=${encodedRedirectUri}&state=${encodedState}`;
-      console.log('Auth URL:', authUrl);
   
       const response = await fetch(authUrl, {
         method: 'GET',
@@ -1838,7 +1517,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
       }
   
       const data = await response.json();
-      console.log('Auth URL response:', data);
   
       const redirectUrl = new URL(data.authUrl);
       redirectUrl.searchParams.set('state', userId);
@@ -1858,7 +1536,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
     //   return;
     // }
     
-    console.log('Starting Zoho disconnection process...');
     setIsDisconnectingZoho(true);
     try {
       const userId = Cookies.get('userId');
@@ -1885,7 +1562,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
       }
 
       const data = await response.json();
-      console.log('Disconnect response:', data);
 
       if (data.success) {
         // Reset Zoho service configuration
@@ -1898,7 +1574,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
         // Clear any cached Zoho data
         setRealtimeLeads([]);
         setParsedLeads([]);
-        // (plus de rafraîchissement ni d'alerte)
       } else {
         throw new Error(data.message || 'Failed to disconnect from Zoho');
       }
@@ -1929,12 +1604,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
         window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
       }
 
-      console.log('URL Params:', {
-        code,
-        state,
-        location,
-        accountsServer
-      });
       
       if (code) {
         if (!state) {
@@ -1955,12 +1624,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
   }, []);
 
   const handleOAuthCallback = async (code: string, state: string, location?: string, accountsServer?: string) => {
-    console.log('handleOAuthCallback called with:', {
-      code,
-      state,
-      location,
-      accountsServer
-    });
     
     try {
       const userId = state || Cookies.get('userId');
@@ -1986,7 +1649,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
       });
   
       const data = await response.json();
-      console.log('Callback response:', data);
   
       if (!response.ok) {
         throw new Error(data.error || 'Failed to exchange code for tokens');
@@ -2003,16 +1665,9 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
   useEffect(() => {
     // Skip this effect if we're currently processing a file
     if (isProcessing || processingRef.current) {
-      console.log('⏸️ Skipping hasZohoConfig effect - file processing in progress');
       return;
     }
     
-    console.log('�� État actuel de hasZohoConfig:', hasZohoConfig);
-    if (!hasZohoConfig) {
-      console.log('⚠️ Configuration Zoho non trouvée - Affichage de la modal');
-    } else {
-      console.log('✅ Configuration Zoho trouvée - Pas besoin d\'afficher la modal');
-    }
   }, [hasZohoConfig, isProcessing]);
 
   // Ajout d'une fonction utilitaire pour fetch Zoho avec refresh automatique
@@ -2113,7 +1768,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
               { status: 'completed' }
             );
-            console.log('✅ Step 6 marked as completed after Zoho import');
           }
         } catch (error) {
           console.error('Error updating onboarding progress after Zoho import:', error);
@@ -2130,25 +1784,21 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
   const fetchLeads = async (page = currentPage) => {
     // Skip fetching leads if we're currently processing a file
     if (isProcessing || processingRef.current) {
-      console.log('⏸️ Skipping fetchLeads - file processing in progress');
       return;
     }
 
     // Also check localStorage for processing state
     if (localStorage.getItem('uploadProcessing') === 'true') {
-      console.log('⏸️ Skipping fetchLeads - processing state in localStorage');
       return;
     }
 
     if (!selectedGigId) {
       // Don't clear leads if we have parsed leads from file upload
       if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads')) {
-        console.log('⏸️ Skipping leads clear in fetchLeads - parsed leads exist');
         return;
       }
       // Only clear leads if we're not in the middle of file processing
       if (!processingRef.current && localStorage.getItem('uploadProcessing') !== 'true') {
-        console.log('No gig selected, clearing leads');
         setLeads([]);
         setTotalPages(0);
         setCurrentPage(1);
@@ -2162,8 +1812,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
     try {
       // Fetch leads with pagination (50 per page)
       const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=50`;
-      console.log('API URL:', apiUrl);
-      console.log('Fetching leads for gig:', selectedGigId, 'page:', page);
       const response = await fetch(apiUrl, {
         headers: {
           'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`,
@@ -2176,7 +1824,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
       }
 
       const responseData: ApiResponse = await response.json();
-      console.log('API Response:', responseData);
       
       if (!responseData.success) {
         throw new Error('Failed to fetch leads: API returned unsuccessful response');
@@ -2186,8 +1833,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
         throw new Error('Invalid response format: expected data to be an array');
       }
 
-      console.log('Setting leads:', responseData.data);
-      console.log('Total leads on this page:', responseData.data.length);
       setLeads(responseData.data);
       setFilteredLeads(responseData.data); // Initialiser les leads filtrés
       setTotalPages(responseData.totalPages);
@@ -2206,18 +1851,15 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
   useEffect(() => {
     // Skip this effect if we're currently processing a file
     if (isProcessing || processingRef.current) {
-      console.log('⏸️ Skipping selectedGigId effect - file processing in progress');
       return;
     }
 
     // Skip if we have parsed leads that should be preserved
     if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads') || sessionStorage.getItem('parsedLeads')) {
-      console.log('⏸️ Skipping selectedGigId effect - parsed leads exist');
       return;
     }
 
     if (selectedGigId) {
-      console.log('Selected gig changed, fetching leads for:', selectedGigId);
       fetchLeads().catch(error => {
         console.error('Error in useEffect:', error);
         setError('Failed to load leads');
@@ -2225,12 +1867,10 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
     } else {
       // Don't clear leads if we're processing or have parsed leads
       if (processingRef.current || localStorage.getItem('uploadProcessing') === 'true' || sessionStorage.getItem('uploadProcessing') === 'true' || parsedLeads.length > 0) {
-        console.log('⏸️ Skipping leads clear - file processing in progress or parsed leads exist');
         return;
       }
       // Only clear leads if we're not in the middle of file processing
       if (!processingRef.current && localStorage.getItem('uploadProcessing') !== 'true') {
-        console.log('No gig selected, clearing leads');
         setLeads([]);
         setTotalPages(0);
         setCurrentPage(1);
@@ -2241,7 +1881,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
   useEffect(() => {
     // Skip this effect if we're currently processing a file
     if (processingRef.current) {
-      console.log('⏸️ Skipping leads effect - file processing in progress');
       return;
     }
 
@@ -2249,14 +1888,12 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
     
     // If we have parsed leads, don't show empty leads list
     if (parsedLeads.length > 0) {
-      console.log('📋 Showing parsed leads instead of empty leads list');
       return;
     }
 
     // Also check localStorage for parsed leads
     const savedParsedLeads = localStorage.getItem('parsedLeads');
     if (savedParsedLeads) {
-      console.log('📋 Found parsed leads in localStorage, skipping empty leads display');
       return;
     }
 
@@ -2265,7 +1902,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
     try {
       const leads = JSON.parse(savedParsedLeads);
       setParsedLeads(leads);
-      console.log('🔄 Restored parsed leads from localStorage during render:', leads.length);
       return;
     } catch (error) {
       console.error('Error restoring parsed leads during render:', error);
@@ -2274,15 +1910,8 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
 
   // If we have parsed leads, force the display to show them
   if (parsedLeads.length > 0) {
-    console.log('📋 Forcing display of parsed leads:', parsedLeads.length);
     return;
   }
-
-    if (leads.length === 0) {
-      console.log('No leads to display');
-    } else {
-      console.log('Rendering leads:', leads);
-    }
   }, [leads, parsedLeads.length]);
 
   const renderPaginationButtons = () => {
@@ -2411,7 +2040,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
 
       const data = await response.json();
 
-      console.log('data gigs', data);
       if (data.data) {
         setGigs(data.data);
         // Set the first gig as selected by default if available
@@ -2435,7 +2063,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data.zohoConnected) {
-        console.log('Received zohoConnected message');
         setHasZohoConfig(true);
       }
     };
@@ -2449,9 +2076,6 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
       const isConfigured = zohoService.isConfigured();
       setHasZohoAccessToken(isConfigured);
       setHasZohoConfig(isConfigured);
-      if (isConfigured) {
-        console.log('✅ Zoho est configuré - Affichage du composant UploadContacts');
-      }
     };
     checkZohoConfig();
   }, []);
@@ -2763,19 +2387,7 @@ REMEMBER: You MUST return EXACTLY ${lines.length - 1} leads. Process every singl
                     <span className="text-blue-700 font-medium">
                       {processingProgress.status || 'Traitement OpenAI en cours...'}
                     </span>
-                    <span className="text-blue-600">
-                      {processingProgress.current}/{processingProgress.total}
-                    </span>
                   </div>
-                  {/* Additional progress bar for detailed status */}
-                  {processingProgress.total > 0 && (
-                    <div className="mt-1 h-2 bg-blue-100 rounded-full overflow-hidden">
-                      <div 
-                        className="h-2 bg-blue-500 rounded-full transition-all duration-300"
-                        style={{ width: `${(processingProgress.current / processingProgress.total) * 100}%` }}
-                      />
-                    </div>
-                  )}
                   
                   {/* Animated activity indicator */}
                   <div className="mt-2 flex items-center space-x-1">
