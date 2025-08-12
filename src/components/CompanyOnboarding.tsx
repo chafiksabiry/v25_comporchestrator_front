@@ -1124,6 +1124,20 @@ const CompanyOnboarding = () => {
       setShowUploadContacts(false);
       console.log('✅ Set showUploadContacts to false');
       
+      // Navigate back to the main onboarding view by changing the active tab
+      // This will trigger a re-render of App.tsx and show the main onboarding interface
+      if (window.parent && window.parent !== window) {
+        // If we're in an iframe, communicate with parent
+        window.parent.postMessage({ type: 'SET_ACTIVE_TAB', tab: 'company-onboarding' }, '*');
+      } else {
+        // If we're in the main window, use localStorage to communicate with App component
+        localStorage.setItem('activeTab', 'company-onboarding');
+        // Trigger a custom event to notify the App component
+        window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } }));
+      }
+      
+      console.log('✅ Triggered navigation back to main onboarding view');
+      
       // Reset the flag after a longer delay to ensure navigation completes
       setTimeout(() => {
         userClickedBackRef.current = false;
@@ -1252,7 +1266,15 @@ const CompanyOnboarding = () => {
   // Skip rendering if user wants to go back
   if ((window as any).userWantsToGoBack === true) {
     console.log('⏸️ Skipping CompanyOnboarding render - userWantsToGoBack flag is true');
-    return null;
+    // Return a loading state instead of null to prevent re-renders
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Returning to onboarding...</p>
+        </div>
+      </div>
+    );
   }
 
   // Déterminer quel composant afficher
@@ -1345,6 +1367,20 @@ const CompanyOnboarding = () => {
       // Close the component immediately
       setShowUploadContacts(false);
       console.log('✅ Set showUploadContacts to false in onBack');
+      
+      // Navigate back to the main onboarding view by changing the active tab
+      // This will trigger a re-render of App.tsx and show the main onboarding interface
+      if (window.parent && window.parent !== window) {
+        // If we're in an iframe, communicate with parent
+        window.parent.postMessage({ type: 'SET_ACTIVE_TAB', tab: 'company-onboarding' }, '*');
+      } else {
+        // If we're in the main window, use localStorage to communicate with App component
+        localStorage.setItem('activeTab', 'company-onboarding');
+        // Trigger a custom event to notify the App component
+        window.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } }));
+      }
+      
+      console.log('✅ Triggered navigation back to main onboarding view');
       
       // Reset the flag after a delay to ensure navigation completes
       setTimeout(() => {
