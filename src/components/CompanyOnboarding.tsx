@@ -109,6 +109,12 @@ interface GigResponse {
 }
 
 const CompanyOnboarding = () => {
+  // Early return if user wants to go back
+  if ((window as any).userWantsToGoBack === true) {
+    console.log('⏸️ CompanyOnboarding component not rendering - userWantsToGoBack flag is true');
+    return null;
+  }
+
   const [currentPhase, setCurrentPhase] = useState(1);
   const [displayedPhase, setDisplayedPhase] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
@@ -1243,6 +1249,12 @@ const CompanyOnboarding = () => {
     );
   }
 
+  // Skip rendering if user wants to go back
+  if ((window as any).userWantsToGoBack === true) {
+    console.log('⏸️ Skipping CompanyOnboarding render - userWantsToGoBack flag is true');
+    return null;
+  }
+
   // Déterminer quel composant afficher
   let activeComponent = null;
   let onBack: () => void = () => {};
@@ -1363,6 +1375,12 @@ const CompanyOnboarding = () => {
         {activeComponent}
       </div>
     );
+  }
+
+  // Skip rendering if user wants to go back
+  if ((window as any).userWantsToGoBack === true) {
+    console.log('⏸️ Skipping CompanyOnboarding main render - userWantsToGoBack flag is true');
+    return null;
   }
 
   // Utiliser displayedPhase au lieu de currentPhase pour afficher les steps
