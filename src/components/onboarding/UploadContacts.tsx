@@ -263,7 +263,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
   // Function to update progress
 
-  // Function to reset progress
+  // Ultra-fast progress reset function
   const resetProgress = () => {
     setProcessingProgress({
       current: 0,
@@ -273,7 +273,30 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     });
   };
 
-  // Function to show processing status
+  // Function to calculate optimal chunk size for maximum speed
+  const calculateOptimalChunkSize = (totalLines: number): number => {
+    // For maximum speed: larger chunks = fewer API calls
+    // But stay within token limits
+    const maxTokensPerChunk = 14000;
+    const estimatedTokensPerLine = 12; // Ultra-optimized estimate
+    
+    // Calculate optimal size
+    let optimalSize = Math.floor(maxTokensPerChunk / estimatedTokensPerLine);
+    
+    // For very large files, use larger chunks
+    if (totalLines > 1000) {
+      optimalSize = Math.min(300, optimalSize); // Up to 300 lines per chunk
+    } else if (totalLines > 500) {
+      optimalSize = Math.min(200, optimalSize); // Up to 200 lines per chunk
+    } else {
+      optimalSize = Math.min(150, optimalSize); // Up to 150 lines per chunk
+    }
+    
+    console.log(`🚀 Optimal chunk size calculated: ${optimalSize} lines for ${totalLines} total lines`);
+    return optimalSize;
+  };
+
+  // Ultra-fast processing status function
   const showProcessingStatus = (status: string) => {
     setProcessingProgress({
       current: 1,
@@ -283,7 +306,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     });
   };
 
-  // Function to update real progress during OpenAI processing
+  // Ultra-fast progress update function for maximum speed
   const updateRealProgress = (progress: number, status: string) => {
     // Check if processing was cancelled
     if (!processingRef.current) {
@@ -291,7 +314,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     }
     
     
-    // Update both progress states
+    // Update both progress states immediately
     setUploadProgress(progress);
     setProcessingProgress({
       current: progress,
@@ -300,7 +323,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       isProcessing: true
     });
     
-    // Add a small delay for smooth visual updates
+    // Minimal delay for visual updates (reduced from 100ms to 25ms for speed)
     if (progress < 100) {
       setTimeout(() => {
         // Ensure we're still processing
@@ -309,7 +332,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           const currentProgress = Math.min(progress + 1, 99);
           setUploadProgress(currentProgress);
         }
-      }, 100);
+      }, 25); // Reduced delay for maximum speed
     }
   };
   
@@ -617,24 +640,24 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       // Count the number of lines
       const lines = cleanedFileContent.split('\n');
       
-      // Check if content is too large or has many lines - use smart chunking for very large files
-      if (!isOptimized && (cleanedFileContent.length > 100000 || lines.length > 200)) {
-        console.warn(`⚠️ File is very large (${lines.length} lines, ${cleanedFileContent.length} characters) - using smart chunking`);
+      // Check if content is too large or has many lines - use ultra-fast chunking for very large files
+      if (!isOptimized && (cleanedFileContent.length > 50000 || lines.length > 100)) {
+        console.warn(`🚀 File is large (${lines.length} lines, ${cleanedFileContent.length} characters) - using ultra-fast parallel chunking`);
         
-        // Use smart chunking for very large files to avoid token limit issues
-        showProcessingStatus(`Traitement par lots intelligents (${lines.length} lignes)...`);
+        // Use ultra-fast parallel chunking for large files
+        showProcessingStatus(`Traitement ultra-rapide par lots (${lines.length} lignes)...`);
         
-        // Start real progress updates with more granular steps
-        updateRealProgress(5, 'Initialisation du traitement...');
-        await new Promise(resolve => setTimeout(resolve, 200)); // Small delay for visual feedback
+        // Start real progress updates with minimal delays for speed
+        updateRealProgress(5, 'Initialisation ultra-rapide...');
+        await new Promise(resolve => setTimeout(resolve, 50)); // Minimal delay for speed
         
         // Check if cancelled
         if (!processingRef.current) {
           throw new Error('Processing cancelled by user');
         }
         
-        updateRealProgress(15, 'Analyse de la structure du fichier...');
-        await new Promise(resolve => setTimeout(resolve, 300));
+        updateRealProgress(15, 'Analyse de la structure...');
+        await new Promise(resolve => setTimeout(resolve, 50)); // Minimal delay
         
         // Check if cancelled
         if (!processingRef.current) {
@@ -642,39 +665,39 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         }
         
         updateRealProgress(25, 'Préparation des données...');
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 50)); // Minimal delay
         
         // Check if cancelled
         if (!processingRef.current) {
           throw new Error('Processing cancelled by user');
         }
         
-        // Use smart chunking to process the file in manageable pieces
+        // Use ultra-fast parallel chunking to process the file
         const result = await processLargeFileInChunks(cleanedFileContent, fileType, lines);
         
-        updateRealProgress(100, 'Traitement terminé !');
+        updateRealProgress(100, 'Traitement ultra-rapide terminé !');
         return result;
       }
       
-      // For smaller files, use single batch processing
+      // For medium files, use single batch processing with minimal delays
       if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 50)) {
-        console.warn(`⚠️ File is large (${lines.length} lines, ${cleanedFileContent.length} characters) - processing in single batch like ChatGPT`);
+        console.warn(`🚀 File is medium-sized (${lines.length} lines, ${cleanedFileContent.length} characters) - processing in single batch for speed`);
         
-        // Process the entire file at once for better performance
-        showProcessingStatus(`Traitement du fichier complet (${lines.length} lignes)...`);
+        // Process the entire file at once for maximum speed
+        showProcessingStatus(`Traitement rapide du fichier complet (${lines.length} lignes)...`);
         
-        // Start real progress updates with more granular steps
-        updateRealProgress(5, 'Initialisation du traitement...');
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Start real progress updates with minimal delays for speed
+        updateRealProgress(5, 'Initialisation rapide...');
+        await new Promise(resolve => setTimeout(resolve, 50)); // Minimal delay
         
-        updateRealProgress(15, 'Analyse de la structure du fichier...');
-        await new Promise(resolve => setTimeout(resolve, 300));
+        updateRealProgress(15, 'Analyse de la structure...');
+        await new Promise(resolve => setTimeout(resolve, 50)); // Minimal delay
         
         updateRealProgress(25, 'Préparation des données...');
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 50)); // Minimal delay
         
         updateRealProgress(35, 'Nettoyage des données...');
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 50)); // Minimal delay
         
         // Increase the content limit for large files
         const largeFileMaxLength = 100000; // Reduced to avoid token limit issues
@@ -688,7 +711,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         }
         
         updateRealProgress(45, 'Envoi à OpenAI...');
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call time
+        await new Promise(resolve => setTimeout(resolve, 100)); // Minimal delay for speed
         
         // Check if cancelled
         if (!processingRef.current) {
@@ -696,7 +719,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         }
         
         updateRealProgress(55, 'Traitement par l\'IA...');
-        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate processing time
+        await new Promise(resolve => setTimeout(resolve, 100)); // Minimal delay for speed
         
         // Check if cancelled
         if (!processingRef.current) {
@@ -707,12 +730,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         const result = await processFileWithOpenAI(finalContent, fileType, true);
         
         updateRealProgress(75, 'Validation des résultats...');
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 50)); // Minimal delay
         
         updateRealProgress(85, 'Finalisation...');
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 50)); // Minimal delay
         
-        updateRealProgress(100, 'Traitement terminé !');
+        updateRealProgress(100, 'Traitement rapide terminé !');
         
         // Validate that we got the expected number of leads
         if (result.leads.length !== lines.length - 1) {
@@ -757,9 +780,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       // Prepare content for OpenAI (using the fileContent parameter)
       const truncatedContent = fileContent;
       
-      // Ultra-aggressive prompt to force processing of ALL rows
-      const prompt = `Extract ${lines.length - 1} leads from ${fileType} file. Return JSON only:
-
+      // Ultra-fast optimized prompt for maximum speed
+      const prompt = `Extract ${lines.length - 1} leads. Return JSON only:
 {
   "leads": [
     {
@@ -998,78 +1020,108 @@ ${truncatedContent}`;
     }
   };
 
-  // Smart chunking function for large files
+  // Ultra-fast parallel chunking function for large files
   const processLargeFileInChunks = async (fileContent: string, fileType: string, lines: string[]): Promise<{leads: any[], validation: any}> => {
     
-    // Calculate optimal chunk size based on OpenAI's token limit
-    const maxTokensPerChunk = 14000; // Optimized limit (16,385 - safe buffer)
-    const estimatedTokensPerLine = 20; // Optimized estimate for Excel data
-    const optimalChunkSize = Math.min(150, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 150 lines per chunk
-    
+    // Calculate optimal chunk size for maximum speed using the utility function
+    const optimalChunkSize = calculateOptimalChunkSize(lines.length);
     
     const allLeads: any[] = [];
     const totalChunks = Math.ceil((lines.length - 1) / optimalChunkSize);
     
-    // Update progress for chunk processing start
-    updateRealProgress(30, `Début du traitement par lots (${totalChunks} lots à traiter)...`);
+    console.log(`🚀 Ultra-fast processing: ${totalChunks} chunks of ${optimalChunkSize} lines each`);
+    updateRealProgress(30, `Traitement ultra-rapide: ${totalChunks} lots de ${optimalChunkSize} lignes...`);
     
+    // Process chunks in parallel batches for maximum speed
+    const maxConcurrentChunks = 8; // Process 8 chunks simultaneously
+    const chunks: string[][] = [];
+    
+    // Prepare all chunks first
     for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      const startLine = chunkIndex * optimalChunkSize + 1; // +1 to skip header
+      const endLine = Math.min((chunkIndex + 1) * optimalChunkSize, lines.length - 1);
+      const chunkLines = lines.slice(0, 1).concat(lines.slice(startLine, endLine + 1)); // Include header + chunk
+      chunks.push(chunkLines);
+    }
+    
+    // Process chunks in parallel batches
+    for (let batchStart = 0; batchStart < chunks.length; batchStart += maxConcurrentChunks) {
       // Check if processing was cancelled
       if (!processingRef.current) {
         throw new Error('Processing cancelled by user');
       }
       
-      const startLine = chunkIndex * optimalChunkSize + 1; // +1 to skip header
-      const endLine = Math.min((chunkIndex + 1) * optimalChunkSize, lines.length - 1);
-      const chunkLines = lines.slice(0, 1).concat(lines.slice(startLine, endLine + 1)); // Include header + chunk
+      const batchEnd = Math.min(batchStart + maxConcurrentChunks, chunks.length);
+      const currentBatch = chunks.slice(batchStart, batchEnd);
       
+      // Update progress for batch processing
+      const batchProgress = 30 + (batchStart / chunks.length) * 60;
+      updateRealProgress(Math.round(batchProgress), `Traitement parallèle: lots ${batchStart + 1}-${batchEnd}/${totalChunks}...`);
       
-      // Update progress for chunk processing
-      const chunkProgress = 30 + (chunkIndex / totalChunks) * 60; // 30% to 90%
-      const currentChunkProgress = Math.round(chunkProgress);
-      updateRealProgress(currentChunkProgress, `Traitement du lot ${chunkIndex + 1}/${totalChunks} (lignes ${startLine}-${endLine})...`);
-      
-      // Process this chunk with the existing function but smaller chunks
       try {
-        // Check again before processing chunk
-        if (!processingRef.current) {
-          throw new Error('Processing cancelled by user');
-        }
-        
-        // Process this chunk with the existing function but smaller chunks
-        const chunkResult = await processFileWithOpenAI(chunkLines.join('\n'), fileType, true);
-        
-        // Check if cancelled after chunk processing
-        if (!processingRef.current) {
-          throw new Error('Processing cancelled by user');
-        }
-        
-        if (chunkResult.leads && chunkResult.leads.length > 0) {
-          allLeads.push(...chunkResult.leads);
+        // Process current batch in parallel
+        const batchPromises = currentBatch.map(async (chunkLines, batchIndex) => {
+          const chunkIndex = batchStart + batchIndex;
+          const startLine = chunkIndex * optimalChunkSize + 1;
+          const endLine = Math.min((chunkIndex + 1) * optimalChunkSize, lines.length - 1);
           
-          // Update progress after successful chunk processing
-          const successProgress = 30 + ((chunkIndex + 1) / totalChunks) * 60;
-          updateRealProgress(Math.round(successProgress), `Lot ${chunkIndex + 1}/${totalChunks} terminé (${chunkResult.leads.length} leads)`);
-        } else {
-          console.warn(`⚠️ Chunk ${chunkIndex + 1} returned no leads`);
-        }
+          try {
+            // Check if cancelled before processing
+            if (!processingRef.current) {
+              throw new Error('Processing cancelled by user');
+            }
+            
+            const chunkResult = await processFileWithOpenAI(chunkLines.join('\n'), fileType, true);
+            
+            // Check if cancelled after processing
+            if (!processingRef.current) {
+              throw new Error('Processing cancelled by user');
+            }
+            
+            if (chunkResult.leads && chunkResult.leads.length > 0) {
+              console.log(`✅ Chunk ${chunkIndex + 1}/${totalChunks} processed: ${chunkResult.leads.length} leads`);
+              return chunkResult.leads;
+            } else {
+              console.warn(`⚠️ Chunk ${chunkIndex + 1} returned no leads`);
+              return [];
+            }
+          } catch (error) {
+            console.error(`❌ Error processing chunk ${chunkIndex + 1}:`, error);
+            return []; // Return empty array to continue processing
+          }
+        });
         
-        // Small delay to avoid rate limiting and show progress
-        if (chunkIndex < totalChunks - 1) {
-          await new Promise(resolve => setTimeout(resolve, 300)); // Small delay for visual feedback
+        // Wait for all chunks in current batch to complete
+        const batchResults = await Promise.all(batchPromises);
+        
+        // Add all leads from this batch
+        batchResults.forEach(leads => {
+          if (leads && leads.length > 0) {
+            allLeads.push(...leads);
+          }
+        });
+        
+        // Update progress after successful batch processing
+        const successProgress = 30 + (batchEnd / chunks.length) * 60;
+        updateRealProgress(Math.round(successProgress), `Lot ${batchEnd}/${totalChunks} terminé (${allLeads.length} leads au total)`);
+        
+        // Minimal delay between batches to avoid overwhelming the API
+        if (batchEnd < chunks.length) {
+          await new Promise(resolve => setTimeout(resolve, 100)); // Reduced delay for speed
         }
         
       } catch (error) {
-        console.error(`❌ Error processing chunk ${chunkIndex + 1}:`, error);
-        // Continue with next chunk instead of failing completely
-        updateRealProgress(Math.round(chunkProgress), `Erreur sur le lot ${chunkIndex + 1}, passage au suivant...`);
+        console.error(`❌ Error processing batch ${batchStart + 1}-${batchEnd}:`, error);
+        // Continue with next batch instead of failing completely
+        updateRealProgress(Math.round(batchProgress), `Erreur sur le lot ${batchStart + 1}-${batchEnd}, passage au suivant...`);
       }
     }
     
-    
     // Final progress update
-    updateRealProgress(95, 'Finalisation du traitement par lots...');
-    await new Promise(resolve => setTimeout(resolve, 200));
+    updateRealProgress(95, 'Finalisation du traitement ultra-rapide...');
+    await new Promise(resolve => setTimeout(resolve, 100)); // Reduced delay
+    
+    console.log(`🚀 Ultra-fast processing completed: ${allLeads.length} leads from ${totalChunks} chunks`);
     
     return {
       leads: allLeads,
