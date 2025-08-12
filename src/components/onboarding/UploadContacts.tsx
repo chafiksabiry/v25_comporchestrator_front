@@ -262,8 +262,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       };
     }
     
+    // Check if user wants to go back (parent component sets this flag)
+    const userWantsToGoBack = (window as any).userWantsToGoBack === true;
+    
     // Restore parsed leads if they exist and we haven't already restored them
-    if (!dataRestoredRef.current && !componentInitializedRef.current) {
+    // But don't restore if user wants to go back
+    if (!dataRestoredRef.current && !componentInitializedRef.current && !userWantsToGoBack) {
       const savedParsedLeads = localStorage.getItem('parsedLeads');
       const savedValidationResults = localStorage.getItem('validationResults');
       
@@ -294,8 +298,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
   // Add a protection effect that runs on every render to prevent data loss
   useEffect(() => {
+    // Check if user wants to go back (parent component sets this flag)
+    const userWantsToGoBack = (window as any).userWantsToGoBack === true;
+    
     // If we have parsed leads in state but they're about to be lost, save them
-    if (parsedLeads.length > 0) {
+    // But don't save if user wants to go back
+    if (parsedLeads.length > 0 && !userWantsToGoBack) {
       localStorage.setItem('parsedLeads', JSON.stringify(parsedLeads));
       console.log('💾 Auto-saving parsed leads to localStorage:', parsedLeads.length);
     }
@@ -303,23 +311,69 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
   // Add a protection effect to prevent component re-mounting
   useEffect(() => {
+    // Check if user wants to go back (parent component sets this flag)
+    const userWantsToGoBack = (window as any).userWantsToGoBack === true;
+    
     // If we have parsed leads, prevent re-mounting
-    if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads')) {
+    // But don't prevent if user wants to go back
+    if ((parsedLeads.length > 0 || localStorage.getItem('parsedLeads')) && !userWantsToGoBack) {
       preventRemountRef.current = true;
       console.log('🛡️ Preventing component re-mount - parsed leads exist');
+    } else if (userWantsToGoBack) {
+      // If user wants to go back, disable all protection mechanisms
+      preventRemountRef.current = false;
+      console.log('🔄 Disabling component re-mount protection - user wants to go back');
     }
   }, [parsedLeads.length]);
 
   // Add a cleanup protection to prevent data loss on unmount
   useEffect(() => {
     return () => {
+      // Check if user wants to go back (parent component sets this flag)
+      const userWantsToGoBack = (window as any).userWantsToGoBack === true;
+      
       // If we're unmounting but have parsed leads, save them
-      if (parsedLeads.length > 0) {
+      // But don't save if user wants to go back
+      if (parsedLeads.length > 0 && !userWantsToGoBack) {
         localStorage.setItem('parsedLeads', JSON.stringify(parsedLeads));
         console.log('🛡️ Component unmounting - saved parsed leads to localStorage:', parsedLeads.length);
       }
     };
   }, [parsedLeads]);
+
+  // Effect to handle user wanting to go back
+  useEffect(() => {
+    const userWantsToGoBack = (window as any).userWantsToGoBack === true;
+    
+    if (userWantsToGoBack) {
+      console.log('🔄 User wants to go back - disabling all protection mechanisms');
+      
+      // Disable all protection mechanisms
+      preventRemountRef.current = false;
+      dataRestoredRef.current = false;
+      componentInitializedRef.current = false;
+      
+      // Clear any cached data
+      localStorage.removeItem('parsedLeads');
+      localStorage.removeItem('validationResults');
+      localStorage.removeItem('uploadProcessing');
+      sessionStorage.removeItem('uploadProcessing');
+      sessionStorage.removeItem('parsedLeads');
+      sessionStorage.removeItem('validationResults');
+      
+      // Remove processing indicators
+      document.body.removeAttribute('data-processing');
+      processingRef.current = false;
+      
+      console.log('✅ All protection mechanisms disabled for back navigation');
+    }
+  }, [(window as any).userWantsToGoBack]);
+
+  // Debug effect to log when userWantsToGoBack changes
+  useEffect(() => {
+    const userWantsToGoBack = (window as any).userWantsToGoBack === true;
+    console.log('🔍 userWantsToGoBack flag changed:', userWantsToGoBack);
+  }, [(window as any).userWantsToGoBack]);
 
   // Clean up processing state when component mounts without file
   useEffect(() => {
@@ -1901,8 +1955,12 @@ ${truncatedContent}`;
     }
 
     if (!selectedGigId) {
+      // Check if user wants to go back (parent component sets this flag)
+      const userWantsToGoBack = (window as any).userWantsToGoBack === true;
+      
       // Don't clear leads if we have parsed leads from file upload
-      if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads')) {
+      // But allow clearing if user wants to go back
+      if ((parsedLeads.length > 0 || localStorage.getItem('parsedLeads')) && !userWantsToGoBack) {
         console.log('⏸️ Skipping leads clear in fetchLeads - parsed leads exist');
         return;
       }
@@ -1970,8 +2028,12 @@ ${truncatedContent}`;
       return;
     }
 
+    // Check if user wants to go back (parent component sets this flag)
+    const userWantsToGoBack = (window as any).userWantsToGoBack === true;
+    
     // Also skip if we have parsed leads that should be preserved
-    if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads') || sessionStorage.getItem('parsedLeads')) {
+    // But allow proceeding if user wants to go back
+    if ((parsedLeads.length > 0 || localStorage.getItem('parsedLeads') || sessionStorage.getItem('parsedLeads')) && !userWantsToGoBack) {
       console.log('⏸️ Skipping selectedGigId effect - parsed leads exist');
       return;
     }
@@ -1983,8 +2045,12 @@ ${truncatedContent}`;
         setError('Failed to load leads');
       });
     } else {
+      // Check if user wants to go back (parent component sets this flag)
+      const userWantsToGoBack = (window as any).userWantsToGoBack === true;
+      
       // Don't clear leads if we're processing or have parsed leads
-      if (processingRef.current || localStorage.getItem('uploadProcessing') === 'true' || sessionStorage.getItem('uploadProcessing') === 'true' || parsedLeads.length > 0) {
+      // But allow clearing if user wants to go back
+      if ((processingRef.current || localStorage.getItem('uploadProcessing') === 'true' || sessionStorage.getItem('uploadProcessing') === 'true' || parsedLeads.length > 0) && !userWantsToGoBack) {
         console.log('⏸️ Skipping leads clear - file processing in progress or parsed leads exist');
         return;
       }
@@ -2005,21 +2071,26 @@ ${truncatedContent}`;
       return;
     }
 
+    // Check if user wants to go back (parent component sets this flag)
+    const userWantsToGoBack = (window as any).userWantsToGoBack === true;
+    
     // If we have parsed leads, don't show empty leads list
-    if (parsedLeads.length > 0) {
+    // But allow proceeding if user wants to go back
+    if (parsedLeads.length > 0 && !userWantsToGoBack) {
       console.log('📋 Showing parsed leads instead of empty leads list');
       return;
     }
 
     // Also check localStorage for parsed leads
     const savedParsedLeads = localStorage.getItem('parsedLeads');
-    if (savedParsedLeads) {
+    if (savedParsedLeads && !userWantsToGoBack) {
       console.log('📋 Found parsed leads in localStorage, skipping empty leads display');
       return;
     }
 
       // If we have leads in localStorage but not in state, restore them
-  if (savedParsedLeads && parsedLeads.length === 0) {
+      // But don't restore if user wants to go back
+  if (savedParsedLeads && parsedLeads.length === 0 && !userWantsToGoBack) {
     try {
       const leads = JSON.parse(savedParsedLeads);
       setParsedLeads(leads);
@@ -2031,7 +2102,8 @@ ${truncatedContent}`;
   }
 
   // If we have parsed leads, force the display to show them
-  if (parsedLeads.length > 0) {
+  // But don't force if user wants to go back
+  if (parsedLeads.length > 0 && !userWantsToGoBack) {
     console.log('📋 Forcing display of parsed leads:', parsedLeads.length);
     return;
   }

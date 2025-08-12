@@ -118,7 +118,13 @@ const CompanyOnboarding = () => {
   
   // Maintain showUploadContacts state if we have parsed leads, but respect current phase
   useEffect(() => {
-    if (localStorage.getItem('parsedLeads') && !showUploadContacts && !userClickedBackRef.current) {
+    // Skip auto-restore if user explicitly clicked back
+    if (userClickedBackRef.current) {
+      console.log('⏸️ Skipping UploadContacts auto-restore - user clicked back');
+      return;
+    }
+    
+    if (localStorage.getItem('parsedLeads') && !showUploadContacts) {
       // Only restore if we're in a phase that should show UploadContacts
       const shouldShowUploadContacts = displayedPhase >= 2; // UploadContacts is typically in phase 2+
       if (shouldShowUploadContacts) {
@@ -141,6 +147,34 @@ const CompanyOnboarding = () => {
 
   // Add a ref to track if user manually clicked back
   const userClickedBackRef = useRef(false);
+
+  // Clean up parsed leads when user explicitly wants to go back
+  useEffect(() => {
+    if (userClickedBackRef.current && localStorage.getItem('parsedLeads')) {
+      console.log('🧹 Cleaning parsed leads - user clicked back');
+      localStorage.removeItem('parsedLeads');
+      setShowUploadContacts(false);
+    }
+  }, [userClickedBackRef.current]);
+
+  // Clean up window flags when component unmounts
+  useEffect(() => {
+    return () => {
+      // Clean up any window flags we set
+      if ((window as any).userWantsToGoBack) {
+        delete (window as any).userWantsToGoBack;
+      }
+    };
+  }, []);
+
+  // Clean up window flags when showUploadContacts changes
+  useEffect(() => {
+    if (!showUploadContacts && (window as any).userWantsToGoBack) {
+      // Clean up the flag when UploadContacts is closed
+      console.log('🧹 Cleaning up userWantsToGoBack flag - UploadContacts closed');
+      delete (window as any).userWantsToGoBack;
+    }
+  }, [showUploadContacts]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasGigs, setHasGigs] = useState(false);
   const [hasLeads, setHasLeads] = useState(false);
@@ -1017,6 +1051,13 @@ const CompanyOnboarding = () => {
     if (showUploadContacts) {
       console.log('🛑 Back to onboarding clicked while UploadContacts is active - cancelling processing');
       
+      // Set the flag first to prevent auto-restore
+      userClickedBackRef.current = true;
+      
+      // Set a flag on window to tell UploadContacts component not to auto-restore
+      (window as any).userWantsToGoBack = true;
+      console.log('✅ Set userWantsToGoBack flag to true');
+      
       // Call the cancel processing function if it exists
       if ((window as any).cancelUploadProcessing) {
         (window as any).cancelUploadProcessing();
@@ -1024,7 +1065,16 @@ const CompanyOnboarding = () => {
       
       // Remove parsed leads from localStorage to prevent auto-restore
       localStorage.removeItem('parsedLeads');
+      console.log('🧹 Removed parsedLeads from localStorage');
       setShowUploadContacts(false);
+      console.log('✅ Set showUploadContacts to false');
+      
+      // Reset the flag after a longer delay to ensure navigation completes
+      setTimeout(() => {
+        userClickedBackRef.current = false;
+        (window as any).userWantsToGoBack = false;
+        console.log('🔄 Reset userWantsToGoBack flag to false');
+      }, 1000);
       return;
     }
     
@@ -1215,11 +1265,23 @@ const CompanyOnboarding = () => {
     onBack = () => {
       console.log('🛑 Back clicked - returning to onboarding');
       
+      // Set the flag first to prevent auto-restore
+      userClickedBackRef.current = true;
+      
+      // Set a flag on window to tell UploadContacts component not to auto-restore
+      (window as any).userWantsToGoBack = true;
+      
       // Remove parsed leads from localStorage to prevent auto-restore
       localStorage.removeItem('parsedLeads');
       
       // Close the component immediately
       setShowUploadContacts(false);
+      
+      // Reset the flag after a delay to ensure navigation completes
+      setTimeout(() => {
+        userClickedBackRef.current = false;
+        (window as any).userWantsToGoBack = false;
+      }, 1000);
     };
   } else if (ActiveStepComponent) {
     activeComponent = <ActiveStepComponent />;
