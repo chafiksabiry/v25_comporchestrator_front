@@ -1170,9 +1170,37 @@ const CompanyOnboarding = () => {
         "🛑 Back to onboarding clicked while UploadContacts is active - cancelling processing"
       );
 
-      // Call the cancel processing function if it exists
+      // Try to call the normal cancel processing function first
       if ((window as any).cancelUploadProcessing) {
-        (window as any).cancelUploadProcessing();
+        console.log("✅ Calling cancelUploadProcessing function");
+        try {
+          (window as any).cancelUploadProcessing();
+          console.log("✅ cancelUploadProcessing executed successfully");
+        } catch (error) {
+          console.error("❌ Error calling cancelUploadProcessing:", error);
+          // If normal cancellation fails, try emergency cancellation
+          if ((window as any).emergencyCancelUpload) {
+            console.log("🚨 Trying emergency cancellation...");
+            try {
+              (window as any).emergencyCancelUpload();
+              console.log("✅ Emergency cancellation executed successfully");
+            } catch (emergencyError) {
+              console.error("❌ Emergency cancellation also failed:", emergencyError);
+            }
+          }
+        }
+      } else {
+        console.warn("⚠️ cancelUploadProcessing function not found on window");
+        // Try emergency cancellation as fallback
+        if ((window as any).emergencyCancelUpload) {
+          console.log("🚨 Trying emergency cancellation as fallback...");
+          try {
+            (window as any).emergencyCancelUpload();
+            console.log("✅ Emergency cancellation executed successfully");
+          } catch (emergencyError) {
+            console.error("❌ Emergency cancellation failed:", emergencyError);
+          }
+        }
       }
 
       // Remove parsed leads from localStorage to prevent auto-restore

@@ -111,13 +111,45 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   // Function to cancel processing
   const cancelProcessing = () => {
     console.log('🛑 Cancelling processing...');
+    
+    // Stop all processing immediately
     setIsProcessing(false);
     processingRef.current = false;
     setUploadProgress(0);
     setUploadError(null);
+    setUploadSuccess(false);
+    
+    // Reset all processing states
+    setProcessingProgress({
+      current: 0,
+      total: 0,
+      status: 'Cancelled',
+      isProcessing: false
+    });
+    
+    // Clear all storage items
     localStorage.removeItem('uploadProcessing');
+    localStorage.removeItem('parsedLeads');
+    localStorage.removeItem('validationResults');
     sessionStorage.removeItem('uploadProcessing');
+    sessionStorage.removeItem('parsedLeads');
+    sessionStorage.removeItem('validationResults');
+    
+    // Remove processing indicators
     document.body.removeAttribute('data-processing');
+    
+    // Reset file-related states
+    setSelectedFile(null);
+    setParsedLeads([]);
+    setValidationResults(null);
+    
+    // Reset file input
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+    
+    console.log('✅ Processing cancelled and all states reset');
     
     // Call the parent callback if provided
     if (onCancelProcessing) {
@@ -125,17 +157,54 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     }
   };
 
-  // Expose cancelProcessing function to parent component
+  // Emergency cancel function that can be called even during processing
+  const emergencyCancel = () => {
+    console.log('🚨 EMERGENCY CANCELLATION triggered');
+    
+    // Force stop all processing
+    processingRef.current = false;
+    setIsProcessing(false);
+    
+    // Clear all storage immediately
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Reset all states
+    setUploadProgress(0);
+    setUploadError(null);
+    setUploadSuccess(false);
+    setParsedLeads([]);
+    setValidationResults(null);
+    setSelectedFile(null);
+    
+    // Remove all processing indicators
+    document.body.removeAttribute('data-processing');
+    
+    console.log('🚨 Emergency cancellation completed');
+  };
+
+  // Expose both cancel functions to parent component
   useEffect(() => {
-    if (onCancelProcessing) {
-      // Store the cancel function in a way that parent can access
-      (window as any).cancelUploadProcessing = cancelProcessing;
-    }
+    // Always expose the cancel function to window for parent access
+    (window as any).cancelUploadProcessing = cancelProcessing;
+    (window as any).emergencyCancelUpload = emergencyCancel;
+    
+    // Log that the functions are now available
+    console.log('🔧 cancelUploadProcessing and emergencyCancelUpload functions exposed to window');
+    
+    // Test function availability
+    console.log('🔍 Testing function availability:', {
+      cancelUploadProcessing: typeof (window as any).cancelUploadProcessing,
+      emergencyCancelUpload: typeof (window as any).emergencyCancelUpload
+    });
     
     return () => {
       delete (window as any).cancelUploadProcessing;
+      delete (window as any).emergencyCancelUpload;
+      console.log('🧹 Cancel functions removed from window');
     };
-  }, [onCancelProcessing]);
+  }, []); // Remove onCancelProcessing dependency to always expose
+
   // Add a ref to track if the component has been initialized
   const componentInitializedRef = useRef(false);
   
@@ -292,6 +361,18 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     if (parsedLeads.length > 0) {
       localStorage.setItem('parsedLeads', JSON.stringify(parsedLeads));
       console.log('💾 Auto-saving parsed leads to localStorage:', parsedLeads.length);
+    }
+    
+    // Ensure cancelProcessing function is always available
+    if (!(window as any).cancelUploadProcessing) {
+      (window as any).cancelUploadProcessing = cancelProcessing;
+      console.log('🔧 Re-exposing cancelUploadProcessing function to window');
+    }
+    
+    // Ensure emergency cancel function is always available
+    if (!(window as any).emergencyCancelUpload) {
+      (window as any).emergencyCancelUpload = emergencyCancel;
+      console.log('🔧 Re-exposing emergencyCancelUpload function to window');
     }
   });
 
@@ -2339,16 +2420,29 @@ ${truncatedContent}`;
                 <FileText className="mr-2 h-4 w-4 text-blue-600" />
                 <span className="font-medium text-gray-900">{selectedFile.name}</span>
               </div>
-              <button onClick={() => {
-                setSelectedFile(null);
-                setUploadProgress(0);
-                setUploadError(null);
-                setUploadSuccess(false);
-                setParsedLeads([]);
-                setValidationResults(null);
-              }}>
-                <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-              </button>
+              <div className="flex items-center space-x-2">
+                {/* Cancel button during processing */}
+                {isProcessing && (
+                  <button
+                    onClick={cancelProcessing}
+                    className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors duration-200 border border-red-300"
+                    title="Cancel processing"
+                  >
+                    <X className="h-4 w-4 mr-1 inline" />
+                    Cancel
+                  </button>
+                )}
+                <button onClick={() => {
+                  setSelectedFile(null);
+                  setUploadProgress(0);
+                  setUploadError(null);
+                  setUploadSuccess(false);
+                  setParsedLeads([]);
+                  setValidationResults(null);
+                }}>
+                  <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                </button>
+              </div>
             </div>
             <div className="mt-3">
               <div className="relative">
