@@ -973,13 +973,41 @@ ${truncatedContent}`;
     }
   };
 
+  // Helper function to process individual chunks asynchronously
+  const processChunkAsync = async (chunkIndex: number, chunkLines: string[], fileType: string, totalChunks: number) => {
+    try {
+      // Update progress for chunk processing
+      const chunkProgress = 30 + (chunkIndex / totalChunks) * 60; // 30% to 90%
+      const currentChunkProgress = Math.round(chunkProgress);
+      updateRealProgress(currentChunkProgress, `Traitement du lot ${chunkIndex + 1}/${totalChunks} (lignes ${chunkIndex * 500 + 1}-${Math.min((chunkIndex + 1) * 500, chunkLines.length - 1)})...`);
+      
+      // Process this chunk
+      const chunkResult = await processFileWithOpenAI(chunkLines.join('\n'), fileType, true);
+      
+      if (chunkResult.leads && chunkResult.leads.length > 0) {
+        // Update progress after successful chunk processing
+        const successProgress = 30 + ((chunkIndex + 1) / totalChunks) * 60;
+        updateRealProgress(Math.round(successProgress), `Lot ${chunkIndex + 1}/${totalChunks} terminé (${chunkResult.leads.length} leads)`);
+        return chunkResult;
+      } else {
+        console.warn(`⚠️ Chunk ${chunkIndex + 1} returned no leads`);
+        return { leads: [], validation: { totalRows: 0, validRows: 0, invalidRows: 0, errors: [] } };
+      }
+      
+    } catch (error: any) {
+      console.error(`❌ Error processing chunk ${chunkIndex + 1}:`, error);
+      // Return empty result instead of failing completely
+      return { leads: [], validation: { totalRows: 0, validRows: 0, invalidRows: 0, errors: [error.message] } };
+    }
+  };
+
   // Smart chunking function for large files
   const processLargeFileInChunks = async (fileContent: string, fileType: string, lines: string[]): Promise<{leads: any[], validation: any}> => {
     
-    // Calculate optimal chunk size based on OpenAI's token limit
+    // Calculate optimal chunk size for maximum speed
     const maxTokensPerChunk = 14000; // Optimized limit (16,385 - safe buffer)
-    const estimatedTokensPerLine = 20; // Optimized estimate for Excel data
-    const optimalChunkSize = Math.min(150, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 150 lines per chunk
+    const estimatedTokensPerLine = 15; // Reduced estimate for faster processing
+    const optimalChunkSize = Math.min(500, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 500 lines per chunk for speed
     
     
     const allLeads: any[] = [];
@@ -988,52 +1016,52 @@ ${truncatedContent}`;
     // Update progress for chunk processing start
     updateRealProgress(30, `Début du traitement par lots (${totalChunks} lots à traiter)...`);
     
-            for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-          // Check if processing was cancelled
-          if (!processingRef.current) {
-            throw new Error('Processing cancelled by user');
+    // Process chunks in parallel for maximum speed
+    const maxConcurrent = 15; // Process 15 chunks simultaneously
+    const chunkPromises: Promise<any>[] = [];
+    
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      // Check if processing was cancelled
+      if (!processingRef.current) {
+        throw new Error('Processing cancelled by user');
+      }
+      
+      const startLine = chunkIndex * optimalChunkSize + 1; // +1 to skip header
+      const endLine = Math.min((chunkIndex + 1) * optimalChunkSize, lines.length - 1);
+      
+      // Create chunk with header + data rows for this specific chunk
+      const chunkLines = [
+        lines[0], // Header row
+        ...lines.slice(startLine, endLine + 1) // Data rows for this chunk
+      ];
+      
+      // Create promise for this chunk
+      const chunkPromise = processChunkAsync(chunkIndex, chunkLines, fileType, totalChunks);
+      chunkPromises.push(chunkPromise);
+      
+      // Process in batches to avoid overwhelming the API
+      if (chunkPromises.length >= maxConcurrent || chunkIndex === totalChunks - 1) {
+        try {
+          const batchResults = await Promise.all(chunkPromises);
+          
+          // Collect leads from batch
+          for (const result of batchResults) {
+            if (result && result.leads && result.leads.length > 0) {
+              allLeads.push(...result.leads);
+            }
           }
           
-          const startLine = chunkIndex * optimalChunkSize + 1; // +1 to skip header
-          const endLine = Math.min((chunkIndex + 1) * optimalChunkSize, lines.length - 1);
+          // Update progress after batch processing
+          const batchProgress = 30 + ((chunkIndex + 1) / totalChunks) * 60;
+          updateRealProgress(Math.round(batchProgress), `Lot ${chunkIndex + 1}/${totalChunks} terminé (${allLeads.length} leads collectés)`);
           
-          // Create chunk with header + data rows for this specific chunk
-          const chunkLines = [
-            lines[0], // Header row
-            ...lines.slice(startLine, endLine + 1) // Data rows for this chunk
-          ];
-      
-      
-      // Update progress for chunk processing
-      const chunkProgress = 30 + (chunkIndex / totalChunks) * 60; // 30% to 90%
-      const currentChunkProgress = Math.round(chunkProgress);
-      updateRealProgress(currentChunkProgress, `Traitement du lot ${chunkIndex + 1}/${totalChunks} (lignes ${startLine}-${endLine})...`);
-      
-      // Process this chunk with the existing function but smaller chunks
-      try {
-
-        // Process this chunk with the existing function but smaller chunks
-        const chunkResult = await processFileWithOpenAI(chunkLines.join('\n'), fileType, true);
-
-        if (chunkResult.leads && chunkResult.leads.length > 0) {
-          allLeads.push(...chunkResult.leads);
+          // Clear batch for next iteration
+          chunkPromises.length = 0;
           
-          // Update progress after successful chunk processing
-          const successProgress = 30 + ((chunkIndex + 1) / totalChunks) * 60;
-          updateRealProgress(Math.round(successProgress), `Lot ${chunkIndex + 1}/${totalChunks} terminé (${chunkResult.leads.length} leads)`);
-        } else {
-          console.warn(`⚠️ Chunk ${chunkIndex + 1} returned no leads`);
+        } catch (error: any) {
+          console.error(`❌ Error processing batch ending at chunk ${chunkIndex + 1}:`, error);
+          // Continue with next batch instead of failing completely
         }
-        
-        // Small delay to avoid rate limiting and show progress
-        if (chunkIndex < totalChunks - 1) {
-          await new Promise(resolve => setTimeout(resolve, 300)); // Small delay for visual feedback
-        }
-        
-      } catch (error) {
-        console.error(`❌ Error processing chunk ${chunkIndex + 1}:`, error);
-        // Continue with next chunk instead of failing completely
-        updateRealProgress(Math.round(chunkProgress), `Erreur sur le lot ${chunkIndex + 1}, passage au suivant...`);
       }
     }
     
