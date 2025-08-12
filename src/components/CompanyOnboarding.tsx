@@ -124,6 +124,12 @@ const CompanyOnboarding = () => {
       return;
     }
     
+    // Skip auto-restore if user wants to go back (window flag)
+    if ((window as any).userWantsToGoBack === true) {
+      console.log('⏸️ Skipping UploadContacts auto-restore - userWantsToGoBack flag is true');
+      return;
+    }
+    
     if (localStorage.getItem('parsedLeads') && !showUploadContacts) {
       // Only restore if we're in a phase that should show UploadContacts
       const shouldShowUploadContacts = displayedPhase >= 2; // UploadContacts is typically in phase 2+
@@ -1065,7 +1071,14 @@ const CompanyOnboarding = () => {
       
       // Remove parsed leads from localStorage to prevent auto-restore
       localStorage.removeItem('parsedLeads');
-      console.log('🧹 Removed parsedLeads from localStorage');
+      localStorage.removeItem('validationResults');
+      localStorage.removeItem('uploadProcessing');
+      sessionStorage.removeItem('uploadProcessing');
+      sessionStorage.removeItem('parsedLeads');
+      sessionStorage.removeItem('validationResults');
+      console.log('🧹 Removed all storage items');
+      
+      // Force close the component immediately
       setShowUploadContacts(false);
       console.log('✅ Set showUploadContacts to false');
       
@@ -1270,17 +1283,26 @@ const CompanyOnboarding = () => {
       
       // Set a flag on window to tell UploadContacts component not to auto-restore
       (window as any).userWantsToGoBack = true;
+      console.log('✅ Set userWantsToGoBack flag to true in onBack');
       
-      // Remove parsed leads from localStorage to prevent auto-restore
+      // Remove all storage items to prevent auto-restore
       localStorage.removeItem('parsedLeads');
+      localStorage.removeItem('validationResults');
+      localStorage.removeItem('uploadProcessing');
+      sessionStorage.removeItem('uploadProcessing');
+      sessionStorage.removeItem('parsedLeads');
+      sessionStorage.removeItem('validationResults');
+      console.log('🧹 Removed all storage items in onBack');
       
       // Close the component immediately
       setShowUploadContacts(false);
+      console.log('✅ Set showUploadContacts to false in onBack');
       
       // Reset the flag after a delay to ensure navigation completes
       setTimeout(() => {
         userClickedBackRef.current = false;
         (window as any).userWantsToGoBack = false;
+        console.log('🔄 Reset userWantsToGoBack flag to false in onBack');
       }, 1000);
     };
   } else if (ActiveStepComponent) {

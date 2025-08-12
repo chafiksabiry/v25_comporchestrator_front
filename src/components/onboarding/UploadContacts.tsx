@@ -106,6 +106,12 @@ interface UploadContactsProps {
 }
 
 const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) => {
+  // Early return if user wants to go back
+  if ((window as any).userWantsToGoBack === true) {
+    console.log('🔄 User wants to go back - UploadContacts component not rendering');
+    return null;
+  }
+
   // Function to cancel processing
   const cancelProcessing = () => {
     console.log('🛑 Cancelling processing...');
@@ -301,9 +307,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     // Check if user wants to go back (parent component sets this flag)
     const userWantsToGoBack = (window as any).userWantsToGoBack === true;
     
+    // If user wants to go back, don't do anything
+    if (userWantsToGoBack) {
+      return;
+    }
+    
     // If we have parsed leads in state but they're about to be lost, save them
-    // But don't save if user wants to go back
-    if (parsedLeads.length > 0 && !userWantsToGoBack) {
+    if (parsedLeads.length > 0) {
       localStorage.setItem('parsedLeads', JSON.stringify(parsedLeads));
       console.log('💾 Auto-saving parsed leads to localStorage:', parsedLeads.length);
     }
@@ -348,7 +358,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     if (userWantsToGoBack) {
       console.log('🔄 User wants to go back - disabling all protection mechanisms');
       
-      // Disable all protection mechanisms
+      // Disable all protection mechanisms immediately
       preventRemountRef.current = false;
       dataRestoredRef.current = false;
       componentInitializedRef.current = false;
@@ -364,6 +374,15 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       // Remove processing indicators
       document.body.removeAttribute('data-processing');
       processingRef.current = false;
+      
+      // Force clear all state to prevent any interference
+      setParsedLeads([]);
+      setValidationResults(null);
+      setSelectedFile(null);
+      setUploadProgress(0);
+      setUploadError(null);
+      setUploadSuccess(false);
+      setIsProcessing(false);
       
       console.log('✅ All protection mechanisms disabled for back navigation');
     }
