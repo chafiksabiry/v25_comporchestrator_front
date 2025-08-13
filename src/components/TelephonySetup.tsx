@@ -18,20 +18,25 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
-  Search
+  Search,
+  X
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 
 import { phoneNumberService } from '../services/api';
 import type { AvailablePhoneNumber } from '../services/api';
 
-const gigId = import.meta.env.DEV ? '683083e7af226bea2d459372' : Cookies.get('gigId');
+const gigId = import.meta.env.VITE_NODE_ENV === 'development' ? '683083e7af226bea2d459372' : Cookies.get('lastGigId');
+console.log('lastGigId', Cookies.get('lastGigId'));
+console.log('gigId', gigId);
+console.log('import.meta.env.VITE_NODE_ENV', import.meta.env.VITE_NODE_ENV);
 const companyId = Cookies.get('companyId');
 
 interface PhoneNumber {
   phoneNumber: string;
   status: string;
   features: string[];
+  provider?: string;
 }
 
 interface TelephonySetupProps {
@@ -46,7 +51,6 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
   const [voicemail, setVoicemail] = useState(true);
   const [callRouting, setCallRouting] = useState('round-robin');
   const [webhookUrl, setWebhookUrl] = useState('');
-  const [testMode, setTestMode] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [availableNumbers, setAvailableNumbers] = useState<AvailablePhoneNumber[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,6 +61,11 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
     monitoring: true,
     analytics: true
   });
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [purchasedNumber, setPurchasedNumber] = useState('');
+  const [purchasedCountry, setPurchasedCountry] = useState('');
+  const [purchasedPhoneInfo, setPurchasedPhoneInfo] = useState<PhoneNumber | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const providers = [
     { id: 'twilio', name: 'Twilio', logo: Phone },
@@ -91,7 +100,23 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
     // Load existing numbers and destination zone on startup
     fetchExistingNumbers();
     fetchDestinationZone();
+    fetchPurchasedPhoneNumber();
   }, [companyId]);
+
+  const fetchPurchasedPhoneNumber = async () => {
+    if (!gigId) return;
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/phone-numbers/gig/${gigId}`);
+      const data = await response.json();
+      console.log("data", data);
+      if (Array.isArray(data) && data.length > 0) {
+        setPurchasedPhoneInfo(data[0]); // Take the first phone number if multiple exist
+      }
+    } catch (error) {
+      console.error('Error fetching purchased phone number:', error);
+    }
+  };
 
   const fetchExistingNumbers = async () => {
     try {
@@ -130,26 +155,55 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
     }
     
     setIsLoading(true);
+    setSearchError(null); // Clear previous errors
+    
     try {
       const data = await phoneNumberService.searchPhoneNumbers(destinationZone, provider);
       setAvailableNumbers(Array.isArray(data) ? data : []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error searching numbers:', error);
-      setAvailableNumbers([]);
+      
+      // Handle Twilio specific error for no numbers available
+      if (error.response?.status === 404 && error.response?.data?.error === 'no_numbers_available') {
+        setSearchError(error.response.data.message);
+        setAvailableNumbers([]);
+      } else {
+        setSearchError(`Twilio ne propose pas de numéros de téléphone pour (${destinationZone}). Veuillez essayer un autre fournisseur.`);
+        setAvailableNumbers([]);
+      }
     }
     setIsLoading(false);
   };
 
-  const purchaseNumber = async (phoneNumber: string) => {
+  const purchaseNumber = async (phoneNumber: string, locality?: string, region?: string) => {
     if (!gigId) {
       console.error('gigId is required to purchase a phone number');
       return;
     }
 
     try {
-      await phoneNumberService.purchasePhoneNumber(phoneNumber, provider, gigId);
-      fetchExistingNumbers(); // Refresh the list after purchase
+      try {
+        await phoneNumberService.purchasePhoneNumber(phoneNumber, provider, gigId);
+      } catch (error: any) {
+        if (error.response?.status === 400 && error.response?.data?.error === 'This gig already has a phone number assigned') {
+          alert('Ce gig possède déjà un numéro de téléphone assigné.');
+          return;
+        }
+        throw error; // Re-throw other errors to be caught by outer catch block
+      }
+      fetchExistingNumbers(); // Refresh the list after purchase 
+      fetchPurchasedPhoneNumber(); // Refresh purchased phone info
       setIsSearchOpen(false); // Close the search
+      
+      // Show success popup
+      setPurchasedNumber(phoneNumber);
+      setPurchasedCountry(locality && region ? `${locality}, ${region}` : 'Unknown');
+      setShowSuccessPopup(true);
+      
+      // Auto-hide popup after 5 seconds
+      setTimeout(() => {
+        setShowSuccessPopup(false);
+      }, 5000);
     } catch (error) {
       console.error('Error purchasing number:', error);
     }
@@ -218,22 +272,46 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Success Popup */}
+      {showSuccessPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="relative rounded-lg bg-white p-6 shadow-xl max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <div className="rounded-full bg-green-100 p-2">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
+                <h3 className="ml-3 text-lg font-medium text-gray-900">Purchase Successful!</h3>
+              </div>
+              <button
+                onClick={() => setShowSuccessPopup(false)}
+                className="rounded-full p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-2">You have successfully purchased:</p>
+              <p className="text-lg font-semibold text-gray-900 mb-1">{purchasedNumber}</p>
+              <p className="text-sm text-gray-500">{purchasedCountry}</p>
+            </div>
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={() => setShowSuccessPopup(false)}
+                className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Telephony Setup</h2>
           <p className="text-sm text-gray-500">Configure your call center infrastructure</p>
         </div>
         <div className="flex space-x-3">
-          <button 
-            className={`rounded-lg px-4 py-2 text-sm font-medium ${
-              testMode 
-                ? 'bg-yellow-100 text-yellow-800' 
-                : 'bg-green-100 text-green-800'
-            }`}
-            onClick={() => setTestMode(!testMode)}
-          >
-            {testMode ? 'Test Mode' : 'Production Mode'}
-          </button>
           <button 
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
             onClick={handleSaveConfiguration}
@@ -243,24 +321,120 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
         </div>
       </div>
 
+      {/* Integration Status */}
+      <div className="rounded-lg bg-white p-6 shadow">
+        <h3 className="text-lg font-medium text-gray-900">Integration Status</h3>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className={`rounded-lg border p-4 ${
+            purchasedPhoneInfo 
+              ? 'border-green-200 bg-green-50' 
+              : 'border-red-200 bg-red-50'
+          }`}>
+            <div className="flex items-center">
+              <Server className={`mr-2 h-5 w-5 ${
+                purchasedPhoneInfo ? 'text-green-500' : 'text-red-500'
+              }`} />
+              <span className={`font-medium ${
+                purchasedPhoneInfo ? 'text-green-800' : 'text-red-800'
+              }`}>
+                {purchasedPhoneInfo ? 'API Connected' : 'API Not Connected'}
+              </span>
+            </div>
+          </div>
+          <div className={`rounded-lg border p-4 ${
+            purchasedPhoneInfo 
+              ? 'border-green-200 bg-green-50' 
+              : 'border-red-200 bg-red-50'
+          }`}>
+            <div className="flex items-center">
+              <Headphones className={`mr-2 h-5 w-5 ${
+                purchasedPhoneInfo ? 'text-green-500' : 'text-red-500'
+              }`} />
+              <span className={`font-medium ${
+                purchasedPhoneInfo ? 'text-green-800' : 'text-red-800'
+              }`}>
+                {purchasedPhoneInfo ? 'Audio Quality OK' : 'Audio Quality Not Ready'}
+              </span>
+            </div>
+          </div>
+          <div className={`rounded-lg border p-4 ${
+            purchasedPhoneInfo 
+              ? 'border-green-200 bg-green-50' 
+              : 'border-red-200 bg-red-50'
+          }`}>
+            <div className="flex items-center">
+              <Settings className={`mr-2 h-5 w-5 ${
+                purchasedPhoneInfo ? 'text-green-500' : 'text-red-500'
+              }`} />
+              <span className={`font-medium ${
+                purchasedPhoneInfo ? 'text-green-800' : 'text-red-800'
+              }`}>
+                {purchasedPhoneInfo ? 'System Ready' : 'System Not Ready'}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Purchased Phone Number Info */}
+        {purchasedPhoneInfo && (
+          <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Phone className="mr-2 h-5 w-5 text-blue-500" />
+                <div>
+                  <span className="font-medium text-blue-800">Active Phone Number</span>
+                  <div className="text-sm text-blue-600">
+                    {purchasedPhoneInfo.phoneNumber}
+                    {purchasedPhoneInfo.provider && (
+                      <span className="ml-2 text-xs bg-blue-100 px-2 py-1 rounded">
+                        {purchasedPhoneInfo.provider}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-sm text-blue-600">Status: {purchasedPhoneInfo.status}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Provider Selection */}
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="text-lg font-medium text-gray-900">Select Provider</h3>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           {providers.map((p) => {
             const Logo = p.logo;
+            const isVonage = p.id === 'vonage';
             return (
               <button
                 key={p.id}
                 className={`flex items-center justify-center rounded-lg border p-4 ${
-                  provider === p.id 
-                    ? 'border-indigo-500 bg-indigo-50' 
-                    : 'border-gray-200 hover:bg-gray-50'
+                  isVonage
+                    ? 'border-gray-300 bg-gray-100 cursor-not-allowed opacity-60'
+                    : provider === p.id 
+                      ? 'border-indigo-500 bg-indigo-50' 
+                      : 'border-gray-200 hover:bg-gray-50'
                 }`}
-                onClick={() => setProvider(p.id)}
+                onClick={() => {
+                  if (!isVonage) {
+                    setProvider(p.id);
+                    setSearchError(null); // Clear error when changing provider
+                  }
+                }}
+                disabled={isVonage}
               >
-                <Logo className="mr-2 h-5 w-5 text-indigo-600" />
-                <span className="font-medium text-gray-900">{p.name}</span>
+                <Logo className={`mr-2 h-5 w-5 ${isVonage ? 'text-gray-400' : 'text-indigo-600'}`} />
+                <div className="flex flex-col items-center">
+                  <span className={`font-medium ${isVonage ? 'text-gray-500' : 'text-gray-900'}`}>
+                    {p.name}
+                  </span>
+                  {isVonage && (
+                    <span className="text-xs text-gray-400 mt-1">Coming Soon</span>
+                  )}
+                </div>
               </button>
             );
           })}
@@ -294,6 +468,23 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
               </button>
             </div>
 
+            {/* Error Message */}
+            {searchError && (
+              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800">Information</h3>
+                    <div className="mt-2 text-sm text-red-700">
+                      <p>{searchError}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Available Numbers List */}
             {Array.isArray(availableNumbers) && availableNumbers.length > 0 && (
               <div className="mt-4 space-y-2">
@@ -315,7 +506,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
                           )}
                         </div>
                         <button
-                          onClick={() => purchaseNumber(phoneNumber)}
+                          onClick={() => purchaseNumber(phoneNumber, number.locality, number.region)}
                           className="rounded-md bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700"
                         >
                           Purchase
@@ -351,6 +542,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       </div>
 
       {/* Features Configuration */}
+      {/* 
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="text-lg font-medium text-gray-900">Features</h3>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -383,8 +575,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
           })}
         </div>
       </div>
+      */}
 
       {/* Call Routing */}
+      {/* 
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="text-lg font-medium text-gray-900">Call Routing</h3>
         <div className="mt-4 space-y-4">
@@ -432,8 +626,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
           </div>
         </div>
       </div>
+      */}
 
       {/* Advanced Settings */}
+      {/* 
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="text-lg font-medium text-gray-900">Advanced Settings</h3>
         <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -524,37 +720,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
           </div>
         </div>
       </div>
-
-      {/* Integration Status */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h3 className="text-lg font-medium text-gray-900">Integration Status</h3>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-            <div className="flex items-center">
-              <Server className="mr-2 h-5 w-5 text-green-500" />
-              <span className="font-medium text-green-800">API Connected</span>
-            </div>
-          </div>
-          <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-            <div className="flex items-center">
-              <Shield className="mr-2 h-5 w-5 text-green-500" />
-              <span className="font-medium text-green-800">SSL Secure</span>
-            </div>
-          </div>
-          <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-            <div className="flex items-center">
-              <Headphones className="mr-2 h-5 w-5 text-green-500" />
-              <span className="font-medium text-green-800">Audio Quality OK</span>
-            </div>
-          </div>
-          <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-            <div className="flex items-center">
-              <Settings className="mr-2 h-5 w-5 text-green-500" />
-              <span className="font-medium text-green-800">System Ready</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      */}
     </div>
   );
 };
