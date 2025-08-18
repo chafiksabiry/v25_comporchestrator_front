@@ -91,7 +91,46 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
     // Load existing numbers and destination zone on startup
     fetchExistingNumbers();
     fetchDestinationZone();
+    
+    // Vérifier l'état des étapes complétées au chargement
+    checkCompletedSteps();
   }, [companyId]);
+
+  const checkCompletedSteps = async () => {
+    try {
+      if (!companyId) return;
+      
+      // Vérifier l'état de l'étape 5 (Telephony Setup)
+      const response = await axios.get(
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`
+      );
+      
+      if (response.data && response.data.status === 'completed') {
+        setCompletedSteps((prev: number[]) => {
+          if (!prev.includes(5)) {
+            return [...prev, 5];
+          }
+          return prev;
+        });
+      }
+      
+      // Vérifier aussi le localStorage pour la cohérence
+      const storedProgress = localStorage.getItem('companyOnboardingProgress');
+      if (storedProgress) {
+        try {
+          const progress = JSON.parse(storedProgress);
+          if (progress.completedSteps && Array.isArray(progress.completedSteps)) {
+            setCompletedSteps(progress.completedSteps);
+          }
+        } catch (e) {
+          console.error('Error parsing stored progress:', e);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error checking completed steps:', error);
+    }
+  };
 
   const fetchExistingNumbers = async () => {
     try {
@@ -171,14 +210,22 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       console.log('✅ Telephony setup step 5 marked as completed:', response.data);
       
       // Update local state to reflect the completed step
-      setCompletedSteps(prev => [...prev, 5]);
+      setCompletedSteps((prev: number[]) => {
+        const newCompletedSteps = prev.includes(5) ? prev : [...prev, 5];
       
       // Force update the onboarding progress in localStorage/cookies
       const currentProgress = {
         currentPhase: 2,
-        completedSteps: [...completedSteps, 5]
+          completedSteps: newCompletedSteps,
+          lastUpdated: new Date().toISOString()
       };
       localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+        
+        return newCompletedSteps;
+      });
+      
+      // Synchroniser avec les cookies aussi
+      Cookies.set('telephonyStepCompleted', 'true', { expires: 7 });
       
       // Wait a moment to ensure the API call is fully processed
       await new Promise(resolve => setTimeout(resolve, 200));
@@ -220,7 +267,12 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
+          <div className="flex items-center space-x-2">
           <h2 className="text-xl font-bold text-gray-900">Telephony Setup</h2>
+            {completedSteps.includes(5) && (
+              <CheckCircle className="h-6 w-6 text-green-500" />
+            )}
+          </div>
           <p className="text-sm text-gray-500">Configure your call center infrastructure</p>
         </div>
         <div className="flex space-x-3">
@@ -235,10 +287,22 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
             {testMode ? 'Test Mode' : 'Production Mode'}
           </button>
           <button 
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-            onClick={handleSaveConfiguration}
+            className={`rounded-lg px-4 py-2 text-sm font-medium ${
+              completedSteps.includes(5)
+                ? 'bg-green-600 text-white cursor-not-allowed'
+                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+            }`}
+            onClick={completedSteps.includes(5) ? undefined : handleSaveConfiguration}
+            disabled={completedSteps.includes(5)}
           >
-            Save Configuration
+            {completedSteps.includes(5) ? (
+              <span className="flex items-center">
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Configuration Saved
+              </span>
+            ) : (
+              'Save Configuration'
+            )}
           </button>
         </div>
       </div>

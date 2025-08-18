@@ -65,9 +65,92 @@ function CompanyProfile() {
   const [editMode, setEditMode] = useState(false);
   const [logoUrl, setLogoUrl] = useState("");
   const [showUniquenessPanel, setShowUniquenessPanel] = useState(false);
+  const [isStepCompleted, setIsStepCompleted] = useState(false);
 
   const companyId = Cookies.get('companyId');
   console.log('Stored companyId from cookie:', companyId);
+
+  // Vérifier l'état de l'étape au chargement
+  useEffect(() => {
+    if (companyId) {
+      checkStepStatus();
+    }
+  }, [companyId]);
+
+  // Vérifier si l'étape peut être marquée comme complétée
+  useEffect(() => {
+    if (company && !isStepCompleted && hasBasicInfo()) {
+      // Si l'entreprise a les informations de base, on peut marquer l'étape comme complétée
+      checkStepStatus();
+    }
+  }, [company, isStepCompleted]);
+
+  const hasBasicInfo = () => {
+    return company.name && company.industry && company.contact?.email;
+  };
+
+  const checkStepStatus = async () => {
+    try {
+      if (!companyId) return;
+      
+      // Vérifier l'état de l'étape 1 (Company Profile) dans la phase 1
+      const response = await axios.get(
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/1`
+      );
+      
+      if (response.data && response.data.status === 'completed') {
+        setIsStepCompleted(true);
+        return;
+      }
+      
+      // Vérifier aussi le localStorage pour la cohérence
+      const storedProgress = localStorage.getItem('companyOnboardingProgress');
+      if (storedProgress) {
+        try {
+          const progress = JSON.parse(storedProgress);
+          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(1)) {
+            setIsStepCompleted(true);
+            return;
+          }
+        } catch (e) {
+          console.error('Error parsing stored progress:', e);
+        }
+      }
+      
+      // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
+      // marquer automatiquement l'étape comme complétée
+      if (hasBasicInfo()) {
+        try {
+          const onboardingResponse = await axios.put(
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/1`,
+            { status: 'completed' }
+          );
+          
+          console.log('✅ Company Profile step 1 automatically marked as completed:', onboardingResponse.data);
+          
+          // Mettre à jour l'état local
+          setIsStepCompleted(true);
+          
+          // Mettre à jour le localStorage
+          const currentProgress = {
+            currentPhase: 1,
+            completedSteps: [1],
+            lastUpdated: new Date().toISOString()
+          };
+          localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+          
+          // Synchroniser avec les cookies
+          Cookies.set('companyProfileStepCompleted', 'true', { expires: 7 });
+          
+        } catch (autoCompleteError) {
+          console.error('Error auto-completing step:', autoCompleteError);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error checking step status:', error);
+    }
+  };
 
   // Helper functions for the new UI
   const hasContactInfo = company.contact && (
@@ -262,17 +345,48 @@ function CompanyProfile() {
 
   const handleSaveAll = async () => {
     try {
+      // Sauvegarder les informations de l'entreprise
       await axios.put(
         `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}`,
         company
       );
+      
+      // Marquer l'étape 1 comme complétée dans l'onboarding si les informations de base sont présentes
+      if (!isStepCompleted && hasBasicInfo()) {
+        try {
+          const onboardingResponse = await axios.put(
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/1`,
+            { status: 'completed' }
+          );
+          
+          console.log('✅ Company Profile step 1 marked as completed:', onboardingResponse.data);
+          
+          // Mettre à jour l'état local
+          setIsStepCompleted(true);
+          
+          // Mettre à jour le localStorage
+          const currentProgress = {
+            currentPhase: 1,
+            completedSteps: [1],
+            lastUpdated: new Date().toISOString()
+          };
+          localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+          
+          // Synchroniser avec les cookies
+          Cookies.set('companyProfileStepCompleted', 'true', { expires: 7 });
+          
+        } catch (onboardingError) {
+          console.error('Error updating onboarding progress:', onboardingError);
+        }
+      }
+      
       setHasChanges(false);
       setSaveSuccess(true);
 
       // Afficher un popup SweetAlert2 pour indiquer le succès
       Swal.fire({
         title: "Success!",
-        text: "Company profile updated successfully.",
+        text: "Company profile updated successfully and step marked as completed!",
         icon: "success",
         confirmButtonText: "Ok",
       });
@@ -520,11 +634,19 @@ function CompanyProfile() {
                   )}
                 </div>
                 <div>
-                  <EditableField
-                    value={profile.name}
-                    field="name"
-                    className="text-5xl font-bold text-white mb-2 tracking-tight"
-                  />
+                  <div className="flex items-center gap-3 mb-2">
+                    <EditableField
+                      value={profile.name}
+                      field="name"
+                      className="text-5xl font-bold text-white tracking-tight"
+                    />
+                    {isStepCompleted && (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-green-500/20 border border-green-300/30 rounded-lg">
+                        <CheckCircle2 className="w-5 h-5 text-green-300" />
+                        <span className="text-sm font-medium text-green-200">Step Completed</span>
+                      </div>
+                    )}
+                  </div>
                   <div className="flex flex-wrap gap-6 text-white/90">
                     {profile.industry && (
                       <EditableField
@@ -938,8 +1060,14 @@ function CompanyProfile() {
           </div>
         </div>
 
-      {/* Edit and Save buttons */}
+              {/* Edit and Save buttons */}
       <div className="fixed right-6 top-6 flex items-center gap-3 z-10">
+          {isStepCompleted && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
+              <CheckCircle2 className="w-5 h-5 text-green-600" />
+              <span className="text-sm font-medium text-green-700">Step Completed</span>
+            </div>
+          )}
           <button
             onClick={() => setEditMode(!editMode)}
             className={`p-2 rounded-full transition-all duration-300 ${
@@ -957,10 +1085,14 @@ function CompanyProfile() {
         <div className="fixed bottom-6 right-6 z-10">
             <button
               onClick={handleSaveAll}
-              className="px-6 py-3 bg-green-600 text-white rounded-xl shadow-lg hover:bg-green-700 transition-all flex items-center gap-2"
+              className={`px-6 py-3 rounded-xl shadow-lg transition-all flex items-center gap-2 ${
+                isStepCompleted
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-green-600 text-white hover:bg-green-700'
+              }`}
             >
               <Save size={18} />
-              Save Changes
+              {isStepCompleted ? 'Update Profile' : 'Save & Complete Step'}
             </button>
           </div>
         )}
