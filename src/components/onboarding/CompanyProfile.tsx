@@ -124,20 +124,22 @@ function CompanyProfile() {
       
       console.log('🔍 Checking step 1 status for company:', companyId);
       
-      // Vérifier l'état de l'étape 1 (Company Profile) dans la phase 1
+      // Vérifier l'état de l'étape 1 via l'API d'onboarding principale
       const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/1`
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
       );
       
-      console.log('📡 API response for step 1:', response.data);
+      console.log('📡 API response for onboarding:', response.data);
       
-      if (response.data && response.data.status === 'completed') {
-        console.log('✅ Step 1 is already completed according to API');
-        setIsStepCompleted(true);
-        return;
+      if (response.data && response.data.completedSteps && Array.isArray(response.data.completedSteps)) {
+        if (response.data.completedSteps.includes(1)) {
+          console.log('✅ Step 1 is already completed according to API');
+          setIsStepCompleted(true);
+          return;
+        } else {
+          console.log('⚠️ Step 1 is not completed according to API');
+        }
       }
-      
-      console.log('⚠️ Step 1 is not completed according to API');
       
       // Vérifier aussi le localStorage pour la cohérence
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
@@ -162,9 +164,16 @@ function CompanyProfile() {
       if (hasBasicInfo()) {
         console.log('🎯 Auto-completing step 1 because basic info is present');
         try {
+          // Utiliser l'API d'onboarding principale pour marquer l'étape comme complétée
+          const currentCompletedSteps = response.data?.completedSteps || [];
+          const newCompletedSteps = currentCompletedSteps.includes(1) ? currentCompletedSteps : [...currentCompletedSteps, 1];
+          
           const onboardingResponse = await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/1`,
-            { status: 'completed' }
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`,
+            { 
+              completedSteps: newCompletedSteps,
+              currentPhase: 1
+            }
           );
           
           console.log('✅ Company Profile step 1 automatically marked as completed:', onboardingResponse.data);
@@ -175,7 +184,7 @@ function CompanyProfile() {
           // Mettre à jour le localStorage
           const currentProgress = {
             currentPhase: 1,
-            completedSteps: [1],
+            completedSteps: newCompletedSteps,
             lastUpdated: new Date().toISOString()
           };
           localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
@@ -407,12 +416,26 @@ function CompanyProfile() {
       if (!isStepCompleted && hasBasicInfo()) {
         console.log('🎯 Marking step 1 as completed...');
         try {
-          const onboardingResponse = await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/1`,
-            { status: 'completed' }
+          console.log('🎯 Marking step 1 as completed in onboarding...');
+          
+          // Récupérer l'état actuel de l'onboarding
+          const onboardingResponse = await axios.get(
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
           );
           
-          console.log('✅ Company Profile step 1 marked as completed:', onboardingResponse.data);
+          const currentCompletedSteps = onboardingResponse.data?.completedSteps || [];
+          const newCompletedSteps = currentCompletedSteps.includes(1) ? currentCompletedSteps : [...currentCompletedSteps, 1];
+          
+          // Mettre à jour l'onboarding avec l'étape 1 marquée comme complétée
+          const updateResponse = await axios.put(
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`,
+            { 
+              completedSteps: newCompletedSteps,
+              currentPhase: 1
+            }
+          );
+          
+          console.log('✅ Company Profile step 1 marked as completed:', updateResponse.data);
           
           // Mettre à jour l'état local
           setIsStepCompleted(true);
@@ -420,7 +443,7 @@ function CompanyProfile() {
           // Mettre à jour le localStorage
           const currentProgress = {
             currentPhase: 1,
-            completedSteps: [1],
+            completedSteps: newCompletedSteps,
             lastUpdated: new Date().toISOString()
           };
           localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
@@ -428,7 +451,7 @@ function CompanyProfile() {
           // Synchroniser avec les cookies
           Cookies.set('companyProfileStepCompleted', 'true', { expires: 7 });
           
-          console.log('💾 Local state and storage updated');
+          console.log('💾 Local state and storage updated after step completion');
           
         } catch (onboardingError) {
           console.error('❌ Error updating onboarding progress:', onboardingError);
