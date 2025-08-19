@@ -73,53 +73,94 @@ function CompanyProfile() {
   // Vérifier l'état de l'étape au chargement
   useEffect(() => {
     if (companyId) {
+      console.log('🚀 CompanyProfile component loaded, checking step status...');
       checkStepStatus();
     }
   }, [companyId]);
 
+  // Vérifier l'état de l'étape quand les données de l'entreprise sont chargées
+  useEffect(() => {
+    if (company && Object.keys(company).length > 0 && companyId) {
+      console.log('📊 Company data loaded, checking if step should be auto-completed...');
+      // Attendre un peu que les données soient bien chargées
+      setTimeout(() => {
+        checkStepStatus();
+      }, 500);
+    }
+  }, [company, companyId]);
+
   // Vérifier si l'étape peut être marquée comme complétée
   useEffect(() => {
+    console.log('🔄 useEffect triggered:', {
+      hasCompany: !!company,
+      isStepCompleted,
+      hasBasicInfo: hasBasicInfo()
+    });
+    
     if (company && !isStepCompleted && hasBasicInfo()) {
+      console.log('🎯 Triggering automatic step completion check');
       // Si l'entreprise a les informations de base, on peut marquer l'étape comme complétée
       checkStepStatus();
     }
   }, [company, isStepCompleted]);
 
   const hasBasicInfo = () => {
-    return company.name && company.industry && company.contact?.email;
+    const hasInfo = company.name && company.industry && company.contact?.email;
+    console.log('🔍 Checking basic info:', {
+      name: company.name,
+      industry: company.industry,
+      email: company.contact?.email,
+      hasInfo
+    });
+    return hasInfo;
   };
 
   const checkStepStatus = async () => {
     try {
-      if (!companyId) return;
+      if (!companyId) {
+        console.log('❌ No companyId available for step status check');
+        return;
+      }
+      
+      console.log('🔍 Checking step 1 status for company:', companyId);
       
       // Vérifier l'état de l'étape 1 (Company Profile) dans la phase 1
       const response = await axios.get(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/1`
       );
       
+      console.log('📡 API response for step 1:', response.data);
+      
       if (response.data && response.data.status === 'completed') {
+        console.log('✅ Step 1 is already completed according to API');
         setIsStepCompleted(true);
         return;
       }
+      
+      console.log('⚠️ Step 1 is not completed according to API');
       
       // Vérifier aussi le localStorage pour la cohérence
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
       if (storedProgress) {
         try {
           const progress = JSON.parse(storedProgress);
+          console.log('💾 Stored progress from localStorage:', progress);
           if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(1)) {
+            console.log('✅ Step 1 found in localStorage, setting as completed');
             setIsStepCompleted(true);
             return;
           }
         } catch (e) {
-          console.error('Error parsing stored progress:', e);
+          console.error('❌ Error parsing stored progress:', e);
         }
+      } else {
+        console.log('💾 No stored progress found in localStorage');
       }
       
       // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
       // marquer automatiquement l'étape comme complétée
       if (hasBasicInfo()) {
+        console.log('🎯 Auto-completing step 1 because basic info is present');
         try {
           const onboardingResponse = await axios.put(
             `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/1`,
@@ -142,13 +183,17 @@ function CompanyProfile() {
           // Synchroniser avec les cookies
           Cookies.set('companyProfileStepCompleted', 'true', { expires: 7 });
           
+          console.log('💾 Local state and storage updated after auto-completion');
+          
         } catch (autoCompleteError) {
-          console.error('Error auto-completing step:', autoCompleteError);
+          console.error('❌ Error auto-completing step:', autoCompleteError);
         }
+      } else {
+        console.log('⚠️ Cannot auto-complete step 1 because basic info is missing');
       }
       
     } catch (error) {
-      console.error('Error checking step status:', error);
+      console.error('❌ Error checking step status:', error);
     }
   };
 
@@ -345,14 +390,22 @@ function CompanyProfile() {
 
   const handleSaveAll = async () => {
     try {
+      console.log('🚀 Starting save process...');
+      console.log('📊 Current company data:', company);
+      console.log('🔍 Has basic info:', hasBasicInfo());
+      console.log('📝 Is step completed:', isStepCompleted);
+      
       // Sauvegarder les informations de l'entreprise
       await axios.put(
         `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}`,
         company
       );
       
+      console.log('✅ Company data saved successfully');
+      
       // Marquer l'étape 1 comme complétée dans l'onboarding si les informations de base sont présentes
       if (!isStepCompleted && hasBasicInfo()) {
+        console.log('🎯 Marking step 1 as completed...');
         try {
           const onboardingResponse = await axios.put(
             `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/1`,
@@ -375,9 +428,16 @@ function CompanyProfile() {
           // Synchroniser avec les cookies
           Cookies.set('companyProfileStepCompleted', 'true', { expires: 7 });
           
+          console.log('💾 Local state and storage updated');
+          
         } catch (onboardingError) {
-          console.error('Error updating onboarding progress:', onboardingError);
+          console.error('❌ Error updating onboarding progress:', onboardingError);
         }
+      } else {
+        console.log('⚠️ Step not marked as completed because:', {
+          isStepCompleted,
+          hasBasicInfo: hasBasicInfo()
+        });
       }
       
       setHasChanges(false);
