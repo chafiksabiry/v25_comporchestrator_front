@@ -104,8 +104,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       const response = await axios.get(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`
       );
-      
-      if (response.data && response.data.status === 'completed') {
+
+      // Fix: Ensure response.data is typed and has 'status' property
+      const stepStatus = (response.data as { status?: string })?.status;
+      if (stepStatus === 'completed') {
         setCompletedSteps((prev: number[]) => {
           if (!prev.includes(5)) {
             return [...prev, 5];

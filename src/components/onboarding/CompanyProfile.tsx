@@ -635,9 +635,9 @@ function CompanyProfile() {
                 </div>
                 <div>
                   <div className="flex items-center gap-3 mb-2">
-                    <EditableField
-                      value={profile.name}
-                      field="name"
+                  <EditableField
+                    value={profile.name}
+                    field="name"
                       className="text-5xl font-bold text-white tracking-tight"
                     />
                     {isStepCompleted && (
@@ -1060,7 +1060,7 @@ function CompanyProfile() {
           </div>
         </div>
 
-              {/* Edit and Save buttons */}
+      {/* Edit and Save buttons */}
       <div className="fixed right-6 top-6 flex items-center gap-3 z-10">
           {isStepCompleted && (
             <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">

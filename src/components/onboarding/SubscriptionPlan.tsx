@@ -182,9 +182,9 @@ const SubscriptionPlan = () => {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <div>
+      <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold text-gray-900">Free Plan</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Free Plan</h2>
             {isStepCompleted && (
               <div className="flex items-center gap-2 px-3 py-1 bg-green-100 border border-green-300 rounded-lg">
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -192,9 +192,9 @@ const SubscriptionPlan = () => {
               </div>
             )}
           </div>
-          <p className="mt-2 text-gray-600">
-            Start using our platform with our comprehensive free plan.
-          </p>
+        <p className="mt-2 text-gray-600">
+          Start using our platform with our comprehensive free plan.
+        </p>
         </div>
       </div>
 
