@@ -831,20 +831,6 @@ const CompanyOnboarding = () => {
       // Si le step est déjà complété, ne pas changer son statut
       if (isStepCompleted) {
         console.log(`✅ Step ${stepId} is already completed, not changing status`);
-      } else {
-        // Mettre à jour le statut de l'étape à "in_progress" seulement si pas déjà complétée
-        const phaseId =
-          phases.findIndex((phase) =>
-            phase.steps.some((step) => step.id === stepId)
-          ) + 1;
-
-        await axios.put(
-          `${
-            import.meta.env.VITE_COMPANY_API_URL
-          }/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
-          { status: "in_progress" }
-        );
-        console.log(`🔄 Step ${stepId} status updated to in_progress`);
       }
 
       const allSteps = phases.flatMap((phase) => phase.steps);
