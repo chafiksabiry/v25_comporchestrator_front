@@ -120,6 +120,11 @@ const CompanyOnboarding = () => {
   const [showUploadContacts, setShowUploadContacts] = useState(false);
   const [phases, setPhases] = useState<Phase[]>([]);
 
+  // Initialize phases with default values
+  useEffect(() => {
+    setPhases(defaultPhases);
+  }, []);
+
   // Single useEffect to handle UploadContacts state and parsed leads cleanup
   useEffect(() => {
     const hasParsedLeads = localStorage.getItem("parsedLeads");
