@@ -687,12 +687,34 @@ const CompanyOnboarding = () => {
 
         // Validate that all previous phases are completed before allowing current phase
         let validCurrentPhase = currentPhase;
-        for (let i = 1; i < currentPhase; i++) {
-          const phase = phases.find(p => p.id === i);
-          if (phase && phase.status !== 'completed') {
-            console.log(`⚠️ Phase ${i} is not fully completed, stopping at phase ${i}`);
-            validCurrentPhase = i;
-            break;
+        
+        // Only validate if we're trying to advance to a higher phase
+        // Don't force regression if the current phase is already valid
+        if (currentPhase > 1) {
+          let canKeepCurrentPhase = true;
+          
+          for (let i = 1; i < currentPhase; i++) {
+            const phase = phases.find(p => p.id === i);
+            if (phase && phase.status !== 'completed') {
+              console.log(`⚠️ Phase ${i} is not fully completed, but current phase ${currentPhase} may still be valid`);
+              // Don't force regression immediately - check if current phase has progress
+              const currentPhaseData = phases.find(p => p.id === currentPhase);
+              if (currentPhaseData && currentPhaseData.status === 'in_progress') {
+                console.log(`✅ Phase ${currentPhase} has progress, keeping it as valid`);
+                canKeepCurrentPhase = true;
+                break;
+              } else {
+                console.log(`⚠️ Phase ${currentPhase} has no progress, falling back to phase ${i}`);
+                validCurrentPhase = i;
+                canKeepCurrentPhase = false;
+                break;
+              }
+            }
+          }
+          
+          if (canKeepCurrentPhase) {
+            console.log(`✅ Keeping current phase ${currentPhase} as it has valid progress`);
+            validCurrentPhase = currentPhase;
           }
         }
 
