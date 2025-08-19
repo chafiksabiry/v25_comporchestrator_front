@@ -719,12 +719,6 @@ function CompanyProfile() {
                     field="name"
                       className="text-5xl font-bold text-white tracking-tight"
                     />
-                    {isStepCompleted && (
-                      <div className="flex items-center gap-2 px-3 py-1 bg-green-500/20 border border-green-300/30 rounded-lg">
-                        <CheckCircle2 className="w-5 h-5 text-green-300" />
-                        <span className="text-sm font-medium text-green-200">Step Completed</span>
-                      </div>
-                    )}
                   </div>
                   <div className="flex flex-wrap gap-6 text-white/90">
                     {profile.industry && (
@@ -1141,12 +1135,6 @@ function CompanyProfile() {
 
       {/* Edit and Save buttons */}
       <div className="fixed right-6 top-6 flex items-center gap-3 z-10">
-          {isStepCompleted && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
-              <span className="text-sm font-medium text-green-700">Step Completed</span>
-            </div>
-          )}
           <button
             onClick={() => setEditMode(!editMode)}
             className={`p-2 rounded-full transition-all duration-300 ${
