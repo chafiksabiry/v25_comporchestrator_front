@@ -170,6 +170,7 @@ const CompanyOnboarding = () => {
         const devCompanyId = "6830839c641398dc582eb897";
         setCompanyId(devCompanyId);
         Cookies.set("companyId", devCompanyId);
+        setIsLoading(false); // Set loading to false for development
         return;
       }
 
@@ -198,11 +199,20 @@ const CompanyOnboarding = () => {
         }
       } catch (error) {
         console.error("Error fetching company ID:", error);
-        // Ne pas rediriger immédiatement, afficher un message d'erreur à la place
+      } finally {
+        setIsLoading(false); // Always set loading to false after company ID fetch
       }
     };
 
     fetchCompanyId();
+    
+    // Fallback timeout to ensure loading doesn't get stuck
+    const timeoutId = setTimeout(() => {
+      console.log('⏰ Loading timeout fallback - forcing loading to false');
+      setIsLoading(false);
+    }, 10000); // 10 seconds timeout
+    
+    return () => clearTimeout(timeoutId);
   }, [userId]);
 
   // Load company progress and check gigs when company ID is available
@@ -727,8 +737,8 @@ const CompanyOnboarding = () => {
             `${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}/last`
           );
           
-          if (gigsResponse.data && gigsResponse.data.data) {
-            const gig = gigsResponse.data.data;
+          if (gigsResponse.data && (gigsResponse.data as any).data) {
+            const gig = (gigsResponse.data as any).data;
             const hasActiveGig = gig.status === 'active' || gig.status === 'in_progress';
             
             if (hasActiveGig && !completedSteps.includes(13)) {
@@ -752,7 +762,7 @@ const CompanyOnboarding = () => {
             }
           }
         } catch (gigsError) {
-          if (axios.isAxiosError(gigsError) && gigsError.response?.status === 404) {
+          if ((gigsError as any).response?.status === 404) {
             console.log('ℹ️ No gigs found for company - this is normal for new companies');
             // If no gigs found and step 13 is marked as completed, remove it
             if (completedSteps.includes(13)) {
@@ -778,6 +788,7 @@ const CompanyOnboarding = () => {
           console.log('🔄 Forcing re-render after state update');
           setCurrentPhase(prev => prev);
           setCompletedSteps(prev => [...prev]);
+          setIsLoading(false); // Ensure loading is set to false after progress is loaded
         }, 100);
 
       }
@@ -796,6 +807,9 @@ const CompanyOnboarding = () => {
           console.error('❌ Error parsing stored progress:', parseError);
         }
       }
+      
+      // Always set loading to false, even if there's an error
+      setIsLoading(false);
     }
   }, [companyId]);
 
@@ -1347,16 +1361,23 @@ const CompanyOnboarding = () => {
 
   // Vérifier si l'utilisateur est authentifié
   if (!userId) {
-    console.log("User ID not found, redirecting to /auth");
-    window.location.href = "/auth";
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting to authentication...</p>
+    console.log("User ID not found, checking if we're in development mode...");
+    
+    // In development mode, allow the component to render without userId
+    if (import.meta.env.VITE_NODE_ENV === "development") {
+      console.log("Development mode detected - allowing render without userId");
+    } else {
+      console.log("User ID not found, redirecting to /auth");
+      window.location.href = "/auth";
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Redirecting to authentication...</p>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
   }
 
   // Find the active step component
@@ -1367,9 +1388,78 @@ const CompanyOnboarding = () => {
     : null;
 
   if (isLoading) {
+    console.log('🔄 CompanyOnboarding: Still loading, showing spinner');
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  console.log('🚀 CompanyOnboarding: Loading complete, rendering main content');
+  console.log('📊 Current state:', {
+    currentPhase,
+    displayedPhase,
+    completedSteps,
+    activeStep,
+    showGigDetails,
+    showTelephonySetup,
+    showUploadContacts,
+    hasActiveComponent: !!ActiveStepComponent
+  });
+
+  // TEMPORARY: Add a simple test render to debug
+  if (import.meta.env.VITE_NODE_ENV === 'development') {
+    console.log('🧪 Development mode: Testing simple render');
+    console.log('🔧 Environment variables:', {
+      NODE_ENV: import.meta.env.VITE_NODE_ENV,
+      COMPANY_API_URL: import.meta.env.VITE_COMPANY_API_URL,
+      GIGS_API: import.meta.env.VITE_GIGS_API,
+      DASHBOARD_API: import.meta.env.VITE_DASHBOARD_API
+    });
+    
+    return (
+      <div className="p-8">
+        <h1 className="text-3xl font-bold text-blue-600 mb-4">🧪 CompanyOnboarding Test Render</h1>
+        <div className="bg-green-100 p-4 rounded-lg">
+          <p className="text-green-800">✅ Component is rendering successfully!</p>
+          <p className="text-sm text-green-700 mt-2">
+            Current Phase: {currentPhase} | Displayed Phase: {displayedPhase} | 
+            Completed Steps: {completedSteps.join(', ')}
+          </p>
+        </div>
+        <div className="mt-4 bg-blue-100 p-4 rounded-lg">
+          <p className="text-blue-800">📊 Debug Info:</p>
+          <pre className="text-xs mt-2 overflow-auto">
+            {JSON.stringify({
+              currentPhase,
+              displayedPhase,
+              completedSteps,
+              activeStep,
+              showGigDetails,
+              showTelephonySetup,
+              showUploadContacts,
+              phasesCount: phases.length
+            }, null, 2)}
+          </pre>
+        </div>
+        <div className="mt-4 bg-yellow-100 p-4 rounded-lg">
+          <p className="text-yellow-800">🔧 Environment Variables:</p>
+          <pre className="text-xs mt-2 overflow-auto">
+            {JSON.stringify({
+              NODE_ENV: import.meta.env.VITE_NODE_ENV,
+              COMPANY_API_URL: import.meta.env.VITE_COMPANY_API_URL,
+              GIGS_API: import.meta.env.VITE_GIGS_API,
+              DASHBOARD_API: import.meta.env.VITE_DASHBOARD_API
+            }, null, 2)}
+          </pre>
+        </div>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Reload Page
+        </button>
       </div>
     );
   }
@@ -1427,6 +1517,7 @@ const CompanyOnboarding = () => {
   }
 
   if (activeComponent) {
+    console.log('🎯 CompanyOnboarding: Rendering active component:', activeComponent.type?.name || 'Unknown');
     return (
       <div className="space-y-6">
         <div className="flex items-center space-x-4">
@@ -1445,11 +1536,19 @@ const CompanyOnboarding = () => {
     );
   }
 
-  // Allow normal rendering - navigation is handled directly by child components
+  console.log('🎯 CompanyOnboarding: No active component, rendering main onboarding interface');
 
   // Utiliser displayedPhase au lieu de currentPhase pour afficher les steps
   const displayedPhaseData = phases[displayedPhase - 1];
+  console.log('📋 CompanyOnboarding: Phases data:', {
+    displayedPhase,
+    totalPhases: phases.length,
+    displayedPhaseData: displayedPhaseData ? 'Available' : 'Not found',
+    phases: phases.map(p => ({ id: p.id, title: p.title, stepsCount: p.steps.length }))
+  });
+  
   if (!displayedPhaseData) {
+    console.error('❌ CompanyOnboarding: Phase data not found for phase:', displayedPhase);
     return (
       <div className="text-center text-red-600">
         Error: Phase data not found. Please try refreshing the page.
