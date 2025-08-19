@@ -25,7 +25,7 @@ const SubscriptionPlan = () => {
         `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/subscription`
       );
       
-      if (response.data && response.data.subscription) {
+      if (response.data && (response.data as any).subscription) {
         // Si un abonnement existe, marquer automatiquement l'étape comme complétée
         if (!isStepCompleted) {
           try {
@@ -70,7 +70,7 @@ const SubscriptionPlan = () => {
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/3`
       );
       
-      if (response.data && response.data.status === 'completed') {
+      if (response.data && (response.data as any).status === 'completed') {
         setIsStepCompleted(true);
         return;
       }

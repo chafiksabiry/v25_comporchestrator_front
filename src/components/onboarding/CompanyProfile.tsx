@@ -131,8 +131,8 @@ function CompanyProfile() {
       
       console.log('📡 API response for onboarding:', response.data);
       
-      if (response.data && response.data.completedSteps && Array.isArray(response.data.completedSteps)) {
-        if (response.data.completedSteps.includes(1)) {
+      if (response.data && (response.data as any).completedSteps && Array.isArray((response.data as any).completedSteps)) {
+        if ((response.data as any).completedSteps.includes(1)) {
           console.log('✅ Step 1 is already completed according to API');
           setIsStepCompleted(true);
           return;
@@ -168,7 +168,7 @@ function CompanyProfile() {
         setIsStepCompleted(true);
         
         // Mettre à jour le localStorage avec l'étape 1 marquée comme complétée
-        const currentCompletedSteps = response.data?.completedSteps || [];
+        const currentCompletedSteps = (response.data as any)?.completedSteps || [];
         const newCompletedSteps = currentCompletedSteps.includes(1) ? currentCompletedSteps : [...currentCompletedSteps, 1];
         
         const currentProgress = {
@@ -419,7 +419,7 @@ function CompanyProfile() {
             `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
           );
           
-          const currentCompletedSteps = onboardingResponse.data?.completedSteps || [];
+          const currentCompletedSteps = (onboardingResponse.data as any)?.completedSteps || [];
           const newCompletedSteps = currentCompletedSteps.includes(1) ? currentCompletedSteps : [...currentCompletedSteps, 1];
           
           // Mettre à jour l'onboarding avec l'étape 1 marquée comme complétée
