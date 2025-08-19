@@ -13,18 +13,15 @@ RUN npm install
 
 COPY . .
 
-ENV VITE_GIGS_API=https://preprod-api-gigsmanual.harx.ai/api
-ENV VITE_NODE_ENV=preprod
-ENV VITE_API_BASE_URL=https://preprod-api-comp-orchestrator.harx.ai/api
-ENV VITE_COMPANY_API_URL=https://preprod-api-companysearchwizard.harx.ai/api
-ENV VITE_DASHBOARD_API=https://preprod-api-dashboard.harx.ai/api
-ENV VITE_REP_API=https://preprod-api-repcreationwizard.harx.ai/api
-
+ENV VITE_GIGS_API=https://api-gigsmanual.harx.ai/api
+ENV NODE_ENV=sandbox
+ENV VITE_API_BASE_URL=https://api-Comp-Orchestrator.harx.ai/api
+ENV VITE_COMPANY_API_URL=https://api-companysearchwizard.harx.ai/api
+ENV VITE_DASHBOARD_API=https://api-dashboard.harx.ai/api
+ENV VITE_REP_API=https://api-repcreationwizard.harx.ai/api
 ENV VITE_GOOGLE_API_KEY=AIzaSyCHEKiraViKIrgvloZI-ZBIJqtDMeBuQD0
 ENV VITE_KNOWLEDGE_BASE_URL=/knowledgebase
-ENV VITE_OPENAI_API_KEY=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
-ENV VITE_KNOWLEDGE_BASE_URL=/knowledgebase/upload
-ENV VITE_SCRIPT_GENERATION_BASE_URL=/knowledgebase/script-generator
+ENV VITE_OPENAI_API_KEY=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
 
 RUN npm run build
 

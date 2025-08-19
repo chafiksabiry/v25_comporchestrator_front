@@ -65,9 +65,142 @@ function CompanyProfile() {
   const [editMode, setEditMode] = useState(false);
   const [logoUrl, setLogoUrl] = useState("");
   const [showUniquenessPanel, setShowUniquenessPanel] = useState(false);
+  const [isStepCompleted, setIsStepCompleted] = useState(false);
 
   const companyId = Cookies.get('companyId');
   console.log('Stored companyId from cookie:', companyId);
+
+  // Vérifier l'état de l'étape au chargement
+  useEffect(() => {
+    if (companyId) {
+      console.log('🚀 CompanyProfile component loaded, checking step status...');
+      checkStepStatus();
+    }
+  }, [companyId]);
+
+  // Vérifier l'état de l'étape quand les données de l'entreprise sont chargées
+  useEffect(() => {
+    if (company && Object.keys(company).length > 0 && companyId) {
+      console.log('📊 Company data loaded, checking if step should be auto-completed...');
+      // Attendre un peu que les données soient bien chargées
+      setTimeout(() => {
+        checkStepStatus();
+      }, 500);
+    }
+  }, [company, companyId]);
+
+  // Vérifier si l'étape peut être marquée comme complétée
+  useEffect(() => {
+    console.log('🔄 useEffect triggered:', {
+      hasCompany: !!company,
+      isStepCompleted,
+      hasBasicInfo: hasBasicInfo()
+    });
+    
+    if (company && !isStepCompleted && hasBasicInfo()) {
+      console.log('🎯 Triggering automatic step completion check');
+      // Si l'entreprise a les informations de base, on peut marquer l'étape comme complétée
+      checkStepStatus();
+    }
+  }, [company, isStepCompleted]);
+
+  const hasBasicInfo = () => {
+    const hasInfo = company.name && company.industry && company.contact?.email;
+    console.log('🔍 Checking basic info:', {
+      name: company.name,
+      industry: company.industry,
+      email: company.contact?.email,
+      hasInfo
+    });
+    return hasInfo;
+  };
+
+  const checkStepStatus = async () => {
+    try {
+      if (!companyId) {
+        console.log('❌ No companyId available for step status check');
+        return;
+      }
+      
+      console.log('🔍 Checking step 1 status for company:', companyId);
+      
+      // Vérifier l'état de l'étape 1 via l'API d'onboarding principale
+      const response = await axios.get(
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+      );
+      
+      console.log('📡 API response for onboarding:', response.data);
+      
+      if (response.data && (response.data as any).completedSteps && Array.isArray((response.data as any).completedSteps)) {
+        if ((response.data as any).completedSteps.includes(1)) {
+          console.log('✅ Step 1 is already completed according to API');
+          setIsStepCompleted(true);
+          return;
+        } else {
+          console.log('⚠️ Step 1 is not completed according to API');
+        }
+      }
+      
+      // Vérifier aussi le localStorage pour la cohérence
+      const storedProgress = localStorage.getItem('companyOnboardingProgress');
+      if (storedProgress) {
+        try {
+          const progress = JSON.parse(storedProgress);
+          console.log('💾 Stored progress from localStorage:', progress);
+          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(1)) {
+            console.log('✅ Step 1 found in localStorage, setting as completed');
+            setIsStepCompleted(true);
+            return;
+          }
+        } catch (e) {
+          console.error('❌ Error parsing stored progress:', e);
+        }
+      } else {
+        console.log('💾 No stored progress found in localStorage');
+      }
+      
+      // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
+      // marquer automatiquement l'étape comme complétée localement
+      if (hasBasicInfo()) {
+        console.log('🎯 Auto-completing step 1 locally because basic info is present');
+        
+        // Marquer l'étape comme complétée localement
+        setIsStepCompleted(true);
+        
+        // Mettre à jour le localStorage avec l'étape 1 marquée comme complétée
+        const currentCompletedSteps = (response.data as any)?.completedSteps || [];
+        const newCompletedSteps = currentCompletedSteps.includes(1) ? currentCompletedSteps : [...currentCompletedSteps, 1];
+        
+        const currentProgress = {
+          currentPhase: 1,
+          completedSteps: newCompletedSteps,
+          lastUpdated: new Date().toISOString()
+        };
+        localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+        
+        // Synchroniser avec les cookies
+        Cookies.set('companyProfileStepCompleted', 'true', { expires: 7 });
+        
+        // Notifier le composant parent CompanyOnboarding via un événement personnalisé
+        window.dispatchEvent(new CustomEvent('stepCompleted', { 
+          detail: { 
+            stepId: 1, 
+            phaseId: 1, 
+            status: 'completed',
+            completedSteps: newCompletedSteps
+          } 
+        }));
+        
+        console.log('💾 Step 1 marked as completed locally and parent component notified');
+        
+      } else {
+        console.log('⚠️ Cannot auto-complete step 1 because basic info is missing');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error checking step status:', error);
+    }
+  };
 
   // Helper functions for the new UI
   const hasContactInfo = company.contact && (
@@ -262,17 +395,77 @@ function CompanyProfile() {
 
   const handleSaveAll = async () => {
     try {
+      console.log('🚀 Starting save process...');
+      console.log('📊 Current company data:', company);
+      console.log('🔍 Has basic info:', hasBasicInfo());
+      console.log('📝 Is step completed:', isStepCompleted);
+      
+      // Sauvegarder les informations de l'entreprise
       await axios.put(
         `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}`,
         company
       );
+      
+      console.log('✅ Company data saved successfully');
+      
+      // Marquer l'étape 1 comme complétée dans l'onboarding si les informations de base sont présentes
+      if (!isStepCompleted && hasBasicInfo()) {
+        console.log('🎯 Marking step 1 as completed...');
+        try {
+          console.log('🎯 Marking step 1 as completed in onboarding...');
+          
+          // Récupérer l'état actuel de l'onboarding
+          const onboardingResponse = await axios.get(
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+          );
+          
+          const currentCompletedSteps = (onboardingResponse.data as any)?.completedSteps || [];
+          const newCompletedSteps = currentCompletedSteps.includes(1) ? currentCompletedSteps : [...currentCompletedSteps, 1];
+          
+          // Mettre à jour l'onboarding avec l'étape 1 marquée comme complétée
+          const updateResponse = await axios.put(
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`,
+            { 
+              completedSteps: newCompletedSteps,
+              currentPhase: 1
+            }
+          );
+          
+          console.log('✅ Company Profile step 1 marked as completed:', updateResponse.data);
+          
+          // Mettre à jour l'état local
+          setIsStepCompleted(true);
+          
+          // Mettre à jour le localStorage
+          const currentProgress = {
+            currentPhase: 1,
+            completedSteps: newCompletedSteps,
+            lastUpdated: new Date().toISOString()
+          };
+          localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+          
+          // Synchroniser avec les cookies
+          Cookies.set('companyProfileStepCompleted', 'true', { expires: 7 });
+          
+          console.log('💾 Local state and storage updated after step completion');
+          
+        } catch (onboardingError) {
+          console.error('❌ Error updating onboarding progress:', onboardingError);
+        }
+      } else {
+        console.log('⚠️ Step not marked as completed because:', {
+          isStepCompleted,
+          hasBasicInfo: hasBasicInfo()
+        });
+      }
+      
       setHasChanges(false);
       setSaveSuccess(true);
 
       // Afficher un popup SweetAlert2 pour indiquer le succès
       Swal.fire({
         title: "Success!",
-        text: "Company profile updated successfully.",
+        text: "Company profile updated successfully and step marked as completed!",
         icon: "success",
         confirmButtonText: "Ok",
       });
@@ -520,11 +713,13 @@ function CompanyProfile() {
                   )}
                 </div>
                 <div>
+                  <div className="flex items-center gap-3 mb-2">
                   <EditableField
                     value={profile.name}
                     field="name"
-                    className="text-5xl font-bold text-white mb-2 tracking-tight"
-                  />
+                      className="text-5xl font-bold text-white tracking-tight"
+                    />
+                  </div>
                   <div className="flex flex-wrap gap-6 text-white/90">
                     {profile.industry && (
                       <EditableField
@@ -957,10 +1152,14 @@ function CompanyProfile() {
         <div className="fixed bottom-6 right-6 z-10">
             <button
               onClick={handleSaveAll}
-              className="px-6 py-3 bg-green-600 text-white rounded-xl shadow-lg hover:bg-green-700 transition-all flex items-center gap-2"
+              className={`px-6 py-3 rounded-xl shadow-lg transition-all flex items-center gap-2 ${
+                isStepCompleted
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-green-600 text-white hover:bg-green-700'
+              }`}
             >
               <Save size={18} />
-              Save Changes
+              {isStepCompleted ? 'Update Profile' : 'Save & Complete Step'}
             </button>
           </div>
         )}

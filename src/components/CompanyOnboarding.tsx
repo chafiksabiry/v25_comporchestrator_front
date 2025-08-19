@@ -250,6 +250,43 @@ const CompanyOnboarding = () => {
     };
   }, []);
 
+  // Add listener for custom step completion events from child components
+  useEffect(() => {
+    const handleStepCompleted = (event: CustomEvent) => {
+      const { stepId, phaseId, status, completedSteps } = event.detail;
+      console.log('🎯 Step completion event received:', { stepId, phaseId, status, completedSteps });
+      
+      // Mettre à jour l'état local des étapes complétées
+      if (completedSteps && Array.isArray(completedSteps)) {
+        setCompletedSteps(completedSteps);
+        
+        // Mettre à jour le localStorage
+        const currentProgress = {
+          currentPhase: phaseId,
+          completedSteps: completedSteps,
+          lastUpdated: new Date().toISOString()
+        };
+        localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+        
+        console.log('💾 Local state updated from step completion event');
+        
+        // Forcer un re-render pour mettre à jour l'interface
+        setTimeout(() => {
+          console.log('🔄 Forcing re-render after step completion');
+          setCompletedSteps((prev) => [...prev]); // This will trigger a re-render
+        }, 100);
+      }
+    };
+    
+    // Ajouter l'écouteur d'événement
+    window.addEventListener('stepCompleted', handleStepCompleted as EventListener);
+    
+    // Nettoyer l'écouteur d'événement
+    return () => {
+      window.removeEventListener('stepCompleted', handleStepCompleted as EventListener);
+    };
+  }, []);
+
   // Recharger les données périodiquement pour détecter les changements
   // Désactivé car cause trop de rafraîchissements
   // useEffect(() => {
@@ -788,18 +825,27 @@ const CompanyOnboarding = () => {
     }
 
     try {
-      // Mettre à jour le statut de l'étape à "in_progress"
-      const phaseId =
-        phases.findIndex((phase) =>
-          phase.steps.some((step) => step.id === stepId)
-        ) + 1;
+      // Vérifier si le step est déjà complété
+      const isStepCompleted = completedSteps.includes(stepId);
+      
+      // Si le step est déjà complété, ne pas changer son statut
+      if (isStepCompleted) {
+        console.log(`✅ Step ${stepId} is already completed, not changing status`);
+      } else {
+        // Mettre à jour le statut de l'étape à "in_progress" seulement si pas déjà complétée
+        const phaseId =
+          phases.findIndex((phase) =>
+            phase.steps.some((step) => step.id === stepId)
+          ) + 1;
 
-      await axios.put(
-        `${
-          import.meta.env.VITE_COMPANY_API_URL
-        }/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
-        { status: "in_progress" }
-      );
+        await axios.put(
+          `${
+            import.meta.env.VITE_COMPANY_API_URL
+          }/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
+          { status: "in_progress" }
+        );
+        console.log(`🔄 Step ${stepId} status updated to in_progress`);
+      }
 
       const allSteps = phases.flatMap((phase) => phase.steps);
       const step = allSteps.find((s) => s.id === stepId);
@@ -841,6 +887,55 @@ const CompanyOnboarding = () => {
     } catch (error) {
       console.error("Error updating step status:", error);
       // Afficher un message d'erreur plus informatif
+      if (error instanceof Error) {
+        console.error("Error details:", error.message);
+      }
+    }
+  };
+
+  // Nouvelle fonction pour gérer la révision des steps complétés
+  const handleReviewStep = async (stepId: number) => {
+    if (!companyId) {
+      console.error("Company ID not available for reviewing step");
+      return;
+    }
+
+    try {
+      console.log(`🔍 Reviewing step ${stepId} (already completed)`);
+      
+      const allSteps = phases.flatMap((phase) => phase.steps);
+      const step = allSteps.find((s) => s.id === stepId);
+
+      // Special handling for Knowledge Base step
+      if (stepId === 7) {
+        window.location.replace(import.meta.env.VITE_KNOWLEDGE_BASE_URL);
+        return;
+      }
+
+      // Special handling for Gig Activation step (step 13) - redirect to Approval & Publishing
+      if (stepId === 13) {
+        // Set the active tab to approval-publishing in the App component
+        localStorage.setItem("activeTab", "approval-publishing");
+        // Trigger a custom event to notify the App component
+        window.dispatchEvent(
+          new CustomEvent("tabChange", {
+            detail: { tab: "approval-publishing" },
+          })
+        );
+        return;
+      }
+
+      if (step?.component) {
+        if (stepId === 4) {
+          setShowGigDetails(true);
+        } else if (stepId === 5) {
+          setShowTelephonySetup(true);
+        } else {
+          setActiveStep(stepId);
+        }
+      }
+    } catch (error) {
+      console.error("Error reviewing step:", error);
       if (error instanceof Error) {
         console.error("Error details:", error.message);
       }
@@ -1597,7 +1692,7 @@ const CompanyOnboarding = () => {
                     {isClickable && !step.disabled && canAccessStep && (
                       <button
                         className="mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-500"
-                        onClick={() => handleStartStep(step.id)}
+                        onClick={() => isCompleted ? handleReviewStep(step.id) : handleStartStep(step.id)}
                       >
                         {isCompleted ? "Review Step" : "Start Step"}
                       </button>

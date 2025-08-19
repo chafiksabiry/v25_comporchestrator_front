@@ -1347,149 +1347,200 @@ ${truncatedContent}`;
 
   const handleSaveLeads = async () => {
     if (!parsedLeads || parsedLeads.length === 0) return;
+    
+    // Début du traitement
     setIsProcessing(true);
     setUploadProgress(0);
     setShowSaveButton(false);
     setShowFileName(false);
+    
+    // Utiliser la référence pour suivre l'état de traitement de manière fiable
+    processingRef.current = true;
 
     try {
-      // Convert leads to API format (try both MongoDB ObjectId and string formats)
+      // Convert leads to API format
       const currentUserId = Cookies.get('userId');
-      const currentGigId = selectedGigId; // Use selected gig ID instead of cookie
+      const currentGigId = selectedGigId;
       const currentCompanyId = Cookies.get('companyId');
       
-      const leadsForAPI = parsedLeads.map((lead: any) => {
-        // Use the selected gigId
-        const finalGigId = selectedGigId;
-        
-        // Try string format first (more common for APIs)
-        return {
-          userId: lead.userId?.$oid || currentUserId,
-          companyId: lead.companyId?.$oid || currentCompanyId,
-          gigId: lead.gigId?.$oid || finalGigId,
-          Last_Activity_Time: lead.Last_Activity_Time || null,
-          Deal_Name: lead.Deal_Name || "Unnamed Lead",
-          Email_1: lead.Email_1 || "no-email@placeholder.com",
-          Phone: lead.Phone || "no-phone@placeholder.com",
-          Stage: lead.Stage || "New",
-          Pipeline: lead.Pipeline || "Sales Pipeline",
-          Activity_Tag: lead.Activity_Tag || '',
-          Telephony: lead.Telephony || '',
-          Project_Tags: lead.Project_Tags || []
-        };
-      });
+      const leadsForAPI = parsedLeads.map((lead: any) => ({
+        userId: lead.userId?.$oid || currentUserId,
+        companyId: lead.companyId?.$oid || currentCompanyId,
+        gigId: lead.gigId?.$oid || currentGigId,
+        Last_Activity_Time: lead.Last_Activity_Time || null,
+        Deal_Name: lead.Deal_Name || "Unnamed Lead",
+        Email_1: lead.Email_1 || "no-email@placeholder.com",
+        Phone: lead.Phone || "no-phone@placeholder.com",
+        Stage: lead.Stage || "New",
+        Pipeline: lead.Pipeline || "Sales Pipeline",
+        Activity_Tag: lead.Activity_Tag || '',
+        Telephony: lead.Telephony || '',
+        Project_Tags: lead.Project_Tags || []
+      }));
 
-      // Envoyer chaque lead individuellement pour s'assurer qu'ils sont tous sauvegardés
+      // Sauvegarder en parallèle par lots pour de meilleures performances
+      const batchSize = 10; // Traiter 10 leads à la fois
       const savedLeads = [];
-      for (let i = 0; i < leadsForAPI.length; i++) {
-        const lead = leadsForAPI[i];
+      const failedLeads = [];
+      
+      for (let i = 0; i < leadsForAPI.length; i += batchSize) {
+        // Vérifier si le traitement a été annulé avec la référence fiable
+        if (!processingRef.current) {
+          throw new Error('Processing cancelled by user');
+        }
+        
+        const batch = leadsForAPI.slice(i, i + batchSize);
+        const batchPromises = batch.map(async (lead, batchIndex) => {
+          try {
+            const response = await axios.post(
+              `${import.meta.env.VITE_DASHBOARD_API}/leads`, 
+              lead,
+              {
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`
+                },
+                timeout: 10000 // 10 secondes de timeout
+              }
+            );
+            
+            if (response.status === 200 || response.status === 201) {
+              return { success: true, data: response.data, index: i + batchIndex };
+            } else {
+              return { success: false, error: response.statusText, index: i + batchIndex };
+            }
+          } catch (error: any) {
+            return { 
+              success: false, 
+              error: error.message || 'Network error', 
+              index: i + batchIndex 
+            };
+          }
+        });
+        
+        // Attendre que le lot soit terminé
+        const batchResults = await Promise.allSettled(batchPromises);
+        
+        // Traiter les résultats du lot
+        batchResults.forEach((result) => {
+          if (result.status === 'fulfilled') {
+            const { success, data, error, index } = result.value;
+            if (success) {
+              savedLeads.push(data);
+            } else {
+              failedLeads.push({ index, error });
+            }
+          } else {
+            failedLeads.push({ index: i, error: 'Promise rejected' });
+          }
+        });
         
         // Mettre à jour la progression
-        const progress = Math.round(((i + 1) / leadsForAPI.length) * 100);
+        const progress = Math.round(((i + batch.length) / leadsForAPI.length) * 100);
         setUploadProgress(progress);
         
-        try {
-          const response = await axios.post(`${import.meta.env.VITE_DASHBOARD_API}/leads`, lead, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`
-        }
-      });
-          
-          if (response.status === 200 || response.status === 201) {
-            savedLeads.push(response.data);
-          } else {
-            console.error(`Failed to save lead ${i + 1}:`, response.statusText);
-            throw new Error(`Failed to save lead ${i + 1}: ${response.statusText}`);
-          }
-        } catch (error) {
-          console.error(`Error saving lead ${i + 1}:`, error);
-          throw new Error(`Error saving lead ${i + 1}: ${error}`);
+        // Petite pause entre les lots pour éviter de surcharger l'API
+        if (i + batchSize < leadsForAPI.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
       }
       
-      const response = { status: 200, data: savedLeads };
-      if (response.status === 200) {
-        const savedCount = savedLeads.length;
-        const totalCount = leadsForAPI.length;
-        
-        if (savedCount === totalCount) {
+      // Résultats finaux
+      const savedCount = savedLeads.length;
+      const totalCount = leadsForAPI.length;
+      const failedCount = failedLeads.length;
+      
+      if (savedCount === totalCount) {
+        // Tous les leads ont été sauvegardés
         setUploadSuccess(true);
         setUploadProgress(100);
-        } else {
-          setUploadError(`Only ${savedCount} out of ${totalCount} leads were saved. Check console for details.`);
-          toast.error(`Only ${savedCount} out of ${totalCount} leads were saved.`);
-        }
+        toast.success(`Successfully saved ${savedCount} contacts!`);
         
-        // Rafraîchir la liste des leads après l'importation
+        // Rafraîchir la liste des leads
         if (selectedGigId) {
           await fetchLeads();
         }
         
-        // Déclencher une mise à jour de l'état d'onboarding pour marquer le step 6 comme complété
+        // Mettre à jour l'onboarding
         try {
           const companyId = Cookies.get('companyId');
           if (companyId) {
-            const response = await axios.put(
+            await axios.put(
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
               { status: 'completed' }
             );
             
-            // Notifier le parent component que l'étape est complétée
-            // Removed postMessage - using localStorage instead
             localStorage.setItem('stepCompleted', JSON.stringify({
               stepId: 6,
               phaseId: 2,
-              data: response.data
+              data: { success: true, leadsSaved: savedCount }
             }));
           }
         } catch (error) {
-          console.error('Error updating onboarding progress after saving leads:', error);
-          toast.error('Failed to update onboarding progress');
+          console.error('Error updating onboarding progress:', error);
+          // Ne pas bloquer le processus si l'onboarding échoue
         }
         
-        // Reset all states after a short delay
-        setTimeout(() => {
-          // Force complete reset for new upload
-          setSelectedFile(null);
-          setUploadProgress(0);
-          setUploadSuccess(false);
-          setParsedLeads([]);
-          setUploadError(null);
-          setValidationResults(null);
-          setIsProcessing(false);
-          setShowSaveButton(true);
-          setShowFileName(true);
-          
-          // Clear all storage items
-          localStorage.removeItem('parsedLeads');
-          localStorage.removeItem('validationResults');
-          localStorage.removeItem('uploadProcessing');
-          sessionStorage.removeItem('uploadProcessing');
-          sessionStorage.removeItem('parsedLeads');
-          sessionStorage.removeItem('validationResults');
-          
-          // Remove processing indicators
-          document.body.removeAttribute('data-processing');
-          processingRef.current = false;
-          
-          // Reset file input
-          const fileInput = document.getElementById('file-upload') as HTMLInputElement;
-          if (fileInput) {
-            fileInput.value = '';
-          }
-        }, 1200);
+      } else if (savedCount > 0) {
+        // Certains leads ont été sauvegardés
+        setUploadError(`${savedCount} leads saved, ${failedCount} failed`);
+        toast.error(`Partially saved: ${savedCount}/${totalCount} leads`);
+        
+        // Afficher les erreurs dans la console
+        console.warn('Failed leads:', failedLeads);
+        
+        // Rafraîchir quand même pour montrer les leads sauvegardés
+        if (selectedGigId) {
+          await fetchLeads();
+        }
+        
+      } else {
+        // Aucun lead n'a été sauvegardé
+        setUploadError('Failed to save any leads');
+        toast.error('Failed to save any leads. Check console for details.');
+        console.error('All leads failed to save:', failedLeads);
       }
+      
     } catch (error: any) {
-      console.error('Error processing file:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Error processing file';
+      console.error('Error in handleSaveLeads:', error);
+      const errorMessage = error.message || 'Error saving leads';
       setUploadError(errorMessage);
       toast.error(errorMessage);
-      setUploadProgress(0);
+      
+    } finally {
+      // TOUJOURS réinitialiser l'état, même en cas d'erreur
+      setIsProcessing(false);
+      processingRef.current = false; // Réinitialiser la référence aussi
       setShowSaveButton(true);
       setShowFileName(true);
-    } finally {
-      setIsProcessing(false);
+      
+      // Reset après un délai pour permettre à l'utilisateur de voir le résultat
+      setTimeout(() => {
+        setSelectedFile(null);
+        setUploadProgress(0);
+        setUploadSuccess(false);
+        setParsedLeads([]);
+        setUploadError(null);
+        setValidationResults(null);
+        
+        // Clear storage
+        localStorage.removeItem('parsedLeads');
+        localStorage.removeItem('validationResults');
+        localStorage.removeItem('uploadProcessing');
+        sessionStorage.removeItem('uploadProcessing');
+        sessionStorage.removeItem('parsedLeads');
+        sessionStorage.removeItem('validationResults');
+        
+        // Remove processing indicators
+        document.body.removeAttribute('data-processing');
+        processingRef.current = false;
+        
+        // Reset file input
+        const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+        if (fileInput) {
+          fileInput.value = '';
+        }
+      }, 2000); // 2 secondes au lieu de 1.2
     }
   };
 
