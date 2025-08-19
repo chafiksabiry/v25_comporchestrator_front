@@ -124,75 +124,52 @@ export const phoneNumberService = {
   }
 };
 
-// Onboarding service for managing onboarding progress
+// Onboarding API service with proper error handling
 export const onboardingService = {
-  // Get onboarding progress
   getProgress: async (companyId: string) => {
     try {
-      return await axios.get(`${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`);
+      const response = await api.get(`/onboarding/companies/${companyId}/onboarding`);
+      return response.data;
     } catch (error) {
       console.error('Error fetching onboarding progress:', error);
       throw error;
     }
   },
 
-  // Update step progress
-  updateStepProgress: async (companyId: string, stepId: number, status: string) => {
+  updateStepProgress: async (companyId: string, phaseId: number, stepId: number, status: string) => {
     try {
-      // Determine phase based on step ID
-      let phaseId = 1;
-      if (stepId >= 1 && stepId <= 3) phaseId = 1;
-      else if (stepId >= 4 && stepId <= 6) phaseId = 2;
-      else if (stepId >= 7 && stepId <= 10) phaseId = 3;
-      else if (stepId >= 11 && stepId <= 13) phaseId = 4;
-
-      return await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
-        { status }
-      );
+      const response = await api.put(`/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`, {
+        status
+      });
+      return response.data;
     } catch (error) {
       console.error('Error updating step progress:', error);
       throw error;
     }
   },
 
-  // Check company leads (step 6)
   checkCompanyLeads: async (companyId: string) => {
     try {
-      return await axios.get(`${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/has-leads`);
-    } catch (error: any) {
-      // Handle 404 gracefully - return default data
-      if (error.response?.status === 404) {
-        console.log('⚠️ Leads endpoint not found, returning default data');
-        return {
-          data: {
-            success: true,
-            hasLeads: false,
-            count: 0
-          }
-        };
+      const response = await api.get(`/companies/${companyId}/has-leads`);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        console.log('Leads endpoint not found - returning default response');
+        return { success: true, hasLeads: false, count: 0 };
       }
       console.error('Error checking company leads:', error);
       throw error;
     }
   },
 
-  // Check company gigs (step 13)
   checkCompanyGigs: async (companyId: string) => {
     try {
-      return await axios.get(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}/last`);
-    } catch (error: any) {
-      // Handle 404 gracefully - return default data
-      if (error.response?.status === 404) {
-        console.log('⚠️ Gigs endpoint not found, returning default data');
-        return {
-          data: {
-            data: null,
-            totalGigs: 0,
-            hasActiveGig: false,
-            gigStatuses: []
-          }
-        };
+      const response = await api.get(`/gigs/company/${companyId}/last`);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        console.log('Gigs endpoint not found - returning default response');
+        return { data: null };
       }
       console.error('Error checking company gigs:', error);
       throw error;
