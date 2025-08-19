@@ -73,141 +73,107 @@ function CompanyProfile() {
 
   // Memoized function to check if company has basic info
   const hasBasicInfo = useCallback(() => {
-    const hasInfo = company.name && company.industry && company.contact?.email;
+    if (!company) return false;
+    
+    const hasInfo = company.name && company.industry && company.email;
     console.log('🔍 Checking basic info:', {
       name: company.name,
       industry: company.industry,
-      email: company.contact?.email,
-      hasInfo
+      email: company.email,
+      hasInfo: hasInfo ? company.email : undefined
     });
+    
     return hasInfo;
-  }, [company.name, company.industry, company.contact?.email]);
+  }, [company]);
 
-  // Check step status with proper error handling and state management
+  // Check step status from API
   const checkStepStatus = useCallback(async () => {
-    if (stepCheckInProgress || !companyId) {
-      console.log('❌ Step check already in progress or no companyId available');
-      return;
-    }
-
+    if (!companyId || stepCheckInProgress) return;
+    
+    setStepCheckInProgress(true);
+    
     try {
-      setStepCheckInProgress(true);
-      console.log('🔍 Checking step 1 status for company:', companyId);
-      
-      // Check step 1 status via main onboarding API
-      const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
-      );
-      
+      const response = await onboardingService.getProgress(companyId);
       console.log('📡 API response for onboarding:', response.data);
       
-      if (response.data && response.data.completedSteps && Array.isArray(response.data.completedSteps)) {
-        if (response.data.completedSteps.includes(1)) {
-          console.log('✅ Step 1 is already completed according to API');
-          setIsStepCompleted(true);
-          return;
-        } else {
+      if (response && response.data && response.data.completedSteps) {
+        const apiCompletedSteps = response.data.completedSteps;
+        
+        if (!apiCompletedSteps.includes(1)) {
           console.log('⚠️ Step 1 is not completed according to API');
-        }
-      }
-      
-      // Check localStorage for consistency
-      const storedProgress = localStorage.getItem('companyOnboardingProgress');
-      if (storedProgress) {
-        try {
-          const progress = JSON.parse(storedProgress);
-          console.log('💾 Stored progress from localStorage:', progress);
-          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(1)) {
-            console.log('✅ Step 1 found in localStorage, setting as completed');
-            setIsStepCompleted(true);
-            return;
+          
+          // Check localStorage for local progress
+          const localProgress = localStorage.getItem('companyOnboardingProgress');
+          if (localProgress) {
+            try {
+              const parsed = JSON.parse(localProgress);
+              if (parsed.completedSteps && parsed.completedSteps.includes(1)) {
+                console.log('✅ Step 1 found in localStorage, setting as completed');
+                setIsStepCompleted(true);
+                
+                // Update the backend to mark step 1 as completed
+                try {
+                  await onboardingService.updateStepProgress(companyId, 1, 'completed');
+                  console.log('✅ Step 1 marked as completed in backend');
+                } catch (updateError) {
+                  console.log('⚠️ Error updating step 1 status in backend:', updateError);
+                }
+              }
+            } catch (parseError) {
+              console.log('⚠️ Error parsing localStorage progress:', parseError);
+            }
           }
-        } catch (e) {
-          console.error('❌ Error parsing stored progress:', e);
+        } else {
+          console.log('✅ Step 1 is completed according to API');
+          setIsStepCompleted(true);
         }
-      } else {
-        console.log('💾 No stored progress found in localStorage');
       }
-      
-      // If step is not marked as completed but basic info is present, auto-complete locally
-      if (hasBasicInfo()) {
-        console.log('🎯 Auto-completing step 1 locally because basic info is present');
-        
-        // Mark step as completed locally
-        setIsStepCompleted(true);
-        
-        // Update localStorage with step 1 marked as completed
-        const currentCompletedSteps = response.data?.completedSteps || [];
-        const newCompletedSteps = currentCompletedSteps.includes(1) ? currentCompletedSteps : [...currentCompletedSteps, 1];
-        
-        const currentProgress = {
-          currentPhase: 1,
-          completedSteps: newCompletedSteps,
-          lastUpdated: new Date().toISOString()
-        };
-        localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-        
-        // Sync with cookies
-        Cookies.set('companyProfileStepCompleted', 'true', { expires: 7 });
-        
-        // Notify parent CompanyOnboarding component via custom event
-        window.dispatchEvent(new CustomEvent('stepCompleted', { 
-          detail: { 
-            stepId: 1, 
-            phaseId: 1, 
-            status: 'completed',
-            completedSteps: newCompletedSteps
-          } 
-        }));
-        
-        console.log('💾 Step 1 marked as completed locally and parent component notified');
-        
-      } else {
-        console.log('⚠️ Cannot auto-complete step 1 because basic info is missing');
-      }
-      
     } catch (error) {
-      console.error('❌ Error checking step status:', error);
-      // Don't set step as completed if there's an error
+      console.log('⚠️ Error checking step status:', error);
     } finally {
       setStepCheckInProgress(false);
     }
-  }, [companyId, hasBasicInfo, stepCheckInProgress]);
+  }, [companyId, stepCheckInProgress]);
 
-  // Check step status when component loads
+  // Effect to check step status when component mounts or company data changes
   useEffect(() => {
-    if (companyId && !stepCheckInProgress) {
-      console.log('🚀 CompanyProfile component loaded, checking step status...');
+    if (hasCompany && !isStepCompleted && hasBasicInfo() === undefined) {
+      console.log('🔄 useEffect triggered:', { hasCompany, isStepCompleted, hasBasicInfo: hasBasicInfo() });
       checkStepStatus();
     }
-  }, [companyId, checkStepStatus, stepCheckInProgress]);
+  }, [hasCompany, isStepCompleted, hasBasicInfo, checkStepStatus]);
 
-  // Check step status when company data is loaded
+  // Effect to auto-complete step when basic info is available
   useEffect(() => {
-    if (company && Object.keys(company).length > 0 && companyId && !stepCheckInProgress) {
+    if (hasCompany && company && hasBasicInfo() && !isStepCompleted) {
       console.log('📊 Company data loaded, checking if step should be auto-completed...');
-      // Wait a bit for data to be properly loaded
-      const timer = setTimeout(() => {
-        checkStepStatus();
-      }, 500);
+      setIsStepCompleted(true);
       
-      return () => clearTimeout(timer);
+      // Update localStorage
+      const currentProgress = localStorage.getItem('companyOnboardingProgress');
+      if (currentProgress) {
+        try {
+          const parsed = JSON.parse(currentProgress);
+          const updatedProgress = {
+            ...parsed,
+            completedSteps: [...(parsed.completedSteps || []), 1].filter((v, i, a) => a.indexOf(v) === i), // Remove duplicates
+            lastUpdated: new Date().toISOString()
+          };
+          localStorage.setItem('companyOnboardingProgress', JSON.stringify(updatedProgress));
+          console.log('💾 Updated localStorage with step 1 completion');
+        } catch (parseError) {
+          console.log('⚠️ Error updating localStorage:', parseError);
+        }
+      }
+      
+      // Update the backend
+      if (companyId) {
+        onboardingService.updateStepProgress(companyId, 1, 'completed')
+          .then(() => console.log('✅ Step 1 marked as completed in backend'))
+          .catch(error => console.log('⚠️ Error updating step 1 in backend:', error));
+      }
     }
-  }, [company, companyId, checkStepStatus, stepCheckInProgress]);
-
-  // Check if step can be marked as completed
-  useEffect(() => {
-    console.log('🔄 useEffect triggered:', {
-      hasCompany: !!company,
-      isStepCompleted,
-      hasBasicInfo: hasBasicInfo()
-    });
-    
-    if (company && !isStepCompleted && hasBasicInfo() && !stepCheckInProgress) {
-      console.log('🎯 Triggering automatic step completion check');
-      checkStepStatus();
-    }
-  }, [company, isStepCompleted, hasBasicInfo, checkStepStatus, stepCheckInProgress]);
+  }, [hasCompany, company, hasBasicInfo, isStepCompleted, companyId]);
 
   // Helper functions for the new UI
   const hasContactInfo = company.contact && (
