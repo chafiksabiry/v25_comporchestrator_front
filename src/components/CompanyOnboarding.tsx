@@ -250,6 +250,43 @@ const CompanyOnboarding = () => {
     };
   }, []);
 
+  // Add listener for custom step completion events from child components
+  useEffect(() => {
+    const handleStepCompleted = (event: CustomEvent) => {
+      const { stepId, phaseId, status, completedSteps } = event.detail;
+      console.log('🎯 Step completion event received:', { stepId, phaseId, status, completedSteps });
+      
+      // Mettre à jour l'état local des étapes complétées
+      if (completedSteps && Array.isArray(completedSteps)) {
+        setCompletedSteps(completedSteps);
+        
+        // Mettre à jour le localStorage
+        const currentProgress = {
+          currentPhase: phaseId,
+          completedSteps: completedSteps,
+          lastUpdated: new Date().toISOString()
+        };
+        localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+        
+        console.log('💾 Local state updated from step completion event');
+        
+        // Forcer un re-render pour mettre à jour l'interface
+        setTimeout(() => {
+          console.log('🔄 Forcing re-render after step completion');
+          setCompletedSteps((prev) => [...prev]); // This will trigger a re-render
+        }, 100);
+      }
+    };
+    
+    // Ajouter l'écouteur d'événement
+    window.addEventListener('stepCompleted', handleStepCompleted as EventListener);
+    
+    // Nettoyer l'écouteur d'événement
+    return () => {
+      window.removeEventListener('stepCompleted', handleStepCompleted as EventListener);
+    };
+  }, []);
+
   // Recharger les données périodiquement pour détecter les changements
   // Désactivé car cause trop de rafraîchissements
   // useEffect(() => {

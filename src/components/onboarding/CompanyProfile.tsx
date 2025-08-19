@@ -160,43 +160,39 @@ function CompanyProfile() {
       }
       
       // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
-      // marquer automatiquement l'étape comme complétée
+      // marquer automatiquement l'étape comme complétée localement
       if (hasBasicInfo()) {
-        console.log('🎯 Auto-completing step 1 because basic info is present');
-        try {
-          // Utiliser l'API d'onboarding principale pour marquer l'étape comme complétée
-          const currentCompletedSteps = response.data?.completedSteps || [];
-          const newCompletedSteps = currentCompletedSteps.includes(1) ? currentCompletedSteps : [...currentCompletedSteps, 1];
-          
-          const onboardingResponse = await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`,
-            { 
-              completedSteps: newCompletedSteps,
-              currentPhase: 1
-            }
-          );
-          
-          console.log('✅ Company Profile step 1 automatically marked as completed:', onboardingResponse.data);
-          
-          // Mettre à jour l'état local
-          setIsStepCompleted(true);
-          
-          // Mettre à jour le localStorage
-          const currentProgress = {
-            currentPhase: 1,
-            completedSteps: newCompletedSteps,
-            lastUpdated: new Date().toISOString()
-          };
-          localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-          
-          // Synchroniser avec les cookies
-          Cookies.set('companyProfileStepCompleted', 'true', { expires: 7 });
-          
-          console.log('💾 Local state and storage updated after auto-completion');
-          
-        } catch (autoCompleteError) {
-          console.error('❌ Error auto-completing step:', autoCompleteError);
-        }
+        console.log('🎯 Auto-completing step 1 locally because basic info is present');
+        
+        // Marquer l'étape comme complétée localement
+        setIsStepCompleted(true);
+        
+        // Mettre à jour le localStorage avec l'étape 1 marquée comme complétée
+        const currentCompletedSteps = response.data?.completedSteps || [];
+        const newCompletedSteps = currentCompletedSteps.includes(1) ? currentCompletedSteps : [...currentCompletedSteps, 1];
+        
+        const currentProgress = {
+          currentPhase: 1,
+          completedSteps: newCompletedSteps,
+          lastUpdated: new Date().toISOString()
+        };
+        localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+        
+        // Synchroniser avec les cookies
+        Cookies.set('companyProfileStepCompleted', 'true', { expires: 7 });
+        
+        // Notifier le composant parent CompanyOnboarding via un événement personnalisé
+        window.dispatchEvent(new CustomEvent('stepCompleted', { 
+          detail: { 
+            stepId: 1, 
+            phaseId: 1, 
+            status: 'completed',
+            completedSteps: newCompletedSteps
+          } 
+        }));
+        
+        console.log('💾 Step 1 marked as completed locally and parent component notified');
+        
       } else {
         console.log('⚠️ Cannot auto-complete step 1 because basic info is missing');
       }
