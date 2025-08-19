@@ -291,8 +291,7 @@ const CallScript = () => {
               Setup Completed
             </button>
           )}
-        </div>
-      </div>
+          <button className="flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
             <Plus className="mr-2 h-4 w-4" />
             New Script
           </button>
