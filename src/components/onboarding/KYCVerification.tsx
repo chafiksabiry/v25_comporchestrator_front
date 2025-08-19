@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Shield,
   Upload,
@@ -15,8 +15,11 @@ import {
   EyeOff,
   HelpCircle,
   ChevronRight,
-  X
+  X,
+  CheckCircle2
 } from 'lucide-react';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 
 const KYCVerification = () => {
   const [verificationMethod, setVerificationMethod] = useState('automatic');
@@ -25,6 +28,167 @@ const KYCVerification = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [showPreview, setShowPreview] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
+  const [isStepCompleted, setIsStepCompleted] = useState(false);
+
+  const companyId = Cookies.get('companyId');
+
+  // Vérifier l'état de l'étape au chargement
+  useEffect(() => {
+    if (companyId) {
+      checkStepStatus();
+    }
+  }, [companyId]);
+
+  // Vérifier l'état de l'étape quand les données changent
+  useEffect(() => {
+    if (companyId && hasBasicInfo() && !isStepCompleted) {
+      console.log('🎯 KYC data changed, checking if step should be auto-completed...');
+      checkStepStatus();
+    }
+  }, [uploadedFiles, verificationStatus, currentStep, companyId, isStepCompleted]);
+
+  const checkStepStatus = async () => {
+    try {
+      if (!companyId) return;
+      
+      console.log('🔍 Checking step 2 status for company:', companyId);
+      
+      // Vérifier l'état de l'étape 2 via l'API d'onboarding
+      const response = await axios.get(
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/2`
+      );
+      
+      console.log('📡 API response for step 2:', response.data);
+      
+      if (response.data && (response.data as any).status === 'completed') {
+        console.log('✅ Step 2 is already completed according to API');
+        setIsStepCompleted(true);
+        return;
+      }
+      
+      // Vérifier aussi le localStorage pour la cohérence
+      const storedProgress = localStorage.getItem('companyOnboardingProgress');
+      if (storedProgress) {
+        try {
+          const progress = JSON.parse(storedProgress);
+          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(2)) {
+            console.log('✅ Step 2 found in localStorage, setting as completed');
+            setIsStepCompleted(true);
+            return;
+          }
+        } catch (e) {
+          console.error('❌ Error parsing stored progress:', e);
+        }
+      }
+      
+      // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
+      // marquer automatiquement l'étape comme complétée localement
+      if (hasBasicInfo() && !isStepCompleted) {
+        console.log('🎯 Auto-completing step 2 locally because basic info is present');
+        
+        // Marquer l'étape comme complétée localement
+        setIsStepCompleted(true);
+        
+        // Mettre à jour le localStorage avec l'étape 2 marquée comme complétée
+        const currentCompletedSteps = [2];
+        const currentProgress = {
+          currentPhase: 1,
+          completedSteps: currentCompletedSteps,
+          lastUpdated: new Date().toISOString()
+        };
+        localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+        
+        // Synchroniser avec les cookies
+        Cookies.set('kycVerificationStepCompleted', 'true', { expires: 7 });
+        
+        // Notifier le composant parent CompanyOnboarding via un événement personnalisé
+        window.dispatchEvent(new CustomEvent('stepCompleted', { 
+          detail: { 
+            stepId: 2, 
+            phaseId: 1, 
+            status: 'completed',
+            completedSteps: currentCompletedSteps
+          } 
+        }));
+        
+        console.log('💾 Step 2 marked as completed locally and parent component notified');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error checking step status:', error);
+      
+      // En cas d'erreur API, vérifier le localStorage
+      const storedProgress = localStorage.getItem('companyOnboardingProgress');
+      if (storedProgress) {
+        try {
+          const progress = JSON.parse(storedProgress);
+          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(2)) {
+            setIsStepCompleted(true);
+          }
+        } catch (e) {
+          console.error('❌ Error parsing stored progress:', e);
+        }
+      }
+    }
+  };
+
+  const hasBasicInfo = () => {
+    const hasInfo = uploadedFiles.length >= 3 && verificationStatus === 'completed';
+    console.log('🔍 Checking basic info for KYC:', {
+      uploadedFiles: uploadedFiles.length,
+      verificationStatus,
+      hasInfo
+    });
+    return hasInfo;
+  };
+
+  const handleCompleteVerification = async () => {
+    try {
+      if (!companyId) {
+        console.error('❌ No companyId available');
+        return;
+      }
+
+      console.log('🚀 Completing KYC verification...');
+      
+      // Marquer l'étape 2 comme complétée
+      const stepResponse = await axios.put(
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/2`,
+        { status: 'completed' }
+      );
+      
+      console.log('✅ Step 2 marked as completed:', stepResponse.data);
+      
+      // Mettre à jour l'état local
+      setIsStepCompleted(true);
+      
+      // Mettre à jour le localStorage
+      const currentProgress = {
+        currentPhase: 1,
+        completedSteps: [2],
+        lastUpdated: new Date().toISOString()
+      };
+      localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+      
+      // Synchroniser avec les cookies
+      Cookies.set('kycVerificationStepCompleted', 'true', { expires: 7 });
+      
+      // Notifier le composant parent
+      window.dispatchEvent(new CustomEvent('stepCompleted', { 
+        detail: { 
+          stepId: 2, 
+          phaseId: 1, 
+          status: 'completed',
+          completedSteps: [2]
+        } 
+      }));
+      
+      console.log('💾 KYC verification completed and step 2 marked as completed');
+      
+    } catch (error) {
+      console.error('❌ Error completing KYC verification:', error);
+    }
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -111,16 +275,36 @@ const KYCVerification = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">KYC/KYB Verification</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold text-gray-900">KYC/KYB Verification</h2>
+            {isStepCompleted && (
+              <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                <CheckCircle2 className="w-4 h-4" />
+                Completed
+              </div>
+            )}
+          </div>
           <p className="text-sm text-gray-500">Complete identity verification for your company</p>
         </div>
         <div className="flex space-x-3">
           <button className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
             Save Progress
           </button>
-          <button className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
-            Submit for Verification
-          </button>
+          {!isStepCompleted ? (
+            <button 
+              onClick={handleCompleteVerification}
+              className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
+              disabled={!hasBasicInfo()}
+            >
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Complete Verification
+            </button>
+          ) : (
+            <button className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm cursor-not-allowed">
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              Verification Completed
+            </button>
+          )}
         </div>
       </div>
 
