@@ -69,6 +69,7 @@ function CompanyProfile() {
   const [stepCheckInProgress, setStepCheckInProgress] = useState(false);
 
   const companyId = Cookies.get('companyId');
+  const hasCompany = !!companyId && Object.keys(company).length > 0;
   console.log('Stored companyId from cookie:', companyId);
 
   // Memoized function to check if company has basic info
