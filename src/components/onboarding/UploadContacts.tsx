@@ -1353,6 +1353,9 @@ ${truncatedContent}`;
     setUploadProgress(0);
     setShowSaveButton(false);
     setShowFileName(false);
+    
+    // Utiliser la référence pour suivre l'état de traitement de manière fiable
+    processingRef.current = true;
 
     try {
       // Convert leads to API format
@@ -1381,8 +1384,8 @@ ${truncatedContent}`;
       const failedLeads = [];
       
       for (let i = 0; i < leadsForAPI.length; i += batchSize) {
-        // Vérifier si le traitement a été annulé
-        if (!isProcessing) {
+        // Vérifier si le traitement a été annulé avec la référence fiable
+        if (!processingRef.current) {
           throw new Error('Processing cancelled by user');
         }
         
@@ -1507,6 +1510,7 @@ ${truncatedContent}`;
     } finally {
       // TOUJOURS réinitialiser l'état, même en cas d'erreur
       setIsProcessing(false);
+      processingRef.current = false; // Réinitialiser la référence aussi
       setShowSaveButton(true);
       setShowFileName(true);
       
