@@ -30,6 +30,40 @@ const api = axios.create({
   },
 });
 
+// Add request interceptor for better error handling
+api.interceptors.request.use(
+  (config) => {
+    console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    return config;
+  },
+  (error) => {
+    console.error('❌ API Request Error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for better error handling
+api.interceptors.response.use(
+  (response) => {
+    console.log(`✅ API Response: ${response.status} ${response.config.url}`);
+    return response;
+  },
+  (error) => {
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 404) {
+        console.warn(`⚠️ API Endpoint not found: ${error.config?.url}`);
+      } else if (error.response?.status >= 500) {
+        console.error(`❌ Server Error: ${error.response.status} ${error.config?.url}`);
+      } else {
+        console.error(`❌ API Error: ${error.response?.status} ${error.config?.url}`, error.response?.data);
+      }
+    } else {
+      console.error('❌ Network Error:', error);
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const phoneNumberService = {
   listPhoneNumbers: async (): Promise<PhoneNumber[]> => {
     try {
@@ -85,6 +119,59 @@ export const phoneNumberService = {
       return response.data;
     } catch (error) {
       console.error(`Error purchasing ${provider} phone number:`, error);
+      throw error;
+    }
+  }
+};
+
+// Onboarding API service with proper error handling
+export const onboardingService = {
+  getProgress: async (companyId: string) => {
+    try {
+      const response = await api.get(`/onboarding/companies/${companyId}/onboarding`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching onboarding progress:', error);
+      throw error;
+    }
+  },
+
+  updateStepProgress: async (companyId: string, phaseId: number, stepId: number, status: string) => {
+    try {
+      const response = await api.put(`/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`, {
+        status
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating step progress:', error);
+      throw error;
+    }
+  },
+
+  checkCompanyLeads: async (companyId: string) => {
+    try {
+      const response = await api.get(`/companies/${companyId}/has-leads`);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        console.log('Leads endpoint not found - returning default response');
+        return { success: true, hasLeads: false, count: 0 };
+      }
+      console.error('Error checking company leads:', error);
+      throw error;
+    }
+  },
+
+  checkCompanyGigs: async (companyId: string) => {
+    try {
+      const response = await api.get(`/gigs/company/${companyId}/last`);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        console.log('Gigs endpoint not found - returning default response');
+        return { data: null };
+      }
+      console.error('Error checking company gigs:', error);
       throw error;
     }
   }

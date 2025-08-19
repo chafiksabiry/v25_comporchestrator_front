@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
 
@@ -66,45 +66,13 @@ function CompanyProfile() {
   const [logoUrl, setLogoUrl] = useState("");
   const [showUniquenessPanel, setShowUniquenessPanel] = useState(false);
   const [isStepCompleted, setIsStepCompleted] = useState(false);
+  const [stepCheckInProgress, setStepCheckInProgress] = useState(false);
 
   const companyId = Cookies.get('companyId');
   console.log('Stored companyId from cookie:', companyId);
 
-  // Vérifier l'état de l'étape au chargement
-  useEffect(() => {
-    if (companyId) {
-      console.log('🚀 CompanyProfile component loaded, checking step status...');
-      checkStepStatus();
-    }
-  }, [companyId]);
-
-  // Vérifier l'état de l'étape quand les données de l'entreprise sont chargées
-  useEffect(() => {
-    if (company && Object.keys(company).length > 0 && companyId) {
-      console.log('📊 Company data loaded, checking if step should be auto-completed...');
-      // Attendre un peu que les données soient bien chargées
-      setTimeout(() => {
-        checkStepStatus();
-      }, 500);
-    }
-  }, [company, companyId]);
-
-  // Vérifier si l'étape peut être marquée comme complétée
-  useEffect(() => {
-    console.log('🔄 useEffect triggered:', {
-      hasCompany: !!company,
-      isStepCompleted,
-      hasBasicInfo: hasBasicInfo()
-    });
-    
-    if (company && !isStepCompleted && hasBasicInfo()) {
-      console.log('🎯 Triggering automatic step completion check');
-      // Si l'entreprise a les informations de base, on peut marquer l'étape comme complétée
-      checkStepStatus();
-    }
-  }, [company, isStepCompleted]);
-
-  const hasBasicInfo = () => {
+  // Memoized function to check if company has basic info
+  const hasBasicInfo = useCallback(() => {
     const hasInfo = company.name && company.industry && company.contact?.email;
     console.log('🔍 Checking basic info:', {
       name: company.name,
@@ -113,18 +81,20 @@ function CompanyProfile() {
       hasInfo
     });
     return hasInfo;
-  };
+  }, [company.name, company.industry, company.contact?.email]);
 
-  const checkStepStatus = async () => {
+  // Check step status with proper error handling and state management
+  const checkStepStatus = useCallback(async () => {
+    if (stepCheckInProgress || !companyId) {
+      console.log('❌ Step check already in progress or no companyId available');
+      return;
+    }
+
     try {
-      if (!companyId) {
-        console.log('❌ No companyId available for step status check');
-        return;
-      }
-      
+      setStepCheckInProgress(true);
       console.log('🔍 Checking step 1 status for company:', companyId);
       
-      // Vérifier l'état de l'étape 1 via l'API d'onboarding principale
+      // Check step 1 status via main onboarding API
       const response = await axios.get(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
       );
@@ -141,7 +111,7 @@ function CompanyProfile() {
         }
       }
       
-      // Vérifier aussi le localStorage pour la cohérence
+      // Check localStorage for consistency
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
       if (storedProgress) {
         try {
@@ -159,15 +129,14 @@ function CompanyProfile() {
         console.log('💾 No stored progress found in localStorage');
       }
       
-      // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
-      // marquer automatiquement l'étape comme complétée localement
+      // If step is not marked as completed but basic info is present, auto-complete locally
       if (hasBasicInfo()) {
         console.log('🎯 Auto-completing step 1 locally because basic info is present');
         
-        // Marquer l'étape comme complétée localement
+        // Mark step as completed locally
         setIsStepCompleted(true);
         
-        // Mettre à jour le localStorage avec l'étape 1 marquée comme complétée
+        // Update localStorage with step 1 marked as completed
         const currentCompletedSteps = response.data?.completedSteps || [];
         const newCompletedSteps = currentCompletedSteps.includes(1) ? currentCompletedSteps : [...currentCompletedSteps, 1];
         
@@ -178,10 +147,10 @@ function CompanyProfile() {
         };
         localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
         
-        // Synchroniser avec les cookies
+        // Sync with cookies
         Cookies.set('companyProfileStepCompleted', 'true', { expires: 7 });
         
-        // Notifier le composant parent CompanyOnboarding via un événement personnalisé
+        // Notify parent CompanyOnboarding component via custom event
         window.dispatchEvent(new CustomEvent('stepCompleted', { 
           detail: { 
             stepId: 1, 
@@ -199,8 +168,46 @@ function CompanyProfile() {
       
     } catch (error) {
       console.error('❌ Error checking step status:', error);
+      // Don't set step as completed if there's an error
+    } finally {
+      setStepCheckInProgress(false);
     }
-  };
+  }, [companyId, hasBasicInfo, stepCheckInProgress]);
+
+  // Check step status when component loads
+  useEffect(() => {
+    if (companyId && !stepCheckInProgress) {
+      console.log('🚀 CompanyProfile component loaded, checking step status...');
+      checkStepStatus();
+    }
+  }, [companyId, checkStepStatus, stepCheckInProgress]);
+
+  // Check step status when company data is loaded
+  useEffect(() => {
+    if (company && Object.keys(company).length > 0 && companyId && !stepCheckInProgress) {
+      console.log('📊 Company data loaded, checking if step should be auto-completed...');
+      // Wait a bit for data to be properly loaded
+      const timer = setTimeout(() => {
+        checkStepStatus();
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [company, companyId, checkStepStatus, stepCheckInProgress]);
+
+  // Check if step can be marked as completed
+  useEffect(() => {
+    console.log('🔄 useEffect triggered:', {
+      hasCompany: !!company,
+      isStepCompleted,
+      hasBasicInfo: hasBasicInfo()
+    });
+    
+    if (company && !isStepCompleted && hasBasicInfo() && !stepCheckInProgress) {
+      console.log('🎯 Triggering automatic step completion check');
+      checkStepStatus();
+    }
+  }, [company, isStepCompleted, hasBasicInfo, checkStepStatus, stepCheckInProgress]);
 
   // Helper functions for the new UI
   const hasContactInfo = company.contact && (
