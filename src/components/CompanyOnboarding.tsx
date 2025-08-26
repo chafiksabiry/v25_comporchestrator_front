@@ -850,15 +850,15 @@ const CompanyOnboarding = () => {
       const allSteps = phases.flatMap((phase) => phase.steps);
       const step = allSteps.find((s) => s.id === stepId);
 
-      // Special handling for Knowledge Base step
+      // Special handling for Knowledge Base step (always go to main KB app)
       if (stepId === 7) {
-        if (completedSteps.includes(stepId)) {
-          window.location.replace(import.meta.env.VITE_KNOWLEDGE_BASE_URL);
-        } else {
-          window.location.replace(
-            `${import.meta.env.VITE_KNOWLEDGE_BASE_URL}/upload`
-          );
-        }
+        window.location.replace(import.meta.env.VITE_KNOWLEDGE_BASE_URL);
+        return;
+      }
+
+      // Special handling for Call Script step (redirect to external script app)
+      if (stepId === 8) {
+        window.location.replace(import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL);
         return;
       }
 
@@ -909,6 +909,12 @@ const CompanyOnboarding = () => {
       // Special handling for Knowledge Base step
       if (stepId === 7) {
         window.location.replace(import.meta.env.VITE_KNOWLEDGE_BASE_URL);
+        return;
+      }
+
+      // Special handling for Call Script step
+      if (stepId === 8) {
+        window.location.replace(import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL);
         return;
       }
 
@@ -1356,23 +1362,16 @@ const CompanyOnboarding = () => {
 
     // Pour Knowledge Base
     if (stepId === 7) {
-      console.log("Knowledge Base step clicked");
-      console.log("All previous completed:", allPreviousCompleted);
-      console.log("Step completed:", completedSteps.includes(stepId));
-      console.log(
-        "Knowledge Base URL:",
-        import.meta.env.VITE_KNOWLEDGE_BASE_URL
-      );
-
       if (allPreviousCompleted) {
-        const baseUrl = import.meta.env.VITE_KNOWLEDGE_BASE_URL;
-        if (completedSteps.includes(stepId)) {
-          console.log("Redirecting to review page:", baseUrl);
-          window.location.replace(baseUrl);
-        } else {
-          console.log("Redirecting to upload page:", `${baseUrl}/upload`);
-          window.location.replace(`${baseUrl}/upload`);
-        }
+        window.location.replace(import.meta.env.VITE_KNOWLEDGE_BASE_URL);
+      }
+      return;
+    }
+
+    // Pour Call Script
+    if (stepId === 8) {
+      if (allPreviousCompleted) {
+        window.location.replace(import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL);
       }
       return;
     }
