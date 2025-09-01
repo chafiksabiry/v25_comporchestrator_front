@@ -253,28 +253,34 @@ const CompanyOnboarding = () => {
   // Add listener for custom step completion events from child components
   useEffect(() => {
     const handleStepCompleted = (event: CustomEvent) => {
-      const { stepId, phaseId, status, completedSteps } = event.detail;
-      console.log('🎯 Step completion event received:', { stepId, phaseId, status, completedSteps });
+      const { stepId, phaseId, status, completedSteps: newCompletedSteps } = event.detail;
+      console.log('🎯 Step completion event received:', { stepId, phaseId, status, completedSteps: newCompletedSteps });
       
       // Mettre à jour l'état local des étapes complétées
-      if (completedSteps && Array.isArray(completedSteps)) {
-        setCompletedSteps(completedSteps);
+      if (status === 'completed') {
+        setCompletedSteps((prev) => {
+          // Ajouter le nouveau step aux étapes complétées si pas déjà présent
+          const updatedSteps = prev.includes(stepId) ? prev : [...prev, stepId];
+          console.log('📝 Updated completed steps:', updatedSteps);
+          
+          // Mettre à jour le localStorage avec le nouvel état
+          const currentProgress = {
+            currentPhase: Math.max(currentPhase, phaseId),
+            completedSteps: updatedSteps,
+            lastUpdated: new Date().toISOString()
+          };
+          localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+          
+          return updatedSteps;
+        });
         
-        // Mettre à jour le localStorage
-        const currentProgress = {
-          currentPhase: phaseId,
-          completedSteps: completedSteps,
-          lastUpdated: new Date().toISOString()
-        };
-        localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+        console.log(`✅ Step ${stepId} marked as completed in onboarding state`);
         
-        console.log('💾 Local state updated from step completion event');
-        
-        // Forcer un re-render pour mettre à jour l'interface
+        // Recharger le progrès de l'onboarding pour s'assurer que tout est à jour
         setTimeout(() => {
-          console.log('🔄 Forcing re-render after step completion');
-          setCompletedSteps((prev) => [...prev]); // This will trigger a re-render
-        }, 100);
+          console.log('🔄 Reloading company progress after step completion');
+          loadCompanyProgress();
+        }, 500);
       }
     };
     
@@ -1264,7 +1270,7 @@ const CompanyOnboarding = () => {
     }
   };
 
-  const handleBackToOnboarding = async () => {
+  const handleBackToOnboarding = () => {
     // If UploadContacts is showing, cancel processing and return immediately
     if (showUploadContacts) {
       console.log(
@@ -1317,20 +1323,12 @@ const CompanyOnboarding = () => {
       setShowUploadContacts(false);
       console.log("✅ Set showUploadContacts to false");
 
-      // Force reload onboarding state after upload contacts completion
+      // Recharger le progrès de l'onboarding au retour pour détecter les changements
       if (companyId) {
-        try {
-          await loadCompanyProgress();
-          console.log("✅ Onboarding state reloaded successfully after UploadContacts");
-          
-          // Force an additional state refresh after a small delay to ensure UI updates
-          setTimeout(() => {
-            console.log("🔄 Forcing additional state refresh for UploadContacts");
-            setCompletedSteps(prev => [...prev]); // Force re-render of completed steps
-          }, 100);
-        } catch (error) {
-          console.error("❌ Error reloading onboarding state after UploadContacts:", error);
-        }
+        setTimeout(() => {
+          console.log("🔄 Reloading onboarding progress after closing UploadContacts");
+          loadCompanyProgress();
+        }, 100);
       }
 
       // Simply close UploadContacts and return to normal CompanyOnboarding state
@@ -1485,7 +1483,7 @@ const CompanyOnboarding = () => {
     };
   } else if (showUploadContacts) {
     activeComponent = <UploadContacts />;
-    onBack = async () => {
+    onBack = () => {
       // Clean up localStorage when manually closing UploadContacts
       localStorage.removeItem("parsedLeads");
       localStorage.removeItem("validationResults");
@@ -1496,21 +1494,13 @@ const CompanyOnboarding = () => {
       sessionStorage.removeItem("uploadContactsManuallyClosed");
       console.log("🧹 Manual cleanup - UploadContacts closed");
       setShowUploadContacts(false);
-
-      // Force reload onboarding state after upload contacts completion
+      
+      // Recharger le progrès de l'onboarding au retour pour détecter les changements
       if (companyId) {
-        try {
-          await loadCompanyProgress();
-          console.log("✅ Onboarding state reloaded successfully after UploadContacts");
-          
-          // Force an additional state refresh after a small delay to ensure UI updates
-          setTimeout(() => {
-            console.log("🔄 Forcing additional state refresh for UploadContacts onBack");
-            setCompletedSteps(prev => [...prev]); // Force re-render of completed steps
-          }, 100);
-        } catch (error) {
-          console.error("❌ Error reloading onboarding state after UploadContacts:", error);
-        }
+        setTimeout(() => {
+          console.log("🔄 Reloading onboarding progress after manual close");
+          loadCompanyProgress();
+        }, 100);
       }
     };
   } else if (ActiveStepComponent) {
