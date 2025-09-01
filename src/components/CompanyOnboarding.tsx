@@ -1322,6 +1322,12 @@ const CompanyOnboarding = () => {
         try {
           await loadCompanyProgress();
           console.log("✅ Onboarding state reloaded successfully after UploadContacts");
+          
+          // Force an additional state refresh after a small delay to ensure UI updates
+          setTimeout(() => {
+            console.log("🔄 Forcing additional state refresh for UploadContacts");
+            setCompletedSteps(prev => [...prev]); // Force re-render of completed steps
+          }, 100);
         } catch (error) {
           console.error("❌ Error reloading onboarding state after UploadContacts:", error);
         }
@@ -1496,6 +1502,12 @@ const CompanyOnboarding = () => {
         try {
           await loadCompanyProgress();
           console.log("✅ Onboarding state reloaded successfully after UploadContacts");
+          
+          // Force an additional state refresh after a small delay to ensure UI updates
+          setTimeout(() => {
+            console.log("🔄 Forcing additional state refresh for UploadContacts onBack");
+            setCompletedSteps(prev => [...prev]); // Force re-render of completed steps
+          }, 100);
         } catch (error) {
           console.error("❌ Error reloading onboarding state after UploadContacts:", error);
         }
