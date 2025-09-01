@@ -270,20 +270,37 @@ const CompanyOnboarding = () => {
         
         console.log('💾 Local state updated from step completion event');
         
-        // Forcer un re-render pour mettre à jour l'interface
+        // Force reload onboarding progress to get fresh data from API
         setTimeout(() => {
-          console.log('🔄 Forcing re-render after step completion');
-          setCompletedSteps((prev) => [...prev]); // This will trigger a re-render
-        }, 100);
+          console.log('🔄 Reloading onboarding progress after step completion');
+          loadCompanyProgress();
+        }, 500);
       }
+    };
+
+    // Add listener for contacts upload completion
+    const handleContactsUploadCompleted = () => {
+      console.log('📞 Contacts upload completed - refreshing onboarding state');
+      // Close UploadContacts and refresh progress
+      setShowUploadContacts(false);
+      // Clear manual close flag to allow future auto-restoration if needed
+      sessionStorage.removeItem("uploadContactsManuallyClosed");
+      // Immediately check for leads and auto-complete step 6
+      checkCompanyLeadsForAutoCompletion();
+      // Also reload progress after a short delay
+      setTimeout(() => {
+        loadCompanyProgress();
+      }, 1000);
     };
     
     // Ajouter l'écouteur d'événement
     window.addEventListener('stepCompleted', handleStepCompleted as EventListener);
+    window.addEventListener('contactsUploadCompleted', handleContactsUploadCompleted);
     
     // Nettoyer l'écouteur d'événement
     return () => {
       window.removeEventListener('stepCompleted', handleStepCompleted as EventListener);
+      window.removeEventListener('contactsUploadCompleted', handleContactsUploadCompleted);
     };
   }, []);
 
@@ -305,14 +322,61 @@ const CompanyOnboarding = () => {
 
     const interval = setInterval(() => {
       // Vérifier si la company a des leads mais que l'étape 6 n'est pas marquée comme complétée
-      // if (hasLeads && !completedSteps.includes(6)) {
-      //   console.log('🔄 Company has leads but step 6 not completed - auto-completing...');
-      //   checkCompanyLeads();
-      // }
+      checkCompanyLeadsForAutoCompletion();
     }, 10000); // Vérifier toutes les 10 secondes
 
     return () => clearInterval(interval);
-  }, [companyId, hasLeads, completedSteps]);
+  }, [companyId, completedSteps]);
+
+  // Fonction pour auto-compléter l'étape 6 si des leads existent
+  const checkCompanyLeadsForAutoCompletion = async () => {
+    try {
+      if (!companyId || completedSteps.includes(6)) {
+        return; // Step already completed or no company ID
+      }
+
+      const response = await axios.get<HasLeadsResponse>(
+        `${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads`
+      );
+      
+      if (response.data.hasLeads && response.data.count > 0) {
+        console.log('✅ Company has leads - auto-completing step 6');
+        try {
+          await axios.put(
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
+            { status: 'completed' }
+          );
+          
+          // Update local state to reflect the completed step
+          setCompletedSteps((prev: any) => {
+            if (!prev.includes(6)) {
+              const newSteps = [...prev, 6];
+              console.log('✅ Step 6 auto-completed successfully - updating local state');
+              
+              // Update localStorage as well
+              const currentProgress = {
+                currentPhase: 2,
+                completedSteps: newSteps,
+                lastUpdated: new Date().toISOString()
+              };
+              localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+              
+              return newSteps;
+            }
+            return prev;
+          });
+          
+          // Set hasLeads state
+          setHasLeads(true);
+          
+        } catch (error) {
+          console.error('Error auto-completing step 6:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking company leads for auto-completion:', error);
+    }
+  };
 
   // Si l'URL contient ?startStep=6 ou si on est sur l'URL spécifique avec session, on lance handleStartStep(6)
   useEffect(() => {
@@ -785,6 +849,13 @@ const CompanyOnboarding = () => {
       setCurrentPhase(validPhase);
       setDisplayedPhase(validPhase);
       setCompletedSteps(progress.completedSteps);
+
+      // Check for leads and auto-complete step 6 if necessary
+      if (!progress.completedSteps.includes(6)) {
+        setTimeout(() => {
+          checkCompanyLeadsForAutoCompletion();
+        }, 100);
+      }
 
       // Force a re-render to ensure the UI updates
       setTimeout(() => {
