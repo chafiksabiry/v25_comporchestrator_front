@@ -1470,11 +1470,32 @@ ${truncatedContent}`;
               { status: 'completed' }
             );
             
+            // Mettre à jour directement le localStorage avec le nouveau progrès
+            const currentProgress = JSON.parse(localStorage.getItem('companyOnboardingProgress') || '{}');
+            const updatedProgress = {
+              ...currentProgress,
+              completedSteps: [...(currentProgress.completedSteps || []), 6].filter((step, index, arr) => arr.indexOf(step) === index)
+            };
+            localStorage.setItem('companyOnboardingProgress', JSON.stringify(updatedProgress));
+            
+            // Émettre un événement personnalisé pour notifier CompanyOnboarding
+            const completionEvent = new CustomEvent('stepCompleted', {
+              detail: {
+                stepId: 6,
+                phaseId: 2,
+                status: 'completed',
+                completedSteps: updatedProgress.completedSteps
+              }
+            });
+            window.dispatchEvent(completionEvent);
+            
             localStorage.setItem('stepCompleted', JSON.stringify({
               stepId: 6,
               phaseId: 2,
               data: { success: true, leadsSaved: savedCount }
             }));
+            
+            console.log('✅ Step 6 completed and state updated successfully');
           }
         } catch (error) {
           console.error('Error updating onboarding progress:', error);
@@ -1828,6 +1849,27 @@ ${truncatedContent}`;
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
               { status: 'completed' }
             );
+            
+            // Mettre à jour directement le localStorage avec le nouveau progrès
+            const currentProgress = JSON.parse(localStorage.getItem('companyOnboardingProgress') || '{}');
+            const updatedProgress = {
+              ...currentProgress,
+              completedSteps: [...(currentProgress.completedSteps || []), 6].filter((step, index, arr) => arr.indexOf(step) === index)
+            };
+            localStorage.setItem('companyOnboardingProgress', JSON.stringify(updatedProgress));
+            
+            // Émettre un événement personnalisé pour notifier CompanyOnboarding
+            const completionEvent = new CustomEvent('stepCompleted', {
+              detail: {
+                stepId: 6,
+                phaseId: 2,
+                status: 'completed',
+                completedSteps: updatedProgress.completedSteps
+              }
+            });
+            window.dispatchEvent(completionEvent);
+            
+            console.log('✅ Step 6 completed after Zoho import and state updated successfully');
           }
         } catch (error) {
           console.error('Error updating onboarding progress after Zoho import:', error);
