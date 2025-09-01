@@ -21,7 +21,7 @@ ENV VITE_DASHBOARD_API=https://api-dashboard.harx.ai/api
 ENV VITE_REP_API=https://api-repcreationwizard.harx.ai/api
 ENV VITE_GOOGLE_API_KEY=AIzaSyCHEKiraViKIrgvloZI-ZBIJqtDMeBuQD0
 ENV VITE_KNOWLEDGE_BASE_URL=/knowledgebase/upload
-ENV VITE_OPENAI_API_KEY=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
+ENV VITE_OPENAI_API_KEY=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
 ENV VITE_SCRIPT_GENERATION_BASE_URL=/knowledgebase/script-generator
 RUN npm run build
 
