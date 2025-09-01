@@ -260,21 +260,22 @@ const CompanyOnboarding = () => {
       if (completedSteps && Array.isArray(completedSteps)) {
         setCompletedSteps(completedSteps);
         
-        // Mettre à jour le localStorage
-        const currentProgress = {
-          currentPhase: phaseId,
+        // Conserver la phase actuelle au lieu de l'écraser
+        const existingProgress = JSON.parse(localStorage.getItem('companyOnboardingProgress') || '{}');
+        const updatedProgress = {
+          ...existingProgress,
           completedSteps: completedSteps,
           lastUpdated: new Date().toISOString()
         };
-        localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+        localStorage.setItem('companyOnboardingProgress', JSON.stringify(updatedProgress));
         
         console.log('💾 Local state updated from step completion event');
         
-        // Forcer un re-render pour mettre à jour l'interface
+        // Forcer un re-render pour mettre à jour l'interface immédiatement
         setTimeout(() => {
           console.log('🔄 Forcing re-render after step completion');
-          setCompletedSteps((prev) => [...prev]); // This will trigger a re-render
-        }, 100);
+          setCompletedSteps((prev) => [...completedSteps]); // Force update with new completed steps
+        }, 50);
       }
     };
     
