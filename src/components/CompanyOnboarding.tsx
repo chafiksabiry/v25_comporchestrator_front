@@ -1264,7 +1264,7 @@ const CompanyOnboarding = () => {
     }
   };
 
-  const handleBackToOnboarding = () => {
+  const handleBackToOnboarding = async () => {
     // If UploadContacts is showing, cancel processing and return immediately
     if (showUploadContacts) {
       console.log(
@@ -1316,6 +1316,16 @@ const CompanyOnboarding = () => {
       // Force close the component immediately
       setShowUploadContacts(false);
       console.log("✅ Set showUploadContacts to false");
+
+      // Force reload onboarding state after upload contacts completion
+      if (companyId) {
+        try {
+          await loadCompanyProgress();
+          console.log("✅ Onboarding state reloaded successfully after UploadContacts");
+        } catch (error) {
+          console.error("❌ Error reloading onboarding state after UploadContacts:", error);
+        }
+      }
 
       // Simply close UploadContacts and return to normal CompanyOnboarding state
       console.log(
@@ -1469,7 +1479,7 @@ const CompanyOnboarding = () => {
     };
   } else if (showUploadContacts) {
     activeComponent = <UploadContacts />;
-    onBack = () => {
+    onBack = async () => {
       // Clean up localStorage when manually closing UploadContacts
       localStorage.removeItem("parsedLeads");
       localStorage.removeItem("validationResults");
@@ -1480,6 +1490,16 @@ const CompanyOnboarding = () => {
       sessionStorage.removeItem("uploadContactsManuallyClosed");
       console.log("🧹 Manual cleanup - UploadContacts closed");
       setShowUploadContacts(false);
+
+      // Force reload onboarding state after upload contacts completion
+      if (companyId) {
+        try {
+          await loadCompanyProgress();
+          console.log("✅ Onboarding state reloaded successfully after UploadContacts");
+        } catch (error) {
+          console.error("❌ Error reloading onboarding state after UploadContacts:", error);
+        }
+      }
     };
   } else if (ActiveStepComponent) {
     activeComponent = <ActiveStepComponent />;
