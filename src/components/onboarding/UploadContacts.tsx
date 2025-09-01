@@ -1472,10 +1472,9 @@ ${truncatedContent}`;
             
             // Mettre à jour directement le localStorage avec le nouveau progrès
             const currentProgress = JSON.parse(localStorage.getItem('companyOnboardingProgress') || '{}');
-            const updatedCompletedSteps = [...(currentProgress.completedSteps || []), 6].filter((step, index, arr) => arr.indexOf(step) === index);
             const updatedProgress = {
               ...currentProgress,
-              completedSteps: updatedCompletedSteps
+              completedSteps: [...(currentProgress.completedSteps || []), 6].filter((step, index, arr) => arr.indexOf(step) === index)
             };
             localStorage.setItem('companyOnboardingProgress', JSON.stringify(updatedProgress));
             
@@ -1483,15 +1482,12 @@ ${truncatedContent}`;
             const completionEvent = new CustomEvent('stepCompleted', {
               detail: {
                 stepId: 6,
-                phaseId: currentProgress.currentPhase || 2,
+                phaseId: 2,
                 status: 'completed',
-                completedSteps: updatedCompletedSteps
+                completedSteps: updatedProgress.completedSteps
               }
             });
             window.dispatchEvent(completionEvent);
-            
-            // Alternative: Mettre à jour les cookies aussi pour la compatibilité
-            Cookies.set('companyOnboardingProgress', JSON.stringify(updatedProgress));
             
             localStorage.setItem('stepCompleted', JSON.stringify({
               stepId: 6,
@@ -1500,8 +1496,6 @@ ${truncatedContent}`;
             }));
             
             console.log('✅ Step 6 completed and state updated successfully');
-            console.log('📊 Updated progress:', updatedProgress);
-            console.log('🔔 Event dispatched:', completionEvent.detail);
           }
         } catch (error) {
           console.error('Error updating onboarding progress:', error);
@@ -1858,10 +1852,9 @@ ${truncatedContent}`;
             
             // Mettre à jour directement le localStorage avec le nouveau progrès
             const currentProgress = JSON.parse(localStorage.getItem('companyOnboardingProgress') || '{}');
-            const updatedCompletedSteps = [...(currentProgress.completedSteps || []), 6].filter((step, index, arr) => arr.indexOf(step) === index);
             const updatedProgress = {
               ...currentProgress,
-              completedSteps: updatedCompletedSteps
+              completedSteps: [...(currentProgress.completedSteps || []), 6].filter((step, index, arr) => arr.indexOf(step) === index)
             };
             localStorage.setItem('companyOnboardingProgress', JSON.stringify(updatedProgress));
             
@@ -1869,9 +1862,9 @@ ${truncatedContent}`;
             const completionEvent = new CustomEvent('stepCompleted', {
               detail: {
                 stepId: 6,
-                phaseId: currentProgress.currentPhase || 2,
+                phaseId: 2,
                 status: 'completed',
-                completedSteps: updatedCompletedSteps
+                completedSteps: updatedProgress.completedSteps
               }
             });
             window.dispatchEvent(completionEvent);
