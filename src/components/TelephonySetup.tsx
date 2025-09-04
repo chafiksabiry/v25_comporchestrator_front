@@ -25,7 +25,7 @@ import Cookies from 'js-cookie';
 import { phoneNumberService } from '../services/api';
 import type { AvailablePhoneNumber } from '../services/api';
 
-const gigId = import.meta.env.DEV ? '683083e7af226bea2d459372' : Cookies.get('gigId');
+const gigId = import.meta.env.DEV ? '683083e7af226bea2d459372' : Cookies.get('lastGigId');
 const companyId = Cookies.get('companyId');
 
 interface PhoneNumber {
@@ -39,7 +39,7 @@ interface TelephonySetupProps {
 }
 
 const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
-  const [provider, setProvider] = useState('telnyx');
+  const [provider, setProvider] = useState('twilio');
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [destinationZone, setDestinationZone] = useState('');
   const [callRecording, setCallRecording] = useState(true);
@@ -213,7 +213,33 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       console.log('🛒 Attempting to purchase number:', phoneNumber);
       console.log('🛒 Provider:', provider);
       console.log('🛒 GigId:', gigId);
+      console.log('🛒 Test Mode:', testMode);
       
+      // In test mode, simulate successful purchase
+      if (testMode) {
+        console.log('🧪 Test Mode: Simulating successful purchase');
+        
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Add to existing numbers list (simulation)
+        const newNumber = {
+          phoneNumber: phoneNumber,
+          status: 'active',
+          features: ['voice', 'sms'],
+          gigId: gigId
+        };
+        
+        setPhoneNumbers(prev => [...prev, newNumber]);
+        
+        // Remove from available numbers
+        setAvailableNumbers(prev => prev.filter(num => getPhoneNumber(num) !== phoneNumber));
+        
+        alert(`🧪 TEST MODE: Numéro ${phoneNumber} simulé comme acheté avec succès !`);
+        return;
+      }
+      
+      // Real purchase
       await phoneNumberService.purchasePhoneNumber(phoneNumber, provider, gigId);
       
       console.log('✅ Number purchased successfully!');
@@ -361,7 +387,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
             }`}
             onClick={() => setTestMode(!testMode)}
           >
-            {testMode ? 'Test Mode' : 'Production Mode'}
+            {testMode ? '🧪 Test Mode' : '🚀 Production Mode'}
           </button>
           <button 
             className={`rounded-lg px-4 py-2 text-sm font-medium ${
