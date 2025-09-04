@@ -25,7 +25,7 @@ import Cookies from 'js-cookie';
 import { phoneNumberService } from '../services/api';
 import type { AvailablePhoneNumber } from '../services/api';
 
-const gigId = import.meta.env.DEV ? '683083e7af226bea2d459372' : Cookies.get('lastGigId');
+const gigId = Cookies.get('lastGigId');
 const companyId = Cookies.get('companyId');
 
 interface PhoneNumber {
