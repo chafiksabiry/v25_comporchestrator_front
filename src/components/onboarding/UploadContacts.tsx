@@ -1379,80 +1379,60 @@ ${truncatedContent}`;
         Project_Tags: lead.Project_Tags || []
       }));
 
-      // Sauvegarder en parallèle par lots pour de meilleures performances
-      const batchSize = 10; // Traiter 10 leads à la fois
+      // Sauvegarder les leads un par un pour affichage immédiat
       const savedLeads: any[] = [];
       const failedLeads: { index: number; error: string }[] = [];
       
-      for (let i = 0; i < leadsForAPI.length; i += batchSize) {
+      for (let i = 0; i < leadsForAPI.length; i++) {
         // Vérifier si le traitement a été annulé avec la référence fiable
         if (!processingRef.current) {
           throw new Error('Processing cancelled by user');
         }
         
-        const batch = leadsForAPI.slice(i, i + batchSize);
-        const batchPromises = batch.map(async (lead, batchIndex) => {
-          try {
-            const response = await axios.post(
-              `${import.meta.env.VITE_DASHBOARD_API}/leads`, 
-              lead,
-              {
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`
-                },
-                timeout: 10000 // 10 secondes de timeout
-              }
-            );
-            
-            if (response.status === 200 || response.status === 201) {
-              return { success: true, data: response.data, index: i + batchIndex };
-            } else {
-              return { success: false, error: response.statusText, index: i + batchIndex };
+        const lead = leadsForAPI[i];
+        
+        try {
+          const response = await axios.post(
+            `${import.meta.env.VITE_DASHBOARD_API}/leads`, 
+            lead,
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`
+              },
+              timeout: 10000 // 10 secondes de timeout
             }
-          } catch (error: any) {
-            return { 
-              success: false, 
-              error: error.message || 'Network error', 
-              index: i + batchIndex 
-            };
-          }
-        });
-        
-        // Attendre que le lot soit terminé
-        const batchResults = await Promise.allSettled(batchPromises);
-        
-        // Traiter les résultats du lot
-        batchResults.forEach((result) => {
-          if (result.status === 'fulfilled') {
-            const { success, data, error, index } = result.value;
-            if (success) {
-              savedLeads.push(data);
-            } else {
-              failedLeads.push({ index, error });
+          );
+          
+          if (response.status === 200 || response.status === 201) {
+            savedLeads.push(response.data);
+            
+            // Mettre à jour la progression et le compteur immédiatement
+            const progress = Math.round(((i + 1) / leadsForAPI.length) * 100);
+            setUploadProgress(progress);
+            setSavedLeadsCount(savedLeads.length);
+            
+            // Rafraîchir automatiquement la liste des leads tous les 5 leads ou à la fin
+            if (savedLeads.length % 5 === 0 || i === leadsForAPI.length - 1) {
+              try {
+                await fetchLeads();
+              } catch (error) {
+                console.warn('Error refreshing leads during save:', error);
+              }
             }
           } else {
-            failedLeads.push({ index: i, error: 'Promise rejected' });
+            failedLeads.push({ index: i, error: response.statusText });
           }
-        });
-        
-        // Mettre à jour la progression et afficher les leads sauvegardés
-        const progress = Math.round(((i + batch.length) / leadsForAPI.length) * 100);
-        setUploadProgress(progress);
-        setSavedLeadsCount(savedLeads.length);
-        
-        // Rafraîchir automatiquement la liste des leads tous les 10 leads sauvegardés
-        if (savedLeads.length > 0 && savedLeads.length % 10 === 0) {
-          try {
-            await fetchLeads();
-          } catch (error) {
-            console.warn('Error refreshing leads during save:', error);
-          }
+        } catch (error: any) {
+          failedLeads.push({ 
+            index: i, 
+            error: error.message || 'Network error'
+          });
         }
         
-        // Petite pause entre les lots pour éviter de surcharger l'API
-        if (i + batchSize < leadsForAPI.length) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+        // Petite pause entre chaque lead pour éviter de surcharger l'API
+        if (i < leadsForAPI.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
       }
       
