@@ -100,28 +100,37 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
     try {
       if (!companyId) return;
       
-      // Vérifier l'état de l'étape 5 (Telephony Setup)
-      const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`
-      );
-
-      // Fix: Ensure response.data is typed and has 'status' property
-      const stepStatus = (response.data as { status?: string })?.status;
-      if (stepStatus === 'completed') {
-        setCompletedSteps((prev: number[]) => {
-          if (!prev.includes(5)) {
-            return [...prev, 5];
+      console.log('🔍 Checking step 5 status for company:', companyId);
+      
+      // First, try to get the general onboarding status
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+        );
+        
+        console.log('📡 API response for onboarding:', response.data);
+        
+        if (response.data && (response.data as any).completedSteps && Array.isArray((response.data as any).completedSteps)) {
+          const completedSteps = (response.data as any).completedSteps;
+          if (completedSteps.includes(5)) {
+            console.log('✅ Step 5 is already completed according to API');
+            setCompletedSteps(completedSteps);
+            return;
+          } else {
+            console.log('⚠️ Step 5 is not completed according to API');
           }
-          return prev;
-        });
+        }
+      } catch (apiError) {
+        console.log('⚠️ Could not fetch onboarding status from API, falling back to localStorage');
       }
       
-      // Vérifier aussi le localStorage pour la cohérence
+      // Fallback: Vérifier le localStorage pour la cohérence
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
       if (storedProgress) {
         try {
           const progress = JSON.parse(storedProgress);
           if (progress.completedSteps && Array.isArray(progress.completedSteps)) {
+            console.log('📱 Found completed steps in localStorage:', progress.completedSteps);
             setCompletedSteps(progress.completedSteps);
           }
         } catch (e) {
@@ -204,24 +213,55 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
         throw new Error('Company ID not found. Please refresh the page and try again.');
       }
 
-      const response = await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
-        { status: 'completed' }
-      );
+      console.log('🚀 Completing telephony setup...');
       
-      console.log('✅ Telephony setup step 5 marked as completed:', response.data);
+      // Try to update the general onboarding status first (more reliable approach)
+      try {
+        // Get current onboarding status
+        const onboardingResponse = await axios.get(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+        );
+        
+        const currentCompletedSteps = (onboardingResponse.data as any)?.completedSteps || [];
+        const newCompletedSteps = currentCompletedSteps.includes(5) ? currentCompletedSteps : [...currentCompletedSteps, 5];
+        
+        // Update the general onboarding status
+        const updateResponse = await axios.put(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`,
+          { 
+            completedSteps: newCompletedSteps,
+            currentPhase: 2
+          }
+        );
+        
+        console.log('✅ Telephony setup step 5 marked as completed via general onboarding:', updateResponse.data);
+        
+      } catch (apiError) {
+        console.log('⚠️ Could not update via general onboarding API, trying individual step endpoint...');
+        
+        // Fallback: try the individual step endpoint
+        try {
+          const response = await axios.put(
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
+            { status: 'completed' }
+          );
+          console.log('✅ Telephony setup step 5 marked as completed via individual endpoint:', response.data);
+        } catch (stepError) {
+          console.log('⚠️ Individual step endpoint also failed, proceeding with localStorage only');
+        }
+      }
       
       // Update local state to reflect the completed step
       setCompletedSteps((prev: number[]) => {
         const newCompletedSteps = prev.includes(5) ? prev : [...prev, 5];
       
-      // Force update the onboarding progress in localStorage/cookies
-      const currentProgress = {
-        currentPhase: 2,
+        // Force update the onboarding progress in localStorage/cookies
+        const currentProgress = {
+          currentPhase: 2,
           completedSteps: newCompletedSteps,
           lastUpdated: new Date().toISOString()
-      };
-      localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+        };
+        localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
         
         return newCompletedSteps;
       });
