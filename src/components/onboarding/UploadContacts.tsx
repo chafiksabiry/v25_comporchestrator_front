@@ -217,6 +217,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   const [parsedLeads, setParsedLeads] = useState<Lead[]>([]);
   const [showSaveButton, setShowSaveButton] = useState(true);
   const [showFileName, setShowFileName] = useState(true);
+  const [isSavingLeads, setIsSavingLeads] = useState(false);
+  const [savedLeadsCount, setSavedLeadsCount] = useState(0);
   const [hasZohoConfig, setHasZohoConfig] = useState(false);
   const [zohoConfig, setZohoConfig] = useState({
     clientId: '',
@@ -1348,11 +1350,10 @@ ${truncatedContent}`;
   const handleSaveLeads = async () => {
     if (!parsedLeads || parsedLeads.length === 0) return;
     
-    // Début du traitement
-    setIsProcessing(true);
-    setUploadProgress(0);
+    // Début de la sauvegarde (séparé du processing)
+    setIsSavingLeads(true);
+    setSavedLeadsCount(0);
     setShowSaveButton(false);
-    setShowFileName(false);
     
     // Utiliser la référence pour suivre l'état de traitement de manière fiable
     processingRef.current = true;
@@ -1380,8 +1381,8 @@ ${truncatedContent}`;
 
       // Sauvegarder en parallèle par lots pour de meilleures performances
       const batchSize = 10; // Traiter 10 leads à la fois
-      const savedLeads = [];
-      const failedLeads = [];
+      const savedLeads: any[] = [];
+      const failedLeads: { index: number; error: string }[] = [];
       
       for (let i = 0; i < leadsForAPI.length; i += batchSize) {
         // Vérifier si le traitement a été annulé avec la référence fiable
@@ -1435,9 +1436,19 @@ ${truncatedContent}`;
           }
         });
         
-        // Mettre à jour la progression
+        // Mettre à jour la progression et afficher les leads sauvegardés
         const progress = Math.round(((i + batch.length) / leadsForAPI.length) * 100);
         setUploadProgress(progress);
+        setSavedLeadsCount(savedLeads.length);
+        
+        // Rafraîchir automatiquement la liste des leads tous les 10 leads sauvegardés
+        if (savedLeads.length > 0 && savedLeads.length % 10 === 0) {
+          try {
+            await fetchLeads();
+          } catch (error) {
+            console.warn('Error refreshing leads during save:', error);
+          }
+        }
         
         // Petite pause entre les lots pour éviter de surcharger l'API
         if (i + batchSize < leadsForAPI.length) {
@@ -1456,7 +1467,7 @@ ${truncatedContent}`;
         setUploadProgress(100);
         toast.success(`Successfully saved ${savedCount} contacts!`);
         
-        // Rafraîchir la liste des leads
+        // Rafraîchir la liste des leads une dernière fois
         if (selectedGigId) {
           await fetchLeads();
         }
@@ -1509,7 +1520,7 @@ ${truncatedContent}`;
       
     } finally {
       // TOUJOURS réinitialiser l'état, même en cas d'erreur
-      setIsProcessing(false);
+      setIsSavingLeads(false);
       processingRef.current = false; // Réinitialiser la référence aussi
       setShowSaveButton(true);
       setShowFileName(true);
@@ -2651,20 +2662,51 @@ ${truncatedContent}`;
                                 <button
                 className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-white font-bold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                 onClick={handleSaveLeads}
-                disabled={isProcessing}
+                disabled={isSavingLeads}
               >
-                {isProcessing ? (
-                  <div className="flex items-center justify-center">
-                    <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-                    Saving Contacts...
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center">
-                    <UserPlus className="mr-2 h-5 w-5" />
-                    Save {parsedLeads.length} Contacts
-                  </div>
-                )}
+                <div className="flex items-center justify-center">
+                  <UserPlus className="mr-2 h-5 w-5" />
+                  Save {parsedLeads.length} Contacts
+                </div>
               </button>
+              
+              {/* Bouton de sauvegarde séparé qui apparaît pendant la sauvegarde */}
+              {isSavingLeads && (
+                <div className="mt-4 space-y-3">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <RefreshCw className="mr-3 h-5 w-5 text-green-600 animate-spin" />
+                        <div>
+                          <h4 className="text-sm font-semibold text-green-800">Saving Contacts...</h4>
+                          <p className="text-xs text-green-600">
+                            {savedLeadsCount} of {parsedLeads.length} contacts saved
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-bold text-green-700">{Math.round((savedLeadsCount / parsedLeads.length) * 100)}%</div>
+                        <div className="w-16 h-2 bg-green-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-300"
+                            style={{ width: `${(savedLeadsCount / parsedLeads.length) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button
+                    className="w-full rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-4 py-3 text-white font-bold hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    disabled
+                  >
+                    <div className="flex items-center justify-center">
+                      <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                      Saving {savedLeadsCount}/{parsedLeads.length} Contacts...
+                    </div>
+                  </button>
+                </div>
+              )}
               
 
                 </div>
