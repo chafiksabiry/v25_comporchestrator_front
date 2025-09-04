@@ -25,7 +25,7 @@ import Cookies from 'js-cookie';
 import { phoneNumberService } from '../services/api';
 import type { AvailablePhoneNumber } from '../services/api';
 
-const gigId = import.meta.env.DEV ? '683083e7af226bea2d459372' : Cookies.get('gigId');
+const gigId = Cookies.get('lastGigId');
 const companyId = Cookies.get('companyId');
 
 interface PhoneNumber {
@@ -39,14 +39,14 @@ interface TelephonySetupProps {
 }
 
 const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
-  const [provider, setProvider] = useState('telnyx');
+  const [provider, setProvider] = useState('twilio'); // Try Twilio for Morocco
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [destinationZone, setDestinationZone] = useState('');
   const [callRecording, setCallRecording] = useState(true);
   const [voicemail, setVoicemail] = useState(true);
   const [callRouting, setCallRouting] = useState('round-robin');
   const [webhookUrl, setWebhookUrl] = useState('');
-  const [testMode, setTestMode] = useState(true);
+  const [testMode, setTestMode] = useState(true); // Force test mode until backend issue is resolved
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [availableNumbers, setAvailableNumbers] = useState<AvailablePhoneNumber[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -96,32 +96,49 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
     checkCompletedSteps();
   }, [companyId]);
 
+  // Auto-search for available numbers when destination zone is loaded
+  useEffect(() => {
+    if (destinationZone && provider) {
+      console.log('🚀 Auto-searching for available numbers with destination zone:', destinationZone);
+      searchAvailableNumbers();
+    }
+  }, [destinationZone, provider]);
+
   const checkCompletedSteps = async () => {
     try {
       if (!companyId) return;
       
-      // Vérifier l'état de l'étape 5 (Telephony Setup)
+      console.log('🔍 Checking step 5 status for company:', companyId);
+      
+      // First, try to get the general onboarding status
+      try {
       const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`
-      );
-
-      // Fix: Ensure response.data is typed and has 'status' property
-      const stepStatus = (response.data as { status?: string })?.status;
-      if (stepStatus === 'completed') {
-        setCompletedSteps((prev: number[]) => {
-          if (!prev.includes(5)) {
-            return [...prev, 5];
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+        );
+        
+        console.log('📡 API response for onboarding:', response.data);
+        
+        if (response.data && (response.data as any).completedSteps && Array.isArray((response.data as any).completedSteps)) {
+          const completedSteps = (response.data as any).completedSteps;
+          if (completedSteps.includes(5)) {
+            console.log('✅ Step 5 is already completed according to API');
+            setCompletedSteps(completedSteps);
+            return;
+          } else {
+            console.log('⚠️ Step 5 is not completed according to API');
           }
-          return prev;
-        });
+        }
+      } catch (apiError) {
+        console.log('⚠️ Could not fetch onboarding status from API, falling back to localStorage');
       }
       
-      // Vérifier aussi le localStorage pour la cohérence
+      // Fallback: Vérifier le localStorage pour la cohérence
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
       if (storedProgress) {
         try {
           const progress = JSON.parse(storedProgress);
           if (progress.completedSteps && Array.isArray(progress.completedSteps)) {
+            console.log('📱 Found completed steps in localStorage:', progress.completedSteps);
             setCompletedSteps(progress.completedSteps);
           }
         } catch (e) {
@@ -153,7 +170,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
 
       const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}/destination-zone`);
       const data = await response.json();
-      console.log(data.data.code);
+      console.log('🌍 Destination zone data from API:', data);
+      console.log('🌍 Destination zone code:', data.data.code);
       setDestinationZone(data.data.code);
     } catch (error) {
       console.error('Error fetching destination zone:', error);
@@ -170,9 +188,13 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       return;
     }
     
+    console.log('🔍 Searching phone numbers with destination zone:', destinationZone);
+    console.log('🔍 Using provider:', provider);
+    
     setIsLoading(true);
     try {
       const data = await phoneNumberService.searchPhoneNumbers(destinationZone, provider);
+      console.log('📞 Phone numbers found:', data);
       setAvailableNumbers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error searching numbers:', error);
@@ -188,11 +210,44 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
     }
 
     try {
+      console.log('🛒 Attempting to purchase number:', phoneNumber);
+      console.log('🛒 Provider:', provider);
+      console.log('🛒 GigId:', gigId);
+      console.log('🛒 Test Mode:', testMode);
+      
+      // In test mode, simulate successful purchase
+      if (testMode) {
+        console.log('🧪 Test Mode: Simulating successful purchase');
+        
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Add to existing numbers list (simulation)
+        const newNumber = {
+          phoneNumber: phoneNumber,
+          status: 'active',
+          features: ['voice', 'sms'],
+          gigId: gigId
+        };
+        
+        setPhoneNumbers(prev => [...prev, newNumber]);
+        
+        // Remove from available numbers
+        setAvailableNumbers(prev => prev.filter(num => getPhoneNumber(num) !== phoneNumber));
+        
+        return;
+      }
+      
+      // Real purchase
       await phoneNumberService.purchasePhoneNumber(phoneNumber, provider, gigId);
+      
+      console.log('✅ Number purchased successfully!');
       fetchExistingNumbers(); // Refresh the list after purchase
-      setIsSearchOpen(false); // Close the search
+      
+      // Show success message
+      
     } catch (error) {
-      console.error('Error purchasing number:', error);
+      console.error('❌ Error purchasing number:', error);
     }
   };
 
@@ -204,12 +259,43 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
         throw new Error('Company ID not found. Please refresh the page and try again.');
       }
 
+      console.log('🚀 Completing telephony setup...');
+      
+      // Try to update the general onboarding status first (more reliable approach)
+      try {
+        // Get current onboarding status
+        const onboardingResponse = await axios.get(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+        );
+        
+        const currentCompletedSteps = (onboardingResponse.data as any)?.completedSteps || [];
+        const newCompletedSteps = currentCompletedSteps.includes(5) ? currentCompletedSteps : [...currentCompletedSteps, 5];
+        
+        // Update the general onboarding status
+        const updateResponse = await axios.put(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`,
+          { 
+            completedSteps: newCompletedSteps,
+            currentPhase: 2
+          }
+        );
+        
+        console.log('✅ Telephony setup step 5 marked as completed via general onboarding:', updateResponse.data);
+        
+      } catch (apiError) {
+        console.log('⚠️ Could not update via general onboarding API, trying individual step endpoint...');
+        
+        // Fallback: try the individual step endpoint
+        try {
       const response = await axios.put(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
         { status: 'completed' }
       );
-      
-      console.log('✅ Telephony setup step 5 marked as completed:', response.data);
+          console.log('✅ Telephony setup step 5 marked as completed via individual endpoint:', response.data);
+        } catch (stepError) {
+          console.log('⚠️ Individual step endpoint also failed, proceeding with localStorage only');
+        }
+      }
       
       // Update local state to reflect the completed step
       setCompletedSteps((prev: number[]) => {
@@ -282,11 +368,17 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
             className={`rounded-lg px-4 py-2 text-sm font-medium ${
               testMode 
                 ? 'bg-yellow-100 text-yellow-800' 
-                : 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
             }`}
-            onClick={() => setTestMode(!testMode)}
+            onClick={() => {
+              if (!testMode) {
+                const confirm = window.confirm('⚠️ ATTENTION: Le mode production a des problèmes avec l\'achat de numéros français. Voulez-vous vraiment continuer ?');
+                if (!confirm) return;
+              }
+              setTestMode(!testMode);
+            }}
           >
-            {testMode ? 'Test Mode' : 'Production Mode'}
+            {testMode ? '🧪 Test Mode (Recommandé)' : '⚠️ Production Mode (Problème connu)'}
           </button>
           <button 
             className={`rounded-lg px-4 py-2 text-sm font-medium ${
@@ -337,33 +429,34 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       <div className="rounded-lg bg-white p-6 shadow">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-900">Phone Numbers</h3>
-          <button
-            onClick={() => setIsSearchOpen(!isSearchOpen)}
-            className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-700"
-          >
-            {isSearchOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-            <span>{isSearchOpen ? 'Hide Search' : 'Search Numbers'}</span>
-          </button>
+          {destinationZone && (
+            <span className="text-sm text-gray-600">
+              Destination Zone: <span className="font-medium">{destinationZone}</span>
+            </span>
+          )}
         </div>
 
-        {/* Search Panel */}
-        {isSearchOpen && (
-          <div className="mb-6 space-y-4 border-b pb-6">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={searchAvailableNumbers}
-                disabled={isLoading || !destinationZone}
-                className="flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
-              >
-                <Search className="mr-2 h-4 w-4" />
-                {isLoading ? 'Searching...' : 'Search Numbers'}
-              </button>
+        {/* Information about backend issue */}
+        {!testMode && (
+          <div className="mb-4 rounded-lg bg-red-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Problème connu</h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>L'achat de numéros français en mode production échoue actuellement (erreur 500). Utilisez le mode test pour simuler les achats.</p>
+                </div>
+              </div>
             </div>
+            </div>
+        )}
 
-            {/* Available Numbers List */}
-            {Array.isArray(availableNumbers) && availableNumbers.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <h4 className="text-sm font-medium text-gray-700">Available Numbers</h4>
+        {/* Available Numbers List - Auto-displayed */}
+        {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
+          <div className="mb-6 space-y-2">
+            <h4 className="text-sm font-medium text-gray-700">Available Numbers (Destination: {destinationZone})</h4>
                 <div className="grid gap-2">
                   {availableNumbers.map((number) => {
                     const phoneNumber = getPhoneNumber(number);
@@ -391,13 +484,80 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
                   })}
                 </div>
               </div>
-            )}
+        ) : destinationZone && availableNumbers.length === 0 && (
+          <div className="mb-6 rounded-lg bg-yellow-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-yellow-400" />
+              </div>
+              <div className="ml-3 flex-1">
+                <h3 className="text-sm font-medium text-yellow-800">Aucun numéro disponible</h3>
+                <div className="mt-2 text-sm text-yellow-700">
+                  <p>Aucun numéro téléphonique n'est disponible pour <strong>{destinationZone}</strong> avec le provider <strong>{provider}</strong>.</p>
+                  <p className="mt-1">
+                    {provider === 'twilio' && "Twilio a une erreur serveur (500). "}
+                    {provider === 'telnyx' && "Telnyx ne semble pas avoir de numéros pour ce pays. "}
+                    {provider === 'vonage' && "Vonage ne semble pas avoir de numéros pour ce pays. "}
+                    Essayez un autre provider ou contactez le support.
+                  </p>
+                </div>
+                <div className="mt-3 flex space-x-2">
+                  <button
+                    onClick={() => {
+                      setProvider('twilio');
+                      searchAvailableNumbers();
+                    }}
+                    className={`rounded-md px-3 py-1 text-xs text-white ${
+                      provider === 'twilio' 
+                        ? 'bg-red-600 hover:bg-red-700' 
+                        : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
+                  >
+                    {provider === 'twilio' ? '⚠️ Twilio (Erreur)' : 'Essayer Twilio'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setProvider('telnyx');
+                      searchAvailableNumbers();
+                    }}
+                    className={`rounded-md px-3 py-1 text-xs text-white ${
+                      provider === 'telnyx' 
+                        ? 'bg-orange-600 hover:bg-orange-700' 
+                        : 'bg-green-600 hover:bg-green-700'
+                    }`}
+                  >
+                    {provider === 'telnyx' ? '⚠️ Telnyx (Vide)' : 'Essayer Telnyx'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setProvider('vonage');
+                      searchAvailableNumbers();
+                    }}
+                    className="rounded-md bg-purple-600 px-3 py-1 text-xs text-white hover:bg-purple-700"
+                  >
+                    Essayer Vonage
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Existing Numbers List */}
+        {/* Existing Numbers List - Filtered by destination zone */}
+        {Array.isArray(phoneNumbers) && phoneNumbers.length > 0 && (() => {
+          // Filter numbers based on destination zone
+          const filteredNumbers = phoneNumbers.filter(number => {
+            if (destinationZone === 'FR') {
+              return number.phoneNumber.startsWith('+33');
+            }
+            // For other zones, show all numbers or implement specific filtering
+            return true;
+          });
+          
+          return filteredNumbers.length > 0 ? (
         <div className="space-y-4">
-          {Array.isArray(phoneNumbers) && phoneNumbers.map((number) => (
+              <h4 className="text-sm font-medium text-gray-700">Existing Numbers ({destinationZone})</h4>
+              {filteredNumbers.map((number) => (
             <div key={number.phoneNumber} className="rounded-lg bg-gray-50 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
@@ -414,6 +574,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
             </div>
           ))}
         </div>
+          ) : null;
+        })()}
       </div>
 
       {/* Features Configuration */}
