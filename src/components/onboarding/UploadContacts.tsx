@@ -620,10 +620,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const lines = cleanedFileContent.split('\n');
       
       // Check if content is too large or has many lines - use smart chunking for very large files
-      if (!isOptimized && (cleanedFileContent.length > 100000 || lines.length > 200)) {
-        console.warn(`⚠️ File is very large (${lines.length} lines, ${cleanedFileContent.length} characters) - using smart chunking`);
+      if (!isOptimized && (cleanedFileContent.length > 50000 || lines.length > 100)) {
+        console.warn(`⚠️ File is large (${lines.length} lines, ${cleanedFileContent.length} characters) - using smart chunking`);
         
-        // Use smart chunking for very large files to avoid token limit issues
+        // Use smart chunking for large files to avoid token limit issues
         showProcessingStatus(`Traitement par lots intelligents (${lines.length} lignes)...`);
         
         // Start real progress updates with more granular steps
@@ -696,36 +696,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           console.error(`❌ CRITICAL ERROR: Expected ${lines.length - 1} leads, but got ${result.leads.length}`);
           console.error(`   This means OpenAI did not process all rows as instructed!`);
           
-          // Force creation of missing leads
-          const missingLeads = lines.length - 1 - result.leads.length;
-          console.warn(`⚠️ Creating ${missingLeads} missing leads to complete the dataset...`);
-          
-          // Create placeholder leads for missing rows
-          for (let i = result.leads.length; i < lines.length - 1; i++) {
-            const rowData = lines[i + 1]; // +1 because lines[0] is header
-            const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
-            const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
-            
-            result.leads.push({
-              userId: { $oid: userId },
-              companyId: { $oid: companyId },
-              gId: { $oid: gigId },
-              Last_Activity_Time: null,
-              Deal_Name: email || `Lead from row ${i + 2}`,
-              Email_1: email,
-              Phone: phone,
-              Stage: "New",
-              Pipeline: "Sales Pipeline",
-              Project_Tags: [],
-              Prénom: "",
-              Nom: ""
-            });
-          }
-          
-          // Update validation to reflect all leads are now valid
-          result.validation.validRows = result.leads.length;
-          result.validation.invalidRows = 0;
-          
+          // Instead of creating artificial leads, throw an error to retry
+          throw new Error(`OpenAI processing failed: Expected ${lines.length - 1} leads but got ${result.leads.length}. Please try again with a smaller file or check the file format.`);
         }
         
         return result;
@@ -734,9 +706,22 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       // Prepare content for OpenAI (using the fileContent parameter)
       const truncatedContent = fileContent;
       
-      // Ultra-simple prompt to avoid JSON truncation
-      const prompt = `Process ${lines.length - 1} rows. Return ONLY valid JSON:
+      // Prompt optimisé pour éviter les erreurs de traitement
+      const prompt = `You are a data processing expert. Process EXACTLY ${lines.length - 1} rows from the CSV data below.
 
+CRITICAL: You MUST process ALL ${lines.length - 1} rows. Do not skip any rows.
+
+For each row, create a lead object with these fields:
+- userId: {"$oid": "${userId}"}
+- companyId: {"$oid": "${companyId}"}
+- gigId: {"$oid": "${gigId}"}
+- Deal_Name: Combine Prénom + Nom (use "Unknown" if missing)
+- Email_1: Email address
+- Phone: Phone number
+- Stage: "New"
+- Pipeline: "Sales Pipeline"
+
+Return ONLY this JSON format:
 {
   "leads": [
     {
@@ -752,19 +737,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   ]
 }
 
-EXEMPLE: Si une ligne a Prénom="Jean" et Nom="Dupont", alors Deal_Name="Jean Dupont"
-EXEMPLE: Si une ligne a Prénom="Marie" et Nom="", alors Deal_Name="Marie Unknown"
-EXEMPLE: Si une ligne a Prénom="" et Nom="Martin", alors Deal_Name="Unknown Martin"
-
-CRITICAL RULES:
-1. Email→Email_1, Phone→Phone
-2. Deal_Name = Prénom + Nom (OBLIGATOIRE pour toutes les lignes)
-3. Si Prénom ou Nom manque, utilise "Unknown" pour la partie manquante
-4. JAMAIS utiliser l'email comme Deal_Name sauf si Prénom ET Nom sont vides
-5. Process ALL rows - never skip any
-6. Format Deal_Name: "Prénom Nom" (exemple: "Jean Dupont", "Marie Unknown", "Unknown Martin")
-
-Data:
+CSV Data (${lines.length - 1} rows to process):
 ${truncatedContent}`;
 
       // Update progress for OpenAI request
@@ -941,32 +914,8 @@ ${truncatedContent}`;
         console.error(`❌ CRITICAL ERROR: Expected ${lines.length - 1} leads, but got ${processedLeads.length}`);
         console.error(`   This means OpenAI did not process all rows as instructed!`);
         
-        // Force creation of missing leads
-        const missingLeads = lines.length - 1 - processedLeads.length;
-        console.warn(`⚠️ Creating ${missingLeads} missing leads to complete the dataset...`);
-        
-        // Create placeholder leads for missing rows
-        for (let i = processedLeads.length; i < lines.length - 1; i++) {
-          const rowData = lines[i + 1]; // +1 because lines[0] is header
-          const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
-          const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
-          
-          processedLeads.push({
-            userId: { $oid: userId },
-            companyId: { $oid: companyId },
-            gId: { $oid: gigId },
-            Last_Activity_Time: null,
-            Deal_Name: email || `Lead from row ${i + 2}`,
-            Email_1: email,
-            Phone: phone,
-            Stage: "New",
-            Pipeline: "Sales Pipeline",
-            Project_Tags: [],
-            Prénom: "",
-            Nom: ""
-          });
-        }
-        
+        // Instead of creating artificial leads, throw an error to retry
+        throw new Error(`OpenAI processing failed: Expected ${lines.length - 1} leads but got ${processedLeads.length}. Please try again with a smaller file or check the file format.`);
       }
 
       return {
@@ -1281,6 +1230,8 @@ ${truncatedContent}`;
               errorMessage = 'OpenAI API error. Please check your API key and try again.';
             } else if (error.message.includes('Invalid response format')) {
               errorMessage = 'AI processing returned invalid format. Please check your file structure.';
+            } else if (error.message.includes('OpenAI processing failed')) {
+              errorMessage = error.message;
             } else {
               errorMessage = error.response?.data?.message || error.message || 'Error processing file';
             }
