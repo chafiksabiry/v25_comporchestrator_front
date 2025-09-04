@@ -430,28 +430,39 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
           </div>
         )}
 
-        {/* Existing Numbers List */}
-        {Array.isArray(phoneNumbers) && phoneNumbers.length > 0 && (
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium text-gray-700">Existing Numbers</h4>
-            {phoneNumbers.map((number) => (
-              <div key={number.phoneNumber} className="rounded-lg bg-gray-50 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Phone className="mr-2 h-5 w-5 text-indigo-600" />
-                    <span className="font-medium text-gray-900">{number.phoneNumber}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-500">{number.status}</span>
-                    <button className="rounded-full bg-red-100 p-1 text-red-600 hover:bg-red-200">
-                      <VolumeX className="h-4 w-4" />
-                    </button>
+        {/* Existing Numbers List - Filtered by destination zone */}
+        {Array.isArray(phoneNumbers) && phoneNumbers.length > 0 && (() => {
+          // Filter numbers based on destination zone
+          const filteredNumbers = phoneNumbers.filter(number => {
+            if (destinationZone === 'FR') {
+              return number.phoneNumber.startsWith('+33');
+            }
+            // For other zones, show all numbers or implement specific filtering
+            return true;
+          });
+          
+          return filteredNumbers.length > 0 ? (
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium text-gray-700">Existing Numbers ({destinationZone})</h4>
+              {filteredNumbers.map((number) => (
+                <div key={number.phoneNumber} className="rounded-lg bg-gray-50 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Phone className="mr-2 h-5 w-5 text-indigo-600" />
+                      <span className="font-medium text-gray-900">{number.phoneNumber}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-500">{number.status}</span>
+                      <button className="rounded-full bg-red-100 p-1 text-red-600 hover:bg-red-200">
+                        <VolumeX className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          ) : null;
+        })()}
       </div>
 
       {/* Features Configuration */}
