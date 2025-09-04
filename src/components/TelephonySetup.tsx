@@ -162,7 +162,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
 
       const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}/destination-zone`);
       const data = await response.json();
-      console.log(data.data.code);
+      console.log('🌍 Destination zone data from API:', data);
+      console.log('🌍 Destination zone code:', data.data.code);
       setDestinationZone(data.data.code);
     } catch (error) {
       console.error('Error fetching destination zone:', error);
@@ -179,9 +180,13 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       return;
     }
     
+    console.log('🔍 Searching phone numbers with destination zone:', destinationZone);
+    console.log('🔍 Using provider:', provider);
+    
     setIsLoading(true);
     try {
       const data = await phoneNumberService.searchPhoneNumbers(destinationZone, provider);
+      console.log('📞 Phone numbers found:', data);
       setAvailableNumbers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error searching numbers:', error);
@@ -398,6 +403,11 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
                 <Search className="mr-2 h-4 w-4" />
                 {isLoading ? 'Searching...' : 'Search Numbers'}
               </button>
+              {destinationZone && (
+                <span className="text-sm text-gray-600">
+                  Destination Zone: <span className="font-medium">{destinationZone}</span>
+                </span>
+              )}
             </div>
 
             {/* Available Numbers List */}
