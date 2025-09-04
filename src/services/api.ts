@@ -47,12 +47,16 @@ export const phoneNumberService = {
     try {
       const endpoint = provider === 'twilio' ? '/search/twilio' : '/search';
       const url = `${import.meta.env.VITE_API_BASE_URL}/phone-numbers${endpoint}`;
-      console.log(`Searching ${provider} numbers from:`, url);
-      console.log('Search params:', { countryCode, provider });
+      console.log(`🔍 Searching ${provider} numbers from:`, url);
+      console.log('🔍 Search params being sent:', { countryCode, provider });
+      console.log('🔍 Full URL with params:', `${url}?countryCode=${countryCode}`);
       
       const response = await axios.get<AvailablePhoneNumber[]>(url, {
         params: { countryCode }
       });
+
+      console.log('📞 API Response status:', response.status);
+      console.log('📞 API Response data:', response.data);
 
       if (!response.data || typeof response.data === 'string') {
         console.error('Invalid response format:', response.data);

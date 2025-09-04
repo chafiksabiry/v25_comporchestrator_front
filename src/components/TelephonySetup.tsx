@@ -96,6 +96,14 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
     checkCompletedSteps();
   }, [companyId]);
 
+  // Auto-search for available numbers when destination zone is loaded
+  useEffect(() => {
+    if (destinationZone && provider) {
+      console.log('🚀 Auto-searching for available numbers with destination zone:', destinationZone);
+      searchAvailableNumbers();
+    }
+  }, [destinationZone, provider]);
+
   const checkCompletedSteps = async () => {
     try {
       if (!companyId) return;
@@ -382,88 +390,68 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       <div className="rounded-lg bg-white p-6 shadow">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-900">Phone Numbers</h3>
-          <button
-            onClick={() => setIsSearchOpen(!isSearchOpen)}
-            className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-700"
-          >
-            {isSearchOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-            <span>{isSearchOpen ? 'Hide Search' : 'Search Numbers'}</span>
-          </button>
+          {destinationZone && (
+            <span className="text-sm text-gray-600">
+              Destination Zone: <span className="font-medium">{destinationZone}</span>
+            </span>
+          )}
         </div>
 
-        {/* Search Panel */}
-        {isSearchOpen && (
-          <div className="mb-6 space-y-4 border-b pb-6">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={searchAvailableNumbers}
-                disabled={isLoading || !destinationZone}
-                className="flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"
-              >
-                <Search className="mr-2 h-4 w-4" />
-                {isLoading ? 'Searching...' : 'Search Numbers'}
-              </button>
-              {destinationZone && (
-                <span className="text-sm text-gray-600">
-                  Destination Zone: <span className="font-medium">{destinationZone}</span>
-                </span>
-              )}
+        {/* Available Numbers List - Auto-displayed */}
+        {Array.isArray(availableNumbers) && availableNumbers.length > 0 && (
+          <div className="mb-6 space-y-2">
+            <h4 className="text-sm font-medium text-gray-700">Available Numbers (Destination: {destinationZone})</h4>
+            <div className="grid gap-2">
+              {availableNumbers.map((number) => {
+                const phoneNumber = getPhoneNumber(number);
+                return (
+                  <div 
+                    key={phoneNumber}
+                    className="flex items-center justify-between rounded-lg border p-3"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium">{phoneNumber}</span>
+                      {number.locality && (
+                        <span className="text-sm text-gray-500">
+                          {number.locality}, {number.region}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => purchaseNumber(phoneNumber)}
+                      className="rounded-md bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700"
+                    >
+                      Purchase
+                    </button>
+                  </div>
+                );
+              })}
             </div>
-
-            {/* Available Numbers List */}
-            {Array.isArray(availableNumbers) && availableNumbers.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <h4 className="text-sm font-medium text-gray-700">Available Numbers</h4>
-                <div className="grid gap-2">
-                  {availableNumbers.map((number) => {
-                    const phoneNumber = getPhoneNumber(number);
-                    return (
-                      <div 
-                        key={phoneNumber}
-                        className="flex items-center justify-between rounded-lg border p-3"
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-medium">{phoneNumber}</span>
-                          {number.locality && (
-                            <span className="text-sm text-gray-500">
-                              {number.locality}, {number.region}
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => purchaseNumber(phoneNumber)}
-                          className="rounded-md bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700"
-                        >
-                          Purchase
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
         {/* Existing Numbers List */}
-        <div className="space-y-4">
-          {Array.isArray(phoneNumbers) && phoneNumbers.map((number) => (
-            <div key={number.phoneNumber} className="rounded-lg bg-gray-50 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Phone className="mr-2 h-5 w-5 text-indigo-600" />
-                  <span className="font-medium text-gray-900">{number.phoneNumber}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">{number.status}</span>
-                  <button className="rounded-full bg-red-100 p-1 text-red-600 hover:bg-red-200">
-                    <VolumeX className="h-4 w-4" />
-                  </button>
+        {Array.isArray(phoneNumbers) && phoneNumbers.length > 0 && (
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium text-gray-700">Existing Numbers</h4>
+            {phoneNumbers.map((number) => (
+              <div key={number.phoneNumber} className="rounded-lg bg-gray-50 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Phone className="mr-2 h-5 w-5 text-indigo-600" />
+                    <span className="font-medium text-gray-900">{number.phoneNumber}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-500">{number.status}</span>
+                    <button className="rounded-full bg-red-100 p-1 text-red-600 hover:bg-red-200">
+                      <VolumeX className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Features Configuration */}
