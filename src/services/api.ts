@@ -78,17 +78,27 @@ export const phoneNumberService = {
     try {
       const endpoint = provider === 'twilio' ? '/purchase/twilio' : '/purchase';
       const url = `${import.meta.env.VITE_API_BASE_URL}/phone-numbers${endpoint}`;
-      console.log(`Purchasing ${provider} number from:`, url);
-      console.log('Purchase params:', { phoneNumber, provider, gigId });
+      console.log(`🛒 Purchasing ${provider} number from:`, url);
+      console.log('🛒 Purchase params:', { phoneNumber, provider, gigId });
       
       const response = await axios.post<PhoneNumber>(url, {
         phoneNumber,
         provider,
         gigId
       });
+      
+      console.log('✅ Purchase response:', response.data);
       return response.data;
     } catch (error) {
-      console.error(`Error purchasing ${provider} phone number:`, error);
+      console.error(`❌ Error purchasing ${provider} phone number:`, error);
+      
+      // Add more detailed error information
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Response status:', error.response?.status);
+        console.error('❌ Response data:', error.response?.data);
+        console.error('❌ Request config:', error.config);
+      }
+      
       throw error;
     }
   }

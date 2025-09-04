@@ -210,11 +210,33 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
     }
 
     try {
+      console.log('🛒 Attempting to purchase number:', phoneNumber);
+      console.log('🛒 Provider:', provider);
+      console.log('🛒 GigId:', gigId);
+      
       await phoneNumberService.purchasePhoneNumber(phoneNumber, provider, gigId);
+      
+      console.log('✅ Number purchased successfully!');
       fetchExistingNumbers(); // Refresh the list after purchase
-      setIsSearchOpen(false); // Close the search
+      
+      // Show success message
+      alert(`✅ Numéro ${phoneNumber} acheté avec succès !`);
+      
     } catch (error) {
-      console.error('Error purchasing number:', error);
+      console.error('❌ Error purchasing number:', error);
+      
+      // Show user-friendly error message
+      if (error instanceof Error) {
+        if (error.message.includes('500')) {
+          alert(`❌ Erreur serveur lors de l'achat du numéro ${phoneNumber}. Veuillez réessayer plus tard ou contacter le support.`);
+        } else if (error.message.includes('400')) {
+          alert(`❌ Paramètres invalides pour l'achat du numéro ${phoneNumber}. Vérifiez la configuration.`);
+        } else {
+          alert(`❌ Erreur lors de l'achat du numéro ${phoneNumber}: ${error.message}`);
+        }
+      } else {
+        alert(`❌ Erreur inconnue lors de l'achat du numéro ${phoneNumber}. Veuillez réessayer.`);
+      }
     }
   };
 
