@@ -46,7 +46,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
   const [voicemail, setVoicemail] = useState(true);
   const [callRouting, setCallRouting] = useState('round-robin');
   const [webhookUrl, setWebhookUrl] = useState('');
-  const [testMode, setTestMode] = useState(true);
+  const [testMode, setTestMode] = useState(true); // Force test mode until backend issue is resolved
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [availableNumbers, setAvailableNumbers] = useState<AvailablePhoneNumber[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -383,11 +383,17 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
             className={`rounded-lg px-4 py-2 text-sm font-medium ${
               testMode 
                 ? 'bg-yellow-100 text-yellow-800' 
-                : 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
             }`}
-            onClick={() => setTestMode(!testMode)}
+            onClick={() => {
+              if (!testMode) {
+                const confirm = window.confirm('⚠️ ATTENTION: Le mode production a des problèmes avec l\'achat de numéros français. Voulez-vous vraiment continuer ?');
+                if (!confirm) return;
+              }
+              setTestMode(!testMode);
+            }}
           >
-            {testMode ? '🧪 Test Mode' : '🚀 Production Mode'}
+            {testMode ? '🧪 Test Mode (Recommandé)' : '⚠️ Production Mode (Problème connu)'}
           </button>
           <button 
             className={`rounded-lg px-4 py-2 text-sm font-medium ${
@@ -444,6 +450,23 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
             </span>
           )}
         </div>
+
+        {/* Information about backend issue */}
+        {!testMode && (
+          <div className="mb-4 rounded-lg bg-red-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Problème connu</h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>L'achat de numéros français en mode production échoue actuellement (erreur 500). Utilisez le mode test pour simuler les achats.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Available Numbers List - Auto-displayed */}
         {Array.isArray(availableNumbers) && availableNumbers.length > 0 && (
