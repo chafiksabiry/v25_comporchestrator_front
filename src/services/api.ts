@@ -47,12 +47,16 @@ export const phoneNumberService = {
     try {
       const endpoint = provider === 'twilio' ? '/search/twilio' : '/search';
       const url = `${import.meta.env.VITE_API_BASE_URL}/phone-numbers${endpoint}`;
-      console.log(`Searching ${provider} numbers from:`, url);
-      console.log('Search params:', { countryCode, provider });
+      console.log(`🔍 Searching ${provider} numbers from:`, url);
+      console.log('🔍 Search params being sent:', { countryCode, provider });
+      console.log('🔍 Full URL with params:', `${url}?countryCode=${countryCode}`);
       
       const response = await axios.get<AvailablePhoneNumber[]>(url, {
         params: { countryCode }
       });
+
+      console.log('📞 API Response status:', response.status);
+      console.log('📞 API Response data:', response.data);
 
       if (!response.data || typeof response.data === 'string') {
         console.error('Invalid response format:', response.data);
@@ -61,7 +65,21 @@ export const phoneNumberService = {
 
       return response.data;
     } catch (error) {
-      console.error(`Error searching ${provider} phone numbers:`, error);
+      console.error(`❌ Error searching ${provider} phone numbers:`, error);
+      
+      // Add more detailed error information
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Response status:', error.response?.status);
+        console.error('❌ Response data:', error.response?.data);
+        console.error('❌ Request config:', error.config);
+        
+        // If it's a 500 error, return empty array instead of throwing
+        if (error.response?.status === 500) {
+          console.log(`⚠️ ${provider} API returned 500 error, returning empty array`);
+          return [];
+        }
+      }
+      
       throw error;
     }
   },
@@ -74,17 +92,27 @@ export const phoneNumberService = {
     try {
       const endpoint = provider === 'twilio' ? '/purchase/twilio' : '/purchase';
       const url = `${import.meta.env.VITE_API_BASE_URL}/phone-numbers${endpoint}`;
-      console.log(`Purchasing ${provider} number from:`, url);
-      console.log('Purchase params:', { phoneNumber, provider, gigId });
+      console.log(`🛒 Purchasing ${provider} number from:`, url);
+      console.log('🛒 Purchase params:', { phoneNumber, provider, gigId });
       
       const response = await axios.post<PhoneNumber>(url, {
         phoneNumber,
         provider,
         gigId
       });
+      
+      console.log('✅ Purchase response:', response.data);
       return response.data;
     } catch (error) {
-      console.error(`Error purchasing ${provider} phone number:`, error);
+      console.error(`❌ Error purchasing ${provider} phone number:`, error);
+      
+      // Add more detailed error information
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Response status:', error.response?.status);
+        console.error('❌ Response data:', error.response?.data);
+        console.error('❌ Request config:', error.config);
+      }
+      
       throw error;
     }
   }

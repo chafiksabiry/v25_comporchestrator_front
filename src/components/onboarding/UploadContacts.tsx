@@ -48,7 +48,8 @@ import {
   Settings,
   CheckCircle,
   Info,
-  LogOut
+  LogOut,
+  AlertTriangle
 } from 'lucide-react';
 import zohoLogo from '../../assets/public/images/zoho-logo.png';
 import axios from 'axios';
@@ -69,6 +70,7 @@ interface Lead {
   Pipeline?: string;
   updatedAt?: string;
   __v?: number;
+  _isPlaceholder?: boolean; // Mark for invalid/unprocessed leads
 }
 
 interface Gig {
@@ -217,6 +219,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   const [parsedLeads, setParsedLeads] = useState<Lead[]>([]);
   const [showSaveButton, setShowSaveButton] = useState(true);
   const [showFileName, setShowFileName] = useState(true);
+  const [isSavingLeads, setIsSavingLeads] = useState(false);
+  const [savedLeadsCount, setSavedLeadsCount] = useState(0);
+  const [recentlySavedLeads, setRecentlySavedLeads] = useState<Lead[]>([]);
   const [hasZohoConfig, setHasZohoConfig] = useState(false);
   const [zohoConfig, setZohoConfig] = useState({
     clientId: '',
@@ -934,17 +939,14 @@ ${truncatedContent}`;
         updateRealProgress(95, 'Finalisation du traitement...');
       }
 
-      // Validate that we got the expected number of leads
-      if (processedLeads.length !== lines.length - 1) {
-        console.error(`❌ CRITICAL ERROR: Expected ${lines.length - 1} leads, but got ${processedLeads.length}`);
-        console.error(`   This means OpenAI did not process all rows as instructed!`);
-        
-        // Force creation of missing leads
-        const missingLeads = lines.length - 1 - processedLeads.length;
-        console.warn(`⚠️ Creating ${missingLeads} missing leads to complete the dataset...`);
+      // Handle missing leads gracefully - create placeholder leads for unprocessed rows
+      const expectedLeads = lines.length - 1; // -1 for header
+      if (processedLeads.length < expectedLeads) {
+        const missingLeads = expectedLeads - processedLeads.length;
+        console.warn(`⚠️ OpenAI processed ${processedLeads.length}/${expectedLeads} leads. Creating ${missingLeads} placeholder leads for unprocessed rows.`);
         
         // Create placeholder leads for missing rows
-        for (let i = processedLeads.length; i < lines.length - 1; i++) {
+        for (let i = processedLeads.length; i < expectedLeads; i++) {
           const rowData = lines[i + 1]; // +1 because lines[0] is header
           const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
           const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
@@ -961,18 +963,22 @@ ${truncatedContent}`;
             Pipeline: "Sales Pipeline",
             Project_Tags: [],
             Prénom: "",
-            Nom: ""
+            Nom: "",
+            _isPlaceholder: true // Mark as placeholder for tracking
           });
         }
-        
       }
 
+      // Separate valid and invalid leads for better tracking
+      const validLeads = processedLeads.filter((lead: any) => !(lead as any)._isPlaceholder);
+      const invalidLeads = processedLeads.filter((lead: any) => (lead as any)._isPlaceholder);
+
       return {
-        leads: processedLeads,
+        leads: processedLeads, // Return all leads (valid + invalid)
         validation: {
           totalRows,
-          validRows: processedLeads.length, // Use actual length after fixes
-          invalidRows: 0, // All leads are now valid
+          validRows: validLeads.length,
+          invalidRows: invalidLeads.length,
           errors: []
         }
       };
@@ -1080,12 +1086,16 @@ ${truncatedContent}`;
     updateRealProgress(95, 'Finalisation du traitement par lots...');
     await new Promise(resolve => setTimeout(resolve, 200));
     
+    // Separate valid and invalid leads for better tracking
+    const validLeads = allLeads.filter((lead: any) => !(lead as any)._isPlaceholder);
+    const invalidLeads = allLeads.filter((lead: any) => (lead as any)._isPlaceholder);
+
     return {
-      leads: allLeads,
+      leads: allLeads, // Return all leads (valid + invalid)
       validation: {
         totalRows: lines.length - 1,
-        validRows: allLeads.length,
-        invalidRows: Math.max(0, (lines.length - 1) - allLeads.length),
+        validRows: validLeads.length,
+        invalidRows: invalidLeads.length,
         errors: []
       }
     };
@@ -1348,11 +1358,11 @@ ${truncatedContent}`;
   const handleSaveLeads = async () => {
     if (!parsedLeads || parsedLeads.length === 0) return;
     
-    // Début du traitement
-    setIsProcessing(true);
-    setUploadProgress(0);
+    // Début de la sauvegarde (séparé du processing)
+    setIsSavingLeads(true);
+    setSavedLeadsCount(0);
+    setRecentlySavedLeads([]);
     setShowSaveButton(false);
-    setShowFileName(false);
     
     // Utiliser la référence pour suivre l'état de traitement de manière fiable
     processingRef.current = true;
@@ -1378,19 +1388,18 @@ ${truncatedContent}`;
         Project_Tags: lead.Project_Tags || []
       }));
 
-      // Sauvegarder en parallèle par lots pour de meilleures performances
-      const batchSize = 10; // Traiter 10 leads à la fois
-      const savedLeads = [];
-      const failedLeads = [];
+      // Sauvegarder les leads un par un pour affichage immédiat
+      const savedLeads: any[] = [];
+      const failedLeads: { index: number; error: string }[] = [];
       
-      for (let i = 0; i < leadsForAPI.length; i += batchSize) {
+      for (let i = 0; i < leadsForAPI.length; i++) {
         // Vérifier si le traitement a été annulé avec la référence fiable
         if (!processingRef.current) {
           throw new Error('Processing cancelled by user');
         }
         
-        const batch = leadsForAPI.slice(i, i + batchSize);
-        const batchPromises = batch.map(async (lead, batchIndex) => {
+        const lead = leadsForAPI[i];
+        
           try {
             const response = await axios.post(
               `${import.meta.env.VITE_DASHBOARD_API}/leads`, 
@@ -1405,43 +1414,51 @@ ${truncatedContent}`;
             );
             
             if (response.status === 200 || response.status === 201) {
-              return { success: true, data: response.data, index: i + batchIndex };
-            } else {
-              return { success: false, error: response.statusText, index: i + batchIndex };
-            }
-          } catch (error: any) {
-            return { 
-              success: false, 
-              error: error.message || 'Network error', 
-              index: i + batchIndex 
+            savedLeads.push(response.data);
+            
+            // Ajouter le lead sauvegardé à la liste des leads récemment sauvegardés
+            const responseData = response.data as any;
+            const savedLead: Lead = {
+              _id: responseData._id || `temp_${Date.now()}_${i}`,
+              gigId: responseData.gigId || selectedGigId,
+              userId: responseData.userId || Cookies.get('userId') || '',
+              companyId: responseData.companyId || Cookies.get('companyId') || '',
+              Email_1: responseData.Email_1 || lead.Email_1,
+              Phone: responseData.Phone || lead.Phone,
+              Deal_Name: responseData.Deal_Name || lead.Deal_Name,
+              Stage: responseData.Stage || lead.Stage,
+              Pipeline: responseData.Pipeline || lead.Pipeline,
+              updatedAt: new Date().toISOString()
             };
-          }
-        });
-        
-        // Attendre que le lot soit terminé
-        const batchResults = await Promise.allSettled(batchPromises);
-        
-        // Traiter les résultats du lot
-        batchResults.forEach((result) => {
-          if (result.status === 'fulfilled') {
-            const { success, data, error, index } = result.value;
-            if (success) {
-              savedLeads.push(data);
-            } else {
-              failedLeads.push({ index, error });
+            
+            setRecentlySavedLeads(prev => [...prev, savedLead]);
+            
+            // Mettre à jour la progression et le compteur immédiatement
+            const progress = Math.round(((i + 1) / leadsForAPI.length) * 100);
+            setUploadProgress(progress);
+            setSavedLeadsCount(savedLeads.length);
+            
+            // Rafraîchir automatiquement la liste des leads tous les 10 leads ou à la fin
+            if (savedLeads.length % 10 === 0 || i === leadsForAPI.length - 1) {
+              try {
+                await fetchLeads();
+              } catch (error) {
+                console.warn('Error refreshing leads during save:', error);
+              }
             }
           } else {
-            failedLeads.push({ index: i, error: 'Promise rejected' });
+            failedLeads.push({ index: i, error: response.statusText });
           }
-        });
+        } catch (error: any) {
+          failedLeads.push({ 
+            index: i, 
+            error: error.message || 'Network error'
+          });
+        }
         
-        // Mettre à jour la progression
-        const progress = Math.round(((i + batch.length) / leadsForAPI.length) * 100);
-        setUploadProgress(progress);
-        
-        // Petite pause entre les lots pour éviter de surcharger l'API
-        if (i + batchSize < leadsForAPI.length) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+        // Petite pause entre chaque lead pour éviter de surcharger l'API
+        if (i < leadsForAPI.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
       }
       
@@ -1456,7 +1473,7 @@ ${truncatedContent}`;
         setUploadProgress(100);
         toast.success(`Successfully saved ${savedCount} contacts!`);
         
-        // Rafraîchir la liste des leads
+        // Rafraîchir la liste des leads une dernière fois
         if (selectedGigId) {
           await fetchLeads();
         }
@@ -1484,8 +1501,6 @@ ${truncatedContent}`;
       } else if (savedCount > 0) {
         // Certains leads ont été sauvegardés
         setUploadError(`${savedCount} leads saved, ${failedCount} failed`);
-        toast.error(`Partially saved: ${savedCount}/${totalCount} leads`);
-        
         // Afficher les erreurs dans la console
         console.warn('Failed leads:', failedLeads);
         
@@ -1509,7 +1524,7 @@ ${truncatedContent}`;
       
     } finally {
       // TOUJOURS réinitialiser l'état, même en cas d'erreur
-      setIsProcessing(false);
+      setIsSavingLeads(false);
       processingRef.current = false; // Réinitialiser la référence aussi
       setShowSaveButton(true);
       setShowFileName(true);
@@ -1522,6 +1537,7 @@ ${truncatedContent}`;
         setParsedLeads([]);
         setUploadError(null);
         setValidationResults(null);
+        setRecentlySavedLeads([]);
         
         // Clear storage
         localStorage.removeItem('parsedLeads');
@@ -2272,12 +2288,6 @@ ${truncatedContent}`;
                 <div>
                   <h4 className="text-xl font-bold text-blue-900">Zoho CRM Integration</h4>
                   <p className="text-sm text-blue-700">Connect and sync with your Zoho CRM</p>
-                  {hasZohoAccessToken && (
-                    <div className="flex items-center mt-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                      <span className="text-xs text-green-700 font-medium">Connected</span>
-                    </div>
-                  )}
                 </div>
               </div>
               <div className="flex space-x-2">
@@ -2657,20 +2667,51 @@ ${truncatedContent}`;
                                 <button
                 className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-white font-bold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                 onClick={handleSaveLeads}
-                disabled={isProcessing}
+                disabled={isSavingLeads}
               >
-                {isProcessing ? (
-                  <div className="flex items-center justify-center">
-                    <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-                    Saving Contacts...
-                  </div>
-                ) : (
                   <div className="flex items-center justify-center">
                     <UserPlus className="mr-2 h-5 w-5" />
                     Save {parsedLeads.length} Contacts
                   </div>
-                )}
               </button>
+              
+              {/* Bouton de sauvegarde séparé qui apparaît pendant la sauvegarde */}
+              {isSavingLeads && (
+                <div className="mt-4 space-y-3">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <RefreshCw className="mr-3 h-5 w-5 text-green-600 animate-spin" />
+                        <div>
+                          <h4 className="text-sm font-semibold text-green-800">Saving Contacts...</h4>
+                          <p className="text-xs text-green-600">
+                            {savedLeadsCount} of {parsedLeads.length} contacts saved
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-bold text-green-700">{Math.round((savedLeadsCount / parsedLeads.length) * 100)}%</div>
+                        <div className="w-16 h-2 bg-green-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-300"
+                            style={{ width: `${(savedLeadsCount / parsedLeads.length) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button
+                    className="w-full rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-4 py-3 text-white font-bold hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    disabled
+                  >
+                    <div className="flex items-center justify-center">
+                      <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                      Saving {savedLeadsCount}/{parsedLeads.length} Contacts...
+                    </div>
+                  </button>
+                </div>
+              )}
               
 
                 </div>
@@ -2723,6 +2764,10 @@ ${truncatedContent}`;
                     {parsedLeads.length > 0 ? (
                       <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
                         {parsedLeads.length} leads ready to save
+                      </span>
+                    ) : isSavingLeads && recentlySavedLeads.length > 0 ? (
+                      <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium">
+                        Showing {recentlySavedLeads.length} recently saved leads (saving in progress...)
                       </span>
                     ) : leads.length > 0 ? (
                       <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium">
@@ -2821,7 +2866,7 @@ ${truncatedContent}`;
                         </div>
                       </td>
                     </tr>
-                  ) : leads.length === 0 ? (
+                  ) : (leads.length === 0 && !isSavingLeads) ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-8">
@@ -2831,7 +2876,7 @@ ${truncatedContent}`;
                         </div>
                       </td>
                     </tr>
-                  ) : filteredLeads.length === 0 ? (
+                  ) : (filteredLeads.length === 0 && !isSavingLeads) ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-8">
@@ -2842,15 +2887,27 @@ ${truncatedContent}`;
                       </td>
                     </tr>
                   ) : (
-                    filteredLeads.map((lead, index) => (
-                      <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                    // Afficher les leads récemment sauvegardés pendant la sauvegarde, sinon les leads filtrés
+                    (isSavingLeads && recentlySavedLeads.length > 0 ? recentlySavedLeads : filteredLeads).map((lead, index) => (
+                      <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-orange-400' : ''}`}>
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="flex items-center">
-                                                    <div className="h-10 w-10 flex-shrink-0 rounded-full bg-blue-100 flex items-center justify-center">
-                          <UserPlus className="h-6 w-6 text-blue-700" />
-                        </div>
+                            <div className={`h-10 w-10 flex-shrink-0 rounded-full flex items-center justify-center ${(lead as any)._isPlaceholder ? 'bg-orange-100' : 'bg-blue-100'}`}>
+                              {(lead as any)._isPlaceholder ? (
+                                <AlertTriangle className="h-6 w-6 text-orange-700" />
+                              ) : (
+                                <UserPlus className="h-6 w-6 text-blue-700" />
+                              )}
+                            </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'No Email'}</div>
+                              <div className="text-sm font-medium text-gray-900 flex items-center">
+                                {lead.Email_1 || 'No Email'}
+                                {(lead as any)._isPlaceholder && (
+                                  <span className="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-800">
+                                    Invalid
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-sm text-gray-500">{lead.Phone || 'No Phone'}</div>
                             </div>
                           </div>
