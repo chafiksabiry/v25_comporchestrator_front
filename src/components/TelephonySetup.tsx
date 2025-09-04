@@ -39,7 +39,7 @@ interface TelephonySetupProps {
 }
 
 const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
-  const [provider, setProvider] = useState('twilio');
+  const [provider, setProvider] = useState('twilio'); // Try Twilio for Morocco
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [destinationZone, setDestinationZone] = useState('');
   const [callRecording, setCallRecording] = useState(true);
@@ -469,7 +469,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
         )}
 
         {/* Available Numbers List - Auto-displayed */}
-        {Array.isArray(availableNumbers) && availableNumbers.length > 0 && (
+        {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
           <div className="mb-6 space-y-2">
             <h4 className="text-sm font-medium text-gray-700">Available Numbers (Destination: {destinationZone})</h4>
             <div className="grid gap-2">
@@ -497,6 +497,63 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        ) : destinationZone && (
+          <div className="mb-6 rounded-lg bg-yellow-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-yellow-400" />
+              </div>
+              <div className="ml-3 flex-1">
+                <h3 className="text-sm font-medium text-yellow-800">Aucun numéro disponible</h3>
+                <div className="mt-2 text-sm text-yellow-700">
+                  <p>Aucun numéro téléphonique n'est disponible pour <strong>{destinationZone}</strong> avec le provider <strong>{provider}</strong>.</p>
+                  <p className="mt-1">
+                    {provider === 'twilio' && "Twilio a une erreur serveur (500). "}
+                    {provider === 'telnyx' && "Telnyx ne semble pas avoir de numéros pour ce pays. "}
+                    {provider === 'vonage' && "Vonage ne semble pas avoir de numéros pour ce pays. "}
+                    Essayez un autre provider ou contactez le support.
+                  </p>
+                </div>
+                <div className="mt-3 flex space-x-2">
+                  <button
+                    onClick={() => {
+                      setProvider('twilio');
+                      searchAvailableNumbers();
+                    }}
+                    className={`rounded-md px-3 py-1 text-xs text-white ${
+                      provider === 'twilio' 
+                        ? 'bg-red-600 hover:bg-red-700' 
+                        : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
+                  >
+                    {provider === 'twilio' ? '⚠️ Twilio (Erreur)' : 'Essayer Twilio'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setProvider('telnyx');
+                      searchAvailableNumbers();
+                    }}
+                    className={`rounded-md px-3 py-1 text-xs text-white ${
+                      provider === 'telnyx' 
+                        ? 'bg-orange-600 hover:bg-orange-700' 
+                        : 'bg-green-600 hover:bg-green-700'
+                    }`}
+                  >
+                    {provider === 'telnyx' ? '⚠️ Telnyx (Vide)' : 'Essayer Telnyx'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setProvider('vonage');
+                      searchAvailableNumbers();
+                    }}
+                    className="rounded-md bg-purple-600 px-3 py-1 text-xs text-white hover:bg-purple-700"
+                  >
+                    Essayer Vonage
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

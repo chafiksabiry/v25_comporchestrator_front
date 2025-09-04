@@ -65,7 +65,21 @@ export const phoneNumberService = {
 
       return response.data;
     } catch (error) {
-      console.error(`Error searching ${provider} phone numbers:`, error);
+      console.error(`❌ Error searching ${provider} phone numbers:`, error);
+      
+      // Add more detailed error information
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Response status:', error.response?.status);
+        console.error('❌ Response data:', error.response?.data);
+        console.error('❌ Request config:', error.config);
+        
+        // If it's a 500 error, return empty array instead of throwing
+        if (error.response?.status === 500) {
+          console.log(`⚠️ ${provider} API returned 500 error, returning empty array`);
+          return [];
+        }
+      }
+      
       throw error;
     }
   },
