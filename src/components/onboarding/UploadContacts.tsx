@@ -48,7 +48,8 @@ import {
   Settings,
   CheckCircle,
   Info,
-  LogOut
+  LogOut,
+  AlertTriangle
 } from 'lucide-react';
 import zohoLogo from '../../assets/public/images/zoho-logo.png';
 import axios from 'axios';
@@ -69,6 +70,7 @@ interface Lead {
   Pipeline?: string;
   updatedAt?: string;
   __v?: number;
+  _isPlaceholder?: boolean; // Mark for invalid/unprocessed leads
 }
 
 interface Gig {
@@ -937,17 +939,14 @@ ${truncatedContent}`;
         updateRealProgress(95, 'Finalisation du traitement...');
       }
 
-      // Validate that we got the expected number of leads
-      if (processedLeads.length !== lines.length - 1) {
-        console.error(`❌ CRITICAL ERROR: Expected ${lines.length - 1} leads, but got ${processedLeads.length}`);
-        console.error(`   This means OpenAI did not process all rows as instructed!`);
-        
-        // Force creation of missing leads
-        const missingLeads = lines.length - 1 - processedLeads.length;
-        console.warn(`⚠️ Creating ${missingLeads} missing leads to complete the dataset...`);
+      // Handle missing leads gracefully - create placeholder leads for unprocessed rows
+      const expectedLeads = lines.length - 1; // -1 for header
+      if (processedLeads.length < expectedLeads) {
+        const missingLeads = expectedLeads - processedLeads.length;
+        console.warn(`⚠️ OpenAI processed ${processedLeads.length}/${expectedLeads} leads. Creating ${missingLeads} placeholder leads for unprocessed rows.`);
         
         // Create placeholder leads for missing rows
-        for (let i = processedLeads.length; i < lines.length - 1; i++) {
+        for (let i = processedLeads.length; i < expectedLeads; i++) {
           const rowData = lines[i + 1]; // +1 because lines[0] is header
           const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
           const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
@@ -964,18 +963,22 @@ ${truncatedContent}`;
             Pipeline: "Sales Pipeline",
             Project_Tags: [],
             Prénom: "",
-            Nom: ""
+            Nom: "",
+            _isPlaceholder: true // Mark as placeholder for tracking
           });
         }
-        
       }
 
+      // Separate valid and invalid leads for better tracking
+      const validLeads = processedLeads.filter((lead: any) => !(lead as any)._isPlaceholder);
+      const invalidLeads = processedLeads.filter((lead: any) => (lead as any)._isPlaceholder);
+
       return {
-        leads: processedLeads,
+        leads: processedLeads, // Return all leads (valid + invalid)
         validation: {
           totalRows,
-          validRows: processedLeads.length, // Use actual length after fixes
-          invalidRows: 0, // All leads are now valid
+          validRows: validLeads.length,
+          invalidRows: invalidLeads.length,
           errors: []
         }
       };
@@ -1083,12 +1086,16 @@ ${truncatedContent}`;
     updateRealProgress(95, 'Finalisation du traitement par lots...');
     await new Promise(resolve => setTimeout(resolve, 200));
     
+    // Separate valid and invalid leads for better tracking
+    const validLeads = allLeads.filter((lead: any) => !(lead as any)._isPlaceholder);
+    const invalidLeads = allLeads.filter((lead: any) => (lead as any)._isPlaceholder);
+
     return {
-      leads: allLeads,
+      leads: allLeads, // Return all leads (valid + invalid)
       validation: {
         totalRows: lines.length - 1,
-        validRows: allLeads.length,
-        invalidRows: Math.max(0, (lines.length - 1) - allLeads.length),
+        validRows: validLeads.length,
+        invalidRows: invalidLeads.length,
         errors: []
       }
     };
@@ -2882,14 +2889,25 @@ ${truncatedContent}`;
                   ) : (
                     // Afficher les leads récemment sauvegardés pendant la sauvegarde, sinon les leads filtrés
                     (isSavingLeads && recentlySavedLeads.length > 0 ? recentlySavedLeads : filteredLeads).map((lead, index) => (
-                      <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                      <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-orange-400' : ''}`}>
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="flex items-center">
-                                                    <div className="h-10 w-10 flex-shrink-0 rounded-full bg-blue-100 flex items-center justify-center">
-                          <UserPlus className="h-6 w-6 text-blue-700" />
-                        </div>
+                            <div className={`h-10 w-10 flex-shrink-0 rounded-full flex items-center justify-center ${(lead as any)._isPlaceholder ? 'bg-orange-100' : 'bg-blue-100'}`}>
+                              {(lead as any)._isPlaceholder ? (
+                                <AlertTriangle className="h-6 w-6 text-orange-700" />
+                              ) : (
+                                <UserPlus className="h-6 w-6 text-blue-700" />
+                              )}
+                            </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'No Email'}</div>
+                              <div className="text-sm font-medium text-gray-900 flex items-center">
+                                {lead.Email_1 || 'No Email'}
+                                {(lead as any)._isPlaceholder && (
+                                  <span className="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-800">
+                                    Invalid
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-sm text-gray-500">{lead.Phone || 'No Phone'}</div>
                             </div>
                           </div>
