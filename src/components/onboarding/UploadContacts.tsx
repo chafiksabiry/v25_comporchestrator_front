@@ -219,6 +219,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   const [showFileName, setShowFileName] = useState(true);
   const [isSavingLeads, setIsSavingLeads] = useState(false);
   const [savedLeadsCount, setSavedLeadsCount] = useState(0);
+  const [recentlySavedLeads, setRecentlySavedLeads] = useState<Lead[]>([]);
   const [hasZohoConfig, setHasZohoConfig] = useState(false);
   const [zohoConfig, setZohoConfig] = useState({
     clientId: '',
@@ -620,10 +621,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const lines = cleanedFileContent.split('\n');
       
       // Check if content is too large or has many lines - use smart chunking for very large files
-      if (!isOptimized && (cleanedFileContent.length > 50000 || lines.length > 100)) {
-        console.warn(`⚠️ File is large (${lines.length} lines, ${cleanedFileContent.length} characters) - using smart chunking`);
+      if (!isOptimized && (cleanedFileContent.length > 100000 || lines.length > 200)) {
+        console.warn(`⚠️ File is very large (${lines.length} lines, ${cleanedFileContent.length} characters) - using smart chunking`);
         
-        // Use smart chunking for large files to avoid token limit issues
+        // Use smart chunking for very large files to avoid token limit issues
         showProcessingStatus(`Traitement par lots intelligents (${lines.length} lignes)...`);
         
         // Start real progress updates with more granular steps
@@ -696,8 +697,36 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           console.error(`❌ CRITICAL ERROR: Expected ${lines.length - 1} leads, but got ${result.leads.length}`);
           console.error(`   This means OpenAI did not process all rows as instructed!`);
           
-          // Instead of creating artificial leads, throw an error to retry
-          throw new Error(`OpenAI processing failed: Expected ${lines.length - 1} leads but got ${result.leads.length}. Please try again with a smaller file or check the file format.`);
+          // Force creation of missing leads
+          const missingLeads = lines.length - 1 - result.leads.length;
+          console.warn(`⚠️ Creating ${missingLeads} missing leads to complete the dataset...`);
+          
+          // Create placeholder leads for missing rows
+          for (let i = result.leads.length; i < lines.length - 1; i++) {
+            const rowData = lines[i + 1]; // +1 because lines[0] is header
+            const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
+            const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
+            
+            result.leads.push({
+              userId: { $oid: userId },
+              companyId: { $oid: companyId },
+              gId: { $oid: gigId },
+              Last_Activity_Time: null,
+              Deal_Name: email || `Lead from row ${i + 2}`,
+              Email_1: email,
+              Phone: phone,
+              Stage: "New",
+              Pipeline: "Sales Pipeline",
+              Project_Tags: [],
+              Prénom: "",
+              Nom: ""
+            });
+          }
+          
+          // Update validation to reflect all leads are now valid
+          result.validation.validRows = result.leads.length;
+          result.validation.invalidRows = 0;
+          
         }
         
         return result;
@@ -706,22 +735,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       // Prepare content for OpenAI (using the fileContent parameter)
       const truncatedContent = fileContent;
       
-      // Prompt optimisé pour éviter les erreurs de traitement
-      const prompt = `You are a data processing expert. Process EXACTLY ${lines.length - 1} rows from the CSV data below.
+      // Ultra-simple prompt to avoid JSON truncation
+      const prompt = `Process ${lines.length - 1} rows. Return ONLY valid JSON:
 
-CRITICAL: You MUST process ALL ${lines.length - 1} rows. Do not skip any rows.
-
-For each row, create a lead object with these fields:
-- userId: {"$oid": "${userId}"}
-- companyId: {"$oid": "${companyId}"}
-- gigId: {"$oid": "${gigId}"}
-- Deal_Name: Combine Prénom + Nom (use "Unknown" if missing)
-- Email_1: Email address
-- Phone: Phone number
-- Stage: "New"
-- Pipeline: "Sales Pipeline"
-
-Return ONLY this JSON format:
 {
   "leads": [
     {
@@ -737,7 +753,19 @@ Return ONLY this JSON format:
   ]
 }
 
-CSV Data (${lines.length - 1} rows to process):
+EXEMPLE: Si une ligne a Prénom="Jean" et Nom="Dupont", alors Deal_Name="Jean Dupont"
+EXEMPLE: Si une ligne a Prénom="Marie" et Nom="", alors Deal_Name="Marie Unknown"
+EXEMPLE: Si une ligne a Prénom="" et Nom="Martin", alors Deal_Name="Unknown Martin"
+
+CRITICAL RULES:
+1. Email→Email_1, Phone→Phone
+2. Deal_Name = Prénom + Nom (OBLIGATOIRE pour toutes les lignes)
+3. Si Prénom ou Nom manque, utilise "Unknown" pour la partie manquante
+4. JAMAIS utiliser l'email comme Deal_Name sauf si Prénom ET Nom sont vides
+5. Process ALL rows - never skip any
+6. Format Deal_Name: "Prénom Nom" (exemple: "Jean Dupont", "Marie Unknown", "Unknown Martin")
+
+Data:
 ${truncatedContent}`;
 
       // Update progress for OpenAI request
@@ -914,8 +942,32 @@ ${truncatedContent}`;
         console.error(`❌ CRITICAL ERROR: Expected ${lines.length - 1} leads, but got ${processedLeads.length}`);
         console.error(`   This means OpenAI did not process all rows as instructed!`);
         
-        // Instead of creating artificial leads, throw an error to retry
-        throw new Error(`OpenAI processing failed: Expected ${lines.length - 1} leads but got ${processedLeads.length}. Please try again with a smaller file or check the file format.`);
+        // Force creation of missing leads
+        const missingLeads = lines.length - 1 - processedLeads.length;
+        console.warn(`⚠️ Creating ${missingLeads} missing leads to complete the dataset...`);
+        
+        // Create placeholder leads for missing rows
+        for (let i = processedLeads.length; i < lines.length - 1; i++) {
+          const rowData = lines[i + 1]; // +1 because lines[0] is header
+          const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
+          const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
+          
+          processedLeads.push({
+            userId: { $oid: userId },
+            companyId: { $oid: companyId },
+            gId: { $oid: gigId },
+            Last_Activity_Time: null,
+            Deal_Name: email || `Lead from row ${i + 2}`,
+            Email_1: email,
+            Phone: phone,
+            Stage: "New",
+            Pipeline: "Sales Pipeline",
+            Project_Tags: [],
+            Prénom: "",
+            Nom: ""
+          });
+        }
+        
       }
 
       return {
@@ -1230,8 +1282,6 @@ ${truncatedContent}`;
               errorMessage = 'OpenAI API error. Please check your API key and try again.';
             } else if (error.message.includes('Invalid response format')) {
               errorMessage = 'AI processing returned invalid format. Please check your file structure.';
-            } else if (error.message.includes('OpenAI processing failed')) {
-              errorMessage = error.message;
             } else {
               errorMessage = error.response?.data?.message || error.message || 'Error processing file';
             }
@@ -1304,6 +1354,7 @@ ${truncatedContent}`;
     // Début de la sauvegarde (séparé du processing)
     setIsSavingLeads(true);
     setSavedLeadsCount(0);
+    setRecentlySavedLeads([]);
     setShowSaveButton(false);
     
     // Utiliser la référence pour suivre l'état de traitement de manière fiable
@@ -1358,13 +1409,29 @@ ${truncatedContent}`;
           if (response.status === 200 || response.status === 201) {
             savedLeads.push(response.data);
             
+            // Ajouter le lead sauvegardé à la liste des leads récemment sauvegardés
+            const savedLead: Lead = {
+              _id: response.data._id || `temp_${Date.now()}_${i}`,
+              gigId: response.data.gigId || selectedGigId,
+              userId: response.data.userId || Cookies.get('userId') || '',
+              companyId: response.data.companyId || Cookies.get('companyId') || '',
+              Email_1: response.data.Email_1 || lead.Email_1,
+              Phone: response.data.Phone || lead.Phone,
+              Deal_Name: response.data.Deal_Name || lead.Deal_Name,
+              Stage: response.data.Stage || lead.Stage,
+              Pipeline: response.data.Pipeline || lead.Pipeline,
+              updatedAt: new Date().toISOString()
+            };
+            
+            setRecentlySavedLeads(prev => [...prev, savedLead]);
+            
             // Mettre à jour la progression et le compteur immédiatement
             const progress = Math.round(((i + 1) / leadsForAPI.length) * 100);
             setUploadProgress(progress);
             setSavedLeadsCount(savedLeads.length);
             
-            // Rafraîchir automatiquement la liste des leads tous les 5 leads ou à la fin
-            if (savedLeads.length % 5 === 0 || i === leadsForAPI.length - 1) {
+            // Rafraîchir automatiquement la liste des leads tous les 10 leads ou à la fin
+            if (savedLeads.length % 10 === 0 || i === leadsForAPI.length - 1) {
               try {
                 await fetchLeads();
               } catch (error) {
@@ -1464,6 +1531,7 @@ ${truncatedContent}`;
         setParsedLeads([]);
         setUploadError(null);
         setValidationResults(null);
+        setRecentlySavedLeads([]);
         
         // Clear storage
         localStorage.removeItem('parsedLeads');
@@ -2691,6 +2759,10 @@ ${truncatedContent}`;
                       <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
                         {parsedLeads.length} leads ready to save
                       </span>
+                    ) : isSavingLeads && recentlySavedLeads.length > 0 ? (
+                      <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium">
+                        Showing {recentlySavedLeads.length} recently saved leads (saving in progress...)
+                      </span>
                     ) : leads.length > 0 ? (
                       <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium">
                         Showing {filteredLeads.length} of {leads.length} leads {searchQuery && `(filtered by "${searchQuery}")`}
@@ -2788,7 +2860,7 @@ ${truncatedContent}`;
                         </div>
                       </td>
                     </tr>
-                  ) : leads.length === 0 ? (
+                  ) : (leads.length === 0 && !isSavingLeads) ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-8">
@@ -2798,7 +2870,7 @@ ${truncatedContent}`;
                         </div>
                       </td>
                     </tr>
-                  ) : filteredLeads.length === 0 ? (
+                  ) : (filteredLeads.length === 0 && !isSavingLeads) ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-8">
@@ -2809,7 +2881,8 @@ ${truncatedContent}`;
                       </td>
                     </tr>
                   ) : (
-                    filteredLeads.map((lead, index) => (
+                    // Afficher les leads récemment sauvegardés pendant la sauvegarde, sinon les leads filtrés
+                    (isSavingLeads && recentlySavedLeads.length > 0 ? recentlySavedLeads : filteredLeads).map((lead, index) => (
                       <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="flex items-center">

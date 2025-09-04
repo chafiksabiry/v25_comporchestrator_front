@@ -112,7 +112,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       
       // First, try to get the general onboarding status
       try {
-        const response = await axios.get(
+      const response = await axios.get(
           `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
         );
         
@@ -287,10 +287,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
         
         // Fallback: try the individual step endpoint
         try {
-          const response = await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
-            { status: 'completed' }
-          );
+      const response = await axios.put(
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
+        { status: 'completed' }
+      );
           console.log('✅ Telephony setup step 5 marked as completed via individual endpoint:', response.data);
         } catch (stepError) {
           console.log('⚠️ Individual step endpoint also failed, proceeding with localStorage only');
@@ -301,13 +301,13 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       setCompletedSteps((prev: number[]) => {
         const newCompletedSteps = prev.includes(5) ? prev : [...prev, 5];
       
-        // Force update the onboarding progress in localStorage/cookies
-        const currentProgress = {
-          currentPhase: 2,
+      // Force update the onboarding progress in localStorage/cookies
+      const currentProgress = {
+        currentPhase: 2,
           completedSteps: newCompletedSteps,
           lastUpdated: new Date().toISOString()
-        };
-        localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+      };
+      localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
         
         return newCompletedSteps;
       });
@@ -450,40 +450,40 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
                 </div>
               </div>
             </div>
-          </div>
+            </div>
         )}
 
         {/* Available Numbers List - Auto-displayed */}
         {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
           <div className="mb-6 space-y-2">
             <h4 className="text-sm font-medium text-gray-700">Available Numbers (Destination: {destinationZone})</h4>
-            <div className="grid gap-2">
-              {availableNumbers.map((number) => {
-                const phoneNumber = getPhoneNumber(number);
-                return (
-                  <div 
-                    key={phoneNumber}
-                    className="flex items-center justify-between rounded-lg border p-3"
-                  >
-                    <div className="flex flex-col">
-                      <span className="font-medium">{phoneNumber}</span>
-                      {number.locality && (
-                        <span className="text-sm text-gray-500">
-                          {number.locality}, {number.region}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => purchaseNumber(phoneNumber)}
-                      className="rounded-md bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700"
-                    >
-                      Purchase
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+                <div className="grid gap-2">
+                  {availableNumbers.map((number) => {
+                    const phoneNumber = getPhoneNumber(number);
+                    return (
+                      <div 
+                        key={phoneNumber}
+                        className="flex items-center justify-between rounded-lg border p-3"
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">{phoneNumber}</span>
+                          {number.locality && (
+                            <span className="text-sm text-gray-500">
+                              {number.locality}, {number.region}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => purchaseNumber(phoneNumber)}
+                          className="rounded-md bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700"
+                        >
+                          Purchase
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
         ) : destinationZone && availableNumbers.length === 0 && (
           <div className="mb-6 rounded-lg bg-yellow-50 p-4">
             <div className="flex">
@@ -555,25 +555,25 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
           });
           
           return filteredNumbers.length > 0 ? (
-            <div className="space-y-4">
+        <div className="space-y-4">
               <h4 className="text-sm font-medium text-gray-700">Existing Numbers ({destinationZone})</h4>
               {filteredNumbers.map((number) => (
-                <div key={number.phoneNumber} className="rounded-lg bg-gray-50 p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Phone className="mr-2 h-5 w-5 text-indigo-600" />
-                      <span className="font-medium text-gray-900">{number.phoneNumber}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-500">{number.status}</span>
-                      <button className="rounded-full bg-red-100 p-1 text-red-600 hover:bg-red-200">
-                        <VolumeX className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
+            <div key={number.phoneNumber} className="rounded-lg bg-gray-50 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Phone className="mr-2 h-5 w-5 text-indigo-600" />
+                  <span className="font-medium text-gray-900">{number.phoneNumber}</span>
                 </div>
-              ))}
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-500">{number.status}</span>
+                  <button className="rounded-full bg-red-100 p-1 text-red-600 hover:bg-red-200">
+                    <VolumeX className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
             </div>
+          ))}
+        </div>
           ) : null;
         })()}
       </div>
