@@ -2272,12 +2272,6 @@ ${truncatedContent}`;
                 <div>
                   <h4 className="text-xl font-bold text-blue-900">Zoho CRM Integration</h4>
                   <p className="text-sm text-blue-700">Connect and sync with your Zoho CRM</p>
-                  {hasZohoAccessToken && (
-                    <div className="flex items-center mt-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                      <span className="text-xs text-green-700 font-medium">Connected</span>
-                    </div>
-                  )}
                 </div>
               </div>
               <div className="flex space-x-2">
