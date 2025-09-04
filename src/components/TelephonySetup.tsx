@@ -235,7 +235,6 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
         // Remove from available numbers
         setAvailableNumbers(prev => prev.filter(num => getPhoneNumber(num) !== phoneNumber));
         
-        alert(`🧪 TEST MODE: Numéro ${phoneNumber} simulé comme acheté avec succès !`);
         return;
       }
       
@@ -246,23 +245,9 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       fetchExistingNumbers(); // Refresh the list after purchase
       
       // Show success message
-      alert(`✅ Numéro ${phoneNumber} acheté avec succès !`);
       
     } catch (error) {
       console.error('❌ Error purchasing number:', error);
-      
-      // Show user-friendly error message
-      if (error instanceof Error) {
-        if (error.message.includes('500')) {
-          alert(`❌ Erreur serveur lors de l'achat du numéro ${phoneNumber}. Veuillez réessayer plus tard ou contacter le support.`);
-        } else if (error.message.includes('400')) {
-          alert(`❌ Paramètres invalides pour l'achat du numéro ${phoneNumber}. Vérifiez la configuration.`);
-        } else {
-          alert(`❌ Erreur lors de l'achat du numéro ${phoneNumber}: ${error.message}`);
-        }
-      } else {
-        alert(`❌ Erreur inconnue lors de l'achat du numéro ${phoneNumber}. Veuillez réessayer.`);
-      }
     }
   };
 
@@ -499,7 +484,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
               })}
             </div>
           </div>
-        ) : destinationZone && (
+        ) : destinationZone && availableNumbers.length === 0 && (
           <div className="mb-6 rounded-lg bg-yellow-50 p-4">
             <div className="flex">
               <div className="flex-shrink-0">
