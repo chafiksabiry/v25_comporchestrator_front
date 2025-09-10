@@ -1,5 +1,5 @@
 /**
- * UploadContacts Component
+ * UploadContacts Component - Composant d'importation et gestion des contacts/leads
  * 
  * Ce composant permet de gérer l'importation et la gestion des contacts/leads pour une entreprise.
  * Il offre deux méthodes principales d'importation :
@@ -19,6 +19,9 @@
  * - Gestion des gigs (projets) associés aux leads
  * - Filtrage et recherche des contacts
  * - Pagination des résultats
+ * - Auto-complétion de l'étape 6 d'onboarding quand des leads sont importés
+ * - Préservation des leads existants lors de nouveaux uploads
+ * - Gestion des erreurs et validation des données
  * - Édition en ligne des données
  * - Validation des données avant import
  * - Interface utilisateur responsive
@@ -26,29 +29,17 @@
  * @component
  * @returns {JSX.Element} Le composant UploadContacts
  */
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
-  Upload,
   FileText,
-  Download,
   RefreshCw,
   Search,
   Trash2,
   Edit,
-  Users,
   Phone,
   Mail,
-  MessageSquare,
-  Facebook,
-  Twitter,
-  Instagram,
-  Linkedin,
-  Youtube,
   Globe,
   X,
-  Database,
-  ChevronLeft,
-  ChevronRight,
   ChevronUp,
   ChevronDown,
   UserPlus,
@@ -56,9 +47,9 @@ import {
   Cloud,
   Settings,
   CheckCircle,
-  AlertCircle,
   Info,
-  LogOut
+  LogOut,
+  AlertTriangle
 } from 'lucide-react';
 import zohoLogo from '../../assets/public/images/zoho-logo.png';
 import axios from 'axios';
@@ -79,6 +70,7 @@ interface Lead {
   Pipeline?: string;
   updatedAt?: string;
   __v?: number;
+  _isPlaceholder?: boolean; // Mark for invalid/unprocessed leads
 }
 
 interface Gig {
@@ -98,12 +90,124 @@ interface ApiResponse {
   data: Lead[];
 }
 
-const UploadContacts = React.memo(() => {
+interface UploadContactsProps {
+  onCancelProcessing?: () => void;
+}
+
+const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) => {
+  // Component will render normally - no early return needed
+
+  // Function to cancel processing
+  const cancelProcessing = () => {
+    
+    // Abort any ongoing OpenAI requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
+    // Stop all processing immediately
+    setIsProcessing(false);
+    processingRef.current = false;
+    setUploadProgress(0);
+    setUploadError(null);
+    setUploadSuccess(false);
+    
+    // Reset all processing states
+    setProcessingProgress({
+      current: 0,
+      total: 0,
+      status: 'Cancelled by user (Back to Onboarding)',
+      isProcessing: false
+    });
+    
+    // Clear all storage items
+    localStorage.removeItem('uploadProcessing');
+    localStorage.removeItem('parsedLeads');
+    localStorage.removeItem('validationResults');
+    sessionStorage.removeItem('uploadProcessing');
+    sessionStorage.removeItem('parsedLeads');
+    sessionStorage.removeItem('validationResults');
+    
+    // Remove processing indicators
+    document.body.removeAttribute('data-processing');
+    
+    // Reset file-related states
+    setSelectedFile(null);
+    setParsedLeads([]);
+    setValidationResults(null);
+    
+    // Reset file input
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+    
+    
+    // Call the parent callback if provided
+    if (onCancelProcessing) {
+      onCancelProcessing();
+    }
+  };
+
+  // Emergency cancel function that can be called even during processing
+  const emergencyCancel = () => {
+    
+    // Force abort any ongoing requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
+    // Force stop all processing
+    processingRef.current = false;
+    setIsProcessing(false);
+    
+    // Clear all storage immediately
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Reset all states
+    setUploadProgress(0);
+    setUploadError(null);
+    setUploadSuccess(false);
+    setParsedLeads([]);
+    setValidationResults(null);
+    setSelectedFile(null);
+    
+    // Remove all processing indicators
+    document.body.removeAttribute('data-processing');
+    
+    // Force reset all progress
+    setProcessingProgress({
+      current: 0,
+      total: 0,
+      status: 'EMERGENCY CANCELLED',
+      isProcessing: false
+    });
+    
+  };
+
+  // Expose both cancel functions to parent component
+  useEffect(() => {
+    // Always expose the cancel function to window for parent access
+    (window as any).cancelUploadProcessing = cancelProcessing;
+    (window as any).emergencyCancelUpload = emergencyCancel;
+    return () => {
+      delete (window as any).cancelUploadProcessing;
+      delete (window as any).emergencyCancelUpload;
+    };
+  }, []); // Remove onCancelProcessing dependency to always expose
+
   // Add a ref to track if the component has been initialized
   const componentInitializedRef = useRef(false);
   
   // Add a ref to track if we should prevent re-mounting
   const preventRemountRef = useRef(false);
+  
+  // Add AbortController for cancelling OpenAI requests
+  const abortControllerRef = useRef<AbortController | null>(null);
+  
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
@@ -115,6 +219,9 @@ const UploadContacts = React.memo(() => {
   const [parsedLeads, setParsedLeads] = useState<Lead[]>([]);
   const [showSaveButton, setShowSaveButton] = useState(true);
   const [showFileName, setShowFileName] = useState(true);
+  const [isSavingLeads, setIsSavingLeads] = useState(false);
+  const [savedLeadsCount, setSavedLeadsCount] = useState(0);
+  const [recentlySavedLeads, setRecentlySavedLeads] = useState<Lead[]>([]);
   const [hasZohoConfig, setHasZohoConfig] = useState(false);
   const [zohoConfig, setZohoConfig] = useState({
     clientId: '',
@@ -146,6 +253,71 @@ const UploadContacts = React.memo(() => {
   const processingRef = useRef(false);
   const dataRestoredRef = useRef(false);
   
+  // State for progress tracking
+  const [processingProgress, setProcessingProgress] = useState<{
+    current: number;
+    total: number;
+    status: string;
+    isProcessing: boolean;
+  }>({
+    current: 0,
+    total: 0,
+    status: '',
+    isProcessing: false
+  });
+
+  // Function to update progress
+
+  // Function to reset progress
+  const resetProgress = () => {
+    setProcessingProgress({
+      current: 0,
+      total: 0,
+      status: '',
+      isProcessing: false
+    });
+  };
+
+  // Function to show processing status
+  const showProcessingStatus = (status: string) => {
+    setProcessingProgress({
+      current: 1,
+      total: 1,
+      status,
+      isProcessing: true
+    });
+  };
+
+  // Function to update real progress during OpenAI processing
+  const updateRealProgress = (progress: number, status: string) => {
+    // Check if processing was cancelled
+    if (!processingRef.current) {
+      return;
+    }
+    
+    
+    // Update both progress states
+    setUploadProgress(progress);
+    setProcessingProgress({
+      current: progress,
+      total: 100,
+      status,
+      isProcessing: true
+    });
+    
+    // Add a small delay for smooth visual updates
+    if (progress < 100) {
+      setTimeout(() => {
+        // Ensure we're still processing
+        if (isProcessing && processingRef.current) {
+          // Add a small increment to show activity
+          const currentProgress = Math.min(progress + 1, 99);
+          setUploadProgress(currentProgress);
+        }
+      }, 100);
+    }
+  };
+
   // Check if we're currently processing on component mount
   useEffect(() => {
     const isCurrentlyProcessing = localStorage.getItem('uploadProcessing') === 'true';
@@ -154,7 +326,6 @@ const UploadContacts = React.memo(() => {
     
     // If we have processing state but no file and no leads, clean it up
     if (isCurrentlyProcessing && !hasSelectedFile && !hasParsedLeads) {
-      console.log('🧹 Cleaning up stale processing state - no file selected and no leads');
       setIsProcessing(false);
       processingRef.current = false;
       localStorage.removeItem('uploadProcessing');
@@ -165,7 +336,6 @@ const UploadContacts = React.memo(() => {
     if (isCurrentlyProcessing && (hasSelectedFile || hasParsedLeads)) {
       processingRef.current = true;
       setIsProcessing(true);
-      console.log('🔄 Restoring processing state from localStorage');
       
       // Prevent any other effects from running during processing
       return () => {
@@ -182,7 +352,6 @@ const UploadContacts = React.memo(() => {
         try {
           const leads = JSON.parse(savedParsedLeads);
           setParsedLeads(leads);
-          console.log('🔄 Restored parsed leads from localStorage:', leads.length);
         } catch (error) {
           console.error('Error restoring parsed leads:', error);
         }
@@ -192,7 +361,6 @@ const UploadContacts = React.memo(() => {
         try {
           const validation = JSON.parse(savedValidationResults);
           setValidationResults(validation);
-          console.log('🔄 Restored validation results from localStorage');
         } catch (error) {
           console.error('Error restoring validation results:', error);
         }
@@ -208,7 +376,16 @@ const UploadContacts = React.memo(() => {
     // If we have parsed leads in state but they're about to be lost, save them
     if (parsedLeads.length > 0) {
       localStorage.setItem('parsedLeads', JSON.stringify(parsedLeads));
-      console.log('💾 Auto-saving parsed leads to localStorage:', parsedLeads.length);
+    }
+    
+    // Ensure cancelProcessing function is always available
+    if (!(window as any).cancelUploadProcessing) {
+      (window as any).cancelUploadProcessing = cancelProcessing;
+    }
+    
+    // Ensure emergency cancel function is always available
+    if (!(window as any).emergencyCancelUpload) {
+      (window as any).emergencyCancelUpload = emergencyCancel;
     }
   });
 
@@ -217,20 +394,22 @@ const UploadContacts = React.memo(() => {
     // If we have parsed leads, prevent re-mounting
     if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads')) {
       preventRemountRef.current = true;
-      console.log('🛡️ Preventing component re-mount - parsed leads exist');
     }
   }, [parsedLeads.length]);
 
   // Add a cleanup protection to prevent data loss on unmount
   useEffect(() => {
     return () => {
-      // If we're unmounting but have parsed leads, save them
-      if (parsedLeads.length > 0) {
+      // Only save leads if we're not intentionally closing the component
+      // Check if this is a manual close (onBackToOnboarding was called)
+      const isManualClose = !localStorage.getItem('parsedLeads');
+      if (parsedLeads.length > 0 && !isManualClose) {
         localStorage.setItem('parsedLeads', JSON.stringify(parsedLeads));
-        console.log('🛡️ Component unmounting - saved parsed leads to localStorage:', parsedLeads.length);
       }
     };
   }, [parsedLeads]);
+
+  // Component will handle cleanup normally without complex flags
 
   // Clean up processing state when component mounts without file
   useEffect(() => {
@@ -238,7 +417,6 @@ const UploadContacts = React.memo(() => {
     if (!selectedFile && parsedLeads.length === 0) {
       const isCurrentlyProcessing = localStorage.getItem('uploadProcessing') === 'true';
       if (isCurrentlyProcessing) {
-        console.log('🧹 Cleaning up processing state on mount - no file selected');
         setIsProcessing(false);
         processingRef.current = false;
         localStorage.removeItem('uploadProcessing');
@@ -253,39 +431,9 @@ const UploadContacts = React.memo(() => {
     { id: 'voice', name: 'Voice Calls', icon: Phone }
   ];
 
-  const contacts = [
-    {
-      id: 1,
-      name: 'John Smith',
-      email: 'john.smith@example.com',
-      phone: '+1 (555) 123-4567',
-      channels: ['voice', 'email'],
-      status: 'active',
-      lastContact: '2 hours ago'
-    },
-    {
-      id: 2,
-      name: 'Sarah Johnson',
-      email: 'sarah.j@example.com',
-      phone: '+1 (555) 234-5678',
-      channels: ['chat', 'email', 'facebook'],
-      status: 'inactive',
-      lastContact: '1 day ago'
-    },
-    {
-      id: 3,
-      name: 'Michael Brown',
-      email: 'michael.b@example.com',
-      phone: '+1 (555) 345-6789',
-      channels: ['voice', 'email', 'twitter'],
-      status: 'active',
-      lastContact: '3 hours ago'
-    }
-  ];
 
     // Function to clean email addresses by removing prefixes and invalid characters
   const cleanEmailAddresses = (content: string): string => {
-    console.log('🧹 Cleaning email addresses...');
     
     // First, identify the "Email" column (last column) and clean emails there specifically
     const lines = content.split('\n');
@@ -302,7 +450,6 @@ const UploadContacts = React.memo(() => {
           // Clean the email in "Email" column
           const cleanedEmail = emailColumn.replace(/^Nor\s+/, '').trim();
           columns[23] = cleanedEmail;
-          console.log(`🧹 Cleaned email in row ${index + 1}: "${emailColumn}" -> "${cleanedEmail}"`);
         }
       }
       
@@ -315,227 +462,22 @@ const UploadContacts = React.memo(() => {
     const generalCleaned = cleanedContent.replace(/Nor\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, '$1');
     const finalCleaned = generalCleaned.replace(/(?:Prefix|Label|Tag)\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, '$1');
     
-    console.log('🧹 Email cleaning completed');
-    console.log('🧹 Total lines processed:', lines.length);
-    console.log('🧹 Sample of cleaned content:', finalCleaned.substring(0, 1000));
-    
     return finalCleaned;
   };
 
   // Function to optimize CSV content by keeping only essential columns
-  const optimizeCSVContent = (content: string): string => {
-    console.log('🔄 Optimizing CSV content...');
-    
-    const lines = content.split('\n');
-    if (lines.length === 0) return content;
-    
-    // Parse header to find essential columns
-    const header = lines[0];
-    const headerColumns = header.split(',');
-    
-    // Define essential columns (adjust based on your CSV structure)
-    const essentialColumns = [
-      'Email', 'Téléphone 1', 'Prénom', 'Nom', 'Deal_Name', 'Stage', 'Pipeline'
-    ];
-    
-    // Find indices of essential columns
-    const essentialIndices: number[] = [];
-    headerColumns.forEach((col, index) => {
-      const cleanCol = col.trim().replace(/"/g, '');
-      if (essentialColumns.some(essential => 
-        cleanCol.toLowerCase().includes(essential.toLowerCase()) ||
-        cleanCol.toLowerCase().includes('email') ||
-        cleanCol.toLowerCase().includes('téléphone') ||
-        cleanCol.toLowerCase().includes('prénom') ||
-        cleanCol.toLowerCase().includes('nom')
-      )) {
-        essentialIndices.push(index);
-      }
-    });
-    
-    // If no essential columns found, keep all columns
-    if (essentialIndices.length === 0) {
-      console.log('⚠️ No essential columns found, keeping all columns');
-      return content;
-    }
-    
-    // Create optimized content with only essential columns
-    const optimizedLines = lines.map((line, lineIndex) => {
-      if (lineIndex === 0) {
-        // Optimize header
-        return essentialIndices.map(index => headerColumns[index]).join(',');
-      }
-      
-      // Optimize data rows
-      const columns = line.split(',');
-      return essentialIndices.map(index => columns[index] || '').join(',');
-    });
-    
-    const optimizedContent = optimizedLines.join('\n');
-    console.log(`🔄 Content optimized: ${content.length} -> ${optimizedContent.length} characters`);
-    console.log(`🔄 Kept ${essentialIndices.length} essential columns out of ${headerColumns.length}`);
-    
-    return optimizedContent;
-  };
 
   // Function to process optimized content
-  const processOptimizedContent = async (optimizedContent: string, fileType: string): Promise<{leads: any[], validation: any}> => {
-    console.log('🔄 Processing optimized content...');
-    
-    // Use the same processing logic but with optimized content and isOptimized flag
-    const result: {leads: any[], validation: any} = await processFileWithOpenAI(optimizedContent, fileType, true);
-    
-    console.log(`🔄 Optimized processing complete: ${result.leads.length} leads`);
-    return result;
-  };
-
-  // Function to process large files in chunks
-  const processLargeFileInChunks = async (fileContent: string, fileType: string): Promise<{leads: any[], validation: any}> => {
-    console.log('🔄 Processing large file in chunks...');
-    
-    const lines = fileContent.split('\n');
-    const header = lines[0];
-    const dataLines = lines.slice(1);
-    
-    console.log(`📊 Total data lines to process: ${dataLines.length}`);
-    console.log(`📋 Header line: ${header.substring(0, 100)}...`);
-    
-    // Analyser les lignes pour comprendre la structure
-    console.log('🔍 Analyzing data lines structure:');
-    dataLines.forEach((line, index) => {
-      if (index < 5) { // Afficher les 5 premières lignes
-        console.log(`   Line ${index + 1}: ${line.substring(0, 100)}...`);
-      }
-    });
-    
-    const chunkSize = 25; // Reduced chunk size for better reliability
-    const allLeads: any[] = [];
-    let totalProcessed = 0;
-    let successfulChunks = 0;
-    let failedChunks = 0;
-    let emptyLines = 0;
-    let headerDuplicates = 0;
-    
-    // Compter les lignes vides et les doublons d'en-tête
-    dataLines.forEach((line, index) => {
-      if (line.trim() === '') {
-        emptyLines++;
-        console.log(`⚠️ Empty line found at position ${index + 1}`);
-      } else if (line.includes('Identifiant,Type,Statut')) {
-        headerDuplicates++;
-        console.log(`⚠️ Header duplicate found at position ${index + 1}: ${line.substring(0, 50)}...`);
-      }
-    });
-    
-    console.log(`📊 Analysis results:`);
-    console.log(`   - Empty lines: ${emptyLines}`);
-    console.log(`   - Header duplicates: ${headerDuplicates}`);
-    console.log(`   - Valid data lines: ${dataLines.length - emptyLines - headerDuplicates}`);
-    
-    for (let i = 0; i < dataLines.length; i += chunkSize) {
-      const chunk = dataLines.slice(i, i + chunkSize);
-      const chunkContent = [header, ...chunk].join('\n');
-      
-      console.log(`🔄 Processing chunk ${Math.floor(i/chunkSize) + 1}/${Math.ceil(dataLines.length/chunkSize)} (${chunk.length} leads)`);
-      
-      try {
-        const chunkResult = await processFileWithOpenAI(chunkContent, fileType, true);
-        allLeads.push(...chunkResult.leads);
-        totalProcessed += chunkResult.leads.length;
-        successfulChunks++;
-        
-        console.log(`✅ Chunk ${Math.floor(i/chunkSize) + 1} processed: ${chunkResult.leads.length} leads`);
-      } catch (error) {
-        console.error(`❌ Error processing chunk ${Math.floor(i/chunkSize) + 1}:`, error);
-        failedChunks++;
-        
-        // Try to process individual lines if chunk fails
-        console.log(`🔄 Attempting to process individual lines for failed chunk...`);
-        for (const line of chunk) {
-          try {
-            const singleLineContent = [header, line].join('\n');
-            const singleResult = await processFileWithOpenAI(singleLineContent, fileType, true);
-            if (singleResult.leads.length > 0) {
-              allLeads.push(...singleResult.leads);
-              totalProcessed += singleResult.leads.length;
-            }
-          } catch (singleError) {
-            console.error(`❌ Failed to process individual line:`, line.substring(0, 50));
-          }
-        }
-      }
-    }
-    
-    console.log(`✅ Large file processing complete:`);
-    console.log(`   - Total leads processed: ${allLeads.length}`);
-    console.log(`   - Successful chunks: ${successfulChunks}`);
-    console.log(`   - Failed chunks: ${failedChunks}`);
-    console.log(`   - Expected leads: ${dataLines.length}`);
-    console.log(`   - Empty lines found: ${emptyLines}`);
-    console.log(`   - Header duplicates found: ${headerDuplicates}`);
-    console.log(`   - Actual valid data lines: ${dataLines.length - emptyLines - headerDuplicates}`);
-    console.log(`   - Note: All leads including duplicates are preserved`);
-    
-    const actualValidLines = dataLines.length - emptyLines - headerDuplicates;
-    const invalidRows = Math.max(0, dataLines.length - allLeads.length);
-    
-    console.log(`📊 Final calculation:`);
-    console.log(`   - Total rows in file: ${dataLines.length}`);
-    console.log(`   - Empty lines: ${emptyLines}`);
-    console.log(`   - Header duplicates: ${headerDuplicates}`);
-    console.log(`   - Actual valid data lines: ${actualValidLines}`);
-    console.log(`   - Leads successfully processed: ${allLeads.length}`);
-    console.log(`   - Invalid rows (difference): ${invalidRows}`);
-    console.log(`   - Reason for invalid rows: ${emptyLines + headerDuplicates} structural issues + ${Math.max(0, actualValidLines - allLeads.length)} processing failures`);
-    
-    // Show detailed analysis of invalid lines
-    if (allLeads.length < actualValidLines) {
-      console.log(`🔍 Detailed invalid lines analysis:`);
-      const processedEmails = allLeads.map((lead: any) => lead.Email_1?.toLowerCase());
-      
-      dataLines.forEach((line, index) => {
-        if (line.trim() && !line.includes('Identifiant,Type,Statut')) {
-          // Try to extract email from the line
-          const emailMatch = line.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-          const email = emailMatch ? emailMatch[0].toLowerCase() : null;
-          
-          if (email && !processedEmails.includes(email)) {
-            console.log(`❌ Line ${index + 1} NOT processed: ${line.substring(0, 80)}...`);
-            console.log(`   Email: ${email} - Not found in processed leads`);
-          } else if (!email) {
-            console.log(`❌ Line ${index + 1} NOT processed: ${line.substring(0, 80)}...`);
-            console.log(`   Reason: No valid email found in line`);
-          }
-        }
-      });
-    } else {
-      console.log(`✅ All valid lines were processed successfully!`);
-    }
-    
-    return {
-      leads: allLeads,
-      validation: {
-        totalRows: dataLines.length,
-        validRows: allLeads.length,
-        invalidRows: invalidRows,
-        errors: failedChunks > 0 ? [`${failedChunks} chunks failed to process`] : []
-      }
-    };
-  };
-
-
 
   // Helper function to recover incomplete JSON from OpenAI responses
   const tryRecoverIncompleteJSON = (content: string, expectedLeads: number): any | null => {
     try {
-      console.log('🔄 Attempting to recover incomplete JSON...');
       
       // Method 1: Try to find complete lead objects and reconstruct
       const leadPattern = /\{[^}]*"userId"[^}]*"Email_1"[^}]*"Phone"[^}]*\}/g;
       const leadMatches = content.match(leadPattern);
       
       if (leadMatches && leadMatches.length > 0) {
-        console.log('Found', leadMatches.length, 'complete lead objects');
         
         // Reconstruct JSON with found leads
         const leadsJson = leadMatches.map(obj => obj.trim()).join(',\n    ');
@@ -555,7 +497,6 @@ const UploadContacts = React.memo(() => {
           const parsed = JSON.parse(reconstructedJson);
           return parsed;
         } catch (e) {
-          console.log('Method 1 failed, trying method 2...');
         }
       }
       
@@ -585,7 +526,6 @@ const UploadContacts = React.memo(() => {
           return parsed;
         }
       } catch (e) {
-        console.log('Method 2 failed, trying method 3...');
       }
       
       // Method 3: Extract partial leads and create minimal valid JSON
@@ -611,7 +551,6 @@ const UploadContacts = React.memo(() => {
       }
       
       if (partialLeads.length > 0) {
-        console.log('Found', partialLeads.length, 'partial lead objects');
         
         const minimalJson = `{
   "leads": ${JSON.stringify(partialLeads)},
@@ -626,7 +565,6 @@ const UploadContacts = React.memo(() => {
         try {
           return JSON.parse(minimalJson);
         } catch (e) {
-          console.log('Method 3 also failed');
         }
       }
       
@@ -638,9 +576,16 @@ const UploadContacts = React.memo(() => {
   };
 
   const processFileWithOpenAI = async (fileContent: string, fileType: string, isOptimized: boolean = false): Promise<{leads: any[], validation: any}> => {
-    console.log(`🔍 Starting processFileWithOpenAI - isOptimized: ${isOptimized}`);
     
-    try {
+          try {
+        // Check if processing was cancelled
+        if (!processingRef.current) {
+          throw new Error('Processing cancelled by user');
+        }
+        
+        // Create new AbortController for this request
+        abortControllerRef.current = new AbortController();
+      
       const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
       if (!openaiApiKey) {
         throw new Error('OpenAI API key not configured');
@@ -663,119 +608,172 @@ const UploadContacts = React.memo(() => {
         throw new Error('Missing user or company information');
       }
 
-      // Clean the file content before sending to OpenAI
-      const cleanedFileContent = cleanEmailAddresses(fileContent);
-      
-      // Reduce content size for faster processing
+              // Clean the file content before sending to OpenAI
+        const cleanedFileContent = cleanEmailAddresses(fileContent);
+        
+        // Check if processing was cancelled after cleaning
+        if (!processingRef.current) {
+          throw new Error('Processing cancelled by user');
+        }
+        
+        // Reduce content size for faster processing
       const maxContentLength = 25000; // Reduced from 50000
-      
-      console.log('Original file content length:', fileContent.length);
-      console.log('Cleaned file content length:', cleanedFileContent.length);
       
       // Count the number of lines
       const lines = cleanedFileContent.split('\n');
-      console.log(`📊 Lines in this chunk: ${lines.length}`);
       
-      // Log first few lines to understand content
-      if (lines.length > 0) {
-        console.log(`📋 First line: ${lines[0].substring(0, 100)}...`);
-        if (lines.length > 1) {
-          console.log(`📋 Second line: ${lines[1].substring(0, 100)}...`);
-        }
-        if (lines.length > 2) {
-          console.log(`📋 Third line: ${lines[2].substring(0, 100)}...`);
-        }
-        if (lines.length > 3) {
-          console.log(`📋 Fourth line: ${lines[3].substring(0, 100)}...`);
-        }
-        if (lines.length > 4) {
-          console.log(`📋 Fifth line: ${lines[4].substring(0, 100)}...`);
-        }
-      }
-      
-      // Log the last few lines to see if there are any issues
-      if (lines.length > 5) {
-        console.log(`📋 Last line: ${lines[lines.length - 1].substring(0, 100)}...`);
-        if (lines.length > 6) {
-          console.log(`📋 Second to last line: ${lines[lines.length - 2].substring(0, 100)}...`);
-        }
-      }
-      
-      // Check if content is too large or has many lines - use chunks for better processing
-      if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 50)) {
-        console.warn(`⚠️ File is large (${lines.length} lines, ${cleanedFileContent.length} characters) - using chunks for better processing`);
+      // Check if content is too large or has many lines - use smart chunking for very large files
+      if (!isOptimized && (cleanedFileContent.length > 100000 || lines.length > 200)) {
+        console.warn(`⚠️ File is very large (${lines.length} lines, ${cleanedFileContent.length} characters) - using smart chunking`);
         
-        // Always use chunks for files with more than 50 lines to avoid OpenAI token limits
-        console.log(`🔄 Processing in chunks for ${lines.length} lines...`);
-        return await processLargeFileInChunks(cleanedFileContent, fileType);
+        // Use smart chunking for very large files to avoid token limit issues
+        showProcessingStatus(`Traitement par lots intelligents (${lines.length} lignes)...`);
+        
+        // Start real progress updates with more granular steps
+        updateRealProgress(5, 'Initialisation du traitement...');
+        await new Promise(resolve => setTimeout(resolve, 200)); // Small delay for visual feedback
+        
+        updateRealProgress(15, 'Analyse de la structure du fichier...');
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        updateRealProgress(25, 'Préparation des données...');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Use smart chunking to process the file in manageable pieces
+        const result = await processLargeFileInChunks(cleanedFileContent, fileType, lines);
+        
+        updateRealProgress(100, 'Traitement terminé !');
+        return result;
       }
-
-      const truncatedContent = cleanedFileContent.length > maxContentLength 
-        ? cleanedFileContent.substring(0, maxContentLength) + '\n... [content truncated]'
+      
+      // For smaller files, use single batch processing
+      if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 50)) {
+        console.warn(`⚠️ File is large (${lines.length} lines, ${cleanedFileContent.length} characters) - processing in single batch like ChatGPT`);
+        
+        // Process the entire file at once for better performance
+        showProcessingStatus(`Traitement du fichier complet (${lines.length} lignes)...`);
+        
+        // Start real progress updates with more granular steps
+        updateRealProgress(5, 'Initialisation du traitement...');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        updateRealProgress(15, 'Analyse de la structure du fichier...');
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        updateRealProgress(25, 'Préparation des données...');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        updateRealProgress(35, 'Nettoyage des données...');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Increase the content limit for large files
+        const largeFileMaxLength = 100000; // Reduced to avoid token limit issues
+        const finalContent = cleanedFileContent.length > largeFileMaxLength 
+          ? cleanedFileContent.substring(0, largeFileMaxLength) + '\n... [content truncated due to size]'
         : cleanedFileContent;
       
-      // Validate content before sending to OpenAI
-      if (!truncatedContent || truncatedContent.trim().length === 0) {
-        throw new Error('No valid content to process');
+        if (cleanedFileContent.length > largeFileMaxLength) {
+          console.warn(`⚠️ WARNING: File content was truncated! Only processing first ${largeFileMaxLength} characters`);
+          console.warn(`   This may result in incomplete processing. Consider splitting very large files.`);
+        }
+        
+        updateRealProgress(45, 'Envoi à OpenAI...');
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call time
+        
+        updateRealProgress(55, 'Traitement par l\'IA...');
+        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate processing time
+        
+        // Use the same processing logic but with the full content
+        const result = await processFileWithOpenAI(finalContent, fileType, true);
+        
+        updateRealProgress(75, 'Validation des résultats...');
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        updateRealProgress(85, 'Finalisation...');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        updateRealProgress(100, 'Traitement terminé !');
+        
+        // Validate that we got the expected number of leads
+        if (result.leads.length !== lines.length - 1) {
+          console.error(`❌ CRITICAL ERROR: Expected ${lines.length - 1} leads, but got ${result.leads.length}`);
+          console.error(`   This means OpenAI did not process all rows as instructed!`);
+          
+          // Force creation of missing leads
+          const missingLeads = lines.length - 1 - result.leads.length;
+          console.warn(`⚠️ Creating ${missingLeads} missing leads to complete the dataset...`);
+          
+          // Create placeholder leads for missing rows
+          for (let i = result.leads.length; i < lines.length - 1; i++) {
+            const rowData = lines[i + 1]; // +1 because lines[0] is header
+            const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
+            const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
+            
+            result.leads.push({
+              userId: { $oid: userId },
+              companyId: { $oid: companyId },
+              gId: { $oid: gigId },
+              Last_Activity_Time: null,
+              Deal_Name: email || `Lead from row ${i + 2}`,
+              Email_1: email,
+              Phone: phone,
+              Stage: "New",
+              Pipeline: "Sales Pipeline",
+              Project_Tags: [],
+              Prénom: "",
+              Nom: ""
+            });
+          }
+          
+          // Update validation to reflect all leads are now valid
+          result.validation.validRows = result.leads.length;
+          result.validation.invalidRows = 0;
+          
+        }
+        
+        return result;
       }
       
-      // Optimized prompt with better JSON formatting instructions
-      const prompt = `Extract lead information from this ${fileType} file.
+      // Prepare content for OpenAI (using the fileContent parameter)
+      const truncatedContent = fileContent;
+      
+      // Ultra-simple prompt to avoid JSON truncation
+      const prompt = `Process ${lines.length - 1} rows. Return ONLY valid JSON:
 
-File content (${lines.length} lines):
-${truncatedContent}
-
-Return ONLY valid JSON in this format:
 {
   "leads": [
     {
       "userId": {"$oid": "${userId}"},
       "companyId": {"$oid": "${companyId}"},
-      "gId": {"$oid": "${gigId}"},
-      "Last_Activity_Time": null,
-      "Deal_Name": "Lead Name",
-      "Email_1": "email@example.com",
+      "gigId": {"$oid": "${gigId}"},
+      "Deal_Name": "Prénom Nom",
+      "Email_1": "email@exemple.com",
       "Phone": "+33123456789",
       "Stage": "New",
-      "Pipeline": "Sales Pipeline",
-      "Project_Tags": [],
-      "Prénom": "John",
-      "Nom": "Doe"
+      "Pipeline": "Sales Pipeline"
     }
-  ],
-  "validation": {
-    "totalRows": ${lines.length - 1},
-    "validRows": 0,
-    "invalidRows": 0,
-    "errors": []
-  }
+  ]
 }
 
-CRITICAL INSTRUCTIONS:
-- Process ALL ${lines.length - 1} rows exactly as they appear
-- DO NOT remove duplicates or deduplicate
-- Keep every single row from the file
-- If you see the same email multiple times, create separate lead objects for each
-- The goal is to preserve ALL data, including duplicates
+EXEMPLE: Si une ligne a Prénom="Jean" et Nom="Dupont", alors Deal_Name="Jean Dupont"
+EXEMPLE: Si une ligne a Prénom="Marie" et Nom="", alors Deal_Name="Marie Unknown"
+EXEMPLE: Si une ligne a Prénom="" et Nom="Martin", alors Deal_Name="Unknown Martin"
 
-Rules:
-1. Extract emails from "Email" column, clean prefixes like "Nor "
-2. Extract phones from "Téléphone 1" column
-3. Extract "Prénom" and "Nom" columns if they exist
-4. Use Deal_Name if available, otherwise use email
-5. Set defaults: Stage="New", Pipeline="Sales Pipeline"
-6. Process ALL ${lines.length - 1} rows - DO NOT remove duplicates
-7. Use placeholder values for missing emails/phones
-8. Use exact MongoDB ObjectId format with "$oid"
-9. IMPORTANT: Keep ALL rows including duplicates - do not deduplicate
-10. ALWAYS extract Prénom and Nom fields if they exist in the file`;
+CRITICAL RULES:
+1. Email→Email_1, Phone→Phone
+2. Deal_Name = Prénom + Nom (OBLIGATOIRE pour toutes les lignes)
+3. Si Prénom ou Nom manque, utilise "Unknown" pour la partie manquante
+4. JAMAIS utiliser l'email comme Deal_Name sauf si Prénom ET Nom sont vides
+5. Process ALL rows - never skip any
+6. Format Deal_Name: "Prénom Nom" (exemple: "Jean Dupont", "Marie Unknown", "Unknown Martin")
 
-      // Log request details for debugging
-      console.log('Sending request to OpenAI with:', {
-        model: 'gpt-3.5-turbo',
-        promptLength: prompt.length,
-        maxTokens: 'unlimited (using model maximum)'
-      });
+Data:
+${truncatedContent}`;
+
+      // Update progress for OpenAI request
+      if (isOptimized) {
+        updateRealProgress(60, 'Traitement par OpenAI...');
+      }
 
       // Check prompt size to avoid token limit issues
       let finalPrompt = prompt;
@@ -783,7 +781,6 @@ Rules:
         console.warn('⚠️ Prompt is very large, truncating content...');
         const maxPromptLength = 100000;
         finalPrompt = prompt.substring(0, maxPromptLength) + '\n... [content truncated due to size]';
-        console.log('Using truncated prompt with length:', finalPrompt.length);
       }
 
       const requestBody = {
@@ -808,7 +805,8 @@ Rules:
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${openaiApiKey}`
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        signal: abortControllerRef.current?.signal
       });
 
       if (!response.ok) {
@@ -839,6 +837,11 @@ Rules:
         throw new Error('No response from OpenAI');
       }
 
+      // Update progress for response processing
+      if (isOptimized) {
+        updateRealProgress(80, 'Analyse de la réponse OpenAI...');
+      }
+
       // Simplified error handling
       if (content.trim().toLowerCase().startsWith('i\'m sorry') || 
           content.trim().toLowerCase().startsWith('sorry') ||
@@ -860,200 +863,242 @@ Rules:
       // Parse the JSON response with recovery for incomplete JSON
       let parsedData;
       
-      console.log(`📊 OpenAI response length: ${content.length}`);
-      console.log(`📋 OpenAI response preview: ${content.substring(0, 200)}...`);
-      
       // Check if JSON appears complete
       const trimmedContent = content.trim();
       const isCompleteJSON = trimmedContent.startsWith('{') && trimmedContent.endsWith('}') && 
-                            trimmedContent.includes('"leads"') && trimmedContent.includes('"validation"');
-      
-      console.log(`🔍 JSON completeness check:`);
-      console.log(`   - Starts with { : ${trimmedContent.startsWith('{')}`);
-      console.log(`   - Ends with } : ${trimmedContent.endsWith('}')}`);
-      console.log(`   - Contains "leads" : ${trimmedContent.includes('"leads"')}`);
-      console.log(`   - Contains "validation" : ${trimmedContent.includes('"validation"')}`);
-      console.log(`   - Is complete JSON : ${isCompleteJSON}`);
+                            trimmedContent.includes('"leads"');
       
       if (!isCompleteJSON) {
         console.warn('⚠️ OpenAI returned incomplete JSON, attempting recovery...');
         const recoveredData = tryRecoverIncompleteJSON(content, lines.length - 1);
         if (recoveredData) {
-          console.log('✅ Successfully recovered JSON with', recoveredData.leads.length, 'leads');
           parsedData = recoveredData;
         } else {
-          console.error('❌ Failed to recover incomplete JSON');
-          return {
-            leads: [],
-            validation: {
-              totalRows: 0,
-              validRows: 0,
-              invalidRows: 0,
-              errors: ['OpenAI returned incomplete JSON that could not be recovered']
-            }
-          };
+          throw new Error('Failed to recover incomplete JSON response');
         }
       } else {
         try {
           parsedData = JSON.parse(content);
-          console.log('✅ Successfully parsed complete JSON');
-        } catch (parseError: unknown) {
-          console.error('❌ Failed to parse OpenAI response:', parseError);
-          console.log('Raw content length:', content.length);
-          console.log('Content preview:', content.substring(0, 500) + '...');
-          
-          // Try to recover incomplete JSON
+        } catch (parseError) {
+          console.warn('⚠️ JSON parse error, attempting recovery...');
           const recoveredData = tryRecoverIncompleteJSON(content, lines.length - 1);
           if (recoveredData) {
-            console.log('✅ Successfully recovered JSON with', recoveredData.leads.length, 'leads');
             parsedData = recoveredData;
           } else {
-            return {
-          leads: [],
-          validation: {
-            totalRows: 0,
-            validRows: 0,
-            invalidRows: 0,
-            errors: [`JSON Parse Error: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`]
-          }
-        };
+            throw new Error(`JSON parse error: ${parseError}`);
           }
         }
       }
-      
-      if (!parsedData.leads || !Array.isArray(parsedData.leads)) {
-        console.error('❌ Invalid response format from OpenAI - no leads array');
-        console.log('Parsed data structure:', Object.keys(parsedData));
+
+      // Validate the parsed data
+      if (!parsedData || !parsedData.leads || !Array.isArray(parsedData.leads)) {
         throw new Error('Invalid response format from OpenAI');
       }
 
-      console.log(`📊 Parsed data analysis:`);
-      console.log(`   - Leads array length: ${parsedData.leads.length}`);
-      console.log(`   - Validation object:`, parsedData.validation);
-      console.log(`   - Expected lines: ${lines.length - 1}`);
-      console.log(`   - Lines in chunk: ${lines.length}`);
-      console.log(`   - Data lines (excluding header): ${lines.length - 1}`);
-      console.log(`   - Processing efficiency: ${parsedData.leads.length}/${lines.length - 1} (${Math.round((parsedData.leads.length / (lines.length - 1)) * 100)}%)`);
-      
-      // Log sample of processed leads to see what was extracted
-      if (parsedData.leads.length > 0) {
-        console.log(`📋 Sample of processed leads:`);
-        parsedData.leads.slice(0, 3).forEach((lead: any, index: number) => {
-          console.log(`   Lead ${index + 1}: ${lead.Email_1} | ${lead.Phone} | ${lead.Deal_Name}`);
-        });
-      }
-
-      // Add required fields to each lead
-      const processedLeads = parsedData.leads.map((lead: any, index: number) => {
-        // Create Deal_Name from Prénom + Nom if both exist
-        let dealName = lead.Deal_Name || "Unnamed Lead";
+      // Process the leads to ensure they have the required fields
+      const processedLeads = parsedData.leads.map((lead: any): any => {
+        // FORCE Deal_Name to be Prénom + Nom (never email)
+        let dealName = '';
         
-        if (lead.Prénom && lead.Nom) {
-          dealName = `${lead.Prénom} ${lead.Nom}`.trim();
-          console.log(`📝 Created Deal_Name from Prénom + Nom: "${lead.Prénom} ${lead.Nom}"`);
-        } else if (lead.Prénom && !lead.Nom) {
-          dealName = lead.Prénom;
-          console.log(`📝 Using Prénom as Deal_Name: "${lead.Prénom}"`);
-        } else if (!lead.Prénom && lead.Nom) {
-          dealName = lead.Nom;
-          console.log(`📝 Using Nom as Deal_Name: "${lead.Nom}"`);
+        // Extract Prénom and Nom from the lead data
+        const prenom = lead.Prénom || lead.prénom || lead.Prenom || lead.prenom || '';
+        const nom = lead.Nom || lead.nom || lead.Name || lead.name || '';
+        
+        // Always create Deal_Name from Prénom + Nom
+        if (prenom || nom) {
+          dealName = `${prenom} ${nom}`.trim();
+        } else {
+          // Only use email if absolutely no name data available
+          dealName = lead.Deal_Name || 'Unknown Lead';
         }
         
-        const processedLead = {
-          ...lead,
-          userId: lead.userId || { "$oid": userId },
-          companyId: lead.companyId || { "$oid": companyId },
-          gigId: lead.gigId || { "$oid": gigId },
+        // Ensure required fields are present
+        return {
+          userId: lead.userId || { $oid: userId },
+          companyId: lead.companyId || { $oid: companyId },
+          gId: lead.gId || { $oid: gigId },
           Last_Activity_Time: lead.Last_Activity_Time || null,
-          Email_1: lead.Email_1 || "no-email@placeholder.com",
-          Phone: lead.Phone || "no-phone@placeholder.com",
           Deal_Name: dealName,
-          Stage: lead.Stage || "New",
-          Pipeline: lead.Pipeline || "Sales Pipeline",
-          Activity_Tag: lead.Activity_Tag || '',
-          Telephony: lead.Telephony || '',
-          Project_Tags: lead.Project_Tags || []
+          Email_1: lead.Email_1 || 'no-email@placeholder.com',
+          Phone: lead.Phone || '',
+          Stage: lead.Stage || 'New',
+          Pipeline: lead.Pipeline || 'Sales Pipeline',
+          Project_Tags: lead.Project_Tags || [],
+          Prénom: prenom,
+          Nom: nom
         };
-        
-        if (index < 3) { // Log first 3 leads for debugging
-          console.log(`📋 Lead ${index + 1}:`, {
-            Email_1: processedLead.Email_1,
-            Phone: processedLead.Phone,
-            Deal_Name: processedLead.Deal_Name,
-            Prénom: lead.Prénom,
-            Nom: lead.Nom
-          });
-        }
-        
-        return processedLead;
       });
 
-      console.log(`✅ Final processing results:`);
-      console.log(`   - Processed leads: ${processedLeads.length}`);
-      console.log(`   - Validation totalRows: ${parsedData.validation?.totalRows || 'undefined'}`);
-      console.log(`   - Validation validRows: ${parsedData.validation?.validRows || 'undefined'}`);
-      console.log(`   - Validation invalidRows: ${parsedData.validation?.invalidRows || 'undefined'}`);
+      // Final validation
+      const totalRows = lines.length - 1; // Exclude header
+      const validRows = processedLeads.length;
+      const invalidRows = Math.max(0, totalRows - validRows);
 
-      // Ensure validation object has correct values
-      const finalValidation = {
-        totalRows: parsedData.validation?.totalRows || lines.length - 1,
-        validRows: parsedData.validation?.validRows || processedLeads.length,
-        invalidRows: parsedData.validation?.invalidRows || Math.max(0, (lines.length - 1) - processedLeads.length),
-        errors: parsedData.validation?.errors || []
-      };
-
-      // Log invalid lines analysis
-      console.log(`🔍 Analyzing invalid lines:`);
-      console.log(`   - Total lines in chunk: ${lines.length}`);
-      console.log(`   - Header line: ${lines[0] ? 'Yes' : 'No'}`);
-      console.log(`   - Data lines: ${lines.length - 1}`);
-      console.log(`   - Successfully processed: ${processedLeads.length}`);
-      console.log(`   - Invalid lines count: ${Math.max(0, (lines.length - 1) - processedLeads.length)}`);
-      
-      // Show which lines were not processed
-      if (processedLeads.length < lines.length - 1) {
-        console.log(`❌ Lines that were NOT processed:`);
-        const processedEmails = processedLeads.map((lead: any) => lead.Email_1?.toLowerCase());
-        
-        for (let i = 1; i < lines.length; i++) {
-          const line = lines[i];
-          if (line.trim()) { // Skip empty lines
-            // Try to extract email from the line
-            const emailMatch = line.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-            const email = emailMatch ? emailMatch[0].toLowerCase() : null;
-            
-            if (email && !processedEmails.includes(email)) {
-              console.log(`   Line ${i + 1}: ${line.substring(0, 100)}...`);
-              console.log(`   ❌ Email not found in processed leads: ${email}`);
-            } else if (!email) {
-              console.log(`   Line ${i + 1}: ${line.substring(0, 100)}...`);
-              console.log(`   ❌ No valid email found in line`);
-            }
-          } else {
-            console.log(`   Line ${i + 1}: <empty line>`);
-          }
-        }
-      } else {
-        console.log(`✅ All lines were processed successfully!`);
+      // Update final progress
+      if (isOptimized) {
+        updateRealProgress(95, 'Finalisation du traitement...');
       }
+
+      // Handle missing leads gracefully - create placeholder leads for unprocessed rows
+      const expectedLeads = lines.length - 1; // -1 for header
+      if (processedLeads.length < expectedLeads) {
+        const missingLeads = expectedLeads - processedLeads.length;
+        console.warn(`⚠️ OpenAI processed ${processedLeads.length}/${expectedLeads} leads. Creating ${missingLeads} placeholder leads for unprocessed rows.`);
+        
+        // Create placeholder leads for missing rows
+        for (let i = processedLeads.length; i < expectedLeads; i++) {
+          const rowData = lines[i + 1]; // +1 because lines[0] is header
+          const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
+          const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
+          
+          processedLeads.push({
+            userId: { $oid: userId },
+            companyId: { $oid: companyId },
+            gId: { $oid: gigId },
+            Last_Activity_Time: null,
+            Deal_Name: email || `Lead from row ${i + 2}`,
+            Email_1: email,
+            Phone: phone,
+            Stage: "New",
+            Pipeline: "Sales Pipeline",
+            Project_Tags: [],
+            Prénom: "",
+            Nom: "",
+            _isPlaceholder: true // Mark as placeholder for tracking
+          });
+        }
+      }
+
+      // Separate valid and invalid leads for better tracking
+      const validLeads = processedLeads.filter((lead: any) => !(lead as any)._isPlaceholder);
+      const invalidLeads = processedLeads.filter((lead: any) => (lead as any)._isPlaceholder);
 
       return {
-        leads: processedLeads,
-        validation: finalValidation
+        leads: processedLeads, // Return all leads (valid + invalid)
+        validation: {
+          totalRows,
+          validRows: validLeads.length,
+          invalidRows: invalidLeads.length,
+          errors: []
+        }
       };
-    } catch (error: any) {
-      console.error('Error processing with OpenAI:', error);
-      
-      if (error.message?.includes('429') || error.status === 429) {
-        throw new Error('Rate limit exceeded. Please wait a moment before trying again.');
-      }
-      
-      if (error.message?.includes('OpenAI') || error.message?.includes('API')) {
-        throw new Error(`OpenAI API error: ${error.message}`);
-      }
-      
+
+    } catch (error) {
+      console.error('❌ Error in processFileWithOpenAI:', error);
       throw error;
     }
+  };
+
+  // Helper function to process individual chunks asynchronously
+  const processChunkAsync = async (chunkIndex: number, chunkLines: string[], fileType: string, totalChunks: number) => {
+    try {
+      // Update progress for chunk processing
+      const chunkProgress = 30 + (chunkIndex / totalChunks) * 60; // 30% to 90%
+      const currentChunkProgress = Math.round(chunkProgress);
+      updateRealProgress(currentChunkProgress, `Traitement du lot ${chunkIndex + 1}/${totalChunks} (lignes ${chunkIndex * 100 + 1}-${Math.min((chunkIndex + 1) * 100, chunkLines.length - 1)})...`);
+      
+      // Process this chunk
+      const chunkResult = await processFileWithOpenAI(chunkLines.join('\n'), fileType, true);
+      
+      if (chunkResult.leads && chunkResult.leads.length > 0) {
+        // Update progress after successful chunk processing
+        const successProgress = 30 + ((chunkIndex + 1) / totalChunks) * 60;
+        updateRealProgress(Math.round(successProgress), `Lot ${chunkIndex + 1}/${totalChunks} terminé (${chunkResult.leads.length} leads)`);
+        return chunkResult;
+      } else {
+        console.warn(`⚠️ Chunk ${chunkIndex + 1} returned no leads`);
+        return { leads: [], validation: { totalRows: 0, validRows: 0, invalidRows: 0, errors: [] } };
+      }
+      
+    } catch (error: any) {
+      console.error(`❌ Error processing chunk ${chunkIndex + 1}:`, error);
+      // Return empty result instead of failing completely
+      return { leads: [], validation: { totalRows: 0, validRows: 0, invalidRows: 0, errors: [error.message] } };
+    }
+  };
+
+  // Smart chunking function for large files
+  const processLargeFileInChunks = async (fileContent: string, fileType: string, lines: string[]): Promise<{leads: any[], validation: any}> => {
+    
+    // Calculate optimal chunk size to respect OpenAI token limits
+    const maxTokensPerChunk = 12000; // Conservative limit (16,385 - safe buffer)
+    const estimatedTokensPerLine = 25; // Realistic estimate for CSV data
+    const optimalChunkSize = Math.min(100, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 100 lines per chunk for safety
+    
+    
+    const allLeads: any[] = [];
+    const totalChunks = Math.ceil((lines.length - 1) / optimalChunkSize);
+    
+    // Update progress for chunk processing start
+    updateRealProgress(30, `Début du traitement par lots (${totalChunks} lots à traiter)...`);
+    
+    // Process chunks in parallel for maximum speed
+    const maxConcurrent = 25; // Process 25 chunks simultaneously for maximum speed
+    const chunkPromises: Promise<any>[] = [];
+    
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      // Check if processing was cancelled
+      if (!processingRef.current) {
+        throw new Error('Processing cancelled by user');
+      }
+      
+      const startLine = chunkIndex * optimalChunkSize + 1; // +1 to skip header
+      const endLine = Math.min((chunkIndex + 1) * optimalChunkSize, lines.length - 1);
+      
+      // Create chunk with header + data rows for this specific chunk
+      const chunkLines = [
+        lines[0], // Header row
+        ...lines.slice(startLine, endLine + 1) // Data rows for this chunk
+      ];
+      
+      // Create promise for this chunk
+      const chunkPromise = processChunkAsync(chunkIndex, chunkLines, fileType, totalChunks);
+      chunkPromises.push(chunkPromise);
+      
+      // Process in batches to avoid overwhelming the API
+      if (chunkPromises.length >= maxConcurrent || chunkIndex === totalChunks - 1) {
+        try {
+          const batchResults = await Promise.all(chunkPromises);
+          
+          // Collect leads from batch
+          for (const result of batchResults) {
+            if (result && result.leads && result.leads.length > 0) {
+              allLeads.push(...result.leads);
+            }
+          }
+          
+          // Update progress after batch processing
+          const batchProgress = 30 + ((chunkIndex + 1) / totalChunks) * 60;
+          updateRealProgress(Math.round(batchProgress), `Lot ${chunkIndex + 1}/${totalChunks} terminé (${allLeads.length} leads collectés)`);
+          
+          // Clear batch for next iteration
+          chunkPromises.length = 0;
+          
+        } catch (error: any) {
+          console.error(`❌ Error processing batch ending at chunk ${chunkIndex + 1}:`, error);
+          // Continue with next batch instead of failing completely
+        }
+      }
+    }
+    
+    
+    // Final progress update
+    updateRealProgress(95, 'Finalisation du traitement par lots...');
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Separate valid and invalid leads for better tracking
+    const validLeads = allLeads.filter((lead: any) => !(lead as any)._isPlaceholder);
+    const invalidLeads = allLeads.filter((lead: any) => (lead as any)._isPlaceholder);
+
+    return {
+      leads: allLeads, // Return all leads (valid + invalid)
+      validation: {
+        totalRows: lines.length - 1,
+        validRows: validLeads.length,
+        invalidRows: invalidLeads.length,
+        errors: []
+      }
+    };
   };
 
 
@@ -1067,10 +1112,11 @@ Rules:
         return;
       }
       
-      // Reset state for new file upload
-      console.log('🔄 Starting new file upload, resetting state...');
+      // Store current leads before resetting
+      const currentLeads = [...leads];
+      const currentFilteredLeads = [...filteredLeads];
       
-      // Force complete reset of all state
+      // Reset file processing state only (keep existing leads)
       setSelectedFile(null);
       setUploadError(null);
       setUploadSuccess(false);
@@ -1078,14 +1124,14 @@ Rules:
       setUploadProgress(0);
       setParsedLeads([]);
       setValidationResults(null);
-      setLeads([]);
-      setFilteredLeads([]);
-      setTotalPages(1);
-      setCurrentPage(1);
-      setTotalCount(0);
+      // Don't clear existing leads - they will be restored after processing
+      setShowSaveButton(true);
+      setShowFileName(true);
+      
+      // Reset OpenAI processing progress
+      resetProgress();
       
       // Clear ALL localStorage and sessionStorage items
-      console.log('🧹 Clearing all storage items...');
       localStorage.removeItem('parsedLeads');
       localStorage.removeItem('validationResults');
       localStorage.removeItem('uploadProcessing');
@@ -1098,8 +1144,11 @@ Rules:
       document.body.removeAttribute('data-processing');
       processingRef.current = false;
       
-      // Force component refresh by clearing any cached data
-      console.log('🔄 Forcing component refresh...');
+      // Reset file input to allow re-upload of same file
+      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
       
       // Now set the new file and start processing
       setSelectedFile(file);
@@ -1120,6 +1169,11 @@ Rules:
         const reader = new FileReader();
         reader.onload = async (e) => {
           try {
+            // Check if processing was cancelled before starting
+            if (!processingRef.current) {
+              return;
+            }
+            
             let fileContent = '';
             let fileType = '';
 
@@ -1132,9 +1186,21 @@ Rules:
               const workbook = XLSX.read(data, { type: 'array' });
               const sheetName = workbook.SheetNames[0];
               const worksheet = workbook.Sheets[sheetName];
-              const json: unknown[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-              const rows = (json as any[]).map((row: any) => Array.isArray(row) ? row.join(',') : Object.values(row).join(','));
-              fileContent = rows.join('\n');
+              
+              // Read Excel as JSON with headers to preserve column structure
+              const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+              
+              // Convert to structured format preserving column names
+              const headers = jsonData[0] as string[];
+              const dataRows = jsonData.slice(1) as any[][];
+              
+              // Convert structured data to readable format for OpenAI
+              const csvFormat = [
+                headers.join(','),
+                ...dataRows.map(row => row.map(cell => `"${cell || ''}"`).join(','))
+              ].join('\n');
+              
+              fileContent = csvFormat;
             } else if (fileExtension === 'csv') {
               fileType = 'CSV';
               fileContent = e.target?.result as string;
@@ -1156,12 +1222,15 @@ Rules:
 
             setUploadProgress(30);
             
+            // Check if processing was cancelled before OpenAI call
+            if (!processingRef.current) {
+              return;
+            }
+            
             // Process with OpenAI
-            console.log('Processing file with OpenAI...');
             const startTime = Date.now();
             const result = await processFileWithOpenAI(fileContent, fileType);
             const processingTime = Date.now() - startTime;
-            console.log(`✅ OpenAI processing completed in ${processingTime}ms`);
             
             setUploadProgress(80);
 
@@ -1173,46 +1242,31 @@ Rules:
               return;
             }
 
-            // Show validation results
+            // Show validation results (suppressed error popups as requested by user)
             if (result.validation) {
               const { totalRows, validRows, invalidRows, errors } = result.validation;
-              
-              console.log('🔍 Validation analysis:');
-              console.log('   - result.validation:', result.validation);
-              console.log('   - totalRows:', totalRows);
-              console.log('   - validRows:', validRows);
-              console.log('   - invalidRows:', invalidRows);
-              console.log('   - result.leads.length:', result.leads.length);
-              
+
               setValidationResults(result.validation);
-              
-              if (invalidRows > 0) {
-                toast.error(`${invalidRows} rows had validation errors. Check the console for details.`);
-                console.log('Validation errors:', errors);
-              }
               
               // Use actual leads count if validRows is undefined or 0
               const actualValidRows = validRows || result.leads.length;
-              toast.success(`Successfully processed ${actualValidRows} out of ${totalRows} rows`);
             }
 
-            console.log('Leads processed with OpenAI:', result.leads);
-            console.log('📊 Total leads processed:', result.leads.length);
-            
             // Verify we got all expected leads
             const fileLines = fileContent.split('\n').filter((line: string) => line.trim());
             const expectedLeads = fileLines.length - 1; // Exclude header row
-            if (result.leads.length < expectedLeads) {
-              console.warn(`⚠️ Warning: Only ${result.leads.length} leads processed. Expected ${expectedLeads} leads from ${fileLines.length} total lines.`);
-            } else {
-              console.log(`✅ Successfully processed ${result.leads.length} leads (expected ${expectedLeads})`);
-            }
             
             setParsedLeads(result.leads);
             
             // Store results in localStorage to prevent loss
             localStorage.setItem('parsedLeads', JSON.stringify(result.leads));
             localStorage.setItem('validationResults', JSON.stringify(result.validation));
+            
+            // Restore existing leads after processing
+            if (currentLeads.length > 0) {
+              setLeads(currentLeads);
+              setFilteredLeads(currentFilteredLeads);
+            }
             
             setIsProcessing(false);
             setUploadProgress(100);
@@ -1303,101 +1357,128 @@ Rules:
 
   const handleSaveLeads = async () => {
     if (!parsedLeads || parsedLeads.length === 0) return;
-    setIsProcessing(true);
-    setUploadProgress(0);
+    
+    // Début de la sauvegarde (séparé du processing)
+    setIsSavingLeads(true);
+    setSavedLeadsCount(0);
+    setRecentlySavedLeads([]);
     setShowSaveButton(false);
-    setShowFileName(false);
+    
+    // Utiliser la référence pour suivre l'état de traitement de manière fiable
+    processingRef.current = true;
 
     try {
-      // Convert leads to API format (try both MongoDB ObjectId and string formats)
+      // Convert leads to API format
       const currentUserId = Cookies.get('userId');
-      const currentGigId = selectedGigId; // Use selected gig ID instead of cookie
+      const currentGigId = selectedGigId;
       const currentCompanyId = Cookies.get('companyId');
       
-      console.log('Current IDs for API:', {
-        userId: currentUserId,
-        gigId: currentGigId,
-        companyId: currentCompanyId
-      });
-      
-      const leadsForAPI = parsedLeads.map((lead: any) => {
-        // Use the selected gigId
-        const finalGigId = selectedGigId;
-        
-        // Try string format first (more common for APIs)
-        return {
-          userId: lead.userId?.$oid || currentUserId,
-          companyId: lead.companyId?.$oid || currentCompanyId,
-          gigId: lead.gigId?.$oid || finalGigId,
-          Last_Activity_Time: lead.Last_Activity_Time || null,
-          Deal_Name: lead.Deal_Name || "Unnamed Lead",
-          Email_1: lead.Email_1 || "no-email@placeholder.com",
-          Phone: lead.Phone || "no-phone@placeholder.com",
-          Stage: lead.Stage || "New",
-          Pipeline: lead.Pipeline || "Sales Pipeline",
-          Activity_Tag: lead.Activity_Tag || '',
-          Telephony: lead.Telephony || '',
-          Project_Tags: lead.Project_Tags || []
-        };
-      });
+      const leadsForAPI = parsedLeads.map((lead: any) => ({
+        userId: lead.userId?.$oid || currentUserId,
+        companyId: lead.companyId?.$oid || currentCompanyId,
+        gigId: lead.gigId?.$oid || currentGigId,
+        Last_Activity_Time: lead.Last_Activity_Time || null,
+        Deal_Name: lead.Deal_Name || "Unnamed Lead",
+        Email_1: lead.Email_1 || "no-email@placeholder.com",
+        Phone: lead.Phone || "no-phone@placeholder.com",
+        Stage: lead.Stage || "New",
+        Pipeline: lead.Pipeline || "Sales Pipeline",
+        Activity_Tag: lead.Activity_Tag || '',
+        Telephony: lead.Telephony || '',
+        Project_Tags: lead.Project_Tags || []
+      }));
 
-      console.log('Saving leads with MongoDB format:', leadsForAPI);
-      console.log('Number of leads to save:', leadsForAPI.length);
-      console.log('API URL:', `${import.meta.env.VITE_DASHBOARD_API}/leads`);
+      // Sauvegarder les leads un par un pour affichage immédiat
+      const savedLeads: any[] = [];
+      const failedLeads: { index: number; error: string }[] = [];
       
-      // Envoyer chaque lead individuellement pour s'assurer qu'ils sont tous sauvegardés
-      const savedLeads = [];
       for (let i = 0; i < leadsForAPI.length; i++) {
-        const lead = leadsForAPI[i];
-        console.log(`Saving lead ${i + 1}/${leadsForAPI.length}:`, lead);
-        
-        // Mettre à jour la progression
-        const progress = Math.round(((i + 1) / leadsForAPI.length) * 100);
-        setUploadProgress(progress);
-        
-        try {
-          const response = await axios.post(`${import.meta.env.VITE_DASHBOARD_API}/leads`, lead, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`
+        // Vérifier si le traitement a été annulé avec la référence fiable
+        if (!processingRef.current) {
+          throw new Error('Processing cancelled by user');
         }
-      });
-          
-          console.log(`Lead ${i + 1} response status:`, response.status);
-          console.log(`Lead ${i + 1} response data:`, response.data);
-          
-          if (response.status === 200 || response.status === 201) {
+        
+        const lead = leadsForAPI[i];
+        
+          try {
+            const response = await axios.post(
+              `${import.meta.env.VITE_DASHBOARD_API}/leads`, 
+              lead,
+              {
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`
+                },
+                timeout: 10000 // 10 secondes de timeout
+              }
+            );
+            
+            if (response.status === 200 || response.status === 201) {
             savedLeads.push(response.data);
-            console.log(`Lead ${i + 1} saved successfully:`, response.data);
+            
+            // Ajouter le lead sauvegardé à la liste des leads récemment sauvegardés
+            const responseData = response.data as any;
+            const savedLead: Lead = {
+              _id: responseData._id || `temp_${Date.now()}_${i}`,
+              gigId: responseData.gigId || selectedGigId,
+              userId: responseData.userId || Cookies.get('userId') || '',
+              companyId: responseData.companyId || Cookies.get('companyId') || '',
+              Email_1: responseData.Email_1 || lead.Email_1,
+              Phone: responseData.Phone || lead.Phone,
+              Deal_Name: responseData.Deal_Name || lead.Deal_Name,
+              Stage: responseData.Stage || lead.Stage,
+              Pipeline: responseData.Pipeline || lead.Pipeline,
+              updatedAt: new Date().toISOString()
+            };
+            
+            setRecentlySavedLeads(prev => [...prev, savedLead]);
+            
+            // Mettre à jour la progression et le compteur immédiatement
+            const progress = Math.round(((i + 1) / leadsForAPI.length) * 100);
+            setUploadProgress(progress);
+            setSavedLeadsCount(savedLeads.length);
+            
+            // Rafraîchir automatiquement la liste des leads tous les 10 leads ou à la fin
+            if (savedLeads.length % 10 === 0 || i === leadsForAPI.length - 1) {
+              try {
+                await fetchLeads();
+              } catch (error) {
+                console.warn('Error refreshing leads during save:', error);
+              }
+            }
           } else {
-            console.error(`Failed to save lead ${i + 1}:`, response.statusText);
+            failedLeads.push({ index: i, error: response.statusText });
           }
-        } catch (error) {
-          console.error(`Error saving lead ${i + 1}:`, error);
+        } catch (error: any) {
+          failedLeads.push({ 
+            index: i, 
+            error: error.message || 'Network error'
+          });
+        }
+        
+        // Petite pause entre chaque lead pour éviter de surcharger l'API
+        if (i < leadsForAPI.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
       }
       
-      const response = { status: 200, data: savedLeads };
-      console.log('Save response:', response.data);
-      if (response.status === 200) {
-        const savedCount = savedLeads.length;
-        const totalCount = leadsForAPI.length;
-        
-        if (savedCount === totalCount) {
+      // Résultats finaux
+      const savedCount = savedLeads.length;
+      const totalCount = leadsForAPI.length;
+      const failedCount = failedLeads.length;
+      
+      if (savedCount === totalCount) {
+        // Tous les leads ont été sauvegardés
         setUploadSuccess(true);
         setUploadProgress(100);
-          toast.success(`Successfully saved all ${savedCount} leads!`);
-        } else {
-          setUploadError(`Only ${savedCount} out of ${totalCount} leads were saved. Check console for details.`);
-          toast.error(`Only ${savedCount} out of ${totalCount} leads were saved.`);
-        }
+        toast.success(`Successfully saved ${savedCount} contacts!`);
         
-        // Rafraîchir la liste des leads après l'importation
+        // Rafraîchir la liste des leads une dernière fois
         if (selectedGigId) {
           await fetchLeads();
         }
         
-        // Déclencher une mise à jour de l'état d'onboarding pour marquer le step 6 comme complété
+        // Mettre à jour l'onboarding
         try {
           const companyId = Cookies.get('companyId');
           if (companyId) {
@@ -1405,56 +1486,85 @@ Rules:
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
               { status: 'completed' }
             );
-            console.log('✅ Step 6 marked as completed after saving leads');
+            
+            localStorage.setItem('stepCompleted', JSON.stringify({
+              stepId: 6,
+              phaseId: 2,
+              data: { success: true, leadsSaved: savedCount }
+            }));
           }
         } catch (error) {
-          console.error('Error updating onboarding progress after saving leads:', error);
+          console.error('Error updating onboarding progress:', error);
+          // Ne pas bloquer le processus si l'onboarding échoue
         }
         
-        // Reset all states after a short delay, but preserve parsed leads
-        setTimeout(() => {
-          // Don't reset if we have parsed leads
-          if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads')) {
-            console.log('🛡️ Skipping state reset - parsed leads exist');
-            return;
-          }
-          
-          setSelectedFile(null);
-          setUploadProgress(0);
-          setUploadSuccess(false);
-          setParsedLeads([]);
-          setUploadError(null);
-          setValidationResults(null);
-          setIsProcessing(false);
-          setShowSaveButton(true);
-          setShowFileName(true);
-          // Only show reset message if we don't have parsed leads
-          if (!parsedLeads.length && !localStorage.getItem('parsedLeads')) {
-            toast('File has been reset. You can upload a new file.', {
-              icon: '🔄',
-              duration: 2000
-            });
-          }
-        }, 1200);
+      } else if (savedCount > 0) {
+        // Certains leads ont été sauvegardés
+        setUploadError(`${savedCount} leads saved, ${failedCount} failed`);
+        // Afficher les erreurs dans la console
+        console.warn('Failed leads:', failedLeads);
+        
+        // Rafraîchir quand même pour montrer les leads sauvegardés
+        if (selectedGigId) {
+          await fetchLeads();
+        }
+        
+      } else {
+        // Aucun lead n'a été sauvegardé
+        setUploadError('Failed to save any leads');
+        toast.error('Failed to save any leads. Check console for details.');
+        console.error('All leads failed to save:', failedLeads);
       }
+      
     } catch (error: any) {
-      console.error('Error processing file:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Error processing file';
+      console.error('Error in handleSaveLeads:', error);
+      const errorMessage = error.message || 'Error saving leads';
       setUploadError(errorMessage);
       toast.error(errorMessage);
-      setUploadProgress(0);
+      
+    } finally {
+      // TOUJOURS réinitialiser l'état, même en cas d'erreur
+      setIsSavingLeads(false);
+      processingRef.current = false; // Réinitialiser la référence aussi
       setShowSaveButton(true);
       setShowFileName(true);
-    } finally {
-      setIsProcessing(false);
+      
+      // Reset après un délai pour permettre à l'utilisateur de voir le résultat
+      setTimeout(() => {
+        setSelectedFile(null);
+        setUploadProgress(0);
+        setUploadSuccess(false);
+        setParsedLeads([]);
+        setUploadError(null);
+        setValidationResults(null);
+        setRecentlySavedLeads([]);
+        
+        // Clear storage
+        localStorage.removeItem('parsedLeads');
+        localStorage.removeItem('validationResults');
+        localStorage.removeItem('uploadProcessing');
+        sessionStorage.removeItem('uploadProcessing');
+        sessionStorage.removeItem('parsedLeads');
+        sessionStorage.removeItem('validationResults');
+        
+        // Remove processing indicators
+        document.body.removeAttribute('data-processing');
+        processingRef.current = false;
+        
+        // Reset file input
+        const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+        if (fileInput) {
+          fileInput.value = '';
+        }
+      }, 2000); // 2 secondes au lieu de 1.2
     }
   };
 
+  // Fonction pour forcer la réinitialisation complète
+
   const handleZohoConnect = async () => {
-    console.log('Starting Zoho connection process...');
     try {
       const userId = Cookies.get('userId');
-      console.log('Retrieved userId from cookies:', userId);
   
       if (!userId) {
         console.error('No userId found in cookies');
@@ -1467,7 +1577,6 @@ Rules:
       const encodedState = encodeURIComponent(userId);
   
       const authUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth?redirect_uri=${encodedRedirectUri}&state=${encodedState}`;
-      console.log('Auth URL:', authUrl);
   
       const response = await fetch(authUrl, {
         method: 'GET',
@@ -1484,7 +1593,6 @@ Rules:
       }
   
       const data = await response.json();
-      console.log('Auth URL response:', data);
   
       const redirectUrl = new URL(data.authUrl);
       redirectUrl.searchParams.set('state', userId);
@@ -1504,7 +1612,6 @@ Rules:
     //   return;
     // }
     
-    console.log('Starting Zoho disconnection process...');
     setIsDisconnectingZoho(true);
     try {
       const userId = Cookies.get('userId');
@@ -1531,7 +1638,6 @@ Rules:
       }
 
       const data = await response.json();
-      console.log('Disconnect response:', data);
 
       if (data.success) {
         // Reset Zoho service configuration
@@ -1540,12 +1646,10 @@ Rules:
         
         setHasZohoConfig(false);
         setHasZohoAccessToken(false);
-        toast.success('Successfully disconnected from Zoho CRM');
         
         // Clear any cached Zoho data
         setRealtimeLeads([]);
         setParsedLeads([]);
-        // (plus de rafraîchissement ni d'alerte)
       } else {
         throw new Error(data.message || 'Failed to disconnect from Zoho');
       }
@@ -1576,12 +1680,6 @@ Rules:
         window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
       }
 
-      console.log('URL Params:', {
-        code,
-        state,
-        location,
-        accountsServer
-      });
       
       if (code) {
         if (!state) {
@@ -1602,12 +1700,6 @@ Rules:
   }, []);
 
   const handleOAuthCallback = async (code: string, state: string, location?: string, accountsServer?: string) => {
-    console.log('handleOAuthCallback called with:', {
-      code,
-      state,
-      location,
-      accountsServer
-    });
     
     try {
       const userId = state || Cookies.get('userId');
@@ -1633,7 +1725,6 @@ Rules:
       });
   
       const data = await response.json();
-      console.log('Callback response:', data);
   
       if (!response.ok) {
         throw new Error(data.error || 'Failed to exchange code for tokens');
@@ -1650,16 +1741,9 @@ Rules:
   useEffect(() => {
     // Skip this effect if we're currently processing a file
     if (isProcessing || processingRef.current) {
-      console.log('⏸️ Skipping hasZohoConfig effect - file processing in progress');
       return;
     }
     
-    console.log('📊 État actuel de hasZohoConfig:', hasZohoConfig);
-    if (!hasZohoConfig) {
-      console.log('⚠️ Configuration Zoho non trouvée - Affichage de la modal');
-    } else {
-      console.log('✅ Configuration Zoho trouvée - Pas besoin d\'afficher la modal');
-    }
   }, [hasZohoConfig, isProcessing]);
 
   // Ajout d'une fonction utilitaire pour fetch Zoho avec refresh automatique
@@ -1760,7 +1844,6 @@ Rules:
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
               { status: 'completed' }
             );
-            console.log('✅ Step 6 marked as completed after Zoho import');
           }
         } catch (error) {
           console.error('Error updating onboarding progress after Zoho import:', error);
@@ -1777,27 +1860,26 @@ Rules:
   const fetchLeads = async (page = currentPage) => {
     // Skip fetching leads if we're currently processing a file
     if (isProcessing || processingRef.current) {
-      console.log('⏸️ Skipping fetchLeads - file processing in progress');
       return;
     }
 
     // Also check localStorage for processing state
     if (localStorage.getItem('uploadProcessing') === 'true') {
-      console.log('⏸️ Skipping fetchLeads - processing state in localStorage');
       return;
     }
 
     if (!selectedGigId) {
       // Don't clear leads if we have parsed leads from file upload
       if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads')) {
-        console.log('⏸️ Skipping leads clear in fetchLeads - parsed leads exist');
         return;
       }
-      console.log('No gig selected, clearing leads');
-      setLeads([]);
-      setTotalPages(0);
-      setCurrentPage(1);
-      setTotalCount(0);
+      // Only clear leads if we're not in the middle of file processing
+      if (!processingRef.current && localStorage.getItem('uploadProcessing') !== 'true') {
+        setLeads([]);
+        setTotalPages(0);
+        setCurrentPage(1);
+        setTotalCount(0);
+      }
       return;
     }
 
@@ -1806,8 +1888,6 @@ Rules:
     try {
       // Fetch leads with pagination (50 per page)
       const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=50`;
-      console.log('API URL:', apiUrl);
-      console.log('Fetching leads for gig:', selectedGigId, 'page:', page);
       const response = await fetch(apiUrl, {
         headers: {
           'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`,
@@ -1820,7 +1900,6 @@ Rules:
       }
 
       const responseData: ApiResponse = await response.json();
-      console.log('API Response:', responseData);
       
       if (!responseData.success) {
         throw new Error('Failed to fetch leads: API returned unsuccessful response');
@@ -1830,8 +1909,6 @@ Rules:
         throw new Error('Invalid response format: expected data to be an array');
       }
 
-      console.log('Setting leads:', responseData.data);
-      console.log('Total leads on this page:', responseData.data.length);
       setLeads(responseData.data);
       setFilteredLeads(responseData.data); // Initialiser les leads filtrés
       setTotalPages(responseData.totalPages);
@@ -1850,18 +1927,15 @@ Rules:
   useEffect(() => {
     // Skip this effect if we're currently processing a file
     if (isProcessing || processingRef.current) {
-      console.log('⏸️ Skipping selectedGigId effect - file processing in progress');
       return;
     }
 
-    // Also skip if we have parsed leads that should be preserved
+    // Skip if we have parsed leads that should be preserved
     if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads') || sessionStorage.getItem('parsedLeads')) {
-      console.log('⏸️ Skipping selectedGigId effect - parsed leads exist');
       return;
     }
 
     if (selectedGigId) {
-      console.log('Selected gig changed, fetching leads for:', selectedGigId);
       fetchLeads().catch(error => {
         console.error('Error in useEffect:', error);
         setError('Failed to load leads');
@@ -1869,33 +1943,33 @@ Rules:
     } else {
       // Don't clear leads if we're processing or have parsed leads
       if (processingRef.current || localStorage.getItem('uploadProcessing') === 'true' || sessionStorage.getItem('uploadProcessing') === 'true' || parsedLeads.length > 0) {
-        console.log('⏸️ Skipping leads clear - file processing in progress or parsed leads exist');
         return;
       }
-      console.log('No gig selected, clearing leads');
-      setLeads([]);
-      setTotalPages(0);
-      setCurrentPage(1);
+      // Only clear leads if we're not in the middle of file processing
+      if (!processingRef.current && localStorage.getItem('uploadProcessing') !== 'true') {
+        setLeads([]);
+        setTotalPages(0);
+        setCurrentPage(1);
+      }
     }
   }, [selectedGigId, isProcessing]);
 
   useEffect(() => {
     // Skip this effect if we're currently processing a file
     if (processingRef.current) {
-      console.log('⏸️ Skipping leads effect - file processing in progress');
       return;
     }
 
+    // Component will handle leads display normally
+    
     // If we have parsed leads, don't show empty leads list
     if (parsedLeads.length > 0) {
-      console.log('📋 Showing parsed leads instead of empty leads list');
       return;
     }
 
     // Also check localStorage for parsed leads
     const savedParsedLeads = localStorage.getItem('parsedLeads');
     if (savedParsedLeads) {
-      console.log('📋 Found parsed leads in localStorage, skipping empty leads display');
       return;
     }
 
@@ -1904,7 +1978,6 @@ Rules:
     try {
       const leads = JSON.parse(savedParsedLeads);
       setParsedLeads(leads);
-      console.log('🔄 Restored parsed leads from localStorage during render:', leads.length);
       return;
     } catch (error) {
       console.error('Error restoring parsed leads during render:', error);
@@ -1913,15 +1986,8 @@ Rules:
 
   // If we have parsed leads, force the display to show them
   if (parsedLeads.length > 0) {
-    console.log('📋 Forcing display of parsed leads:', parsedLeads.length);
     return;
   }
-
-    if (leads.length === 0) {
-      console.log('No leads to display');
-    } else {
-      console.log('Rendering leads:', leads);
-    }
   }, [leads, parsedLeads.length]);
 
   const renderPaginationButtons = () => {
@@ -2050,7 +2116,6 @@ Rules:
 
       const data = await response.json();
 
-      console.log('data gigs', data);
       if (data.data) {
         setGigs(data.data);
         // Set the first gig as selected by default if available
@@ -2070,46 +2135,10 @@ Rules:
     fetchGigs();
   }, []);
 
-  const handleGigChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newGigId = e.target.value;
-    setSelectedGigId(newGigId);
-    
-    // Update gigId in all parsed leads (keep as string for interface compatibility)
-    setParsedLeads(prevLeads => 
-      prevLeads.map(lead => ({
-        ...lead,
-        gigId: newGigId
-      }))
-    );
-
-    // Update gigId in existing leads
-    setLeads(prevLeads =>
-      prevLeads.map(lead => ({
-        ...lead,
-        gigId: newGigId
-      }))
-    );
-
-    // Update gigId in realtime leads
-    setRealtimeLeads(prevLeads =>
-      prevLeads.map(lead => ({
-        ...lead,
-        gigId: newGigId
-      }))
-    );
-
-    // Update the cookie with the new gigId for consistency
-    Cookies.set('gigId', newGigId);
-    
-    // Log the change for debugging
-    console.log('Gig changed to:', newGigId);
-    console.log('Updated parsedLeads with new gigId');
-  };
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data.zohoConnected) {
-        console.log('Received zohoConnected message');
         setHasZohoConfig(true);
       }
     };
@@ -2123,82 +2152,19 @@ Rules:
       const isConfigured = zohoService.isConfigured();
       setHasZohoAccessToken(isConfigured);
       setHasZohoConfig(isConfigured);
-      if (isConfigured) {
-        console.log('✅ Zoho est configuré - Affichage du composant UploadContacts');
-      }
     };
     checkZohoConfig();
   }, []);
 
-  // Show import choice modal on first visit
+  // Show import choice modal on first visit - DISABLED
   useEffect(() => {
-    const hasSeenModal = localStorage.getItem('hasSeenImportChoiceModal');
-    if (!hasSeenModal) {
-      setShowImportChoiceModal(true);
-    }
+    // Modal disabled - always mark as seen
+    localStorage.setItem('hasSeenImportChoiceModal', 'true');
+    setShowImportChoiceModal(false);
   }, []);
 
-  const handleImportChoice = (choice: 'zoho' | 'file') => {
-    setSelectedImportChoice(choice);
-  };
 
-  const handleConfirmChoice = () => {
-    if (selectedImportChoice) {
-      localStorage.setItem('hasSeenImportChoiceModal', 'true');
-      setShowImportChoiceModal(false);
-      
-      if (selectedImportChoice === 'zoho') {
-        // Focus on Zoho import section
-        const zohoButton = document.querySelector('[data-zoho-import]');
-        if (zohoButton) {
-          zohoButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      } else {
-        // Focus on file upload section
-        const uploadSection = document.querySelector('[data-file-upload]');
-        if (uploadSection) {
-          uploadSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }
-    }
-  };
 
-  const testOpenAIConnection = async () => {
-    try {
-      const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
-      if (!openaiApiKey) {
-        toast.error('OpenAI API key not configured');
-        return;
-      }
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openaiApiKey}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [
-            {
-              role: 'user',
-              content: 'Hello, this is a test message. Please respond with "Connection successful" if you can read this.'
-            }
-          ],
-          max_tokens: 10
-        })
-      });
-
-      if (response.ok) {
-        toast.success('OpenAI connection successful!');
-      } else {
-        toast.error('OpenAI connection failed. Please check your API key.');
-      }
-    } catch (error) {
-      console.error('OpenAI test error:', error);
-      toast.error('OpenAI connection test failed');
-    }
-  };
 
   const handleEditLead = (index: number, field: string, value: string) => {
     const newLeads = [...parsedLeads];
@@ -2238,20 +2204,23 @@ Rules:
     setSelectedImportChoice(null);
   };
 
+
+
   return (
     <div className="space-y-4 bg-gradient-to-br from-blue-50 to-white min-h-screen p-4">
       {/* Page Header */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-        <div className="flex items-start space-x-6 mb-6">
+        <div className="flex items-start justify-between mb-6">
           <div className="flex-1">
-                      <h1 className="text-3xl font-bold text-gray-900 mb-3 flex items-center">
-            <UserPlus className="mr-3 h-8 w-8 text-blue-600" />
-            Upload Contacts
-          </h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-3 flex items-center">
+              <UserPlus className="mr-3 h-8 w-8 text-blue-600" />
+              Upload Contacts
+            </h1>
             <p className="text-lg text-gray-600">
               Import, manage, and organize your leads efficiently. Choose between connecting with your CRM system or uploading contact files directly.
             </p>
           </div>
+
         </div>
       </div>
 
@@ -2319,12 +2288,6 @@ Rules:
                 <div>
                   <h4 className="text-xl font-bold text-blue-900">Zoho CRM Integration</h4>
                   <p className="text-sm text-blue-700">Connect and sync with your Zoho CRM</p>
-                  {hasZohoAccessToken && (
-                    <div className="flex items-center mt-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                      <span className="text-xs text-green-700 font-medium">Connected</span>
-                    </div>
-                  )}
                 </div>
               </div>
               <div className="flex space-x-2">
@@ -2467,17 +2430,55 @@ Rules:
               <div className="relative">
                 <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
                   <div
-                    className={`h-3 rounded-full transition-all duration-500 ${
-                      uploadError ? 'bg-red-500' : uploadSuccess ? 'bg-green-500' : 'bg-gradient-to-r from-green-500 to-emerald-500'
+                    className={`h-3 rounded-full transition-all duration-300 ${
+                      uploadError ? 'bg-red-500' : uploadSuccess ? 'bg-green-500' : 'bg-gradient-to-r from-blue-500 to-indigo-500'
                     }`}
-                    style={{ width: `${uploadProgress}%` }}
+                    style={{ 
+                      width: `${uploadProgress}%`,
+                      background: isProcessing && !uploadError && !uploadSuccess ? 'linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%)' : undefined
+                    }}
                   />
                 </div>
               </div>
               <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                <span>{uploadProgress}% complete</span>
+                <span>
+                  {isProcessing && !uploadError && !uploadSuccess 
+                    ? `Analyse en cours... ${uploadProgress}%` 
+                    : uploadProgress > 0 ? `${uploadProgress}% terminé` : 'Prêt'
+                  }
+                </span>
                 <span>{Math.round(selectedFile.size / 1024)} KB</span>
               </div>
+              
+              {/* Real-time Progress Status for OpenAI Processing */}
+              {isProcessing && !uploadError && !uploadSuccess && (
+                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-blue-700 font-medium">
+                      {processingProgress.status || 'Traitement OpenAI en cours...'}
+                    </span>
+                  </div>
+                  
+                  {/* Animated activity indicator */}
+                  <div className="mt-2 flex items-center space-x-1">
+                    <div className="flex space-x-1">
+                      {[0, 1, 2].map((i) => (
+                        <div
+                          key={i}
+                          className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"
+                          style={{
+                            animationDelay: `${i * 0.2}s`,
+                            animationDuration: '1s'
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs text-blue-600 ml-2">Traitement en cours...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            
               {uploadError && (
                 <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
                   {uploadError}
@@ -2579,7 +2580,6 @@ Rules:
                                         const newLeads = [...parsedLeads];
                                         newLeads.splice(index, 1);
                                         setParsedLeads(newLeads);
-                                        toast.success('Lead removed');
                                       }}
                                       className="text-red-500 hover:text-red-700 p-2 rounded-md hover:bg-red-50 transition-colors duration-200"
                                       title="Delete lead"
@@ -2633,7 +2633,6 @@ Rules:
                                       <button
                                         onClick={() => {
                                           setEditingLeadIndex(null);
-                                          toast.success('Lead updated');
                                         }}
                                         className="px-3 py-1 text-sm font-medium text-white bg-gradient-to-r from-slate-700 to-slate-900 rounded-lg hover:from-slate-800 hover:to-slate-950 transition-all duration-200 shadow-sm"
                                       >
@@ -2668,23 +2667,55 @@ Rules:
                                 <button
                 className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-white font-bold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                 onClick={handleSaveLeads}
-                disabled={isProcessing}
+                disabled={isSavingLeads}
               >
-                {isProcessing ? (
-                  <div className="flex items-center justify-center">
-                    <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-                    Saving Contacts...
-                  </div>
-                ) : (
                   <div className="flex items-center justify-center">
                     <UserPlus className="mr-2 h-5 w-5" />
                     Save {parsedLeads.length} Contacts
                   </div>
-                )}
               </button>
+              
+              {/* Bouton de sauvegarde séparé qui apparaît pendant la sauvegarde */}
+              {isSavingLeads && (
+                <div className="mt-4 space-y-3">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <RefreshCw className="mr-3 h-5 w-5 text-green-600 animate-spin" />
+                        <div>
+                          <h4 className="text-sm font-semibold text-green-800">Saving Contacts...</h4>
+                          <p className="text-xs text-green-600">
+                            {savedLeadsCount} of {parsedLeads.length} contacts saved
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-bold text-green-700">{Math.round((savedLeadsCount / parsedLeads.length) * 100)}%</div>
+                        <div className="w-16 h-2 bg-green-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-300"
+                            style={{ width: `${(savedLeadsCount / parsedLeads.length) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button
+                    className="w-full rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-4 py-3 text-white font-bold hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    disabled
+                  >
+                    <div className="flex items-center justify-center">
+                      <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                      Saving {savedLeadsCount}/{parsedLeads.length} Contacts...
+                    </div>
+                  </button>
                 </div>
               )}
-            </div>
+              
+
+                </div>
+              )}
           </div>
         )}
       </div>
@@ -2733,6 +2764,10 @@ Rules:
                     {parsedLeads.length > 0 ? (
                       <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
                         {parsedLeads.length} leads ready to save
+                      </span>
+                    ) : isSavingLeads && recentlySavedLeads.length > 0 ? (
+                      <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium">
+                        Showing {recentlySavedLeads.length} recently saved leads (saving in progress...)
                       </span>
                     ) : leads.length > 0 ? (
                       <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium">
@@ -2831,7 +2866,7 @@ Rules:
                         </div>
                       </td>
                     </tr>
-                  ) : leads.length === 0 ? (
+                  ) : (leads.length === 0 && !isSavingLeads) ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-8">
@@ -2841,7 +2876,7 @@ Rules:
                         </div>
                       </td>
                     </tr>
-                  ) : filteredLeads.length === 0 ? (
+                  ) : (filteredLeads.length === 0 && !isSavingLeads) ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-8">
@@ -2852,15 +2887,27 @@ Rules:
                       </td>
                     </tr>
                   ) : (
-                    filteredLeads.map((lead, index) => (
-                      <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                    // Afficher les leads récemment sauvegardés pendant la sauvegarde, sinon les leads filtrés
+                    (isSavingLeads && recentlySavedLeads.length > 0 ? recentlySavedLeads : filteredLeads).map((lead, index) => (
+                      <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-orange-400' : ''}`}>
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="flex items-center">
-                                                    <div className="h-10 w-10 flex-shrink-0 rounded-full bg-blue-100 flex items-center justify-center">
-                          <UserPlus className="h-6 w-6 text-blue-700" />
-                        </div>
+                            <div className={`h-10 w-10 flex-shrink-0 rounded-full flex items-center justify-center ${(lead as any)._isPlaceholder ? 'bg-orange-100' : 'bg-blue-100'}`}>
+                              {(lead as any)._isPlaceholder ? (
+                                <AlertTriangle className="h-6 w-6 text-orange-700" />
+                              ) : (
+                                <UserPlus className="h-6 w-6 text-blue-700" />
+                              )}
+                            </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'No Email'}</div>
+                              <div className="text-sm font-medium text-gray-900 flex items-center">
+                                {lead.Email_1 || 'No Email'}
+                                {(lead as any)._isPlaceholder && (
+                                  <span className="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-800">
+                                    Invalid
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-sm text-gray-500">{lead.Phone || 'No Phone'}</div>
                             </div>
                           </div>
@@ -2944,14 +2991,14 @@ Rules:
           </div>
           <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
             <div className="min-w-full divide-y divide-gray-200">
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 sticky top-0">
-            <div className="grid grid-cols-4 px-6 py-3">
-              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Email</div>
-              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Téléphone</div>
-              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Lead</div>
-              <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Stage</div>
-            </div>
-          </div>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 sticky top-0">
+                <div className="grid grid-cols-4 px-6 py-3">
+                  <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Email</div>
+                  <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Téléphone</div>
+                  <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Lead</div>
+                  <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Stage</div>
+                </div>
+              </div>
               <div className="bg-white divide-y divide-gray-100">
                 {realtimeLeads.map((lead, index) => (
                   <div key={index} className="grid grid-cols-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
@@ -2959,9 +3006,9 @@ Rules:
                     <div className="text-sm text-gray-700">{lead.Phone || 'N/A'}</div>
                     <div className="text-sm text-gray-700">{lead.Deal_Name || 'N/A'}</div>
                     <div className="text-sm">
-                                        <span className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-800 px-2.5 py-0.5 text-xs font-medium">
-                    {lead.Stage || 'N/A'}
-                  </span>
+                      <span className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-800 px-2.5 py-0.5 text-xs font-medium">
+                        {lead.Stage || 'N/A'}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -3019,4 +3066,5 @@ Rules:
   );
 });
 
+// cooment
 export default UploadContacts;

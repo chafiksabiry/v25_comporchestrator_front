@@ -20,9 +20,9 @@ ENV VITE_COMPANY_API_URL=https://api-companysearchwizard.harx.ai/api
 ENV VITE_DASHBOARD_API=https://api-dashboard.harx.ai/api
 ENV VITE_REP_API=https://api-repcreationwizard.harx.ai/api
 ENV VITE_GOOGLE_API_KEY=AIzaSyCHEKiraViKIrgvloZI-ZBIJqtDMeBuQD0
-ENV VITE_KNOWLEDGE_BASE_URL=/knowledgebase
-ENV VITE_OPENAI_API_KEY=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
-
+ENV VITE_KNOWLEDGE_BASE_URL=/knowledgebase/upload
+ENV VITE_OPENAI_API_KEY=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
+ENV VITE_SCRIPT_GENERATION_BASE_URL=/knowledgebase/script-generator
 RUN npm run build
 
 RUN npm install -g serve

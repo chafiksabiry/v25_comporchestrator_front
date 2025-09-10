@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import GigDetailsView from './GigDetailsView';
 
 interface Gig {
   _id: string;
@@ -51,7 +52,10 @@ const GigDetails = () => {
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
   const companyId = Cookies.get('companyId');
+
+  console.log('GigDetails render - selectedGig:', selectedGig);
 
   useEffect(() => {
     const fetchGigs = async () => {
@@ -159,6 +163,17 @@ const GigDetails = () => {
           {error}
         </div>
       </div>
+    );
+  }
+
+  // If a gig is selected, show the details view
+  if (selectedGig) {
+    console.log('Rendering GigDetailsView with gig:', selectedGig);
+    return (
+      <GigDetailsView 
+        gig={selectedGig} 
+        onBack={() => setSelectedGig(null)} 
+      />
     );
   }
 
@@ -282,14 +297,23 @@ const GigDetails = () => {
                       {gig.createdAt ? new Date(gig.createdAt).toLocaleDateString() : 'Date unknown'}
                     </div>
                     
-                    <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-lg text-xs font-medium">
+                    <button 
+                      className="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 relative z-10"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('View Details clicked for gig:', gig);
+                        console.log('Setting selectedGig to:', gig);
+                        setSelectedGig(gig);
+                      }}
+                    >
                       View Details
                     </button>
                   </div>
                 </div>
                 
                 {/* Hover Effect Overlay */}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300"></div>
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 pointer-events-none"></div>
               </div>
             );
           })}

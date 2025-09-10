@@ -37,6 +37,14 @@ function App() {
   const isZohoAuth = window.location.pathname === '/zoho-auth';
 
   useEffect(() => {
+    // Vérifier si l'utilisateur est authentifié
+    const userId = Cookies.get('userId');
+    if (!userId && !isZohoCallback && !isZohoAuth) {
+      console.log('User ID not found, redirecting to /auth');
+      window.location.href = '/auth';
+      return;
+    }
+
     // Initialize Zoho configuration
     const initializeZoho = async () => {
       const zohoService = ZohoService.getInstance();
@@ -98,12 +106,7 @@ function App() {
       }
     };
 
-    // Listen for postMessage events from iframe
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data && event.data.type === 'SET_ACTIVE_TAB') {
-        setActiveTab(event.data.tab);
-      }
-    };
+    // Removed postMessage handling - using localStorage and CustomEvent instead
 
     // Check localStorage for activeTab on mount
     const storedActiveTab = localStorage.getItem('activeTab');
@@ -113,11 +116,9 @@ function App() {
     }
 
     window.addEventListener('tabChange', handleTabChange as EventListener);
-    window.addEventListener('message', handleMessage);
 
     return () => {
       window.removeEventListener('tabChange', handleTabChange as EventListener);
-      window.removeEventListener('message', handleMessage);
     };
   }, []);
 

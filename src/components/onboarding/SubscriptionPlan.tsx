@@ -1,10 +1,98 @@
-import React from 'react';
-import { Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Check, CheckCircle2 } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
 const SubscriptionPlan = () => {
+  const [isStepCompleted, setIsStepCompleted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const companyId = Cookies.get('companyId');
+
+  // Vérifier l'état de l'étape au chargement
+  useEffect(() => {
+    if (companyId) {
+      checkStepStatus();
+      checkExistingSubscription();
+    }
+  }, [companyId]);
+
+  const checkExistingSubscription = async () => {
+    try {
+      if (!companyId) return;
+      
+      // Vérifier si l'entreprise a déjà un abonnement
+      const response = await axios.get(
+        `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/subscription`
+      );
+      
+      if (response.data && (response.data as any).subscription) {
+        // Si un abonnement existe, marquer automatiquement l'étape comme complétée
+        if (!isStepCompleted) {
+          try {
+            const stepResponse = await axios.put(
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/3`,
+              { status: 'completed' }
+            );
+            
+            console.log('✅ Subscription step 3 automatically marked as completed:', stepResponse.data);
+            
+            // Mettre à jour l'état local
+            setIsStepCompleted(true);
+            
+            // Mettre à jour le localStorage
+            const currentProgress = {
+              currentPhase: 1,
+              completedSteps: [3],
+              lastUpdated: new Date().toISOString()
+            };
+            localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+            
+            // Synchroniser avec les cookies
+            Cookies.set('subscriptionStepCompleted', 'true', { expires: 7 });
+            
+          } catch (autoCompleteError) {
+            console.error('Error auto-completing subscription step:', autoCompleteError);
+          }
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error checking existing subscription:', error);
+    }
+  };
+
+  const checkStepStatus = async () => {
+    try {
+      if (!companyId) return;
+      
+      // Vérifier l'état de l'étape 3 (Subscription Plan) dans la phase 1
+      const response = await axios.get(
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/3`
+      );
+      
+      if (response.data && (response.data as any).status === 'completed') {
+        setIsStepCompleted(true);
+        return;
+      }
+      
+      // Vérifier aussi le localStorage pour la cohérence
+      const storedProgress = localStorage.getItem('companyOnboardingProgress');
+      if (storedProgress) {
+        try {
+          const progress = JSON.parse(storedProgress);
+          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(3)) {
+            setIsStepCompleted(true);
+            return;
+          }
+        } catch (e) {
+          console.error('Error parsing stored progress:', e);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error checking step status:', error);
+    }
+  };
 
   const freePlan = {
     name: 'Free',
@@ -24,6 +112,7 @@ const SubscriptionPlan = () => {
 
   const handleActivatePlan = async () => {
     try {
+      setIsLoading(true);
       console.log('Starting plan activation...');
       console.log('Company ID:', companyId);
       
@@ -53,6 +142,22 @@ const SubscriptionPlan = () => {
       }
       console.log('Step completion response:', stepResponse.data);
       
+      // Mettre à jour l'état local
+      setIsStepCompleted(true);
+      
+      // Mettre à jour le localStorage
+      const currentProgress = {
+        currentPhase: 1,
+        completedSteps: [3],
+        lastUpdated: new Date().toISOString()
+      };
+      localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+      
+      // Synchroniser avec les cookies
+      Cookies.set('subscriptionStepCompleted', 'true', { expires: 7 });
+      
+      // Attendre un moment pour que l'API soit traitée
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Recharger la page pour mettre à jour l'interface
       window.location.reload();
@@ -65,20 +170,26 @@ const SubscriptionPlan = () => {
           data: error.response.data,
           url: error.config?.url
         });
-        alert(`Erreur lors de l'activation du plan: ${error.response.data?.message || error.message}`);
+        console.log(`Erreur lors de l'activation du plan: ${error.response.data?.message || error.message}`);
       } else {
-        alert('Une erreur est survenue lors de l\'activation du plan');
+        console.log('Une erreur est survenue lors de l\'activation du plan');
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="space-y-8">
+      <div className="flex items-center justify-between">
       <div>
+          <div className="flex items-center gap-3">
         <h2 className="text-2xl font-bold text-gray-900">Free Plan</h2>
+          </div>
         <p className="mt-2 text-gray-600">
           Start using our platform with our comprehensive free plan.
         </p>
+        </div>
       </div>
 
       <div className="max-w-xl">
@@ -107,10 +218,26 @@ const SubscriptionPlan = () => {
           </ul>
 
           <button
-            onClick={handleActivatePlan}
-            className="mt-8 w-full rounded-lg bg-indigo-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
+            onClick={isStepCompleted ? undefined : handleActivatePlan}
+            disabled={isStepCompleted || isLoading}
+            className={`mt-8 w-full rounded-lg px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-all ${
+              isStepCompleted
+                ? 'bg-green-600 cursor-not-allowed'
+                : isLoading
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-indigo-600 hover:bg-indigo-700'
+            }`}
           >
-            Activate Free Plan
+            {isStepCompleted ? (
+              <span className="flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-5 h-5" />
+                Plan Already Activated
+              </span>
+            ) : isLoading ? (
+              'Activating Plan...'
+            ) : (
+              'Activate Free Plan'
+            )}
           </button>
         </div>
       </div>
