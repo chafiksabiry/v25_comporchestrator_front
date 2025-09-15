@@ -1,6 +1,6 @@
 import { CheckCircle, AlertCircle } from 'lucide-react';
 import { RequirementForm } from './RequirementForm';
-
+import React from 'react';
 interface PurchaseModalProps {
   isOpen: boolean;
   onClose: () => void;
