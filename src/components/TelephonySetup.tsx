@@ -82,11 +82,16 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
   useEffect(() => {
     if (destinationZone && provider) {
-      console.log('🚀 Auto-searching for available numbers with destination zone:', destinationZone);
-      searchAvailableNumbers();
-      
       if (provider === 'telnyx') {
-        checkRequirements();
+        // Vérifier d'abord les requirements avant de chercher les numéros
+        checkRequirements().then(() => {
+          console.log('🚀 Auto-searching for available numbers with destination zone:', destinationZone);
+          searchAvailableNumbers();
+        });
+      } else {
+        // Pour les autres providers, chercher directement les numéros
+        console.log('🚀 Auto-searching for available numbers with destination zone:', destinationZone);
+        searchAvailableNumbers();
       }
     }
   }, [destinationZone, provider]);
@@ -95,14 +100,24 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     if (!companyId || !destinationZone) return;
 
     try {
-      setRequirementStatus(prev => ({ ...prev, isChecking: true, error: null }));
+      // Réinitialiser l'état
+      setRequirementStatus({
+        isChecking: true,
+        hasRequirements: false,
+        isComplete: false,
+        error: null
+      });
+      
       console.log('🔍 Checking requirements for:', { companyId, destinationZone });
 
       // 1. Check if country has requirements
       const response = await requirementService.checkCountryRequirements(destinationZone);
-      setCountryReq(response);
       console.log('✅ Country requirements:', response);
+      
+      // Sauvegarder les requirements pour le modal
+      setCountryReq(response);
 
+      // Si pas de requirements, on peut s'arrêter là
       if (!response.hasRequirements) {
         setRequirementStatus({
           isChecking: false,
@@ -114,30 +129,17 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       }
 
       // 2. Get or create requirement group for this company and country
-      const { group, isNew } = await requirementService.getOrCreateGroup(companyId, destinationZone);
-      console.log('✅ Requirement group:', { group, isNew });
+      const { group } = await requirementService.getOrCreateGroup(companyId, destinationZone);
+      console.log('✅ Requirement group:', group);
 
-      // 3. Check group status and requirements completion
-      const status = await requirementService.checkGroupStatus(group.id);
-      console.log('✅ Group status:', status);
-
-      // Check if any requirements are missing or incomplete
-      const incompleteReqs = status.requirements.filter(req => 
-        req.status === 'pending' || req.status === 'rejected'
-      );
-
-      const hasIncompleteReqs = incompleteReqs.length > 0;
-      const isGroupActive = status.status === 'active';
-
+      // Mettre à jour le status final
       setRequirementStatus({
         isChecking: false,
         hasRequirements: true,
-        isComplete: isGroupActive && !hasIncompleteReqs,
+        isComplete: false,
         error: null,
-        incompleteRequirements: hasIncompleteReqs ? incompleteReqs : undefined,
-        groupStatus: status.status,
-        groupId: group.id,
-        validUntil: status.validUntil
+        groupId: group._id,
+        groupStatus: 'pending'
       });
 
     } catch (error) {
@@ -401,14 +403,14 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       // 2. Soumettre chaque requirement
       for (const [field, value] of Object.entries(values)) {
         if (value instanceof File) {
-          await requirementService.submitDocument(group.id, field, value);
+          await requirementService.submitDocument(group._id, field, value);
         } else {
-          await requirementService.submitTextValue(group.id, field, value as string);
+          await requirementService.submitTextValue(group._id, field, value as string);
         }
       }
 
       // 3. Valider les requirements
-      const validation = await requirementService.validateRequirements(group.id);
+      const validation = await requirementService.validateRequirements(group._id);
       console.log('✅ Validation result:', validation);
 
       if (validation.isValid) {
@@ -501,76 +503,6 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           })}
         </div>
 
-        {/* Requirements Status for Telnyx */}
-        {provider === 'telnyx' && destinationZone && requirementStatus.hasRequirements && (
-          <div className="mt-6">
-            <div className={`rounded-lg ${
-              requirementStatus.isComplete ? 'bg-green-50' : 'bg-yellow-50'
-            } p-4`}>
-              <div className="flex">
-                {requirementStatus.isComplete ? (
-                  <CheckCircle className="h-5 w-5 text-green-400" />
-                ) : (
-                  <AlertCircle className="h-5 w-5 text-yellow-400" />
-                )}
-                <div className="ml-3">
-                  <h3 className={`text-sm font-medium ${
-                    requirementStatus.isComplete ? 'text-green-800' : 'text-yellow-800'
-                  }`}>
-                    {requirementStatus.isComplete ? 'Requirements Complete' : 'Requirements Needed'}
-                  </h3>
-                  <div className={`mt-2 text-sm ${
-                    requirementStatus.isComplete ? 'text-green-700' : 'text-yellow-700'
-                  }`}>
-                    {requirementStatus.isComplete ? (
-                      <div>
-                        <p>Your company is approved to purchase numbers in {destinationZone}.</p>
-                        {requirementStatus.validUntil && (
-                          <p className="mt-1">
-                            Valid until: {new Date(requirementStatus.validUntil).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <div>
-                        {requirementStatus.groupStatus === 'pending' ? (
-                          <p>To purchase numbers in {destinationZone}, you need to provide some information first.</p>
-                        ) : requirementStatus.groupStatus === 'rejected' ? (
-                          <p>Your requirements for {destinationZone} have been rejected. Please update and resubmit.</p>
-                        ) : (
-                          <p>Some requirements for {destinationZone} need to be updated or completed.</p>
-                        )}
-                        {requirementStatus.incompleteRequirements && requirementStatus.incompleteRequirements.length > 0 && (
-                          <div className="mt-2">
-                            <p className="font-medium">Missing or incomplete requirements:</p>
-                            <ul className="mt-1 list-disc list-inside">
-                              {requirementStatus.incompleteRequirements.map((req, index) => (
-                                <li key={index} className="text-sm">
-                                  {req.field}
-                                  {req.rejectionReason && (
-                                    <span className="text-red-600 ml-1">
-                                      - {req.rejectionReason}
-                                    </span>
-                                  )}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        <button
-                          onClick={() => setShowRequirementModal(true)}
-                          className="mt-3 inline-flex items-center rounded-md bg-yellow-100 px-3 py-2 text-sm font-medium text-yellow-800 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
-                        >
-                          {requirementStatus.groupStatus === 'rejected' ? 'Update Requirements' : 'Complete Requirements'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Phone Numbers */}
@@ -583,6 +515,28 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
             </span>
           )}
         </div>
+
+
+        {/* Requirements Warning for Telnyx Numbers */}
+        {provider === 'telnyx' && requirementStatus.hasRequirements && (
+          <div className="mb-4 rounded-lg bg-yellow-50 p-4">
+            <div className="flex">
+              <AlertCircle className="h-5 w-5 text-yellow-400" />
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-yellow-800">Requirements Needed</h3>
+                <div className="mt-2 text-sm text-yellow-700">
+                  <p>To purchase numbers in {destinationZone}, you need to provide some required information first.</p>
+                  <button
+                    onClick={() => setShowRequirementModal(true)}
+                    className="mt-3 inline-flex items-center rounded-md bg-yellow-100 px-3 py-2 text-sm font-medium text-yellow-800 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
+                  >
+                    Complete Requirements
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Available Numbers List - Auto-displayed */}
         {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
@@ -610,7 +564,17 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                         setPurchaseStatus('confirming');
                         setShowPurchaseModal(true);
                       }}
-                      className="rounded-md bg-green-600 px-3 py-1 text-sm text-white hover:bg-green-700"
+                      disabled={provider === 'telnyx' && requirementStatus.hasRequirements}
+                      className={`rounded-md px-3 py-1 text-sm text-white ${
+                        provider === 'telnyx' && requirementStatus.hasRequirements
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-green-600 hover:bg-green-700'
+                      }`}
+                      title={
+                        provider === 'telnyx' && requirementStatus.hasRequirements
+                          ? 'Please complete the requirements before purchasing'
+                          : undefined
+                      }
                     >
                       Purchase
                     </button>
