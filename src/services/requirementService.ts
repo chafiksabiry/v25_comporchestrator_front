@@ -1,5 +1,16 @@
 import axios from 'axios';
 
+interface ApiError {
+  response?: {
+    status?: number;
+    data?: any;
+  };
+}
+
+const isAxiosError = (error: unknown): error is ApiError => {
+  return error !== null && typeof error === 'object' && 'response' in error;
+};
+
 export interface RequirementType {
   id: string;
   name: string;
@@ -38,30 +49,54 @@ export const requirementService = {
   }> {
     try {
       console.log(`🔍 Checking requirements for ${countryCode}`);
-      const response = await axios.get(
+      const response = await axios.get<{
+        hasRequirements: boolean;
+        requirements?: RequirementType[];
+      }>(
         `${import.meta.env.VITE_API_BASE_URL}/requirements/countries/${countryCode}/requirements`
       );
       console.log('✅ Requirements:', response.data);
       return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Error checking requirements:', error);
       throw error;
     }
   },
 
   // Obtenir ou créer un groupe de requirements
-  async getOrCreateGroup(companyId: string, countryCode: string): Promise<{
+  async getOrCreateGroup(companyId: string, destinationZone: string): Promise<{
     group: RequirementGroup;
     isNew: boolean;
   }> {
     try {
-      console.log(`🔍 Getting/creating requirement group for ${companyId} in ${countryCode}`);
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/requirements/companies/${companyId}/countries/${countryCode}/groups`
-      );
-      console.log('✅ Group:', response.data);
-      return response.data;
-    } catch (error) {
+      console.log(`🔍 Getting/creating requirement group for ${companyId} in ${destinationZone}`);
+      
+      // First, try to get existing group
+      try {
+        const response = await axios.get<RequirementGroup>(
+          `${import.meta.env.VITE_API_BASE_URL}/requirement-groups/companies/${companyId}/zones/${destinationZone}`
+        );
+        console.log('✅ Found existing group:', response.data);
+        return {
+          group: response.data,
+          isNew: false
+        };
+      } catch (error: unknown) {
+        // If 404, create new group
+        if (isAxiosError(error) && error.response?.status === 404) {
+          console.log('⚠️ No existing group found, creating new one...');
+          const createResponse = await axios.post<RequirementGroup>(
+            `${import.meta.env.VITE_API_BASE_URL}/requirements/companies/${companyId}/zones/${destinationZone}`
+          );
+          console.log('✅ Created new group:', createResponse.data);
+          return {
+            group: createResponse.data,
+            isNew: true
+          };
+        }
+        throw error;
+      }
+    } catch (error: unknown) {
       console.error('❌ Error getting/creating group:', error);
       throw error;
     }
@@ -74,7 +109,7 @@ export const requirementService = {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post(
+      const response = await axios.post<RequirementGroup>(
         `${import.meta.env.VITE_API_BASE_URL}/requirements/groups/${groupId}/documents/${field}`,
         formData,
         {
@@ -85,7 +120,7 @@ export const requirementService = {
       );
       console.log('✅ Document submitted:', response.data);
       return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Error submitting document:', error);
       throw error;
     }
@@ -95,13 +130,13 @@ export const requirementService = {
   async submitTextValue(groupId: string, field: string, value: string): Promise<RequirementGroup> {
     try {
       console.log(`📝 Submitting text value for ${groupId}, field ${field}`);
-      const response = await axios.post(
+      const response = await axios.post<RequirementGroup>(
         `${import.meta.env.VITE_API_BASE_URL}/requirements/groups/${groupId}/values/${field}`,
         { value }
       );
       console.log('✅ Value submitted:', response.data);
       return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Error submitting value:', error);
       throw error;
     }
@@ -121,12 +156,22 @@ export const requirementService = {
   }> {
     try {
       console.log(`🔍 Checking status for group ${groupId}`);
-      const response = await axios.get(
+      const response = await axios.get<{
+        id: string;
+        status: string;
+        requirements: {
+          field: string;
+          status: string;
+          rejectionReason?: string;
+        }[];
+        validUntil?: string;
+        isComplete: boolean;
+      }>(
         `${import.meta.env.VITE_API_BASE_URL}/requirements/groups/${groupId}/status`
       );
       console.log('✅ Status:', response.data);
       return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Error checking status:', error);
       throw error;
     }
@@ -141,12 +186,17 @@ export const requirementService = {
   }> {
     try {
       console.log(`🔍 Validating requirements for group ${groupId}`);
-      const response = await axios.post(
+      const response = await axios.post<{
+        isValid: boolean;
+        missingRequirements?: { field: string; type: string }[];
+        groupId?: string;
+        telnyxId?: string;
+      }>(
         `${import.meta.env.VITE_API_BASE_URL}/requirements/groups/${groupId}/validate`
       );
       console.log('✅ Validation result:', response.data);
       return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Error validating requirements:', error);
       throw error;
     }
