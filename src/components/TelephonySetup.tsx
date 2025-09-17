@@ -692,7 +692,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         onClose={() => setShowRequirementModal(false)}
         countryCode={destinationZone}
         requirements={countryReq.requirements || []}
-        existingValues={requirementStatus.groupId ? requirementStatus.incompleteRequirements : undefined}
+        existingValues={requirementStatus.incompleteRequirements}
         onSubmit={async (values) => {
           try {
             await handleSubmitRequirements(values);
