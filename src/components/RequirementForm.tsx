@@ -40,20 +40,21 @@ interface RequirementFormProps {
 
 export const RequirementForm: React.FC<RequirementFormProps> = ({
   requirements,
+  existingValues,
   onSubmit,
   onCancel
 }) => {
   const [values, setValues] = useState<Record<string, string | File>>(() => {
-    if (!existingValues) return {};
+    if (!existingValues || !Array.isArray(existingValues)) return {};
     return existingValues.reduce((acc, val) => {
-      if (val.value) acc[val.field] = val.value;
+      if (val.value && val.field) acc[val.field] = val.value;
       return acc;
     }, {} as Record<string, string | File>);
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [addressFields, setAddressFields] = useState<Record<string, Record<string, string>>>(() => {
-    if (!existingValues) return {};
+    if (!existingValues || !Array.isArray(existingValues)) return {};
     return existingValues.reduce((acc, val) => {
       if (val.value && val.field) {
         try {
@@ -63,6 +64,7 @@ export const RequirementForm: React.FC<RequirementFormProps> = ({
           }
         } catch (e) {
           // Not a JSON string, ignore
+          console.log('Not a JSON string for address field:', val.field);
         }
       }
       return acc;
