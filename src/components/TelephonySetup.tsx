@@ -12,7 +12,7 @@ import Cookies from 'js-cookie';
 import { phoneNumberService } from '../services/api';
 import { requirementService } from '../services/requirementService';
 import { PurchaseModal } from './PurchaseModal';
-import { RequirementFormModal } from './RequirementFormModal';
+import { RequirementFormModal, RequirementFormModalProps } from './RequirementFormModal';
 import type { AvailablePhoneNumber } from '../services/api';
 
 const gigId = Cookies.get('lastGigId');
@@ -42,9 +42,24 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
   const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [showRequirementModal, setShowRequirementModal] = useState(false);
+  type Requirement = {
+    id: string;
+    name: string;
+    type: 'document' | 'textual' | 'address';
+    description: string;
+    example: string;
+    acceptance_criteria: {
+      max_length?: number;
+      min_length?: number;
+      time_limit?: string;
+      locality_limit?: string;
+      acceptable_values?: string[];
+    };
+  };
+
   const [countryReq, setCountryReq] = useState<{
     hasRequirements: boolean;
-    requirements?: any[];
+    requirements?: Requirement[];
   }>({ hasRequirements: false });
 
   const [requirementStatus, setRequirementStatus] = useState<{
@@ -83,6 +98,19 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
   useEffect(() => {
     if (destinationZone && provider) {
       if (provider === 'telnyx') {
+        // Vérifier si on a déjà un groupe de requirements dans les cookies
+        const savedGroupId = Cookies.get(`telnyxRequirementGroup_${companyId}_${destinationZone}`);
+        console.log('📝 Saved requirement group ID:', savedGroupId);
+
+        if (savedGroupId) {
+          // Mettre à jour le status avec l'ID sauvegardé
+          setRequirementStatus(prev => ({
+            ...prev,
+            groupId: savedGroupId,
+            hasRequirements: true
+          }));
+        }
+
         // Vérifier d'abord les requirements avant de chercher les numéros
         checkRequirements().then(() => {
           console.log('🚀 Auto-searching for available numbers with destination zone:', destinationZone);
@@ -100,12 +128,16 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     if (!companyId || !destinationZone) return;
 
     try {
-      // Réinitialiser l'état
+      // Vérifier si on a déjà un groupe de requirements dans les cookies
+      const savedGroupId = Cookies.get(`telnyxRequirementGroup_${companyId}_${destinationZone}`);
+      
+      // Réinitialiser l'état en gardant l'ID du groupe si on en a un
       setRequirementStatus({
         isChecking: true,
         hasRequirements: false,
         isComplete: false,
-        error: null
+        error: null,
+        groupId: savedGroupId || undefined
       });
       
       console.log('🔍 Checking requirements for:', { companyId, destinationZone });
@@ -132,15 +164,26 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       const { group } = await requirementService.getOrCreateGroup(companyId, destinationZone);
       console.log('✅ Requirement group:', group);
 
-      // Mettre à jour le status final
-      setRequirementStatus({
+      // Mettre à jour le status final et stocker l'ID du groupe
+      const newStatus = {
         isChecking: false,
         hasRequirements: true,
         isComplete: false,
         error: null,
         groupId: group._id,
         groupStatus: 'pending'
-      });
+      };
+      setRequirementStatus(newStatus);
+
+      // Stocker l'ID du groupe dans localStorage
+      localStorage.setItem(`telnyxRequirementGroup_${companyId}_${destinationZone}`, group._id);
+      
+      // Stocker aussi dans un cookie pour la persistance cross-domain
+      Cookies.set(
+        `telnyxRequirementGroup_${companyId}_${destinationZone}`,
+        group._id,
+        { expires: 30 } // expire dans 30 jours
+      );
 
     } catch (error) {
       console.error('❌ Error checking requirements:', error);
@@ -395,22 +438,30 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     try {
       console.log('📝 Submitting requirements:', values);
       
-      // 1. Obtenir ou créer un groupe
+      // 1. Utiliser le groupe existant ou en créer un nouveau
       if (!companyId) throw new Error('Company ID is required');
-      const { group } = await requirementService.getOrCreateGroup(companyId, destinationZone);
-      console.log('✅ Got requirement group:', group);
+      
+      let groupId = requirementStatus.groupId;
+      
+      if (!groupId) {
+        const { group } = await requirementService.getOrCreateGroup(companyId, destinationZone);
+        groupId = group._id;
+        console.log('✅ Created new requirement group:', group);
+      } else {
+        console.log('✅ Using existing requirement group:', groupId);
+      }
 
       // 2. Soumettre chaque requirement
       for (const [field, value] of Object.entries(values)) {
         if (value instanceof File) {
-          await requirementService.submitDocument(group._id, field, value);
+          await requirementService.submitDocument(groupId, field, value);
         } else {
-          await requirementService.submitTextValue(group._id, field, value as string);
+          await requirementService.submitTextValue(groupId, field, value as string);
         }
       }
 
       // 3. Valider les requirements
-      const validation = await requirementService.validateRequirements(group._id);
+      const validation = await requirementService.validateRequirements(groupId);
       console.log('✅ Validation result:', validation);
 
       if (validation.isValid) {
@@ -693,6 +744,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         countryCode={destinationZone}
         requirements={countryReq.requirements || []}
         existingValues={requirementStatus.incompleteRequirements}
+        requirementGroupId={requirementStatus.groupId}
         onSubmit={async (values) => {
           try {
             await handleSubmitRequirements(values);
