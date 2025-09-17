@@ -248,8 +248,11 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
       value: values[currentStep.id]
     });
 
-    const validationResult = await validateStep();
-    if (!validationResult.isValid) return;
+    const isValid = await validateStep();
+    if (!isValid) {
+      console.error('Validation failed');
+      return;
+    }
 
     try {
       // Obtenir la valeur actuelle
@@ -259,8 +262,8 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
         return;
       }
 
-      // Utiliser la valeur validée ou la traiter selon le type
-      let submittedValue = validationResult.submittedValue;
+      // Utiliser la valeur actuelle
+      let submittedValue = value;
       switch (currentRequirement.type) {
         case 'document':
           if (value instanceof File) {
