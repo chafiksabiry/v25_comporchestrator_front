@@ -27,6 +27,13 @@ interface RequirementType {
 
 interface RequirementFormProps {
   requirements: RequirementType[];
+  existingValues?: {
+    field: string;
+    value?: string;
+    documentUrl?: string;
+    status: string;
+    rejectionReason?: string;
+  }[];
   onSubmit: (values: Record<string, string | File>) => Promise<void>;
   onCancel: () => void;
 }
@@ -36,9 +43,31 @@ export const RequirementForm: React.FC<RequirementFormProps> = ({
   onSubmit,
   onCancel
 }) => {
-  const [values, setValues] = useState<Record<string, string | File>>({});
+  const [values, setValues] = useState<Record<string, string | File>>(() => {
+    if (!existingValues) return {};
+    return existingValues.reduce((acc, val) => {
+      if (val.value) acc[val.field] = val.value;
+      return acc;
+    }, {} as Record<string, string | File>);
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [addressFields, setAddressFields] = useState<Record<string, Record<string, string>>>(() => {
+    if (!existingValues) return {};
+    return existingValues.reduce((acc, val) => {
+      if (val.value && val.field) {
+        try {
+          const addressData = JSON.parse(val.value);
+          if (typeof addressData === 'object' && addressData !== null) {
+            acc[val.field] = addressData;
+          }
+        } catch (e) {
+          // Not a JSON string, ignore
+        }
+      }
+      return acc;
+    }, {} as Record<string, Record<string, string>>);
+  });
 
   const handleTextChange = (id: string, value: string) => {
     setValues(prev => ({ ...prev, [id]: value }));
@@ -185,19 +214,99 @@ export const RequirementForm: React.FC<RequirementFormProps> = ({
                   type="text"
                   placeholder="Street address"
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                  value={typeof value === 'string' ? value : ''}
-                  onChange={e => handleTextChange(req.id, e.target.value)}
+                  value={addressFields[req.id]?.street || ''}
+                  onChange={e => {
+                    setAddressFields(prev => ({
+                      ...prev,
+                      [req.id]: { ...prev[req.id], street: e.target.value }
+                    }));
+                    handleTextChange(
+                      req.id,
+                      JSON.stringify({
+                        ...addressFields[req.id],
+                        street: e.target.value
+                      })
+                    );
+                  }}
                 />
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     type="text"
                     placeholder="City"
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    value={addressFields[req.id]?.city || ''}
+                    onChange={e => {
+                      setAddressFields(prev => ({
+                        ...prev,
+                        [req.id]: { ...prev[req.id], city: e.target.value }
+                      }));
+                      handleTextChange(
+                        req.id,
+                        JSON.stringify({
+                          ...addressFields[req.id],
+                          city: e.target.value
+                        })
+                      );
+                    }}
                   />
                   <input
                     type="text"
                     placeholder="Postal code"
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    value={addressFields[req.id]?.postalCode || ''}
+                    onChange={e => {
+                      setAddressFields(prev => ({
+                        ...prev,
+                        [req.id]: { ...prev[req.id], postalCode: e.target.value }
+                      }));
+                      handleTextChange(
+                        req.id,
+                        JSON.stringify({
+                          ...addressFields[req.id],
+                          postalCode: e.target.value
+                        })
+                      );
+                    }}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    placeholder="State/Province"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    value={addressFields[req.id]?.state || ''}
+                    onChange={e => {
+                      setAddressFields(prev => ({
+                        ...prev,
+                        [req.id]: { ...prev[req.id], state: e.target.value }
+                      }));
+                      handleTextChange(
+                        req.id,
+                        JSON.stringify({
+                          ...addressFields[req.id],
+                          state: e.target.value
+                        })
+                      );
+                    }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Country"
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    value={addressFields[req.id]?.country || ''}
+                    onChange={e => {
+                      setAddressFields(prev => ({
+                        ...prev,
+                        [req.id]: { ...prev[req.id], country: e.target.value }
+                      }));
+                      handleTextChange(
+                        req.id,
+                        JSON.stringify({
+                          ...addressFields[req.id],
+                          country: e.target.value
+                        })
+                      );
+                    }}
                   />
                 </div>
               </div>
