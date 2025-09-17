@@ -27,18 +27,20 @@ export interface RequirementType {
 }
 
 export interface RequirementGroup {
-  id: string;
+  _id: string;
+  telnyxId: string;
+  companyId: string;
+  destinationZone: string;
   status: 'pending' | 'active' | 'rejected';
   requirements: {
-    field: string;
-    type: string;
+    requirementId: string;
+    type: 'document' | 'textual' | 'address';
     status: 'pending' | 'approved' | 'rejected';
-    value?: string;
-    documentUrl?: string;
+    submittedValueId?: string;
     submittedAt?: string;
-    rejectionReason?: string;
   }[];
-  validUntil?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const requirementService = {
@@ -85,14 +87,38 @@ export const requirementService = {
         // If 404, create new group
         if (isAxiosError(error) && error.response?.status === 404) {
           console.log('⚠️ No existing group found, creating new one...');
-          const createResponse = await axios.post<RequirementGroup>(
-            `${import.meta.env.VITE_API_BASE_URL}/requirements/companies/${companyId}/zones/${destinationZone}`
-          );
-          console.log('✅ Created new group:', createResponse.data);
-          return {
-            group: createResponse.data,
-            isNew: true
-          };
+          try {
+            const createResponse = await axios.post<RequirementGroup>(
+              `${import.meta.env.VITE_API_BASE_URL}/requirement-groups`,
+              {
+                companyId,
+                destinationZone
+              }
+            );
+            console.log('✅ Created new group:', createResponse.data);
+            return {
+              group: createResponse.data,
+              isNew: true
+            };
+          } catch (createError: unknown) {
+            if (isAxiosError(createError)) {
+              if (createError.response?.status === 400) {
+                throw new Error(createError.response.data.message || 'Invalid request parameters');
+              }
+              if (createError.response?.status === 409) {
+                // If group already exists (rare race condition)
+                console.log('⚠️ Group was created by another request, retrying get...');
+                const retryResponse = await axios.get<RequirementGroup>(
+                  `${import.meta.env.VITE_API_BASE_URL}/requirement-groups/companies/${companyId}/zones/${destinationZone}`
+                );
+                return {
+                  group: retryResponse.data,
+                  isNew: false
+                };
+              }
+            }
+            throw createError;
+          }
         }
         throw error;
       }
