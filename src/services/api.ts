@@ -186,8 +186,8 @@ export const phoneNumberService = {
       // Special case: return empty array for 500 errors
       if (isAxiosError(error) && error.response?.status === 500) {
         console.warn(`⚠️ ${provider} API error, returning empty array`);
-        return [];
-      }
+          return [];
+        }
       return handleApiError(error, 'searchPhoneNumbers');
     }
   },
@@ -222,7 +222,7 @@ export const phoneNumberService = {
         provider,
         gigId
       });
-
+      
       console.log('✅ Purchase successful:', response.data);
       return response.data;
     } catch (error) {
