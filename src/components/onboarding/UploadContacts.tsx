@@ -451,6 +451,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       console.log(`📊 File info discovered: ${totalRows} total rows, ${totalPages} pages`);
       console.log(`🔢 Will make ${totalPages} separate API calls...`);
 
+      // Si beaucoup de pages, avertir l'utilisateur
+      if (totalPages > 50) {
+        updateRealProgress(10, `⚠️ Gros fichier détecté: ${totalPages} appels API requis. Cela peut prendre du temps...`);
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Pause pour que l'utilisateur voie le message
+      }
+
       // Traiter la première page immédiatement
       const firstPageLeadsWithIds = firstData.data.leads.map(lead => ({
         ...lead,
@@ -470,6 +476,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       console.log(`✅ API Call 1/${totalPages}: +${firstPageLeadsWithIds.length} leads (Total: ${allLeads.length})`);
 
       // 2️⃣ APPELS SUIVANTS : Une requête séparée pour chaque page
+      let consecutiveFailures = 0;
+      const maxConsecutiveFailures = 5; // Arrêter après 5 échecs consécutifs
+
       for (let currentPage = 2; currentPage <= totalPages; currentPage++) {
         if (!processingRef.current) {
           throw new Error('Processing cancelled by user');
@@ -478,7 +487,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         console.log(`📡 API Call ${currentPage}: Processing page ${currentPage}/${totalPages}...`);
 
         // Créer une nouvelle FormData pour chaque appel
-        const pageFormData = new FormData();
+        let pageFormData = new FormData();
         pageFormData.append('file', file);
         pageFormData.append('page', currentPage.toString());
         pageFormData.append('pageSize', '25');
@@ -509,11 +518,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 
                 // Recréer FormData pour le retry
-                const retryFormData = new FormData();
-                retryFormData.append('file', file);
-                retryFormData.append('page', currentPage.toString());
-                retryFormData.append('pageSize', '25');
-                pageFormData = retryFormData;
+                pageFormData = new FormData();
+                pageFormData.append('file', file);
+                pageFormData.append('page', currentPage.toString());
+                pageFormData.append('pageSize', '25');
               } else {
                 throw fetchError; // Après max retries, lancer l'erreur
               }
@@ -554,6 +562,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
           console.log(`✅ API Call ${currentPage}/${totalPages}: +${pageLeadsWithIds.length} leads (Total: ${allLeads.length})`);
 
+          // Reset consecutive failures on success
+          consecutiveFailures = 0;
+
           // Pause entre les appels pour éviter de surcharger le serveur
           if (currentPage < totalPages) {
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -561,7 +572,19 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
         } catch (pageError) {
           console.warn(`⚠️ Error in API Call ${currentPage}:`, pageError);
-          // Continuer avec l'appel suivant même si celui-ci échoue
+          consecutiveFailures++;
+          
+          // Si trop d'échecs consécutifs, arrêter le traitement
+          if (consecutiveFailures >= maxConsecutiveFailures) {
+            console.error(`❌ Stopping after ${maxConsecutiveFailures} consecutive failures. Server may be overloaded.`);
+            updateRealProgress(
+              Math.round((currentPage / totalPages) * 90), 
+              `❌ Arrêt après ${maxConsecutiveFailures} échecs consécutifs. ${allLeads.length} leads récupérés.`
+            );
+            break; // Sortir de la boucle
+          }
+          
+          // Continuer avec l'appel suivant
           continue;
         }
       }
