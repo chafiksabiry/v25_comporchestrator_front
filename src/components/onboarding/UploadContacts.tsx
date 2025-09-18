@@ -1624,31 +1624,31 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                 await handleImportFromZoho();
               }}
               disabled={!hasZohoAccessToken || isImportingZoho}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl min-h-[60px] flex items-center justify-center"
             >
               {isImportingZoho ? (
-                <div className="flex items-center justify-center">
+                <>
                   <RefreshCw className="mr-3 h-5 w-5 animate-spin" />
                   Importing from Zoho...
-                </div>
+                </>
               ) : !hasZohoAccessToken ? (
-                <div className="flex items-center justify-center">
+                <>
                   <img 
                     src={zohoLogo} 
                     alt="Zoho" 
                     className="h-6 w-6 mr-3 object-contain"
                   />
                   Connect to Zoho CRM First
-                </div>
+                </>
               ) : (
-                <div className="flex items-center justify-center">
+                <>
                   <img 
                     src={zohoLogo} 
                     alt="Zoho" 
                     className="h-6 w-6 mr-3 object-contain"
                   />
                   Sync with Zoho CRM
-                </div>
+                </>
               )}
             </button>
           </div>
@@ -1668,8 +1668,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
             </div>
             
             {/* File Upload Area */}
-            <div className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl cursor-pointer">
-              <label htmlFor="file-upload" className="cursor-pointer group block">
+            <div className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl cursor-pointer min-h-[60px] flex items-center justify-center">
+              <label htmlFor="file-upload" className="cursor-pointer group block w-full">
                 <div className="flex items-center justify-center space-x-3">
                   <FileSpreadsheet className="h-6 w-6 text-white" />
                   <span className="text-base font-semibold text-white group-hover:text-blue-100 transition-colors duration-200">
