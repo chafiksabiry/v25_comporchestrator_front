@@ -1,34 +1,3 @@
-/**
- * UploadContacts Component - Composant d'importation et gestion des contacts/leads
- * 
- * Ce composant permet de gérer l'importation et la gestion des contacts/leads pour une entreprise.
- * Il offre deux méthodes principales d'importation :
- * 
- * 1. Import depuis un fichier (CSV, Excel, PDF, TXT) :
- *    - Utilise OpenAI pour analyser et extraire les données
- *    - Validation automatique des données
- *    - Prévisualisation avant sauvegarde
- *    - Support de multiples formats de fichiers
- * 
- * 2. Import depuis Zoho CRM :
- *    - Connexion OAuth avec Zoho
- *    - Synchronisation automatique des leads
- *    - Gestion des tokens d'accès
- * 
- * Fonctionnalités principales :
- * - Gestion des gigs (projets) associés aux leads
- * - Filtrage et recherche des contacts
- * - Pagination des résultats
- * - Auto-complétion de l'étape 6 d'onboarding quand des leads sont importés
- * - Préservation des leads existants lors de nouveaux uploads
- * - Gestion des erreurs et validation des données
- * - Édition en ligne des données
- * - Validation des données avant import
- * - Interface utilisateur responsive
- * 
- * @component
- * @returns {JSX.Element} Le composant UploadContacts
- */
 import React, { useState, useRef, useEffect } from 'react';
 import {
   FileText,
@@ -54,7 +23,6 @@ import {
 import zohoLogo from '../../assets/public/images/zoho-logo.png';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import * as XLSX from 'xlsx';
 import Cookies from 'js-cookie';
 import ZohoService from '../../services/zohoService';
 
@@ -432,151 +400,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   ];
 
 
-    // Function to clean email addresses by removing prefixes and invalid characters
-  const cleanEmailAddresses = (content: string): string => {
-    
-    // First, identify the "Email" column (last column) and clean emails there specifically
-    const lines = content.split('\n');
-    const cleanedLines = lines.map((line, index) => {
-      if (index === 0) {
-        // Header row - keep as is
-        return line;
-      }
-      
-      const columns = line.split(',');
-      if (columns.length >= 24) { // "Email" is the last column (position 24, 0-indexed = 23)
-        const emailColumn = columns[23]; // Index 23 for "Email" (last column)
-        if (emailColumn && emailColumn.includes('@')) {
-          // Clean the email in "Email" column
-          const cleanedEmail = emailColumn.replace(/^Nor\s+/, '').trim();
-          columns[23] = cleanedEmail;
-        }
-      }
-      
-      return columns.join(',');
-    });
-    
-    const cleanedContent = cleanedLines.join('\n');
-    
-    // Also apply general cleaning for any other email columns
-    const generalCleaned = cleanedContent.replace(/Nor\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, '$1');
-    const finalCleaned = generalCleaned.replace(/(?:Prefix|Label|Tag)\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, '$1');
-    
-    return finalCleaned;
-  };
 
-  // Function to optimize CSV content by keeping only essential columns
-
-  // Function to process optimized content
-
-  // Helper function to recover incomplete JSON from OpenAI responses
-  const tryRecoverIncompleteJSON = (content: string, expectedLeads: number): any | null => {
-    try {
-      
-      // Method 1: Try to find complete lead objects and reconstruct
-      const leadPattern = /\{[^}]*"userId"[^}]*"Email_1"[^}]*"Phone"[^}]*\}/g;
-      const leadMatches = content.match(leadPattern);
-      
-      if (leadMatches && leadMatches.length > 0) {
-        
-        // Reconstruct JSON with found leads
-        const leadsJson = leadMatches.map(obj => obj.trim()).join(',\n    ');
-        const reconstructedJson = `{
-  "leads": [
-    ${leadsJson}
-  ],
-  "validation": {
-    "totalRows": ${expectedLeads},
-    "validRows": ${leadMatches.length},
-    "invalidRows": ${Math.max(0, expectedLeads - leadMatches.length)},
-    "errors": ["JSON was incomplete but leads were recovered"]
-  }
-}`;
-        
-        try {
-          const parsed = JSON.parse(reconstructedJson);
-          return parsed;
-        } catch (e) {
-        }
-      }
-      
-      // Method 2: Try to fix common JSON issues
-      let fixedContent = content;
-      
-      // Remove trailing commas before closing braces
-      fixedContent = fixedContent.replace(/,(\s*[}\]])/g, '$1');
-      
-      // Add missing closing braces if needed
-      const openBraces = (fixedContent.match(/\{/g) || []).length;
-      const closeBraces = (fixedContent.match(/\}/g) || []).length;
-      const openBrackets = (fixedContent.match(/\[/g) || []).length;
-      const closeBrackets = (fixedContent.match(/\]/g) || []).length;
-      
-      if (openBraces > closeBraces) {
-        fixedContent += '}'.repeat(openBraces - closeBraces);
-      }
-      if (openBrackets > closeBrackets) {
-        fixedContent += ']'.repeat(openBrackets - closeBrackets);
-      }
-      
-      // Try to parse the fixed content
-      try {
-        const parsed = JSON.parse(fixedContent);
-        if (parsed.leads && Array.isArray(parsed.leads)) {
-          return parsed;
-        }
-      } catch (e) {
-      }
-      
-      // Method 3: Extract partial leads and create minimal valid JSON
-      const partialLeads = [];
-      const leadStartPattern = /\{[^}]*"userId"[^}]*/g;
-      let match;
-      
-      while ((match = leadStartPattern.exec(content)) !== null) {
-        const startPos = match.index;
-        const endPos = content.indexOf('}', startPos);
-        
-        if (endPos > startPos) {
-          const leadStr = content.substring(startPos, endPos + 1);
-          try {
-            const leadObj = JSON.parse(leadStr);
-            if (leadObj.userId && leadObj.Email_1) {
-              partialLeads.push(leadObj);
-            }
-          } catch (e) {
-            // Skip invalid lead objects
-          }
-        }
-      }
-      
-      if (partialLeads.length > 0) {
-        
-        const minimalJson = `{
-  "leads": ${JSON.stringify(partialLeads)},
-  "validation": {
-    "totalRows": ${expectedLeads},
-    "validRows": ${partialLeads.length},
-    "invalidRows": ${Math.max(0, expectedLeads - partialLeads.length)},
-    "errors": ["JSON was incomplete but partial leads were recovered"]
-  }
-}`;
-        
-        try {
-          return JSON.parse(minimalJson);
-        } catch (e) {
-        }
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Error in JSON recovery:', error);
-      return null;
-    }
-  };
-
-  const processFileWithOpenAI = async (fileContent: string, fileType: string, isOptimized: boolean = false): Promise<{leads: any[], validation: any}> => {
-    
+  const processFileWithBackend = async (file: File): Promise<{leads: any[], validation: any}> => {
           try {
         // Check if processing was cancelled
         if (!processingRef.current) {
@@ -585,16 +410,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         
         // Create new AbortController for this request
         abortControllerRef.current = new AbortController();
-      
-      const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
-      if (!openaiApiKey) {
-        throw new Error('OpenAI API key not configured');
-      }
-
-      // Validate API key format
-      if (!openaiApiKey.startsWith('sk-')) {
-        throw new Error('Invalid OpenAI API key format');
-      }
 
       const userId = Cookies.get('userId');
       const gigId = selectedGigId;
@@ -608,498 +423,67 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         throw new Error('Missing user or company information');
       }
 
-              // Clean the file content before sending to OpenAI
-        const cleanedFileContent = cleanEmailAddresses(fileContent);
-        
-        // Check if processing was cancelled after cleaning
-        if (!processingRef.current) {
-          throw new Error('Processing cancelled by user');
-        }
-        
-        // Reduce content size for faster processing
-      const maxContentLength = 25000; // Reduced from 50000
-      
-      // Count the number of lines
-      const lines = cleanedFileContent.split('\n');
-      
-      // Check if content is too large or has many lines - use smart chunking for very large files
-      if (!isOptimized && (cleanedFileContent.length > 100000 || lines.length > 200)) {
-        console.warn(`⚠️ File is very large (${lines.length} lines, ${cleanedFileContent.length} characters) - using smart chunking`);
-        
-        // Use smart chunking for very large files to avoid token limit issues
-        showProcessingStatus(`Traitement par lots intelligents (${lines.length} lignes)...`);
-        
-        // Start real progress updates with more granular steps
-        updateRealProgress(5, 'Initialisation du traitement...');
-        await new Promise(resolve => setTimeout(resolve, 200)); // Small delay for visual feedback
-        
-        updateRealProgress(15, 'Analyse de la structure du fichier...');
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        updateRealProgress(25, 'Préparation des données...');
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Use smart chunking to process the file in manageable pieces
-        const result = await processLargeFileInChunks(cleanedFileContent, fileType, lines);
-        
-        updateRealProgress(100, 'Traitement terminé !');
-        return result;
-      }
-      
-      // For smaller files, use single batch processing
-      if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 50)) {
-        console.warn(`⚠️ File is large (${lines.length} lines, ${cleanedFileContent.length} characters) - processing in single batch like ChatGPT`);
-        
-        // Process the entire file at once for better performance
-        showProcessingStatus(`Traitement du fichier complet (${lines.length} lignes)...`);
-        
-        // Start real progress updates with more granular steps
-        updateRealProgress(5, 'Initialisation du traitement...');
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        updateRealProgress(15, 'Analyse de la structure du fichier...');
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        updateRealProgress(25, 'Préparation des données...');
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        updateRealProgress(35, 'Nettoyage des données...');
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Increase the content limit for large files
-        const largeFileMaxLength = 100000; // Reduced to avoid token limit issues
-        const finalContent = cleanedFileContent.length > largeFileMaxLength 
-          ? cleanedFileContent.substring(0, largeFileMaxLength) + '\n... [content truncated due to size]'
-        : cleanedFileContent;
-      
-        if (cleanedFileContent.length > largeFileMaxLength) {
-          console.warn(`⚠️ WARNING: File content was truncated! Only processing first ${largeFileMaxLength} characters`);
-          console.warn(`   This may result in incomplete processing. Consider splitting very large files.`);
-        }
-        
-        updateRealProgress(45, 'Envoi à OpenAI...');
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call time
-        
-        updateRealProgress(55, 'Traitement par l\'IA...');
-        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate processing time
-        
-        // Use the same processing logic but with the full content
-        const result = await processFileWithOpenAI(finalContent, fileType, true);
-        
-        updateRealProgress(75, 'Validation des résultats...');
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        updateRealProgress(85, 'Finalisation...');
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        updateRealProgress(100, 'Traitement terminé !');
-        
-        // Validate that we got the expected number of leads
-        if (result.leads.length !== lines.length - 1) {
-          console.error(`❌ CRITICAL ERROR: Expected ${lines.length - 1} leads, but got ${result.leads.length}`);
-          console.error(`   This means OpenAI did not process all rows as instructed!`);
-          
-          // Force creation of missing leads
-          const missingLeads = lines.length - 1 - result.leads.length;
-          console.warn(`⚠️ Creating ${missingLeads} missing leads to complete the dataset...`);
-          
-          // Create placeholder leads for missing rows
-          for (let i = result.leads.length; i < lines.length - 1; i++) {
-            const rowData = lines[i + 1]; // +1 because lines[0] is header
-            const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
-            const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
-            
-            result.leads.push({
-              userId: { $oid: userId },
-              companyId: { $oid: companyId },
-              gId: { $oid: gigId },
-              Last_Activity_Time: null,
-              Deal_Name: email || `Lead from row ${i + 2}`,
-              Email_1: email,
-              Phone: phone,
-              Stage: "New",
-              Pipeline: "Sales Pipeline",
-              Project_Tags: [],
-              Prénom: "",
-              Nom: ""
-            });
-          }
-          
-          // Update validation to reflect all leads are now valid
-          result.validation.validRows = result.leads.length;
-          result.validation.invalidRows = 0;
-          
-        }
-        
-        return result;
-      }
-      
-      // Prepare content for OpenAI (using the fileContent parameter)
-      const truncatedContent = fileContent;
-      
-      // Ultra-simple prompt to avoid JSON truncation
-      const prompt = `Process ${lines.length - 1} rows. Return ONLY valid JSON:
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('userId', userId);
+      formData.append('companyId', companyId);
+      formData.append('gigId', gigId);
 
-{
-  "leads": [
-    {
-      "userId": {"$oid": "${userId}"},
-      "companyId": {"$oid": "${companyId}"},
-      "gigId": {"$oid": "${gigId}"},
-      "Deal_Name": "Prénom Nom",
-      "Email_1": "email@exemple.com",
-      "Phone": "+33123456789",
-      "Stage": "New",
-      "Pipeline": "Sales Pipeline"
-    }
-  ]
-}
+      // Update progress
+      updateRealProgress(10, 'Envoi du fichier au serveur...');
 
-EXEMPLE: Si une ligne a Prénom="Jean" et Nom="Dupont", alors Deal_Name="Jean Dupont"
-EXEMPLE: Si une ligne a Prénom="Marie" et Nom="", alors Deal_Name="Marie Unknown"
-EXEMPLE: Si une ligne a Prénom="" et Nom="Martin", alors Deal_Name="Unknown Martin"
-
-CRITICAL RULES:
-1. Email→Email_1, Phone→Phone
-2. Deal_Name = Prénom + Nom (OBLIGATOIRE pour toutes les lignes)
-3. Si Prénom ou Nom manque, utilise "Unknown" pour la partie manquante
-4. JAMAIS utiliser l'email comme Deal_Name sauf si Prénom ET Nom sont vides
-5. Process ALL rows - never skip any
-6. Format Deal_Name: "Prénom Nom" (exemple: "Jean Dupont", "Marie Unknown", "Unknown Martin")
-
-Data:
-${truncatedContent}`;
-
-      // Update progress for OpenAI request
-      if (isOptimized) {
-        updateRealProgress(60, 'Traitement par OpenAI...');
-      }
-
-      // Check prompt size to avoid token limit issues
-      let finalPrompt = prompt;
-      if (prompt.length > 150000) { // Conservative limit for GPT-3.5-turbo
-        console.warn('⚠️ Prompt is very large, truncating content...');
-        const maxPromptLength = 100000;
-        finalPrompt = prompt.substring(0, maxPromptLength) + '\n... [content truncated due to size]';
-      }
-
-      const requestBody = {
-        model: 'gpt-3.5-turbo',
-          messages: [
-            {
-              role: 'system',
-            content: 'You are a data processing expert. Return ONLY valid JSON. Never return text explanations.'
-            },
-            {
-              role: 'user',
-            content: finalPrompt
-          }
-        ],
-        temperature: 0.1
-        // Removed max_tokens to use model's maximum limit
-      };
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      // Send file to backend for processing
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process`, {
         method: 'POST',
+        body: formData,
+        signal: abortControllerRef.current?.signal,
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openaiApiKey}`
-        },
-        body: JSON.stringify(requestBody),
-        signal: abortControllerRef.current?.signal
+          'Authorization': `Bearer ${gigId}:${userId}`
+        }
       });
 
+      updateRealProgress(30, 'Traitement par l\'IA en cours...');
+
       if (!response.ok) {
-        // Get detailed error information
-        let errorMessage = `OpenAI API error: ${response.status} ${response.statusText}`;
+        let errorMessage = `Backend error: ${response.status} ${response.statusText}`;
         try {
           const errorData = await response.json();
           if (errorData.error) {
-            errorMessage += ` - ${errorData.error.message || errorData.error.type || 'Unknown error'}`;
+            errorMessage = errorData.error;
           }
         } catch (e) {
-          // If we can't parse the error response, use the status text
+          // Use status text if we can't parse error
         }
-        
-        console.error('OpenAI API Error Details:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorMessage
-        });
-        
         throw new Error(errorMessage);
       }
 
+      updateRealProgress(70, 'Réception des résultats...');
+
       const data = await response.json();
-      const content = data.choices[0]?.message?.content;
       
-      if (!content) {
-        throw new Error('No response from OpenAI');
+      if (!data.success) {
+        throw new Error(data.error || 'Backend processing failed');
       }
 
-      // Update progress for response processing
-      if (isOptimized) {
-        updateRealProgress(80, 'Analyse de la réponse OpenAI...');
-      }
+      updateRealProgress(90, 'Validation des données...');
 
-      // Simplified error handling
-      if (content.trim().toLowerCase().startsWith('i\'m sorry') || 
-          content.trim().toLowerCase().startsWith('sorry') ||
-          content.trim().toLowerCase().includes('cannot') ||
-          content.trim().toLowerCase().includes('unable')) {
-        console.warn('⚠️ OpenAI returned an error message:', content);
-        
-        return {
-          leads: [],
-          validation: {
-            totalRows: 0,
-            validRows: 0,
-            invalidRows: 0,
-            errors: [`OpenAI Error: ${content.substring(0, 100)}...`]
-          }
-        };
-      }
-
-      // Parse the JSON response with recovery for incomplete JSON
-      let parsedData;
+      const result = data.data;
       
-      // Check if JSON appears complete
-      const trimmedContent = content.trim();
-      const isCompleteJSON = trimmedContent.startsWith('{') && trimmedContent.endsWith('}') && 
-                            trimmedContent.includes('"leads"');
-      
-      if (!isCompleteJSON) {
-        console.warn('⚠️ OpenAI returned incomplete JSON, attempting recovery...');
-        const recoveredData = tryRecoverIncompleteJSON(content, lines.length - 1);
-        if (recoveredData) {
-          parsedData = recoveredData;
-        } else {
-          throw new Error('Failed to recover incomplete JSON response');
-        }
-      } else {
-        try {
-          parsedData = JSON.parse(content);
-        } catch (parseError) {
-          console.warn('⚠️ JSON parse error, attempting recovery...');
-          const recoveredData = tryRecoverIncompleteJSON(content, lines.length - 1);
-          if (recoveredData) {
-            parsedData = recoveredData;
-          } else {
-            throw new Error(`JSON parse error: ${parseError}`);
-          }
-        }
+      if (!result || !result.leads || !Array.isArray(result.leads)) {
+        throw new Error('Invalid response format from backend');
       }
 
-      // Validate the parsed data
-      if (!parsedData || !parsedData.leads || !Array.isArray(parsedData.leads)) {
-        throw new Error('Invalid response format from OpenAI');
-      }
+      updateRealProgress(100, 'Traitement terminé !');
 
-      // Process the leads to ensure they have the required fields
-      const processedLeads = parsedData.leads.map((lead: any): any => {
-        // FORCE Deal_Name to be Prénom + Nom (never email)
-        let dealName = '';
-        
-        // Extract Prénom and Nom from the lead data
-        const prenom = lead.Prénom || lead.prénom || lead.Prenom || lead.prenom || '';
-        const nom = lead.Nom || lead.nom || lead.Name || lead.name || '';
-        
-        // Always create Deal_Name from Prénom + Nom
-        if (prenom || nom) {
-          dealName = `${prenom} ${nom}`.trim();
-        } else {
-          // Only use email if absolutely no name data available
-          dealName = lead.Deal_Name || 'Unknown Lead';
-        }
-        
-        // Ensure required fields are present
-        return {
-          userId: lead.userId || { $oid: userId },
-          companyId: lead.companyId || { $oid: companyId },
-          gId: lead.gId || { $oid: gigId },
-          Last_Activity_Time: lead.Last_Activity_Time || null,
-          Deal_Name: dealName,
-          Email_1: lead.Email_1 || 'no-email@placeholder.com',
-          Phone: lead.Phone || '',
-          Stage: lead.Stage || 'New',
-          Pipeline: lead.Pipeline || 'Sales Pipeline',
-          Project_Tags: lead.Project_Tags || [],
-          Prénom: prenom,
-          Nom: nom
-        };
-      });
-
-      // Final validation
-      const totalRows = lines.length - 1; // Exclude header
-      const validRows = processedLeads.length;
-      const invalidRows = Math.max(0, totalRows - validRows);
-
-      // Update final progress
-      if (isOptimized) {
-        updateRealProgress(95, 'Finalisation du traitement...');
-      }
-
-      // Handle missing leads gracefully - create placeholder leads for unprocessed rows
-      const expectedLeads = lines.length - 1; // -1 for header
-      if (processedLeads.length < expectedLeads) {
-        const missingLeads = expectedLeads - processedLeads.length;
-        console.warn(`⚠️ OpenAI processed ${processedLeads.length}/${expectedLeads} leads. Creating ${missingLeads} placeholder leads for unprocessed rows.`);
-        
-        // Create placeholder leads for missing rows
-        for (let i = processedLeads.length; i < expectedLeads; i++) {
-          const rowData = lines[i + 1]; // +1 because lines[0] is header
-          const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
-          const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
-          
-          processedLeads.push({
-            userId: { $oid: userId },
-            companyId: { $oid: companyId },
-            gId: { $oid: gigId },
-            Last_Activity_Time: null,
-            Deal_Name: email || `Lead from row ${i + 2}`,
-            Email_1: email,
-            Phone: phone,
-            Stage: "New",
-            Pipeline: "Sales Pipeline",
-            Project_Tags: [],
-            Prénom: "",
-            Nom: "",
-            _isPlaceholder: true // Mark as placeholder for tracking
-          });
-        }
-      }
-
-      // Separate valid and invalid leads for better tracking
-      const validLeads = processedLeads.filter((lead: any) => !(lead as any)._isPlaceholder);
-      const invalidLeads = processedLeads.filter((lead: any) => (lead as any)._isPlaceholder);
-
-      return {
-        leads: processedLeads, // Return all leads (valid + invalid)
-        validation: {
-          totalRows,
-          validRows: validLeads.length,
-          invalidRows: invalidLeads.length,
-          errors: []
-        }
-      };
+      return result;
 
     } catch (error) {
-      console.error('❌ Error in processFileWithOpenAI:', error);
+      console.error('❌ Error in processFileWithBackend:', error);
       throw error;
     }
   };
 
-  // Helper function to process individual chunks asynchronously
-  const processChunkAsync = async (chunkIndex: number, chunkLines: string[], fileType: string, totalChunks: number) => {
-    try {
-      // Update progress for chunk processing
-      const chunkProgress = 30 + (chunkIndex / totalChunks) * 60; // 30% to 90%
-      const currentChunkProgress = Math.round(chunkProgress);
-      updateRealProgress(currentChunkProgress, `Traitement du lot ${chunkIndex + 1}/${totalChunks} (lignes ${chunkIndex * 100 + 1}-${Math.min((chunkIndex + 1) * 100, chunkLines.length - 1)})...`);
-      
-      // Process this chunk
-      const chunkResult = await processFileWithOpenAI(chunkLines.join('\n'), fileType, true);
-      
-      if (chunkResult.leads && chunkResult.leads.length > 0) {
-        // Update progress after successful chunk processing
-        const successProgress = 30 + ((chunkIndex + 1) / totalChunks) * 60;
-        updateRealProgress(Math.round(successProgress), `Lot ${chunkIndex + 1}/${totalChunks} terminé (${chunkResult.leads.length} leads)`);
-        return chunkResult;
-      } else {
-        console.warn(`⚠️ Chunk ${chunkIndex + 1} returned no leads`);
-        return { leads: [], validation: { totalRows: 0, validRows: 0, invalidRows: 0, errors: [] } };
-      }
-      
-    } catch (error: any) {
-      console.error(`❌ Error processing chunk ${chunkIndex + 1}:`, error);
-      // Return empty result instead of failing completely
-      return { leads: [], validation: { totalRows: 0, validRows: 0, invalidRows: 0, errors: [error.message] } };
-    }
-  };
-
-  // Smart chunking function for large files
-  const processLargeFileInChunks = async (fileContent: string, fileType: string, lines: string[]): Promise<{leads: any[], validation: any}> => {
-    
-    // Calculate optimal chunk size to respect OpenAI token limits
-    const maxTokensPerChunk = 12000; // Conservative limit (16,385 - safe buffer)
-    const estimatedTokensPerLine = 25; // Realistic estimate for CSV data
-    const optimalChunkSize = Math.min(100, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 100 lines per chunk for safety
-    
-    
-    const allLeads: any[] = [];
-    const totalChunks = Math.ceil((lines.length - 1) / optimalChunkSize);
-    
-    // Update progress for chunk processing start
-    updateRealProgress(30, `Début du traitement par lots (${totalChunks} lots à traiter)...`);
-    
-    // Process chunks in parallel for maximum speed
-    const maxConcurrent = 25; // Process 25 chunks simultaneously for maximum speed
-    const chunkPromises: Promise<any>[] = [];
-    
-    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-      // Check if processing was cancelled
-      if (!processingRef.current) {
-        throw new Error('Processing cancelled by user');
-      }
-      
-      const startLine = chunkIndex * optimalChunkSize + 1; // +1 to skip header
-      const endLine = Math.min((chunkIndex + 1) * optimalChunkSize, lines.length - 1);
-      
-      // Create chunk with header + data rows for this specific chunk
-      const chunkLines = [
-        lines[0], // Header row
-        ...lines.slice(startLine, endLine + 1) // Data rows for this chunk
-      ];
-      
-      // Create promise for this chunk
-      const chunkPromise = processChunkAsync(chunkIndex, chunkLines, fileType, totalChunks);
-      chunkPromises.push(chunkPromise);
-      
-      // Process in batches to avoid overwhelming the API
-      if (chunkPromises.length >= maxConcurrent || chunkIndex === totalChunks - 1) {
-        try {
-          const batchResults = await Promise.all(chunkPromises);
-          
-          // Collect leads from batch
-          for (const result of batchResults) {
-            if (result && result.leads && result.leads.length > 0) {
-              allLeads.push(...result.leads);
-            }
-          }
-          
-          // Update progress after batch processing
-          const batchProgress = 30 + ((chunkIndex + 1) / totalChunks) * 60;
-          updateRealProgress(Math.round(batchProgress), `Lot ${chunkIndex + 1}/${totalChunks} terminé (${allLeads.length} leads collectés)`);
-          
-          // Clear batch for next iteration
-          chunkPromises.length = 0;
-          
-        } catch (error: any) {
-          console.error(`❌ Error processing batch ending at chunk ${chunkIndex + 1}:`, error);
-          // Continue with next batch instead of failing completely
-        }
-      }
-    }
-    
-    
-    // Final progress update
-    updateRealProgress(95, 'Finalisation du traitement par lots...');
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    // Separate valid and invalid leads for better tracking
-    const validLeads = allLeads.filter((lead: any) => !(lead as any)._isPlaceholder);
-    const invalidLeads = allLeads.filter((lead: any) => (lead as any)._isPlaceholder);
-
-    return {
-      leads: allLeads, // Return all leads (valid + invalid)
-      validation: {
-        totalRows: lines.length - 1,
-        validRows: validLeads.length,
-        invalidRows: invalidLeads.length,
-        errors: []
-      }
-    };
-  };
 
 
 
@@ -1165,74 +549,18 @@ ${truncatedContent}`;
       sessionStorage.setItem('uploadProcessing', 'true');
       
       try {
-        // Read the file content
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          try {
+        // Process file directly with backend (no need to read content)
             // Check if processing was cancelled before starting
             if (!processingRef.current) {
               return;
             }
             
-            let fileContent = '';
-            let fileType = '';
-
-            // Determine file type based on extension
-            const fileExtension = file.name.toLowerCase().split('.').pop();
-            
-            if (fileExtension === 'xlsx' || fileExtension === 'xls') {
-              fileType = 'Excel';
-              const data = new Uint8Array(e.target?.result as ArrayBuffer);
-              const workbook = XLSX.read(data, { type: 'array' });
-              const sheetName = workbook.SheetNames[0];
-              const worksheet = workbook.Sheets[sheetName];
-              
-              // Read Excel as JSON with headers to preserve column structure
-              const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-              
-              // Convert to structured format preserving column names
-              const headers = jsonData[0] as string[];
-              const dataRows = jsonData.slice(1) as any[][];
-              
-              // Convert structured data to readable format for OpenAI
-              const csvFormat = [
-                headers.join(','),
-                ...dataRows.map(row => row.map(cell => `"${cell || ''}"`).join(','))
-              ].join('\n');
-              
-              fileContent = csvFormat;
-            } else if (fileExtension === 'csv') {
-              fileType = 'CSV';
-              fileContent = e.target?.result as string;
-            } else if (fileExtension === 'json') {
-              fileType = 'JSON';
-              fileContent = e.target?.result as string;
-            } else if (fileExtension === 'txt') {
-              fileType = 'Text';
-              fileContent = e.target?.result as string;
-            } else if (fileExtension === 'pdf') {
-              fileType = 'PDF';
-              // For PDF files, we'll send the raw content and let OpenAI extract text
-              fileContent = e.target?.result as string;
-            } else {
-              // For any other file type, treat as text
-              fileType = 'Unknown';
-              fileContent = e.target?.result as string;
-            }
-
-            setUploadProgress(30);
-            
-            // Check if processing was cancelled before OpenAI call
-            if (!processingRef.current) {
-              return;
-            }
-            
-            // Process with OpenAI
+        setUploadProgress(20);
+        
+        // Process with backend
             const startTime = Date.now();
-            const result = await processFileWithOpenAI(fileContent, fileType);
+        const result = await processFileWithBackend(file);
             const processingTime = Date.now() - startTime;
-            
-            setUploadProgress(80);
 
             if (result.leads.length === 0) {
               toast.error('No valid leads found in the file. Please check the file format and content.');
@@ -1242,19 +570,10 @@ ${truncatedContent}`;
               return;
             }
 
-            // Show validation results (suppressed error popups as requested by user)
+        // Show validation results
             if (result.validation) {
-              const { totalRows, validRows, invalidRows, errors } = result.validation;
-
               setValidationResults(result.validation);
-              
-              // Use actual leads count if validRows is undefined or 0
-              const actualValidRows = validRows || result.leads.length;
             }
-
-            // Verify we got all expected leads
-            const fileLines = fileContent.split('\n').filter((line: string) => line.trim());
-            const expectedLeads = fileLines.length - 1; // Exclude header row
             
             setParsedLeads(result.leads);
             
@@ -1276,55 +595,6 @@ ${truncatedContent}`;
             processingRef.current = false;
             localStorage.removeItem('uploadProcessing');
             sessionStorage.removeItem('uploadProcessing');
-            
-          } catch (error: any) {
-            console.error('Error processing file:', error);
-            let errorMessage = 'Error processing file';
-            
-            if (error.message.includes('Rate limit exceeded')) {
-              errorMessage = 'Rate limit exceeded. Please wait a moment before trying again.';
-            } else if (error.message.includes('OpenAI API key not configured')) {
-              errorMessage = 'OpenAI API key not configured. Please check your environment variables.';
-            } else if (error.message.includes('OpenAI API error')) {
-              errorMessage = 'OpenAI API error. Please check your API key and try again.';
-            } else if (error.message.includes('Invalid response format')) {
-              errorMessage = 'AI processing returned invalid format. Please check your file structure.';
-            } else {
-              errorMessage = error.response?.data?.message || error.message || 'Error processing file';
-            }
-            
-            setUploadError(errorMessage);
-            toast.error(errorMessage);
-            setUploadProgress(0);
-            setIsProcessing(false);
-            
-            // Remove processing indicator on error
-            document.body.removeAttribute('data-processing');
-            processingRef.current = false;
-            localStorage.removeItem('uploadProcessing');
-            sessionStorage.removeItem('uploadProcessing');
-          }
-        };
-
-        reader.onerror = () => {
-          setUploadError('Error reading file');
-          toast.error('Error reading file');
-          setUploadProgress(0);
-          setIsProcessing(false);
-        };
-
-        // Read file based on type
-        const fileExtension = file.name.toLowerCase().split('.').pop();
-        
-        if (fileExtension === 'xlsx' || fileExtension === 'xls') {
-          reader.readAsArrayBuffer(file);
-        } else if (fileExtension === 'pdf') {
-          // For PDF files, we'll try to read as text first, then as array buffer if needed
-          reader.readAsText(file);
-        } else {
-          // For all other file types, read as text
-          reader.readAsText(file);
-        }
       } catch (error: any) {
         console.error('Error uploading file:', error);
         const errorMessage = error.message || 'Error uploading file';
