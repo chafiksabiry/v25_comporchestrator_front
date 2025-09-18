@@ -271,22 +271,8 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
             throw new Error('Failed to create address');
           }
 
-          try {
-            // Mettre à jour le requirement group avec l'ID de l'adresse
-            console.log('Updating requirement group with address ID:', {
-              groupId: requirementGroupId,
-              requirementId: currentRequirement.id,
-              addressId: addressResult.id
-            });
-
-            await requirementGroupService.updateRequirements(requirementGroupId, [{
-              requirementId: currentRequirement.id,
-              value: addressResult.id
-            }]);
-          } catch (error) {
-            console.error('Failed to update requirement group with address ID:', error);
-            throw new Error('Failed to update requirement group with address ID');
-          }
+          // On stocke l'ID pour la mise à jour unique à la fin
+          submittedValue = addressResult.id;
 
           // Stocker les détails de l'adresse pour l'affichage
           setValues(prev => ({
