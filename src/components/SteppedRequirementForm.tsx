@@ -34,6 +34,7 @@ interface RequirementValue {
   documentUrl?: string;
   status: string;
   rejectionReason?: string;
+  submittedAt: string;
 }
 
 interface AddressFields {
@@ -51,7 +52,6 @@ interface SteppedRequirementFormProps {
   existingValues?: RequirementValue[];
   requirementGroupId?: string;
   destinationZone: string;
-  onSubmit: (values: Record<string, any>) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -60,7 +60,6 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
   existingValues,
   requirementGroupId: initialGroupId,
   destinationZone,
-  onSubmit,
   onCancel
 }) => {
   // Créer une étape pour chaque requirement
@@ -93,7 +92,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
   });
 
   // État pour stocker l'ID du groupe de requirements
-  const [requirementGroupId, setRequirementGroupId] = useState<string | null>(initialGroupId || null);
+  const requirementGroupId = initialGroupId || null;
 
   // Trouver l'index du premier requirement non complété
   const findFirstIncompleteStep = useCallback(() => {
@@ -199,115 +198,81 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
     }
   }, [steps.length, onCancel]);
 
-  const validateStep = useCallback(async () => {
-    if (!currentRequirement || !currentStep) return false;
+    const validateStep = useCallback(async () => {
+      if (!currentRequirement || !currentStep) return false;
 
-    const stepErrors: Record<string, string> = {};
-    let isValid = true;
-    const value = values[currentStep.id];
+      const stepErrors: Record<string, string> = {};
+      let isValid = true;
+      const value = values[currentStep.id];
 
-    // Validation de base
-    if (!value && !existingValues?.find(v => v.field === currentStep.id)) {
-      stepErrors[currentStep.id] = 'This field is required';
-      isValid = false;
-    }
-
-    // Si la valeur existe déjà et est valide, on continue
-    const existingValue = existingValues?.find(v => v.field === currentStep.id);
-    if (existingValue && existingValue.status === 'approved') {
-      return true;
-    }
-
-    if (!isValid) {
-      setErrors(stepErrors);
-      return false;
-    }
-
-    // Initialiser submittedValue avec la valeur actuelle
-    let submittedValue = value;
-
-    // Validation spécifique par type
-    try {
-      switch (currentRequirement.type) {
-        case 'document':
-          if (value instanceof File) {
-            if (value.size > 5 * 1024 * 1024) {
-              throw new Error('File size must be less than 5MB');
-            }
-            const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-            if (!allowedTypes.includes(value.type)) {
-              throw new Error('Only JPG, PNG and PDF files are allowed');
-            }
-          }
-          break;
-
-        case 'address':
-          if (!requirementGroupId) {
-            throw new Error('Requirement group ID is missing');
-          }
-
-          const addressData = typeof value === 'string' ? JSON.parse(value) : value;
-          
-          // Vérifier tous les champs requis
-          if (!addressData.businessName || !addressData.streetAddress || !addressData.locality || 
-              !addressData.postalCode) {
-            throw new Error('Required address fields are missing');
-          }
-
-          console.log('🔍 Validating address data:', {
-            addressData,
-            destinationZone,
-            countryCode: addressData.countryCode
-          });
-
-          // Créer l'adresse dans Telnyx
-          const addressResult = await addressService.createAddress({
-            ...addressData,
-            countryCode: destinationZone,
-            customerReference: requirementGroupId
-          });
-
-          if (!addressResult.id) {
-            throw new Error('Failed to create address');
-          }
-
-          // On stocke l'ID pour la mise à jour unique à la fin
-          submittedValue = addressResult.id;
-
-          // Stocker les détails de l'adresse pour l'affichage
-          setValues(prev => ({
-            ...prev,
-            [`${currentRequirement.id}_details`]: {
-              id: addressResult.id,
-              status: 'pending',
-              createdAt: addressResult.createdAt
-            }
-          }));
-          break;
-
-        case 'textual':
-          if (currentRequirement.acceptance_criteria) {
-            const { min_length, max_length } = currentRequirement.acceptance_criteria;
-            if (min_length && value.length < min_length) {
-              throw new Error(`Minimum length is ${min_length} characters`);
-            }
-            if (max_length && value.length > max_length) {
-              throw new Error(`Maximum length is ${max_length} characters`);
-            }
-          }
-          break;
+      // Validation de base
+      if (!value && !existingValues?.find(v => v.field === currentStep.id)) {
+        stepErrors[currentStep.id] = 'This field is required';
+        isValid = false;
       }
 
-      // Retourner la valeur validée
-      return { isValid: true, submittedValue };
-    } catch (error) {
-      console.error('Validation error:', error);
-      setErrors({
-        [currentStep.id]: error instanceof Error ? error.message : 'Validation failed'
-      });
-      return { isValid: false, submittedValue: null };
-    }
-  }, [currentStep, currentRequirement, values]);
+      // Si la valeur existe déjà et est valide, on continue
+      const existingValue = existingValues?.find(v => v.field === currentStep.id);
+      if (existingValue && existingValue.status === 'completed') {
+        return true;
+      }
+
+      if (!isValid) {
+        setErrors(stepErrors);
+        return false;
+      }
+
+      // Validation spécifique par type
+      try {
+        switch (currentRequirement.type) {
+          case 'document':
+            if (value instanceof File) {
+              if (value.size > 5 * 1024 * 1024) {
+                throw new Error('File size must be less than 5MB');
+              }
+              const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+              if (!allowedTypes.includes(value.type)) {
+                throw new Error('Only JPG, PNG and PDF files are allowed');
+              }
+            }
+            break;
+
+          case 'address':
+            if (!requirementGroupId) {
+              throw new Error('Requirement group ID is missing');
+            }
+
+            const addressData = typeof value === 'string' ? JSON.parse(value) : value;
+            
+            // Vérifier tous les champs requis
+            if (!addressData.businessName || !addressData.streetAddress || !addressData.locality || 
+                !addressData.postalCode) {
+              throw new Error('Required address fields are missing');
+            }
+            break;
+
+          case 'textual':
+            if (currentRequirement.acceptance_criteria) {
+              const { min_length, max_length } = currentRequirement.acceptance_criteria;
+              if (min_length && value.length < min_length) {
+                throw new Error(`Minimum length is ${min_length} characters`);
+              }
+              if (max_length && value.length > max_length) {
+                throw new Error(`Maximum length is ${max_length} characters`);
+              }
+            }
+            break;
+        }
+
+        return true;
+      } catch (error) {
+        console.error('Validation error:', error);
+        setErrors({
+          [currentStep.id]: error instanceof Error ? error.message : 'Validation failed'
+        });
+        return false;
+      }
+    }, [currentStep, currentRequirement, values]);
 
   const handleNext = async () => {
     if (!currentStep || !currentRequirement) {
@@ -378,27 +343,29 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
           break;
 
         case 'address':
-          const addressData = typeof value === 'string' ? JSON.parse(value) : value;
-          // S'assurer que le countryCode est inclus
-          const addressToCreate = {
-            ...addressData,
-            countryCode: destinationZone
-          };
-          
-          // Log pour le debugging
-          console.log('🌍 Destination Zone in SteppedForm:', destinationZone);
-          console.log('📦 Address data to send:', addressToCreate);
-          
-          // Créer l'adresse et obtenir l'ID
-          const addressResult = await addressService.createAddress(addressToCreate);
-          console.log('📬 Address creation response:', addressResult);
+          if (typeof value === 'object' && value.id) {
+            // Si on a déjà un ID d'adresse, on l'utilise directement
+            console.log('Using existing address ID:', value.id);
+            submittedValue = value.id;
+          } else {
+            // Sinon, on crée une nouvelle adresse
+            const addressData = typeof value === 'string' ? JSON.parse(value) : value;
+            const addressToCreate = {
+              ...addressData,
+              countryCode: destinationZone
+            };
+            
+            console.log('🌍 Creating new address:', addressToCreate);
+            
+            const addressResult = await addressService.createAddress(addressToCreate);
+            console.log('📬 Address creation response:', addressResult);
 
-          if (!addressResult.id) {
-            throw new Error('Failed to create address - no ID received');
+            if (!addressResult.id) {
+              throw new Error('Failed to create address - no ID received');
+            }
+
+            submittedValue = addressResult.id;
           }
-
-          // Utiliser l'ID pour mettre à jour le requirement group
-          submittedValue = addressResult.id;
           break;
 
         case 'textual':
@@ -453,21 +420,12 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
   };
 
   const handleSubmit = async () => {
+    // Pour le dernier step, on vérifie juste qu'il est valide
     const isValid = await validateStep();
     if (!isValid) return;
 
-    setIsSubmitting(true);
-    try {
-      await onSubmit(values);
-    } catch (error) {
-      console.error('Error submitting requirements:', error);
-      setErrors(prev => ({
-        ...prev,
-        submit: error instanceof Error ? error.message : 'Failed to submit requirements'
-      }));
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Si valide, on ferme simplement le modal
+    onCancel();
   };
 
   const renderAddressFields = (req: RequirementType) => {
@@ -830,7 +788,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
                 Processing...
               </>
             ) : currentStepIndex === steps.length - 1 ? (
-              'Submit'
+              'Finish'
             ) : (
               <>
                 Next
