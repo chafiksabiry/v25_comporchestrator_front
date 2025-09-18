@@ -145,10 +145,16 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
     const initialFields = existingValues?.reduce((acc, val) => {
       if (val.value && val.field) {
         try {
-          const parsedValue = JSON.parse(val.value);
+          let parsedValue: any;
+          if (typeof val.value === 'string') {
+            parsedValue = JSON.parse(val.value);
+          } else {
+            parsedValue = val.value;
+          }
+
           if (typeof parsedValue === 'object' && parsedValue !== null) {
             // Pour les adresses existantes
-            if (parsedValue.businessName || parsedValue.streetAddress) {
+            if (parsedValue.businessName || parsedValue.streetAddress || parsedValue.id) {
               acc[val.field] = {
                 businessName: parsedValue.businessName || '',
                 streetAddress: parsedValue.streetAddress || '',
@@ -432,25 +438,8 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
     
     // Initialiser les données d'adresse
     let addressData = addressFields[req.id] || {};
-    if (existingValue?.value) {
-      try {
-        const parsedValue = JSON.parse(existingValue.value);
-        if (typeof parsedValue === 'object' && parsedValue !== null) {
-          addressData = {
-            ...parsedValue,
-            countryCode: destinationZone
-          };
-          // Mettre à jour les champs d'adresse si ce n'est pas déjà fait
-          if (!addressFields[req.id]) {
-            setAddressFields(prev => ({
-              ...prev,
-              [req.id]: addressData
-            }));
-          }
-        }
-      } catch (e) {
-        console.error('Error parsing existing address:', e);
-      }
+    if (!addressData.countryCode) {
+      addressData.countryCode = destinationZone;
     }
     
     const error = errors[req.id];
@@ -662,7 +651,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
                   type="text"
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   placeholder={req.example}
-                  value={typeof value === 'string' ? value : existingValue?.value || ''}
+                  value={typeof value === 'string' ? value : (existingValue?.value ? existingValue.value.replace(/^"|"$/g, '') : '')}
                   onChange={e => {
                     setValues(prev => ({ ...prev, [req.id]: e.target.value }));
                     setErrors(prev => ({ ...prev, [req.id]: '' }));
