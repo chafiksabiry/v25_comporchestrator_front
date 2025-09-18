@@ -650,6 +650,14 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const currentGigId = selectedGigId;
       const currentCompanyId = Cookies.get('companyId');
       
+      // Debug: Log the IDs being used for lead saving
+      console.log('💾 Saving leads with IDs:');
+      console.log(`   currentUserId: ${currentUserId}`);
+      console.log(`   currentGigId: ${currentGigId}`);
+      console.log(`   currentCompanyId: ${currentCompanyId}`);
+      console.log(`   Cookie gigId: ${Cookies.get('gigId')}`);
+      console.log(`   selectedGigId: ${selectedGigId}`);
+      
       const leadsForAPI = parsedLeads.map((lead: any) => ({
         userId: lead.userId?.$oid || currentUserId,
         companyId: lead.companyId?.$oid || currentCompanyId,
@@ -684,7 +692,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
               {
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`
+                  'Authorization': `Bearer ${currentGigId}:${currentUserId}`
                 },
                 timeout: 10000 // 10 secondes de timeout
               }
@@ -698,8 +706,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
             const savedLead: Lead = {
               _id: responseData._id || `temp_${Date.now()}_${i}`,
               gigId: responseData.gigId || selectedGigId,
-              userId: responseData.userId || Cookies.get('userId') || '',
-              companyId: responseData.companyId || Cookies.get('companyId') || '',
+              userId: responseData.userId || currentUserId || '',
+              companyId: responseData.companyId || currentCompanyId || '',
               Email_1: responseData.Email_1 || lead.Email_1,
               Phone: responseData.Phone || lead.Phone,
               Deal_Name: responseData.Deal_Name || lead.Deal_Name,
@@ -892,7 +900,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     setIsDisconnectingZoho(true);
     try {
       const userId = Cookies.get('userId');
-      const gigId = Cookies.get('gigId');
+      const gigId = selectedGigId || Cookies.get('gigId');
       
       if (!userId) {
         console.error('No userId found in cookies');
@@ -997,7 +1005,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Cookies.get('gigId')}:${userId}`
+          'Authorization': `Bearer ${selectedGigId || Cookies.get('gigId')}:${userId}`
         }
       });
   
@@ -1024,9 +1032,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   }, [hasZohoConfig, isProcessing]);
 
   // Ajout d'une fonction utilitaire pour fetch Zoho avec refresh automatique
-  const fetchZohoWithAutoRefresh = async (url: string, options: RequestInit = {}) => {
+  const fetchZohoWithAutoRefresh = async (url: string, options: RequestInit = {}, customGigId?: string) => {
     const userId = Cookies.get('userId');
-    const gigId = Cookies.get('gigId');
+    const gigId = customGigId || selectedGigId || Cookies.get('gigId');
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${gigId}:${userId}`,
@@ -1083,7 +1091,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`,
           'Accept': 'application/json',
         },
         credentials: 'include',
@@ -1092,7 +1099,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           companyId: companyId,
           gigId: selectedGigId
         })
-      });
+      }, selectedGigId);
       if (!checkResponse.ok) {
         const errorData = await checkResponse.json().catch(() => null);
         throw new Error(errorData?.message || `Erreur lors de la synchronisation avec Zoho pour le gig ${selectedGig.title}`);
@@ -1167,7 +1174,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=50`;
       const response = await fetch(apiUrl, {
         headers: {
-          'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`,
+          'Authorization': `Bearer ${selectedGigId}:${Cookies.get('userId')}`,
           'Content-Type': 'application/json'
         }
       });
@@ -1382,7 +1389,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
       const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`, {
         headers: {
-          'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`,
+          'Authorization': `Bearer ${selectedGigId || Cookies.get('gigId')}:${Cookies.get('userId')}`,
           'Content-Type': 'application/json'
         }
       });
