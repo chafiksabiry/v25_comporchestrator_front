@@ -107,12 +107,31 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         console.log('📝 Saved requirement group ID:', savedGroupId);
 
         if (savedGroupId) {
-          // Mettre à jour le status avec l'ID sauvegardé
-          setRequirementStatus(prev => ({
-            ...prev,
-            groupId: savedGroupId,
-            hasRequirements: true
-          }));
+          // Vérifier immédiatement le statut détaillé du groupe
+          requirementService.getDetailedGroupStatus(savedGroupId)
+            .then(detailedStatus => {
+              console.log('✅ Loaded detailed status for saved group:', detailedStatus);
+              const completionPercentage = Math.round(
+                (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
+              );
+
+              setRequirementStatus(prev => ({
+                ...prev,
+                groupId: savedGroupId,
+                hasRequirements: true,
+                isComplete: detailedStatus.isComplete,
+                completionPercentage,
+                completedRequirements: detailedStatus.completedRequirements,
+                totalRequirements: detailedStatus.totalRequirements,
+                pendingRequirements: detailedStatus.pendingRequirements
+              }));
+            })
+            .catch(error => {
+              console.error('Failed to load saved group status:', error);
+              // En cas d'erreur, on supprime l'ID sauvegardé et on recommence
+              Cookies.remove(`telnyxRequirementGroup_${companyId}_${destinationZone}`);
+              checkRequirements();
+            });
         }
 
         // Vérifier d'abord les requirements avant de chercher les numéros
@@ -788,7 +807,30 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       {/* Requirements Modal */}
       <RequirementFormModal
         isOpen={showRequirementModal}
-        onClose={() => setShowRequirementModal(false)}
+        onClose={async () => {
+          // Récupérer le statut détaillé avant de fermer
+          if (requirementStatus.groupId) {
+            try {
+              const detailedStatus = await requirementService.getDetailedGroupStatus(requirementStatus.groupId);
+              const completionPercentage = Math.round(
+                (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
+              );
+
+              setRequirementStatus(prev => ({
+                ...prev,
+                isComplete: detailedStatus.isComplete,
+                completionPercentage,
+                completedRequirements: detailedStatus.completedRequirements,
+                totalRequirements: detailedStatus.totalRequirements,
+                pendingRequirements: detailedStatus.pendingRequirements
+              }));
+            } catch (error) {
+              console.error('Error updating status on close:', error);
+            }
+          }
+          setShowRequirementModal(false);
+        }}
+        closeOnOverlayClick={false}
         countryCode={destinationZone}
         requirements={countryReq.requirements || []}
         existingValues={requirementStatus.completedRequirements?.map(req => ({
