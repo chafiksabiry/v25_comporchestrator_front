@@ -11,6 +11,49 @@ const isAxiosError = (error: unknown): error is ApiError => {
   return error !== null && typeof error === 'object' && 'response' in error;
 };
 
+export interface GroupStatusResponse {
+  groupId: string;
+  destinationZone: string;
+  isComplete: boolean;
+  totalRequirements: number;
+  completedRequirements: RequirementDetail[];
+  pendingRequirements: number;
+}
+
+export interface RequirementDetail {
+  id: string;
+  type: 'document' | 'textual' | 'address';
+  status: 'completed';
+  submittedAt: string;
+  value: DocumentValue | AddressValue | string;
+}
+
+export interface DocumentValue {
+  id: string;
+  filename: string;
+  size: {
+    unit: 'bytes';
+    amount: number;
+  };
+  sha256: string;
+  status: string;
+  content_type: string;
+  customerReference: string;
+  createdAt: string;
+  downloadUrl: string;
+}
+
+export interface AddressValue {
+  id: string;
+  businessName: string;
+  streetAddress: string;
+  locality: string;
+  postalCode: string;
+  countryCode: string;
+  extendedAddress?: string;
+  administrativeArea?: string;
+}
+
 export interface RequirementType {
   id: string;
   name: string;
@@ -199,6 +242,21 @@ export const requirementService = {
       return response.data;
     } catch (error: unknown) {
       console.error('❌ Error checking status:', error);
+      throw error;
+    }
+  },
+
+  // Obtenir le statut détaillé d'un groupe
+  async getDetailedGroupStatus(groupId: string): Promise<GroupStatusResponse> {
+    try {
+      console.log(`🔍 Getting detailed status for group ${groupId}`);
+      const response = await axios.get<GroupStatusResponse>(
+        `${import.meta.env.VITE_API_BASE_URL}/requirement-groups/${groupId}/status`
+      );
+      console.log('✅ Detailed status:', response.data);
+      return response.data;
+    } catch (error: unknown) {
+      console.error('❌ Error getting detailed status:', error);
       throw error;
     }
   },
