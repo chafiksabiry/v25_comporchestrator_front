@@ -399,8 +399,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     { id: 'voice', name: 'Voice Calls', icon: Phone }
   ];
 
-  // Nouvelle fonction pour traitement paginé avec affichage en temps réel
-  const processFileWithPaginationLoop = async (file: File): Promise<{leads: any[], validation: any}> => {
+  // Fonction pour traitement paginé avec appels multiples séparés
+  const processFileWithMultipleCalls = async (file: File): Promise<{leads: any[], validation: any}> => {
     try {
       if (!processingRef.current) {
         throw new Error('Processing cancelled by user');
@@ -412,7 +412,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const gigId = selectedGigId;
       const companyId = Cookies.get('companyId');
 
-      console.log('🔄 Starting paginated processing with real-time display...');
+      console.log('🔄 Starting multiple API calls for paginated processing...');
 
       if (!gigId || !userId || !companyId) {
         throw new Error('Missing required IDs');
@@ -421,82 +421,130 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       updateRealProgress(5, 'Analyse du fichier...');
       setParsedLeads([]); // Réinitialiser l'affichage
 
-      // Traiter page par page dans une boucle
-      let currentPage = 1;
-      let totalPages = 1;
-      let allLeads: any[] = [];
-      let totalRows = 0;
+      // 1️⃣ PREMIER APPEL : Découvrir le nombre total de pages
+      console.log('📡 API Call 1: Getting file info...');
+      const firstFormData = new FormData();
+      firstFormData.append('file', file);
+      firstFormData.append('page', '1');
+      firstFormData.append('pageSize', '50');
 
-      do {
+      const firstResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process-paginated`, {
+        method: 'POST',
+        body: firstFormData,
+        signal: abortControllerRef.current?.signal
+      });
+
+      if (!firstResponse.ok) {
+        throw new Error(`First API call failed: ${firstResponse.status} ${firstResponse.statusText}`);
+      }
+
+      const firstData = await firstResponse.json();
+      
+      if (!firstData.success) {
+        throw new Error(`First API call processing failed: ${firstData.error}`);
+      }
+
+      const { pagination } = firstData.data;
+      const totalPages = pagination.totalPages;
+      const totalRows = pagination.totalRows;
+
+      console.log(`📊 File info discovered: ${totalRows} total rows, ${totalPages} pages`);
+      console.log(`🔢 Will make ${totalPages} separate API calls...`);
+
+      // Traiter la première page immédiatement
+      const firstPageLeadsWithIds = firstData.data.leads.map(lead => ({
+        ...lead,
+        userId: { $oid: userId },
+        companyId: { $oid: companyId },
+        gigId: { $oid: gigId }
+      }));
+
+      let allLeads: any[] = [...firstPageLeadsWithIds];
+      setParsedLeads([...firstPageLeadsWithIds]); // Afficher la première page
+
+      updateRealProgress(
+        Math.round((1 / totalPages) * 90), 
+        `API Call 1/${totalPages} terminé - ${firstPageLeadsWithIds.length} leads ajoutés`
+      );
+
+      console.log(`✅ API Call 1/${totalPages}: +${firstPageLeadsWithIds.length} leads (Total: ${allLeads.length})`);
+
+      // 2️⃣ APPELS SUIVANTS : Une requête séparée pour chaque page
+      for (let currentPage = 2; currentPage <= totalPages; currentPage++) {
         if (!processingRef.current) {
           throw new Error('Processing cancelled by user');
         }
 
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('page', currentPage.toString());
-        formData.append('pageSize', '50');
+        console.log(`📡 API Call ${currentPage}: Processing page ${currentPage}/${totalPages}...`);
+
+        // Créer une nouvelle FormData pour chaque appel
+        const pageFormData = new FormData();
+        pageFormData.append('file', file);
+        pageFormData.append('page', currentPage.toString());
+        pageFormData.append('pageSize', '50');
 
         updateRealProgress(
-          Math.round((currentPage / Math.max(totalPages, 1)) * 90), 
-          `Traitement page ${currentPage}${totalPages > 1 ? `/${totalPages}` : ''}...`
+          Math.round((currentPage / totalPages) * 90), 
+          `API Call ${currentPage}/${totalPages} en cours...`
         );
 
-        const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process-paginated`, {
-          method: 'POST',
-          body: formData,
-          signal: abortControllerRef.current?.signal
-        });
+        try {
+          // NOUVEL APPEL API pour cette page
+          const pageResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process-paginated`, {
+            method: 'POST',
+            body: pageFormData,
+            signal: abortControllerRef.current?.signal
+          });
 
-        if (!response.ok) {
-          throw new Error(`Page ${currentPage} error: ${response.status} ${response.statusText}`);
+          if (!pageResponse.ok) {
+            console.warn(`⚠️ API Call ${currentPage} failed with status ${pageResponse.status}, skipping...`);
+            continue;
+          }
+
+          const pageData = await pageResponse.json();
+          
+          if (!pageData.success) {
+            console.warn(`⚠️ API Call ${currentPage} processing failed: ${pageData.error}, skipping...`);
+            continue;
+          }
+
+          // Traiter les leads de cette page
+          const pageLeadsWithIds = pageData.data.leads.map(lead => ({
+            ...lead,
+            userId: { $oid: userId },
+            companyId: { $oid: companyId },
+            gigId: { $oid: gigId }
+          }));
+
+          // Ajouter à la collection totale
+          allLeads = [...allLeads, ...pageLeadsWithIds];
+
+          // 🔥 AFFICHAGE EN TEMPS RÉEL : Ajouter immédiatement les nouveaux leads
+          setParsedLeads(prevLeads => [...prevLeads, ...pageLeadsWithIds]);
+
+          const progress = Math.round((currentPage / totalPages) * 90);
+          updateRealProgress(
+            progress, 
+            `API Call ${currentPage}/${totalPages} terminé - ${pageLeadsWithIds.length} leads ajoutés (Total: ${allLeads.length})`
+          );
+
+          console.log(`✅ API Call ${currentPage}/${totalPages}: +${pageLeadsWithIds.length} leads (Total: ${allLeads.length})`);
+
+          // Pause entre les appels pour éviter de surcharger le serveur
+          if (currentPage < totalPages) {
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+
+        } catch (pageError) {
+          console.warn(`⚠️ Error in API Call ${currentPage}:`, pageError);
+          // Continuer avec l'appel suivant même si celui-ci échoue
+          continue;
         }
+      }
 
-        const data = await response.json();
-        
-        if (!data.success) {
-          throw new Error(`Page ${currentPage} processing failed: ${data.error}`);
-        }
+      updateRealProgress(100, `✅ ${totalPages} appels API terminés ! ${allLeads.length} leads récupérés sur ${totalRows} lignes`);
 
-        // Mettre à jour les infos de pagination après la première page
-        if (currentPage === 1) {
-          totalPages = data.data.pagination.totalPages;
-          totalRows = data.data.pagination.totalRows;
-          console.log(`📊 File analysis: ${totalRows} total rows, ${totalPages} pages`);
-        }
-
-        // Ajouter les IDs aux leads de cette page
-        const pageLeadsWithIds = data.data.leads.map(lead => ({
-          ...lead,
-          userId: { $oid: userId },
-          companyId: { $oid: companyId },
-          gigId: { $oid: gigId }
-        }));
-
-        // Ajouter à la collection totale
-        allLeads = [...allLeads, ...pageLeadsWithIds];
-
-        // 🔥 AFFICHAGE EN TEMPS RÉEL : Ajouter immédiatement les nouveaux leads
-        setParsedLeads(prevLeads => [...prevLeads, ...pageLeadsWithIds]);
-
-        const progress = Math.round((currentPage / totalPages) * 90);
-        updateRealProgress(
-          progress, 
-          `Page ${currentPage}/${totalPages} traitée - ${pageLeadsWithIds.length} leads ajoutés (Total: ${allLeads.length})`
-        );
-
-        console.log(`✅ Page ${currentPage}/${totalPages}: +${pageLeadsWithIds.length} leads (Total: ${allLeads.length})`);
-
-        currentPage++;
-        
-        // Petite pause entre les pages
-        if (currentPage <= totalPages) {
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
-
-      } while (currentPage <= totalPages);
-
-      updateRealProgress(100, `✅ Traitement terminé ! ${allLeads.length} leads récupérés sur ${totalRows} lignes`);
+      console.log(`🎉 Processing completed: ${totalPages} API calls made, ${allLeads.length} total leads`);
 
       return {
         leads: allLeads,
@@ -509,7 +557,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       };
 
     } catch (error) {
-      console.error('❌ Error in processFileWithPaginationLoop:', error);
+      console.error('❌ Error in processFileWithMultipleCalls:', error);
       throw error;
     }
   };
@@ -822,9 +870,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
             
         setUploadProgress(20);
         
-        // Process with backend (using pagination loop with real-time display)
+        // Process with backend (using multiple separate API calls)
             const startTime = Date.now();
-        const result = await processFileWithPaginationLoop(file);
+        const result = await processFileWithMultipleCalls(file);
             const processingTime = Date.now() - startTime;
 
             if (result.leads.length === 0) {
