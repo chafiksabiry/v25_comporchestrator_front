@@ -43,6 +43,11 @@ interface Gig {
       common: string;
     };
     cca2: string;
+    flags?: {
+      png: string;
+      svg: string;
+      alt: string;
+    };
   };
   category: string;
   status: string;
@@ -136,6 +141,15 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       }
     }
   }, [selectedGigId, gigs]);
+
+  // Function to get flag emoji from country code
+  const getFlagEmoji = (countryCode: string): string => {
+    const codePoints = countryCode
+      .toUpperCase()
+      .split('')
+      .map(char => 127397 + char.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
+  };
 
   const fetchCompanyGigs = async () => {
     if (!companyId) {
@@ -505,7 +519,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
                 <option value="" className="text-blue-400 bg-blue-50">🎯 Select a gig (required)...</option>
               {gigs.map((gig: Gig) => (
                 <option key={gig._id} value={gig._id} className="py-3 text-blue-800 bg-white hover:bg-blue-50">
-                  📋 {gig.title} - 🌍 {gig.destination_zone.name.common}
+                  📋 {gig.title} - {getFlagEmoji(gig.destination_zone.cca2)} {gig.destination_zone.name.common}
                 </option>
               ))}
               </select>
