@@ -125,20 +125,24 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                 totalRequirements: detailedStatus.totalRequirements,
                 pendingRequirements: detailedStatus.pendingRequirements
               }));
+
+              // Chercher les numéros après avoir vérifié le statut
+              searchAvailableNumbers();
             })
             .catch(error => {
               console.error('Failed to load saved group status:', error);
-              // En cas d'erreur, on supprime l'ID sauvegardé et on recommence
+              // En cas d'erreur, on supprime l'ID sauvegardé et on vérifie les requirements
               Cookies.remove(`telnyxRequirementGroup_${companyId}_${destinationZone}`);
-              checkRequirements();
+              checkRequirements().then(() => {
+                searchAvailableNumbers();
+              });
             });
+        } else {
+          // Si pas de groupe sauvegardé, vérifier les requirements
+          checkRequirements().then(() => {
+            searchAvailableNumbers();
+          });
         }
-
-        // Vérifier d'abord les requirements avant de chercher les numéros
-        checkRequirements().then(() => {
-          console.log('🚀 Auto-searching for available numbers with destination zone:', destinationZone);
-          searchAvailableNumbers();
-        });
       } else {
         // Pour les autres providers, chercher directement les numéros
         console.log('🚀 Auto-searching for available numbers with destination zone:', destinationZone);
@@ -151,21 +155,9 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     if (!companyId || !destinationZone) return;
 
     try {
-      // Vérifier si on a déjà un groupe de requirements dans les cookies
-      const savedGroupId = Cookies.get(`telnyxRequirementGroup_${companyId}_${destinationZone}`);
-      
-      // Réinitialiser l'état en gardant l'ID du groupe si on en a un
-      setRequirementStatus({
-        isChecking: true,
-        hasRequirements: false,
-        isComplete: false,
-        error: null,
-        groupId: savedGroupId || undefined
-      });
-      
       console.log('🔍 Checking requirements for:', { companyId, destinationZone });
 
-      // 1. Check if country has requirements
+      // 1. Check if country has requirements first
       const response = await requirementService.checkCountryRequirements(destinationZone);
       console.log('✅ Country requirements:', response);
       
@@ -184,6 +176,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       }
 
       // 2. Get or create requirement group for this company and country
+      // SEULEMENT si le pays a des requirements
       const { group } = await requirementService.getOrCreateGroup(companyId, destinationZone);
       console.log('✅ Requirement group:', group);
 
