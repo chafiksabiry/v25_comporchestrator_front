@@ -81,6 +81,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const providers = [
     { id: 'twilio', name: 'Twilio', logo: Phone },
@@ -142,13 +143,31 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
     }
   }, [selectedGigId, gigs]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (isDropdownOpen && !target.closest('.gig-dropdown')) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isDropdownOpen]);
+
   // Function to get flag emoji from country code
   const getFlagEmoji = (countryCode: string): string => {
-    const codePoints = countryCode
-      .toUpperCase()
-      .split('')
-      .map(char => 127397 + char.charCodeAt(0));
-    return String.fromCodePoint(...codePoints);
+    try {
+      const codePoints = countryCode
+        .toUpperCase()
+        .split('')
+        .map(char => 127397 + char.charCodeAt(0));
+      return String.fromCodePoint(...codePoints);
+    } catch (error) {
+      console.log('Error generating flag emoji for:', countryCode, error);
+      return '🌍'; // Fallback
+    }
   };
 
   const fetchCompanyGigs = async () => {
@@ -166,6 +185,12 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       
       if (response.data && response.data.data && Array.isArray(response.data.data)) {
         const gigsData = response.data.data;
+        console.log('📋 Gigs data with flags:', gigsData.map(gig => ({
+          title: gig.title,
+          cca2: gig.destination_zone?.cca2,
+          country: gig.destination_zone?.name?.common,
+          flags: gig.destination_zone?.flags
+        })));
         setGigs(gigsData);
         
         // Auto-select the first gig if available
@@ -506,25 +531,71 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
           </div>
         ) : gigs.length > 0 ? (
           <div className="mt-6">
-            <div className="relative">
-              <select
-                className={`block w-full rounded-xl border-2 py-4 pl-5 pr-12 text-base font-medium transition-all duration-300 shadow-md ${
+            <div className="relative gig-dropdown">
+              {/* Custom Dropdown */}
+              <button
+                type="button"
+                className={`relative w-full rounded-xl border-2 py-4 pl-5 pr-12 text-left text-base font-medium transition-all duration-300 shadow-md ${
                   selectedGigId 
                     ? 'border-blue-400 bg-blue-50 text-blue-900 focus:border-blue-500 focus:ring-blue-500 shadow-blue-200/50' 
                     : 'border-blue-200 bg-white text-blue-800 focus:border-blue-400 focus:ring-blue-400 hover:border-blue-300'
                 } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
-                value={selectedGigId}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedGigId(e.target.value)}
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               >
-                <option value="" className="text-blue-400 bg-blue-50">🎯 Select a gig (required)...</option>
-              {gigs.map((gig: Gig) => (
-                <option key={gig._id} value={gig._id} className="py-3 text-blue-800 bg-white hover:bg-blue-50">
-                  📋 {gig.title} - {getFlagEmoji(gig.destination_zone.cca2)} {gig.destination_zone.name.common}
-                </option>
-              ))}
-              </select>
+                <span className="flex items-center">
+                  {selectedGigId ? (
+                    (() => {
+                      const selectedGig = gigs.find(g => g._id === selectedGigId);
+                      return selectedGig ? (
+                        <>
+                          <img 
+                            src={selectedGig.destination_zone.flags?.png} 
+                            alt={selectedGig.destination_zone.flags?.alt}
+                            className="inline-block w-6 h-4 mr-3 rounded-sm border border-gray-200 object-cover"
+                          />
+                          📋 {selectedGig.title} - {selectedGig.destination_zone.name.common}
+                        </>
+                      ) : 'Select a gig...';
+                    })()
+                  ) : (
+                    '🎯 Select a gig (required)...'
+                  )}
+                </span>
+                <span className="absolute inset-y-0 right-0 flex items-center pr-4">
+                  <ChevronDown className={`h-5 w-5 text-blue-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                </span>
+              </button>
+
+              {/* Dropdown Options */}
+              {isDropdownOpen && (
+                <div className="absolute z-10 mt-1 w-full bg-white border-2 border-blue-200 rounded-xl shadow-lg max-h-60 overflow-auto">
+                  {gigs.map((gig: Gig) => (
+                    <button
+                      key={gig._id}
+                      type="button"
+                      className="relative w-full px-5 py-4 text-left hover:bg-blue-50 focus:bg-blue-50 focus:outline-none transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl"
+                      onClick={() => {
+                        setSelectedGigId(gig._id);
+                        setIsDropdownOpen(false);
+                      }}
+                    >
+                      <div className="flex items-center">
+                        <img 
+                          src={gig.destination_zone.flags?.png} 
+                          alt={gig.destination_zone.flags?.alt}
+                          className="inline-block w-6 h-4 mr-3 rounded-sm border border-gray-200 object-cover"
+                        />
+                        <span className="text-blue-800 font-medium">
+                          📋 {gig.title} - {gig.destination_zone.name.common}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {selectedGigId && (
-                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                <div className="absolute inset-y-0 right-10 flex items-center pointer-events-none">
                   <CheckCircle className="h-6 w-6 text-blue-500 drop-shadow-sm" />
                 </div>
               )}
