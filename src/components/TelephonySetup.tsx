@@ -548,12 +548,12 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
                       const selectedGig = gigs.find(g => g._id === selectedGigId);
                       return selectedGig ? (
                         <>
+                          📋 {selectedGig.title} - {selectedGig.destination_zone.name.common}
                           <img 
                             src={selectedGig.destination_zone.flags?.png} 
                             alt={selectedGig.destination_zone.flags?.alt}
-                            className="inline-block w-6 h-4 mr-3 rounded-sm border border-gray-200 object-cover"
+                            className="inline-block w-6 h-4 ml-2 rounded-sm border border-gray-200 object-cover"
                           />
-                          📋 {selectedGig.title} - {selectedGig.destination_zone.name.common}
                         </>
                       ) : 'Select a gig...';
                     })()
@@ -580,14 +580,14 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
                       }}
                     >
                       <div className="flex items-center">
-                        <img 
-                          src={gig.destination_zone.flags?.png} 
-                          alt={gig.destination_zone.flags?.alt}
-                          className="inline-block w-6 h-4 mr-3 rounded-sm border border-gray-200 object-cover"
-                        />
                         <span className="text-blue-800 font-medium">
                           📋 {gig.title} - {gig.destination_zone.name.common}
                         </span>
+                        <img 
+                          src={gig.destination_zone.flags?.png} 
+                          alt={gig.destination_zone.flags?.alt}
+                          className="inline-block w-6 h-4 ml-2 rounded-sm border border-gray-200 object-cover"
+                        />
                       </div>
                     </button>
                   ))}
