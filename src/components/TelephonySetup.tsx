@@ -18,20 +18,34 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
-  Search
+  Search,
+  Briefcase
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 
 import { phoneNumberService } from '../services/api';
 import type { AvailablePhoneNumber } from '../services/api';
 
-const gigId = Cookies.get('lastGigId');
 const companyId = Cookies.get('companyId');
 
 interface PhoneNumber {
   phoneNumber: string;
   status: string;
   features: string[];
+}
+
+interface Gig {
+  _id: string;
+  title: string;
+  description: string;
+  destination_zone: {
+    name: {
+      common: string;
+    };
+    cca2: string;
+  };
+  category: string;
+  status: string;
 }
 
 interface TelephonySetupProps {
@@ -57,6 +71,11 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
     monitoring: true,
     analytics: true
   });
+  
+  // New gig-related state
+  const [gigs, setGigs] = useState<Gig[]>([]);
+  const [selectedGigId, setSelectedGigId] = useState<string>('');
+  const [isLoadingGigs, setIsLoadingGigs] = useState(false);
 
   const providers = [
     { id: 'twilio', name: 'Twilio', logo: Phone },
@@ -88,9 +107,11 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       return;
     }
 
-    // Load existing numbers and destination zone on startup
+    // Load company gigs first
+    fetchCompanyGigs();
+    
+    // Load existing numbers
     fetchExistingNumbers();
-    fetchDestinationZone();
     
     // Vérifier l'état des étapes complétées au chargement
     checkCompletedSteps();
@@ -103,6 +124,52 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       searchAvailableNumbers();
     }
   }, [destinationZone, provider]);
+
+  // Update destination zone when selected gig changes
+  useEffect(() => {
+    if (selectedGigId) {
+      const selectedGig = gigs.find((gig: Gig) => gig._id === selectedGigId);
+      if (selectedGig) {
+        const newDestinationZone = selectedGig.destination_zone.cca2;
+        console.log('🌍 Setting destination zone from selected gig:', newDestinationZone);
+        setDestinationZone(newDestinationZone);
+      }
+    }
+  }, [selectedGigId, gigs]);
+
+  const fetchCompanyGigs = async () => {
+    if (!companyId) {
+      console.error('Company ID not found');
+      return;
+    }
+
+    setIsLoadingGigs(true);
+    try {
+      console.log('🔍 Fetching gigs for company:', companyId);
+      const response = await axios.get(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`);
+      
+      console.log('📋 Company gigs response:', response.data);
+      
+      if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        const gigsData = response.data.data;
+        setGigs(gigsData);
+        
+        // Auto-select the first gig if available
+        if (gigsData.length > 0) {
+          setSelectedGigId(gigsData[0]._id);
+          console.log('🎯 Auto-selected first gig:', gigsData[0].title);
+        }
+      } else {
+        console.warn('No gigs found or invalid response format');
+        setGigs([]);
+      }
+    } catch (error) {
+      console.error('Error fetching company gigs:', error);
+      setGigs([]);
+    } finally {
+      setIsLoadingGigs(false);
+    }
+  };
 
   const checkCompletedSteps = async () => {
     try {
@@ -161,22 +228,6 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
     }
   };
 
-  const fetchDestinationZone = async () => {
-    try {
-      if (!gigId) {
-        console.error('Gig ID not found');
-        return;
-      }
-
-      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}/destination-zone`);
-      const data = await response.json();
-      console.log('🌍 Destination zone data from API:', data);
-      console.log('🌍 Destination zone code:', data.data.code);
-      setDestinationZone(data.data.code);
-    } catch (error) {
-      console.error('Error fetching destination zone:', error);
-    }
-  };
 
   const getPhoneNumber = (number: AvailablePhoneNumber): string => {
     return number.phoneNumber || number.phone_number || '';
@@ -204,15 +255,15 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
   };
 
   const purchaseNumber = async (phoneNumber: string) => {
-    if (!gigId) {
-      console.error('gigId is required to purchase a phone number');
+    if (!selectedGigId) {
+      console.error('selectedGigId is required to purchase a phone number');
       return;
     }
 
     try {
       console.log('🛒 Attempting to purchase number:', phoneNumber);
       console.log('🛒 Provider:', provider);
-      console.log('🛒 GigId:', gigId);
+      console.log('🛒 Selected GigId:', selectedGigId);
       console.log('🛒 Test Mode:', testMode);
       
       // In test mode, simulate successful purchase
@@ -227,19 +278,19 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
           phoneNumber: phoneNumber,
           status: 'active',
           features: ['voice', 'sms'],
-          gigId: gigId
+          gigId: selectedGigId
         };
         
-        setPhoneNumbers(prev => [...prev, newNumber]);
+        setPhoneNumbers((prev: PhoneNumber[]) => [...prev, newNumber]);
         
         // Remove from available numbers
-        setAvailableNumbers(prev => prev.filter(num => getPhoneNumber(num) !== phoneNumber));
+        setAvailableNumbers((prev: AvailablePhoneNumber[]) => prev.filter((num: AvailablePhoneNumber) => getPhoneNumber(num) !== phoneNumber));
         
         return;
       }
       
       // Real purchase
-      await phoneNumberService.purchasePhoneNumber(phoneNumber, provider, gigId);
+      await phoneNumberService.purchasePhoneNumber(phoneNumber, provider, selectedGigId);
       
       console.log('✅ Number purchased successfully!');
       fetchExistingNumbers(); // Refresh the list after purchase
@@ -399,6 +450,68 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
             )}
           </button>
         </div>
+      </div>
+
+      {/* Gig Selection */}
+      <div className="rounded-lg bg-white p-6 shadow">
+        <h3 className="text-lg font-medium text-gray-900">Select Gig</h3>
+        <p className="mt-1 text-sm text-gray-500">Choose the gig for which you want to configure telephony</p>
+        
+        {isLoadingGigs ? (
+          <div className="mt-4 flex items-center space-x-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
+            <span className="text-sm text-gray-600">Loading gigs...</span>
+          </div>
+        ) : gigs.length > 0 ? (
+          <div className="mt-4">
+            <select
+              className="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+              value={selectedGigId}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedGigId(e.target.value)}
+            >
+              <option value="">Select a gig...</option>
+              {gigs.map((gig: Gig) => (
+                <option key={gig._id} value={gig._id}>
+                  {gig.title} - {gig.destination_zone.name.common} ({gig.destination_zone.cca2})
+                </option>
+              ))}
+            </select>
+            
+            {selectedGigId && (() => {
+              const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
+              return selectedGig ? (
+                <div className="mt-3 rounded-lg bg-blue-50 p-3">
+                  <div className="flex items-start space-x-2">
+                    <Briefcase className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="text-sm font-medium text-blue-900">{selectedGig.title}</h4>
+                      <p className="text-sm text-blue-700 mt-1">{selectedGig.description}</p>
+                      <div className="flex items-center space-x-4 mt-2 text-xs text-blue-600">
+                        <span>Category: {selectedGig.category}</span>
+                        <span>Destination: {selectedGig.destination_zone.name.common}</span>
+                        <span>Status: {selectedGig.status}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null;
+            })()}
+          </div>
+        ) : (
+          <div className="mt-4 rounded-lg bg-yellow-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-yellow-400" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-yellow-800">No Gigs Found</h3>
+                <div className="mt-2 text-sm text-yellow-700">
+                  <p>No gigs were found for this company. Please create a gig first before configuring telephony.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Provider Selection */}
@@ -622,7 +735,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
               <select
                 className="mt-1 block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
                 value={callRouting}
-                onChange={(e) => setCallRouting(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCallRouting(e.target.value)}
               >
                 {routingOptions.map(option => (
                   <option key={option.id} value={option.id}>{option.name}</option>
@@ -636,7 +749,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 placeholder="https://your-webhook-url.com"
                 value={webhookUrl}
-                onChange={(e) => setWebhookUrl(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWebhookUrl(e.target.value)}
               />
             </div>
           </div>
@@ -718,7 +831,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
                   type="checkbox"
                   className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   checked={securitySettings.encryption}
-                  onChange={(e) => setSecuritySettings(prev => ({ ...prev, encryption: e.target.checked }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSecuritySettings(prev => ({ ...prev, encryption: e.target.checked }))}
                 />
                 <label htmlFor="encryption" className="ml-3 block text-sm text-gray-700">
                   Enable call encryption
@@ -730,7 +843,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
                   type="checkbox"
                   className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   checked={securitySettings.monitoring}
-                  onChange={(e) => setSecuritySettings(prev => ({ ...prev, monitoring: e.target.checked }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSecuritySettings(prev => ({ ...prev, monitoring: e.target.checked }))}
                 />
                 <label htmlFor="monitoring" className="ml-3 block text-sm text-gray-700">
                   Enable call monitoring
