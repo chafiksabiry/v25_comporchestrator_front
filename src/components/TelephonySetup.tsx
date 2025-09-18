@@ -10,7 +10,7 @@ import {
 import Cookies from 'js-cookie';
 
 import { phoneNumberService } from '../services/api';
-import { requirementService } from '../services/requirementService';
+import { requirementService, RequirementDetail } from '../services/requirementService';
 import { PurchaseModal } from './PurchaseModal';
 import { RequirementFormModal, RequirementFormModalProps } from './RequirementFormModal';
 import type { AvailablePhoneNumber } from '../services/api';
@@ -71,6 +71,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     groupStatus?: string;
     groupId?: string;
     validUntil?: string;
+    completionPercentage?: number;
+    completedRequirements?: RequirementDetail[];
+    totalRequirements?: number;
+    pendingRequirements?: number;
   }>({
     isChecking: false,
     hasRequirements: false,
@@ -164,16 +168,39 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       const { group } = await requirementService.getOrCreateGroup(companyId, destinationZone);
       console.log('✅ Requirement group:', group);
 
-      // Mettre à jour le status final et stocker l'ID du groupe
-      const newStatus = {
-        isChecking: false,
-        hasRequirements: true,
-        isComplete: false,
-        error: null,
-        groupId: group._id,
-        groupStatus: 'pending'
-      };
-      setRequirementStatus(newStatus);
+      // 3. Get detailed status if group exists
+      if (group._id) {
+        const detailedStatus = await requirementService.getDetailedGroupStatus(group._id);
+        console.log('✅ Detailed status:', detailedStatus);
+
+        // Calculer le pourcentage de complétion
+        const completionPercentage = Math.round(
+          (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
+        );
+
+        // Mettre à jour le status avec les détails
+        const newStatus = {
+          isChecking: false,
+          hasRequirements: true,
+          isComplete: detailedStatus.isComplete,
+          error: null,
+          groupId: group._id,
+          groupStatus: 'pending',
+          completionPercentage,
+          completedRequirements: detailedStatus.completedRequirements,
+          totalRequirements: detailedStatus.totalRequirements,
+          pendingRequirements: detailedStatus.pendingRequirements
+        };
+        setRequirementStatus(newStatus);
+
+        // Si le groupe est complet, on peut activer les boutons d'achat
+        if (detailedStatus.isComplete) {
+          setRequirementStatus(prev => ({
+            ...prev,
+            isComplete: true
+          }));
+        }
+      }
 
       // Stocker l'ID du groupe dans localStorage
       localStorage.setItem(`telnyxRequirementGroup_${companyId}_${destinationZone}`, group._id);
@@ -569,19 +596,40 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
 
         {/* Requirements Warning for Telnyx Numbers */}
-        {provider === 'telnyx' && requirementStatus.hasRequirements && (
+        {provider === 'telnyx' && requirementStatus.hasRequirements && !requirementStatus.isComplete && (
           <div className="mb-4 rounded-lg bg-yellow-50 p-4">
             <div className="flex">
               <AlertCircle className="h-5 w-5 text-yellow-400" />
-              <div className="ml-3">
+              <div className="ml-3 flex-grow">
                 <h3 className="text-sm font-medium text-yellow-800">Requirements Needed</h3>
                 <div className="mt-2 text-sm text-yellow-700">
-                  <p>To purchase numbers in {destinationZone}, you need to provide some required information first.</p>
+                  <p>To purchase numbers in {destinationZone}, you need to complete all required information.</p>
+                  
+                  {/* Progress bar */}
+                  {requirementStatus.completionPercentage !== undefined && (
+                    <div className="mt-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium text-yellow-800">
+                          Progress: {requirementStatus.completionPercentage}%
+                        </span>
+                        <span className="text-xs font-medium text-yellow-800">
+                          {requirementStatus.completedRequirements?.length || 0} / {requirementStatus.totalRequirements || 0}
+                        </span>
+                      </div>
+                      <div className="w-full bg-yellow-200 rounded-full h-2">
+                        <div
+                          className="bg-yellow-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${requirementStatus.completionPercentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   <button
                     onClick={() => setShowRequirementModal(true)}
                     className="mt-3 inline-flex items-center rounded-md bg-yellow-100 px-3 py-2 text-sm font-medium text-yellow-800 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
                   >
-                    Complete Requirements
+                    {requirementStatus.completedRequirements?.length ? 'Continue Requirements' : 'Start Requirements'}
                   </button>
                 </div>
               </div>
@@ -743,14 +791,33 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         onClose={() => setShowRequirementModal(false)}
         countryCode={destinationZone}
         requirements={countryReq.requirements || []}
-        existingValues={requirementStatus.incompleteRequirements}
+        existingValues={requirementStatus.completedRequirements?.map(req => ({
+          field: req.id,
+          value: JSON.stringify(req.value),
+          status: req.status,
+          submittedAt: req.submittedAt
+        }))}
         requirementGroupId={requirementStatus.groupId}
         onSubmit={async (values) => {
           try {
             await handleSubmitRequirements(values);
+            // Récupérer le statut détaillé immédiatement
+            if (requirementStatus.groupId) {
+              const detailedStatus = await requirementService.getDetailedGroupStatus(requirementStatus.groupId);
+              const completionPercentage = Math.round(
+                (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
+              );
+
+              setRequirementStatus(prev => ({
+                ...prev,
+                isComplete: detailedStatus.isComplete,
+                completionPercentage,
+                completedRequirements: detailedStatus.completedRequirements,
+                totalRequirements: detailedStatus.totalRequirements,
+                pendingRequirements: detailedStatus.pendingRequirements
+              }));
+            }
             setShowRequirementModal(false);
-            // Refresh requirements status
-            checkRequirements();
           } catch (error) {
             console.error('Error submitting requirements:', error);
           }
