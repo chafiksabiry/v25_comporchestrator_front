@@ -138,7 +138,6 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
     }, {} as Record<string, any>);
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [validatedSteps, setValidatedSteps] = useState<number[]>([]);
 
   // État pour les champs d'adresse
@@ -430,12 +429,29 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
 
   const renderAddressFields = (req: RequirementType) => {
     const existingValue = existingValues?.find(v => v.field === req.id);
-    const isCompleted = existingValue?.status === 'completed';
     
-    // Si l'adresse est déjà complétée, utiliser ses valeurs
-    const addressData = isCompleted && existingValue?.value
-      ? JSON.parse(existingValue.value)
-      : addressFields[req.id] || {};
+    // Initialiser les données d'adresse
+    let addressData = addressFields[req.id] || {};
+    if (existingValue?.value) {
+      try {
+        const parsedValue = JSON.parse(existingValue.value);
+        if (typeof parsedValue === 'object' && parsedValue !== null) {
+          addressData = {
+            ...parsedValue,
+            countryCode: destinationZone
+          };
+          // Mettre à jour les champs d'adresse si ce n'est pas déjà fait
+          if (!addressFields[req.id]) {
+            setAddressFields(prev => ({
+              ...prev,
+              [req.id]: addressData
+            }));
+          }
+        }
+      } catch (e) {
+        console.error('Error parsing existing address:', e);
+      }
+    }
     
     const error = errors[req.id];
 
@@ -504,8 +520,8 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
               readOnly
               disabled
             />
+          </div>
         </div>
-</div>
         {/* Champ optionnel */}
         <div className="mt-4 border-t border-gray-200 pt-4">
           <p className="mb-2 text-sm text-gray-500">Additional Information (Optional)</p>
@@ -639,30 +655,28 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
         ) : req.type === 'address' ? (
           renderAddressFields(req)
         ) : (
-          isCompleted && existingValue?.value ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex-grow">
-                  <p className="text-sm font-medium text-gray-900">{existingValue.value}</p>
-                  <p className="text-xs text-gray-500">
-                    Submitted: {new Date(existingValue.submittedAt).toLocaleString()}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex-grow">
+                <input
+                  type="text"
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  placeholder={req.example}
+                  value={typeof value === 'string' ? value : existingValue?.value || ''}
+                  onChange={e => {
+                    setValues(prev => ({ ...prev, [req.id]: e.target.value }));
+                    setErrors(prev => ({ ...prev, [req.id]: '' }));
+                  }}
+                />
+                {existingValue?.status === 'completed' && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Last submitted: {new Date(existingValue?.submittedAt || '').toLocaleString()}
                   </p>
-                </div>
-                <CheckCircle className="h-5 w-5 text-green-500" />
+                )}
               </div>
+              {existingValue?.status === 'completed' && <CheckCircle className="h-5 w-5 text-green-500" />}
             </div>
-          ) : (
-            <input
-              type="text"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              placeholder={req.example}
-              value={typeof value === 'string' ? value : ''}
-              onChange={e => {
-                setValues(prev => ({ ...prev, [req.id]: e.target.value }));
-                setErrors(prev => ({ ...prev, [req.id]: '' }));
-              }}
-            />
-          )
+          </div>
         )}
 
         {error && (
@@ -772,22 +786,9 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
           <button
             type="button"
             onClick={handleNext}
-            disabled={isSubmitting}
-            className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+            className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
-            {isSubmitting ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                Processing...
-              </>
-            ) : currentStepIndex === steps.length - 1 ? (
+            {currentStepIndex === steps.length - 1 ? (
               'Finish'
             ) : (
               <>
