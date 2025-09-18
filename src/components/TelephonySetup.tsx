@@ -310,6 +310,12 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
         throw new Error('Company ID not found. Please refresh the page and try again.');
       }
 
+      // Vérifier qu'un gig est sélectionné
+      if (!selectedGigId) {
+        alert('⚠️ Please select a gig before saving the configuration.');
+        return;
+      }
+
       console.log('🚀 Completing telephony setup...');
       
       // Try to update the general onboarding status first (more reliable approach)
@@ -432,18 +438,26 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
             {testMode ? '🧪 Test Mode (Recommended)' : '⚠️ Production Mode (Known Issue)'}
           </button>
           <button 
-            className={`rounded-lg px-4 py-2 text-sm font-medium ${
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
               completedSteps.includes(5)
                 ? 'bg-green-600 text-white cursor-not-allowed'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                : !selectedGigId
+                ? 'bg-gray-400 text-white cursor-not-allowed'
+                : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md'
             }`}
-            onClick={completedSteps.includes(5) ? undefined : handleSaveConfiguration}
-            disabled={completedSteps.includes(5)}
+            onClick={completedSteps.includes(5) || !selectedGigId ? undefined : handleSaveConfiguration}
+            disabled={completedSteps.includes(5) || !selectedGigId}
+            title={!selectedGigId ? 'Please select a gig first' : ''}
           >
             {completedSteps.includes(5) ? (
               <span className="flex items-center">
                 <CheckCircle className="mr-2 h-4 w-4" />
                 Configuration Saved
+              </span>
+            ) : !selectedGigId ? (
+              <span className="flex items-center">
+                <AlertCircle className="mr-2 h-4 w-4" />
+                Select Gig First
               </span>
             ) : (
               'Save Configuration'
@@ -453,9 +467,14 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       </div>
 
       {/* Gig Selection */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h3 className="text-lg font-medium text-gray-900">Select Gig</h3>
-        <p className="mt-1 text-sm text-gray-500">Choose the gig for which you want to configure telephony</p>
+      <div className="rounded-lg bg-white p-6 shadow border-l-4 border-indigo-500">
+        <div className="flex items-center space-x-2">
+          <h3 className="text-lg font-medium text-gray-900">Select Gig</h3>
+          <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+            Required
+          </span>
+        </div>
+        <p className="mt-1 text-sm text-gray-600">Choose the gig for which you want to configure telephony <span className="text-red-500">*</span></p>
         
         {isLoadingGigs ? (
           <div className="mt-4 flex items-center space-x-2">
@@ -464,32 +483,61 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
           </div>
         ) : gigs.length > 0 ? (
           <div className="mt-4">
-            <select
-              className="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-              value={selectedGigId}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedGigId(e.target.value)}
-            >
-              <option value="">Select a gig...</option>
+            <div className="relative">
+              <select
+                className={`block w-full rounded-lg border-2 py-3 pl-4 pr-10 text-base transition-all duration-200 ${
+                  selectedGigId 
+                    ? 'border-green-400 bg-green-50 text-green-900 focus:border-green-500 focus:ring-green-500' 
+                    : 'border-gray-300 bg-white text-gray-900 focus:border-indigo-500 focus:ring-indigo-500'
+                } focus:outline-none focus:ring-2 sm:text-sm shadow-sm`}
+                value={selectedGigId}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedGigId(e.target.value)}
+              >
+                <option value="" className="text-gray-500">🎯 Select a gig (required)...</option>
               {gigs.map((gig: Gig) => (
-                <option key={gig._id} value={gig._id}>
-                  {gig.title} - {gig.destination_zone.name.common}
+                <option key={gig._id} value={gig._id} className="py-2">
+                  📋 {gig.title} - 🌍 {gig.destination_zone.name.common}
                 </option>
               ))}
-            </select>
+              </select>
+              {selectedGigId && (
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                </div>
+              )}
+            </div>
             
             {selectedGigId && (() => {
               const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
               return selectedGig ? (
-                <div className="mt-3 rounded-lg bg-blue-50 p-3">
-                  <div className="flex items-start space-x-2">
-                    <Briefcase className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h4 className="text-sm font-medium text-blue-900">{selectedGig.title}</h4>
-                      <p className="text-sm text-blue-700 mt-1">{selectedGig.description}</p>
-                      <div className="flex items-center space-x-4 mt-2 text-xs text-blue-600">
-                        <span>Category: {selectedGig.category}</span>
-                        <span>Destination: {selectedGig.destination_zone.name.common}</span>
-                        <span>Status: {selectedGig.status}</span>
+                <div className="mt-4 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border border-blue-200">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      <div className="rounded-full bg-blue-100 p-2">
+                        <Briefcase className="h-5 w-5 text-blue-600" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <h4 className="text-lg font-semibold text-blue-900">{selectedGig.title}</h4>
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          selectedGig.status === 'to_activate' 
+                            ? 'bg-yellow-100 text-yellow-800' 
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {selectedGig.status === 'to_activate' ? '⏳ To Activate' : '✅ Active'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-blue-700 mb-3 leading-relaxed">{selectedGig.description}</p>
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div className="flex items-center space-x-1">
+                          <span className="font-medium text-blue-800">📂 Category:</span>
+                          <span className="text-blue-600">{selectedGig.category}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <span className="font-medium text-blue-800">🌍 Destination:</span>
+                          <span className="text-blue-600 font-medium">{selectedGig.destination_zone.name.common}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
