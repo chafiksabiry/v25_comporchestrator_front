@@ -423,13 +423,13 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
             }`}
             onClick={() => {
               if (!testMode) {
-                const confirm = window.confirm('⚠️ ATTENTION: Le mode production a des problèmes avec l\'achat de numéros français. Voulez-vous vraiment continuer ?');
+                const confirm = window.confirm('⚠️ WARNING: Production mode has known issues with French number purchases. Do you really want to continue?');
                 if (!confirm) return;
               }
               setTestMode(!testMode);
             }}
           >
-            {testMode ? '🧪 Test Mode (Recommandé)' : '⚠️ Production Mode (Problème connu)'}
+            {testMode ? '🧪 Test Mode (Recommended)' : '⚠️ Production Mode (Known Issue)'}
           </button>
           <button 
             className={`rounded-lg px-4 py-2 text-sm font-medium ${
@@ -472,7 +472,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
               <option value="">Select a gig...</option>
               {gigs.map((gig: Gig) => (
                 <option key={gig._id} value={gig._id}>
-                  {gig.title} - {gig.destination_zone.name.common} ({gig.destination_zone.cca2})
+                  {gig.title} - {gig.destination_zone.name.common}
                 </option>
               ))}
             </select>
@@ -542,11 +542,14 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       <div className="rounded-lg bg-white p-6 shadow">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-900">Phone Numbers</h3>
-          {destinationZone && (
-            <span className="text-sm text-gray-600">
-              Destination Zone: <span className="font-medium">{destinationZone}</span>
-            </span>
-          )}
+          {destinationZone && selectedGigId && (() => {
+            const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
+            return selectedGig ? (
+              <span className="text-sm text-gray-600">
+                Destination Zone: <span className="font-medium">{selectedGig.destination_zone.name.common}</span>
+              </span>
+            ) : null;
+          })()}
         </div>
 
         {/* Information about backend issue */}
@@ -557,9 +560,9 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
                 <AlertCircle className="h-5 w-5 text-red-400" />
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">Problème connu</h3>
+                <h3 className="text-sm font-medium text-red-800">Known Issue</h3>
                 <div className="mt-2 text-sm text-red-700">
-                  <p>L'achat de numéros français en mode production échoue actuellement (erreur 500). Utilisez le mode test pour simuler les achats.</p>
+                  <p>French number purchases in production mode currently fail (error 500). Use test mode to simulate purchases.</p>
                 </div>
               </div>
             </div>
@@ -569,7 +572,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
         {/* Available Numbers List - Auto-displayed */}
         {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
           <div className="mb-6 space-y-2">
-            <h4 className="text-sm font-medium text-gray-700">Available Numbers (Destination: {destinationZone})</h4>
+            <h4 className="text-sm font-medium text-gray-700">Available Numbers (Destination: {(() => {
+              const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
+              return selectedGig ? selectedGig.destination_zone.name.common : destinationZone;
+            })()})</h4>
                 <div className="grid gap-2">
                   {availableNumbers.map((number) => {
                     const phoneNumber = getPhoneNumber(number);
@@ -604,14 +610,17 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
                 <AlertCircle className="h-5 w-5 text-yellow-400" />
               </div>
               <div className="ml-3 flex-1">
-                <h3 className="text-sm font-medium text-yellow-800">Aucun numéro disponible</h3>
+                <h3 className="text-sm font-medium text-yellow-800">No Numbers Available</h3>
                 <div className="mt-2 text-sm text-yellow-700">
-                  <p>Aucun numéro téléphonique n'est disponible pour <strong>{destinationZone}</strong> avec le provider <strong>{provider}</strong>.</p>
+                  <p>No phone numbers are available for <strong>{(() => {
+                    const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
+                    return selectedGig ? selectedGig.destination_zone.name.common : destinationZone;
+                  })()}</strong> with provider <strong>{provider}</strong>.</p>
                   <p className="mt-1">
-                    {provider === 'twilio' && "Twilio a une erreur serveur (500). "}
-                    {provider === 'telnyx' && "Telnyx ne semble pas avoir de numéros pour ce pays. "}
-                    {provider === 'vonage' && "Vonage ne semble pas avoir de numéros pour ce pays. "}
-                    Essayez un autre provider ou contactez le support.
+                    {provider === 'twilio' && "Twilio has a server error (500). "}
+                    {provider === 'telnyx' && "Telnyx doesn't seem to have numbers for this country. "}
+                    {provider === 'vonage' && "Vonage doesn't seem to have numbers for this country. "}
+                    Try another provider or contact support.
                   </p>
                 </div>
                 <div className="mt-3 flex space-x-2">
@@ -626,7 +635,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
                         : 'bg-blue-600 hover:bg-blue-700'
                     }`}
                   >
-                    {provider === 'twilio' ? '⚠️ Twilio (Erreur)' : 'Essayer Twilio'}
+                    {provider === 'twilio' ? '⚠️ Twilio (Error)' : 'Try Twilio'}
                   </button>
                   <button
                     onClick={() => {
@@ -639,7 +648,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
                         : 'bg-green-600 hover:bg-green-700'
                     }`}
                   >
-                    {provider === 'telnyx' ? '⚠️ Telnyx (Vide)' : 'Essayer Telnyx'}
+                    {provider === 'telnyx' ? '⚠️ Telnyx (Empty)' : 'Try Telnyx'}
                   </button>
                   <button
                     onClick={() => {
@@ -648,7 +657,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
                     }}
                     className="rounded-md bg-purple-600 px-3 py-1 text-xs text-white hover:bg-purple-700"
                   >
-                    Essayer Vonage
+                    Try Vonage
                   </button>
                 </div>
               </div>
@@ -669,7 +678,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
           
           return filteredNumbers.length > 0 ? (
         <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-700">Existing Numbers ({destinationZone})</h4>
+              <h4 className="text-sm font-medium text-gray-700">Existing Numbers ({(() => {
+                const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
+                return selectedGig ? selectedGig.destination_zone.name.common : destinationZone;
+              })()})</h4>
               {filteredNumbers.map((number) => (
             <div key={number.phoneNumber} className="rounded-lg bg-gray-50 p-4">
               <div className="flex items-center justify-between">
