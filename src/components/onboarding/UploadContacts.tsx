@@ -426,7 +426,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const firstFormData = new FormData();
       firstFormData.append('file', file);
       firstFormData.append('page', '1');
-      firstFormData.append('pageSize', '50');
+      firstFormData.append('pageSize', '25');
 
       const firstResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process-paginated`, {
         method: 'POST',
@@ -481,7 +481,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         const pageFormData = new FormData();
         pageFormData.append('file', file);
         pageFormData.append('page', currentPage.toString());
-        pageFormData.append('pageSize', '50');
+        pageFormData.append('pageSize', '25');
 
         updateRealProgress(
           Math.round((currentPage / totalPages) * 90), 
@@ -489,15 +489,39 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         );
 
         try {
-          // NOUVEL APPEL API pour cette page
-          const pageResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process-paginated`, {
-            method: 'POST',
-            body: pageFormData,
-            signal: abortControllerRef.current?.signal
-          });
+          // NOUVEL APPEL API pour cette page avec retry
+          let pageResponse;
+          let retryCount = 0;
+          const maxRetries = 2;
 
-          if (!pageResponse.ok) {
-            console.warn(`⚠️ API Call ${currentPage} failed with status ${pageResponse.status}, skipping...`);
+          while (retryCount <= maxRetries) {
+            try {
+              pageResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process-paginated`, {
+                method: 'POST',
+                body: pageFormData,
+                signal: abortControllerRef.current?.signal
+              });
+              break; // Si succès, sortir de la boucle retry
+            } catch (fetchError) {
+              retryCount++;
+              if (retryCount <= maxRetries) {
+                console.warn(`⚠️ API Call ${currentPage} attempt ${retryCount} failed, retrying in 2s...`);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Recréer FormData pour le retry
+                const retryFormData = new FormData();
+                retryFormData.append('file', file);
+                retryFormData.append('page', currentPage.toString());
+                retryFormData.append('pageSize', '25');
+                pageFormData = retryFormData;
+              } else {
+                throw fetchError; // Après max retries, lancer l'erreur
+              }
+            }
+          }
+
+          if (!pageResponse || !pageResponse.ok) {
+            console.warn(`⚠️ API Call ${currentPage} failed with status ${pageResponse?.status || 'unknown'}, skipping...`);
             continue;
           }
 
@@ -532,7 +556,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
           // Pause entre les appels pour éviter de surcharger le serveur
           if (currentPage < totalPages) {
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 1000));
           }
 
         } catch (pageError) {
@@ -1966,7 +1990,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <span className="text-sm font-medium text-blue-800">📁 Supported: CSV, Excel, JSON, TXT</span>
                 <br />
-                <span className="text-xs text-blue-600">✨ Now with pagination to handle large files!</span>
+                <span className="text-xs text-blue-600">✨ Optimized: 25 lines per API call with auto-retry!</span>
               </div>
             </div>
             
