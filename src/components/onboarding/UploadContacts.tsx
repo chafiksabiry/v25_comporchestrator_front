@@ -430,12 +430,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         throw new Error('Missing user or company information');
       }
 
-      // Create FormData for file upload
+      // Create FormData for file upload (only the file, no IDs)
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('userId', userId);
-      formData.append('companyId', companyId);
-      formData.append('gigId', gigId);
 
       // Update progress
       updateRealProgress(10, 'Envoi du fichier au serveur...');
@@ -444,10 +441,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process`, {
         method: 'POST',
         body: formData,
-        signal: abortControllerRef.current?.signal,
-        headers: {
-          'Authorization': `Bearer ${gigId}:${userId}`
-        }
+        signal: abortControllerRef.current?.signal
       });
 
       updateRealProgress(30, 'Traitement par l\'IA en cours...');
@@ -481,9 +475,20 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         throw new Error('Invalid response format from backend');
       }
 
+      // Add IDs to each lead on the frontend
+      const leadsWithIds = result.leads.map(lead => ({
+        ...lead,
+        userId: { $oid: userId },
+        companyId: { $oid: companyId },
+        gigId: { $oid: gigId }
+      }));
+
       updateRealProgress(100, 'Traitement terminé !');
 
-      return result;
+      return {
+        ...result,
+        leads: leadsWithIds
+      };
 
     } catch (error) {
       console.error('❌ Error in processFileWithBackend:', error);
