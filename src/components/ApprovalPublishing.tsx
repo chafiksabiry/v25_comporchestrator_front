@@ -1394,9 +1394,9 @@ const ApprovalPublishing = () => {
                   <span className="text-sm font-semibold text-gray-700">Activities</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {currentGigData.activities?.map((activity: string, index: number) => (
+                  {currentGigData.activities?.map((activity: any, index: number) => (
                     <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200">
-                      {getActivityName(activity)}
+                      {activity?.name || getActivityName(activity)}
                     </span>
                   )) || <span className="text-sm text-gray-500 italic">No activities specified</span>}
                 </div>
@@ -1407,9 +1407,9 @@ const ApprovalPublishing = () => {
                   <span className="text-sm font-semibold text-gray-700">Industries</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {currentGigData.industries?.map((industry: string, index: number) => (
+                  {currentGigData.industries?.map((industry: any, index: number) => (
                     <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 border border-emerald-200">
-                      {getIndustryName(industry)}
+                      {industry?.name || getIndustryName(industry)}
                     </span>
                   )) || <span className="text-sm text-gray-500 italic">No industries specified</span>}
                 </div>
@@ -1463,8 +1463,7 @@ const ApprovalPublishing = () => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {currentGigData.skills?.professional?.map((skill: any, index: number) => {
-                    const skillId = skill?.skill?.$oid || skill?.skill?._id || skill?.skill || skill?._id;
-                    const skillName = skillId && skillsData[skillId]?.name ? skillsData[skillId].name : `Skill ${skillId || 'Unknown'}`;
+                    const skillName = skill?.skill?.name || (skillsData[skill?.skill?._id]?.name) || `Skill ${skill?.skill?._id || 'Unknown'}`;
                     return (
                       <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-purple-100 to-violet-100 text-purple-800 border border-purple-200">
                         {skillName} (Level {skill?.level || 'N/A'})
@@ -1480,8 +1479,7 @@ const ApprovalPublishing = () => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {currentGigData.skills?.technical?.map((skill: any, index: number) => {
-                    const skillId = skill?.skill?.$oid || skill?.skill?._id || skill?.skill || skill?._id;
-                    const skillName = skillId && skillsData[skillId]?.name ? skillsData[skillId].name : `Skill ${skillId || 'Unknown'}`;
+                    const skillName = skill?.skill?.name || (skillsData[skill?.skill?._id]?.name) || `Skill ${skill?.skill?._id || 'Unknown'}`;
                     return (
                       <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 border border-orange-200">
                         {skillName} (Level {skill?.level || 'N/A'})
@@ -1497,8 +1495,7 @@ const ApprovalPublishing = () => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {currentGigData.skills?.soft?.map((skill: any, index: number) => {
-                    const skillId = skill?.skill?.$oid || skill?.skill?._id || skill?.skill || skill?._id;
-                    const skillName = skillId && skillsData[skillId]?.name ? skillsData[skillId].name : `Skill ${skillId || 'Unknown'}`;
+                    const skillName = skill?.skill?.name || (skillsData[skill?.skill?._id]?.name) || `Skill ${skill?.skill?._id || 'Unknown'}`;
                     return (
                       <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-pink-100 to-rose-100 text-pink-800 border border-pink-200">
                         {skillName} (Level {skill?.level || 'N/A'})
@@ -1515,7 +1512,7 @@ const ApprovalPublishing = () => {
                 <div className="flex flex-wrap gap-2">
                   {currentGigData.skills?.languages?.map((lang: any, index: number) => (
                     <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-800 border border-indigo-200">
-                      {getLanguageName(lang?.language)} ({lang?.proficiency || 'N/A'})
+                      {lang?.language?.name || getLanguageName(lang?.language)} ({lang?.proficiency || 'N/A'})
                     </span>
                   )) || <span className="text-sm text-gray-500 italic">No languages specified</span>}
                 </div>
@@ -1532,9 +1529,12 @@ const ApprovalPublishing = () => {
                   <span className="text-sm font-medium text-gray-500">Time Zone:</span>
                   <p className="text-sm text-gray-900 mt-1">
                     {(() => {
-                      const timezoneId = currentGigData.availability?.time_zone;
-                      const timezone = timezoneData[timezoneId];
-                      return timezone ? `${timezone.zoneName} (${timezone.countryName})` : (timezoneId || 'Not specified');
+                      const timezoneObj = currentGigData.availability?.time_zone;
+                      if (timezoneObj && typeof timezoneObj === 'object') {
+                        return `${timezoneObj.zoneName} (${timezoneObj.countryName})`;
+                      }
+                      const timezone = timezoneData[timezoneObj];
+                      return timezone ? `${timezone.zoneName} (${timezone.countryName})` : (timezoneObj || 'Not specified');
                     })()}
                   </p>
                 </div>
@@ -2172,7 +2172,11 @@ const ApprovalPublishing = () => {
                 <input
                   type="text"
                   id="timezone"
-                  defaultValue={currentGigData.availability?.time_zone}
+                  defaultValue={
+                    currentGigData.availability?.time_zone?.zoneName || 
+                    currentGigData.availability?.time_zone || 
+                    ''
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                   placeholder="Enter timezone"
                 />
