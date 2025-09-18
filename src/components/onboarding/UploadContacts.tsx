@@ -415,6 +415,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const gigId = selectedGigId;
       const companyId = Cookies.get('companyId');
 
+      // Debug: Log the IDs being sent
+      console.log('🔍 Frontend sending IDs:');
+      console.log(`   userId: ${userId}`);
+      console.log(`   companyId: ${companyId}`);
+      console.log(`   gigId: ${gigId}`);
+      console.log(`   selectedGigId: ${selectedGigId}`);
+
       if (!gigId) {
         throw new Error('Please select a gig first');
       }
