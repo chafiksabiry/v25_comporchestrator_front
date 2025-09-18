@@ -115,23 +115,33 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
       if (!val.value) return acc;
       
       try {
-        // Pour les documents et adresses, parser la valeur JSON
-        const parsedValue = JSON.parse(val.value);
-        if (typeof parsedValue === 'object' && parsedValue !== null) {
-          // Stocker à la fois la valeur parsée et les détails
-          acc[val.field] = parsedValue;
+        // Trouver le type du requirement
+        const requirement = requirements.find(r => r.id === val.field);
+        
+        if (requirement?.type === 'textual') {
+          // Pour les valeurs textuelles, enlever les quotes et utiliser directement
+          const textValue = val.value.replace(/^"|"$/g, '');
+          acc[val.field] = textValue;
           acc[`${val.field}_details`] = {
-            ...parsedValue,
+            value: textValue,
             status: val.status,
             submittedAt: val.submittedAt
           };
         } else {
-          // Pour les valeurs textuelles, utiliser directement
-          acc[val.field] = val.value;
+          // Pour les documents et adresses, parser la valeur JSON
+          const parsedValue = JSON.parse(val.value);
+          if (typeof parsedValue === 'object' && parsedValue !== null) {
+            // Stocker à la fois la valeur parsée et les détails
+            acc[val.field] = parsedValue;
+            acc[`${val.field}_details`] = {
+              ...parsedValue,
+              status: val.status,
+              submittedAt: val.submittedAt
+            };
+          }
         }
       } catch (e) {
-        // Si ce n'est pas du JSON, c'est une valeur textuelle
-        acc[val.field] = val.value;
+        console.error('Error parsing value for field:', val.field, e);
       }
       
       return acc;
@@ -434,8 +444,6 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
   };
 
   const renderAddressFields = (req: RequirementType) => {
-    const existingValue = existingValues?.find(v => v.field === req.id);
-    
     // Initialiser les données d'adresse
     let addressData = addressFields[req.id] || {};
     if (!addressData.countryCode) {
@@ -651,7 +659,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
                   type="text"
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   placeholder={req.example}
-                  value={typeof value === 'string' ? value : (existingValue?.value ? existingValue.value.replace(/^"|"$/g, '') : '')}
+                  value={value || (values[`${req.id}_details`]?.value || '')}
                   onChange={e => {
                     setValues(prev => ({ ...prev, [req.id]: e.target.value }));
                     setErrors(prev => ({ ...prev, [req.id]: '' }));
