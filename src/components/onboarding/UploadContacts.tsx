@@ -399,7 +399,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     { id: 'voice', name: 'Voice Calls', icon: Phone }
   ];
 
-  // Fonction pour traitement paginé avec appels multiples séparés
+  // Fonction pour traitement paginé CÔTÉ FRONTEND avec appels multiples
   const processFileWithMultipleCalls = async (file: File): Promise<{leads: any[], validation: any}> => {
     try {
       if (!processingRef.current) {
@@ -412,85 +412,62 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const gigId = selectedGigId;
       const companyId = Cookies.get('companyId');
 
-      console.log('🔄 Starting multiple API calls for paginated processing...');
+      console.log('🔄 Starting frontend-based paginated processing...');
 
       if (!gigId || !userId || !companyId) {
         throw new Error('Missing required IDs');
       }
 
-      updateRealProgress(5, 'Analyse du fichier...');
+      updateRealProgress(5, 'Lecture du fichier...');
       setParsedLeads([]); // Réinitialiser l'affichage
 
-      // 1️⃣ PREMIER APPEL : Découvrir le nombre total de pages
-      console.log('📡 API Call 1: Getting file info...');
-      const firstFormData = new FormData();
-      firstFormData.append('file', file);
-      firstFormData.append('page', '1');
-      firstFormData.append('pageSize', '25');
-
-      const firstResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process-paginated`, {
-        method: 'POST',
-        body: firstFormData,
-        signal: abortControllerRef.current?.signal
+      // 1️⃣ LIRE LE FICHIER CÔTÉ FRONTEND
+      const fileContent = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.onerror = reject;
+        reader.readAsText(file);
       });
 
-      if (!firstResponse.ok) {
-        throw new Error(`First API call failed: ${firstResponse.status} ${firstResponse.statusText}`);
-      }
+      console.log('📄 File read successfully, splitting into pages...');
 
-      const firstData = await firstResponse.json();
+      // 2️⃣ DIVISER LE CONTENU EN PAGES (CÔTÉ FRONTEND)
+      const lines = fileContent.split('\n');
+      const headerLine = lines[0];
+      const dataLines = lines.slice(1).filter(line => line.trim());
       
-      if (!firstData.success) {
-        throw new Error(`First API call processing failed: ${firstData.error}`);
-      }
+      const totalRows = dataLines.length;
+      const pageSize = 25;
+      const totalPages = Math.ceil(totalRows / pageSize);
 
-      const { pagination } = firstData.data;
-      const totalPages = pagination.totalPages;
-      const totalRows = pagination.totalRows;
+      console.log(`📊 File analysis: ${totalRows} total rows, ${totalPages} pages (${pageSize} rows per page)`);
 
-      console.log(`📊 File info discovered: ${totalRows} total rows, ${totalPages} pages`);
-      console.log(`🔢 Will make ${totalPages} separate API calls...`);
-
-      // Si beaucoup de pages, avertir l'utilisateur
       if (totalPages > 50) {
         updateRealProgress(10, `⚠️ Gros fichier détecté: ${totalPages} appels API requis. Cela peut prendre du temps...`);
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Pause pour que l'utilisateur voie le message
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
 
-      // Traiter la première page immédiatement
-      const firstPageLeadsWithIds = firstData.data.leads.map(lead => ({
-        ...lead,
-        userId: { $oid: userId },
-        companyId: { $oid: companyId },
-        gigId: { $oid: gigId }
-      }));
-
-      let allLeads: any[] = [...firstPageLeadsWithIds];
-      setParsedLeads([...firstPageLeadsWithIds]); // Afficher la première page
-
-      updateRealProgress(
-        Math.round((1 / totalPages) * 90), 
-        `API Call 1/${totalPages} terminé - ${firstPageLeadsWithIds.length} leads ajoutés`
-      );
-
-      console.log(`✅ API Call 1/${totalPages}: +${firstPageLeadsWithIds.length} leads (Total: ${allLeads.length})`);
-
-      // 2️⃣ APPELS SUIVANTS : Une requête séparée pour chaque page
+      let allLeads: any[] = [];
       let consecutiveFailures = 0;
-      const maxConsecutiveFailures = 5; // Arrêter après 5 échecs consécutifs
+      const maxConsecutiveFailures = 5;
 
-      for (let currentPage = 2; currentPage <= totalPages; currentPage++) {
+      // 3️⃣ TRAITER CHAQUE PAGE SÉPARÉMENT
+      for (let currentPage = 1; currentPage <= totalPages; currentPage++) {
         if (!processingRef.current) {
           throw new Error('Processing cancelled by user');
         }
 
         console.log(`📡 API Call ${currentPage}: Processing page ${currentPage}/${totalPages}...`);
 
-        // Créer une nouvelle FormData pour chaque appel
-        let pageFormData = new FormData();
-        pageFormData.append('file', file);
-        pageFormData.append('page', currentPage.toString());
-        pageFormData.append('pageSize', '25');
+        // Créer le contenu de cette page
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = Math.min(startIndex + pageSize, totalRows);
+        const pageLines = dataLines.slice(startIndex, endIndex);
+        const pageContent = [headerLine, ...pageLines].join('\n');
+
+        // Créer un mini-fichier pour cette page
+        const pageBlob = new Blob([pageContent], { type: 'text/plain' });
+        const pageFile = new File([pageBlob], `page_${currentPage}_${file.name}`, { type: file.type });
 
         updateRealProgress(
           Math.round((currentPage / totalPages) * 90), 
@@ -498,14 +475,17 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         );
 
         try {
-          // NOUVEL APPEL API pour cette page avec retry
+          // APPEL API avec retry pour cette page
           let pageResponse;
           let retryCount = 0;
           const maxRetries = 2;
 
           while (retryCount <= maxRetries) {
             try {
-              pageResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process-paginated`, {
+              const pageFormData = new FormData();
+              pageFormData.append('file', pageFile);
+
+              pageResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process`, {
                 method: 'POST',
                 body: pageFormData,
                 signal: abortControllerRef.current?.signal
@@ -516,12 +496,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
               if (retryCount <= maxRetries) {
                 console.warn(`⚠️ API Call ${currentPage} attempt ${retryCount} failed, retrying in 2s...`);
                 await new Promise(resolve => setTimeout(resolve, 2000));
-                
-                // Recréer FormData pour le retry
-                pageFormData = new FormData();
-                pageFormData.append('file', file);
-                pageFormData.append('page', currentPage.toString());
-                pageFormData.append('pageSize', '25');
               } else {
                 throw fetchError; // Après max retries, lancer l'erreur
               }
@@ -530,6 +504,11 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
           if (!pageResponse || !pageResponse.ok) {
             console.warn(`⚠️ API Call ${currentPage} failed with status ${pageResponse?.status || 'unknown'}, skipping...`);
+            consecutiveFailures++;
+            if (consecutiveFailures >= maxConsecutiveFailures) {
+              console.error(`❌ Stopping after ${maxConsecutiveFailures} consecutive failures.`);
+              break;
+            }
             continue;
           }
 
@@ -537,6 +516,11 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           
           if (!pageData.success) {
             console.warn(`⚠️ API Call ${currentPage} processing failed: ${pageData.error}, skipping...`);
+            consecutiveFailures++;
+            if (consecutiveFailures >= maxConsecutiveFailures) {
+              console.error(`❌ Stopping after ${maxConsecutiveFailures} consecutive failures.`);
+              break;
+            }
             continue;
           }
 
@@ -574,17 +558,15 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           console.warn(`⚠️ Error in API Call ${currentPage}:`, pageError);
           consecutiveFailures++;
           
-          // Si trop d'échecs consécutifs, arrêter le traitement
           if (consecutiveFailures >= maxConsecutiveFailures) {
-            console.error(`❌ Stopping after ${maxConsecutiveFailures} consecutive failures. Server may be overloaded.`);
+            console.error(`❌ Stopping after ${maxConsecutiveFailures} consecutive failures.`);
             updateRealProgress(
               Math.round((currentPage / totalPages) * 90), 
               `❌ Arrêt après ${maxConsecutiveFailures} échecs consécutifs. ${allLeads.length} leads récupérés.`
             );
-            break; // Sortir de la boucle
+            break;
           }
           
-          // Continuer avec l'appel suivant
           continue;
         }
       }
@@ -2013,7 +1995,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <span className="text-sm font-medium text-blue-800">📁 Supported: CSV, Excel, JSON, TXT</span>
                 <br />
-                <span className="text-xs text-blue-600">✨ Optimized: 25 lines per API call with auto-retry!</span>
+                <span className="text-xs text-blue-600">✨ Frontend Pagination: 25 lines per call, no backend errors!</span>
               </div>
             </div>
             
