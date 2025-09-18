@@ -91,6 +91,7 @@ export const RequirementFormModal: React.FC<RequirementFormModalProps> = ({
                   requirements={requirements}
                   existingValues={existingValues}
                   requirementGroupId={requirementGroupId}
+                  destinationZone={countryCode.toLowerCase()}
                   onSubmit={onSubmit}
                   onCancel={onClose}
                 />

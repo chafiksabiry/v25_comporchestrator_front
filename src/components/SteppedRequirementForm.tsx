@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { validationService } from '../services/validationService';
 import { documentService } from '../services/documentService';
+import { addressService } from '../services/addressService';
 import { requirementGroupService } from '../services/requirementGroupService';
 import {
   FileText,
@@ -37,26 +37,20 @@ interface RequirementValue {
 }
 
 interface AddressFields {
-  street: string;
-  city: string;
+  businessName: string;
+  streetAddress: string;
+  locality: string;
   postalCode: string;
-  state: string;
-  country: string;
-  // Champs optionnels
-  streetNumber?: string;
-  streetType?: string;
-  buildingName?: string;
-  floor?: string;
-  apartment?: string;
-  district?: string;
-  region?: string;
-  additionalInfo?: string;
+  countryCode: string;
+  extendedAddress?: string;
+  administrativeArea: string;
 }
 
 interface SteppedRequirementFormProps {
   requirements: RequirementType[];
   existingValues?: RequirementValue[];
   requirementGroupId?: string;
+  destinationZone: string;
   onSubmit: (values: Record<string, any>) => Promise<void>;
   onCancel: () => void;
 }
@@ -65,6 +59,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
   requirements,
   existingValues,
   requirementGroupId: initialGroupId,
+  destinationZone,
   onSubmit,
   onCancel
 }) => {
@@ -118,20 +113,31 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
 
   // État pour les champs d'adresse
   const [addressFields, setAddressFields] = useState<Record<string, AddressFields>>(() => {
-    if (!existingValues) return {};
-    return existingValues.reduce((acc, val) => {
+    const initialFields = existingValues?.reduce((acc, val) => {
       if (val.value && val.field) {
         try {
           const addressData = JSON.parse(val.value);
           if (typeof addressData === 'object' && addressData !== null) {
-            acc[val.field] = addressData;
+            acc[val.field] = {
+              ...addressData,
+              countryCode: destinationZone // Initialiser avec la zone de destination
+            };
           }
         } catch (e) {
           console.log('Not a JSON string for address field:', val.field);
         }
       }
       return acc;
-    }, {} as Record<string, AddressFields>);
+    }, {} as Record<string, AddressFields>) || {};
+
+    // Log pour le debugging
+    console.log('🏠 Initial address fields:', {
+      existingValues,
+      initialFields,
+      destinationZone
+    });
+
+    return initialFields;
   });
 
   const currentStep = steps[currentStepIndex];
@@ -197,10 +203,61 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
           break;
 
         case 'address':
+          if (!requirementGroupId) {
+            throw new Error('Requirement group ID is missing');
+          }
+
           const addressData = typeof value === 'string' ? JSON.parse(value) : value;
-          if (!addressData.street || !addressData.city || !addressData.postalCode || !addressData.country) {
+          
+          // Vérifier tous les champs requis
+          if (!addressData.businessName || !addressData.streetAddress || !addressData.locality || 
+              !addressData.postalCode || !addressData.administrativeArea) {
             throw new Error('Required address fields are missing');
           }
+
+          console.log('🔍 Validating address data:', {
+            addressData,
+            destinationZone,
+            countryCode: addressData.countryCode
+          });
+
+          // Créer l'adresse dans Telnyx
+          const addressResult = await addressService.createAddress({
+            ...addressData,
+            countryCode: destinationZone,
+            customerReference: requirementGroupId
+          });
+
+          if (!addressResult.id) {
+            throw new Error('Failed to create address');
+          }
+
+          try {
+            // Mettre à jour le requirement group avec l'ID de l'adresse
+            console.log('Updating requirement group with address ID:', {
+              groupId: requirementGroupId,
+              requirementId: currentRequirement.id,
+              addressId: addressResult.id
+            });
+
+            await requirementGroupService.updateRequirements(requirementGroupId, [{
+              requirementId: currentRequirement.id,
+              value: addressResult.id
+            }]);
+          } catch (error) {
+            console.error('Failed to update requirement group with address ID:', error);
+            throw new Error('Failed to update requirement group with address ID');
+          }
+
+          // Stocker les détails de l'adresse pour l'affichage
+          setValues(prev => ({
+            ...prev,
+            [`${currentRequirement.id}_details`]: {
+              id: addressResult.id,
+              status: addressResult.status,
+              createdAt: addressResult.createdAt
+            }
+          }));
           break;
 
         case 'textual':
@@ -309,7 +366,17 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
 
         case 'address':
           const addressData = typeof value === 'string' ? JSON.parse(value) : value;
-          const addressResult = await validationService.validateAddress(addressData);
+          // S'assurer que le countryCode est inclus
+          const addressToCreate = {
+            ...addressData,
+            countryCode: destinationZone
+          };
+          
+          // Log pour le debugging
+          console.log('🌍 Destination Zone in SteppedForm:', destinationZone);
+          console.log('📦 Address data to send:', addressToCreate);
+          
+          const addressResult = await addressService.createAddress(addressToCreate);
           if (addressResult.status !== 'valid' || !addressResult.id) {
             throw new Error('Address validation failed');
           }
@@ -388,7 +455,8 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
     const updateAddressField = (field: keyof AddressFields, value: string) => {
       const newAddressData = {
         ...addressData,
-        [field]: value
+        [field]: value,
+        countryCode: destinationZone // Toujours inclure le code pays
       };
       setAddressFields(prev => ({
         ...prev,
@@ -399,110 +467,68 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
         [req.id]: JSON.stringify(newAddressData)
       }));
     };
-
     return (
       <div className="space-y-4">
         {/* Champs requis */}
         <div className="space-y-2">
           <input
             type="text"
-            placeholder="Street address *"
+            placeholder="Business Name *"
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            value={addressData.street || ''}
-            onChange={e => updateAddressField('street', e.target.value)}
+            value={addressData.businessName || ''}
+            onChange={e => updateAddressField('businessName', e.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="Street Address *"
+            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            value={addressData.streetAddress || ''}
+            onChange={e => updateAddressField('streetAddress', e.target.value)}
           />
           <div className="grid grid-cols-2 gap-2">
             <input
               type="text"
               placeholder="City *"
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              value={addressData.city || ''}
-              onChange={e => updateAddressField('city', e.target.value)}
+              value={addressData.locality || ''}
+              onChange={e => updateAddressField('locality', e.target.value)}
             />
             <input
               type="text"
-              placeholder="Postal code *"
+              placeholder="Postal Code *"
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
               value={addressData.postalCode || ''}
               onChange={e => updateAddressField('postalCode', e.target.value)}
             />
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <input
+            type="text"
+            placeholder="Administrative Area (State/Province) *"
+            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            value={addressData.administrativeArea || ''}
+            onChange={e => updateAddressField('administrativeArea', e.target.value)}
+          />
+          <div className="mt-2">
+            <label className="block text-sm font-medium text-gray-700">Country Code</label>
             <input
               type="text"
-              placeholder="State/Province *"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              value={addressData.state || ''}
-              onChange={e => updateAddressField('state', e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              value={destinationZone}
+              readOnly
+              disabled
             />
-            <input
-              type="text"
-              placeholder="Country *"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              value={addressData.country || ''}
-              onChange={e => updateAddressField('country', e.target.value)}
-            />
-          </div>
         </div>
-
-        {/* Champs optionnels */}
+</div>
+        {/* Champ optionnel */}
         <div className="mt-4 border-t border-gray-200 pt-4">
           <p className="mb-2 text-sm text-gray-500">Additional Information (Optional)</p>
-          <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="text"
-                placeholder="Street Number"
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                value={addressData.streetNumber || ''}
-                onChange={e => updateAddressField('streetNumber', e.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="Street Type"
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                value={addressData.streetType || ''}
-                onChange={e => updateAddressField('streetType', e.target.value)}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="text"
-                placeholder="Building Name"
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                value={addressData.buildingName || ''}
-                onChange={e => updateAddressField('buildingName', e.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="Floor"
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                value={addressData.floor || ''}
-                onChange={e => updateAddressField('floor', e.target.value)}
-              />
-            </div>
-            <input
-              type="text"
-              placeholder="Apartment/Suite"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              value={addressData.apartment || ''}
-              onChange={e => updateAddressField('apartment', e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="District"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              value={addressData.district || ''}
-              onChange={e => updateAddressField('district', e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Additional Information"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              value={addressData.additionalInfo || ''}
-              onChange={e => updateAddressField('additionalInfo', e.target.value)}
-            />
-          </div>
+          <input
+            type="text"
+            placeholder="Extended Address (Apartment, Suite, etc.)"
+            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            value={addressData.extendedAddress || ''}
+            onChange={e => updateAddressField('extendedAddress', e.target.value)}
+          />
         </div>
 
         {error && (
@@ -745,5 +771,6 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
         </div>
       </div>
     </div>
+    
   );
 };
