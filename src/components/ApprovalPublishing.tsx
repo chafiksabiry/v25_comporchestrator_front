@@ -1634,9 +1634,16 @@ const ApprovalPublishing = () => {
                 <div>
                   <span className="text-sm font-medium text-gray-500">Territories:</span>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {currentGigData.team?.territories?.map((territory: string, index: number) => (
-                      <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        {territory}
+                    {currentGigData.team?.territories?.map((territory: any, index: number) => (
+                      <span key={index} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        {territory.flags && (
+                          <img 
+                            src={territory.flags.png} 
+                            alt={territory.flags.alt} 
+                            className="w-3 h-2 rounded-sm"
+                          />
+                        )}
+                        {territory.name?.common || territory}
                       </span>
                     )) || <span className="text-sm text-gray-500">No territories specified</span>}
                   </div>
@@ -2136,7 +2143,7 @@ const ApprovalPublishing = () => {
                 <input
                   type="text"
                   id="territories"
-                  defaultValue={currentGigData.team?.territories?.join(', ')}
+                  defaultValue={currentGigData.team?.territories?.map((territory: any) => territory.name?.common || territory).join(', ')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                   placeholder="Enter territories (comma separated)"
                 />
