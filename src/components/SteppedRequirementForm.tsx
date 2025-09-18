@@ -95,15 +95,46 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
   // État pour stocker l'ID du groupe de requirements
   const [requirementGroupId, setRequirementGroupId] = useState<string | null>(initialGroupId || null);
 
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  // Trouver l'index du premier requirement non complété
+  const findFirstIncompleteStep = useCallback(() => {
+    if (!existingValues) return 0;
+    
+    const completedFields = new Set(
+      existingValues
+        .filter(v => v.status === 'completed')
+        .map(v => v.field)
+    );
+
+    return steps.findIndex(step => !completedFields.has(step.id)) || 0;
+  }, [steps, existingValues]);
+
+  const [currentStepIndex, setCurrentStepIndex] = useState(findFirstIncompleteStep);
   const [values, setValues] = useState<Record<string, any>>(() => {
     if (!existingValues || !Array.isArray(existingValues)) return {};
+    
     return existingValues.reduce((acc, val) => {
-      if (val.value) {
+      if (!val.value) return acc;
+      
+      try {
+        // Pour les documents et adresses, parser la valeur JSON
+        const parsedValue = JSON.parse(val.value);
+        if (typeof parsedValue === 'object' && parsedValue !== null) {
+          // Stocker à la fois la valeur parsée et les détails
+          acc[val.field] = parsedValue;
+          acc[`${val.field}_details`] = {
+            ...parsedValue,
+            status: val.status,
+            submittedAt: val.submittedAt
+          };
+        } else {
+          // Pour les valeurs textuelles, utiliser directement
+          acc[val.field] = val.value;
+        }
+      } catch (e) {
+        // Si ce n'est pas du JSON, c'est une valeur textuelle
         acc[val.field] = val.value;
-      } else if (val.documentUrl) {
-        acc[val.field] = val.documentUrl;
       }
+      
       return acc;
     }, {} as Record<string, any>);
   });
@@ -116,15 +147,23 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
     const initialFields = existingValues?.reduce((acc, val) => {
       if (val.value && val.field) {
         try {
-          const addressData = JSON.parse(val.value);
-          if (typeof addressData === 'object' && addressData !== null) {
-            acc[val.field] = {
-              ...addressData,
-              countryCode: destinationZone // Initialiser avec la zone de destination
-            };
+          const parsedValue = JSON.parse(val.value);
+          if (typeof parsedValue === 'object' && parsedValue !== null) {
+            // Pour les adresses existantes
+            if (parsedValue.businessName || parsedValue.streetAddress) {
+              acc[val.field] = {
+                businessName: parsedValue.businessName || '',
+                streetAddress: parsedValue.streetAddress || '',
+                locality: parsedValue.locality || '',
+                postalCode: parsedValue.postalCode || '',
+                countryCode: destinationZone,
+                extendedAddress: parsedValue.extendedAddress || '',
+                administrativeArea: parsedValue.administrativeArea || ''
+              };
+            }
           }
         } catch (e) {
-          console.log('Not a JSON string for address field:', val.field);
+          console.log('Not a valid address data for field:', val.field);
         }
       }
       return acc;
@@ -324,15 +363,14 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
       switch (currentRequirement.type) {
         case 'document':
           if (value instanceof File) {
-            console.log('Uploading document:', value.name);
-            // 1. Upload du document pour obtenir un ID
-            // Créer un nom de fichier personnalisé basé sur le type de document
+            console.log('Uploading new document:', value.name);
+            // Upload du nouveau document
             const filename = `${currentRequirement.name.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString()}`;
             
             const uploadResult = await documentService.uploadDocument(
               value,
               filename,
-              requirementGroupId // Utiliser l'ID du groupe comme référence client
+              requirementGroupId
             );
             console.log('Upload result:', uploadResult);
             
@@ -340,26 +378,15 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
               throw new Error('Document upload failed - no ID received');
             }
 
-            // Le document est uploadé avec succès, on peut utiliser son ID
+            // Utiliser uniquement l'ID du document
             submittedValue = uploadResult.id;
-
-            // Stocker les informations du document pour l'affichage et pour la mise à jour
-            const documentDetails = {
-              id: uploadResult.id,
-              filename: uploadResult.filename,
-              status: uploadResult.status,
-              createdAt: uploadResult.createdAt
-            };
-
-            setValues(prev => ({
-              ...prev,
-              [`${currentRequirement.id}_details`]: documentDetails
-            }));
-
-            // On stocke l'ID pour la mise à jour unique à la fin
-            submittedValue = uploadResult.id;
-          } else {
-            console.log('Using existing document value');
+          } else if (typeof value === 'object' && value !== null) {
+            // Si c'est un document existant et pas de nouveau fichier sélectionné
+            console.log('Using existing document ID:', value.id);
+            submittedValue = value.id;
+          } else if (typeof value === 'string') {
+            // Si c'est déjà un ID
+            console.log('Using existing document ID (string):', value);
             submittedValue = value;
           }
           break;
@@ -403,10 +430,14 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
         value: submittedValue
       });
 
-      await requirementGroupService.updateRequirements(requirementGroupId, [{
+      // S'assurer que nous n'envoyons que l'ID et la valeur
+      const updatePayload = {
         requirementId: currentRequirement.id,
         value: submittedValue
-      }]);
+      };
+
+      console.log('📝 Update payload:', updatePayload);
+      await requirementGroupService.updateRequirements(requirementGroupId, [updatePayload]);
 
       // Marquer l'étape comme validée
       if (!validatedSteps.includes(currentStepIndex)) {
@@ -454,7 +485,14 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
   };
 
   const renderAddressFields = (req: RequirementType) => {
-    const addressData = addressFields[req.id] || {};
+    const existingValue = existingValues?.find(v => v.field === req.id);
+    const isCompleted = existingValue?.status === 'completed';
+    
+    // Si l'adresse est déjà complétée, utiliser ses valeurs
+    const addressData = isCompleted && existingValue?.value
+      ? JSON.parse(existingValue.value)
+      : addressFields[req.id] || {};
+    
     const error = errors[req.id];
 
     const updateAddressField = (field: keyof AddressFields, value: string) => {
@@ -548,6 +586,8 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
   const renderRequirement = (req: RequirementType) => {
     const error = errors[req.id];
     const value = values[req.id];
+    const existingValue = existingValues?.find(v => v.field === req.id);
+    const isCompleted = existingValue?.status === 'completed';
 
     return (
       <div key={req.id} className="space-y-4 bg-gray-50 p-6 rounded-lg border border-gray-200">
@@ -575,71 +615,110 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
 
         {req.type === 'document' ? (
           <div className="mt-1 flex items-center space-x-3">
-            <input
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              onChange={e => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  setValues(prev => ({ ...prev, [req.id]: file }));
-                  setErrors(prev => ({ ...prev, [req.id]: '' }));
-                }
-              }}
-              className="hidden"
-              id={`file-${req.id}`}
-            />
-            <label
-              htmlFor={`file-${req.id}`}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              <Upload className="-ml-1 mr-2 h-5 w-5" />
-              Choose File
-            </label>
-            {value instanceof File ? (
-              <span className="text-sm text-gray-500">{value.name}</span>
-            ) : values[`${req.id}_details`] ? (
-              <div className="flex items-center space-x-2">
-                <div className="flex flex-col">
-                  <span className="text-sm text-gray-500">
-                    {values[`${req.id}_details`].filename}
-                  </span>
-                  <span className="text-xs text-gray-400">
-                    Status: {values[`${req.id}_details`].status}
-                  </span>
+            {isCompleted && existingValue?.value ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-gray-700">
+                        {JSON.parse(existingValue.value).filename}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        Submitted: {new Date(existingValue.submittedAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <a
+                      href={`${import.meta.env.VITE_API_BASE_URL}/documents/${JSON.parse(existingValue.value).id}/download`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      View Document
+                    </a>
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                  </div>
                 </div>
-                {values[`${req.id}_details`].status === 'approved' && (
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                )}
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setValues(prev => ({ ...prev, [req.id]: file }));
+                        setErrors(prev => ({ ...prev, [req.id]: '' }));
+                      }
+                    }}
+                    className="hidden"
+                    id={`file-${req.id}`}
+                  />
+                  <label
+                    htmlFor={`file-${req.id}`}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    <Upload className="-ml-1 mr-2 h-5 w-5" />
+                    Change Document
+                  </label>
+                  {values[req.id] instanceof File && (
+                    <span className="text-sm text-gray-500">New file selected: {values[req.id].name}</span>
+                  )}
+                </div>
               </div>
-            ) : existingValues?.find(v => v.field === req.id)?.documentUrl ? (
-              <div className="flex items-center space-x-2">
-                <a 
-                  href={existingValues.find(v => v.field === req.id)?.documentUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sm text-indigo-600 hover:text-indigo-800"
+            ) : (
+              <>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setValues(prev => ({ ...prev, [req.id]: file }));
+                      setErrors(prev => ({ ...prev, [req.id]: '' }));
+                    }
+                  }}
+                  className="hidden"
+                  id={`file-${req.id}`}
+                />
+                <label
+                  htmlFor={`file-${req.id}`}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
-                  View existing document
-                </a>
-                {existingValues.find(v => v.field === req.id)?.status === 'approved' && (
-                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <Upload className="-ml-1 mr-2 h-5 w-5" />
+                  Choose File
+                </label>
+                {value instanceof File && (
+                  <span className="text-sm text-gray-500">{value.name}</span>
                 )}
-              </div>
-            ) : null}
+              </>
+            )}
           </div>
         ) : req.type === 'address' ? (
           renderAddressFields(req)
         ) : (
-          <input
-            type="text"
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            placeholder={req.example}
-            value={typeof value === 'string' ? value : ''}
-            onChange={e => {
-              setValues(prev => ({ ...prev, [req.id]: e.target.value }));
-              setErrors(prev => ({ ...prev, [req.id]: '' }));
-            }}
-          />
+          isCompleted && existingValue?.value ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex-grow">
+                  <p className="text-sm font-medium text-gray-900">{existingValue.value}</p>
+                  <p className="text-xs text-gray-500">
+                    Submitted: {new Date(existingValue.submittedAt).toLocaleString()}
+                  </p>
+                </div>
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              </div>
+            </div>
+          ) : (
+            <input
+              type="text"
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder={req.example}
+              value={typeof value === 'string' ? value : ''}
+              onChange={e => {
+                setValues(prev => ({ ...prev, [req.id]: e.target.value }));
+                setErrors(prev => ({ ...prev, [req.id]: '' }));
+              }}
+            />
+          )
         )}
 
         {error && (
