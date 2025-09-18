@@ -516,7 +516,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
           <div className="flex-1">
             <div className="flex items-center space-x-2">
               <h3 className="text-xl font-semibold text-blue-900">Select Gig</h3>
-              <span className="inline-flex items-center rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white shadow-sm">
+              <span className="inline-flex items-center rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-sm">
                 Required
               </span>
             </div>
