@@ -1564,115 +1564,115 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         {/* Import Methods Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
           {/* Zoho Import Card */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02]">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-blue-200 shadow-sm">
-                  <img 
-                    src={zohoLogo} 
-                    alt="Zoho CRM" 
-                    className="h-7 w-7 object-contain"
-                  />
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold text-blue-900">Zoho CRM Integration</h4>
-                  <p className="text-sm text-blue-700">Connect and sync with your Zoho CRM</p>
-                </div>
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] flex flex-col h-full">
+            {/* Header */}
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-blue-200 shadow-sm">
+                <img 
+                  src={zohoLogo} 
+                  alt="Zoho CRM" 
+                  className="h-7 w-7 object-contain"
+                />
               </div>
-              <div className="flex space-x-2">
-                {hasZohoAccessToken ? (
-                  <button
-                    onClick={handleZohoDisconnect}
-                    disabled={isDisconnectingZoho}
-                    className="px-4 py-2 text-sm font-medium text-red-700 bg-red-200 hover:bg-red-300 rounded-xl transition-colors duration-200 shadow-sm disabled:opacity-50"
-                  >
-                    {isDisconnectingZoho ? (
-                      <div className="flex items-center">
-                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                        Disconnecting...
-                      </div>
-                    ) : (
-                      <div className="flex items-center">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Disconnect
-                      </div>
-                    )}
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleZohoConnect}
-                    className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-200 hover:bg-blue-300 rounded-xl transition-colors duration-200 shadow-sm"
-                  >
-                    <div className="flex items-center">
-                      <img 
-                        src={zohoLogo} 
-                        alt="Zoho" 
-                        className="h-4 w-4 mr-2 object-contain"
-                      />
-                      Connect to Zoho
-                    </div>
-                  </button>
-                )}
-              </div>
-            </div>
-            <button
-              onClick={async () => {
-                if (!selectedGigId) {
-                  toast.error('Please select a gig first');
-                  return;
-                }
-                await handleImportFromZoho();
-              }}
-              disabled={!hasZohoAccessToken || isImportingZoho}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl min-h-[60px] flex items-center justify-center"
-            >
-              {isImportingZoho ? (
-                <>
-                  <RefreshCw className="mr-3 h-5 w-5 animate-spin" />
-                  Importing from Zoho...
-                </>
-              ) : !hasZohoAccessToken ? (
-                <>
-                  <img 
-                    src={zohoLogo} 
-                    alt="Zoho" 
-                    className="h-6 w-6 mr-3 object-contain"
-                  />
-                  Connect to Zoho CRM First
-                </>
-              ) : (
-                <>
-                  <img 
-                    src={zohoLogo} 
-                    alt="Zoho" 
-                    className="h-6 w-6 mr-3 object-contain"
-                  />
-                  Sync with Zoho CRM
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* File Upload Card */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02]" data-file-upload>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-blue-200 shadow-sm">
-                  <FileSpreadsheet className="h-6 w-6 text-blue-700" />
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold text-blue-900">File Upload</h4>
-                  <p className="text-sm text-blue-700">Upload and process contact files</p>
-                </div>
+              <div className="flex-1">
+                <h4 className="text-xl font-bold text-blue-900">Zoho CRM Integration</h4>
+                <p className="text-sm text-blue-700">Connect and sync with your Zoho CRM</p>
               </div>
             </div>
             
-            {/* File Upload Area */}
-            <div className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl cursor-pointer min-h-[60px] flex items-center justify-center">
-              <label htmlFor="file-upload" className="cursor-pointer group block w-full">
-                <div className="flex items-center justify-center space-x-3">
-                  <FileSpreadsheet className="h-6 w-6 text-white" />
-                  <span className="text-base font-semibold text-white group-hover:text-blue-100 transition-colors duration-200">
+            {/* Connection Status */}
+            <div className="mb-4">
+              {hasZohoAccessToken ? (
+                <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3">
+                  <span className="text-sm font-medium text-green-800">✓ Connected to Zoho CRM</span>
+                  <button
+                    onClick={handleZohoDisconnect}
+                    disabled={isDisconnectingZoho}
+                    className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                  >
+                    {isDisconnectingZoho ? 'Disconnecting...' : 'Disconnect'}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <span className="text-sm font-medium text-yellow-800">⚠ Not connected</span>
+                  <button
+                    onClick={handleZohoConnect}
+                    className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors duration-200"
+                  >
+                    Connect
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            {/* Action Button - Pushed to bottom */}
+            <div className="mt-auto">
+              <button
+                onClick={async () => {
+                  if (!selectedGigId) {
+                    toast.error('Please select a gig first');
+                    return;
+                  }
+                  await handleImportFromZoho();
+                }}
+                disabled={!hasZohoAccessToken || isImportingZoho}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center"
+              >
+                {isImportingZoho ? (
+                  <>
+                    <RefreshCw className="mr-3 h-5 w-5 animate-spin" />
+                    Importing from Zoho...
+                  </>
+                ) : !hasZohoAccessToken ? (
+                  <>
+                    <img 
+                      src={zohoLogo} 
+                      alt="Zoho" 
+                      className="h-5 w-5 mr-3 object-contain"
+                    />
+                    Connect to Zoho CRM First
+                  </>
+                ) : (
+                  <>
+                    <img 
+                      src={zohoLogo} 
+                      alt="Zoho" 
+                      className="h-5 w-5 mr-3 object-contain"
+                    />
+                    Sync with Zoho CRM
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* File Upload Card */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] flex flex-col h-full" data-file-upload>
+            {/* Header */}
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-blue-200 shadow-sm">
+                <FileSpreadsheet className="h-6 w-6 text-blue-700" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-xl font-bold text-blue-900">File Upload</h4>
+                <p className="text-sm text-blue-700">Upload and process contact files</p>
+              </div>
+            </div>
+            
+            {/* File Info */}
+            <div className="mb-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <span className="text-sm font-medium text-blue-800">📁 Supported: CSV, Excel, JSON, TXT</span>
+              </div>
+            </div>
+            
+            {/* Upload Button - Pushed to bottom */}
+            <div className="mt-auto">
+              <div className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl cursor-pointer flex items-center justify-center">
+                <label htmlFor="file-upload" className="cursor-pointer flex items-center justify-center w-full">
+                  <FileSpreadsheet className="h-5 w-5 mr-3 text-white" />
+                  <span className="text-base font-semibold text-white">
                     {isProcessing ? (
                       <div className="flex items-center">
                         <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
@@ -1682,16 +1682,16 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                       'Click to upload or drag and drop'
                     )}
                   </span>
-                </div>
-                <input
-                  id="file-upload"
-                  type="file"
-                  className="hidden"
-                  accept="*"
-                  onChange={handleFileSelect}
-                  disabled={isProcessing}
-                />
-              </label>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    className="hidden"
+                    accept="*"
+                    onChange={handleFileSelect}
+                    disabled={isProcessing}
+                  />
+                </label>
+              </div>
             </div>
           </div>
         </div>
