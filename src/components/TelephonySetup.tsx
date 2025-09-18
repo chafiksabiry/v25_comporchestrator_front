@@ -467,42 +467,51 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
       </div>
 
       {/* Gig Selection */}
-      <div className="rounded-lg bg-white p-6 shadow border-l-4 border-indigo-500">
-        <div className="flex items-center space-x-2">
-          <h3 className="text-lg font-medium text-gray-900">Select Gig</h3>
-          <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
-            Required
-          </span>
+      <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 p-6 shadow-lg border border-blue-200">
+        <div className="flex items-center space-x-3 mb-2">
+          <div className="flex-shrink-0">
+            <div className="rounded-full bg-blue-500 p-2">
+              <Briefcase className="h-5 w-5 text-white" />
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center space-x-2">
+              <h3 className="text-xl font-semibold text-blue-900">Select Gig</h3>
+              <span className="inline-flex items-center rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white shadow-sm">
+                Required
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-blue-700">Choose the gig for which you want to configure telephony <span className="text-blue-600 font-medium">*</span></p>
+          </div>
         </div>
-        <p className="mt-1 text-sm text-gray-600">Choose the gig for which you want to configure telephony <span className="text-red-500">*</span></p>
         
         {isLoadingGigs ? (
-          <div className="mt-4 flex items-center space-x-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
-            <span className="text-sm text-gray-600">Loading gigs...</span>
+          <div className="mt-6 flex items-center justify-center space-x-3 p-4 rounded-lg bg-white/50 backdrop-blur-sm">
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-200 border-t-blue-600"></div>
+            <span className="text-sm font-medium text-blue-700">Loading gigs...</span>
           </div>
         ) : gigs.length > 0 ? (
-          <div className="mt-4">
+          <div className="mt-6">
             <div className="relative">
               <select
-                className={`block w-full rounded-lg border-2 py-3 pl-4 pr-10 text-base transition-all duration-200 ${
+                className={`block w-full rounded-xl border-2 py-4 pl-5 pr-12 text-base font-medium transition-all duration-300 shadow-md ${
                   selectedGigId 
-                    ? 'border-green-400 bg-green-50 text-green-900 focus:border-green-500 focus:ring-green-500' 
-                    : 'border-gray-300 bg-white text-gray-900 focus:border-indigo-500 focus:ring-indigo-500'
-                } focus:outline-none focus:ring-2 sm:text-sm shadow-sm`}
+                    ? 'border-blue-400 bg-blue-50 text-blue-900 focus:border-blue-500 focus:ring-blue-500 shadow-blue-200/50' 
+                    : 'border-blue-200 bg-white text-blue-800 focus:border-blue-400 focus:ring-blue-400 hover:border-blue-300'
+                } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
                 value={selectedGigId}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedGigId(e.target.value)}
               >
-                <option value="" className="text-gray-500">🎯 Select a gig (required)...</option>
+                <option value="" className="text-blue-400 bg-blue-50">🎯 Select a gig (required)...</option>
               {gigs.map((gig: Gig) => (
-                <option key={gig._id} value={gig._id} className="py-2">
+                <option key={gig._id} value={gig._id} className="py-3 text-blue-800 bg-white hover:bg-blue-50">
                   📋 {gig.title} - 🌍 {gig.destination_zone.name.common}
                 </option>
               ))}
               </select>
               {selectedGigId && (
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <CheckCircle className="h-5 w-5 text-green-500" />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                  <CheckCircle className="h-6 w-6 text-blue-500 drop-shadow-sm" />
                 </div>
               )}
             </div>
@@ -510,33 +519,33 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
             {selectedGigId && (() => {
               const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
               return selectedGig ? (
-                <div className="mt-4 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border border-blue-200">
-                  <div className="flex items-start space-x-3">
+                <div className="mt-6 rounded-xl bg-white p-6 border-2 border-blue-200 shadow-lg">
+                  <div className="flex items-start space-x-4">
                     <div className="flex-shrink-0">
-                      <div className="rounded-full bg-blue-100 p-2">
-                        <Briefcase className="h-5 w-5 text-blue-600" />
+                      <div className="rounded-full bg-gradient-to-r from-blue-500 to-blue-600 p-3 shadow-md">
+                        <Briefcase className="h-6 w-6 text-white" />
                       </div>
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <h4 className="text-lg font-semibold text-blue-900">{selectedGig.title}</h4>
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      <div className="flex items-center space-x-3 mb-3">
+                        <h4 className="text-xl font-bold text-blue-900">{selectedGig.title}</h4>
+                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold shadow-sm ${
                           selectedGig.status === 'to_activate' 
-                            ? 'bg-yellow-100 text-yellow-800' 
-                            : 'bg-green-100 text-green-800'
+                            ? 'bg-blue-100 text-blue-800 border border-blue-300' 
+                            : 'bg-blue-500 text-white'
                         }`}>
                           {selectedGig.status === 'to_activate' ? '⏳ To Activate' : '✅ Active'}
                         </span>
                       </div>
-                      <p className="text-sm text-blue-700 mb-3 leading-relaxed">{selectedGig.description}</p>
-                      <div className="grid grid-cols-2 gap-3 text-xs">
-                        <div className="flex items-center space-x-1">
-                          <span className="font-medium text-blue-800">📂 Category:</span>
-                          <span className="text-blue-600">{selectedGig.category}</span>
+                      <p className="text-sm text-blue-700 mb-4 leading-relaxed bg-blue-50 p-3 rounded-lg">{selectedGig.description}</p>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="flex items-center space-x-2 bg-blue-50 p-3 rounded-lg">
+                          <span className="font-semibold text-blue-800">📂 Category:</span>
+                          <span className="text-blue-600 font-medium">{selectedGig.category}</span>
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <span className="font-medium text-blue-800">🌍 Destination:</span>
-                          <span className="text-blue-600 font-medium">{selectedGig.destination_zone.name.common}</span>
+                        <div className="flex items-center space-x-2 bg-blue-50 p-3 rounded-lg">
+                          <span className="font-semibold text-blue-800">🌍 Destination:</span>
+                          <span className="text-blue-600 font-bold">{selectedGig.destination_zone.name.common}</span>
                         </div>
                       </div>
                     </div>
@@ -546,16 +555,16 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
             })()}
           </div>
         ) : (
-          <div className="mt-4 rounded-lg bg-yellow-50 p-4">
-            <div className="flex">
+          <div className="mt-6 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-2 border-blue-200">
+            <div className="flex items-start space-x-3">
               <div className="flex-shrink-0">
-                <AlertCircle className="h-5 w-5 text-yellow-400" />
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-yellow-800">No Gigs Found</h3>
-                <div className="mt-2 text-sm text-yellow-700">
-                  <p>No gigs were found for this company. Please create a gig first before configuring telephony.</p>
+                <div className="rounded-full bg-blue-100 p-2">
+                  <AlertCircle className="h-6 w-6 text-blue-500" />
                 </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-blue-900 mb-2">No Gigs Found</h3>
+                <p className="text-sm text-blue-700 leading-relaxed">No gigs were found for this company. Please create a gig first before configuring telephony.</p>
               </div>
             </div>
           </div>
