@@ -17,11 +17,21 @@ interface Gig {
     bonus: string;
     bonusAmount: string;
     structure: string;
-    currency: string;
+    currency: {
+      _id: string;
+      code: string;
+      name: string;
+      symbol: string;
+      isActive: boolean;
+      createdAt: string;
+      updatedAt: string;
+      __v: number;
+    };
     transactionCommission: {
       type: string;
       amount: string;
     };
+    additionalDetails?: string;
   };
   availability: {
     schedule: Array<{
@@ -66,13 +76,16 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
   const formatCommission = (commission: Gig['commission']) => {
     if (!commission) return 'Not specified';
     
+    const currencySymbol = commission.currency?.symbol || '€';
+    const currencyCode = commission.currency?.code || 'EUR';
+    
     let details = [];
     if (commission.base) details.push(`Base: ${commission.base}`);
-    if (commission.baseAmount) details.push(`Base Amount: ${commission.baseAmount} ${commission.currency || 'EUR'}`);
+    if (commission.baseAmount) details.push(`Base Amount: ${commission.baseAmount} ${currencySymbol}`);
     if (commission.bonus) details.push(`Bonus: ${commission.bonus}`);
-    if (commission.bonusAmount) details.push(`Bonus Amount: ${commission.bonusAmount} ${commission.currency || 'EUR'}`);
+    if (commission.bonusAmount) details.push(`Bonus Amount: ${commission.bonusAmount} ${currencySymbol}`);
     if (commission.transactionCommission?.amount) {
-      details.push(`Transaction: ${commission.transactionCommission.amount} ${commission.currency || 'EUR'}`);
+      details.push(`Transaction: ${commission.transactionCommission.amount} ${currencySymbol}`);
     }
     if (commission.structure) details.push(`Structure: ${commission.structure}`);
     
@@ -219,7 +232,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                   {gig.commission.baseAmount && (
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Base Amount:</span>
-                      <span className="font-medium text-gray-900">{gig.commission.baseAmount} {gig.commission.currency || 'EUR'}</span>
+                      <span className="font-medium text-gray-900">{gig.commission.baseAmount} {gig.commission.currency?.symbol || '€'}</span>
                     </div>
                   )}
                   {gig.commission.bonus && (
@@ -231,19 +244,25 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                   {gig.commission.bonusAmount && (
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Bonus Amount:</span>
-                      <span className="font-medium text-gray-900">{gig.commission.bonusAmount} {gig.commission.currency || 'EUR'}</span>
+                      <span className="font-medium text-gray-900">{gig.commission.bonusAmount} {gig.commission.currency?.symbol || '€'}</span>
                     </div>
                   )}
                   {gig.commission.transactionCommission?.amount && (
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Transaction Commission:</span>
-                      <span className="font-medium text-gray-900">{gig.commission.transactionCommission.amount} {gig.commission.currency || 'EUR'}</span>
+                      <span className="font-medium text-gray-900">{gig.commission.transactionCommission.amount} {gig.commission.currency?.symbol || '€'}</span>
                     </div>
                   )}
                   {gig.commission.structure && (
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Structure:</span>
                       <span className="font-medium text-gray-900">{gig.commission.structure}</span>
+                    </div>
+                  )}
+                  {gig.commission.additionalDetails && (
+                    <div className="pt-3 border-t border-gray-200">
+                      <span className="text-sm text-gray-600">Additional Details:</span>
+                      <p className="text-sm text-gray-900 mt-1">{gig.commission.additionalDetails}</p>
                     </div>
                   )}
                 </div>

@@ -19,11 +19,21 @@ interface Gig {
     bonus: string;
     bonusAmount: string;
     structure: string;
-    currency: string;
+    currency: {
+      _id: string;
+      code: string;
+      name: string;
+      symbol: string;
+      isActive: boolean;
+      createdAt: string;
+      updatedAt: string;
+      __v: number;
+    };
     transactionCommission: {
       type: string;
       amount: string;
     };
+    additionalDetails?: string;
   };
   availability: {
     schedule: Array<{
@@ -126,11 +136,13 @@ const GigDetails = () => {
   const formatCommission = (commission: Gig['commission']) => {
     if (!commission) return 'Not specified';
     
+    const currencySymbol = commission.currency?.symbol || '€';
+    
     if (commission.transactionCommission?.amount) {
-      return `${commission.transactionCommission.amount} ${commission.currency || 'EUR'}`;
+      return `${commission.transactionCommission.amount} ${currencySymbol}`;
     }
     if (commission.bonusAmount) {
-      return `${commission.bonusAmount} ${commission.currency || 'EUR'}`;
+      return `${commission.bonusAmount} ${currencySymbol}`;
     }
     return commission.base || 'Not specified';
   };

@@ -1588,7 +1588,7 @@ const ApprovalPublishing = () => {
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-500">Base Amount:</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.baseAmount ? `${currentGigData.commission.currency} ${currentGigData.commission.baseAmount}` : 'Not specified'}</p>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.baseAmount ? `${currentGigData.commission.baseAmount} ${currentGigData.commission.currency?.symbol || '€'}` : 'Not specified'}</p>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-500">Bonus:</span>
@@ -1596,7 +1596,7 @@ const ApprovalPublishing = () => {
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-500">Bonus Amount:</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.bonusAmount ? `${currentGigData.commission.currency} ${currentGigData.commission.bonusAmount}` : 'Not specified'}</p>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.bonusAmount ? `${currentGigData.commission.bonusAmount} ${currentGigData.commission.currency?.symbol || '€'}` : 'Not specified'}</p>
                 </div>
               </div>
               <div className="space-y-3">
@@ -1606,13 +1606,19 @@ const ApprovalPublishing = () => {
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-500">Commission Amount:</span>
-                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.transactionCommission?.amount ? `${currentGigData.commission?.currency || ''} ${currentGigData.commission.transactionCommission.amount}` : 'Not specified'}</p>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.transactionCommission?.amount ? `${currentGigData.commission.transactionCommission.amount} ${currentGigData.commission?.currency?.symbol || '€'}` : 'Not specified'}</p>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-500">Minimum Volume:</span>
                   <p className="text-sm text-gray-900 mt-1">{currentGigData.commission?.minimumVolume?.amount ? `${currentGigData.commission.minimumVolume.amount} ${currentGigData.commission.minimumVolume.unit} ${currentGigData.commission.minimumVolume.period}` : 'Not specified'}</p>
                 </div>
               </div>
+              {currentGigData.commission?.additionalDetails && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <span className="text-sm font-medium text-gray-500">Additional Details:</span>
+                  <p className="text-sm text-gray-900 mt-1">{currentGigData.commission.additionalDetails}</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -2082,7 +2088,7 @@ const ApprovalPublishing = () => {
                 </label>
                 <select
                   id="currency"
-                  defaultValue={currentGigData.commission?.currency}
+                  defaultValue={currentGigData.commission?.currency?.code || currentGigData.commission?.currency}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
                 >
                   <option value="">Select currency</option>
