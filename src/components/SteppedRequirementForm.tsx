@@ -43,7 +43,7 @@ interface AddressFields {
   postalCode: string;
   countryCode: string;
   extendedAddress?: string;
-  administrativeArea: string;
+  administrativeArea?: string;
 }
 
 interface SteppedRequirementFormProps {
@@ -211,7 +211,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
           
           // Vérifier tous les champs requis
           if (!addressData.businessName || !addressData.streetAddress || !addressData.locality || 
-              !addressData.postalCode || !addressData.administrativeArea) {
+              !addressData.postalCode) {
             throw new Error('Required address fields are missing');
           }
 
@@ -254,7 +254,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
             ...prev,
             [`${currentRequirement.id}_details`]: {
               id: addressResult.id,
-              status: addressResult.status,
+              status: 'pending',
               createdAt: addressResult.createdAt
             }
           }));
@@ -376,10 +376,15 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
           console.log('🌍 Destination Zone in SteppedForm:', destinationZone);
           console.log('📦 Address data to send:', addressToCreate);
           
+          // Créer l'adresse et obtenir l'ID
           const addressResult = await addressService.createAddress(addressToCreate);
-          if (addressResult.status !== 'valid' || !addressResult.id) {
-            throw new Error('Address validation failed');
+          console.log('📬 Address creation response:', addressResult);
+
+          if (!addressResult.id) {
+            throw new Error('Failed to create address - no ID received');
           }
+
+          // Utiliser l'ID pour mettre à jour le requirement group
           submittedValue = addressResult.id;
           break;
 

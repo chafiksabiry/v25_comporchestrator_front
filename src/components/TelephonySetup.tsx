@@ -268,11 +268,11 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         return;
       }
 
-      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}/destination-zone`);
-      const data = await response.json();
-      console.log('🌍 Destination zone data from API:', data);
-      console.log('🌍 Destination zone code:', data.data.code);
-      setDestinationZone(data.data.code);
+      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`);
+      const res = await response.json();
+      console.log('🌍 Gig data from API:', res.data);
+      console.log('🌍 Destination zone code:', res.data.availability.time_zone.countryCode);
+      setDestinationZone(res.data.availability.time_zone.countryCode);
     } catch (error) {
       console.error('Error fetching destination zone:', error);
     }
