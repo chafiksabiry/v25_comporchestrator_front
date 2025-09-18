@@ -106,26 +106,46 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         const savedGroupId = Cookies.get(`telnyxRequirementGroup_${companyId}_${destinationZone}`);
         console.log('📝 Saved requirement group ID:', savedGroupId);
 
-        if (savedGroupId) {
-          // Vérifier immédiatement le statut détaillé du groupe
-          requirementService.getDetailedGroupStatus(savedGroupId)
-            .then(detailedStatus => {
-              console.log('✅ Loaded detailed status for saved group:', detailedStatus);
-              const completionPercentage = Math.round(
-                (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
-              );
+        const loadGroupStatus = async (groupId: string) => {
+          try {
+            const detailedStatus = await requirementService.getDetailedGroupStatus(groupId);
+            console.log('✅ Loaded detailed status for group:', detailedStatus);
+            
+            const completionPercentage = Math.round(
+              (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
+            );
 
+            setRequirementStatus(prev => ({
+              ...prev,
+              groupId: groupId,
+              hasRequirements: true,
+              isComplete: detailedStatus.isComplete,
+              completionPercentage,
+              completedRequirements: detailedStatus.completedRequirements,
+              totalRequirements: detailedStatus.totalRequirements,
+              pendingRequirements: detailedStatus.pendingRequirements
+            }));
+
+            // Si tous les requirements sont complétés, activer les boutons
+            if (detailedStatus.isComplete) {
               setRequirementStatus(prev => ({
                 ...prev,
-                groupId: savedGroupId,
-                hasRequirements: true,
-                isComplete: detailedStatus.isComplete,
-                completionPercentage,
-                completedRequirements: detailedStatus.completedRequirements,
-                totalRequirements: detailedStatus.totalRequirements,
-                pendingRequirements: detailedStatus.pendingRequirements
+                isComplete: true,
+                hasRequirements: false // Pour cacher le warning
               }));
+            }
 
+            return detailedStatus.isComplete;
+          } catch (error) {
+            console.error('Failed to load group status:', error);
+            return false;
+          }
+        };
+
+        if (savedGroupId) {
+          // Vérifier immédiatement le statut détaillé du groupe
+          loadGroupStatus(savedGroupId)
+            .then(isComplete => {
               // Chercher les numéros après avoir vérifié le statut
               searchAvailableNumbers();
             })
