@@ -12,7 +12,7 @@ import Cookies from 'js-cookie';
 import { phoneNumberService } from '../services/api';
 import { requirementService, RequirementDetail } from '../services/requirementService';
 import { PurchaseModal } from './PurchaseModal';
-import { RequirementFormModal, RequirementFormModalProps } from './RequirementFormModal';
+import { RequirementFormModal } from './RequirementFormModal';
 import type { AvailablePhoneNumber } from '../services/api';
 
 const gigId = Cookies.get('lastGigId');
@@ -145,7 +145,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         if (savedGroupId) {
           // Vérifier immédiatement le statut détaillé du groupe
           loadGroupStatus(savedGroupId)
-            .then(isComplete => {
+            .then(() => {
               // Chercher les numéros après avoir vérifié le statut
               searchAvailableNumbers();
             })
@@ -825,25 +825,35 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           if (requirementStatus.groupId) {
             try {
               const detailedStatus = await requirementService.getDetailedGroupStatus(requirementStatus.groupId);
+              console.log('✅ Detailed status on close:', detailedStatus);
+              
               const completionPercentage = Math.round(
                 (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
               );
 
-              setRequirementStatus(prev => ({
-                ...prev,
+              // Mettre à jour le statut avec les détails
+              const newStatus = {
+                ...requirementStatus,
                 isComplete: detailedStatus.isComplete,
                 completionPercentage,
                 completedRequirements: detailedStatus.completedRequirements,
                 totalRequirements: detailedStatus.totalRequirements,
                 pendingRequirements: detailedStatus.pendingRequirements
-              }));
+              };
+
+              // Si tout est complété, désactiver le warning et activer les boutons
+              if (detailedStatus.isComplete) {
+                newStatus.hasRequirements = false;
+              }
+
+              console.log('🔄 Setting new status:', newStatus);
+              setRequirementStatus(newStatus);
             } catch (error) {
               console.error('Error updating status on close:', error);
             }
           }
           setShowRequirementModal(false);
         }}
-        closeOnOverlayClick={false}
         countryCode={destinationZone}
         requirements={countryReq.requirements || []}
         existingValues={requirementStatus.completedRequirements?.map(req => ({
@@ -863,14 +873,23 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                 (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
               );
 
-              setRequirementStatus(prev => ({
-                ...prev,
+              // Mettre à jour le statut avec les détails
+              const newStatus = {
+                ...requirementStatus,
                 isComplete: detailedStatus.isComplete,
                 completionPercentage,
                 completedRequirements: detailedStatus.completedRequirements,
                 totalRequirements: detailedStatus.totalRequirements,
                 pendingRequirements: detailedStatus.pendingRequirements
-              }));
+              };
+
+              // Si tout est complété, désactiver le warning et activer les boutons
+              if (detailedStatus.isComplete) {
+                newStatus.hasRequirements = false;
+              }
+
+              console.log('🔄 Setting new status after submit:', newStatus);
+              setRequirementStatus(newStatus);
             }
             setShowRequirementModal(false);
           } catch (error) {
