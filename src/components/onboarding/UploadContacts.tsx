@@ -723,19 +723,17 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
             
             setRecentlySavedLeads(prev => [...prev, savedLead]);
             
+            // Ajouter immédiatement le lead sauvegardé à la liste principale
+            setLeads(prevLeads => [...prevLeads, savedLead]);
+            setFilteredLeads(prevFilteredLeads => [...prevFilteredLeads, savedLead]);
+            setTotalCount(prevCount => prevCount + 1);
+            
             // Mettre à jour la progression et le compteur immédiatement
             const progress = Math.round(((i + 1) / leadsForAPI.length) * 100);
             setUploadProgress(progress);
             setSavedLeadsCount(savedLeads.length);
             
-            // Rafraîchir automatiquement la liste des leads tous les 10 leads ou à la fin
-            if (savedLeads.length % 10 === 0 || i === leadsForAPI.length - 1) {
-              try {
-                await fetchLeads();
-              } catch (error) {
-                console.warn('Error refreshing leads during save:', error);
-              }
-            }
+            // Les leads sont maintenant ajoutés en temps réel, plus besoin de fetchLeads
           } else {
             failedLeads.push({ index: i, error: response.statusText });
           }
@@ -763,10 +761,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         setUploadProgress(100);
         toast.success(`Successfully saved ${savedCount} contacts!`);
         
-        // Rafraîchir la liste des leads une dernière fois
-        if (selectedGigId) {
-          await fetchLeads();
-        }
+        // Les leads ont été ajoutés en temps réel, effacer seulement les leads parsés
+        setParsedLeads([]);
+        setRecentlySavedLeads([]);
         
         // Mettre à jour l'onboarding
         try {
@@ -794,10 +791,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         // Afficher les erreurs dans la console
         console.warn('Failed leads:', failedLeads);
         
-        // Rafraîchir quand même pour montrer les leads sauvegardés
-        if (selectedGigId) {
-          await fetchLeads();
-        }
+        // Les leads sauvegardés ont été ajoutés en temps réel
+        // Garder seulement les leads parsés qui ont échoué pour permettre une nouvelle tentative
+        const failedParsedLeads = parsedLeads.filter((_, index) => 
+          failedLeads.some(failed => failed.index === index)
+        );
+        setParsedLeads(failedParsedLeads);
+        setRecentlySavedLeads([]);
         
       } else {
         // Aucun lead n'a été sauvegardé
