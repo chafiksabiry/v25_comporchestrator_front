@@ -548,7 +548,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
                       const selectedGig = gigs.find(g => g._id === selectedGigId);
                       return selectedGig ? (
                         <>
-                          📋 {selectedGig.title} - {selectedGig.destination_zone.name.common}
+                           {selectedGig.title} - {selectedGig.destination_zone.name.common}
                           <img 
                             src={selectedGig.destination_zone.flags?.png} 
                             alt={selectedGig.destination_zone.flags?.alt}
