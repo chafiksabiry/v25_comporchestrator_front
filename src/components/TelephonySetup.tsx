@@ -515,44 +515,6 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps) => {
                 </div>
               )}
             </div>
-            
-            {selectedGigId && (() => {
-              const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
-              return selectedGig ? (
-                <div className="mt-6 rounded-xl bg-white p-6 border-2 border-blue-200 shadow-lg">
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0">
-                      <div className="rounded-full bg-gradient-to-r from-blue-500 to-blue-600 p-3 shadow-md">
-                        <Briefcase className="h-6 w-6 text-white" />
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <h4 className="text-xl font-bold text-blue-900">{selectedGig.title}</h4>
-                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold shadow-sm ${
-                          selectedGig.status === 'to_activate' 
-                            ? 'bg-blue-100 text-blue-800 border border-blue-300' 
-                            : 'bg-blue-500 text-white'
-                        }`}>
-                          {selectedGig.status === 'to_activate' ? '⏳ To Activate' : '✅ Active'}
-                        </span>
-                      </div>
-                      <p className="text-sm text-blue-700 mb-4 leading-relaxed bg-blue-50 p-3 rounded-lg">{selectedGig.description}</p>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="flex items-center space-x-2 bg-blue-50 p-3 rounded-lg">
-                          <span className="font-semibold text-blue-800">📂 Category:</span>
-                          <span className="text-blue-600 font-medium">{selectedGig.category}</span>
-                        </div>
-                        <div className="flex items-center space-x-2 bg-blue-50 p-3 rounded-lg">
-                          <span className="font-semibold text-blue-800">🌍 Destination:</span>
-                          <span className="text-blue-600 font-bold">{selectedGig.destination_zone.name.common}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : null;
-            })()}
           </div>
         ) : (
           <div className="mt-6 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-2 border-blue-200">
