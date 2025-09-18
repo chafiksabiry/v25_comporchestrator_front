@@ -401,6 +401,134 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
 
 
+  const processFileWithBackendPaginated = async (file: File): Promise<{leads: any[], validation: any}> => {
+    try {
+      // Check if processing was cancelled
+      if (!processingRef.current) {
+        throw new Error('Processing cancelled by user');
+      }
+      
+      // Create new AbortController for this request
+      abortControllerRef.current = new AbortController();
+
+      const userId = Cookies.get('userId');
+      const gigId = selectedGigId;
+      const companyId = Cookies.get('companyId');
+
+      // Debug: Log the IDs being sent
+      console.log('🔍 Frontend processing with pagination:');
+      console.log(`   userId: ${userId}`);
+      console.log(`   companyId: ${companyId}`);
+      console.log(`   gigId: ${gigId}`);
+      console.log(`   selectedGigId: ${selectedGigId}`);
+
+      if (!gigId) {
+        throw new Error('Please select a gig first');
+      }
+
+      if (!userId || !companyId) {
+        throw new Error('Missing user or company information');
+      }
+
+      updateRealProgress(5, 'Analyse du fichier...');
+
+      // First, get file info to determine pagination
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('page', '1');
+      formData.append('pageSize', '50');
+
+      const firstPageResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process-paginated`, {
+        method: 'POST',
+        body: formData,
+        signal: abortControllerRef.current?.signal
+      });
+
+      if (!firstPageResponse.ok) {
+        throw new Error(`Backend error: ${firstPageResponse.status} ${firstPageResponse.statusText}`);
+      }
+
+      const firstPageData = await firstPageResponse.json();
+      
+      if (!firstPageData.success) {
+        throw new Error(firstPageData.error || 'Backend processing failed');
+      }
+
+      const { pagination } = firstPageData.data;
+      const allLeads: any[] = [...firstPageData.data.leads];
+
+      updateRealProgress(20, `Traitement page 1/${pagination.totalPages}...`);
+
+      // Process remaining pages if any
+      if (pagination.totalPages > 1) {
+        const pagePromises = [];
+        
+        for (let page = 2; page <= pagination.totalPages; page++) {
+          const pageFormData = new FormData();
+          pageFormData.append('file', file);
+          pageFormData.append('page', page.toString());
+          pageFormData.append('pageSize', '50');
+
+          const pagePromise = fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process-paginated`, {
+            method: 'POST',
+            body: pageFormData,
+            signal: abortControllerRef.current?.signal
+          }).then(async (response) => {
+            if (!response.ok) {
+              throw new Error(`Page ${page} error: ${response.status}`);
+            }
+            const data = await response.json();
+            if (!data.success) {
+              throw new Error(`Page ${page} processing failed: ${data.error}`);
+            }
+            return { page, leads: data.data.leads };
+          });
+
+          pagePromises.push(pagePromise);
+          
+          // Process in batches to avoid overwhelming the server
+          if (pagePromises.length >= 3 || page === pagination.totalPages) {
+            const batchResults = await Promise.all(pagePromises);
+            
+            for (const result of batchResults) {
+              allLeads.push(...result.leads);
+              const progress = Math.round((result.page / pagination.totalPages) * 80) + 20;
+              updateRealProgress(progress, `Traitement page ${result.page}/${pagination.totalPages}...`);
+            }
+            
+            pagePromises.length = 0; // Clear the array
+          }
+        }
+      }
+
+      updateRealProgress(90, 'Validation des données...');
+
+      // Add IDs to each lead on the frontend
+      const leadsWithIds = allLeads.map(lead => ({
+        ...lead,
+        userId: { $oid: userId },
+        companyId: { $oid: companyId },
+        gigId: { $oid: gigId }
+      }));
+
+      updateRealProgress(100, 'Traitement terminé !');
+
+      return {
+        leads: leadsWithIds,
+        validation: {
+          totalRows: pagination.totalRows,
+          validRows: leadsWithIds.length,
+          invalidRows: Math.max(0, pagination.totalRows - leadsWithIds.length),
+          errors: []
+        }
+      };
+
+    } catch (error) {
+      console.error('❌ Error in processFileWithBackendPaginated:', error);
+      throw error;
+    }
+  };
+
   const processFileWithBackend = async (file: File): Promise<{leads: any[], validation: any}> => {
           try {
         // Check if processing was cancelled
@@ -569,9 +697,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
             
         setUploadProgress(20);
         
-        // Process with backend
+        // Process with backend (using pagination for better reliability)
             const startTime = Date.now();
-        const result = await processFileWithBackend(file);
+        const result = await processFileWithBackendPaginated(file);
             const processingTime = Date.now() - startTime;
 
             if (result.leads.length === 0) {
@@ -1664,6 +1792,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
             <div className="mb-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <span className="text-sm font-medium text-blue-800">📁 Supported: CSV, Excel, JSON, TXT</span>
+                <br />
+                <span className="text-xs text-blue-600">✨ Now with pagination to handle large files!</span>
               </div>
             </div>
             
