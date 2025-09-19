@@ -1346,6 +1346,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       setLeads(responseData.data);
       setFilteredLeads(responseData.data); // Initialiser les leads filtrés
       
+      // Nettoyer realtimeLeads quand on charge des leads depuis l'API
+      if (responseData.data.length > 0) {
+        setRealtimeLeads([]);
+        setParsedLeads([]);
+      }
+      
       if (searchQuery.trim()) {
         // Pour la recherche, afficher tous les résultats sur une seule page
         setTotalPages(1);
@@ -2252,9 +2258,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                             <div className="mt-2">
                 {selectedGigId ? (
                   <div className="text-sm text-gray-600">
-                    {parsedLeads.length > 0 || realtimeLeads.length > 0 ? (
+                    {parsedLeads.length > 0 && leads.length === 0 ? (
                       <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
-                        {parsedLeads.length > 0 ? parsedLeads.length : realtimeLeads.length} leads ready to save
+                        {parsedLeads.length} leads ready to save
                       </span>
                     ) : isSavingLeads && recentlySavedLeads.length > 0 ? (
                       <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium">
