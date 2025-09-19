@@ -17,7 +17,6 @@ import {
   Settings,
   CheckCircle,
   Info,
-  LogOut,
   AlertTriangle
 } from 'lucide-react';
 import zohoLogo from '../../assets/public/images/zoho-logo.png';
@@ -31,11 +30,19 @@ interface Lead {
   gigId: string;
   userId: string;
   companyId: string;
+  Last_Activity_Time?: string | null;
+  Deal_Name?: string;
   Email_1?: string;
   Phone?: string;
-  Deal_Name?: string;
   Stage?: string;
   Pipeline?: string;
+  Project_Tags?: string[];
+  Prénom?: string;
+  Nom?: string;
+  Account_Name?: string;
+  Contact_Name?: string;
+  Amount?: string;
+  Probability?: string;
   updatedAt?: string;
   __v?: number;
   _isPlaceholder?: boolean; // Mark for invalid/unprocessed leads
@@ -89,13 +96,11 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       isProcessing: false
     });
     
-    // Clear all storage items
-    localStorage.removeItem('uploadProcessing');
-    localStorage.removeItem('parsedLeads');
-    localStorage.removeItem('validationResults');
-    sessionStorage.removeItem('uploadProcessing');
-    sessionStorage.removeItem('parsedLeads');
-    sessionStorage.removeItem('validationResults');
+      // Clear all storage items
+      localStorage.removeItem('uploadProcessing');
+      localStorage.removeItem('parsedLeads');
+      sessionStorage.removeItem('uploadProcessing');
+      sessionStorage.removeItem('parsedLeads');
     
     // Remove processing indicators
     document.body.removeAttribute('data-processing');
@@ -103,7 +108,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     // Reset file-related states
     setSelectedFile(null);
     setParsedLeads([]);
-    setValidationResults(null);
     
     // Reset file input
     const fileInput = document.getElementById('file-upload') as HTMLInputElement;
@@ -140,7 +144,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     setUploadError(null);
     setUploadSuccess(false);
     setParsedLeads([]);
-    setValidationResults(null);
     setSelectedFile(null);
     
     // Remove all processing indicators
@@ -191,12 +194,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   const [savedLeadsCount, setSavedLeadsCount] = useState(0);
   const [recentlySavedLeads, setRecentlySavedLeads] = useState<Lead[]>([]);
   const [hasZohoConfig, setHasZohoConfig] = useState(false);
-  const [zohoConfig, setZohoConfig] = useState({
-    clientId: '',
-    clientSecret: '',
-    refreshToken: '',
-    companyId: Cookies.get('companyId') || ''
-  });
   const [isImportingZoho, setIsImportingZoho] = useState(false);
   const [isDisconnectingZoho, setIsDisconnectingZoho] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -206,16 +203,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   const [realtimeLeads, setRealtimeLeads] = useState<Lead[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [pageSize] = useState(50);
   const [totalCount, setTotalCount] = useState(0);
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [selectedGigId, setSelectedGigId] = useState<string>('');
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
   const [hasZohoAccessToken, setHasZohoAccessToken] = useState(false);
   const [showImportChoiceModal, setShowImportChoiceModal] = useState(false);
-  const [selectedImportChoice, setSelectedImportChoice] = useState<'zoho' | 'file' | null>(null);
   const [showLeadsPreview, setShowLeadsPreview] = useState(true);
-  const [validationResults, setValidationResults] = useState<any>(null);
   const [editingLeadIndex, setEditingLeadIndex] = useState<number | null>(null);
   const urlParamsProcessedRef = useRef(false);
   const processingRef = useRef(false);
@@ -246,15 +240,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     });
   };
 
-  // Function to show processing status
-  const showProcessingStatus = (status: string) => {
-    setProcessingProgress({
-      current: 1,
-      total: 1,
-      status,
-      isProcessing: true
-    });
-  };
 
   // Function to update real progress during OpenAI processing
   const updateRealProgress = (progress: number, status: string) => {
@@ -304,7 +289,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     // Restore parsed leads if they exist and we haven't already restored them
     if (!dataRestoredRef.current && !componentInitializedRef.current) {
       const savedParsedLeads = localStorage.getItem('parsedLeads');
-      const savedValidationResults = localStorage.getItem('validationResults');
       
       if (savedParsedLeads && !parsedLeads.length) {
         try {
@@ -312,15 +296,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           setParsedLeads(leads);
         } catch (error) {
           console.error('Error restoring parsed leads:', error);
-        }
-      }
-      
-      if (savedValidationResults && !validationResults) {
-        try {
-          const validation = JSON.parse(savedValidationResults);
-          setValidationResults(validation);
-        } catch (error) {
-          console.error('Error restoring validation results:', error);
         }
       }
       
@@ -391,7 +366,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
 
 
-  const processFileWithBackend = async (file: File): Promise<{leads: any[], validation: any}> => {
+  const processFileWithBackend = async (file: File): Promise<{leads: any[]}> => {
     try {
       // Check if processing was cancelled
       if (!processingRef.current) {
@@ -413,11 +388,11 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         throw new Error('Missing user or company information');
       }
 
-      // Create FormData for file upload (only the file, no IDs)
+      // Create FormData for file upload
       const formData = new FormData();
       formData.append('file', file);
 
-      // Single progress update for upload start
+      // Progress update for upload start
       updateRealProgress(20, 'Envoi du fichier au serveur...');
 
       // Send file to backend for processing
@@ -440,7 +415,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         throw new Error(errorMessage);
       }
 
-      // Single progress update for processing
+      // Progress update for processing
       updateRealProgress(80, 'Traitement par l\'IA en cours...');
 
       const data = await response.json();
@@ -449,14 +424,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         throw new Error(data.error || 'Backend processing failed');
       }
 
-      const result = data.data;
-      
-      if (!result || !result.leads || !Array.isArray(result.leads)) {
+      if (!data.data || !data.data.leads || !Array.isArray(data.data.leads)) {
         throw new Error('Invalid response format from backend');
       }
 
-      // Add IDs to each lead on the frontend - optimized with useMemo-like approach
-      const leadsWithIds = result.leads.map((lead: any) => ({
+      // Add IDs to each lead for database storage
+      const leadsWithIds = data.data.leads.map((lead: any) => ({
         ...lead,
         userId: { $oid: userId },
         companyId: { $oid: companyId },
@@ -466,7 +439,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       updateRealProgress(100, 'Traitement terminé !');
 
       return {
-        ...result,
         leads: leadsWithIds
       };
 
@@ -499,7 +471,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       setIsProcessing(false);
       setUploadProgress(0);
       setParsedLeads([]);
-      setValidationResults(null);
       setShowSaveButton(true);
       setShowFileName(true);
       
@@ -507,7 +478,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       resetProgress();
       
       // Clear storage items in batch
-      const storageKeys = ['parsedLeads', 'validationResults', 'uploadProcessing', 'hasSeenImportChoiceModal'];
+      const storageKeys = ['parsedLeads', 'uploadProcessing', 'hasSeenImportChoiceModal'];
       storageKeys.forEach(key => {
         localStorage.removeItem(key);
         sessionStorage.removeItem(key);
@@ -547,9 +518,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         setUploadProgress(20);
         
         // Process with backend
-        const startTime = Date.now();
         const result = await processFileWithBackend(file);
-        const processingTime = Date.now() - startTime;
 
         if (result.leads.length === 0) {
           toast.error('No valid leads found in the file. Please check the file format and content.');
@@ -559,32 +528,21 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           return;
         }
 
-        // Batch all state updates and storage operations
-        const batchUpdate = () => {
-          // Update states
-          if (result.validation) {
-            setValidationResults(result.validation);
-          }
-          setParsedLeads(result.leads);
-          
-          // Restore existing leads after processing
-          if (currentLeads.length > 0) {
-            setLeads(currentLeads);
-            setFilteredLeads(currentFilteredLeads);
-          }
-          
-          setIsProcessing(false);
-          setUploadProgress(100);
-          
-          // Update storage
-          localStorage.setItem('parsedLeads', JSON.stringify(result.leads));
-          if (result.validation) {
-            localStorage.setItem('validationResults', JSON.stringify(result.validation));
-          }
-        };
+        // Update states with processed leads
+        setParsedLeads(result.leads);
+        
+        // Restore existing leads after processing
+        if (currentLeads.length > 0) {
+          setLeads(currentLeads);
+          setFilteredLeads(currentFilteredLeads);
+        }
+        
+        setIsProcessing(false);
+        setUploadProgress(100);
+        
+        // Update storage
+        localStorage.setItem('parsedLeads', JSON.stringify(result.leads));
 
-        // Execute batch update
-        batchUpdate();
         
         // Clean up processing state
         document.body.removeAttribute('data-processing');
@@ -657,9 +615,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         Phone: lead.Phone || "no-phone@placeholder.com",
         Stage: lead.Stage || "New",
         Pipeline: lead.Pipeline || "Sales Pipeline",
-        Activity_Tag: lead.Activity_Tag || '',
-        Telephony: lead.Telephony || '',
-        Project_Tags: lead.Project_Tags || []
+        Project_Tags: lead.Project_Tags || [],
+        Prénom: lead.Prénom || "",
+        Nom: lead.Nom || "",
+        Account_Name: lead.Account_Name || "",
+        Contact_Name: lead.Contact_Name || "",
+        Amount: lead.Amount || "",
+        Probability: lead.Probability || ""
       }));
 
       // Sauvegarder les leads un par un pour affichage immédiat
@@ -697,11 +659,19 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
               gigId: responseData.gigId || selectedGigId,
               userId: responseData.userId || currentUserId || '',
               companyId: responseData.companyId || currentCompanyId || '',
+              Last_Activity_Time: responseData.Last_Activity_Time || lead.Last_Activity_Time,
+              Deal_Name: responseData.Deal_Name || lead.Deal_Name,
               Email_1: responseData.Email_1 || lead.Email_1,
               Phone: responseData.Phone || lead.Phone,
-              Deal_Name: responseData.Deal_Name || lead.Deal_Name,
               Stage: responseData.Stage || lead.Stage,
               Pipeline: responseData.Pipeline || lead.Pipeline,
+              Project_Tags: responseData.Project_Tags || lead.Project_Tags || [],
+              Prénom: responseData.Prénom || lead.Prénom,
+              Nom: responseData.Nom || lead.Nom,
+              Account_Name: responseData.Account_Name || lead.Account_Name,
+              Contact_Name: responseData.Contact_Name || lead.Contact_Name,
+              Amount: responseData.Amount || lead.Amount,
+              Probability: responseData.Probability || lead.Probability,
               updatedAt: new Date().toISOString()
             };
             
@@ -810,16 +780,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         setUploadSuccess(false);
         setParsedLeads([]);
         setUploadError(null);
-        setValidationResults(null);
         setRecentlySavedLeads([]);
         
         // Clear storage
         localStorage.removeItem('parsedLeads');
-        localStorage.removeItem('validationResults');
         localStorage.removeItem('uploadProcessing');
         sessionStorage.removeItem('uploadProcessing');
         sessionStorage.removeItem('parsedLeads');
-        sessionStorage.removeItem('validationResults');
         
         // Remove processing indicators
         document.body.removeAttribute('data-processing');
@@ -1474,7 +1441,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   const handleCancelModal = () => {
     localStorage.setItem('hasSeenImportChoiceModal', 'true');
     setShowImportChoiceModal(false);
-    setSelectedImportChoice(null);
   };
 
 
@@ -1694,7 +1660,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                 setUploadError(null);
                 setUploadSuccess(false);
                 setParsedLeads([]);
-                setValidationResults(null);
               }}>
                 <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
               </button>
@@ -1764,44 +1729,21 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
               )}
               {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
                 <div className="mt-4 space-y-4">
-                  {validationResults && (
-                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3">
-                      <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
-                        <Info className="mr-2 h-4 w-4" />
-                        AI Processing Results
-                      </h4>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-blue-600 font-medium">Total Rows:</span> {validationResults.totalRows}
-                        </div>
-                        <div>
-                          <span className="text-green-600 font-medium">Valid Rows:</span> {validationResults.validRows > 0 ? validationResults.validRows : parsedLeads.length}
-                        </div>
-                        {validationResults.invalidRows > 0 && (
-                          <div className="col-span-2">
-                            <span className="text-red-600 font-medium">Invalid Rows:</span> {validationResults.invalidRows}
-                          </div>
-                        )}
+                  {/* Processing Results Summary */}
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3">
+                    <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                      <Info className="mr-2 h-4 w-4" />
+                      Processing Results
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-blue-600 font-medium">Total Leads:</span> {parsedLeads.length}
                       </div>
-
-                    {validationResults.errors && validationResults.errors.length > 0 && (
-                      <div className="mt-3">
-                        <details className="text-xs">
-                          <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
-                            View validation errors ({validationResults.errors.length})
-                          </summary>
-                            <div className="mt-2 space-y-1">
-                              {validationResults.errors.map((error: string, index: number) => (
-                                <div key={index} className="text-red-600 bg-red-50 p-2 rounded">
-                                  {error}
-                                </div>
-                              ))}
-                            </div>
-                          </details>
-                        </div>
-                      )}
+                      <div>
+                        <span className="text-green-600 font-medium">Ready to Save:</span> {parsedLeads.length}
+                      </div>
                     </div>
-                  )}
+                  </div>
                   
                   {/* Preview Section */}
                   <div className="bg-white border border-gray-200 rounded-lg p-3">
