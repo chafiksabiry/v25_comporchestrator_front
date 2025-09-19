@@ -44,8 +44,8 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
 
   return (
     <>
-      {/* Overlay avec effet de flou */}
-      <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
+      {/* Overlay avec effet de flou - pas de clic extérieur */}
+      <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm pointer-events-none" />
       
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

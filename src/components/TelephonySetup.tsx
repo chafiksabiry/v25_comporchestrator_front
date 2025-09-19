@@ -184,8 +184,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         }
       } else {
         // Pour les autres providers, chercher directement les numéros
-        console.log('🚀 Auto-searching for available numbers with destination zone:', destinationZone);
-        searchAvailableNumbers();
+      console.log('🚀 Auto-searching for available numbers with destination zone:', destinationZone);
+      searchAvailableNumbers();
       }
     }
   }, [destinationZone, provider]);
@@ -547,7 +547,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       let groupId = requirementStatus.groupId;
       
       if (!groupId) {
-        const { group } = await requirementService.getOrCreateGroup(companyId, destinationZone);
+      const { group } = await requirementService.getOrCreateGroup(companyId, destinationZone);
         groupId = group._id;
         console.log('✅ Created new requirement group:', group);
       } else {
@@ -713,45 +713,87 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           </div>
         )}
 
-      {/* Purchased Numbers Section */}
-      {phoneNumbers.length > 0 && (
-        <div className="mb-6 space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">Purchased Numbers</h4>
-          <div className="grid gap-2">
-            {phoneNumbers
-              .filter(number => number.provider === provider)
-              .map((number) => (
-                <div 
-                  key={number.phoneNumber}
-                  className="flex items-center justify-between rounded-lg border p-3"
-                >
-                  <div className="flex flex-col">
-                    <span className="font-medium">{number.phoneNumber}</span>
-                    <span className="text-sm text-gray-500">
-                      Status: {number.status}
-                      {number.status === 'pending' && ' (Processing...)'}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {number.status === 'pending' && (
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
-                    )}
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      number.status === 'active' ? 'bg-green-100 text-green-800' :
-                      number.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {number.status}
-                    </span>
-                  </div>
+      {/* Purchased Numbers Section - Visible when provider requirements are met */}
+      {provider === 'telnyx' ? (
+        // Pour Telnyx, vérifier les requirements
+        (!requirementStatus.hasRequirements || requirementStatus.isComplete) && (
+          <div className="mb-6 space-y-2">
+            <h4 className="text-sm font-medium text-gray-700">Purchased Telnyx Numbers</h4>
+            <div className="grid gap-2">
+              {phoneNumbers.filter(number => number.provider === 'telnyx').length > 0 ? (
+                phoneNumbers
+                  .filter(number => number.provider === 'telnyx')
+                  .map((number) => (
+                    <div 
+                      key={number.phoneNumber}
+                      className="flex items-center justify-between rounded-lg border p-3"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium">{number.phoneNumber}</span>
+                        <span className="text-sm text-gray-500">
+                          Status: {number.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          number.status === 'active' ? 'bg-green-100 text-green-800' :
+                          number.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {number.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+              ) : (
+                <div className="rounded-lg border border-gray-200 p-4 text-center text-gray-500">
+                  No Telnyx numbers purchased yet
                 </div>
-              ))}
+              )}
+            </div>
+          </div>
+        )
+      ) : provider === 'twilio' && (
+        // Pour Twilio, toujours afficher
+        <div className="mb-6 space-y-2">
+          <h4 className="text-sm font-medium text-gray-700">Purchased Twilio Numbers</h4>
+          <div className="grid gap-2">
+            {phoneNumbers.filter(number => number.provider === 'twilio').length > 0 ? (
+              phoneNumbers
+                .filter(number => number.provider === 'twilio')
+                .map((number) => (
+                  <div 
+                    key={number.phoneNumber}
+                    className="flex items-center justify-between rounded-lg border p-3"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium">{number.phoneNumber}</span>
+                      <span className="text-sm text-gray-500">
+                        Status: {number.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        number.status === 'active' ? 'bg-green-100 text-green-800' :
+                        number.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {number.status}
+                      </span>
+                    </div>
+                  </div>
+                ))
+            ) : (
+              <div className="rounded-lg border border-gray-200 p-4 text-center text-gray-500">
+                No Twilio numbers purchased yet
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* Available Numbers List - Auto-displayed */}
-      {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
+        {/* Available Numbers List - Auto-displayed */}
+        {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
           <div className="mb-6 space-y-2">
             <h4 className="text-sm font-medium text-gray-700">Available Numbers (Destination: {destinationZone})</h4>
             <div className="grid gap-2">
@@ -844,43 +886,16 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           </div>
         )}
 
-        {/* Existing Numbers List - Filtered by destination zone */}
-        {Array.isArray(phoneNumbers) && phoneNumbers.length > 0 && (() => {
-          const filteredNumbers = phoneNumbers.filter(number => {
-            if (destinationZone === 'FR') {
-              return number.phoneNumber.startsWith('+33');
-            }
-            return true;
-          });
-          
-          return filteredNumbers.length > 0 ? (
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-700">Existing Numbers ({destinationZone})</h4>
-              {filteredNumbers.map((number) => (
-                <div key={number.phoneNumber} className="rounded-lg bg-gray-50 p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Phone className="mr-2 h-5 w-5 text-indigo-600" />
-                      <span className="font-medium text-gray-900">{number.phoneNumber}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-500">{number.status}</span>
-                      <button className="rounded-full bg-red-100 p-1 text-red-600 hover:bg-red-200">
-                        <VolumeX className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : null;
-        })()}
       </div>
 
       {/* Purchase Modal */}
       <PurchaseModal
         isOpen={showPurchaseModal}
-        onClose={() => {
+        onClose={async () => {
+          // Re-fetch available numbers if we were using Telnyx
+          if (provider === 'telnyx') {
+            await searchAvailableNumbers();
+          }
           setShowPurchaseModal(false);
           setPurchaseStatus('idle');
           setSelectedNumber(null);
