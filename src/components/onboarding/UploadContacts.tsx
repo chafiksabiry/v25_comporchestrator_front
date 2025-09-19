@@ -217,6 +217,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   const [showLeadsPreview, setShowLeadsPreview] = useState(true);
   const [validationResults, setValidationResults] = useState<any>(null);
   const [editingLeadIndex, setEditingLeadIndex] = useState<number | null>(null);
+  const [dataTooLarge, setDataTooLarge] = useState(false);
   const urlParamsProcessedRef = useRef(false);
   const processingRef = useRef(false);
   const dataRestoredRef = useRef(false);
@@ -259,13 +260,22 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   // Utility function to safely store data in localStorage/sessionStorage
   const safeStorageSet = (key: string, data: any, useSessionStorage = false) => {
     try {
-      const dataString = JSON.stringify(data);
+      // Limit data size first, then compress
+      const limitedData = limitDataSize(data, 50); // Limit to 50 items for storage
+      const compressedData = compressData(limitedData);
+      const dataString = JSON.stringify(compressedData);
       
-      // Check data size (5MB limit for localStorage)
-      if (dataString.length > 5 * 1024 * 1024) {
-        console.warn(`⚠️ Data for ${key} too large for localStorage, using sessionStorage`);
-        sessionStorage.setItem(key, dataString);
-        return true;
+      // Check data size (1MB limit for localStorage, 3MB for sessionStorage)
+      const maxSize = useSessionStorage ? 3 * 1024 * 1024 : 1 * 1024 * 1024;
+      
+      if (dataString.length > maxSize) {
+        if (useSessionStorage) {
+          console.warn(`⚠️ Data for ${key} too large for sessionStorage (${Math.round(dataString.length / 1024 / 1024)}MB)`);
+          return false;
+        } else {
+          console.warn(`⚠️ Data for ${key} too large for localStorage, using sessionStorage`);
+          return safeStorageSet(key, data, true);
+        }
       }
       
       if (useSessionStorage) {
@@ -275,26 +285,29 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       }
       return true;
     } catch (error) {
-      console.warn(`⚠️ localStorage full for ${key}, cleaning up and retrying`);
+      console.warn(`⚠️ Storage full for ${key}, cleaning up and retrying`);
       
-      // Clean up localStorage and try again
+      // Clean up storage and try again
       cleanupLocalStorage();
       
       try {
+        const limitedData = limitDataSize(data, 25); // Further limit to 25 items
+        const compressedData = compressData(limitedData);
+        const dataString = JSON.stringify(compressedData);
+        
         if (useSessionStorage) {
-          sessionStorage.setItem(key, JSON.stringify(data));
+          sessionStorage.setItem(key, dataString);
         } else {
-          localStorage.setItem(key, JSON.stringify(data));
+          localStorage.setItem(key, dataString);
         }
         return true;
       } catch (retryError) {
-        console.warn(`⚠️ Still full after cleanup, trying sessionStorage for ${key}`);
-        try {
-          sessionStorage.setItem(key, JSON.stringify(data));
-          return true;
-        } catch (sessionError) {
+        if (useSessionStorage) {
           console.error(`❌ Both localStorage and sessionStorage are full for ${key}`);
           return false;
+        } else {
+          console.warn(`⚠️ Still full after cleanup, trying sessionStorage for ${key}`);
+          return safeStorageSet(key, data, true);
         }
       }
     }
@@ -322,6 +335,48 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     }
   };
 
+  // Function to compress data before storage
+  const compressData = (data: any) => {
+    try {
+      // Remove unnecessary fields to reduce size
+      if (Array.isArray(data)) {
+        return data.map(lead => ({
+          _id: lead._id,
+          gigId: lead.gigId,
+          userId: lead.userId,
+          companyId: lead.companyId,
+          Email_1: lead.Email_1,
+          Phone: lead.Phone,
+          Deal_Name: lead.Deal_Name,
+          Stage: lead.Stage,
+          Pipeline: lead.Pipeline,
+          updatedAt: lead.updatedAt
+        }));
+      }
+      return data;
+    } catch (error) {
+      console.error('❌ Error compressing data:', error);
+      return data;
+    }
+  };
+
+  // Function to limit data size for storage
+  const limitDataSize = (data: any, maxItems: number = 100) => {
+    try {
+      if (Array.isArray(data)) {
+        // If data is too large, keep only the most recent items
+        if (data.length > maxItems) {
+          console.warn(`⚠️ Limiting data to ${maxItems} items (was ${data.length})`);
+          return data.slice(-maxItems); // Keep last 100 items
+        }
+      }
+      return data;
+    } catch (error) {
+      console.error('❌ Error limiting data size:', error);
+      return data;
+    }
+  };
+
   // Function to clean up localStorage when it's full
   const cleanupLocalStorage = () => {
     try {
@@ -334,12 +389,20 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const allKeys = Object.keys(localStorage);
       
       allKeys.forEach(key => {
-        if (!keysToKeep.includes(key) && key.includes('leads')) {
+        if (!keysToKeep.includes(key) && (key.includes('leads') || key.includes('parsed'))) {
           localStorage.removeItem(key);
         }
       });
       
-      console.log('🧹 Cleaned up localStorage to free space');
+      // Also clean sessionStorage
+      const sessionKeys = Object.keys(sessionStorage);
+      sessionKeys.forEach(key => {
+        if (key.includes('leads') || key.includes('parsed')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+      
+      console.log('🧹 Cleaned up localStorage and sessionStorage to free space');
     } catch (error) {
       console.error('❌ Error cleaning up localStorage:', error);
     }
@@ -409,7 +472,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   useEffect(() => {
     // If we have parsed leads in state but they're about to be lost, save them
     if (parsedLeads.length > 0) {
-      safeStorageSet('parsedLeads', parsedLeads);
+      // Only save if data is not too large
+      const success = safeStorageSet('parsedLeads', parsedLeads);
+      if (!success) {
+        console.warn('⚠️ Could not save parsed leads to storage - keeping in memory only');
+        // Set a flag to indicate data is only in memory
+        setParsedLeads(prev => prev.map(lead => ({ ...lead, _memoryOnly: true })));
+      }
     }
     
     // Ensure cancelProcessing function is always available
@@ -643,9 +712,17 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         
         setParsedLeads(result.leads);
         
-        // Store results safely
-        safeStorageSet('parsedLeads', result.leads);
-        safeStorageSet('validationResults', result.validation);
+        // Store results safely - only if not too large
+        const leadsStored = safeStorageSet('parsedLeads', result.leads);
+        const validationStored = safeStorageSet('validationResults', result.validation);
+        
+        if (!leadsStored) {
+          console.warn('⚠️ Could not save leads to storage - data too large, keeping in memory only');
+          setDataTooLarge(true);
+        }
+        if (!validationStored) {
+          console.warn('⚠️ Could not save validation results to storage - data too large');
+        }
         
         // Restore existing leads after processing
         if (currentLeads.length > 0) {
@@ -1881,6 +1958,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                         <h4 className="text-sm font-semibold text-gray-800">
                           Confirm & Edit Leads ({parsedLeads.length})
                         </h4>
+                        {dataTooLarge && (
+                          <span className="ml-2 inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <AlertTriangle className="mr-1 h-3 w-3" />
+                            Large dataset - memory only
+                          </span>
+                        )}
                       </div>
                       <button
                         onClick={() => setShowLeadsPreview(!showLeadsPreview)}
@@ -2183,26 +2266,20 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                       Lead Name
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
-                      Stage
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
                       Pipeline
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
-                      Last Activity
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {error ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-red-500">
+                      <td colSpan={3} className="px-6 py-4 text-center text-sm text-red-500">
                         {error}
                       </td>
                     </tr>
                   ) : isLoadingLeads ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex items-center justify-center py-8">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
                           Loading leads...
@@ -2211,7 +2288,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                     </tr>
                   ) : (leads.length === 0 && !isSavingLeads) ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-8">
                           <FileText className="h-12 w-12 text-gray-300 mb-2" />
                           <p>No leads found</p>
@@ -2221,7 +2298,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                     </tr>
                   ) : (filteredLeads.length === 0 && !isSavingLeads) ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-8">
                           <Search className="h-12 w-12 text-gray-300 mb-2" />
                           <p>No leads match your search</p>
@@ -2258,16 +2335,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                           {lead.Deal_Name || 'N/A'}
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4">
-                                          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-800">
-                  {lead.Stage || 'N/A'}
-                </span>
-                        </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                           {lead.Pipeline || 'N/A'}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                          {lead.updatedAt ? new Date(lead.updatedAt).toLocaleDateString() : 'N/A'}
                         </td>
                       </tr>
                     ))
@@ -2335,24 +2404,18 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
             <div className="min-w-full divide-y divide-gray-200">
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 sticky top-0">
-                <div className="grid grid-cols-4 px-6 py-3">
+                <div className="grid grid-cols-3 px-6 py-3">
                   <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Email</div>
                   <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Téléphone</div>
                   <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Lead</div>
-                  <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Stage</div>
                 </div>
               </div>
               <div className="bg-white divide-y divide-gray-100">
                 {realtimeLeads.map((lead, index) => (
-                  <div key={index} className="grid grid-cols-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
+                  <div key={index} className="grid grid-cols-3 px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
                     <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'N/A'}</div>
                     <div className="text-sm text-gray-700">{lead.Phone || 'N/A'}</div>
                     <div className="text-sm text-gray-700">{lead.Deal_Name || 'N/A'}</div>
-                    <div className="text-sm">
-                      <span className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-800 px-2.5 py-0.5 text-xs font-medium">
-                        {lead.Stage || 'N/A'}
-                      </span>
-                    </div>
                   </div>
                 ))}
               </div>
