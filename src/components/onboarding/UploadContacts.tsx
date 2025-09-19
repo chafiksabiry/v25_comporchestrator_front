@@ -221,6 +221,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   const urlParamsProcessedRef = useRef(false);
   const processingRef = useRef(false);
   const dataRestoredRef = useRef(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // State for progress tracking
   const [processingProgress, setProcessingProgress] = useState<{
@@ -1277,7 +1278,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     }
   };
 
-  const fetchLeads = async (page = currentPage) => {
+  const fetchLeads = async (page = currentPage, searchQuery = '') => {
     // Skip fetching leads if we're currently processing a file
     if (isProcessing || processingRef.current) {
       return;
@@ -1306,8 +1307,14 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     setIsLoadingLeads(true);
     setError(null);
     try {
-      // Fetch leads with pagination (50 per page)
-      const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=50`;
+      // Build API URL with search parameters
+      let apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=50`;
+      
+      // Add search query if provided
+      if (searchQuery.trim()) {
+        apiUrl += `&search=${encodeURIComponent(searchQuery.trim())}`;
+      }
+      
       const response = await fetch(apiUrl, {
         headers: {
           'Authorization': `Bearer ${selectedGigId}:${Cookies.get('userId')}`,
@@ -1438,7 +1445,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     buttons.push(
       <button
         key={1}
-        onClick={() => fetchLeads(1)}
+        onClick={() => fetchLeads(1, searchQuery)}
         className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
           1 === currentPage
             ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
@@ -1474,7 +1481,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       buttons.push(
         <button
           key={i}
-          onClick={() => fetchLeads(i)}
+          onClick={() => fetchLeads(i, searchQuery)}
           className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
             i === currentPage
               ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
@@ -1500,7 +1507,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       buttons.push(
         <button
           key={totalPages}
-          onClick={() => fetchLeads(totalPages)}
+          onClick={() => fetchLeads(totalPages, searchQuery)}
           className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
             totalPages === currentPage
               ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
@@ -1592,31 +1599,46 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     setParsedLeads(newLeads);
   };
 
-  // Fonction de filtrage des leads
-  const filterLeads = (leads: Lead[], query: string, status: string) => {
+  // Fonction de filtrage des leads - maintenant déclenche une recherche API
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    
+    // Annuler le timeout précédent s'il existe
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Délai pour éviter trop d'appels API pendant la frappe
+    searchTimeoutRef.current = setTimeout(async () => {
+      // Si on a une requête de recherche, faire un appel API
+      if (query.trim()) {
+        await fetchLeads(1, query); // Rechercher depuis la page 1
+      } else {
+        // Si pas de recherche, recharger les leads normaux
+        await fetchLeads(1);
+      }
+    }, 500); // 500ms de délai
+  };
+
+  // Fonction de filtrage par statut (local uniquement)
+  const filterLeadsByStatus = (leads: Lead[], status: string) => {
+    if (status === 'all') return leads;
+    
     return leads.filter(lead => {
-      // Filtre par recherche textuelle
-      const searchMatch = query === '' || 
-        lead.Deal_Name?.toLowerCase().includes(query.toLowerCase()) ||
-        lead.Email_1?.toLowerCase().includes(query.toLowerCase()) ||
-        lead.Phone?.toLowerCase().includes(query.toLowerCase()) ||
-        lead.Stage?.toLowerCase().includes(query.toLowerCase()) ||
-        lead.Pipeline?.toLowerCase().includes(query.toLowerCase());
-
-      // Filtre par statut
-      const statusMatch = status === 'all' || 
-        (status === 'active' && lead.Stage !== 'Closed') ||
-        (status === 'inactive' && lead.Stage === 'Closed');
-
-      return searchMatch && statusMatch;
+      if (status === 'active') {
+        return lead.Stage !== 'Closed';
+      } else if (status === 'inactive') {
+        return lead.Stage === 'Closed';
+      }
+      return true;
     });
   };
 
-  // Effet pour filtrer les leads quand la recherche ou le statut change
+  // Effet pour filtrer les leads par statut seulement (la recherche est gérée par l'API)
   useEffect(() => {
-    const filtered = filterLeads(leads, searchQuery, filterStatus);
+    const filtered = filterLeadsByStatus(leads, filterStatus);
     setFilteredLeads(filtered);
-  }, [leads, searchQuery, filterStatus]);
+  }, [leads, filterStatus]);
 
   const handleCancelModal = () => {
     localStorage.setItem('hasSeenImportChoiceModal', 'true');
@@ -2220,7 +2242,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                   className="block w-full rounded-lg border-gray-300 pl-10 focus:border-blue-600 focus:ring-blue-600 sm:text-sm shadow-sm"
                   placeholder="Search leads..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => handleSearch(e.target.value)}
                 />
               </div>
               <select
@@ -2233,7 +2255,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                 <option value="inactive">Inactive (Closed)</option>
               </select>
               <button
-                onClick={() => fetchLeads()}
+                onClick={() => {
+                  setSearchQuery('');
+                  fetchLeads(1);
+                }}
                 className="flex items-center rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105"
                 disabled={isLoadingLeads || !selectedGigId}
               >
@@ -2364,7 +2389,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
               {totalPages > 1 && (
                 <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => fetchLeads(currentPage - 1)}
+                    onClick={() => fetchLeads(currentPage - 1, searchQuery)}
                     disabled={currentPage === 1}
                     className="relative inline-flex items-center px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -2376,7 +2401,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                   </div>
                   
                   <button
-                    onClick={() => fetchLeads(currentPage + 1)}
+                    onClick={() => fetchLeads(currentPage + 1, searchQuery)}
                     disabled={currentPage === totalPages}
                     className="relative inline-flex items-center px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
