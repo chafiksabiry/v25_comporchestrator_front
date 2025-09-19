@@ -2,13 +2,19 @@ import axios from 'axios';
 
 interface PhoneNumber {
   phoneNumber: string;
-  status: 'pending' | 'active' | 'inactive' | 'deleted' | 'error' | 'port_pending';
-  providerStatus?: string;
-  features: string[];
+  status: string;
+  features: {
+    voice: boolean;
+    sms: boolean;
+    mms: boolean;
+  };
   provider: 'telnyx' | 'twilio';
-  gigId: string;
-  createdAt?: string;
-  updatedAt?: string;
+}
+
+interface CheckNumberResponse {
+  hasNumber: boolean;
+  number?: PhoneNumber;
+  message?: string;
 }
 
 export interface AvailablePhoneNumber {
@@ -144,13 +150,13 @@ const handleApiError = (error: unknown, context: string): never => {
 };
 
 export const phoneNumberService = {
-  listPhoneNumbers: async (): Promise<PhoneNumber[]> => {
+  listPhoneNumbers: async (gigId: string): Promise<CheckNumberResponse> => {
     try {
-      const response = await api.get<PhoneNumber[]>('/phone-numbers');
+      const response = await api.get<CheckNumberResponse>(`/phone-numbers/gig/${gigId}/check`);
       console.log('📞 Listed phone numbers:', response.data);
       return response.data;
     } catch (error) {
-      return handleApiError(error, 'listPhoneNumbers');
+      throw handleApiError(error, 'listPhoneNumbers');
     }
   },
 
