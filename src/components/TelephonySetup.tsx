@@ -20,11 +20,13 @@ const companyId = Cookies.get('companyId');
 
 interface PhoneNumber {
   phoneNumber: string;
-  status: 'pending' | 'active' | 'inactive' | 'deleted' | 'error' | 'port_pending';
-  providerStatus?: string;
-  features: string[];
+  status: string;
+  features: {
+    voice: boolean;
+    sms: boolean;
+    mms: boolean;
+  };
   provider: 'telnyx' | 'twilio';
-  gigId: string;
 }
 
 interface TelephonySetupProps {
@@ -328,14 +330,18 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         return;
       }
 
-      console.log('📞 Checking number for gig:', gigId);
-      const result = await phoneNumberService.listPhoneNumbers();
+      console.log('📞 Checking numbers for gig:', gigId);
+      const result = await phoneNumberService.listPhoneNumbers(gigId);
       console.log('📞 Check result:', result);
       
-      const filteredNumbers = result.filter(number => number.gigId === gigId);
-      setPhoneNumbers(filteredNumbers as PhoneNumber[]);
+      // Si un numéro est trouvé, le mettre dans le tableau
+      if (result?.hasNumber && result.number) {
+        setPhoneNumbers([result.number]);
+      } else {
+        setPhoneNumbers([]);
+      }
     } catch (error) {
-      console.error('❌ Error checking gig number:', error);
+      console.error('❌ Error checking gig numbers:', error);
       setPhoneNumbers([]);
     }
   };
@@ -713,14 +719,14 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           </div>
         )}
 
-      {/* Purchased Numbers Section - Visible when provider requirements are met */}
+      {/* Purchased Numbers Section - Visible for Telnyx only when requirements are met */}
       {provider === 'telnyx' ? (
-        // Pour Telnyx, vérifier les requirements
+        // Pour Telnyx, vérifier si les requirements sont satisfaits
         (!requirementStatus.hasRequirements || requirementStatus.isComplete) && (
           <div className="mb-6 space-y-2">
             <h4 className="text-sm font-medium text-gray-700">Purchased Telnyx Numbers</h4>
             <div className="grid gap-2">
-              {phoneNumbers.filter(number => number.provider === 'telnyx').length > 0 ? (
+              {Array.isArray(phoneNumbers) && phoneNumbers.filter(number => number.provider === 'telnyx').length > 0 ? (
                 phoneNumbers
                   .filter(number => number.provider === 'telnyx')
                   .map((number) => (
@@ -758,7 +764,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         <div className="mb-6 space-y-2">
           <h4 className="text-sm font-medium text-gray-700">Purchased Twilio Numbers</h4>
           <div className="grid gap-2">
-            {phoneNumbers.filter(number => number.provider === 'twilio').length > 0 ? (
+            {Array.isArray(phoneNumbers) && phoneNumbers.filter(number => number.provider === 'twilio').length > 0 ? (
               phoneNumbers
                 .filter(number => number.provider === 'twilio')
                 .map((number) => (
