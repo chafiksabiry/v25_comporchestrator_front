@@ -1308,11 +1308,14 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     setError(null);
     try {
       // Build API URL with search parameters
-      let apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=50`;
+      let apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}`;
       
-      // Add search query if provided
       if (searchQuery.trim()) {
-        apiUrl += `&search=${encodeURIComponent(searchQuery.trim())}`;
+        // Pour la recherche, récupérer tous les résultats sans pagination
+        apiUrl += `?search=${encodeURIComponent(searchQuery.trim())}&limit=1000`;
+      } else {
+        // Pour la pagination normale, utiliser la pagination
+        apiUrl += `?page=${page}&limit=50`;
       }
       
       const response = await fetch(apiUrl, {
@@ -1338,9 +1341,18 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
       setLeads(responseData.data);
       setFilteredLeads(responseData.data); // Initialiser les leads filtrés
-      setTotalPages(responseData.totalPages);
-      setCurrentPage(responseData.currentPage);
-      setTotalCount(responseData.total);
+      
+      if (searchQuery.trim()) {
+        // Pour la recherche, afficher tous les résultats sur une seule page
+        setTotalPages(1);
+        setCurrentPage(1);
+        setTotalCount(responseData.data.length);
+      } else {
+        // Pour la pagination normale
+        setTotalPages(responseData.totalPages);
+        setCurrentPage(responseData.currentPage);
+        setTotalCount(responseData.total);
+      }
     } catch (error: unknown) {
       console.error('Error fetching leads:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch leads';
@@ -1610,11 +1622,11 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     
     // Délai pour éviter trop d'appels API pendant la frappe
     searchTimeoutRef.current = setTimeout(async () => {
-      // Si on a une requête de recherche, faire un appel API
+      // Si on a une requête de recherche, récupérer tous les résultats
       if (query.trim()) {
-        await fetchLeads(1, query); // Rechercher depuis la page 1
+        await fetchLeads(1, query); // Récupérer tous les résultats de recherche
       } else {
-        // Si pas de recherche, recharger les leads normaux
+        // Si pas de recherche, recharger les leads normaux avec pagination
         await fetchLeads(1);
       }
     }, 500); // 500ms de délai
@@ -2377,19 +2389,26 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
             <div className="flex items-center justify-between">
               <div className="flex items-center text-sm text-gray-700">
                 <span>
-                  Showing <span className="font-medium">{filteredLeads.length}</span> of{' '}
-                  <span className="font-medium">{totalCount}</span> leads
-                  {searchQuery && (
-                    <span className="text-indigo-600"> (filtered by "{searchQuery}")</span>
+                  {searchQuery ? (
+                    // Mode recherche : afficher tous les résultats
+                    <>
+                      Showing <span className="font-medium">{filteredLeads.length}</span> results for "{searchQuery}"
+                    </>
+                  ) : (
+                    // Mode normal : afficher avec pagination
+                    <>
+                      Showing <span className="font-medium">{filteredLeads.length}</span> of{' '}
+                      <span className="font-medium">{totalCount}</span> leads
+                    </>
                   )}
                 </span>
               </div>
               
-              {/* Pagination Buttons */}
-              {totalPages > 1 && (
+              {/* Pagination Buttons - seulement si pas en mode recherche */}
+              {!searchQuery && totalPages > 1 && (
                 <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => fetchLeads(currentPage - 1, searchQuery)}
+                    onClick={() => fetchLeads(currentPage - 1)}
                     disabled={currentPage === 1}
                     className="relative inline-flex items-center px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -2401,7 +2420,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                   </div>
                   
                   <button
-                    onClick={() => fetchLeads(currentPage + 1, searchQuery)}
+                    onClick={() => fetchLeads(currentPage + 1)}
                     disabled={currentPage === totalPages}
                     className="relative inline-flex items-center px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
