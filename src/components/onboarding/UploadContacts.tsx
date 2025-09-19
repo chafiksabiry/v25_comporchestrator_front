@@ -89,12 +89,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       isProcessing: false
     });
     
-    // Clear all storage items
-    localStorage.removeItem('uploadProcessing');
-    localStorage.removeItem('parsedLeads');
+      // Clear all storage items
+      localStorage.removeItem('uploadProcessing');
+      localStorage.removeItem('parsedLeads');
     localStorage.removeItem('validationResults');
-    sessionStorage.removeItem('uploadProcessing');
-    sessionStorage.removeItem('parsedLeads');
+      sessionStorage.removeItem('uploadProcessing');
+      sessionStorage.removeItem('parsedLeads');
     sessionStorage.removeItem('validationResults');
     
     // Remove processing indicators
@@ -690,11 +690,11 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       sessionStorage.setItem('uploadProcessing', 'true');
       
       try {
-        // Check if processing was cancelled before starting
-        if (!processingRef.current) {
-          return;
-        }
-        
+            // Check if processing was cancelled before starting
+            if (!processingRef.current) {
+              return;
+            }
+            
         // Process with backend - optimized
         const result = await processFileWithBackend(file);
 
@@ -1248,13 +1248,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       if (!data.data || !Array.isArray(data.data.leads)) {
         setRealtimeLeads([]);
         setParsedLeads([]);
-        await fetchLeads();
+        await fetchLeads(1, '');
         return;
       }
       const leadsFromApi = data.data.leads;
       setRealtimeLeads(leadsFromApi);
       setParsedLeads(leadsFromApi);
-      await fetchLeads();
+      await fetchLeads(1, '');
       
       // Déclencher une mise à jour de l'état d'onboarding pour marquer le step 6 comme complété
       if (leadsFromApi.length > 0) {
@@ -1278,7 +1278,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     }
   };
 
-  const fetchLeads = async (page = currentPage, searchQuery = '') => {
+  const fetchLeads = async (page = 1, searchQuery = '') => {
     // Skip fetching leads if we're currently processing a file
     if (isProcessing || processingRef.current) {
       return;
@@ -1312,9 +1312,11 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       if (searchQuery.trim()) {
         // Utiliser l'endpoint de recherche dédié
         apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}/search?search=${encodeURIComponent(searchQuery.trim())}`;
+        console.log('🔍 Recherche leads avec URL:', apiUrl);
       } else {
         // Utiliser l'endpoint normal avec pagination
         apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=50`;
+        console.log('📄 Récupération leads avec URL:', apiUrl);
       }
       
       const response = await fetch(apiUrl, {
@@ -1329,6 +1331,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       }
 
       const responseData: ApiResponse = await response.json();
+      console.log('📊 Réponse API leads:', responseData);
       
       if (!responseData.success) {
         throw new Error('Failed to fetch leads: API returned unsuccessful response');
@@ -1374,7 +1377,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     }
 
     if (selectedGigId) {
-      fetchLeads().catch(error => {
+      fetchLeads(1, '').catch(error => {
         console.error('Error in useEffect:', error);
         setError('Failed to load leads');
       });
@@ -1945,24 +1948,24 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
               {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
                 <div className="mt-4 space-y-4">
                   {validationResults && (
-                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3">
-                      <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
-                        <Info className="mr-2 h-4 w-4" />
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3">
+                    <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                      <Info className="mr-2 h-4 w-4" />
                         AI Processing Results
-                      </h4>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
                           <span className="text-blue-600 font-medium">Total Rows:</span> {validationResults.totalRows}
-                        </div>
-                        <div>
+                      </div>
+                      <div>
                           <span className="text-green-600 font-medium">Valid Rows:</span> {validationResults.validRows > 0 ? validationResults.validRows : parsedLeads.length}
-                        </div>
+                      </div>
                         {validationResults.invalidRows > 0 && (
                           <div className="col-span-2">
                             <span className="text-red-600 font-medium">Invalid Rows:</span> {validationResults.invalidRows}
-                          </div>
+                    </div>
                         )}
-                      </div>
+                  </div>
 
                     {validationResults.errors && validationResults.errors.length > 0 && (
                       <div className="mt-3">
@@ -2396,8 +2399,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                   ) : (
                     // Mode normal : afficher avec pagination
                     <>
-                      Showing <span className="font-medium">{filteredLeads.length}</span> of{' '}
-                      <span className="font-medium">{totalCount}</span> leads
+                  Showing <span className="font-medium">{filteredLeads.length}</span> of{' '}
+                  <span className="font-medium">{totalCount}</span> leads
                     </>
                   )}
                 </span>
