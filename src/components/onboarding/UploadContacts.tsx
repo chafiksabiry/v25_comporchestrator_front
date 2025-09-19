@@ -1252,8 +1252,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         return;
       }
       const leadsFromApi = data.data.leads;
+      console.log('📥 Leads importés de Zoho:', leadsFromApi.length, 'leads');
       setRealtimeLeads(leadsFromApi);
       setParsedLeads(leadsFromApi);
+      console.log('🔄 Appel fetchLeads après import Zoho');
       await fetchLeads(1, '');
       
       // Déclencher une mise à jour de l'état d'onboarding pour marquer le step 6 comme complété
@@ -1365,6 +1367,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     }
   };
 
+  // useEffect pour charger les leads normalement
   useEffect(() => {
     // Skip this effect if we're currently processing a file
     if (isProcessing || processingRef.current) {
@@ -1394,6 +1397,18 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       }
     }
   }, [selectedGigId, isProcessing]);
+
+  // useEffect pour recharger les leads après l'import Zoho
+  useEffect(() => {
+    console.log('🔍 useEffect rechargement - realtimeLeads:', realtimeLeads.length, 'selectedGigId:', selectedGigId, 'isProcessing:', isProcessing);
+    // Recharger les leads si on vient de finir l'import Zoho et qu'on a des leads
+    if (realtimeLeads.length > 0 && selectedGigId && !isProcessing) {
+      console.log('🔄 Rechargement des leads après import Zoho');
+      fetchLeads(1, '').catch(error => {
+        console.error('Error reloading leads after Zoho import:', error);
+      });
+    }
+  }, [realtimeLeads.length, selectedGigId, isProcessing]);
 
   useEffect(() => {
     // Skip this effect if we're currently processing a file
