@@ -133,7 +133,13 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
               <div className="text-center">
                 <CheckCircle className="mx-auto mb-4 h-12 w-12 text-green-500" />
                 <p className="text-sm text-gray-500">
-                  Number <span className="font-medium">{selectedNumber}</span> has been successfully purchased!
+                  Number <span className="font-medium">{selectedNumber}</span> has been ordered!
+                </p>
+                <p className="mt-2 text-sm text-yellow-600">
+                  Status: <span className="font-medium">Pending</span>
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  The number order is being processed. You can check its status in the Purchased Numbers section.
                 </p>
               </div>
             )}

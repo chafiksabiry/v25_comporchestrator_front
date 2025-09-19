@@ -192,11 +192,15 @@ export const phoneNumberService = {
     }
   },
 
-  purchasePhoneNumber: async (
-    phoneNumber: string,
-    provider: 'telnyx' | 'twilio' = 'telnyx',
-    gigId: string
-  ): Promise<PhoneNumber> => {
+  purchasePhoneNumber: async (data: {
+    phoneNumber: string;
+    provider: 'telnyx' | 'twilio';
+    gigId: string;
+    companyId: string;
+    requirementGroupId?: string;
+  }): Promise<PhoneNumber> => {
+    const { phoneNumber, provider, gigId, requirementGroupId } = data;
+
     if (!gigId) {
       throw new PhoneNumberServiceError(
         'gigId is required to purchase a phone number',
@@ -211,16 +215,34 @@ export const phoneNumberService = {
       );
     }
 
+    if (!data.companyId) {
+      throw new PhoneNumberServiceError(
+        'companyId is required to purchase a phone number',
+        'MISSING_PARAMETER'
+      );
+    }
+
+    // Vérifier le requirementGroupId pour Telnyx
+    if (provider === 'telnyx' && !requirementGroupId) {
+      throw new PhoneNumberServiceError(
+        'requirementGroupId is required for Telnyx numbers',
+        'MISSING_PARAMETER'
+      );
+    }
+
     try {
       const endpoint = provider === 'twilio'
         ? '/phone-numbers/purchase/twilio'
         : '/phone-numbers/purchase';
-      console.log(`🛒 Purchasing ${provider} number ${phoneNumber} for gig ${gigId}`);
+      console.log(`🛒 Purchasing ${provider} number ${phoneNumber} for gig ${gigId}`, 
+        requirementGroupId ? `with requirement group ${requirementGroupId}` : '');
 
       const response = await api.post<PhoneNumber>(endpoint, {
         phoneNumber,
         provider,
-        gigId
+        gigId,
+        companyId: data.companyId,
+        requirementGroupId
       });
       
       console.log('✅ Purchase successful:', response.data);

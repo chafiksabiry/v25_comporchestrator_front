@@ -1,4 +1,4 @@
-import React,{ useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   Phone,
@@ -70,6 +70,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     incompleteRequirements?: { field: string; status: string; rejectionReason?: string }[];
     groupStatus?: string;
     groupId?: string;
+    telnyxId?: string;
     validUntil?: string;
     completionPercentage?: number;
     completedRequirements?: RequirementDetail[];
@@ -99,6 +100,17 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     checkCompletedSteps();
   }, [companyId]);
 
+  // Rafraîchir les numéros toutes les 30 secondes si il y a des numéros en attente
+  useEffect(() => {
+    const hasPendingNumbers = phoneNumbers.some(number => number.status === 'pending');
+    
+    if (hasPendingNumbers) {
+      console.log('🔄 Setting up auto-refresh for pending numbers');
+      const interval = setInterval(fetchExistingNumbers, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [phoneNumbers]);
+
   useEffect(() => {
     if (destinationZone && provider) {
       if (provider === 'telnyx') {
@@ -115,9 +127,16 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
               (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
             );
 
+            // Obtenir le groupe pour avoir le telnyxId
+            if (!companyId || !destinationZone) {
+              throw new Error('Company ID and destination zone are required');
+            }
+            const { group } = await requirementService.getOrCreateGroup(companyId, destinationZone);
+            
             setRequirementStatus(prev => ({
               ...prev,
               groupId: groupId,
+              telnyxId: group.telnyxId, // Ajouter le telnyxId
               hasRequirements: true,
               isComplete: detailedStatus.isComplete,
               completionPercentage,
@@ -217,6 +236,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           isComplete: detailedStatus.isComplete,
           error: null,
           groupId: group._id,
+          telnyxId: group.telnyxId,
           groupStatus: 'pending',
           completionPercentage,
           completedRequirements: detailedStatus.completedRequirements,
@@ -376,18 +396,27 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       });
 
       if (provider === 'telnyx') {
+        // 1. Vérifier si les requirements sont en cours de vérification
         if (requirementStatus.isChecking) {
           setPurchaseError('Please wait while we check requirements...');
           return;
         }
 
+        // 2. Vérifier s'il y a eu une erreur avec les requirements
         if (requirementStatus.error) {
           setPurchaseError('Cannot proceed: Failed to check requirements');
           return;
         }
 
+        // 3. Vérifier si les requirements sont complétés
         if (requirementStatus.hasRequirements && !requirementStatus.isComplete) {
           setPurchaseError('Please complete the requirements before purchasing');
+          return;
+        }
+
+        // 4. Vérifier si nous avons l'ID du groupe de requirements
+        if (!requirementStatus.groupId) {
+          setPurchaseError('Missing requirement group ID. Please try again.');
           return;
         }
       }
@@ -395,7 +424,22 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       setPurchaseError(null);
       setPurchaseStatus('purchasing');
       
-      const response = await phoneNumberService.purchasePhoneNumber(phoneNumber, provider, gigId);
+      // Préparer les données pour l'achat
+      if (!companyId) {
+        throw new Error('Company ID is required');
+      }
+
+      const purchaseData = {
+        phoneNumber,
+        provider,
+        gigId,
+        companyId,
+        requirementGroupId: provider === 'telnyx' ? requirementStatus.telnyxId : undefined
+      };
+
+      console.log('📝 Purchase request data:', purchaseData);
+      
+      const response = await phoneNumberService.purchasePhoneNumber(purchaseData);
       console.log('📞 Purchase response:', response);
 
       console.log('✅ Number purchased successfully!');
@@ -669,8 +713,45 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           </div>
         )}
 
-        {/* Available Numbers List - Auto-displayed */}
-        {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
+      {/* Purchased Numbers Section */}
+      {phoneNumbers.length > 0 && (
+        <div className="mb-6 space-y-2">
+          <h4 className="text-sm font-medium text-gray-700">Purchased Numbers</h4>
+          <div className="grid gap-2">
+            {phoneNumbers
+              .filter(number => number.provider === provider)
+              .map((number) => (
+                <div 
+                  key={number.phoneNumber}
+                  className="flex items-center justify-between rounded-lg border p-3"
+                >
+                  <div className="flex flex-col">
+                    <span className="font-medium">{number.phoneNumber}</span>
+                    <span className="text-sm text-gray-500">
+                      Status: {number.status}
+                      {number.status === 'pending' && ' (Processing...)'}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {number.status === 'pending' && (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+                    )}
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      number.status === 'active' ? 'bg-green-100 text-green-800' :
+                      number.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {number.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* Available Numbers List - Auto-displayed */}
+      {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
           <div className="mb-6 space-y-2">
             <h4 className="text-sm font-medium text-gray-700">Available Numbers (Destination: {destinationZone})</h4>
             <div className="grid gap-2">
