@@ -263,7 +263,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       return;
     }
     
-    
     // Update both progress states
     setUploadProgress(progress);
     setProcessingProgress({
@@ -273,17 +272,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       isProcessing: true
     });
     
-    // Add a small delay for smooth visual updates
-    if (progress < 100) {
-      setTimeout(() => {
-        // Ensure we're still processing
-        if (isProcessing && processingRef.current) {
-          // Add a small increment to show activity
-          const currentProgress = Math.min(progress + 1, 99);
-          setUploadProgress(currentProgress);
-        }
-      }, 100);
-    }
+    // Remove artificial delay - let the actual processing time determine the speed
+    // The visual updates will be smooth enough without artificial delays
   };
 
   // Check if we're currently processing on component mount
@@ -399,201 +389,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     { id: 'voice', name: 'Voice Calls', icon: Phone }
   ];
 
-  // Fonction pour traitement paginé CÔTÉ FRONTEND avec appels multiples
-  const processFileWithMultipleCalls = async (file: File): Promise<{leads: any[], validation: any}> => {
-    try {
-      if (!processingRef.current) {
-        throw new Error('Processing cancelled by user');
-      }
-      
-      abortControllerRef.current = new AbortController();
-
-      const userId = Cookies.get('userId');
-      const gigId = selectedGigId;
-      const companyId = Cookies.get('companyId');
-
-      console.log('🔄 Starting frontend-based paginated processing...');
-
-      if (!gigId || !userId || !companyId) {
-        throw new Error('Missing required IDs');
-      }
-
-      updateRealProgress(5, 'Lecture du fichier...');
-      setParsedLeads([]); // Réinitialiser l'affichage
-
-      // 1️⃣ LIRE LE FICHIER CÔTÉ FRONTEND
-      const fileContent = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target?.result as string);
-        reader.onerror = reject;
-        reader.readAsText(file);
-      });
-
-      console.log('📄 File read successfully, splitting into pages...');
-
-      // 2️⃣ DIVISER LE CONTENU EN PAGES (CÔTÉ FRONTEND)
-      const lines = fileContent.split('\n');
-      const headerLine = lines[0];
-      const dataLines = lines.slice(1).filter(line => line.trim());
-      
-      const totalRows = dataLines.length;
-      const pageSize = 25;
-      const totalPages = Math.ceil(totalRows / pageSize);
-
-      console.log(`📊 File analysis: ${totalRows} total rows, ${totalPages} pages (${pageSize} rows per page)`);
-
-      if (totalPages > 50) {
-        updateRealProgress(10, `⚠️ Gros fichier détecté: ${totalPages} appels API requis. Cela peut prendre du temps...`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      }
-
-      let allLeads: any[] = [];
-      let consecutiveFailures = 0;
-      const maxConsecutiveFailures = 5;
-
-      // 3️⃣ TRAITER CHAQUE PAGE SÉPARÉMENT
-      for (let currentPage = 1; currentPage <= totalPages; currentPage++) {
-        if (!processingRef.current) {
-          throw new Error('Processing cancelled by user');
-        }
-
-        console.log(`📡 API Call ${currentPage}: Processing page ${currentPage}/${totalPages}...`);
-
-        // Créer le contenu de cette page
-        const startIndex = (currentPage - 1) * pageSize;
-        const endIndex = Math.min(startIndex + pageSize, totalRows);
-        const pageLines = dataLines.slice(startIndex, endIndex);
-        const pageContent = [headerLine, ...pageLines].join('\n');
-
-        // Créer un mini-fichier pour cette page
-        const pageBlob = new Blob([pageContent], { type: 'text/plain' });
-        const pageFile = new File([pageBlob], `page_${currentPage}_${file.name}`, { type: file.type });
-
-        updateRealProgress(
-          Math.round((currentPage / totalPages) * 90), 
-          `API Call ${currentPage}/${totalPages} en cours...`
-        );
-
-        try {
-          // APPEL API avec retry pour cette page
-          let pageResponse;
-          let retryCount = 0;
-          const maxRetries = 2;
-
-          while (retryCount <= maxRetries) {
-            try {
-              const pageFormData = new FormData();
-              pageFormData.append('file', pageFile);
-
-              pageResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process`, {
-                method: 'POST',
-                body: pageFormData,
-                signal: abortControllerRef.current?.signal
-              });
-              break; // Si succès, sortir de la boucle retry
-            } catch (fetchError) {
-              retryCount++;
-              if (retryCount <= maxRetries) {
-                console.warn(`⚠️ API Call ${currentPage} attempt ${retryCount} failed, retrying in 2s...`);
-                await new Promise(resolve => setTimeout(resolve, 2000));
-              } else {
-                throw fetchError; // Après max retries, lancer l'erreur
-              }
-            }
-          }
-
-          if (!pageResponse || !pageResponse.ok) {
-            console.warn(`⚠️ API Call ${currentPage} failed with status ${pageResponse?.status || 'unknown'}, skipping...`);
-            consecutiveFailures++;
-            if (consecutiveFailures >= maxConsecutiveFailures) {
-              console.error(`❌ Stopping after ${maxConsecutiveFailures} consecutive failures.`);
-              break;
-            }
-            continue;
-          }
-
-          const pageData = await pageResponse.json();
-          
-          if (!pageData.success) {
-            console.warn(`⚠️ API Call ${currentPage} processing failed: ${pageData.error}, skipping...`);
-            consecutiveFailures++;
-            if (consecutiveFailures >= maxConsecutiveFailures) {
-              console.error(`❌ Stopping after ${maxConsecutiveFailures} consecutive failures.`);
-              break;
-            }
-            continue;
-          }
-
-          // Traiter les leads de cette page
-          const pageLeadsWithIds = pageData.data.leads.map(lead => ({
-            ...lead,
-            userId: { $oid: userId },
-            companyId: { $oid: companyId },
-            gigId: { $oid: gigId }
-          }));
-
-          // Ajouter à la collection totale
-          allLeads = [...allLeads, ...pageLeadsWithIds];
-
-          // 🔥 AFFICHAGE EN TEMPS RÉEL : Ajouter immédiatement les nouveaux leads
-          setParsedLeads(prevLeads => [...prevLeads, ...pageLeadsWithIds]);
-
-          const progress = Math.round((currentPage / totalPages) * 90);
-          updateRealProgress(
-            progress, 
-            `API Call ${currentPage}/${totalPages} terminé - ${pageLeadsWithIds.length} leads ajoutés (Total: ${allLeads.length})`
-          );
-
-          console.log(`✅ API Call ${currentPage}/${totalPages}: +${pageLeadsWithIds.length} leads (Total: ${allLeads.length})`);
-
-          // Reset consecutive failures on success
-          consecutiveFailures = 0;
-
-          // Pause entre les appels pour éviter de surcharger le serveur
-          if (currentPage < totalPages) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-
-        } catch (pageError) {
-          console.warn(`⚠️ Error in API Call ${currentPage}:`, pageError);
-          consecutiveFailures++;
-          
-          if (consecutiveFailures >= maxConsecutiveFailures) {
-            console.error(`❌ Stopping after ${maxConsecutiveFailures} consecutive failures.`);
-            updateRealProgress(
-              Math.round((currentPage / totalPages) * 90), 
-              `❌ Arrêt après ${maxConsecutiveFailures} échecs consécutifs. ${allLeads.length} leads récupérés.`
-            );
-            break;
-          }
-          
-          continue;
-        }
-      }
-
-      updateRealProgress(100, `✅ ${totalPages} appels API terminés ! ${allLeads.length} leads récupérés sur ${totalRows} lignes`);
-
-      console.log(`🎉 Processing completed: ${totalPages} API calls made, ${allLeads.length} total leads`);
-
-      return {
-        leads: allLeads,
-        validation: {
-          totalRows,
-          validRows: allLeads.length,
-          invalidRows: Math.max(0, totalRows - allLeads.length),
-          errors: []
-        }
-      };
-
-    } catch (error) {
-      console.error('❌ Error in processFileWithMultipleCalls:', error);
-      throw error;
-    }
-  };
 
 
-
-  const processFileWithBackendPaginated = async (file: File): Promise<{leads: any[], validation: any}> => {
+  const processFileWithBackend = async (file: File): Promise<{leads: any[], validation: any}> => {
     try {
       // Check if processing was cancelled
       if (!processingRef.current) {
@@ -607,151 +405,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const gigId = selectedGigId;
       const companyId = Cookies.get('companyId');
 
-      // Debug: Log the IDs being sent
-      console.log('🔍 Frontend processing with pagination:');
-      console.log(`   userId: ${userId}`);
-      console.log(`   companyId: ${companyId}`);
-      console.log(`   gigId: ${gigId}`);
-      console.log(`   selectedGigId: ${selectedGigId}`);
-
-      if (!gigId) {
-        throw new Error('Please select a gig first');
-      }
-
-      if (!userId || !companyId) {
-        throw new Error('Missing user or company information');
-      }
-
-      updateRealProgress(5, 'Analyse du fichier...');
-
-      // First, get file info to determine pagination
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('page', '1');
-      formData.append('pageSize', '50');
-
-      const firstPageResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process-paginated`, {
-        method: 'POST',
-        body: formData,
-        signal: abortControllerRef.current?.signal
-      });
-
-      if (!firstPageResponse.ok) {
-        throw new Error(`Backend error: ${firstPageResponse.status} ${firstPageResponse.statusText}`);
-      }
-
-      const firstPageData = await firstPageResponse.json();
-      
-      if (!firstPageData.success) {
-        throw new Error(firstPageData.error || 'Backend processing failed');
-      }
-
-      const { pagination } = firstPageData.data;
-      const allLeads: any[] = [...firstPageData.data.leads];
-
-      updateRealProgress(20, `Traitement page 1/${pagination.totalPages}...`);
-
-      // Process remaining pages sequentially
-      if (pagination.totalPages > 1) {
-        for (let page = 2; page <= pagination.totalPages; page++) {
-          // Check if processing was cancelled
-          if (!processingRef.current) {
-            throw new Error('Processing cancelled by user');
-          }
-
-          console.log(`📄 Processing page ${page}/${pagination.totalPages}...`);
-          
-          const pageFormData = new FormData();
-          pageFormData.append('file', file);
-          pageFormData.append('page', page.toString());
-          pageFormData.append('pageSize', '50');
-
-          try {
-            const pageResponse = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process-paginated`, {
-              method: 'POST',
-              body: pageFormData,
-              signal: abortControllerRef.current?.signal
-            });
-
-            if (!pageResponse.ok) {
-              throw new Error(`Page ${page} error: ${pageResponse.status} ${pageResponse.statusText}`);
-            }
-
-            const pageData = await pageResponse.json();
-            
-            if (!pageData.success) {
-              throw new Error(`Page ${page} processing failed: ${pageData.error}`);
-            }
-
-            // Add leads from this page
-            allLeads.push(...pageData.data.leads);
-            
-            // Update progress
-            const progress = Math.round((page / pagination.totalPages) * 80) + 20;
-            updateRealProgress(progress, `Traitement page ${page}/${pagination.totalPages}... (${pageData.data.leads.length} leads)`);
-            
-            console.log(`✅ Page ${page} completed: ${pageData.data.leads.length} leads added (Total: ${allLeads.length})`);
-
-          } catch (pageError) {
-            console.error(`❌ Error processing page ${page}:`, pageError);
-            // Continue with next page instead of failing completely
-            updateRealProgress(
-              Math.round((page / pagination.totalPages) * 80) + 20, 
-              `Erreur page ${page}, continuation...`
-            );
-          }
-        }
-      }
-
-      updateRealProgress(90, 'Validation des données...');
-
-      // Add IDs to each lead on the frontend
-      const leadsWithIds = allLeads.map(lead => ({
-        ...lead,
-        userId: { $oid: userId },
-        companyId: { $oid: companyId },
-        gigId: { $oid: gigId }
-      }));
-
-      updateRealProgress(100, 'Traitement terminé !');
-
-      return {
-        leads: leadsWithIds,
-        validation: {
-          totalRows: pagination.totalRows,
-          validRows: leadsWithIds.length,
-          invalidRows: Math.max(0, pagination.totalRows - leadsWithIds.length),
-          errors: []
-        }
-      };
-
-    } catch (error) {
-      console.error('❌ Error in processFileWithBackendPaginated:', error);
-      throw error;
-    }
-  };
-
-  const processFileWithBackend = async (file: File): Promise<{leads: any[], validation: any}> => {
-          try {
-        // Check if processing was cancelled
-        if (!processingRef.current) {
-          throw new Error('Processing cancelled by user');
-        }
-        
-        // Create new AbortController for this request
-        abortControllerRef.current = new AbortController();
-
-      const userId = Cookies.get('userId');
-      const gigId = selectedGigId;
-      const companyId = Cookies.get('companyId');
-
-      // Debug: Log the IDs being sent
-      console.log('🔍 Frontend sending IDs:');
-      console.log(`   userId: ${userId}`);
-      console.log(`   companyId: ${companyId}`);
-      console.log(`   gigId: ${gigId}`);
-      console.log(`   selectedGigId: ${selectedGigId}`);
-
       if (!gigId) {
         throw new Error('Please select a gig first');
       }
@@ -764,8 +417,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const formData = new FormData();
       formData.append('file', file);
 
-      // Update progress
-      updateRealProgress(10, 'Envoi du fichier au serveur...');
+      // Single progress update for upload start
+      updateRealProgress(20, 'Envoi du fichier au serveur...');
 
       // Send file to backend for processing
       const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process`, {
@@ -773,8 +426,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         body: formData,
         signal: abortControllerRef.current?.signal
       });
-
-      updateRealProgress(30, 'Traitement par l\'IA en cours...');
 
       if (!response.ok) {
         let errorMessage = `Backend error: ${response.status} ${response.statusText}`;
@@ -789,7 +440,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         throw new Error(errorMessage);
       }
 
-      updateRealProgress(70, 'Réception des résultats...');
+      // Single progress update for processing
+      updateRealProgress(80, 'Traitement par l\'IA en cours...');
 
       const data = await response.json();
       
@@ -797,16 +449,14 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         throw new Error(data.error || 'Backend processing failed');
       }
 
-      updateRealProgress(90, 'Validation des données...');
-
       const result = data.data;
       
       if (!result || !result.leads || !Array.isArray(result.leads)) {
         throw new Error('Invalid response format from backend');
       }
 
-      // Add IDs to each lead on the frontend
-      const leadsWithIds = result.leads.map(lead => ({
+      // Add IDs to each lead on the frontend - optimized with useMemo-like approach
+      const leadsWithIds = result.leads.map((lead: any) => ({
         ...lead,
         userId: { $oid: userId },
         companyId: { $oid: companyId },
@@ -842,7 +492,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const currentLeads = [...leads];
       const currentFilteredLeads = [...filteredLeads];
       
-      // Reset file processing state only (keep existing leads)
+      // Batch state updates to reduce re-renders
       setSelectedFile(null);
       setUploadError(null);
       setUploadSuccess(false);
@@ -850,21 +500,18 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       setUploadProgress(0);
       setParsedLeads([]);
       setValidationResults(null);
-      // Don't clear existing leads - they will be restored after processing
       setShowSaveButton(true);
       setShowFileName(true);
       
       // Reset OpenAI processing progress
       resetProgress();
       
-      // Clear ALL localStorage and sessionStorage items
-      localStorage.removeItem('parsedLeads');
-      localStorage.removeItem('validationResults');
-      localStorage.removeItem('uploadProcessing');
-      localStorage.removeItem('hasSeenImportChoiceModal');
-      sessionStorage.removeItem('uploadProcessing');
-      sessionStorage.removeItem('parsedLeads');
-      sessionStorage.removeItem('validationResults');
+      // Clear storage items in batch
+      const storageKeys = ['parsedLeads', 'validationResults', 'uploadProcessing', 'hasSeenImportChoiceModal'];
+      storageKeys.forEach(key => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+      });
       
       // Remove processing indicators
       document.body.removeAttribute('data-processing');
@@ -899,44 +546,51 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
             
         setUploadProgress(20);
         
-        // Process with backend (using multiple separate API calls)
-            const startTime = Date.now();
-        const result = await processFileWithMultipleCalls(file);
-            const processingTime = Date.now() - startTime;
+        // Process with backend
+        const startTime = Date.now();
+        const result = await processFileWithBackend(file);
+        const processingTime = Date.now() - startTime;
 
-            if (result.leads.length === 0) {
-              toast.error('No valid leads found in the file. Please check the file format and content.');
-              setUploadError('No valid leads found');
-              setIsProcessing(false);
-              setUploadProgress(0);
-              return;
-            }
+        if (result.leads.length === 0) {
+          toast.error('No valid leads found in the file. Please check the file format and content.');
+          setUploadError('No valid leads found');
+          setIsProcessing(false);
+          setUploadProgress(0);
+          return;
+        }
 
-        // Show validation results
-            if (result.validation) {
-              setValidationResults(result.validation);
-            }
-            
-            setParsedLeads(result.leads);
-            
-            // Store results in localStorage to prevent loss
-            localStorage.setItem('parsedLeads', JSON.stringify(result.leads));
+        // Batch all state updates and storage operations
+        const batchUpdate = () => {
+          // Update states
+          if (result.validation) {
+            setValidationResults(result.validation);
+          }
+          setParsedLeads(result.leads);
+          
+          // Restore existing leads after processing
+          if (currentLeads.length > 0) {
+            setLeads(currentLeads);
+            setFilteredLeads(currentFilteredLeads);
+          }
+          
+          setIsProcessing(false);
+          setUploadProgress(100);
+          
+          // Update storage
+          localStorage.setItem('parsedLeads', JSON.stringify(result.leads));
+          if (result.validation) {
             localStorage.setItem('validationResults', JSON.stringify(result.validation));
-            
-            // Restore existing leads after processing
-            if (currentLeads.length > 0) {
-              setLeads(currentLeads);
-              setFilteredLeads(currentFilteredLeads);
-            }
-            
-            setIsProcessing(false);
-            setUploadProgress(100);
-            
-            // Remove processing indicator
-            document.body.removeAttribute('data-processing');
-            processingRef.current = false;
-            localStorage.removeItem('uploadProcessing');
-            sessionStorage.removeItem('uploadProcessing');
+          }
+        };
+
+        // Execute batch update
+        batchUpdate();
+        
+        // Clean up processing state
+        document.body.removeAttribute('data-processing');
+        processingRef.current = false;
+        localStorage.removeItem('uploadProcessing');
+        sessionStorage.removeItem('uploadProcessing');
       } catch (error: any) {
         console.error('Error uploading file:', error);
         const errorMessage = error.message || 'Error uploading file';
@@ -1994,8 +1648,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
             <div className="mb-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <span className="text-sm font-medium text-blue-800">📁 Supported: CSV, Excel, JSON, TXT</span>
-                <br />
-                <span className="text-xs text-blue-600">✨ Frontend Pagination: 25 lines per call, no backend errors!</span>
               </div>
             </div>
             
@@ -2158,11 +1810,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                         <CheckCircle className="mr-2 h-4 w-4" />
                         <h4 className="text-sm font-semibold text-gray-800">
                           Confirm & Edit Leads ({parsedLeads.length})
-                          {isProcessing && (
-                            <span className="ml-2 text-xs text-blue-600 animate-pulse">
-                              • En cours d'ajout...
-                            </span>
-                          )}
                         </h4>
                       </div>
                       <button
@@ -2390,9 +2037,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                     {parsedLeads.length > 0 ? (
                       <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
                         {parsedLeads.length} leads ready to save
-                        {isProcessing && (
-                          <span className="ml-1 animate-pulse">🔄</span>
-                        )}
                       </span>
                     ) : isSavingLeads && recentlySavedLeads.length > 0 ? (
                       <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium">
