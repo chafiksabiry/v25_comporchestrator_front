@@ -1307,15 +1307,14 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     setIsLoadingLeads(true);
     setError(null);
     try {
-      // Build API URL with search parameters
-      let apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}`;
+      let apiUrl: string;
       
       if (searchQuery.trim()) {
-        // Pour la recherche, récupérer tous les résultats sans pagination
-        apiUrl += `?search=${encodeURIComponent(searchQuery.trim())}&limit=1000`;
+        // Utiliser l'endpoint de recherche dédié
+        apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}/search?search=${encodeURIComponent(searchQuery.trim())}`;
       } else {
-        // Pour la pagination normale, utiliser la pagination
-        apiUrl += `?page=${page}&limit=50`;
+        // Utiliser l'endpoint normal avec pagination
+        apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=50`;
       }
       
       const response = await fetch(apiUrl, {
