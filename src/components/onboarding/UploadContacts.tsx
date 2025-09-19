@@ -256,6 +256,95 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     });
   };
 
+  // Utility function to safely store data in localStorage/sessionStorage
+  const safeStorageSet = (key: string, data: any, useSessionStorage = false) => {
+    try {
+      const dataString = JSON.stringify(data);
+      
+      // Check data size (5MB limit for localStorage)
+      if (dataString.length > 5 * 1024 * 1024) {
+        console.warn(`⚠️ Data for ${key} too large for localStorage, using sessionStorage`);
+        sessionStorage.setItem(key, dataString);
+        return true;
+      }
+      
+      if (useSessionStorage) {
+        sessionStorage.setItem(key, dataString);
+      } else {
+        localStorage.setItem(key, dataString);
+      }
+      return true;
+    } catch (error) {
+      console.warn(`⚠️ localStorage full for ${key}, cleaning up and retrying`);
+      
+      // Clean up localStorage and try again
+      cleanupLocalStorage();
+      
+      try {
+        if (useSessionStorage) {
+          sessionStorage.setItem(key, JSON.stringify(data));
+        } else {
+          localStorage.setItem(key, JSON.stringify(data));
+        }
+        return true;
+      } catch (retryError) {
+        console.warn(`⚠️ Still full after cleanup, trying sessionStorage for ${key}`);
+        try {
+          sessionStorage.setItem(key, JSON.stringify(data));
+          return true;
+        } catch (sessionError) {
+          console.error(`❌ Both localStorage and sessionStorage are full for ${key}`);
+          return false;
+        }
+      }
+    }
+  };
+
+  // Utility function to safely get data from localStorage/sessionStorage
+  const safeStorageGet = (key: string) => {
+    try {
+      // Try localStorage first
+      let data = localStorage.getItem(key);
+      if (data) {
+        return JSON.parse(data);
+      }
+      
+      // Try sessionStorage if not found in localStorage
+      data = sessionStorage.getItem(key);
+      if (data) {
+        return JSON.parse(data);
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`❌ Error parsing data for ${key}:`, error);
+      return null;
+    }
+  };
+
+  // Function to clean up localStorage when it's full
+  const cleanupLocalStorage = () => {
+    try {
+      // Remove old processing data
+      localStorage.removeItem('uploadProcessing');
+      sessionStorage.removeItem('uploadProcessing');
+      
+      // Keep only essential data, remove large datasets
+      const keysToKeep = ['companyOnboardingProgress', 'kycVerificationStepCompleted'];
+      const allKeys = Object.keys(localStorage);
+      
+      allKeys.forEach(key => {
+        if (!keysToKeep.includes(key) && key.includes('leads')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      console.log('🧹 Cleaned up localStorage to free space');
+    } catch (error) {
+      console.error('❌ Error cleaning up localStorage:', error);
+    }
+  };
+
   // Function to update real progress during OpenAI processing
   const updateRealProgress = (progress: number, status: string) => {
     // Check if processing was cancelled
@@ -300,25 +389,15 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     
     // Restore parsed leads if they exist and we haven't already restored them
     if (!dataRestoredRef.current && !componentInitializedRef.current) {
-      const savedParsedLeads = localStorage.getItem('parsedLeads');
-      const savedValidationResults = localStorage.getItem('validationResults');
+      const savedParsedLeads = safeStorageGet('parsedLeads');
+      const savedValidationResults = safeStorageGet('validationResults');
       
       if (savedParsedLeads && !parsedLeads.length) {
-        try {
-          const leads = JSON.parse(savedParsedLeads);
-          setParsedLeads(leads);
-        } catch (error) {
-          console.error('Error restoring parsed leads:', error);
-        }
+        setParsedLeads(savedParsedLeads);
       }
       
       if (savedValidationResults && !validationResults) {
-        try {
-          const validation = JSON.parse(savedValidationResults);
-          setValidationResults(validation);
-        } catch (error) {
-          console.error('Error restoring validation results:', error);
-        }
+        setValidationResults(savedValidationResults);
       }
       
       dataRestoredRef.current = true;
@@ -330,7 +409,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   useEffect(() => {
     // If we have parsed leads in state but they're about to be lost, save them
     if (parsedLeads.length > 0) {
-      localStorage.setItem('parsedLeads', JSON.stringify(parsedLeads));
+      safeStorageSet('parsedLeads', parsedLeads);
     }
     
     // Ensure cancelProcessing function is always available
@@ -357,9 +436,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     return () => {
       // Only save leads if we're not intentionally closing the component
       // Check if this is a manual close (onBackToOnboarding was called)
-      const isManualClose = !localStorage.getItem('parsedLeads');
+      const isManualClose = !localStorage.getItem('parsedLeads') && !sessionStorage.getItem('parsedLeads');
       if (parsedLeads.length > 0 && !isManualClose) {
-        localStorage.setItem('parsedLeads', JSON.stringify(parsedLeads));
+        safeStorageSet('parsedLeads', parsedLeads);
       }
     };
   }, [parsedLeads]);
@@ -564,9 +643,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         
         setParsedLeads(result.leads);
         
-        // Store results in localStorage to prevent loss
-        localStorage.setItem('parsedLeads', JSON.stringify(result.leads));
-        localStorage.setItem('validationResults', JSON.stringify(result.validation));
+        // Store results safely
+        safeStorageSet('parsedLeads', result.leads);
+        safeStorageSet('validationResults', result.validation);
         
         // Restore existing leads after processing
         if (currentLeads.length > 0) {
