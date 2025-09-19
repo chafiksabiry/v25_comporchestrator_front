@@ -1369,22 +1369,22 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
   // useEffect pour charger les leads normalement
   useEffect(() => {
+    console.log('🔍 useEffect principal - selectedGigId:', selectedGigId, 'isProcessing:', isProcessing, 'parsedLeads:', parsedLeads.length);
+    
     // Skip this effect if we're currently processing a file
     if (isProcessing || processingRef.current) {
-      return;
-    }
-
-    // Skip if we have parsed leads that should be preserved
-    if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads') || sessionStorage.getItem('parsedLeads')) {
+      console.log('⏸️ Skipping - processing in progress');
       return;
     }
 
     if (selectedGigId) {
+      console.log('📡 Chargement des leads pour gigId:', selectedGigId);
       fetchLeads(1, '').catch(error => {
         console.error('Error in useEffect:', error);
         setError('Failed to load leads');
       });
     } else {
+      console.log('❌ Pas de selectedGigId, clearing leads');
       // Don't clear leads if we're processing or have parsed leads
       if (processingRef.current || localStorage.getItem('uploadProcessing') === 'true' || sessionStorage.getItem('uploadProcessing') === 'true' || parsedLeads.length > 0) {
         return;
@@ -1409,6 +1409,20 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       });
     }
   }, [realtimeLeads.length, selectedGigId, isProcessing]);
+
+  // useEffect pour charger les leads au montage du composant
+  useEffect(() => {
+    console.log('🚀 useEffect montage - selectedGigId:', selectedGigId, 'parsedLeads:', parsedLeads.length, 'realtimeLeads:', realtimeLeads.length);
+    
+    // Charger les leads si on a un gigId et qu'on n'a pas encore de leads affichés
+    if (selectedGigId && leads.length === 0 && realtimeLeads.length === 0 && !isProcessing) {
+      console.log('🔄 Chargement initial des leads');
+      fetchLeads(1, '').catch(error => {
+        console.error('Error in initial load useEffect:', error);
+        setError('Failed to load leads');
+      });
+    }
+  }, []); // Se déclenche seulement au montage
 
   useEffect(() => {
     // Skip this effect if we're currently processing a file
