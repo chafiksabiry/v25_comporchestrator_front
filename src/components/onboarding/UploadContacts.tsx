@@ -2238,9 +2238,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                             <div className="mt-2">
                 {selectedGigId ? (
                   <div className="text-sm text-gray-600">
-                    {parsedLeads.length > 0 ? (
+                    {parsedLeads.length > 0 || realtimeLeads.length > 0 ? (
                       <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
-                        {parsedLeads.length} leads ready to save
+                        {parsedLeads.length > 0 ? parsedLeads.length : realtimeLeads.length} leads ready to save
                       </span>
                     ) : isSavingLeads && recentlySavedLeads.length > 0 ? (
                       <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium">
@@ -2340,7 +2340,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                         </div>
                       </td>
                     </tr>
-                  ) : (leads.length === 0 && !isSavingLeads) ? (
+                  ) : (leads.length === 0 && realtimeLeads.length === 0 && !isSavingLeads) ? (
                     <tr>
                       <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-8">
@@ -2350,7 +2350,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                         </div>
                       </td>
                     </tr>
-                  ) : (filteredLeads.length === 0 && !isSavingLeads) ? (
+                  ) : (filteredLeads.length === 0 && realtimeLeads.length === 0 && !isSavingLeads) ? (
                     <tr>
                       <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-8">
@@ -2361,8 +2361,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                       </td>
                     </tr>
                   ) : (
-                    // Afficher les leads récemment sauvegardés pendant la sauvegarde, sinon les leads filtrés
-                    (isSavingLeads && recentlySavedLeads.length > 0 ? recentlySavedLeads : filteredLeads).map((lead, index) => (
+                    // Afficher les leads récemment sauvegardés pendant la sauvegarde, sinon les leads filtrés, sinon les leads importés de Zoho
+                    (isSavingLeads && recentlySavedLeads.length > 0 ? recentlySavedLeads : 
+                     filteredLeads.length > 0 ? filteredLeads : 
+                     realtimeLeads.length > 0 ? realtimeLeads : []).map((lead, index) => (
                       <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-orange-400' : ''}`}>
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="flex items-center">
@@ -2401,7 +2403,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           </div>
         </div>
         {/* Pagination Controls */}
-        {filteredLeads.length > 0 && (
+        {(filteredLeads.length > 0 || realtimeLeads.length > 0) && (
           <div className="bg-white px-4 py-3 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center text-sm text-gray-700">
@@ -2414,8 +2416,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                   ) : (
                     // Mode normal : afficher avec pagination
                     <>
-                  Showing <span className="font-medium">{filteredLeads.length}</span> of{' '}
-                  <span className="font-medium">{totalCount}</span> leads
+                      Showing <span className="font-medium">{filteredLeads.length > 0 ? filteredLeads.length : realtimeLeads.length}</span> of{' '}
+                      <span className="font-medium">{totalCount > 0 ? totalCount : realtimeLeads.length}</span> leads
                     </>
                   )}
                 </span>
