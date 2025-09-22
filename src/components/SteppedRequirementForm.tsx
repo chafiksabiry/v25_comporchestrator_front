@@ -474,7 +474,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
           {/* Business Name */}
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
               Business Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -488,7 +488,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
 
           {/* Street Address */}
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
               Street Address <span className="text-red-500">*</span>
             </label>
             <input
@@ -502,7 +502,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
 
           {/* City */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
               City <span className="text-red-500">*</span>
             </label>
             <input
@@ -516,7 +516,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
 
           {/* Postal Code */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
               Postal Code <span className="text-red-500">*</span>
             </label>
             <input
@@ -530,12 +530,12 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
 
           {/* Administrative Area */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              State/Province <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
+              State/Province
             </label>
             <input
               type="text"
-              placeholder="Enter state or province"
+              placeholder="Enter state or province (optional)"
               className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm transition-colors"
               value={addressData.administrativeArea || ''}
               onChange={e => updateAddressField('administrativeArea', e.target.value)}
@@ -544,7 +544,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
 
           {/* Country Code */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
               Country Code
             </label>
             <input
@@ -566,7 +566,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
               Extended Address
             </label>
             <input
@@ -607,7 +607,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
             </div>
             <div>
               <label className="block text-base font-medium text-gray-900">
-                {req.name}
+                {req.name.replace(' (National)', '')}
               </label>
               {req.acceptance_criteria.time_limit && (
                 <div className="mt-1 inline-flex items-center px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs">
