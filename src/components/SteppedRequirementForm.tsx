@@ -34,7 +34,7 @@ interface RequirementValue {
   documentUrl?: string;
   status: string;
   rejectionReason?: string;
-  submittedAt: string;
+  submittedAt?: string; // Rendre optionnel pour la compatibilité
 }
 
 interface AddressFields {
@@ -53,6 +53,7 @@ interface SteppedRequirementFormProps {
   requirementGroupId?: string;
   destinationZone: string;
   onCancel: () => void;
+  onSubmit: (values: Record<string, any>) => Promise<void>;
 }
 
 export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
@@ -468,67 +469,114 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
       }));
     };
     return (
-      <div className="space-y-4">
-        {/* Champs requis */}
-        <div className="space-y-2">
-          <input
-            type="text"
-            placeholder="Business Name *"
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            value={addressData.businessName || ''}
-            onChange={e => updateAddressField('businessName', e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="Street Address *"
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            value={addressData.streetAddress || ''}
-            onChange={e => updateAddressField('streetAddress', e.target.value)}
-          />
-          <div className="grid grid-cols-2 gap-2">
+      <div className="space-y-6">
+        {/* Section des champs requis */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+          {/* Business Name */}
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Business Name <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
-              placeholder="City *"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Enter your business name"
+              className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm transition-colors"
+              value={addressData.businessName || ''}
+              onChange={e => updateAddressField('businessName', e.target.value)}
+            />
+          </div>
+
+          {/* Street Address */}
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Street Address <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              placeholder="Enter your street address"
+              className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm transition-colors"
+              value={addressData.streetAddress || ''}
+              onChange={e => updateAddressField('streetAddress', e.target.value)}
+            />
+          </div>
+
+          {/* City */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              City <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              placeholder="Enter city name"
+              className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm transition-colors"
               value={addressData.locality || ''}
               onChange={e => updateAddressField('locality', e.target.value)}
             />
+          </div>
+
+          {/* Postal Code */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Postal Code <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
-              placeholder="Postal Code *"
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Enter postal code"
+              className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm transition-colors"
               value={addressData.postalCode || ''}
               onChange={e => updateAddressField('postalCode', e.target.value)}
             />
           </div>
-          <input
-            type="text"
-            placeholder="Administrative Area (State/Province) *"
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            value={addressData.administrativeArea || ''}
-            onChange={e => updateAddressField('administrativeArea', e.target.value)}
-          />
-          <div className="mt-2">
-            <label className="block text-sm font-medium text-gray-700">Country Code</label>
+
+          {/* Administrative Area */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              State/Province <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
-              className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              value={destinationZone}
+              placeholder="Enter state or province"
+              className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm transition-colors"
+              value={addressData.administrativeArea || ''}
+              onChange={e => updateAddressField('administrativeArea', e.target.value)}
+            />
+          </div>
+
+          {/* Country Code */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Country Code
+            </label>
+            <input
+              type="text"
+              className="block w-full rounded-lg border-gray-300 bg-gray-50 shadow-sm text-sm transition-colors cursor-not-allowed"
+              value={destinationZone.toUpperCase()}
               readOnly
               disabled
             />
           </div>
         </div>
-        {/* Champ optionnel */}
-        <div className="mt-4 border-t border-gray-200 pt-4">
-          <p className="mb-2 text-sm text-gray-500">Additional Information (Optional)</p>
-          <input
-            type="text"
-            placeholder="Extended Address (Apartment, Suite, etc.)"
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            value={addressData.extendedAddress || ''}
-            onChange={e => updateAddressField('extendedAddress', e.target.value)}
-          />
+
+        {/* Section des champs optionnels */}
+        <div className="pt-4">
+          <div className="flex items-center space-x-2 mb-3">
+            <div className="h-px flex-1 bg-gray-200"></div>
+            <span className="text-sm font-medium text-gray-500">Optional Information</span>
+            <div className="h-px flex-1 bg-gray-200"></div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Extended Address
+            </label>
+            <input
+              type="text"
+              placeholder="Apartment, Suite, Unit, Building, etc."
+              className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm transition-colors"
+              value={addressData.extendedAddress || ''}
+              onChange={e => updateAddressField('extendedAddress', e.target.value)}
+            />
+          </div>
         </div>
 
         {error && (
@@ -547,28 +595,38 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
     const isCompleted = existingValue?.status === 'completed';
 
     return (
-      <div key={req.id} className="space-y-4 bg-gray-50 p-6 rounded-lg border border-gray-200">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-2">
-            {(() => {
-              const Icon = req.type === 'document' ? FileText : req.type === 'address' ? MapPin : User;
-              return <Icon className="h-5 w-5 text-gray-400" />;
-            })()}
-            <label className="block text-sm font-medium text-gray-700">
-              {req.name}
+      <div key={req.id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        {/* En-tête du requirement */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start space-x-3">
+            <div className="mt-1">
+              {(() => {
+                const Icon = req.type === 'document' ? FileText : req.type === 'address' ? MapPin : User;
+                return <Icon className="h-5 w-5 text-indigo-500" />;
+              })()}
+            </div>
+            <div>
+              <label className="block text-base font-medium text-gray-900">
+                {req.name}
+              </label>
               {req.acceptance_criteria.time_limit && (
-                <span className="ml-1 text-xs text-yellow-600">
-                  (within {req.acceptance_criteria.time_limit})
-                </span>
+                <div className="mt-1 inline-flex items-center px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs">
+                  Required within {req.acceptance_criteria.time_limit}
+                </div>
               )}
-            </label>
+              <p className="mt-1 text-sm text-gray-500 max-w-2xl">{req.description}</p>
+            </div>
           </div>
           {(value || existingValues?.find(v => v.field === req.id)?.status === 'approved') && !error && (
-            <CheckCircle className="h-5 w-5 text-green-500" />
+            <div className="flex items-center space-x-2 text-green-600">
+              <CheckCircle className="h-5 w-5" />
+              <span className="text-sm font-medium">Completed</span>
+            </div>
           )}
         </div>
 
-        <p className="text-sm text-gray-500">{req.description}</p>
+        {/* Ligne de séparation */}
+        <div className="border-t border-gray-200 my-4"></div>
 
         {req.type === 'document' ? (
           <div className="mt-1 flex items-center space-x-3">
@@ -581,7 +639,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
                         {JSON.parse(existingValue.value).filename}
                       </span>
                       <span className="text-xs text-gray-500">
-                        Submitted: {new Date(existingValue.submittedAt).toLocaleString()}
+                        {existingValue?.submittedAt && `Submitted: ${new Date(existingValue.submittedAt).toLocaleString()}`}
                       </span>
                     </div>
                     <a
@@ -665,9 +723,9 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
                     setErrors(prev => ({ ...prev, [req.id]: '' }));
                   }}
                 />
-                {existingValue?.status === 'completed' && (
+                {existingValue?.status === 'completed' && existingValue?.submittedAt && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Last submitted: {new Date(existingValue?.submittedAt || '').toLocaleString()}
+                    Last submitted: {new Date(existingValue.submittedAt).toLocaleString()}
                   </p>
                 )}
               </div>
@@ -694,44 +752,56 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
   return (
     <div className="space-y-6">
       {/* Progress Steps */}
-      <nav aria-label="Progress">
-        <ol role="list" className="flex items-center">
+      <nav aria-label="Progress" className="px-8 py-4 bg-white rounded-lg shadow-sm">
+        <ol role="list" className="flex items-center justify-between">
           {steps.map((step, index) => {
             const StepIcon = step.icon;
+            const isActive = index === currentStepIndex;
+            const isCompleted = validatedSteps.includes(index);
+            const isLast = index === steps.length - 1;
+            
             return (
-              <li key={step.id} className={`relative ${index !== steps.length - 1 ? 'pr-8 sm:pr-20' : ''}`}>
-                <div className="flex items-center">
-                  <div
-                    className={`${
-                      index === currentStepIndex
-                        ? 'border-indigo-600 bg-indigo-600'
-                        : validatedSteps.includes(index)
-                        ? 'border-indigo-600 bg-white'
-                        : 'border-gray-300 bg-white'
-                    } relative flex h-8 w-8 items-center justify-center rounded-full border-2`}
-                  >
-                    <StepIcon
-                      className={`h-5 w-5 ${
-                        index === currentStepIndex
-                          ? 'text-white'
-                          : validatedSteps.includes(index)
-                          ? 'text-indigo-600'
-                          : 'text-gray-500'
-                      }`}
-                    />
-                  </div>
-                  {index !== steps.length - 1 && (
+              <li key={step.id} className={`relative flex-1 ${!isLast ? 'pr-8' : ''}`}>
+                <div className="group flex items-center">
+                  <div className="flex items-center justify-center">
                     <div
-                      className={`absolute top-4 w-full h-0.5 ${
-                        validatedSteps.includes(index) ? 'bg-indigo-600' : 'bg-gray-300'
-                      }`}
-                      style={{ left: '100%', width: 'calc(100% - 2rem)' }}
+                      className={`
+                        relative flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-200
+                        ${isActive ? 'border-indigo-600 bg-indigo-600 ring-2 ring-indigo-100' : 
+                          isCompleted ? 'border-green-500 bg-green-500' : 
+                          'border-gray-300 bg-white'}
+                      `}
+                    >
+                      <StepIcon
+                        className={`h-5 w-5 transition-colors
+                          ${isActive || isCompleted ? 'text-white' : 'text-gray-500'}
+                        `}
+                      />
+                      {isCompleted && !isActive && (
+                        <CheckCircle className="absolute h-4 w-4 text-white" />
+                      )}
+                    </div>
+                  </div>
+                  {!isLast && (
+                    <div
+                      className={`absolute left-0 top-5 -z-10 h-0.5 w-full transition-colors duration-200
+                        ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}
+                      `}
+                      style={{ left: '50%', width: '100%' }}
                     />
                   )}
                 </div>
-                <span className="absolute -bottom-6 w-max text-sm font-medium text-gray-500">
-                  {step.label}
-                </span>
+                <div className="mt-3">
+                  <span 
+                    className={`block text-center text-sm font-medium transition-colors duration-200
+                      ${isActive ? 'text-indigo-600' : 
+                        isCompleted ? 'text-green-600' : 
+                        'text-gray-500'}
+                    `}
+                  >
+                    {step.label}
+                  </span>
+                </div>
               </li>
             );
           })}
