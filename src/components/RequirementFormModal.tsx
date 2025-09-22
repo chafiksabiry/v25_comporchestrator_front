@@ -27,6 +27,7 @@ export interface RequirementFormModalProps {
     value?: string;
     documentUrl?: string;
     rejectionReason?: string;
+    submittedAt?: string;
   }>;
   requirementGroupId?: string;
   onSubmit: (values: Record<string, any>) => Promise<void>;
@@ -43,7 +44,7 @@ export const RequirementFormModal: React.FC<RequirementFormModalProps> = ({
 }) => {
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
+      <Dialog as="div" className="relative z-50" onClose={() => {}} static>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -67,34 +68,56 @@ export const RequirementFormModal: React.FC<RequirementFormModalProps> = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-3xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                <Dialog.Title as="div" className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-medium leading-6 text-gray-900">
-                    Complete Requirements
-                  </h3>
-                  <button
-                    type="button"
-                    className="rounded-md text-gray-400 hover:text-gray-500 focus:outline-none"
-                    onClick={onClose}
-                  >
-                    <X className="h-6 w-6" />
-                  </button>
-                </Dialog.Title>
-
-                <div className="mb-4">
-                  <p className="text-sm text-gray-500">
-                    Please provide the following information to purchase phone numbers in {countryCode}. All documents must be clear and legible.
-                  </p>
+              <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white shadow-xl transition-all">
+                {/* Header avec gradient */}
+                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
+                  <Dialog.Title as="div" className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xl font-semibold text-white">
+                        Complete Requirements
+                      </h3>
+                      <p className="mt-1 text-sm text-indigo-100">
+                        Required information for {countryCode} phone numbers
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="rounded-full p-1 text-indigo-100 hover:bg-indigo-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-white"
+                      onClick={onClose}
+                    >
+                      <X className="h-6 w-6" />
+                    </button>
+                  </Dialog.Title>
                 </div>
 
-                <SteppedRequirementForm
-                  requirements={requirements}
-                  existingValues={existingValues}
-                  requirementGroupId={requirementGroupId}
-                  destinationZone={countryCode.toLowerCase()}
-                  onSubmit={onSubmit}
-                  onCancel={onClose}
-                />
+                {/* Corps du modal avec ombre subtile */}
+                <div className="px-6 py-4 bg-gray-50">
+                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm text-yellow-700">
+                          Please ensure all documents are clear, legible, and in the correct format.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-6 pb-6">
+                  <SteppedRequirementForm
+                    requirements={requirements}
+                    existingValues={existingValues}
+                    requirementGroupId={requirementGroupId}
+                    destinationZone={countryCode.toLowerCase()}
+                    onSubmit={onSubmit}
+                    onCancel={onClose}
+                  />
+                </div>
               </Dialog.Panel>
             </Transition.Child>
           </div>
