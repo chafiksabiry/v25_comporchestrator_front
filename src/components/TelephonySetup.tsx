@@ -15,9 +15,6 @@ import { PurchaseModal } from './PurchaseModal';
 import { RequirementFormModal } from './RequirementFormModal';
 import type { AvailablePhoneNumber } from '../services/api';
 
-const gigId = Cookies.get('lastGigId');
-const companyId = Cookies.get('companyId');
-
 interface PhoneNumber {
   phoneNumber: string;
   status: string;
@@ -35,6 +32,46 @@ interface TelephonySetupProps {
 
 const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Element => {
   const [provider, setProvider] = useState<'telnyx' | 'twilio'>('twilio');
+  const [gigId, setGigId] = useState<string | null>(null);
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [cookieError, setCookieError] = useState<string | null>(null);
+
+  // Effet pour lire les cookies au montage du composant et à chaque 2 secondes si non trouvés
+  useEffect(() => {
+    const readCookies = () => {
+      const newGigId = Cookies.get('lastGigId');
+      const newCompanyId = Cookies.get('companyId');
+      
+      console.log('📝 Reading cookies:', { newGigId, newCompanyId });
+      
+      if (newGigId && newCompanyId) {
+        setGigId(newGigId);
+        setCompanyId(newCompanyId);
+        setCookieError(null);
+        return true;
+      }
+      return false;
+    };
+
+    // Première lecture
+    if (!readCookies()) {
+      console.log('⚠️ Cookies not found on first read, setting up retry interval');
+      
+      // Si les cookies ne sont pas trouvés, réessayer toutes les 2 secondes
+      const interval = setInterval(() => {
+        if (readCookies()) {
+          console.log('✅ Cookies found on retry');
+          clearInterval(interval);
+        } else {
+          console.log('⚠️ Cookies still not found on retry');
+          setCookieError('Required cookies not found. Please refresh the page if this persists.');
+        }
+      }, 2000);
+
+      // Nettoyer l'intervalle si le composant est démonté
+      return () => clearInterval(interval);
+    }
+  }, []);
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [destinationZone, setDestinationZone] = useState('');
   const [availableNumbers, setAvailableNumbers] = useState<AvailablePhoneNumber[]>([]);
@@ -92,11 +129,11 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
   useEffect(() => {
     if (!companyId) {
-      console.error('Company ID not found in cookies');
-      console.log('Company ID not found. Please refresh the page and try again.');
+      console.log('Waiting for company ID...');
       return;
     }
 
+    console.log('🔄 Company ID available, fetching initial data...');
     fetchExistingNumbers();
     fetchDestinationZone();
     checkCompletedSteps();
@@ -608,6 +645,19 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
   return (
     <div className="space-y-6">
+      {cookieError && (
+        <div className="rounded-lg bg-yellow-50 p-4">
+          <div className="flex">
+            <AlertCircle className="h-5 w-5 text-yellow-400" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-yellow-800">Configuration Error</h3>
+              <div className="mt-2 text-sm text-yellow-700">
+                <p>{cookieError}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center space-x-2">
