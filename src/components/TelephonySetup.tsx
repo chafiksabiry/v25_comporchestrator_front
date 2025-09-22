@@ -353,11 +353,11 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         return;
       }
 
-      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`);
+      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}/destination-zone`);
       const res = await response.json();
-      console.log('🌍 Gig data from API:', res.data);
-      console.log('🌍 Destination zone code:', res.data.availability.time_zone.countryCode);
-      setDestinationZone(res.data.availability.time_zone.countryCode);
+      console.log('🌍 Destination zone data from API:', res.data);
+      console.log('🌍 Destination zone code:', res.data.code);
+      setDestinationZone(res.data.code);
     } catch (error) {
       console.error('Error fetching destination zone:', error);
     }
