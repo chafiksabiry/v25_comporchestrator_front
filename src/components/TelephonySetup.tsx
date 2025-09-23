@@ -3,12 +3,9 @@ import axios from 'axios';
 import {
   Phone,
   Globe,
-  VolumeX,
   CheckCircle,
   AlertCircle,
   ChevronDown,
-  ChevronUp,
-  Search,
   Briefcase
 } from 'lucide-react';
 import Cookies from 'js-cookie';
@@ -19,7 +16,6 @@ import { PurchaseModal } from './PurchaseModal';
 import { RequirementFormModal } from './RequirementFormModal';
 import type { AvailablePhoneNumber } from '../services/api';
 
-const companyId = Cookies.get('companyId');
 
 interface PhoneNumber {
   phoneNumber: string;
@@ -32,26 +28,50 @@ interface PhoneNumber {
   provider: 'telnyx' | 'twilio';
 }
 
+interface Gig {
+  _id: string;
+  title: string;
+  description: string;
+  category: string;
+  status: string;
+  destination_zone: {
+    _id: string;
+    name: {
+      common: string;
+      official: string;
+    };
+    flags: {
+      png: string;
+      svg: string;
+      alt: string;
+    };
+    cca2: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface TelephonySetupProps {
   onBackToOnboarding?: () => void;
 }
 
 const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Element => {
   const [provider, setProvider] = useState<'telnyx' | 'twilio'>('twilio');
-  const [gigId, setGigId] = useState<string | null>(null);
+  const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [cookieError, setCookieError] = useState<string | null>(null);
+  const [gigs, setGigs] = useState<Gig[]>([]);
+  const [isLoadingGigs, setIsLoadingGigs] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // Effet pour lire les cookies au montage du composant et à chaque 2 secondes si non trouvés
+  // Effet pour lire le companyId depuis les cookies
   useEffect(() => {
     const readCookies = () => {
-      const newGigId = Cookies.get('lastGigId');
       const newCompanyId = Cookies.get('companyId');
       
-      console.log('📝 Reading cookies:', { newGigId, newCompanyId });
+      console.log('📝 Reading companyId cookie:', newCompanyId);
       
-      if (newGigId && newCompanyId) {
-        setGigId(newGigId);
+      if (newCompanyId) {
         setCompanyId(newCompanyId);
         setCookieError(null);
         return true;
@@ -61,16 +81,16 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
     // Première lecture
     if (!readCookies()) {
-      console.log('⚠️ Cookies not found on first read, setting up retry interval');
+      console.log('⚠️ CompanyId cookie not found on first read, setting up retry interval');
       
-      // Si les cookies ne sont pas trouvés, réessayer toutes les 2 secondes
+      // Si le cookie n'est pas trouvé, réessayer toutes les 2 secondes
       const interval = setInterval(() => {
         if (readCookies()) {
-          console.log('✅ Cookies found on retry');
+          console.log('✅ CompanyId cookie found on retry');
           clearInterval(interval);
         } else {
-          console.log('⚠️ Cookies still not found on retry');
-          setCookieError('Required cookies not found. Please refresh the page if this persists.');
+          console.log('⚠️ CompanyId cookie still not found on retry');
+          setCookieError('Required company ID not found. Please refresh the page if this persists.');
         }
       }, 2000);
 
@@ -140,10 +160,17 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     }
 
     console.log('🔄 Company ID available, fetching initial data...');
-    fetchExistingNumbers();
-    fetchDestinationZone();
+    fetchGigs();
     checkCompletedSteps();
   }, [companyId]);
+
+  // Effet pour récupérer les numéros existants quand un gig est sélectionné
+  useEffect(() => {
+    if (selectedGigId) {
+      console.log('🔄 Selected gig changed, fetching existing numbers...');
+      fetchExistingNumbers();
+    }
+  }, [selectedGigId]);
 
   // Rafraîchir les numéros toutes les 30 secondes si il y a des numéros en attente
   useEffect(() => {
@@ -157,7 +184,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
   }, [phoneNumbers]);
 
   useEffect(() => {
-    if (destinationZone && provider) {
+    if (destinationZone && provider && selectedGigId) {
       if (provider === 'telnyx') {
         // Vérifier si on a déjà un groupe de requirements dans les cookies
         const savedGroupId = Cookies.get(`telnyxRequirementGroup_${companyId}_${destinationZone}`);
@@ -229,11 +256,11 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         }
       } else {
         // Pour les autres providers, chercher directement les numéros
-      console.log('🚀 Auto-searching for available numbers with destination zone:', destinationZone);
-      searchAvailableNumbers();
+        console.log('🚀 Auto-searching for available numbers with destination zone:', destinationZone);
+        searchAvailableNumbers();
       }
     }
-  }, [destinationZone, provider]);
+  }, [destinationZone, provider, selectedGigId]);
 
   const checkRequirements = async () => {
     if (!companyId || !destinationZone) return;
@@ -365,16 +392,41 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     }
   };
 
+  const fetchGigs = async () => {
+    if (!companyId) return;
+    
+    try {
+      setIsLoadingGigs(true);
+      console.log('🔍 Fetching gigs for company:', companyId);
+      
+      const response = await axios.get(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`);
+      console.log('✅ Gigs response:', response.data);
+      
+      if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        setGigs(response.data.data);
+        console.log('📋 Loaded gigs:', response.data.data.length);
+      } else {
+        setGigs([]);
+        console.log('⚠️ No gigs found in response');
+      }
+    } catch (error) {
+      console.error('❌ Error fetching gigs:', error);
+      setGigs([]);
+    } finally {
+      setIsLoadingGigs(false);
+    }
+  };
+
   const fetchExistingNumbers = async () => {
     try {
-      if (!gigId) {
-        console.error('❌ No gigId available');
+      if (!selectedGigId) {
+        console.error('❌ No selectedGigId available');
         setPhoneNumbers([]);
         return;
       }
 
-      console.log('📞 Checking numbers for gig:', gigId);
-      const result = await phoneNumberService.listPhoneNumbers(gigId);
+      console.log('📞 Checking numbers for gig:', selectedGigId);
+      const result = await phoneNumberService.listPhoneNumbers(selectedGigId);
       console.log('📞 Check result:', result);
       
       // Si un numéro est trouvé, le mettre dans le tableau
@@ -389,22 +441,18 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     }
   };
 
-  const fetchDestinationZone = async () => {
-    try {
-      if (!gigId) {
-        console.error('Gig ID not found');
-        return;
+  // Mettre à jour la destination zone quand un gig est sélectionné
+  useEffect(() => {
+    if (selectedGigId && gigs.length > 0) {
+      const selectedGig = gigs.find(gig => gig._id === selectedGigId);
+      if (selectedGig && selectedGig.destination_zone && selectedGig.destination_zone.cca2) {
+        console.log('🌍 Setting destination zone from selected gig:', selectedGig.destination_zone.cca2);
+        setDestinationZone(selectedGig.destination_zone.cca2);
       }
-
-      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}/destination-zone`);
-      const res = await response.json();
-      console.log('🌍 Destination zone data from API:', res.data);
-      console.log('🌍 Destination zone code:', res.data.code);
-      setDestinationZone(res.data.code);
-    } catch (error) {
-      console.error('Error fetching destination zone:', error);
+    } else {
+      setDestinationZone('');
     }
-  };
+  }, [selectedGigId, gigs]);
 
   const getPhoneNumber = (number: AvailablePhoneNumber): string => {
     return number.phoneNumber || number.phone_number || '';
@@ -430,8 +478,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
   };
 
   const purchaseNumber = async (phoneNumber: string) => {
-    if (!gigId || !companyId) {
-      console.error('❌ Required IDs missing:', { gigId, companyId });
+    if (!selectedGigId || !companyId) {
+      console.error('❌ Required IDs missing:', { selectedGigId, companyId });
       setPurchaseError('Configuration error: Required IDs not found');
       return;
     }
@@ -440,7 +488,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       console.log('🛒 Starting purchase process:', {
         phoneNumber,
         provider,
-        gigId,
+        selectedGigId,
         requirementStatus
       });
 
@@ -481,7 +529,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       const purchaseData = {
         phoneNumber,
         provider,
-        gigId,
+        gigId: selectedGigId,
         companyId,
         requirementGroupId: provider === 'telnyx' ? requirementStatus.telnyxId : undefined
       };
