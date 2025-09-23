@@ -10,7 +10,6 @@ import {
   ChevronUp,
   Search,
   Briefcase
-  AlertCircle
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 
