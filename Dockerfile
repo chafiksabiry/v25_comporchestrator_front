@@ -13,16 +13,17 @@ RUN npm install
 
 COPY . .
 
-ENV VITE_GIGS_API=https://api-gigsmanual.harx.ai/api
+ENV VITE_GIGS_API=https://preprod-api-gigsmanual.harx.ai/api
 ENV NODE_ENV=sandbox
-ENV VITE_API_BASE_URL=https://api-Comp-Orchestrator.harx.ai/api
-ENV VITE_COMPANY_API_URL=https://api-companysearchwizard.harx.ai/api
-ENV VITE_DASHBOARD_API=https://api-dashboard.harx.ai/api
-ENV VITE_REP_API=https://api-repcreationwizard.harx.ai/api
+ENV VITE_API_BASE_URL=https://preprod-api-Comp-Orchestrator.harx.ai/api
+ENV VITE_COMPANY_API_URL=https://preprod-api-companysearchwizard.harx.ai/api
+ENV VITE_DASHBOARD_API=https://preprod-api-dashboard.harx.ai/api
+ENV VITE_REP_API=https://preprod-api-repcreationwizard.harx.ai/api
 ENV VITE_GOOGLE_API_KEY=AIzaSyCHEKiraViKIrgvloZI-ZBIJqtDMeBuQD0
 ENV VITE_KNOWLEDGE_BASE_URL=/knowledgebase/upload
-ENV VITE_OPENAI_API_KEY=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
+ENV VITE_OPENAI_API_KEY=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
 ENV VITE_SCRIPT_GENERATION_BASE_URL=/knowledgebase/script-generator
+
 RUN npm run build
 
 RUN npm install -g serve
