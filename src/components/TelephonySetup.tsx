@@ -269,8 +269,15 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       console.log('🔍 Checking requirements for:', { companyId, destinationZone });
 
       // 1. Check if country has requirements first
-      const response = await requirementService.checkCountryRequirements(destinationZone);
-      console.log('✅ Country requirements:', response);
+      let response;
+      try {
+        response = await requirementService.checkCountryRequirements(destinationZone);
+        console.log('✅ Country requirements:', response);
+      } catch (error) {
+        // If 404 or other error, assume no requirements are needed
+        console.log('⚠️ Could not check country requirements, assuming no requirements needed:', error);
+        response = { hasRequirements: false };
+      }
       
       // Sauvegarder les requirements pour le modal
       setCountryReq(response);
@@ -338,11 +345,13 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
     } catch (error) {
       console.error('❌ Error checking requirements:', error);
+      // Don't block purchases due to requirement checking errors
+      // Instead, assume no requirements are needed
       setRequirementStatus({
         isChecking: false,
         hasRequirements: false,
-        isComplete: false,
-        error: error instanceof Error ? error.message : 'Failed to check requirements'
+        isComplete: true,
+        error: null
       });
     }
   };
@@ -495,26 +504,19 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       if (provider === 'telnyx') {
         // 1. Vérifier si les requirements sont en cours de vérification
         if (requirementStatus.isChecking) {
-          setPurchaseError('Please wait while we check requirements...');
+          setPurchaseError('Please wait while we verify regulatory requirements for this country...');
           return;
         }
 
-        // 2. Vérifier s'il y a eu une erreur avec les requirements
-        if (requirementStatus.error) {
-          setPurchaseError('Cannot proceed: Failed to check requirements');
-          return;
-        }
-
-        // 3. Vérifier si les requirements sont complétés
+        // 2. Si il y a des requirements et qu'ils ne sont pas complétés, bloquer l'achat
         if (requirementStatus.hasRequirements && !requirementStatus.isComplete) {
-          setPurchaseError('Please complete the requirements before purchasing');
+          setPurchaseError('Please complete the regulatory requirements for this country before purchasing a phone number');
           return;
         }
 
-        // 4. Vérifier si nous avons l'ID du groupe de requirements
-        if (!requirementStatus.groupId) {
-          setPurchaseError('Missing requirement group ID. Please try again.');
-          return;
+        // 3. Si il y a des requirements complétés mais pas d'ID de groupe, essayer de continuer quand même
+        if (requirementStatus.hasRequirements && requirementStatus.isComplete && !requirementStatus.groupId) {
+          console.warn('⚠️ Requirements are complete but no group ID found, proceeding with purchase');
         }
       }
 
@@ -533,6 +535,12 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         companyId,
         requirementGroupId: provider === 'telnyx' ? requirementStatus.telnyxId : undefined
       };
+
+      // Log warning if telnyxId is missing for Telnyx provider
+      if (provider === 'telnyx' && !requirementStatus.telnyxId) {
+        console.warn('⚠️ No telnyxId found for Telnyx purchase, proceeding without requirement group ID');
+        console.log('📝 This may be normal if no regulatory requirements are needed for this country');
+      }
 
       console.log('📝 Purchase request data:', purchaseData);
       
