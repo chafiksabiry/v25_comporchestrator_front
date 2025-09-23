@@ -338,26 +338,11 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
     } catch (error) {
       console.error('❌ Error checking requirements:', error);
-      
-      let errorMessage = 'Failed to check requirements';
-      
-      if (error instanceof Error) {
-        if (error.message.includes('404')) {
-          errorMessage = 'Requirements service not available (404)';
-        } else if (error.message.includes('500')) {
-          errorMessage = 'Requirements service error (500)';
-        } else if (error.message.includes('Network Error')) {
-          errorMessage = 'Network connection error';
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
       setRequirementStatus({
         isChecking: false,
         hasRequirements: false,
         isComplete: false,
-        error: errorMessage
+        error: error instanceof Error ? error.message : 'Failed to check requirements'
       });
     }
   };
@@ -926,43 +911,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         </div>
 
 
-        {/* Requirements Error for Telnyx Numbers */}
-        {provider === 'telnyx' && requirementStatus.error && (
-          <div className="mb-4 rounded-lg bg-red-50 p-4">
-            <div className="flex">
-              <AlertCircle className="h-5 w-5 text-red-400" />
-              <div className="ml-3 flex-grow">
-                <h3 className="text-sm font-medium text-red-800">Requirements Check Failed</h3>
-                <div className="mt-2 text-sm text-red-700">
-                  <p>Unable to check requirements for {destinationZone}: {requirementStatus.error}</p>
-                  <p className="mt-1">This may be due to a temporary service issue. You can try:</p>
-                  <ul className="mt-2 list-disc list-inside space-y-1">
-                    <li>Refreshing the page</li>
-                    <li>Switching to Twilio provider</li>
-                    <li>Contacting support if the issue persists</li>
-                  </ul>
-                  <div className="mt-3 flex space-x-2">
-                    <button
-                      onClick={() => window.location.reload()}
-                      className="inline-flex items-center rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                    >
-                      Refresh Page
-                    </button>
-                    <button
-                      onClick={() => setProvider('twilio')}
-                      className="inline-flex items-center rounded-md bg-blue-100 px-3 py-2 text-sm font-medium text-blue-800 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                    >
-                      Switch to Twilio
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Requirements Warning for Telnyx Numbers */}
-        {provider === 'telnyx' && requirementStatus.hasRequirements && !requirementStatus.isComplete && !requirementStatus.error && (
+        {provider === 'telnyx' && requirementStatus.hasRequirements && !requirementStatus.isComplete && (
           <div className="mb-4 rounded-lg bg-yellow-50 p-4">
             <div className="flex">
               <AlertCircle className="h-5 w-5 text-yellow-400" />
@@ -1005,8 +955,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
       {/* Purchased Numbers Section - Visible for Telnyx only when requirements are met */}
       {provider === 'telnyx' ? (
-        // Pour Telnyx, vérifier si les requirements sont satisfaits ou s'il y a une erreur
-        (!requirementStatus.hasRequirements || requirementStatus.isComplete || requirementStatus.error) && (
+        // Pour Telnyx, vérifier si les requirements sont satisfaits
+        (!requirementStatus.hasRequirements || requirementStatus.isComplete) && (
           <div className="mb-6 space-y-2">
             <h4 className="text-sm font-medium text-gray-700">Purchased Telnyx Numbers</h4>
             <div className="grid gap-2">
@@ -1108,17 +1058,15 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                         setPurchaseStatus('confirming');
                         setShowPurchaseModal(true);
                       }}
-                      disabled={provider === 'telnyx' && (requirementStatus.hasRequirements || requirementStatus.error)}
+                      disabled={provider === 'telnyx' && requirementStatus.hasRequirements}
                       className={`rounded-md px-3 py-1 text-sm text-white ${
-                        provider === 'telnyx' && (requirementStatus.hasRequirements || requirementStatus.error)
+                        provider === 'telnyx' && requirementStatus.hasRequirements
                           ? 'bg-gray-400 cursor-not-allowed'
                           : 'bg-green-600 hover:bg-green-700'
                       }`}
                       title={
                         provider === 'telnyx' && requirementStatus.hasRequirements
                           ? 'Please complete the requirements before purchasing'
-                          : provider === 'telnyx' && requirementStatus.error
-                          ? 'Cannot purchase due to requirements check error'
                           : undefined
                       }
                     >
