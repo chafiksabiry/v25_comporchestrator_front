@@ -19,26 +19,83 @@ interface Gig {
     bonus: string;
     bonusAmount: string;
     structure: string;
-    currency: string;
+    currency: {
+      _id: string;
+      code: string;
+      name: string;
+      symbol: string;
+      isActive: boolean;
+      createdAt: string;
+      updatedAt: string;
+      __v: number;
+    };
     transactionCommission: {
       type: string;
       amount: string;
     };
+    additionalDetails?: string;
   };
   availability: {
+    minimumHours: {
+      daily: number;
+      weekly: number;
+      monthly: number;
+    };
     schedule: Array<{
       day: string;
       hours: {
         start: string;
         end: string;
       };
+      _id: string;
     }>;
-    timeZone: string;
+    time_zone: {
+      _id: string;
+      countryCode: string;
+      countryName: string;
+      zoneName: string;
+      gmtOffset: number;
+      lastUpdated: string;
+      __v: number;
+      createdAt: string;
+      updatedAt: string;
+    };
     flexibility: string[];
   };
   team: {
     size: string;
-    territories: string[];
+    structure: Array<{
+      seniority: {
+        level: string;
+        yearsExperience: string;
+      };
+      roleId: string;
+      count: number;
+      _id: string;
+    }>;
+    territories: Array<{
+      name: {
+        common: string;
+        official: string;
+        nativeName: {
+          [key: string]: {
+            official: string;
+            common: string;
+            _id: string;
+          };
+        };
+      };
+      flags: {
+        png: string;
+        svg: string;
+        alt: string;
+      };
+      _id: string;
+      cca2: string;
+      __v: number;
+      createdAt: string;
+      updatedAt: string;
+    }>;
   };
   createdAt: string;
   updatedAt: string;
@@ -126,11 +183,13 @@ const GigDetails = () => {
   const formatCommission = (commission: Gig['commission']) => {
     if (!commission) return 'Not specified';
     
+    const currencySymbol = commission.currency?.symbol || '€';
+    
     if (commission.transactionCommission?.amount) {
-      return `${commission.transactionCommission.amount} ${commission.currency || 'EUR'}`;
+      return `${commission.transactionCommission.amount} ${currencySymbol}`;
     }
     if (commission.bonusAmount) {
-      return `${commission.bonusAmount} ${commission.currency || 'EUR'}`;
+      return `${commission.bonusAmount} ${currencySymbol}`;
     }
     return commission.base || 'Not specified';
   };

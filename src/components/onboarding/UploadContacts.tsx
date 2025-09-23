@@ -1,34 +1,3 @@
-/**
- * UploadContacts Component - Composant d'importation et gestion des contacts/leads
- * 
- * Ce composant permet de gérer l'importation et la gestion des contacts/leads pour une entreprise.
- * Il offre deux méthodes principales d'importation :
- * 
- * 1. Import depuis un fichier (CSV, Excel, PDF, TXT) :
- *    - Utilise OpenAI pour analyser et extraire les données
- *    - Validation automatique des données
- *    - Prévisualisation avant sauvegarde
- *    - Support de multiples formats de fichiers
- * 
- * 2. Import depuis Zoho CRM :
- *    - Connexion OAuth avec Zoho
- *    - Synchronisation automatique des leads
- *    - Gestion des tokens d'accès
- * 
- * Fonctionnalités principales :
- * - Gestion des gigs (projets) associés aux leads
- * - Filtrage et recherche des contacts
- * - Pagination des résultats
- * - Auto-complétion de l'étape 6 d'onboarding quand des leads sont importés
- * - Préservation des leads existants lors de nouveaux uploads
- * - Gestion des erreurs et validation des données
- * - Édition en ligne des données
- * - Validation des données avant import
- * - Interface utilisateur responsive
- * 
- * @component
- * @returns {JSX.Element} Le composant UploadContacts
- */
 import React, { useState, useRef, useEffect } from 'react';
 import {
   FileText,
@@ -54,7 +23,6 @@ import {
 import zohoLogo from '../../assets/public/images/zoho-logo.png';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import * as XLSX from 'xlsx';
 import Cookies from 'js-cookie';
 import ZohoService from '../../services/zohoService';
 
@@ -121,12 +89,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       isProcessing: false
     });
     
-    // Clear all storage items
-    localStorage.removeItem('uploadProcessing');
-    localStorage.removeItem('parsedLeads');
+      // Clear all storage items
+      localStorage.removeItem('uploadProcessing');
+      localStorage.removeItem('parsedLeads');
     localStorage.removeItem('validationResults');
-    sessionStorage.removeItem('uploadProcessing');
-    sessionStorage.removeItem('parsedLeads');
+      sessionStorage.removeItem('uploadProcessing');
+      sessionStorage.removeItem('parsedLeads');
     sessionStorage.removeItem('validationResults');
     
     // Remove processing indicators
@@ -249,9 +217,11 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   const [showLeadsPreview, setShowLeadsPreview] = useState(true);
   const [validationResults, setValidationResults] = useState<any>(null);
   const [editingLeadIndex, setEditingLeadIndex] = useState<number | null>(null);
+  const [dataTooLarge, setDataTooLarge] = useState(false);
   const urlParamsProcessedRef = useRef(false);
   const processingRef = useRef(false);
   const dataRestoredRef = useRef(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // State for progress tracking
   const [processingProgress, setProcessingProgress] = useState<{
@@ -288,6 +258,157 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     });
   };
 
+  // Utility function to safely store data in localStorage/sessionStorage
+  const safeStorageSet = (key: string, data: any, useSessionStorage = false) => {
+    try {
+      // Limit data size first, then compress
+      const limitedData = limitDataSize(data, 50); // Limit to 50 items for storage
+      const compressedData = compressData(limitedData);
+      const dataString = JSON.stringify(compressedData);
+      
+      // Check data size (1MB limit for localStorage, 3MB for sessionStorage)
+      const maxSize = useSessionStorage ? 3 * 1024 * 1024 : 1 * 1024 * 1024;
+      
+      if (dataString.length > maxSize) {
+        if (useSessionStorage) {
+          console.warn(`⚠️ Data for ${key} too large for sessionStorage (${Math.round(dataString.length / 1024 / 1024)}MB)`);
+          return false;
+        } else {
+          console.warn(`⚠️ Data for ${key} too large for localStorage, using sessionStorage`);
+          return safeStorageSet(key, data, true);
+        }
+      }
+      
+      if (useSessionStorage) {
+        sessionStorage.setItem(key, dataString);
+      } else {
+        localStorage.setItem(key, dataString);
+      }
+      return true;
+    } catch (error) {
+      console.warn(`⚠️ Storage full for ${key}, cleaning up and retrying`);
+      
+      // Clean up storage and try again
+      cleanupLocalStorage();
+      
+      try {
+        const limitedData = limitDataSize(data, 25); // Further limit to 25 items
+        const compressedData = compressData(limitedData);
+        const dataString = JSON.stringify(compressedData);
+        
+        if (useSessionStorage) {
+          sessionStorage.setItem(key, dataString);
+        } else {
+          localStorage.setItem(key, dataString);
+        }
+        return true;
+      } catch (retryError) {
+        if (useSessionStorage) {
+          console.error(`❌ Both localStorage and sessionStorage are full for ${key}`);
+          return false;
+        } else {
+          console.warn(`⚠️ Still full after cleanup, trying sessionStorage for ${key}`);
+          return safeStorageSet(key, data, true);
+        }
+      }
+    }
+  };
+
+  // Utility function to safely get data from localStorage/sessionStorage
+  const safeStorageGet = (key: string) => {
+    try {
+      // Try localStorage first
+      let data = localStorage.getItem(key);
+      if (data) {
+        return JSON.parse(data);
+      }
+      
+      // Try sessionStorage if not found in localStorage
+      data = sessionStorage.getItem(key);
+      if (data) {
+        return JSON.parse(data);
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`❌ Error parsing data for ${key}:`, error);
+      return null;
+    }
+  };
+
+  // Function to compress data before storage
+  const compressData = (data: any) => {
+    try {
+      // Remove unnecessary fields to reduce size
+      if (Array.isArray(data)) {
+        return data.map(lead => ({
+          _id: lead._id,
+          gigId: lead.gigId,
+          userId: lead.userId,
+          companyId: lead.companyId,
+          Email_1: lead.Email_1,
+          Phone: lead.Phone,
+          Deal_Name: lead.Deal_Name,
+          Stage: lead.Stage,
+          Pipeline: lead.Pipeline,
+          updatedAt: lead.updatedAt
+        }));
+      }
+      return data;
+    } catch (error) {
+      console.error('❌ Error compressing data:', error);
+      return data;
+    }
+  };
+
+  // Function to limit data size for storage
+  const limitDataSize = (data: any, maxItems: number = 100) => {
+    try {
+      if (Array.isArray(data)) {
+        // If data is too large, keep only the most recent items
+        if (data.length > maxItems) {
+          console.warn(`⚠️ Limiting data to ${maxItems} items (was ${data.length})`);
+          return data.slice(-maxItems); // Keep last 100 items
+        }
+      }
+      return data;
+    } catch (error) {
+      console.error('❌ Error limiting data size:', error);
+      return data;
+    }
+  };
+
+  // Function to clean up localStorage when it's full
+  const cleanupLocalStorage = () => {
+    try {
+      // Remove old processing data
+      localStorage.removeItem('uploadProcessing');
+      sessionStorage.removeItem('uploadProcessing');
+      
+      // Keep only essential data, remove large datasets
+      const keysToKeep = ['companyOnboardingProgress', 'kycVerificationStepCompleted'];
+      const allKeys = Object.keys(localStorage);
+      
+      allKeys.forEach(key => {
+        if (!keysToKeep.includes(key) && (key.includes('leads') || key.includes('parsed'))) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      // Also clean sessionStorage
+      const sessionKeys = Object.keys(sessionStorage);
+      sessionKeys.forEach(key => {
+        if (key.includes('leads') || key.includes('parsed')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+      
+      console.log('🧹 Cleaned up localStorage and sessionStorage to free space');
+    } catch (error) {
+      console.error('❌ Error cleaning up localStorage:', error);
+    }
+  };
+
   // Function to update real progress during OpenAI processing
   const updateRealProgress = (progress: number, status: string) => {
     // Check if processing was cancelled
@@ -295,8 +416,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       return;
     }
     
-    
-    // Update both progress states
+    // Update both progress states immediately - no artificial delays
     setUploadProgress(progress);
     setProcessingProgress({
       current: progress,
@@ -304,18 +424,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       status,
       isProcessing: true
     });
-    
-    // Add a small delay for smooth visual updates
-    if (progress < 100) {
-      setTimeout(() => {
-        // Ensure we're still processing
-        if (isProcessing && processingRef.current) {
-          // Add a small increment to show activity
-          const currentProgress = Math.min(progress + 1, 99);
-          setUploadProgress(currentProgress);
-        }
-      }, 100);
-    }
   };
 
   // Check if we're currently processing on component mount
@@ -345,25 +453,15 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     
     // Restore parsed leads if they exist and we haven't already restored them
     if (!dataRestoredRef.current && !componentInitializedRef.current) {
-      const savedParsedLeads = localStorage.getItem('parsedLeads');
-      const savedValidationResults = localStorage.getItem('validationResults');
+      const savedParsedLeads = safeStorageGet('parsedLeads');
+      const savedValidationResults = safeStorageGet('validationResults');
       
       if (savedParsedLeads && !parsedLeads.length) {
-        try {
-          const leads = JSON.parse(savedParsedLeads);
-          setParsedLeads(leads);
-        } catch (error) {
-          console.error('Error restoring parsed leads:', error);
-        }
+        setParsedLeads(savedParsedLeads);
       }
       
       if (savedValidationResults && !validationResults) {
-        try {
-          const validation = JSON.parse(savedValidationResults);
-          setValidationResults(validation);
-        } catch (error) {
-          console.error('Error restoring validation results:', error);
-        }
+        setValidationResults(savedValidationResults);
       }
       
       dataRestoredRef.current = true;
@@ -375,7 +473,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   useEffect(() => {
     // If we have parsed leads in state but they're about to be lost, save them
     if (parsedLeads.length > 0) {
-      localStorage.setItem('parsedLeads', JSON.stringify(parsedLeads));
+      // Only save if data is not too large
+      const success = safeStorageSet('parsedLeads', parsedLeads);
+      if (!success) {
+        console.warn('⚠️ Could not save parsed leads to storage - keeping in memory only');
+        // Set a flag to indicate data is only in memory
+        setParsedLeads(prev => prev.map(lead => ({ ...lead, _memoryOnly: true })));
+      }
     }
     
     // Ensure cancelProcessing function is always available
@@ -402,9 +506,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     return () => {
       // Only save leads if we're not intentionally closing the component
       // Check if this is a manual close (onBackToOnboarding was called)
-      const isManualClose = !localStorage.getItem('parsedLeads');
+      const isManualClose = !localStorage.getItem('parsedLeads') && !sessionStorage.getItem('parsedLeads');
       if (parsedLeads.length > 0 && !isManualClose) {
-        localStorage.setItem('parsedLeads', JSON.stringify(parsedLeads));
+        safeStorageSet('parsedLeads', parsedLeads);
       }
     };
   }, [parsedLeads]);
@@ -432,169 +536,16 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   ];
 
 
-    // Function to clean email addresses by removing prefixes and invalid characters
-  const cleanEmailAddresses = (content: string): string => {
-    
-    // First, identify the "Email" column (last column) and clean emails there specifically
-    const lines = content.split('\n');
-    const cleanedLines = lines.map((line, index) => {
-      if (index === 0) {
-        // Header row - keep as is
-        return line;
-      }
-      
-      const columns = line.split(',');
-      if (columns.length >= 24) { // "Email" is the last column (position 24, 0-indexed = 23)
-        const emailColumn = columns[23]; // Index 23 for "Email" (last column)
-        if (emailColumn && emailColumn.includes('@')) {
-          // Clean the email in "Email" column
-          const cleanedEmail = emailColumn.replace(/^Nor\s+/, '').trim();
-          columns[23] = cleanedEmail;
-        }
-      }
-      
-      return columns.join(',');
-    });
-    
-    const cleanedContent = cleanedLines.join('\n');
-    
-    // Also apply general cleaning for any other email columns
-    const generalCleaned = cleanedContent.replace(/Nor\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, '$1');
-    const finalCleaned = generalCleaned.replace(/(?:Prefix|Label|Tag)\s+([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g, '$1');
-    
-    return finalCleaned;
-  };
 
-  // Function to optimize CSV content by keeping only essential columns
-
-  // Function to process optimized content
-
-  // Helper function to recover incomplete JSON from OpenAI responses
-  const tryRecoverIncompleteJSON = (content: string, expectedLeads: number): any | null => {
+  const processFileWithBackend = async (file: File): Promise<{leads: any[], validation: any}> => {
     try {
-      
-      // Method 1: Try to find complete lead objects and reconstruct
-      const leadPattern = /\{[^}]*"userId"[^}]*"Email_1"[^}]*"Phone"[^}]*\}/g;
-      const leadMatches = content.match(leadPattern);
-      
-      if (leadMatches && leadMatches.length > 0) {
-        
-        // Reconstruct JSON with found leads
-        const leadsJson = leadMatches.map(obj => obj.trim()).join(',\n    ');
-        const reconstructedJson = `{
-  "leads": [
-    ${leadsJson}
-  ],
-  "validation": {
-    "totalRows": ${expectedLeads},
-    "validRows": ${leadMatches.length},
-    "invalidRows": ${Math.max(0, expectedLeads - leadMatches.length)},
-    "errors": ["JSON was incomplete but leads were recovered"]
-  }
-}`;
-        
-        try {
-          const parsed = JSON.parse(reconstructedJson);
-          return parsed;
-        } catch (e) {
-        }
+      // Check if processing was cancelled
+      if (!processingRef.current) {
+        throw new Error('Processing cancelled by user');
       }
       
-      // Method 2: Try to fix common JSON issues
-      let fixedContent = content;
-      
-      // Remove trailing commas before closing braces
-      fixedContent = fixedContent.replace(/,(\s*[}\]])/g, '$1');
-      
-      // Add missing closing braces if needed
-      const openBraces = (fixedContent.match(/\{/g) || []).length;
-      const closeBraces = (fixedContent.match(/\}/g) || []).length;
-      const openBrackets = (fixedContent.match(/\[/g) || []).length;
-      const closeBrackets = (fixedContent.match(/\]/g) || []).length;
-      
-      if (openBraces > closeBraces) {
-        fixedContent += '}'.repeat(openBraces - closeBraces);
-      }
-      if (openBrackets > closeBrackets) {
-        fixedContent += ']'.repeat(openBrackets - closeBrackets);
-      }
-      
-      // Try to parse the fixed content
-      try {
-        const parsed = JSON.parse(fixedContent);
-        if (parsed.leads && Array.isArray(parsed.leads)) {
-          return parsed;
-        }
-      } catch (e) {
-      }
-      
-      // Method 3: Extract partial leads and create minimal valid JSON
-      const partialLeads = [];
-      const leadStartPattern = /\{[^}]*"userId"[^}]*/g;
-      let match;
-      
-      while ((match = leadStartPattern.exec(content)) !== null) {
-        const startPos = match.index;
-        const endPos = content.indexOf('}', startPos);
-        
-        if (endPos > startPos) {
-          const leadStr = content.substring(startPos, endPos + 1);
-          try {
-            const leadObj = JSON.parse(leadStr);
-            if (leadObj.userId && leadObj.Email_1) {
-              partialLeads.push(leadObj);
-            }
-          } catch (e) {
-            // Skip invalid lead objects
-          }
-        }
-      }
-      
-      if (partialLeads.length > 0) {
-        
-        const minimalJson = `{
-  "leads": ${JSON.stringify(partialLeads)},
-  "validation": {
-    "totalRows": ${expectedLeads},
-    "validRows": ${partialLeads.length},
-    "invalidRows": ${Math.max(0, expectedLeads - partialLeads.length)},
-    "errors": ["JSON was incomplete but partial leads were recovered"]
-  }
-}`;
-        
-        try {
-          return JSON.parse(minimalJson);
-        } catch (e) {
-        }
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Error in JSON recovery:', error);
-      return null;
-    }
-  };
-
-  const processFileWithOpenAI = async (fileContent: string, fileType: string, isOptimized: boolean = false): Promise<{leads: any[], validation: any}> => {
-    
-          try {
-        // Check if processing was cancelled
-        if (!processingRef.current) {
-          throw new Error('Processing cancelled by user');
-        }
-        
-        // Create new AbortController for this request
-        abortControllerRef.current = new AbortController();
-      
-      const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
-      if (!openaiApiKey) {
-        throw new Error('OpenAI API key not configured');
-      }
-
-      // Validate API key format
-      if (!openaiApiKey.startsWith('sk-')) {
-        throw new Error('Invalid OpenAI API key format');
-      }
+      // Create new AbortController for this request
+      abortControllerRef.current = new AbortController();
 
       const userId = Cookies.get('userId');
       const gigId = selectedGigId;
@@ -608,498 +559,72 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         throw new Error('Missing user or company information');
       }
 
-              // Clean the file content before sending to OpenAI
-        const cleanedFileContent = cleanEmailAddresses(fileContent);
-        
-        // Check if processing was cancelled after cleaning
-        if (!processingRef.current) {
-          throw new Error('Processing cancelled by user');
-        }
-        
-        // Reduce content size for faster processing
-      const maxContentLength = 25000; // Reduced from 50000
-      
-      // Count the number of lines
-      const lines = cleanedFileContent.split('\n');
-      
-      // Check if content is too large or has many lines - use smart chunking for very large files
-      if (!isOptimized && (cleanedFileContent.length > 100000 || lines.length > 200)) {
-        console.warn(`⚠️ File is very large (${lines.length} lines, ${cleanedFileContent.length} characters) - using smart chunking`);
-        
-        // Use smart chunking for very large files to avoid token limit issues
-        showProcessingStatus(`Traitement par lots intelligents (${lines.length} lignes)...`);
-        
-        // Start real progress updates with more granular steps
-        updateRealProgress(5, 'Initialisation du traitement...');
-        await new Promise(resolve => setTimeout(resolve, 200)); // Small delay for visual feedback
-        
-        updateRealProgress(15, 'Analyse de la structure du fichier...');
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        updateRealProgress(25, 'Préparation des données...');
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Use smart chunking to process the file in manageable pieces
-        const result = await processLargeFileInChunks(cleanedFileContent, fileType, lines);
-        
-        updateRealProgress(100, 'Traitement terminé !');
-        return result;
-      }
-      
-      // For smaller files, use single batch processing
-      if (!isOptimized && (cleanedFileContent.length > maxContentLength || lines.length > 50)) {
-        console.warn(`⚠️ File is large (${lines.length} lines, ${cleanedFileContent.length} characters) - processing in single batch like ChatGPT`);
-        
-        // Process the entire file at once for better performance
-        showProcessingStatus(`Traitement du fichier complet (${lines.length} lignes)...`);
-        
-        // Start real progress updates with more granular steps
-        updateRealProgress(5, 'Initialisation du traitement...');
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        updateRealProgress(15, 'Analyse de la structure du fichier...');
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        updateRealProgress(25, 'Préparation des données...');
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        updateRealProgress(35, 'Nettoyage des données...');
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Increase the content limit for large files
-        const largeFileMaxLength = 100000; // Reduced to avoid token limit issues
-        const finalContent = cleanedFileContent.length > largeFileMaxLength 
-          ? cleanedFileContent.substring(0, largeFileMaxLength) + '\n... [content truncated due to size]'
-        : cleanedFileContent;
-      
-        if (cleanedFileContent.length > largeFileMaxLength) {
-          console.warn(`⚠️ WARNING: File content was truncated! Only processing first ${largeFileMaxLength} characters`);
-          console.warn(`   This may result in incomplete processing. Consider splitting very large files.`);
-        }
-        
-        updateRealProgress(45, 'Envoi à OpenAI...');
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call time
-        
-        updateRealProgress(55, 'Traitement par l\'IA...');
-        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate processing time
-        
-        // Use the same processing logic but with the full content
-        const result = await processFileWithOpenAI(finalContent, fileType, true);
-        
-        updateRealProgress(75, 'Validation des résultats...');
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        updateRealProgress(85, 'Finalisation...');
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        updateRealProgress(100, 'Traitement terminé !');
-        
-        // Validate that we got the expected number of leads
-        if (result.leads.length !== lines.length - 1) {
-          console.error(`❌ CRITICAL ERROR: Expected ${lines.length - 1} leads, but got ${result.leads.length}`);
-          console.error(`   This means OpenAI did not process all rows as instructed!`);
-          
-          // Force creation of missing leads
-          const missingLeads = lines.length - 1 - result.leads.length;
-          console.warn(`⚠️ Creating ${missingLeads} missing leads to complete the dataset...`);
-          
-          // Create placeholder leads for missing rows
-          for (let i = result.leads.length; i < lines.length - 1; i++) {
-            const rowData = lines[i + 1]; // +1 because lines[0] is header
-            const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
-            const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
-            
-            result.leads.push({
-              userId: { $oid: userId },
-              companyId: { $oid: companyId },
-              gId: { $oid: gigId },
-              Last_Activity_Time: null,
-              Deal_Name: email || `Lead from row ${i + 2}`,
-              Email_1: email,
-              Phone: phone,
-              Stage: "New",
-              Pipeline: "Sales Pipeline",
-              Project_Tags: [],
-              Prénom: "",
-              Nom: ""
-            });
-          }
-          
-          // Update validation to reflect all leads are now valid
-          result.validation.validRows = result.leads.length;
-          result.validation.invalidRows = 0;
-          
-        }
-        
-        return result;
-      }
-      
-      // Prepare content for OpenAI (using the fileContent parameter)
-      const truncatedContent = fileContent;
-      
-      // Ultra-simple prompt to avoid JSON truncation
-      const prompt = `Process ${lines.length - 1} rows. Return ONLY valid JSON:
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', file);
 
-{
-  "leads": [
-    {
-      "userId": {"$oid": "${userId}"},
-      "companyId": {"$oid": "${companyId}"},
-      "gigId": {"$oid": "${gigId}"},
-      "Deal_Name": "Prénom Nom",
-      "Email_1": "email@exemple.com",
-      "Phone": "+33123456789",
-      "Stage": "New",
-      "Pipeline": "Sales Pipeline"
-    }
-  ]
-}
+      // Simple progress update
+      updateRealProgress(20, 'Sending file to server...');
 
-EXEMPLE: Si une ligne a Prénom="Jean" et Nom="Dupont", alors Deal_Name="Jean Dupont"
-EXEMPLE: Si une ligne a Prénom="Marie" et Nom="", alors Deal_Name="Marie Unknown"
-EXEMPLE: Si une ligne a Prénom="" et Nom="Martin", alors Deal_Name="Unknown Martin"
-
-CRITICAL RULES:
-1. Email→Email_1, Phone→Phone
-2. Deal_Name = Prénom + Nom (OBLIGATOIRE pour toutes les lignes)
-3. Si Prénom ou Nom manque, utilise "Unknown" pour la partie manquante
-4. JAMAIS utiliser l'email comme Deal_Name sauf si Prénom ET Nom sont vides
-5. Process ALL rows - never skip any
-6. Format Deal_Name: "Prénom Nom" (exemple: "Jean Dupont", "Marie Unknown", "Unknown Martin")
-
-Data:
-${truncatedContent}`;
-
-      // Update progress for OpenAI request
-      if (isOptimized) {
-        updateRealProgress(60, 'Traitement par OpenAI...');
-      }
-
-      // Check prompt size to avoid token limit issues
-      let finalPrompt = prompt;
-      if (prompt.length > 150000) { // Conservative limit for GPT-3.5-turbo
-        console.warn('⚠️ Prompt is very large, truncating content...');
-        const maxPromptLength = 100000;
-        finalPrompt = prompt.substring(0, maxPromptLength) + '\n... [content truncated due to size]';
-      }
-
-      const requestBody = {
-        model: 'gpt-3.5-turbo',
-          messages: [
-            {
-              role: 'system',
-            content: 'You are a data processing expert. Return ONLY valid JSON. Never return text explanations.'
-            },
-            {
-              role: 'user',
-            content: finalPrompt
-          }
-        ],
-        temperature: 0.1
-        // Removed max_tokens to use model's maximum limit
-      };
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      // Send file to backend for processing - optimized request
+      const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/file-processing/process`, {
         method: 'POST',
+        body: formData,
+        signal: abortControllerRef.current?.signal,
+        // Add headers for better performance
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openaiApiKey}`
-        },
-        body: JSON.stringify(requestBody),
-        signal: abortControllerRef.current?.signal
+          'Accept': 'application/json',
+        }
       });
 
       if (!response.ok) {
-        // Get detailed error information
-        let errorMessage = `OpenAI API error: ${response.status} ${response.statusText}`;
+        let errorMessage = `Backend error: ${response.status} ${response.statusText}`;
         try {
           const errorData = await response.json();
           if (errorData.error) {
-            errorMessage += ` - ${errorData.error.message || errorData.error.type || 'Unknown error'}`;
+            errorMessage = errorData.error;
           }
         } catch (e) {
-          // If we can't parse the error response, use the status text
+          // Use status text if we can't parse error
         }
-        
-        console.error('OpenAI API Error Details:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorMessage
-        });
-        
         throw new Error(errorMessage);
       }
 
+      // Parse response immediately
       const data = await response.json();
-      const content = data.choices[0]?.message?.content;
       
-      if (!content) {
-        throw new Error('No response from OpenAI');
+      if (!data.success) {
+        throw new Error(data.error || 'Backend processing failed');
       }
 
-      // Update progress for response processing
-      if (isOptimized) {
-        updateRealProgress(80, 'Analyse de la réponse OpenAI...');
-      }
-
-      // Simplified error handling
-      if (content.trim().toLowerCase().startsWith('i\'m sorry') || 
-          content.trim().toLowerCase().startsWith('sorry') ||
-          content.trim().toLowerCase().includes('cannot') ||
-          content.trim().toLowerCase().includes('unable')) {
-        console.warn('⚠️ OpenAI returned an error message:', content);
-        
-        return {
-          leads: [],
-          validation: {
-            totalRows: 0,
-            validRows: 0,
-            invalidRows: 0,
-            errors: [`OpenAI Error: ${content.substring(0, 100)}...`]
-          }
-        };
-      }
-
-      // Parse the JSON response with recovery for incomplete JSON
-      let parsedData;
+      const result = data.data;
       
-      // Check if JSON appears complete
-      const trimmedContent = content.trim();
-      const isCompleteJSON = trimmedContent.startsWith('{') && trimmedContent.endsWith('}') && 
-                            trimmedContent.includes('"leads"');
-      
-      if (!isCompleteJSON) {
-        console.warn('⚠️ OpenAI returned incomplete JSON, attempting recovery...');
-        const recoveredData = tryRecoverIncompleteJSON(content, lines.length - 1);
-        if (recoveredData) {
-          parsedData = recoveredData;
-        } else {
-          throw new Error('Failed to recover incomplete JSON response');
-        }
-      } else {
-        try {
-          parsedData = JSON.parse(content);
-        } catch (parseError) {
-          console.warn('⚠️ JSON parse error, attempting recovery...');
-          const recoveredData = tryRecoverIncompleteJSON(content, lines.length - 1);
-          if (recoveredData) {
-            parsedData = recoveredData;
-          } else {
-            throw new Error(`JSON parse error: ${parseError}`);
-          }
-        }
+      if (!result || !result.leads || !Array.isArray(result.leads)) {
+        throw new Error('Invalid response format from backend');
       }
 
-      // Validate the parsed data
-      if (!parsedData || !parsedData.leads || !Array.isArray(parsedData.leads)) {
-        throw new Error('Invalid response format from OpenAI');
-      }
+      // Add IDs to each lead on the frontend
+      const leadsWithIds = result.leads.map((lead: any) => ({
+        ...lead,
+        userId: { $oid: userId },
+        companyId: { $oid: companyId },
+        gigId: { $oid: gigId }
+      }));
 
-      // Process the leads to ensure they have the required fields
-      const processedLeads = parsedData.leads.map((lead: any): any => {
-        // FORCE Deal_Name to be Prénom + Nom (never email)
-        let dealName = '';
-        
-        // Extract Prénom and Nom from the lead data
-        const prenom = lead.Prénom || lead.prénom || lead.Prenom || lead.prenom || '';
-        const nom = lead.Nom || lead.nom || lead.Name || lead.name || '';
-        
-        // Always create Deal_Name from Prénom + Nom
-        if (prenom || nom) {
-          dealName = `${prenom} ${nom}`.trim();
-        } else {
-          // Only use email if absolutely no name data available
-          dealName = lead.Deal_Name || 'Unknown Lead';
-        }
-        
-        // Ensure required fields are present
-        return {
-          userId: lead.userId || { $oid: userId },
-          companyId: lead.companyId || { $oid: companyId },
-          gId: lead.gId || { $oid: gigId },
-          Last_Activity_Time: lead.Last_Activity_Time || null,
-          Deal_Name: dealName,
-          Email_1: lead.Email_1 || 'no-email@placeholder.com',
-          Phone: lead.Phone || '',
-          Stage: lead.Stage || 'New',
-          Pipeline: lead.Pipeline || 'Sales Pipeline',
-          Project_Tags: lead.Project_Tags || [],
-          Prénom: prenom,
-          Nom: nom
-        };
-      });
-
-      // Final validation
-      const totalRows = lines.length - 1; // Exclude header
-      const validRows = processedLeads.length;
-      const invalidRows = Math.max(0, totalRows - validRows);
-
-      // Update final progress
-      if (isOptimized) {
-        updateRealProgress(95, 'Finalisation du traitement...');
-      }
-
-      // Handle missing leads gracefully - create placeholder leads for unprocessed rows
-      const expectedLeads = lines.length - 1; // -1 for header
-      if (processedLeads.length < expectedLeads) {
-        const missingLeads = expectedLeads - processedLeads.length;
-        console.warn(`⚠️ OpenAI processed ${processedLeads.length}/${expectedLeads} leads. Creating ${missingLeads} placeholder leads for unprocessed rows.`);
-        
-        // Create placeholder leads for missing rows
-        for (let i = processedLeads.length; i < expectedLeads; i++) {
-          const rowData = lines[i + 1]; // +1 because lines[0] is header
-          const email = rowData.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || '';
-          const phone = rowData.match(/[\+]?[0-9\s\-\(\)]{8,}/)?.[0] || '';
-          
-          processedLeads.push({
-            userId: { $oid: userId },
-            companyId: { $oid: companyId },
-            gId: { $oid: gigId },
-            Last_Activity_Time: null,
-            Deal_Name: email || `Lead from row ${i + 2}`,
-            Email_1: email,
-            Phone: phone,
-            Stage: "New",
-            Pipeline: "Sales Pipeline",
-            Project_Tags: [],
-            Prénom: "",
-            Nom: "",
-            _isPlaceholder: true // Mark as placeholder for tracking
-          });
-        }
-      }
-
-      // Separate valid and invalid leads for better tracking
-      const validLeads = processedLeads.filter((lead: any) => !(lead as any)._isPlaceholder);
-      const invalidLeads = processedLeads.filter((lead: any) => (lead as any)._isPlaceholder);
+      // Final progress update
+      updateRealProgress(100, 'Processing completed!');
 
       return {
-        leads: processedLeads, // Return all leads (valid + invalid)
-        validation: {
-          totalRows,
-          validRows: validLeads.length,
-          invalidRows: invalidLeads.length,
-          errors: []
-        }
+        ...result,
+        leads: leadsWithIds
       };
 
     } catch (error) {
-      console.error('❌ Error in processFileWithOpenAI:', error);
+      console.error('❌ Error in processFileWithBackend:', error);
       throw error;
     }
   };
 
-  // Helper function to process individual chunks asynchronously
-  const processChunkAsync = async (chunkIndex: number, chunkLines: string[], fileType: string, totalChunks: number) => {
-    try {
-      // Update progress for chunk processing
-      const chunkProgress = 30 + (chunkIndex / totalChunks) * 60; // 30% to 90%
-      const currentChunkProgress = Math.round(chunkProgress);
-      updateRealProgress(currentChunkProgress, `Traitement du lot ${chunkIndex + 1}/${totalChunks} (lignes ${chunkIndex * 100 + 1}-${Math.min((chunkIndex + 1) * 100, chunkLines.length - 1)})...`);
-      
-      // Process this chunk
-      const chunkResult = await processFileWithOpenAI(chunkLines.join('\n'), fileType, true);
-      
-      if (chunkResult.leads && chunkResult.leads.length > 0) {
-        // Update progress after successful chunk processing
-        const successProgress = 30 + ((chunkIndex + 1) / totalChunks) * 60;
-        updateRealProgress(Math.round(successProgress), `Lot ${chunkIndex + 1}/${totalChunks} terminé (${chunkResult.leads.length} leads)`);
-        return chunkResult;
-      } else {
-        console.warn(`⚠️ Chunk ${chunkIndex + 1} returned no leads`);
-        return { leads: [], validation: { totalRows: 0, validRows: 0, invalidRows: 0, errors: [] } };
-      }
-      
-    } catch (error: any) {
-      console.error(`❌ Error processing chunk ${chunkIndex + 1}:`, error);
-      // Return empty result instead of failing completely
-      return { leads: [], validation: { totalRows: 0, validRows: 0, invalidRows: 0, errors: [error.message] } };
-    }
-  };
-
-  // Smart chunking function for large files
-  const processLargeFileInChunks = async (fileContent: string, fileType: string, lines: string[]): Promise<{leads: any[], validation: any}> => {
-    
-    // Calculate optimal chunk size to respect OpenAI token limits
-    const maxTokensPerChunk = 12000; // Conservative limit (16,385 - safe buffer)
-    const estimatedTokensPerLine = 25; // Realistic estimate for CSV data
-    const optimalChunkSize = Math.min(100, Math.floor(maxTokensPerChunk / estimatedTokensPerLine)); // Max 100 lines per chunk for safety
-    
-    
-    const allLeads: any[] = [];
-    const totalChunks = Math.ceil((lines.length - 1) / optimalChunkSize);
-    
-    // Update progress for chunk processing start
-    updateRealProgress(30, `Début du traitement par lots (${totalChunks} lots à traiter)...`);
-    
-    // Process chunks in parallel for maximum speed
-    const maxConcurrent = 25; // Process 25 chunks simultaneously for maximum speed
-    const chunkPromises: Promise<any>[] = [];
-    
-    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-      // Check if processing was cancelled
-      if (!processingRef.current) {
-        throw new Error('Processing cancelled by user');
-      }
-      
-      const startLine = chunkIndex * optimalChunkSize + 1; // +1 to skip header
-      const endLine = Math.min((chunkIndex + 1) * optimalChunkSize, lines.length - 1);
-      
-      // Create chunk with header + data rows for this specific chunk
-      const chunkLines = [
-        lines[0], // Header row
-        ...lines.slice(startLine, endLine + 1) // Data rows for this chunk
-      ];
-      
-      // Create promise for this chunk
-      const chunkPromise = processChunkAsync(chunkIndex, chunkLines, fileType, totalChunks);
-      chunkPromises.push(chunkPromise);
-      
-      // Process in batches to avoid overwhelming the API
-      if (chunkPromises.length >= maxConcurrent || chunkIndex === totalChunks - 1) {
-        try {
-          const batchResults = await Promise.all(chunkPromises);
-          
-          // Collect leads from batch
-          for (const result of batchResults) {
-            if (result && result.leads && result.leads.length > 0) {
-              allLeads.push(...result.leads);
-            }
-          }
-          
-          // Update progress after batch processing
-          const batchProgress = 30 + ((chunkIndex + 1) / totalChunks) * 60;
-          updateRealProgress(Math.round(batchProgress), `Lot ${chunkIndex + 1}/${totalChunks} terminé (${allLeads.length} leads collectés)`);
-          
-          // Clear batch for next iteration
-          chunkPromises.length = 0;
-          
-        } catch (error: any) {
-          console.error(`❌ Error processing batch ending at chunk ${chunkIndex + 1}:`, error);
-          // Continue with next batch instead of failing completely
-        }
-      }
-    }
-    
-    
-    // Final progress update
-    updateRealProgress(95, 'Finalisation du traitement par lots...');
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    // Separate valid and invalid leads for better tracking
-    const validLeads = allLeads.filter((lead: any) => !(lead as any)._isPlaceholder);
-    const invalidLeads = allLeads.filter((lead: any) => (lead as any)._isPlaceholder);
-
-    return {
-      leads: allLeads, // Return all leads (valid + invalid)
-      validation: {
-        totalRows: lines.length - 1,
-        validRows: validLeads.length,
-        invalidRows: invalidLeads.length,
-        errors: []
-      }
-    };
-  };
 
 
 
@@ -1165,166 +690,55 @@ ${truncatedContent}`;
       sessionStorage.setItem('uploadProcessing', 'true');
       
       try {
-        // Read the file content
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          try {
             // Check if processing was cancelled before starting
             if (!processingRef.current) {
               return;
             }
             
-            let fileContent = '';
-            let fileType = '';
+        // Process with backend - optimized
+        const result = await processFileWithBackend(file);
 
-            // Determine file type based on extension
-            const fileExtension = file.name.toLowerCase().split('.').pop();
-            
-            if (fileExtension === 'xlsx' || fileExtension === 'xls') {
-              fileType = 'Excel';
-              const data = new Uint8Array(e.target?.result as ArrayBuffer);
-              const workbook = XLSX.read(data, { type: 'array' });
-              const sheetName = workbook.SheetNames[0];
-              const worksheet = workbook.Sheets[sheetName];
-              
-              // Read Excel as JSON with headers to preserve column structure
-              const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-              
-              // Convert to structured format preserving column names
-              const headers = jsonData[0] as string[];
-              const dataRows = jsonData.slice(1) as any[][];
-              
-              // Convert structured data to readable format for OpenAI
-              const csvFormat = [
-                headers.join(','),
-                ...dataRows.map(row => row.map(cell => `"${cell || ''}"`).join(','))
-              ].join('\n');
-              
-              fileContent = csvFormat;
-            } else if (fileExtension === 'csv') {
-              fileType = 'CSV';
-              fileContent = e.target?.result as string;
-            } else if (fileExtension === 'json') {
-              fileType = 'JSON';
-              fileContent = e.target?.result as string;
-            } else if (fileExtension === 'txt') {
-              fileType = 'Text';
-              fileContent = e.target?.result as string;
-            } else if (fileExtension === 'pdf') {
-              fileType = 'PDF';
-              // For PDF files, we'll send the raw content and let OpenAI extract text
-              fileContent = e.target?.result as string;
-            } else {
-              // For any other file type, treat as text
-              fileType = 'Unknown';
-              fileContent = e.target?.result as string;
-            }
-
-            setUploadProgress(30);
-            
-            // Check if processing was cancelled before OpenAI call
-            if (!processingRef.current) {
-              return;
-            }
-            
-            // Process with OpenAI
-            const startTime = Date.now();
-            const result = await processFileWithOpenAI(fileContent, fileType);
-            const processingTime = Date.now() - startTime;
-            
-            setUploadProgress(80);
-
-            if (result.leads.length === 0) {
-              toast.error('No valid leads found in the file. Please check the file format and content.');
-              setUploadError('No valid leads found');
-              setIsProcessing(false);
-              setUploadProgress(0);
-              return;
-            }
-
-            // Show validation results (suppressed error popups as requested by user)
-            if (result.validation) {
-              const { totalRows, validRows, invalidRows, errors } = result.validation;
-
-              setValidationResults(result.validation);
-              
-              // Use actual leads count if validRows is undefined or 0
-              const actualValidRows = validRows || result.leads.length;
-            }
-
-            // Verify we got all expected leads
-            const fileLines = fileContent.split('\n').filter((line: string) => line.trim());
-            const expectedLeads = fileLines.length - 1; // Exclude header row
-            
-            setParsedLeads(result.leads);
-            
-            // Store results in localStorage to prevent loss
-            localStorage.setItem('parsedLeads', JSON.stringify(result.leads));
-            localStorage.setItem('validationResults', JSON.stringify(result.validation));
-            
-            // Restore existing leads after processing
-            if (currentLeads.length > 0) {
-              setLeads(currentLeads);
-              setFilteredLeads(currentFilteredLeads);
-            }
-            
-            setIsProcessing(false);
-            setUploadProgress(100);
-            
-            // Remove processing indicator
-            document.body.removeAttribute('data-processing');
-            processingRef.current = false;
-            localStorage.removeItem('uploadProcessing');
-            sessionStorage.removeItem('uploadProcessing');
-            
-          } catch (error: any) {
-            console.error('Error processing file:', error);
-            let errorMessage = 'Error processing file';
-            
-            if (error.message.includes('Rate limit exceeded')) {
-              errorMessage = 'Rate limit exceeded. Please wait a moment before trying again.';
-            } else if (error.message.includes('OpenAI API key not configured')) {
-              errorMessage = 'OpenAI API key not configured. Please check your environment variables.';
-            } else if (error.message.includes('OpenAI API error')) {
-              errorMessage = 'OpenAI API error. Please check your API key and try again.';
-            } else if (error.message.includes('Invalid response format')) {
-              errorMessage = 'AI processing returned invalid format. Please check your file structure.';
-            } else {
-              errorMessage = error.response?.data?.message || error.message || 'Error processing file';
-            }
-            
-            setUploadError(errorMessage);
-            toast.error(errorMessage);
-            setUploadProgress(0);
-            setIsProcessing(false);
-            
-            // Remove processing indicator on error
-            document.body.removeAttribute('data-processing');
-            processingRef.current = false;
-            localStorage.removeItem('uploadProcessing');
-            sessionStorage.removeItem('uploadProcessing');
-          }
-        };
-
-        reader.onerror = () => {
-          setUploadError('Error reading file');
-          toast.error('Error reading file');
-          setUploadProgress(0);
+        if (result.leads.length === 0) {
+          toast.error('No valid leads found in the file. Please check the file format and content.');
+          setUploadError('No valid leads found');
           setIsProcessing(false);
-        };
-
-        // Read file based on type
-        const fileExtension = file.name.toLowerCase().split('.').pop();
-        
-        if (fileExtension === 'xlsx' || fileExtension === 'xls') {
-          reader.readAsArrayBuffer(file);
-        } else if (fileExtension === 'pdf') {
-          // For PDF files, we'll try to read as text first, then as array buffer if needed
-          reader.readAsText(file);
-        } else {
-          // For all other file types, read as text
-          reader.readAsText(file);
+          setUploadProgress(0);
+          return;
         }
+
+        // Show validation results
+        if (result.validation) {
+          setValidationResults(result.validation);
+        }
+        
+        setParsedLeads(result.leads);
+        
+        // Store results safely - only if not too large
+        const leadsStored = safeStorageSet('parsedLeads', result.leads);
+        const validationStored = safeStorageSet('validationResults', result.validation);
+        
+        if (!leadsStored) {
+          console.warn('⚠️ Could not save leads to storage - data too large, keeping in memory only');
+          setDataTooLarge(true);
+        }
+        if (!validationStored) {
+          console.warn('⚠️ Could not save validation results to storage - data too large');
+        }
+        
+        // Restore existing leads after processing
+        if (currentLeads.length > 0) {
+          setLeads(currentLeads);
+          setFilteredLeads(currentFilteredLeads);
+        }
+        
+        setIsProcessing(false);
+        setUploadProgress(100);
+        
+        // Remove processing indicator
+        document.body.removeAttribute('data-processing');
+        processingRef.current = false;
+        localStorage.removeItem('uploadProcessing');
+        sessionStorage.removeItem('uploadProcessing');
       } catch (error: any) {
         console.error('Error uploading file:', error);
         const errorMessage = error.message || 'Error uploading file';
@@ -1373,6 +787,14 @@ ${truncatedContent}`;
       const currentGigId = selectedGigId;
       const currentCompanyId = Cookies.get('companyId');
       
+      // Debug: Log the IDs being used for lead saving
+      console.log('💾 Saving leads with IDs:');
+      console.log(`   currentUserId: ${currentUserId}`);
+      console.log(`   currentGigId: ${currentGigId}`);
+      console.log(`   currentCompanyId: ${currentCompanyId}`);
+      console.log(`   Cookie gigId: ${Cookies.get('gigId')}`);
+      console.log(`   selectedGigId: ${selectedGigId}`);
+      
       const leadsForAPI = parsedLeads.map((lead: any) => ({
         userId: lead.userId?.$oid || currentUserId,
         companyId: lead.companyId?.$oid || currentCompanyId,
@@ -1407,7 +829,7 @@ ${truncatedContent}`;
               {
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`
+                  'Authorization': `Bearer ${currentGigId}:${currentUserId}`
                 },
                 timeout: 10000 // 10 secondes de timeout
               }
@@ -1421,8 +843,8 @@ ${truncatedContent}`;
             const savedLead: Lead = {
               _id: responseData._id || `temp_${Date.now()}_${i}`,
               gigId: responseData.gigId || selectedGigId,
-              userId: responseData.userId || Cookies.get('userId') || '',
-              companyId: responseData.companyId || Cookies.get('companyId') || '',
+              userId: responseData.userId || currentUserId || '',
+              companyId: responseData.companyId || currentCompanyId || '',
               Email_1: responseData.Email_1 || lead.Email_1,
               Phone: responseData.Phone || lead.Phone,
               Deal_Name: responseData.Deal_Name || lead.Deal_Name,
@@ -1433,19 +855,17 @@ ${truncatedContent}`;
             
             setRecentlySavedLeads(prev => [...prev, savedLead]);
             
+            // Ajouter immédiatement le lead sauvegardé à la liste principale
+            setLeads(prevLeads => [...prevLeads, savedLead]);
+            setFilteredLeads(prevFilteredLeads => [...prevFilteredLeads, savedLead]);
+            setTotalCount(prevCount => prevCount + 1);
+            
             // Mettre à jour la progression et le compteur immédiatement
             const progress = Math.round(((i + 1) / leadsForAPI.length) * 100);
             setUploadProgress(progress);
             setSavedLeadsCount(savedLeads.length);
             
-            // Rafraîchir automatiquement la liste des leads tous les 10 leads ou à la fin
-            if (savedLeads.length % 10 === 0 || i === leadsForAPI.length - 1) {
-              try {
-                await fetchLeads();
-              } catch (error) {
-                console.warn('Error refreshing leads during save:', error);
-              }
-            }
+            // Les leads sont maintenant ajoutés en temps réel, plus besoin de fetchLeads
           } else {
             failedLeads.push({ index: i, error: response.statusText });
           }
@@ -1473,10 +893,9 @@ ${truncatedContent}`;
         setUploadProgress(100);
         toast.success(`Successfully saved ${savedCount} contacts!`);
         
-        // Rafraîchir la liste des leads une dernière fois
-        if (selectedGigId) {
-          await fetchLeads();
-        }
+        // Les leads ont été ajoutés en temps réel, effacer seulement les leads parsés
+        setParsedLeads([]);
+        setRecentlySavedLeads([]);
         
         // Mettre à jour l'onboarding
         try {
@@ -1504,10 +923,13 @@ ${truncatedContent}`;
         // Afficher les erreurs dans la console
         console.warn('Failed leads:', failedLeads);
         
-        // Rafraîchir quand même pour montrer les leads sauvegardés
-        if (selectedGigId) {
-          await fetchLeads();
-        }
+        // Les leads sauvegardés ont été ajoutés en temps réel
+        // Garder seulement les leads parsés qui ont échoué pour permettre une nouvelle tentative
+        const failedParsedLeads = parsedLeads.filter((_, index) => 
+          failedLeads.some(failed => failed.index === index)
+        );
+        setParsedLeads(failedParsedLeads);
+        setRecentlySavedLeads([]);
         
       } else {
         // Aucun lead n'a été sauvegardé
@@ -1615,7 +1037,7 @@ ${truncatedContent}`;
     setIsDisconnectingZoho(true);
     try {
       const userId = Cookies.get('userId');
-      const gigId = Cookies.get('gigId');
+      const gigId = selectedGigId || Cookies.get('gigId');
       
       if (!userId) {
         console.error('No userId found in cookies');
@@ -1720,7 +1142,7 @@ ${truncatedContent}`;
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Cookies.get('gigId')}:${userId}`
+          'Authorization': `Bearer ${selectedGigId || Cookies.get('gigId')}:${userId}`
         }
       });
   
@@ -1747,9 +1169,9 @@ ${truncatedContent}`;
   }, [hasZohoConfig, isProcessing]);
 
   // Ajout d'une fonction utilitaire pour fetch Zoho avec refresh automatique
-  const fetchZohoWithAutoRefresh = async (url: string, options: RequestInit = {}) => {
+  const fetchZohoWithAutoRefresh = async (url: string, options: RequestInit = {}, customGigId?: string) => {
     const userId = Cookies.get('userId');
-    const gigId = Cookies.get('gigId');
+    const gigId = customGigId || selectedGigId || Cookies.get('gigId');
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${gigId}:${userId}`,
@@ -1806,7 +1228,6 @@ ${truncatedContent}`;
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`,
           'Accept': 'application/json',
         },
         credentials: 'include',
@@ -1815,7 +1236,7 @@ ${truncatedContent}`;
           companyId: companyId,
           gigId: selectedGigId
         })
-      });
+      }, selectedGigId);
       if (!checkResponse.ok) {
         const errorData = await checkResponse.json().catch(() => null);
         throw new Error(errorData?.message || `Erreur lors de la synchronisation avec Zoho pour le gig ${selectedGig.title}`);
@@ -1827,13 +1248,15 @@ ${truncatedContent}`;
       if (!data.data || !Array.isArray(data.data.leads)) {
         setRealtimeLeads([]);
         setParsedLeads([]);
-        await fetchLeads();
+        await fetchLeads(1, '');
         return;
       }
       const leadsFromApi = data.data.leads;
+      console.log('📥 Leads importés de Zoho:', leadsFromApi.length, 'leads');
       setRealtimeLeads(leadsFromApi);
       setParsedLeads(leadsFromApi);
-      await fetchLeads();
+      console.log('🔄 Appel fetchLeads après import Zoho');
+      await fetchLeads(1, '');
       
       // Déclencher une mise à jour de l'état d'onboarding pour marquer le step 6 comme complété
       if (leadsFromApi.length > 0) {
@@ -1857,7 +1280,7 @@ ${truncatedContent}`;
     }
   };
 
-  const fetchLeads = async (page = currentPage) => {
+  const fetchLeads = async (page = 1, searchQuery = '') => {
     // Skip fetching leads if we're currently processing a file
     if (isProcessing || processingRef.current) {
       return;
@@ -1886,11 +1309,21 @@ ${truncatedContent}`;
     setIsLoadingLeads(true);
     setError(null);
     try {
-      // Fetch leads with pagination (50 per page)
-      const apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=50`;
+      let apiUrl: string;
+      
+      if (searchQuery.trim()) {
+        // Utiliser l'endpoint de recherche dédié
+        apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}/search?search=${encodeURIComponent(searchQuery.trim())}`;
+        console.log('🔍 Recherche leads avec URL:', apiUrl);
+      } else {
+        // Utiliser l'endpoint normal avec pagination
+        apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=50`;
+        console.log('📄 Récupération leads avec URL:', apiUrl);
+      }
+      
       const response = await fetch(apiUrl, {
         headers: {
-          'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`,
+          'Authorization': `Bearer ${selectedGigId}:${Cookies.get('userId')}`,
           'Content-Type': 'application/json'
         }
       });
@@ -1900,6 +1333,7 @@ ${truncatedContent}`;
       }
 
       const responseData: ApiResponse = await response.json();
+      console.log('📊 Réponse API leads:', responseData);
       
       if (!responseData.success) {
         throw new Error('Failed to fetch leads: API returned unsuccessful response');
@@ -1911,9 +1345,24 @@ ${truncatedContent}`;
 
       setLeads(responseData.data);
       setFilteredLeads(responseData.data); // Initialiser les leads filtrés
-      setTotalPages(responseData.totalPages);
-      setCurrentPage(responseData.currentPage);
-      setTotalCount(responseData.total);
+      
+      // Nettoyer realtimeLeads quand on charge des leads depuis l'API
+      if (responseData.data.length > 0) {
+        setRealtimeLeads([]);
+        setParsedLeads([]);
+      }
+      
+      if (searchQuery.trim()) {
+        // Pour la recherche, afficher tous les résultats sur une seule page
+        setTotalPages(1);
+        setCurrentPage(1);
+        setTotalCount(responseData.data.length);
+      } else {
+        // Pour la pagination normale
+        setTotalPages(responseData.totalPages);
+        setCurrentPage(responseData.currentPage);
+        setTotalCount(responseData.total);
+      }
     } catch (error: unknown) {
       console.error('Error fetching leads:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch leads';
@@ -1924,23 +1373,24 @@ ${truncatedContent}`;
     }
   };
 
+  // useEffect pour charger les leads normalement
   useEffect(() => {
+    console.log('🔍 useEffect principal - selectedGigId:', selectedGigId, 'isProcessing:', isProcessing, 'parsedLeads:', parsedLeads.length);
+    
     // Skip this effect if we're currently processing a file
     if (isProcessing || processingRef.current) {
-      return;
-    }
-
-    // Skip if we have parsed leads that should be preserved
-    if (parsedLeads.length > 0 || localStorage.getItem('parsedLeads') || sessionStorage.getItem('parsedLeads')) {
+      console.log('⏸️ Skipping - processing in progress');
       return;
     }
 
     if (selectedGigId) {
-      fetchLeads().catch(error => {
+      console.log('📡 Chargement des leads pour gigId:', selectedGigId);
+      fetchLeads(1, '').catch(error => {
         console.error('Error in useEffect:', error);
         setError('Failed to load leads');
       });
     } else {
+      console.log('❌ Pas de selectedGigId, clearing leads');
       // Don't clear leads if we're processing or have parsed leads
       if (processingRef.current || localStorage.getItem('uploadProcessing') === 'true' || sessionStorage.getItem('uploadProcessing') === 'true' || parsedLeads.length > 0) {
         return;
@@ -1953,6 +1403,32 @@ ${truncatedContent}`;
       }
     }
   }, [selectedGigId, isProcessing]);
+
+  // useEffect pour recharger les leads après l'import Zoho
+  useEffect(() => {
+    console.log('🔍 useEffect rechargement - realtimeLeads:', realtimeLeads.length, 'selectedGigId:', selectedGigId, 'isProcessing:', isProcessing);
+    // Recharger les leads si on vient de finir l'import Zoho et qu'on a des leads
+    if (realtimeLeads.length > 0 && selectedGigId && !isProcessing) {
+      console.log('🔄 Rechargement des leads après import Zoho');
+      fetchLeads(1, '').catch(error => {
+        console.error('Error reloading leads after Zoho import:', error);
+      });
+    }
+  }, [realtimeLeads.length, selectedGigId, isProcessing]);
+
+  // useEffect pour charger les leads au montage du composant
+  useEffect(() => {
+    console.log('🚀 useEffect montage - selectedGigId:', selectedGigId, 'parsedLeads:', parsedLeads.length, 'realtimeLeads:', realtimeLeads.length);
+    
+    // Charger les leads si on a un gigId et qu'on n'a pas encore de leads affichés
+    if (selectedGigId && leads.length === 0 && realtimeLeads.length === 0 && !isProcessing) {
+      console.log('🔄 Chargement initial des leads');
+      fetchLeads(1, '').catch(error => {
+        console.error('Error in initial load useEffect:', error);
+        setError('Failed to load leads');
+      });
+    }
+  }, []); // Se déclenche seulement au montage
 
   useEffect(() => {
     // Skip this effect if we're currently processing a file
@@ -2018,7 +1494,7 @@ ${truncatedContent}`;
     buttons.push(
       <button
         key={1}
-        onClick={() => fetchLeads(1)}
+        onClick={() => fetchLeads(1, searchQuery)}
         className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
           1 === currentPage
             ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
@@ -2054,7 +1530,7 @@ ${truncatedContent}`;
       buttons.push(
         <button
           key={i}
-          onClick={() => fetchLeads(i)}
+          onClick={() => fetchLeads(i, searchQuery)}
           className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
             i === currentPage
               ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
@@ -2080,7 +1556,7 @@ ${truncatedContent}`;
       buttons.push(
         <button
           key={totalPages}
-          onClick={() => fetchLeads(totalPages)}
+          onClick={() => fetchLeads(totalPages, searchQuery)}
           className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
             totalPages === currentPage
               ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
@@ -2105,7 +1581,7 @@ ${truncatedContent}`;
 
       const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`, {
         headers: {
-          'Authorization': `Bearer ${Cookies.get('gigId')}:${Cookies.get('userId')}`,
+          'Authorization': `Bearer ${selectedGigId || Cookies.get('gigId')}:${Cookies.get('userId')}`,
           'Content-Type': 'application/json'
         }
       });
@@ -2172,31 +1648,46 @@ ${truncatedContent}`;
     setParsedLeads(newLeads);
   };
 
-  // Fonction de filtrage des leads
-  const filterLeads = (leads: Lead[], query: string, status: string) => {
+  // Fonction de filtrage des leads - maintenant déclenche une recherche API
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    
+    // Annuler le timeout précédent s'il existe
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Délai pour éviter trop d'appels API pendant la frappe
+    searchTimeoutRef.current = setTimeout(async () => {
+      // Si on a une requête de recherche, récupérer tous les résultats
+      if (query.trim()) {
+        await fetchLeads(1, query); // Récupérer tous les résultats de recherche
+      } else {
+        // Si pas de recherche, recharger les leads normaux avec pagination
+        await fetchLeads(1);
+      }
+    }, 500); // 500ms de délai
+  };
+
+  // Fonction de filtrage par statut (local uniquement)
+  const filterLeadsByStatus = (leads: Lead[], status: string) => {
+    if (status === 'all') return leads;
+    
     return leads.filter(lead => {
-      // Filtre par recherche textuelle
-      const searchMatch = query === '' || 
-        lead.Deal_Name?.toLowerCase().includes(query.toLowerCase()) ||
-        lead.Email_1?.toLowerCase().includes(query.toLowerCase()) ||
-        lead.Phone?.toLowerCase().includes(query.toLowerCase()) ||
-        lead.Stage?.toLowerCase().includes(query.toLowerCase()) ||
-        lead.Pipeline?.toLowerCase().includes(query.toLowerCase());
-
-      // Filtre par statut
-      const statusMatch = status === 'all' || 
-        (status === 'active' && lead.Stage !== 'Closed') ||
-        (status === 'inactive' && lead.Stage === 'Closed');
-
-      return searchMatch && statusMatch;
+      if (status === 'active') {
+        return lead.Stage !== 'Closed';
+      } else if (status === 'inactive') {
+        return lead.Stage === 'Closed';
+      }
+      return true;
     });
   };
 
-  // Effet pour filtrer les leads quand la recherche ou le statut change
+  // Effet pour filtrer les leads par statut seulement (la recherche est gérée par l'API)
   useEffect(() => {
-    const filtered = filterLeads(leads, searchQuery, filterStatus);
+    const filtered = filterLeadsByStatus(leads, filterStatus);
     setFilteredLeads(filtered);
-  }, [leads, searchQuery, filterStatus]);
+  }, [leads, filterStatus]);
 
   const handleCancelModal = () => {
     localStorage.setItem('hasSeenImportChoiceModal', 'true');
@@ -2275,115 +1766,115 @@ ${truncatedContent}`;
         {/* Import Methods Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
           {/* Zoho Import Card */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02]">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-blue-200 shadow-sm">
-                  <img 
-                    src={zohoLogo} 
-                    alt="Zoho CRM" 
-                    className="h-7 w-7 object-contain"
-                  />
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold text-blue-900">Zoho CRM Integration</h4>
-                  <p className="text-sm text-blue-700">Connect and sync with your Zoho CRM</p>
-                </div>
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] flex flex-col h-full">
+            {/* Header */}
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-blue-200 shadow-sm">
+                <img 
+                  src={zohoLogo} 
+                  alt="Zoho CRM" 
+                  className="h-7 w-7 object-contain"
+                />
               </div>
-              <div className="flex space-x-2">
-                {hasZohoAccessToken ? (
-                  <button
-                    onClick={handleZohoDisconnect}
-                    disabled={isDisconnectingZoho}
-                    className="px-4 py-2 text-sm font-medium text-red-700 bg-red-200 hover:bg-red-300 rounded-xl transition-colors duration-200 shadow-sm disabled:opacity-50"
-                  >
-                    {isDisconnectingZoho ? (
-                      <div className="flex items-center">
-                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                        Disconnecting...
-                      </div>
-                    ) : (
-                      <div className="flex items-center">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Disconnect
-                      </div>
-                    )}
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleZohoConnect}
-                    className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-200 hover:bg-blue-300 rounded-xl transition-colors duration-200 shadow-sm"
-                  >
-                    <div className="flex items-center">
-                      <img 
-                        src={zohoLogo} 
-                        alt="Zoho" 
-                        className="h-4 w-4 mr-2 object-contain"
-                      />
-                      Connect to Zoho
-                    </div>
-                  </button>
-                )}
-              </div>
-            </div>
-            <button
-              onClick={async () => {
-                if (!selectedGigId) {
-                  toast.error('Please select a gig first');
-                  return;
-                }
-                await handleImportFromZoho();
-              }}
-              disabled={!hasZohoAccessToken || isImportingZoho}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-            >
-              {isImportingZoho ? (
-                <div className="flex items-center justify-center">
-                  <RefreshCw className="mr-3 h-5 w-5 animate-spin" />
-                  Importing from Zoho...
-                </div>
-              ) : !hasZohoAccessToken ? (
-                <div className="flex items-center justify-center">
-                  <img 
-                    src={zohoLogo} 
-                    alt="Zoho" 
-                    className="h-6 w-6 mr-3 object-contain"
-                  />
-                  Connect to Zoho CRM First
-                </div>
-              ) : (
-                <div className="flex items-center justify-center">
-                  <img 
-                    src={zohoLogo} 
-                    alt="Zoho" 
-                    className="h-6 w-6 mr-3 object-contain"
-                  />
-                  Sync with Zoho CRM
-                </div>
-              )}
-            </button>
-          </div>
-
-          {/* File Upload Card */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02]" data-file-upload>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-blue-200 shadow-sm">
-                  <FileSpreadsheet className="h-6 w-6 text-blue-700" />
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold text-blue-900">File Upload</h4>
-                  <p className="text-sm text-blue-700">Upload and process contact files</p>
-                </div>
+              <div className="flex-1">
+                <h4 className="text-xl font-bold text-blue-900">Zoho CRM Integration</h4>
+                <p className="text-sm text-blue-700">Connect and sync with your Zoho CRM</p>
               </div>
             </div>
             
-            {/* File Upload Area */}
-            <div className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl cursor-pointer">
-              <label htmlFor="file-upload" className="cursor-pointer group block">
-                <div className="flex items-center justify-center space-x-3">
-                  <FileSpreadsheet className="h-6 w-6 text-white" />
-                  <span className="text-base font-semibold text-white group-hover:text-blue-100 transition-colors duration-200">
+            {/* Connection Status */}
+            <div className="mb-4">
+              {hasZohoAccessToken ? (
+                <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3">
+                  <span className="text-sm font-medium text-green-800">✓ Connected to Zoho CRM</span>
+                  <button
+                    onClick={handleZohoDisconnect}
+                    disabled={isDisconnectingZoho}
+                    className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                  >
+                    {isDisconnectingZoho ? 'Disconnecting...' : 'Disconnect'}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <span className="text-sm font-medium text-yellow-800">⚠ Not connected</span>
+                  <button
+                    onClick={handleZohoConnect}
+                    className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors duration-200"
+                  >
+                    Connect
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            {/* Action Button - Pushed to bottom */}
+            <div className="mt-auto">
+              <button
+                onClick={async () => {
+                  if (!selectedGigId) {
+                    toast.error('Please select a gig first');
+                    return;
+                  }
+                  await handleImportFromZoho();
+                }}
+                disabled={!hasZohoAccessToken || isImportingZoho}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center"
+              >
+                {isImportingZoho ? (
+                  <>
+                    <RefreshCw className="mr-3 h-5 w-5 animate-spin" />
+                    Importing from Zoho...
+                  </>
+                ) : !hasZohoAccessToken ? (
+                  <>
+                    <img 
+                      src={zohoLogo} 
+                      alt="Zoho" 
+                      className="h-5 w-5 mr-3 object-contain"
+                    />
+                    Connect to Zoho CRM First
+                  </>
+                ) : (
+                  <>
+                    <img 
+                      src={zohoLogo} 
+                      alt="Zoho" 
+                      className="h-5 w-5 mr-3 object-contain"
+                    />
+                    Sync with Zoho CRM
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* File Upload Card */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] flex flex-col h-full" data-file-upload>
+            {/* Header */}
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-blue-200 shadow-sm">
+                <FileSpreadsheet className="h-6 w-6 text-blue-700" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-xl font-bold text-blue-900">File Upload</h4>
+                <p className="text-sm text-blue-700">Upload and process contact files</p>
+              </div>
+            </div>
+            
+            {/* File Info */}
+            <div className="mb-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <span className="text-sm font-medium text-blue-800">📁 Supported: CSV, Excel, JSON, TXT</span>
+              </div>
+            </div>
+            
+            {/* Upload Button - Pushed to bottom */}
+            <div className="mt-auto">
+              <div className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl cursor-pointer flex items-center justify-center">
+                <label htmlFor="file-upload" className="cursor-pointer flex items-center justify-center w-full">
+                  <FileSpreadsheet className="h-5 w-5 mr-3 text-white" />
+                  <span className="text-base font-semibold text-white">
                     {isProcessing ? (
                       <div className="flex items-center">
                         <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
@@ -2393,16 +1884,16 @@ ${truncatedContent}`;
                       'Click to upload or drag and drop'
                     )}
                   </span>
-                </div>
-                <input
-                  id="file-upload"
-                  type="file"
-                  className="hidden"
-                  accept="*"
-                  onChange={handleFileSelect}
-                  disabled={isProcessing}
-                />
-              </label>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    className="hidden"
+                    accept="*"
+                    onChange={handleFileSelect}
+                    disabled={isProcessing}
+                  />
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -2492,24 +1983,24 @@ ${truncatedContent}`;
               {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
                 <div className="mt-4 space-y-4">
                   {validationResults && (
-                    <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3">
-                      <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
-                        <Info className="mr-2 h-4 w-4" />
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3">
+                    <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                      <Info className="mr-2 h-4 w-4" />
                         AI Processing Results
-                      </h4>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
                           <span className="text-blue-600 font-medium">Total Rows:</span> {validationResults.totalRows}
-                        </div>
-                        <div>
+                      </div>
+                      <div>
                           <span className="text-green-600 font-medium">Valid Rows:</span> {validationResults.validRows > 0 ? validationResults.validRows : parsedLeads.length}
-                        </div>
+                      </div>
                         {validationResults.invalidRows > 0 && (
                           <div className="col-span-2">
                             <span className="text-red-600 font-medium">Invalid Rows:</span> {validationResults.invalidRows}
-                          </div>
+                    </div>
                         )}
-                      </div>
+                  </div>
 
                     {validationResults.errors && validationResults.errors.length > 0 && (
                       <div className="mt-3">
@@ -2538,6 +2029,12 @@ ${truncatedContent}`;
                         <h4 className="text-sm font-semibold text-gray-800">
                           Confirm & Edit Leads ({parsedLeads.length})
                         </h4>
+                        {dataTooLarge && (
+                          <span className="ml-2 inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <AlertTriangle className="mr-1 h-3 w-3" />
+                            Large dataset - memory only
+                          </span>
+                        )}
                       </div>
                       <button
                         onClick={() => setShowLeadsPreview(!showLeadsPreview)}
@@ -2761,7 +2258,7 @@ ${truncatedContent}`;
                             <div className="mt-2">
                 {selectedGigId ? (
                   <div className="text-sm text-gray-600">
-                    {parsedLeads.length > 0 ? (
+                    {parsedLeads.length > 0 && leads.length === 0 ? (
                       <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
                         {parsedLeads.length} leads ready to save
                       </span>
@@ -2794,7 +2291,7 @@ ${truncatedContent}`;
                   className="block w-full rounded-lg border-gray-300 pl-10 focus:border-blue-600 focus:ring-blue-600 sm:text-sm shadow-sm"
                   placeholder="Search leads..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => handleSearch(e.target.value)}
                 />
               </div>
               <select
@@ -2807,7 +2304,10 @@ ${truncatedContent}`;
                 <option value="inactive">Inactive (Closed)</option>
               </select>
               <button
-                onClick={() => fetchLeads()}
+                onClick={() => {
+                  setSearchQuery('');
+                  fetchLeads(1);
+                }}
                 className="flex items-center rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105"
                 disabled={isLoadingLeads || !selectedGigId}
               >
@@ -2840,35 +2340,29 @@ ${truncatedContent}`;
                       Lead Name
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
-                      Stage
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
                       Pipeline
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
-                      Last Activity
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {error ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-red-500">
+                      <td colSpan={3} className="px-6 py-4 text-center text-sm text-red-500">
                         {error}
                       </td>
                     </tr>
                   ) : isLoadingLeads ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex items-center justify-center py-8">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
                           Loading leads...
                         </div>
                       </td>
                     </tr>
-                  ) : (leads.length === 0 && !isSavingLeads) ? (
+                  ) : (leads.length === 0 && realtimeLeads.length === 0 && !isSavingLeads) ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-8">
                           <FileText className="h-12 w-12 text-gray-300 mb-2" />
                           <p>No leads found</p>
@@ -2876,9 +2370,9 @@ ${truncatedContent}`;
                         </div>
                       </td>
                     </tr>
-                  ) : (filteredLeads.length === 0 && !isSavingLeads) ? (
+                  ) : (filteredLeads.length === 0 && realtimeLeads.length === 0 && !isSavingLeads) ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-8">
                           <Search className="h-12 w-12 text-gray-300 mb-2" />
                           <p>No leads match your search</p>
@@ -2887,8 +2381,10 @@ ${truncatedContent}`;
                       </td>
                     </tr>
                   ) : (
-                    // Afficher les leads récemment sauvegardés pendant la sauvegarde, sinon les leads filtrés
-                    (isSavingLeads && recentlySavedLeads.length > 0 ? recentlySavedLeads : filteredLeads).map((lead, index) => (
+                    // Afficher les leads récemment sauvegardés pendant la sauvegarde, sinon les leads filtrés, sinon les leads importés de Zoho
+                    (isSavingLeads && recentlySavedLeads.length > 0 ? recentlySavedLeads : 
+                     filteredLeads.length > 0 ? filteredLeads : 
+                     realtimeLeads.length > 0 ? realtimeLeads : []).map((lead, index) => (
                       <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-orange-400' : ''}`}>
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="flex items-center">
@@ -2915,16 +2411,8 @@ ${truncatedContent}`;
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                           {lead.Deal_Name || 'N/A'}
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4">
-                                          <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-800">
-                  {lead.Stage || 'N/A'}
-                </span>
-                        </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                           {lead.Pipeline || 'N/A'}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                          {lead.updatedAt ? new Date(lead.updatedAt).toLocaleDateString() : 'N/A'}
                         </td>
                       </tr>
                     ))
@@ -2935,21 +2423,28 @@ ${truncatedContent}`;
           </div>
         </div>
         {/* Pagination Controls */}
-        {filteredLeads.length > 0 && (
+        {(filteredLeads.length > 0 || realtimeLeads.length > 0) && (
           <div className="bg-white px-4 py-3 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center text-sm text-gray-700">
                 <span>
-                  Showing <span className="font-medium">{filteredLeads.length}</span> of{' '}
-                  <span className="font-medium">{totalCount}</span> leads
-                  {searchQuery && (
-                    <span className="text-indigo-600"> (filtered by "{searchQuery}")</span>
+                  {searchQuery ? (
+                    // Mode recherche : afficher tous les résultats
+                    <>
+                      Showing <span className="font-medium">{filteredLeads.length}</span> results for "{searchQuery}"
+                    </>
+                  ) : (
+                    // Mode normal : afficher avec pagination
+                    <>
+                      Showing <span className="font-medium">{filteredLeads.length > 0 ? filteredLeads.length : realtimeLeads.length}</span> of{' '}
+                      <span className="font-medium">{totalCount > 0 ? totalCount : realtimeLeads.length}</span> leads
+                    </>
                   )}
                 </span>
               </div>
               
-              {/* Pagination Buttons */}
-              {totalPages > 1 && (
+              {/* Pagination Buttons - seulement si pas en mode recherche */}
+              {!searchQuery && totalPages > 1 && (
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => fetchLeads(currentPage - 1)}
@@ -2992,24 +2487,18 @@ ${truncatedContent}`;
           <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg">
             <div className="min-w-full divide-y divide-gray-200">
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 sticky top-0">
-                <div className="grid grid-cols-4 px-6 py-3">
+                <div className="grid grid-cols-3 px-6 py-3">
                   <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Email</div>
                   <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Téléphone</div>
                   <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Lead</div>
-                  <div className="text-left text-xs font-semibold text-blue-700 uppercase tracking-wider">Stage</div>
                 </div>
               </div>
               <div className="bg-white divide-y divide-gray-100">
                 {realtimeLeads.map((lead, index) => (
-                  <div key={index} className="grid grid-cols-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
+                  <div key={index} className="grid grid-cols-3 px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
                     <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'N/A'}</div>
                     <div className="text-sm text-gray-700">{lead.Phone || 'N/A'}</div>
                     <div className="text-sm text-gray-700">{lead.Deal_Name || 'N/A'}</div>
-                    <div className="text-sm">
-                      <span className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-800 px-2.5 py-0.5 text-xs font-medium">
-                        {lead.Stage || 'N/A'}
-                      </span>
-                    </div>
                   </div>
                 ))}
               </div>
