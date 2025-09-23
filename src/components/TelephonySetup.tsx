@@ -4,9 +4,7 @@ import {
   Phone,
   Globe,
   CheckCircle,
-  AlertCircle,
-  ChevronDown,
-  Briefcase
+  AlertCircle
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 
@@ -15,7 +13,6 @@ import { requirementService, RequirementDetail } from '../services/requirementSe
 import { PurchaseModal } from './PurchaseModal';
 import { RequirementFormModal } from './RequirementFormModal';
 import type { AvailablePhoneNumber } from '../services/api';
-
 
 interface PhoneNumber {
   phoneNumber: string;
@@ -26,29 +23,6 @@ interface PhoneNumber {
     mms: boolean;
   };
   provider: 'telnyx' | 'twilio';
-}
-
-interface Gig {
-  _id: string;
-  title: string;
-  description: string;
-  category: string;
-  status: string;
-  destination_zone: {
-    _id: string;
-    name: {
-      common: string;
-      official: string;
-    };
-    flags: {
-      png: string;
-      svg: string;
-      alt: string;
-    };
-    cca2: string;
-  };
-  createdAt: string;
-  updatedAt: string;
 }
 
 interface TelephonySetupProps {
@@ -160,7 +134,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     }
 
     console.log('🔄 Company ID available, fetching initial data...');
-    fetchGigs();
+    fetchExistingNumbers();
+    fetchDestinationZone();
     checkCompletedSteps();
   }, [companyId]);
 
@@ -260,7 +235,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         searchAvailableNumbers();
       }
     }
-  }, [destinationZone, provider, selectedGigId]);
+  }, [destinationZone, provider]);
 
   const checkRequirements = async () => {
     if (!companyId || !destinationZone) return;
@@ -441,18 +416,22 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     }
   };
 
-  // Mettre à jour la destination zone quand un gig est sélectionné
-  useEffect(() => {
-    if (selectedGigId && gigs.length > 0) {
-      const selectedGig = gigs.find(gig => gig._id === selectedGigId);
-      if (selectedGig && selectedGig.destination_zone && selectedGig.destination_zone.cca2) {
-        console.log('🌍 Setting destination zone from selected gig:', selectedGig.destination_zone.cca2);
-        setDestinationZone(selectedGig.destination_zone.cca2);
+  const fetchDestinationZone = async () => {
+    try {
+      if (!gigId) {
+        console.error('Gig ID not found');
+        return;
       }
-    } else {
-      setDestinationZone('');
+
+      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}/destination-zone`);
+      const res = await response.json();
+      console.log('🌍 Destination zone data from API:', res.data);
+      console.log('🌍 Destination zone code:', res.data.code);
+      setDestinationZone(res.data.code);
+    } catch (error) {
+      console.error('Error fetching destination zone:', error);
     }
-  }, [selectedGigId, gigs]);
+  };
 
   const getPhoneNumber = (number: AvailablePhoneNumber): string => {
     return number.phoneNumber || number.phone_number || '';
@@ -478,8 +457,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
   };
 
   const purchaseNumber = async (phoneNumber: string) => {
-    if (!selectedGigId || !companyId) {
-      console.error('❌ Required IDs missing:', { selectedGigId, companyId });
+    if (!gigId || !companyId) {
+      console.error('❌ Required IDs missing:', { gigId, companyId });
       setPurchaseError('Configuration error: Required IDs not found');
       return;
     }
@@ -556,12 +535,6 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       if (!companyId) {
         console.error('Company ID not found in cookies');
         throw new Error('Company ID not found. Please refresh the page and try again.');
-      }
-
-      // Vérifier qu'un gig est sélectionné
-      if (!selectedGigId) {
-        alert('⚠️ Please select a gig before saving the configuration.');
-        return;
       }
 
       console.log('🚀 Completing telephony setup...');
@@ -730,145 +703,24 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         </div>
         <div className="flex space-x-3">
           <button 
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
+            className={`rounded-lg px-4 py-2 text-sm font-medium ${
               completedSteps.includes(5)
                 ? 'bg-green-600 text-white cursor-not-allowed'
-                : !selectedGigId
-                ? 'bg-gray-400 text-white cursor-not-allowed'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md'
+                : 'bg-indigo-600 text-white hover:bg-indigo-700'
             }`}
-            onClick={completedSteps.includes(5) || !selectedGigId ? undefined : handleSaveConfiguration}
-            disabled={completedSteps.includes(5) || !selectedGigId}
-            title={!selectedGigId ? 'Please select a gig first' : ''}
+            onClick={completedSteps.includes(5) ? undefined : handleSaveConfiguration}
+            disabled={completedSteps.includes(5)}
           >
             {completedSteps.includes(5) ? (
               <span className="flex items-center">
                 <CheckCircle className="mr-2 h-4 w-4" />
                 Configuration Saved
               </span>
-            ) : !selectedGigId ? (
-              <span className="flex items-center">
-                <AlertCircle className="mr-2 h-4 w-4" />
-                Select Gig First
-              </span>
             ) : (
               'Save Configuration'
             )}
           </button>
         </div>
-      </div>
-
-      {/* Gig Selection */}
-      <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 p-6 shadow-lg border border-blue-200">
-        <div className="flex items-center space-x-3 mb-2">
-          <div className="flex-shrink-0">
-            <div className="rounded-full bg-blue-500 p-2">
-              <Briefcase className="h-5 w-5 text-white" />
-            </div>
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center space-x-2">
-              <h3 className="text-xl font-semibold text-blue-900">Select Gig</h3>
-              <span className="inline-flex items-center rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-sm">
-                Required
-              </span>
-            </div>
-            <p className="mt-1 text-sm text-blue-700">Choose the gig for which you want to configure telephony <span className="text-blue-600 font-medium">*</span></p>
-          </div>
-        </div>
-        
-        {isLoadingGigs ? (
-          <div className="mt-6 flex items-center justify-center space-x-3 p-4 rounded-lg bg-white/50 backdrop-blur-sm">
-            <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-200 border-t-blue-600"></div>
-            <span className="text-sm font-medium text-blue-700">Loading gigs...</span>
-          </div>
-        ) : gigs.length > 0 ? (
-          <div className="mt-6">
-            <div className="relative gig-dropdown">
-              {/* Custom Dropdown */}
-              <button
-                type="button"
-                className={`relative w-full rounded-xl border-2 py-4 pl-5 pr-12 text-left text-base font-medium transition-all duration-300 shadow-md ${
-                  selectedGigId 
-                    ? 'border-blue-400 bg-blue-50 text-blue-900 focus:border-blue-500 focus:ring-blue-500 shadow-blue-200/50' 
-                    : 'border-blue-200 bg-white text-blue-800 focus:border-blue-400 focus:ring-blue-400 hover:border-blue-300'
-                } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              >
-                <span className="flex items-center">
-                  {selectedGigId ? (
-                    (() => {
-                      const selectedGig = gigs.find(g => g._id === selectedGigId);
-                      return selectedGig ? (
-                        <>
-                           {selectedGig.title} - {selectedGig.destination_zone.name.common}
-                          <img 
-                            src={selectedGig.destination_zone.flags?.png} 
-                            alt={selectedGig.destination_zone.flags?.alt}
-                            className="inline-block w-6 h-4 ml-2 rounded-sm border border-gray-200 object-cover"
-                          />
-                        </>
-                      ) : 'Select a gig...';
-                    })()
-                  ) : (
-                    '🎯 Select a gig (required)...'
-                  )}
-                </span>
-                <span className="absolute inset-y-0 right-0 flex items-center pr-4">
-                  <ChevronDown className={`h-5 w-5 text-blue-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                </span>
-              </button>
-
-              {/* Dropdown Options */}
-              {isDropdownOpen && (
-                <div className="absolute z-10 mt-1 w-full bg-white border-2 border-blue-200 rounded-xl shadow-lg max-h-60 overflow-auto">
-                  {gigs.map((gig: Gig) => (
-                    <button
-                      key={gig._id}
-                      type="button"
-                      className="relative w-full px-5 py-4 text-left hover:bg-blue-50 focus:bg-blue-50 focus:outline-none transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl"
-                      onClick={() => {
-                        setSelectedGigId(gig._id);
-                        setIsDropdownOpen(false);
-                      }}
-                    >
-                      <div className="flex items-center">
-                        <span className="text-blue-800 font-medium">
-                          📋 {gig.title} - {gig.destination_zone.name.common}
-                        </span>
-                        <img 
-                          src={gig.destination_zone.flags?.png} 
-                          alt={gig.destination_zone.flags?.alt}
-                          className="inline-block w-6 h-4 ml-2 rounded-sm border border-gray-200 object-cover"
-                        />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {selectedGigId && (
-                <div className="absolute inset-y-0 right-10 flex items-center pointer-events-none">
-                  <CheckCircle className="h-6 w-6 text-blue-500 drop-shadow-sm" />
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="mt-6 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-2 border-blue-200">
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                <div className="rounded-full bg-blue-100 p-2">
-                  <AlertCircle className="h-6 w-6 text-blue-500" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-blue-900 mb-2">No Gigs Found</h3>
-                <p className="text-sm text-blue-700 leading-relaxed">No gigs were found for this company. Please create a gig first before configuring telephony.</p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Provider Selection */}
@@ -900,14 +752,11 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       <div className="rounded-lg bg-white p-6 shadow">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-900">Phone Numbers</h3>
-          {destinationZone && selectedGigId && (() => {
-            const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
-            return selectedGig ? (
-              <span className="text-sm text-gray-600">
-                Destination Zone: <span className="font-medium">{selectedGig.destination_zone.name.common}</span>
-              </span>
-            ) : null;
-          })()}
+          {destinationZone && (
+            <span className="text-sm text-gray-600">
+              Destination Zone: <span className="font-medium">{destinationZone}</span>
+            </span>
+          )}
         </div>
 
 
@@ -1084,12 +933,9 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                 <AlertCircle className="h-5 w-5 text-yellow-400" />
               </div>
               <div className="ml-3 flex-1">
-                <h3 className="text-sm font-medium text-yellow-800">No Numbers Available</h3>
+                <h3 className="text-sm font-medium text-yellow-800">Aucun numéro disponible</h3>
                 <div className="mt-2 text-sm text-yellow-700">
-                  <p>No phone numbers are available for <strong>{(() => {
-                    const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
-                    return selectedGig ? selectedGig.destination_zone.name.common : destinationZone;
-                  })()}</strong> with provider <strong>{provider}</strong>.</p>
+                  <p>Aucun numéro téléphonique n'est disponible pour <strong>{destinationZone}</strong> avec le provider <strong>{provider}</strong>.</p>
                   <p className="mt-1">
                     {provider === 'twilio' && "Twilio a une erreur serveur (500). "}
                     {provider === 'telnyx' && "Telnyx ne semble pas avoir de numéros pour ce pays. "}
@@ -1108,7 +954,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                         : 'bg-blue-600 hover:bg-blue-700'
                     }`}
                   >
-                    {provider === 'twilio' ? '⚠️ Twilio (Error)' : 'Try Twilio'}
+                    {provider === 'twilio' ? '⚠️ Twilio (Erreur)' : 'Essayer Twilio'}
                   </button>
                   <button
                     onClick={() => {
@@ -1121,7 +967,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                         : 'bg-green-600 hover:bg-green-700'
                     }`}
                   >
-                    {provider === 'telnyx' ? '⚠️ Telnyx (Empty)' : 'Try Telnyx'}
+                    {provider === 'telnyx' ? '⚠️ Telnyx (Vide)' : 'Essayer Telnyx'}
                   </button>
                 </div>
               </div>
