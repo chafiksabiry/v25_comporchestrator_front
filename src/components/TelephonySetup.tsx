@@ -3,9 +3,10 @@ import axios from 'axios';
 import {
   Phone,
   Globe,
-  VolumeX,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  ChevronDown,
+  Briefcase
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 
@@ -26,26 +27,50 @@ interface PhoneNumber {
   provider: 'telnyx' | 'twilio';
 }
 
+interface Gig {
+  _id: string;
+  title: string;
+  description: string;
+  category: string;
+  status: string;
+  destination_zone: {
+    _id: string;
+    name: {
+      common: string;
+      official: string;
+    };
+    flags: {
+      png: string;
+      svg: string;
+      alt: string;
+    };
+    cca2: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface TelephonySetupProps {
   onBackToOnboarding?: () => void;
 }
 
 const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Element => {
   const [provider, setProvider] = useState<'telnyx' | 'twilio'>('twilio');
-  const [gigId, setGigId] = useState<string | null>(null);
+  const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [cookieError, setCookieError] = useState<string | null>(null);
+  const [gigs, setGigs] = useState<Gig[]>([]);
+  const [isLoadingGigs, setIsLoadingGigs] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // Effet pour lire les cookies au montage du composant et à chaque 2 secondes si non trouvés
+  // Effet pour lire le companyId depuis les cookies
   useEffect(() => {
     const readCookies = () => {
-      const newGigId = Cookies.get('lastGigId');
       const newCompanyId = Cookies.get('companyId');
       
-      console.log('📝 Reading cookies:', { newGigId, newCompanyId });
+      console.log('📝 Reading companyId cookie:', newCompanyId);
       
-      if (newGigId && newCompanyId) {
-        setGigId(newGigId);
+      if (newCompanyId) {
         setCompanyId(newCompanyId);
         setCookieError(null);
         return true;
@@ -55,16 +80,16 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
     // Première lecture
     if (!readCookies()) {
-      console.log('⚠️ Cookies not found on first read, setting up retry interval');
+      console.log('⚠️ CompanyId cookie not found on first read, setting up retry interval');
       
-      // Si les cookies ne sont pas trouvés, réessayer toutes les 2 secondes
+      // Si le cookie n'est pas trouvé, réessayer toutes les 2 secondes
       const interval = setInterval(() => {
         if (readCookies()) {
-          console.log('✅ Cookies found on retry');
+          console.log('✅ CompanyId cookie found on retry');
           clearInterval(interval);
         } else {
-          console.log('⚠️ Cookies still not found on retry');
-          setCookieError('Required cookies not found. Please refresh the page if this persists.');
+          console.log('⚠️ CompanyId cookie still not found on retry');
+          setCookieError('Required company ID not found. Please refresh the page if this persists.');
         }
       }, 2000);
 
@@ -134,14 +159,34 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     }
 
     console.log('🔄 Company ID available, fetching initial data...');
-    fetchExistingNumbers();
-    fetchDestinationZone();
+    fetchGigs();
     checkCompletedSteps();
   }, [companyId]);
 
+  // Effet pour récupérer les numéros existants quand un gig est sélectionné
+  useEffect(() => {
+    if (selectedGigId) {
+      console.log('🔄 Selected gig changed, fetching existing numbers...');
+      fetchExistingNumbers();
+    }
+  }, [selectedGigId]);
+
+  // Mettre à jour la destination zone quand un gig est sélectionné
+  useEffect(() => {
+    if (selectedGigId && gigs.length > 0) {
+      const selectedGig = gigs.find((gig: Gig) => gig._id === selectedGigId);
+      if (selectedGig && selectedGig.destination_zone && selectedGig.destination_zone.cca2) {
+        console.log('🌍 Setting destination zone from selected gig:', selectedGig.destination_zone.cca2);
+        setDestinationZone(selectedGig.destination_zone.cca2);
+      }
+    } else {
+      setDestinationZone('');
+    }
+  }, [selectedGigId, gigs]);
+
   // Rafraîchir les numéros toutes les 30 secondes si il y a des numéros en attente
   useEffect(() => {
-    const hasPendingNumbers = phoneNumbers.some(number => number.status === 'pending');
+    const hasPendingNumbers = phoneNumbers.some((number: PhoneNumber) => number.status === 'pending');
     
     if (hasPendingNumbers) {
       console.log('🔄 Setting up auto-refresh for pending numbers');
@@ -151,7 +196,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
   }, [phoneNumbers]);
 
   useEffect(() => {
-    if (destinationZone && provider) {
+    if (destinationZone && provider && selectedGigId) {
       if (provider === 'telnyx') {
         // Vérifier si on a déjà un groupe de requirements dans les cookies
         const savedGroupId = Cookies.get(`telnyxRequirementGroup_${companyId}_${destinationZone}`);
@@ -223,8 +268,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         }
       } else {
         // Pour les autres providers, chercher directement les numéros
-      console.log('🚀 Auto-searching for available numbers with destination zone:', destinationZone);
-      searchAvailableNumbers();
+        console.log('🚀 Auto-searching for available numbers with destination zone:', destinationZone);
+        searchAvailableNumbers();
       }
     }
   }, [destinationZone, provider]);
@@ -237,7 +282,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
       // 1. Check if country has requirements first
       const response = await requirementService.checkCountryRequirements(destinationZone);
-      console.log('✅ Country requirements:', response);
+        console.log('✅ Country requirements:', response);
       
       // Sauvegarder les requirements pour le modal
       setCountryReq(response);
@@ -359,16 +404,41 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     }
   };
 
+  const fetchGigs = async () => {
+    if (!companyId) return;
+    
+    try {
+      setIsLoadingGigs(true);
+      console.log('🔍 Fetching gigs for company:', companyId);
+      
+      const response = await axios.get(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`);
+      console.log('✅ Gigs response:', response.data);
+      
+      if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        setGigs(response.data.data);
+        console.log('📋 Loaded gigs:', response.data.data.length);
+      } else {
+        setGigs([]);
+        console.log('⚠️ No gigs found in response');
+      }
+    } catch (error) {
+      console.error('❌ Error fetching gigs:', error);
+      setGigs([]);
+    } finally {
+      setIsLoadingGigs(false);
+    }
+  };
+
   const fetchExistingNumbers = async () => {
     try {
-      if (!gigId) {
-        console.error('❌ No gigId available');
+      if (!selectedGigId) {
+        console.error('❌ No selectedGigId available');
         setPhoneNumbers([]);
         return;
       }
 
-      console.log('📞 Checking numbers for gig:', gigId);
-      const result = await phoneNumberService.listPhoneNumbers(gigId);
+      console.log('📞 Checking numbers for gig:', selectedGigId);
+      const result = await phoneNumberService.listPhoneNumbers(selectedGigId);
       console.log('📞 Check result:', result);
       
       // Si un numéro est trouvé, le mettre dans le tableau
@@ -383,22 +453,6 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     }
   };
 
-  const fetchDestinationZone = async () => {
-    try {
-      if (!gigId) {
-        console.error('Gig ID not found');
-        return;
-      }
-
-      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}/destination-zone`);
-      const res = await response.json();
-      console.log('🌍 Destination zone data from API:', res.data);
-      console.log('🌍 Destination zone code:', res.data.code);
-      setDestinationZone(res.data.code);
-    } catch (error) {
-      console.error('Error fetching destination zone:', error);
-    }
-  };
 
   const getPhoneNumber = (number: AvailablePhoneNumber): string => {
     return number.phoneNumber || number.phone_number || '';
@@ -424,8 +478,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
   };
 
   const purchaseNumber = async (phoneNumber: string) => {
-    if (!gigId || !companyId) {
-      console.error('❌ Required IDs missing:', { gigId, companyId });
+    if (!selectedGigId || !companyId) {
+      console.error('❌ Required IDs missing:', { selectedGigId, companyId });
       setPurchaseError('Configuration error: Required IDs not found');
       return;
     }
@@ -434,7 +488,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       console.log('🛒 Starting purchase process:', {
         phoneNumber,
         provider,
-        gigId,
+        selectedGigId,
         requirementStatus
       });
 
@@ -475,7 +529,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       const purchaseData = {
         phoneNumber,
         provider,
-        gigId,
+        gigId: selectedGigId,
         companyId,
         requirementGroupId: provider === 'telnyx' ? requirementStatus.telnyxId : undefined
       };
@@ -486,7 +540,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       console.log('📞 Purchase response:', response);
 
       console.log('✅ Number purchased successfully!');
-      setAvailableNumbers(prev => prev.filter(num => getPhoneNumber(num) !== phoneNumber));
+      setAvailableNumbers((prev: AvailablePhoneNumber[]) => prev.filter((num: AvailablePhoneNumber) => getPhoneNumber(num) !== phoneNumber));
       fetchExistingNumbers();
       setPurchaseStatus('success');
       
@@ -502,6 +556,12 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       if (!companyId) {
         console.error('Company ID not found in cookies');
         throw new Error('Company ID not found. Please refresh the page and try again.');
+      }
+
+      // Vérifier qu'un gig est sélectionné
+      if (!selectedGigId) {
+        alert('⚠️ Please select a gig before saving the configuration.');
+        return;
       }
 
       console.log('🚀 Completing telephony setup...');
@@ -670,24 +730,145 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         </div>
         <div className="flex space-x-3">
           <button 
-            className={`rounded-lg px-4 py-2 text-sm font-medium ${
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
               completedSteps.includes(5)
                 ? 'bg-green-600 text-white cursor-not-allowed'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                : !selectedGigId
+                ? 'bg-gray-400 text-white cursor-not-allowed'
+                : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md'
             }`}
-            onClick={completedSteps.includes(5) ? undefined : handleSaveConfiguration}
-            disabled={completedSteps.includes(5)}
+            onClick={completedSteps.includes(5) || !selectedGigId ? undefined : handleSaveConfiguration}
+            disabled={completedSteps.includes(5) || !selectedGigId}
+            title={!selectedGigId ? 'Please select a gig first' : ''}
           >
             {completedSteps.includes(5) ? (
               <span className="flex items-center">
                 <CheckCircle className="mr-2 h-4 w-4" />
                 Configuration Saved
               </span>
+            ) : !selectedGigId ? (
+              <span className="flex items-center">
+                <AlertCircle className="mr-2 h-4 w-4" />
+                Select Gig First
+              </span>
             ) : (
               'Save Configuration'
             )}
           </button>
         </div>
+      </div>
+
+      {/* Gig Selection */}
+      <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 p-6 shadow-lg border border-blue-200">
+        <div className="flex items-center space-x-3 mb-2">
+          <div className="flex-shrink-0">
+            <div className="rounded-full bg-blue-500 p-2">
+              <Briefcase className="h-5 w-5 text-white" />
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center space-x-2">
+              <h3 className="text-xl font-semibold text-blue-900">Select Gig</h3>
+              <span className="inline-flex items-center rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-sm">
+                Required
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-blue-700">Choose the gig for which you want to configure telephony <span className="text-blue-600 font-medium">*</span></p>
+          </div>
+        </div>
+        
+        {isLoadingGigs ? (
+          <div className="mt-6 flex items-center justify-center space-x-3 p-4 rounded-lg bg-white/50 backdrop-blur-sm">
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-200 border-t-blue-600"></div>
+            <span className="text-sm font-medium text-blue-700">Loading gigs...</span>
+          </div>
+        ) : gigs.length > 0 ? (
+          <div className="mt-6">
+            <div className="relative gig-dropdown">
+              {/* Custom Dropdown */}
+              <button
+                type="button"
+                className={`relative w-full rounded-xl border-2 py-4 pl-5 pr-12 text-left text-base font-medium transition-all duration-300 shadow-md ${
+                  selectedGigId 
+                    ? 'border-blue-400 bg-blue-50 text-blue-900 focus:border-blue-500 focus:ring-blue-500 shadow-blue-200/50' 
+                    : 'border-blue-200 bg-white text-blue-800 focus:border-blue-400 focus:ring-blue-400 hover:border-blue-300'
+                } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              >
+                <span className="flex items-center">
+                  {selectedGigId ? (
+                    (() => {
+                      const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
+                      return selectedGig ? (
+                        <>
+                           {selectedGig.title} - {selectedGig.destination_zone.name.common}
+                          <img 
+                            src={selectedGig.destination_zone.flags?.png} 
+                            alt={selectedGig.destination_zone.flags?.alt}
+                            className="inline-block w-6 h-4 ml-2 rounded-sm border border-gray-200 object-cover"
+                          />
+                        </>
+                      ) : 'Select a gig...';
+                    })()
+                  ) : (
+                    '🎯 Select a gig (required)...'
+                  )}
+                </span>
+                <span className="absolute inset-y-0 right-0 flex items-center pr-4">
+                  <ChevronDown className={`h-5 w-5 text-blue-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                </span>
+              </button>
+
+              {/* Dropdown Options */}
+              {isDropdownOpen && (
+                <div className="absolute z-10 mt-1 w-full bg-white border-2 border-blue-200 rounded-xl shadow-lg max-h-60 overflow-auto">
+                  {gigs.map((gig: Gig) => (
+                    <button
+                      key={gig._id}
+                      type="button"
+                      className="relative w-full px-5 py-4 text-left hover:bg-blue-50 focus:bg-blue-50 focus:outline-none transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl"
+                      onClick={() => {
+                        setSelectedGigId(gig._id);
+                        setIsDropdownOpen(false);
+                      }}
+                    >
+                      <div className="flex items-center">
+                        <span className="text-blue-800 font-medium">
+                          📋 {gig.title} - {gig.destination_zone.name.common}
+                        </span>
+                        <img 
+                          src={gig.destination_zone.flags?.png} 
+                          alt={gig.destination_zone.flags?.alt}
+                          className="inline-block w-6 h-4 ml-2 rounded-sm border border-gray-200 object-cover"
+                        />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {selectedGigId && (
+                <div className="absolute inset-y-0 right-10 flex items-center pointer-events-none">
+                  <CheckCircle className="h-6 w-6 text-blue-500 drop-shadow-sm" />
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="mt-6 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-2 border-blue-200">
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0">
+                <div className="rounded-full bg-blue-100 p-2">
+                  <AlertCircle className="h-6 w-6 text-blue-500" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-blue-900 mb-2">No Gigs Found</h3>
+                <p className="text-sm text-blue-700 leading-relaxed">No gigs were found for this company. Please create a gig first before configuring telephony.</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Provider Selection */}
@@ -719,11 +900,14 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       <div className="rounded-lg bg-white p-6 shadow">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-900">Phone Numbers</h3>
-          {destinationZone && (
-            <span className="text-sm text-gray-600">
-              Destination Zone: <span className="font-medium">{destinationZone}</span>
-            </span>
-          )}
+          {destinationZone && selectedGigId && (() => {
+            const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
+            return selectedGig ? (
+              <span className="text-sm text-gray-600">
+                Destination Zone: <span className="font-medium">{selectedGig.destination_zone.name.common}</span>
+              </span>
+            ) : null;
+          })()}
         </div>
 
 
@@ -851,7 +1035,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         {/* Available Numbers List - Auto-displayed */}
         {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
           <div className="mb-6 space-y-2">
-            <h4 className="text-sm font-medium text-gray-700">Available Numbers (Destination: {destinationZone})</h4>
+            <h4 className="text-sm font-medium text-gray-700">Available Numbers (Destination: {(() => {
+              const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
+              return selectedGig ? selectedGig.destination_zone.name.common : destinationZone;
+            })()})</h4>
             <div className="grid gap-2">
               {availableNumbers.map((number) => {
                 const phoneNumber = getPhoneNumber(number);
@@ -902,7 +1089,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
               <div className="ml-3 flex-1">
                 <h3 className="text-sm font-medium text-yellow-800">Aucun numéro disponible</h3>
                 <div className="mt-2 text-sm text-yellow-700">
-                  <p>Aucun numéro téléphonique n'est disponible pour <strong>{destinationZone}</strong> avec le provider <strong>{provider}</strong>.</p>
+                  <p>Aucun numéro téléphonique n'est disponible pour <strong>{(() => {
+                    const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
+                    return selectedGig ? selectedGig.destination_zone.name.common : destinationZone;
+                  })()}</strong> avec le provider <strong>{provider}</strong>.</p>
                   <p className="mt-1">
                     {provider === 'twilio' && "Twilio a une erreur serveur (500). "}
                     {provider === 'telnyx' && "Telnyx ne semble pas avoir de numéros pour ce pays. "}
@@ -1008,14 +1198,14 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         }}
         countryCode={destinationZone}
         requirements={countryReq.requirements || []}
-        existingValues={requirementStatus.completedRequirements?.map(req => ({
+        existingValues={requirementStatus.completedRequirements?.map((req: RequirementDetail) => ({
           field: req.id,
           value: JSON.stringify(req.value),
           status: req.status,
           submittedAt: req.submittedAt
         }))}
         requirementGroupId={requirementStatus.groupId}
-        onSubmit={async (values) => {
+        onSubmit={async (values: Record<string, any>) => {
           try {
             await handleSubmitRequirements(values);
             // Récupérer le statut détaillé immédiatement
