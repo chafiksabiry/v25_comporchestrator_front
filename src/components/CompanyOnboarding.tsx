@@ -1156,7 +1156,7 @@ const CompanyOnboarding = () => {
       }
     } else if (displayedPhase === 4) {
       // Rediriger seulement si on est déjà en phase 4
-      window.location.href = "/company";
+      window.location.href = "/company#/company";
     }
   };
 
