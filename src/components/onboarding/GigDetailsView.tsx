@@ -17,27 +17,189 @@ interface Gig {
     bonus: string;
     bonusAmount: string;
     structure: string;
-    currency: string;
+    currency: {
+      _id: string;
+      code: string;
+      name: string;
+      symbol: string;
+      isActive: boolean;
+      createdAt: string;
+      updatedAt: string;
+      __v: number;
+    };
     transactionCommission: {
       type: string;
       amount: string;
     };
+    additionalDetails?: string;
   };
   availability: {
+    minimumHours: {
+      daily: number;
+      weekly: number;
+      monthly: number;
+    };
     schedule: Array<{
       day: string;
       hours: {
         start: string;
         end: string;
       };
+      _id: string;
     }>;
-    timeZone: string;
+    time_zone: {
+      _id: string;
+      countryCode: string;
+      countryName: string;
+      zoneName: string;
+      gmtOffset: number;
+      lastUpdated: string;
+      __v: number;
+      createdAt: string;
+      updatedAt: string;
+    };
     flexibility: string[];
   };
   team: {
     size: string;
-    territories: string[];
+    structure: Array<{
+      seniority: {
+        level: string;
+        yearsExperience: string;
+      };
+      roleId: string;
+      count: number;
+      _id: string;
+    }>;
+    territories: Array<{
+      name: {
+        common: string;
+        official: string;
+        nativeName: {
+          [key: string]: {
+            official: string;
+            common: string;
+            _id: string;
+          };
+        };
+      };
+      flags: {
+        png: string;
+        svg: string;
+        alt: string;
+      };
+      _id: string;
+      cca2: string;
+      __v: number;
+      createdAt: string;
+      updatedAt: string;
+    }>;
   };
+  skills: {
+    professional: Array<{
+      skill: {
+        _id: string;
+        name: string;
+        description: string;
+        category: string;
+        isActive: boolean;
+        __v: number;
+        createdAt: string;
+        updatedAt: string;
+      };
+      level: number;
+      _id: string;
+    }>;
+    technical: Array<{
+      skill: {
+        _id: string;
+        name: string;
+        description: string;
+        category: string;
+        isActive: boolean;
+        __v: number;
+        createdAt: string;
+        updatedAt: string;
+      };
+      level: number;
+      _id: string;
+    }>;
+    soft: Array<{
+      skill: {
+        _id: string;
+        name: string;
+        description: string;
+        category: string;
+        isActive: boolean;
+        __v: number;
+        createdAt: string;
+        updatedAt: string;
+      };
+      level: number;
+      _id: string;
+    }>;
+    languages: Array<{
+      language: {
+        _id: string;
+        code: string;
+        __v: number;
+        createdAt: string;
+        lastUpdated: string;
+        name: string;
+        nativeName: string;
+        updatedAt: string;
+      };
+      proficiency: string;
+      iso639_1: string;
+      _id: string;
+    }>;
+  };
+  destination_zone: {
+    name: {
+      common: string;
+      official: string;
+      nativeName: {
+        [key: string]: {
+          official: string;
+          common: string;
+          _id: string;
+        };
+      };
+    };
+    flags: {
+      png: string;
+      svg: string;
+      alt: string;
+    };
+    _id: string;
+    cca2: string;
+    __v: number;
+    createdAt: string;
+    updatedAt: string;
+  };
+  activities: Array<{
+    _id: string;
+    name: string;
+    description: string;
+    category: string;
+    isActive: boolean;
+    __v: number;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  industries: Array<{
+    _id: string;
+    name: string;
+    description: string;
+    isActive: boolean;
+    __v: number;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  highlights: any[];
+  deliverables: any[];
+  userId: string;
+  companyId: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -66,13 +228,16 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
   const formatCommission = (commission: Gig['commission']) => {
     if (!commission) return 'Not specified';
     
+    const currencySymbol = commission.currency?.symbol || '€';
+    const currencyCode = commission.currency?.code || 'EUR';
+    
     let details = [];
     if (commission.base) details.push(`Base: ${commission.base}`);
-    if (commission.baseAmount) details.push(`Base Amount: ${commission.baseAmount} ${commission.currency || 'EUR'}`);
+    if (commission.baseAmount) details.push(`Base Amount: ${commission.baseAmount} ${currencySymbol}`);
     if (commission.bonus) details.push(`Bonus: ${commission.bonus}`);
-    if (commission.bonusAmount) details.push(`Bonus Amount: ${commission.bonusAmount} ${commission.currency || 'EUR'}`);
+    if (commission.bonusAmount) details.push(`Bonus Amount: ${commission.bonusAmount} ${currencySymbol}`);
     if (commission.transactionCommission?.amount) {
-      details.push(`Transaction: ${commission.transactionCommission.amount} ${commission.currency || 'EUR'}`);
+      details.push(`Transaction: ${commission.transactionCommission.amount} ${currencySymbol}`);
     }
     if (commission.structure) details.push(`Structure: ${commission.structure}`);
     
@@ -219,7 +384,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                   {gig.commission.baseAmount && (
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Base Amount:</span>
-                      <span className="font-medium text-gray-900">{gig.commission.baseAmount} {gig.commission.currency || 'EUR'}</span>
+                      <span className="font-medium text-gray-900">{gig.commission.baseAmount} {gig.commission.currency?.symbol || '€'}</span>
                     </div>
                   )}
                   {gig.commission.bonus && (
@@ -231,19 +396,25 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                   {gig.commission.bonusAmount && (
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Bonus Amount:</span>
-                      <span className="font-medium text-gray-900">{gig.commission.bonusAmount} {gig.commission.currency || 'EUR'}</span>
+                      <span className="font-medium text-gray-900">{gig.commission.bonusAmount} {gig.commission.currency?.symbol || '€'}</span>
                     </div>
                   )}
                   {gig.commission.transactionCommission?.amount && (
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Transaction Commission:</span>
-                      <span className="font-medium text-gray-900">{gig.commission.transactionCommission.amount} {gig.commission.currency || 'EUR'}</span>
+                      <span className="font-medium text-gray-900">{gig.commission.transactionCommission.amount} {gig.commission.currency?.symbol || '€'}</span>
                     </div>
                   )}
                   {gig.commission.structure && (
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Structure:</span>
                       <span className="font-medium text-gray-900">{gig.commission.structure}</span>
+                    </div>
+                  )}
+                  {gig.commission.additionalDetails && (
+                    <div className="pt-3 border-t border-gray-200">
+                      <span className="text-sm text-gray-600">Additional Details:</span>
+                      <p className="text-sm text-gray-900 mt-1">{gig.commission.additionalDetails}</p>
                     </div>
                   )}
                 </div>
@@ -281,9 +452,137 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                       Territories
                     </label>
                   </div>
-                  <p className="text-gray-900 font-medium">{gig.team.territories.join(', ')}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {gig.team.territories.map((territory, index) => (
+                      <div key={index} className="flex items-center gap-2 px-3 py-1 bg-rose-50 rounded-full border border-rose-200">
+                        <img 
+                          src={territory.flags.png} 
+                          alt={territory.flags.alt} 
+                          className="w-4 h-3 rounded-sm"
+                        />
+                        <span className="text-sm font-medium text-rose-800">{territory.name.common}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Skills */}
+        {gig.skills && (
+          <div className="rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-100 shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Target className="h-6 w-6 text-purple-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Skills & Requirements</h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {gig.skills.professional && gig.skills.professional.length > 0 && (
+                <div className="bg-white rounded-lg p-4 border border-purple-100">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Professional Skills</h3>
+                  <div className="space-y-2">
+                    {gig.skills.professional.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-purple-50 rounded-lg">
+                        <div>
+                          <span className="text-sm font-medium text-purple-900">{item.skill.name}</span>
+                          <p className="text-xs text-purple-600">{item.skill.category}</p>
+                        </div>
+                        <span className="text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded-full">
+                          Level {item.level}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {gig.skills.technical && gig.skills.technical.length > 0 && (
+                <div className="bg-white rounded-lg p-4 border border-purple-100">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Technical Skills</h3>
+                  <div className="space-y-2">
+                    {gig.skills.technical.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-indigo-50 rounded-lg">
+                        <div>
+                          <span className="text-sm font-medium text-indigo-900">{item.skill.name}</span>
+                          <p className="text-xs text-indigo-600">{item.skill.category}</p>
+                        </div>
+                        <span className="text-xs bg-indigo-200 text-indigo-800 px-2 py-1 rounded-full">
+                          Level {item.level}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {gig.skills.soft && gig.skills.soft.length > 0 && (
+                <div className="bg-white rounded-lg p-4 border border-purple-100">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Soft Skills</h3>
+                  <div className="space-y-2">
+                    {gig.skills.soft.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-pink-50 rounded-lg">
+                        <div>
+                          <span className="text-sm font-medium text-pink-900">{item.skill.name}</span>
+                          <p className="text-xs text-pink-600">{item.skill.category}</p>
+                        </div>
+                        <span className="text-xs bg-pink-200 text-pink-800 px-2 py-1 rounded-full">
+                          Level {item.level}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {gig.skills.languages && gig.skills.languages.length > 0 && (
+                <div className="bg-white rounded-lg p-4 border border-purple-100">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Languages</h3>
+                  <div className="space-y-2">
+                    {gig.skills.languages.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-green-50 rounded-lg">
+                        <div>
+                          <span className="text-sm font-medium text-green-900">{item.language.name}</span>
+                          <p className="text-xs text-green-600">{item.language.nativeName}</p>
+                        </div>
+                        <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full">
+                          {item.proficiency}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Destination Zone */}
+        {gig.destination_zone && (
+          <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-emerald-100 rounded-lg">
+                <MapPin className="h-6 w-6 text-emerald-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Destination Zone</h2>
+            </div>
+            
+            <div className="bg-white rounded-lg p-4 border border-emerald-100">
+              <div className="flex items-center gap-4">
+                <img 
+                  src={gig.destination_zone.flags.png} 
+                  alt={gig.destination_zone.flags.alt} 
+                  className="w-12 h-8 rounded-md border border-gray-200"
+                />
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">{gig.destination_zone.name.common}</h3>
+                  <p className="text-sm text-gray-600">{gig.destination_zone.name.official}</p>
+                  <p className="text-xs text-gray-500">Code: {gig.destination_zone.cca2}</p>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -298,8 +597,23 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
               <h2 className="text-xl font-bold text-gray-900">Schedule & Availability</h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {gig.availability.timeZone && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              {gig.availability.minimumHours && (
+                <div className="bg-white rounded-lg p-4 border border-cyan-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ClockIcon className="h-4 w-4 text-cyan-500" />
+                    <label className="text-sm font-semibold text-gray-700">
+                      Minimum Hours
+                    </label>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-900">Daily: <span className="font-medium">{gig.availability.minimumHours.daily}h</span></p>
+                    <p className="text-sm text-gray-900">Weekly: <span className="font-medium">{gig.availability.minimumHours.weekly}h</span></p>
+                    <p className="text-sm text-gray-900">Monthly: <span className="font-medium">{gig.availability.minimumHours.monthly}h</span></p>
+                  </div>
+                </div>
+              )}
+              {gig.availability.time_zone && (
                 <div className="bg-white rounded-lg p-4 border border-cyan-100">
                   <div className="flex items-center gap-2 mb-3">
                     <Globe className="h-4 w-4 text-cyan-500" />
@@ -307,7 +621,8 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                       Time Zone
                     </label>
                   </div>
-                  <p className="text-gray-900 font-medium">{gig.availability.timeZone}</p>
+                  <p className="text-gray-900 font-medium">{gig.availability.time_zone.zoneName}</p>
+                  <p className="text-sm text-gray-600">{gig.availability.time_zone.countryName} ({gig.availability.time_zone.countryCode})</p>
                 </div>
               )}
               {gig.availability.flexibility && gig.availability.flexibility.length > 0 && (
