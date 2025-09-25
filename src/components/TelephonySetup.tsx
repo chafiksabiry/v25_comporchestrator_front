@@ -1203,7 +1203,30 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       {/* Requirements Modal */}
       <RequirementFormModal
         isOpen={showRequirementModal}
-        onClose={() => {
+        onClose={async () => {
+          // Update requirement status before closing
+          if (requirementStatus.groupId) {
+            try {
+              const detailedStatus = await requirementService.getDetailedGroupStatus(requirementStatus.groupId);
+              
+              const completionPercentage = Math.round(
+                (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
+              );
+
+              setRequirementStatus(prev => ({
+                ...prev,
+                isComplete: detailedStatus.isComplete,
+                completionPercentage,
+                completedRequirements: detailedStatus.completedRequirements,
+                totalRequirements: detailedStatus.totalRequirements,
+                pendingRequirements: detailedStatus.pendingRequirements,
+                // If requirements are complete, we don't need to show the warning anymore
+                hasRequirements: detailedStatus.isComplete ? false : prev.hasRequirements
+              }));
+            } catch (error) {
+              console.error('Error updating requirement status on close:', error);
+            }
+          }
           setShowRequirementModal(false);
         }}
         countryCode={destinationZone}
@@ -1219,6 +1242,24 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         onSubmit={async (values: Record<string, any>) => {
           try {
             await handleSubmitRequirements(values);
+            // After submitting, update the status
+            if (requirementStatus.groupId) {
+              const detailedStatus = await requirementService.getDetailedGroupStatus(requirementStatus.groupId);
+              
+              const completionPercentage = Math.round(
+                (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
+              );
+
+              setRequirementStatus(prev => ({
+                ...prev,
+                isComplete: detailedStatus.isComplete,
+                completionPercentage,
+                completedRequirements: detailedStatus.completedRequirements,
+                totalRequirements: detailedStatus.totalRequirements,
+                pendingRequirements: detailedStatus.pendingRequirements,
+                hasRequirements: detailedStatus.isComplete ? false : prev.hasRequirements
+              }));
+            }
             setShowRequirementModal(false);
           } catch (error) {
             console.error('Error submitting requirements:', error);
