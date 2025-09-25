@@ -1,4 +1,4 @@
-import React,{ useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   Phone,
@@ -25,6 +25,15 @@ interface PhoneNumber {
     mms: boolean;
   };
   provider: 'telnyx' | 'twilio';
+  success?: boolean;
+  error?: string;
+  message?: string;
+  data?: {
+    phoneNumber: string;
+    status: string;
+    features: any;
+    provider: string;
+  };
 }
 
 interface Gig {
@@ -106,6 +115,12 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
   const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [showRequirementModal, setShowRequirementModal] = useState(false);
+  const [purchaseResponse, setPurchaseResponse] = useState<{
+    phoneNumber: string;
+    status: string;
+    features: any;
+    provider: string;
+  } | null>(null);
   type Requirement = {
     id: string;
     name: string;
@@ -471,6 +486,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     if (!selectedGigId || !companyId) {
       console.error('❌ Required IDs missing:', { selectedGigId, companyId });
       setPurchaseError('Configuration error: Required IDs not found');
+      setPurchaseStatus('error');
       return;
     }
 
@@ -486,24 +502,28 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         // 1. Vérifier si les requirements sont en cours de vérification
         if (requirementStatus.isChecking) {
           setPurchaseError('Please wait while we check requirements...');
+          setPurchaseStatus('error');
           return;
         }
 
         // 2. Vérifier s'il y a eu une erreur avec les requirements
         if (requirementStatus.error) {
           setPurchaseError('Cannot proceed: Failed to check requirements');
+          setPurchaseStatus('error');
           return;
         }
 
         // 3. Vérifier si les requirements sont complétés
         if (requirementStatus.hasRequirements && !requirementStatus.isComplete) {
           setPurchaseError('Please complete the requirements before purchasing');
+          setPurchaseStatus('error');
           return;
         }
 
         // 4. Vérifier si nous avons l'ID du groupe de requirements
         if (!requirementStatus.groupId) {
           setPurchaseError('Missing requirement group ID. Please try again.');
+          setPurchaseStatus('error');
           return;
         }
       }
@@ -529,15 +549,31 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       const response = await phoneNumberService.purchasePhoneNumber(purchaseData);
       console.log('📞 Purchase response:', response);
 
+      if (!response || (response as any).error) {
+        const errorMessage = (response as any)?.message || (response as any)?.error || 'Failed to purchase number';
+        throw new Error(errorMessage);
+      }
+
       console.log('✅ Number purchased successfully!');
       setAvailableNumbers((prev: AvailablePhoneNumber[]) => prev.filter((num: AvailablePhoneNumber) => getPhoneNumber(num) !== phoneNumber));
-      fetchExistingNumbers();
+      await fetchExistingNumbers(); // Wait for numbers to be fetched
       setPurchaseStatus('success');
+      // Store the purchased number details for display
+      setPurchaseResponse((response as any)?.data || {
+        phoneNumber,
+        status: 'pending',
+        features: {
+          voice: true,
+          sms: true,
+          mms: true
+        },
+        provider
+      });
       
     } catch (error) {
       console.error('❌ Error purchasing number:', error);
       setPurchaseStatus('error');
-      setPurchaseError(error instanceof Error ? error.message : 'Failed to purchase number');
+      setPurchaseError(error instanceof Error ? error.message : 'Failed to purchase number. Please try again.');
     }
   };
 
@@ -681,12 +717,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     setPurchaseStatus('purchasing');
     try {
       await purchaseNumber(selectedNumber);
-      setPurchaseStatus('success');
-      setTimeout(() => {
-        setShowPurchaseModal(false);
-        setPurchaseStatus('idle');
-        setSelectedNumber(null);
-      }, 2000);
+      // Success state is already set in purchaseNumber function
     } catch (error) {
       setPurchaseStatus('error');
       setPurchaseError(error instanceof Error ? error.message : 'Failed to purchase number');
@@ -1179,6 +1210,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       <PurchaseModal
         isOpen={showPurchaseModal}
         onClose={async () => {
+          // If purchase was successful, refresh purchased numbers
+          if (purchaseStatus === 'success') {
+            await fetchExistingNumbers();
+          }
           // Re-fetch available numbers if we were using Telnyx
           if (provider === 'telnyx') {
             await searchAvailableNumbers();
@@ -1186,8 +1221,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           setShowPurchaseModal(false);
           setPurchaseStatus('idle');
           setSelectedNumber(null);
+          setPurchaseResponse(null);
         }}
         purchaseStatus={purchaseStatus}
+        purchaseResponse={purchaseResponse}
         selectedNumber={selectedNumber}
         countryReq={countryReq}
         requirementStatus={requirementStatus}
