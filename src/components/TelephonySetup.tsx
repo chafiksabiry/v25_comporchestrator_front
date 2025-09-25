@@ -235,6 +235,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       }
 
       const destZone = selectedGig.destination_zone.cca2;
+      setDestinationZone(destZone); // Set destination zone for number search
       const savedGroupId = Cookies.get(`telnyxRequirementGroup_${companyId}_${destZone}`);
 
       if (savedGroupId) {
@@ -261,7 +262,6 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
               totalRequirements: detailedStatus.totalRequirements,
               pendingRequirements: 0
             });
-            searchAvailableNumbers();
           } else {
             // Case 1.2.1: Incomplete requirements
             setRequirementStatus({
@@ -277,6 +277,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
               pendingRequirements: detailedStatus.pendingRequirements
             });
           }
+          // Always search for available numbers
+          searchAvailableNumbers();
         } catch (error) {
           console.error('Failed to load requirement group:', error);
           Cookies.remove(`telnyxRequirementGroup_${companyId}_${destZone}`);
@@ -317,8 +319,9 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
               isComplete: true,
               error: null
             });
-            searchAvailableNumbers();
           }
+          // Always search for available numbers
+          searchAvailableNumbers();
         } catch (error) {
           console.error('Failed to check country requirements:', error);
           setRequirementStatus({
@@ -396,9 +399,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       const response = await axios.get(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`);
       console.log('✅ Gigs response:', response.data);
       
-        if (response.data && Array.isArray(response.data.data)) {
-          setGigs(response.data.data);
-          console.log('📋 Loaded gigs:', response.data.data.length);
+        const responseData = response.data as { data: Gig[] };
+        if (responseData && Array.isArray(responseData.data)) {
+          setGigs(responseData.data);
+          console.log('📋 Loaded gigs:', responseData.data.length);
         } else {
           setGigs([]);
           console.log('⚠️ No gigs found in response');
@@ -1010,115 +1014,141 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
               </div>
             )}
           </div>
+
+          {/* Available Numbers or Warning */}
+          {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
+            <div className="mt-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">Available Numbers</h4>
+              <div className="grid gap-2">
+                {availableNumbers.map((number) => {
+                  const phoneNumber = getPhoneNumber(number);
+                  return (
+                    <div 
+                      key={phoneNumber}
+                      className="flex items-center justify-between rounded-lg border p-3"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium">{phoneNumber}</span>
+                        {number.locality && (
+                          <span className="text-sm text-gray-500">
+                            {number.locality}, {number.region}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedNumber(phoneNumber);
+                          setPurchaseStatus('confirming');
+                          setShowPurchaseModal(true);
+                        }}
+                        disabled={phoneNumbers.length > 0}
+                        className={`rounded-md px-3 py-1 text-sm text-white ${
+                          phoneNumbers.length > 0
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-green-600 hover:bg-green-700'
+                        }`}
+                        title={phoneNumbers.length > 0 ? 'A number is already purchased for this gig' : undefined}
+                      >
+                        Purchase
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : destinationZone && (
+            <div className="mt-4 rounded-lg bg-yellow-50 p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <AlertCircle className="h-5 w-5 text-yellow-400" />
+                </div>
+                <div className="ml-3 flex-1">
+                  <h3 className="text-sm font-medium text-yellow-800">No Numbers Available</h3>
+                  <div className="mt-2 text-sm text-yellow-700">
+                    <p>No phone numbers available for this destination with Twilio.</p>
+                    <p className="mt-1">Try Telnyx instead or contact support if the issue persists.</p>
+                  </div>
+                  <div className="mt-3">
+                    <button
+                      onClick={() => {
+                        setProvider('telnyx');
+                        searchAvailableNumbers();
+                      }}
+                      className="rounded-md px-3 py-1 text-xs text-white bg-indigo-600 hover:bg-indigo-700"
+                    >
+                      Try Telnyx Instead
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-        {/* Available Numbers List - Auto-displayed */}
-        {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
+        {/* Available Numbers List */}
+        {destinationZone && provider === 'telnyx' && (
           <div className="mb-6 space-y-2">
             <h4 className="text-sm font-medium text-gray-700">Available Numbers (Destination: {(() => {
               const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
               return selectedGig ? selectedGig.destination_zone.name.common : destinationZone;
             })()})</h4>
             <div className="grid gap-2">
-              {availableNumbers.map((number) => {
-                const phoneNumber = getPhoneNumber(number);
-                return (
-                  <div 
-                    key={phoneNumber}
-                    className="flex items-center justify-between rounded-lg border p-3"
-                  >
-                    <div className="flex flex-col">
-                      <span className="font-medium">{phoneNumber}</span>
-                      {number.locality && (
-                        <span className="text-sm text-gray-500">
-                          {number.locality}, {number.region}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => {
-                        setSelectedNumber(phoneNumber);
-                        setPurchaseStatus('confirming');
-                        setShowPurchaseModal(true);
-                      }}
-                      disabled={
-                        // Disable if:
-                        // 1. Has requirements that are not complete
-                        (provider === 'telnyx' && requirementStatus.hasRequirements && !requirementStatus.isComplete) ||
-                        // 2. Already has a number for this gig
-                        (phoneNumbers.length > 0)
-                      }
-                      className={`rounded-md px-3 py-1 text-sm text-white ${
-                        phoneNumbers.length > 0
-                          ? 'bg-gray-400 cursor-not-allowed'
-                          : provider === 'telnyx' && requirementStatus.hasRequirements && !requirementStatus.isComplete
-                            ? 'bg-gray-400 cursor-not-allowed'
-                            : 'bg-green-600 hover:bg-green-700'
-                      }`}
-                      title={
-                        phoneNumbers.length > 0
-                          ? 'A number is already purchased for this gig'
-                          : provider === 'telnyx' && requirementStatus.hasRequirements && !requirementStatus.isComplete
-                            ? 'Please complete the requirements before purchasing'
-                            : undefined
-                      }
+              {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
+                availableNumbers.map((number) => {
+                  const phoneNumber = getPhoneNumber(number);
+                  const isDisabled = phoneNumbers.length > 0 || (requirementStatus.hasRequirements && !requirementStatus.isComplete);
+                  const tooltipMessage = phoneNumbers.length > 0 
+                    ? 'A number is already purchased for this gig'
+                    : requirementStatus.hasRequirements && !requirementStatus.isComplete
+                      ? 'Please complete the requirements before purchasing'
+                      : undefined;
+
+                  return (
+                    <div 
+                      key={phoneNumber}
+                      className="flex items-center justify-between rounded-lg border p-3"
                     >
-                      Purchase
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ) : destinationZone && availableNumbers.length === 0 && (
-          <div className="mb-6 rounded-lg bg-yellow-50 p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <AlertCircle className="h-5 w-5 text-yellow-400" />
-              </div>
-              <div className="ml-3 flex-1">
-                <h3 className="text-sm font-medium text-yellow-800">Aucun numéro disponible</h3>
-                <div className="mt-2 text-sm text-yellow-700">
-                  <p>Aucun numéro téléphonique n'est disponible pour <strong>{(() => {
-                    const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
-                    return selectedGig ? selectedGig.destination_zone.name.common : destinationZone;
-                  })()}</strong> avec le provider <strong>{provider}</strong>.</p>
-                  <p className="mt-1">
-                    {provider === 'twilio' && "Twilio a une erreur serveur (500). "}
-                    {provider === 'telnyx' && "Telnyx ne semble pas avoir de numéros pour ce pays. "}
-                    Essayez un autre provider ou contactez le support.
-                  </p>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{phoneNumber}</span>
+                        {number.locality && (
+                          <span className="text-sm text-gray-500">
+                            {number.locality}, {number.region}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isDisabled && (
+                          <span className="text-xs text-gray-500 italic mr-2">
+                            {tooltipMessage}
+                          </span>
+                        )}
+                        <button
+                          onClick={() => {
+                            setSelectedNumber(phoneNumber);
+                            setPurchaseStatus('confirming');
+                            setShowPurchaseModal(true);
+                          }}
+                          disabled={isDisabled}
+                          className={`rounded-md px-3 py-1 text-sm text-white ${
+                            isDisabled
+                              ? 'bg-gray-400 cursor-not-allowed'
+                              : 'bg-green-600 hover:bg-green-700'
+                          }`}
+                          title={tooltipMessage}
+                        >
+                          Purchase
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="rounded-lg border border-gray-200 p-4 text-center text-gray-500">
+                  <p className="mb-2">No phone numbers available for this destination.</p>
+                  <p className="text-sm text-gray-400">Try again later or contact support if the issue persists.</p>
                 </div>
-                <div className="mt-3 flex space-x-2">
-                  <button
-                    onClick={() => {
-                      setProvider('twilio');
-                      searchAvailableNumbers();
-                    }}
-                    className={`rounded-md px-3 py-1 text-xs text-white ${
-                      provider === 'twilio' 
-                        ? 'bg-red-600 hover:bg-red-700' 
-                        : 'bg-blue-600 hover:bg-blue-700'
-                    }`}
-                  >
-                    {provider === 'twilio' ? '⚠️ Twilio (Erreur)' : 'Essayer Twilio'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setProvider('telnyx');
-                      searchAvailableNumbers();
-                    }}
-                    className={`rounded-md px-3 py-1 text-xs text-white ${
-                      provider === 'telnyx' 
-                        ? 'bg-orange-600 hover:bg-orange-700' 
-                        : 'bg-green-600 hover:bg-green-700'
-                    }`}
-                  >
-                    {provider === 'telnyx' ? '⚠️ Telnyx (Vide)' : 'Essayer Telnyx'}
-                  </button>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         )}
