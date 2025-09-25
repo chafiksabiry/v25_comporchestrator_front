@@ -210,38 +210,42 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     }
   }, [phoneNumbers]);
 
-  const checkGigPhoneNumber = async () => {
-    if (!selectedGigId) return false;
-    
-    try {
-      console.log('🔍 Checking if gig has a phone number:', selectedGigId);
-      const result = await phoneNumberService.listPhoneNumbers(selectedGigId);
+    const checkGigPhoneNumber = async () => {
+      if (!selectedGigId) return false;
       
-      if (result?.hasNumber && result.number) {
-        // Case 1.1: Gig already has a number
-        console.log('✅ Found existing number for gig');
-        setPhoneNumbers([result.number]);
-        setRequirementStatus({
-          isChecking: false,
-          hasRequirements: false,
-          isComplete: true,
-          error: null
-        });
-        return true;
+      try {
+        console.log('🔍 Checking if gig has a phone number:', selectedGigId);
+        const result = await phoneNumberService.listPhoneNumbers(selectedGigId);
+        
+        if (result?.hasNumber && result.number) {
+          // Case 1.1: Gig already has a number
+          console.log('✅ Found existing number for gig');
+          setPhoneNumbers([result.number]);
+          setRequirementStatus({
+            isChecking: false,
+            hasRequirements: false,
+            isComplete: true,
+            error: null
+          });
+          // Even if gig has a number, we still want to search available numbers for Telnyx
+          if (provider === 'telnyx') {
+            searchAvailableNumbers();
+          }
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error('❌ Error checking gig numbers:', error);
+        return false;
       }
-      return false;
-    } catch (error) {
-      console.error('❌ Error checking gig numbers:', error);
-      return false;
-    }
-  };
+    };
 
   const handleTelnyxProvider = async () => {
     if (!selectedGigId || !companyId) return;
 
     // First check if gig has a number
     const hasNumber = await checkGigPhoneNumber();
-    if (hasNumber) return; // Case 1.1 handled
+    if (hasNumber) return; // Case 1.1 handled in checkGigPhoneNumber (including searching available numbers)
 
     // Case 1.2: No number, check requirements
     const selectedGig = gigs.find(g => g._id === selectedGigId);
