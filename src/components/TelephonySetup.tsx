@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React,{ useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   Phone,
@@ -210,148 +210,168 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     }
   }, [phoneNumbers]);
 
-  useEffect(() => {
-    if (!selectedGigId || !provider || !companyId) return;
-
-    const checkGigPhoneNumber = async () => {
-      try {
-        console.log('🔍 Checking if gig has a phone number:', selectedGigId);
-        const result = await phoneNumberService.listPhoneNumbers(selectedGigId);
-        
-        if (result?.hasNumber && result.number) {
-          // Case 1.1: Gig already has a number
-          console.log('✅ Found existing number for gig');
-          setPhoneNumbers([result.number]);
-          setRequirementStatus({
-            isChecking: false,
-            hasRequirements: false,
-                isComplete: true,
-            error: null
-          });
-          return true;
-            }
-        return false;
-          } catch (error) {
-        console.error('❌ Error checking gig numbers:', error);
-            return false;
-          }
-        };
-
-    const handleTelnyxProvider = async () => {
-      // First check if gig has a number
-      const hasNumber = await checkGigPhoneNumber();
-      if (hasNumber) return; // Case 1.1 handled
-
-      // Case 1.2: No number, check requirements
-      const selectedGig = gigs.find(g => g._id === selectedGigId);
-      if (!selectedGig?.destination_zone?.cca2) {
-        console.error('No destination zone found for gig');
-        return;
-      }
-
-      const destZone = selectedGig.destination_zone.cca2;
-      setDestinationZone(destZone); // Set destination zone for number search
-      const savedGroupId = Cookies.get(`telnyxRequirementGroup_${companyId}_${destZone}`);
-
-      if (savedGroupId) {
-        // Case 1.2.1 or 1.2.3: Has existing requirement group
-        try {
-          // Get the existing group first
-          const { group } = await requirementService.getOrCreateGroup(companyId, destZone);
-          
-          // Then get the status with a small delay to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          const detailedStatus = await requirementService.getDetailedGroupStatus(savedGroupId);
-          
-          const completionPercentage = Math.round(
-            (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
-          );
-
-          if (detailedStatus.isComplete) {
-            // Case 1.2.3: Requirements completed, no number yet
+  const checkGigPhoneNumber = async () => {
+    if (!selectedGigId) return false;
+    
+    try {
+      console.log('🔍 Checking if gig has a phone number:', selectedGigId);
+      const result = await phoneNumberService.listPhoneNumbers(selectedGigId);
+      
+      if (result?.hasNumber && result.number) {
+        // Case 1.1: Gig already has a number
+        console.log('✅ Found existing number for gig');
+        setPhoneNumbers([result.number]);
         setRequirementStatus({
           isChecking: false,
           hasRequirements: false,
           isComplete: true,
-              error: null,
-              groupId: savedGroupId,
-              telnyxId: group.telnyxId,
-              completionPercentage: 100,
-              completedRequirements: detailedStatus.completedRequirements,
-              totalRequirements: detailedStatus.totalRequirements,
-              pendingRequirements: 0
-            });
-          } else {
-            // Case 1.2.1: Incomplete requirements
-            setRequirementStatus({
-          isChecking: false,
-          hasRequirements: true,
-              isComplete: false,
-          error: null,
-              groupId: savedGroupId,
-          telnyxId: group.telnyxId,
-          completionPercentage,
-          completedRequirements: detailedStatus.completedRequirements,
-          totalRequirements: detailedStatus.totalRequirements,
-          pendingRequirements: detailedStatus.pendingRequirements
-            });
-          }
-          // Always search for available numbers
-          searchAvailableNumbers();
-        } catch (error) {
-          console.error('Failed to load requirement group:', error);
-          Cookies.remove(`telnyxRequirementGroup_${companyId}_${destZone}`);
-          handleTelnyxProvider(); // Retry without saved group
-        }
-      } else {
-        // Case 1.2.2: No requirement group yet
-        try {
-          const response = await requirementService.checkCountryRequirements(destZone);
-          setCountryReq(response);
-
-          if (response.hasRequirements) {
-            const { group } = await requirementService.getOrCreateGroup(companyId, destZone);
-            setRequirementStatus({
-              isChecking: false,
-              hasRequirements: true,
-              isComplete: false,
-              error: null,
-              groupId: group._id,
-              telnyxId: group.telnyxId,
-              completionPercentage: 0,
-              completedRequirements: [],
-              totalRequirements: response.requirements?.length || 0,
-              pendingRequirements: response.requirements?.length || 0
-            });
-
-            // Save new group ID
-      Cookies.set(
-              `telnyxRequirementGroup_${companyId}_${destZone}`,
-        group._id,
-              { expires: 30 }
-            );
-          } else {
-            // No requirements needed
-            setRequirementStatus({
-              isChecking: false,
-              hasRequirements: false,
-              isComplete: true,
-              error: null
-            });
-          }
-          // Always search for available numbers
-          searchAvailableNumbers();
+          error: null
+        });
+        return true;
+      }
+      return false;
     } catch (error) {
-          console.error('Failed to check country requirements:', error);
-      setRequirementStatus({
-        isChecking: false,
-        hasRequirements: false,
-        isComplete: false,
-            error: 'Failed to check requirements'
+      console.error('❌ Error checking gig numbers:', error);
+      return false;
+    }
+  };
+
+  const handleTelnyxProvider = async () => {
+    if (!selectedGigId || !companyId) return;
+
+    // First check if gig has a number
+    const hasNumber = await checkGigPhoneNumber();
+    if (hasNumber) return; // Case 1.1 handled
+
+    // Case 1.2: No number, check requirements
+    const selectedGig = gigs.find(g => g._id === selectedGigId);
+    if (!selectedGig?.destination_zone?.cca2) {
+      console.error('No destination zone found for gig');
+      return;
+    }
+
+    const destZone = selectedGig.destination_zone.cca2;
+    setDestinationZone(destZone); // Set destination zone for number search
+    const savedGroupId = Cookies.get(`telnyxRequirementGroup_${companyId}_${destZone}`);
+
+    if (savedGroupId) {
+      // Case 1.2.1 or 1.2.3: Has existing requirement group
+      try {
+        // Get the existing group first
+        const { group } = await requirementService.getOrCreateGroup(companyId, destZone);
+        
+        // Then get the status with a small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const detailedStatus = await requirementService.getDetailedGroupStatus(savedGroupId);
+        
+        const completionPercentage = Math.round(
+          (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
+        );
+
+        if (detailedStatus.isComplete) {
+          // Case 1.2.3: Requirements completed, no number yet
+          setRequirementStatus({
+            isChecking: false,
+            hasRequirements: false,
+            isComplete: true,
+            error: null,
+            groupId: savedGroupId,
+            telnyxId: group.telnyxId,
+            completionPercentage: 100,
+            completedRequirements: detailedStatus.completedRequirements,
+            totalRequirements: detailedStatus.totalRequirements,
+            pendingRequirements: 0
+          });
+        } else {
+          // Case 1.2.1: Incomplete requirements
+          setRequirementStatus({
+            isChecking: false,
+            hasRequirements: true,
+            isComplete: false,
+            error: null,
+            groupId: savedGroupId,
+            telnyxId: group.telnyxId,
+            completionPercentage,
+            completedRequirements: detailedStatus.completedRequirements,
+            totalRequirements: detailedStatus.totalRequirements,
+            pendingRequirements: detailedStatus.pendingRequirements
           });
         }
+        // Always search for available numbers
+        searchAvailableNumbers();
+      } catch (error) {
+        console.error('Failed to load requirement group:', error);
+        Cookies.remove(`telnyxRequirementGroup_${companyId}_${destZone}`);
+        handleTelnyxProvider(); // Retry without saved group
       }
-    };
+    } else {
+      // Case 1.2.2: No requirement group yet
+      try {
+        const response = await requirementService.checkCountryRequirements(destZone);
+        setCountryReq(response);
+
+        if (response.hasRequirements) {
+          const { group } = await requirementService.getOrCreateGroup(companyId, destZone);
+          setRequirementStatus({
+            isChecking: false,
+            hasRequirements: true,
+            isComplete: false,
+            error: null,
+            groupId: group._id,
+            telnyxId: group.telnyxId,
+            completionPercentage: 0,
+            completedRequirements: [],
+            totalRequirements: response.requirements?.length || 0,
+            pendingRequirements: response.requirements?.length || 0
+          });
+
+          // Save new group ID
+          Cookies.set(
+            `telnyxRequirementGroup_${companyId}_${destZone}`,
+            group._id,
+            { expires: 30 }
+          );
+        } else {
+          // No requirements needed
+          setRequirementStatus({
+            isChecking: false,
+            hasRequirements: false,
+            isComplete: true,
+            error: null
+          });
+        }
+        // Always search for available numbers
+        searchAvailableNumbers();
+      } catch (error) {
+        console.error('Failed to check country requirements:', error);
+        setRequirementStatus({
+          isChecking: false,
+          hasRequirements: false,
+          isComplete: false,
+          error: 'Failed to check requirements'
+        });
+      }
+    }
+  };
+
+  // Effect for provider changes
+  useEffect(() => {
+    // Reset states when provider changes
+    setRequirementStatus({
+      isChecking: false,
+      hasRequirements: false,
+      isComplete: false,
+      error: null
+    });
+    setAvailableNumbers([]);
+    setPurchaseError(null);
+    setPurchaseStatus('idle');
+    setSelectedNumber(null);
+    setShowPurchaseModal(false);
+    setShowRequirementModal(false);
+    
+    // Only proceed if we have necessary data
+    if (!selectedGigId || !companyId) return;
 
     if (provider === 'telnyx') {
       handleTelnyxProvider();
@@ -360,7 +380,28 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       checkGigPhoneNumber();
       searchAvailableNumbers();
     }
-  }, [selectedGigId, provider, companyId]);
+  }, [provider]);
+
+  // Effect for gig changes
+  useEffect(() => {
+    if (!selectedGigId || !companyId) return;
+
+    // Reset states when gig changes
+    setAvailableNumbers([]);
+    setPurchaseError(null);
+    setPurchaseStatus('idle');
+    setSelectedNumber(null);
+    setShowPurchaseModal(false);
+    setShowRequirementModal(false);
+
+    if (provider === 'telnyx') {
+      handleTelnyxProvider();
+    } else {
+      // For other providers, just check for existing numbers and search available ones
+      checkGigPhoneNumber();
+      searchAvailableNumbers();
+    }
+  }, [selectedGigId]);
 
 
   const checkCompletedSteps = async () => {
@@ -1121,13 +1162,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                 </div>
                   <div className="mt-3">
                   <button
-                    onClick={() => {
-                        setProvider('telnyx');
-                      searchAvailableNumbers();
-                    }}
-                      className="rounded-md px-3 py-1 text-xs text-white bg-indigo-600 hover:bg-indigo-700"
-                    >
-                      Try Telnyx Instead
+                    onClick={() => setProvider('telnyx')}
+                    className="rounded-md px-3 py-1 text-xs text-white bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    Try Telnyx Instead
                   </button>
                   </div>
                 </div>
