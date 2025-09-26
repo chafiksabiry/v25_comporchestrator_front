@@ -308,33 +308,58 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         Cookies.remove(`telnyxRequirementGroup_${companyId}_${destZone}`);
         handleTelnyxProvider(); // Retry without saved group
       }
-    } else {
-      // Case 1.2.2: No requirement group yet
-      try {
-        const response = await requirementService.checkCountryRequirements(destZone);
-        setCountryReq(response);
+      } else {
+        // Case 1.2.2: Check for existing group first, even without cookie
+        try {
+          // First check if country has requirements
+          const response = await requirementService.checkCountryRequirements(destZone);
+          setCountryReq(response);
 
-        if (response.hasRequirements) {
-          const { group } = await requirementService.getOrCreateGroup(companyId, destZone);
-          setRequirementStatus({
-            isChecking: false,
-            hasRequirements: true,
-            isComplete: false,
-            error: null,
-            groupId: group._id,
-            telnyxId: group.telnyxId,
-            completionPercentage: 0,
-            completedRequirements: [],
-            totalRequirements: response.requirements?.length || 0,
-            pendingRequirements: response.requirements?.length || 0
-          });
+          if (response.hasRequirements) {
+            // Try to get existing group or create new one
+            const { group, isNew } = await requirementService.getOrCreateGroup(companyId, destZone);
+            
+            if (isNew) {
+              // New group created
+              setRequirementStatus({
+                isChecking: false,
+                hasRequirements: true,
+                isComplete: false,
+                error: null,
+                groupId: group._id,
+                telnyxId: group.telnyxId,
+                completionPercentage: 0,
+                completedRequirements: [],
+                totalRequirements: response.requirements?.length || 0,
+                pendingRequirements: response.requirements?.length || 0
+              });
+            } else {
+              // Existing group found, get its status
+              const detailedStatus = await requirementService.getDetailedGroupStatus(group._id);
+              const completionPercentage = Math.round(
+                (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
+              );
 
-          // Save new group ID
-          Cookies.set(
-            `telnyxRequirementGroup_${companyId}_${destZone}`,
-            group._id,
-            { expires: 30 }
-          );
+              setRequirementStatus({
+                isChecking: false,
+                hasRequirements: true,
+                isComplete: detailedStatus.isComplete,
+                error: null,
+                groupId: group._id,
+                telnyxId: group.telnyxId,
+                completionPercentage,
+                completedRequirements: detailedStatus.completedRequirements,
+                totalRequirements: detailedStatus.totalRequirements,
+                pendingRequirements: detailedStatus.pendingRequirements
+              });
+            }
+
+            // Save group ID in cookie
+            Cookies.set(
+              `telnyxRequirementGroup_${companyId}_${destZone}`,
+              group._id,
+              { expires: 30 }
+            );
         } else {
           // No requirements needed
           setRequirementStatus({
