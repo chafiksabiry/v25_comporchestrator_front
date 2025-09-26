@@ -224,7 +224,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           setRequirementStatus({
             isChecking: false,
             hasRequirements: false,
-            isComplete: true,
+                isComplete: true,
             error: null
           });
           // Even if gig has a number, we still want to search available numbers for Telnyx
@@ -234,11 +234,11 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           return true;
         }
         return false;
-      } catch (error) {
+          } catch (error) {
         console.error('❌ Error checking gig numbers:', error);
-        return false;
-      }
-    };
+            return false;
+          }
+        };
 
   const handleTelnyxProvider = async () => {
     if (!selectedGigId || !companyId) return;
@@ -247,7 +247,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     const hasNumber = await checkGigPhoneNumber();
     if (hasNumber) return; // Case 1.1 handled in checkGigPhoneNumber (including searching available numbers)
 
-    // Case 1.2: No number, check requirements
+    // Case 1.2: No number, first check if there are available numbers
     const selectedGig = gigs.find(g => g._id === selectedGigId);
     if (!selectedGig?.destination_zone?.cca2) {
       console.error('No destination zone found for gig');
@@ -256,6 +256,29 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
     const destZone = selectedGig.destination_zone.cca2;
     setDestinationZone(destZone); // Set destination zone for number search
+    
+    // Check for available numbers first
+    try {
+      const numbers = await phoneNumberService.searchPhoneNumbers(destZone, 'telnyx');
+      setAvailableNumbers(Array.isArray(numbers) ? numbers : []);
+      
+      // If no numbers available, don't proceed with requirements
+      if (!Array.isArray(numbers) || numbers.length === 0) {
+        console.log('No available numbers for this destination zone, skipping requirements check');
+        setRequirementStatus({
+          isChecking: false,
+          hasRequirements: false,
+          isComplete: false,
+          error: null
+        });
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking available numbers:', error);
+      // Even if we fail to check numbers, continue with requirements check
+      // as this might be a temporary API issue
+    }
+
     const savedGroupId = Cookies.get(`telnyxRequirementGroup_${companyId}_${destZone}`);
 
     if (savedGroupId) {
@@ -274,10 +297,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
         if (detailedStatus.isComplete) {
           // Case 1.2.3: Requirements completed, no number yet
-          setRequirementStatus({
-            isChecking: false,
-            hasRequirements: false,
-            isComplete: true,
+        setRequirementStatus({
+          isChecking: false,
+          hasRequirements: false,
+          isComplete: true,
             error: null,
             groupId: savedGroupId,
             telnyxId: group.telnyxId,
@@ -335,29 +358,29 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
               });
             } else {
               // Existing group found, get its status
-              const detailedStatus = await requirementService.getDetailedGroupStatus(group._id);
-              const completionPercentage = Math.round(
-                (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
-              );
+        const detailedStatus = await requirementService.getDetailedGroupStatus(group._id);
+        const completionPercentage = Math.round(
+          (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
+        );
 
               setRequirementStatus({
-                isChecking: false,
-                hasRequirements: true,
-                isComplete: detailedStatus.isComplete,
-                error: null,
-                groupId: group._id,
-                telnyxId: group.telnyxId,
-                completionPercentage,
-                completedRequirements: detailedStatus.completedRequirements,
-                totalRequirements: detailedStatus.totalRequirements,
-                pendingRequirements: detailedStatus.pendingRequirements
+          isChecking: false,
+          hasRequirements: true,
+          isComplete: detailedStatus.isComplete,
+          error: null,
+          groupId: group._id,
+          telnyxId: group.telnyxId,
+          completionPercentage,
+          completedRequirements: detailedStatus.completedRequirements,
+          totalRequirements: detailedStatus.totalRequirements,
+          pendingRequirements: detailedStatus.pendingRequirements
               });
             }
 
             // Save group ID in cookie
-            Cookies.set(
+      Cookies.set(
               `telnyxRequirementGroup_${companyId}_${destZone}`,
-              group._id,
+        group._id,
               { expires: 30 }
             );
         } else {
@@ -371,12 +394,12 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         }
         // Always search for available numbers
         searchAvailableNumbers();
-      } catch (error) {
+    } catch (error) {
         console.error('Failed to check country requirements:', error);
-        setRequirementStatus({
-          isChecking: false,
-          hasRequirements: false,
-          isComplete: false,
+      setRequirementStatus({
+        isChecking: false,
+        hasRequirements: false,
+        isComplete: false,
           error: 'Failed to check requirements'
         });
       }
@@ -1262,9 +1285,15 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                   );
                 })
               ) : (
-                <div className="rounded-lg border border-gray-200 p-4 text-center text-gray-500">
-                  <p className="mb-2">No phone numbers available for this destination.</p>
-                  <p className="text-sm text-gray-400">Try again later or contact support if the issue persists.</p>
+                <div className="rounded-lg border border-gray-200 p-4">
+                  <div className="flex items-center justify-center">
+                    <AlertCircle className="h-5 w-5 text-yellow-400 mr-2" />
+                    <h3 className="text-sm font-medium text-yellow-800">No Numbers Available</h3>
+                  </div>
+                  <div className="mt-2 text-sm text-center text-gray-500">
+                    <p className="mb-2">No Telnyx phone numbers are currently available for this destination.</p>
+                    <p className="text-sm text-gray-400">You can try again later or contact support if you need immediate assistance.</p>
+                  </div>
                 </div>
               )}
             </div>
