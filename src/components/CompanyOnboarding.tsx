@@ -1273,7 +1273,6 @@ const CompanyOnboarding = () => {
           description: "Training, validation, and contract acceptance",
           status: "pending",
           component: RepOnboarding,
-          disabled: true,
         },
         {
           id: 12,
