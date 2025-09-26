@@ -30,6 +30,18 @@ export interface RequirementFormModalProps {
     submittedAt?: string;
   }>;
   requirementGroupId?: string;
+  requirementStatus: {
+    isChecking: boolean;
+    hasRequirements: boolean;
+    isComplete: boolean;
+    error: string | null;
+    groupId?: string;
+    telnyxId?: string;
+    completionPercentage?: number;
+    completedRequirements?: any[];
+    totalRequirements?: number;
+    pendingRequirements?: number;
+  };
   onSubmit: (values: Record<string, any>) => Promise<void>;
 }
 
