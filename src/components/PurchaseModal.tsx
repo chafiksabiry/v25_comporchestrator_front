@@ -5,6 +5,12 @@ interface PurchaseModalProps {
   isOpen: boolean;
   onClose: () => void;
   purchaseStatus: 'idle' | 'confirming' | 'requirements' | 'purchasing' | 'success' | 'error';
+  purchaseResponse?: {
+    phoneNumber: string;
+    status: string;
+    features: any;
+    provider: string;
+  } | null;
   selectedNumber: string | null;
   countryReq: {
     hasRequirements: boolean;
@@ -29,6 +35,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
   isOpen,
   onClose,
   purchaseStatus,
+  purchaseResponse,
   selectedNumber,
   countryReq,
   requirementStatus,
@@ -133,20 +140,47 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
               <div className="text-center">
                 <CheckCircle className="mx-auto mb-4 h-12 w-12 text-green-500" />
                 <p className="text-sm text-gray-500">
-                  Number <span className="font-medium">{selectedNumber}</span> has been ordered!
+                  Number <span className="font-medium">{purchaseResponse?.phoneNumber || selectedNumber}</span> has been ordered!
                 </p>
-                <p className="mt-2 text-sm text-yellow-600">
-                  Status: <span className="font-medium">Pending</span>
+                <p className="mt-2 text-sm text-gray-600">
+                  Status: <span className={`font-medium ${
+                    purchaseResponse?.status === 'active' ? 'text-green-600' :
+                    purchaseResponse?.status === 'pending' ? 'text-yellow-600' :
+                    'text-gray-600'
+                  }`}>{purchaseResponse?.status || 'Unknown'}</span>
                 </p>
-                <p className="mt-1 text-xs text-gray-500">
-                  The number order is being processed. You can check its status in the Purchased Numbers section.
+                <div className="mt-4 text-sm text-gray-500">
+                  <p>Features:</p>
+                  <div className="mt-2 flex justify-center space-x-4">
+                    {purchaseResponse?.features && Object.entries(purchaseResponse.features).map(([feature, enabled]) => (
+                      <span key={feature} className={`px-2 py-1 rounded-full ${
+                        enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {feature}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <p className="mt-4 text-xs text-gray-500">
+                  You can check the number status in the Purchased Numbers section.
                 </p>
               </div>
             )}
             {purchaseStatus === 'error' && (
               <div className="text-center">
                 <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
-                <p className="text-sm text-red-600">{purchaseError}</p>
+                <p className="text-sm text-red-600">{purchaseError || 'An error occurred while purchasing the number'}</p>
+                <p className="mt-2 text-sm text-gray-500">
+                  Please try again or contact support if the issue persists.
+                </p>
+                <button
+                  onClick={() => {
+                    onSetPurchaseStatus('confirming');
+                  }}
+                  className="mt-4 inline-flex items-center rounded-md bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-100"
+                >
+                  Try Again
+                </button>
               </div>
             )}
           </div>
