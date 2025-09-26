@@ -208,11 +208,15 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
 
   // S'assurer qu'il y a au moins une étape
   React.useEffect(() => {
-    if (steps.length === 0) {
-      console.warn('No steps available - no requirements found');
-      onCancel();
+    if (!requirements || requirements.length === 0) {
+      console.warn('No requirements found:', { requirements });
+      return;
     }
-  }, [steps.length, onCancel]);
+    if (steps.length === 0) {
+      console.warn('No steps available from requirements:', { requirements, steps });
+      return;
+    }
+  }, [requirements, steps]);
 
     const validateStep = useCallback(async () => {
       if (!currentRequirement || !currentStep) return false;

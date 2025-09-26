@@ -1446,6 +1446,21 @@ const CompanyOnboarding = () => {
       return;
     }
 
+    // Pour Call Script
+    if (stepId === 8) {
+      console.log('Call Script step clicked');
+      console.log('All previous completed:', allPreviousCompleted);
+      console.log('Step completed:', completedSteps.includes(stepId));
+      console.log('Script Generation URL:', import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL);
+      
+      if (allPreviousCompleted) {
+        const baseUrl = import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL;
+        console.log('Redirecting to script generation:', baseUrl);
+        window.location.replace(baseUrl);
+      }
+      return;
+    }
+
     // Pour Telephony Setup
     if (stepId === 5) {
       if (allPreviousCompleted) {
