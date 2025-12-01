@@ -6,7 +6,8 @@ import {
   Settings,
   HelpCircle,
   LogOut,
-  Building2
+  Building2,
+  BookOpen
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import Cookies from 'js-cookie';
@@ -73,6 +74,10 @@ function App() {
   }, []);
 
 
+
+  const navigateToUrl = (url: string) => {
+    window.location.href = url;
+  };
 
   const handleLogout = () => {
     // Supprimer tous les cookies
@@ -154,6 +159,13 @@ function App() {
             >
               <Building2 className="h-5 w-5" />
               <span>Company Onboarding</span>
+            </button>
+            <button
+              className="flex w-full items-center space-x-2 rounded-lg py-2 px-3 hover:bg-indigo-800"
+              onClick={() => navigateToUrl('/training')}
+            >
+              <BookOpen className="h-5 w-5" />
+              <span>Training</span>
             </button>
             {/* 
             <button
