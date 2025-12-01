@@ -23,6 +23,7 @@ ENV VITE_GOOGLE_API_KEY=AIzaSyCHEKiraViKIrgvloZI-ZBIJqtDMeBuQD0
 ENV VITE_KNOWLEDGE_BASE_URL=/knowledgebase/upload
 ENV VITE_OPENAI_API_KEY=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
 ENV VITE_SCRIPT_GENERATION_BASE_URL=/knowledgebase/script-generator
+ENV VITE_TRAINING_BACKEND_URL=https://api-training.harx.ai
 
 RUN npm run build
 

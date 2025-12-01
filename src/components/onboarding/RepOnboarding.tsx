@@ -66,44 +66,41 @@ const RepOnboarding = () => {
     }
   ];
 
-  const trainingModules = [
-    {
-      id: 1,
-      title: 'Platform Introduction',
-      duration: '30 mins',
-      type: 'video',
-      required: true,
-      status: 'completed',
-      progress: 100
-    },
-    {
-      id: 2,
-      title: 'Communication Best Practices',
-      duration: '1 hour',
-      type: 'interactive',
-      required: true,
-      status: 'in_progress',
-      progress: 60
-    },
-    {
-      id: 3,
-      title: 'Multi-Channel Support',
-      duration: '45 mins',
-      type: 'video',
-      required: true,
-      status: 'not_started',
-      progress: 0
-    },
-    {
-      id: 4,
-      title: 'Customer Service Excellence',
-      duration: '2 hours',
-      type: 'course',
-      required: true,
-      status: 'not_started',
-      progress: 0
+  // Helper function to format training journey data for display
+  const formatTrainingJourney = (journey: any) => {
+    // Calculate total duration from modules if available
+    let duration = 'N/A';
+    if (journey.modules && Array.isArray(journey.modules)) {
+      const totalMinutes = journey.modules.reduce((acc: number, module: any) => {
+        return acc + (module.duration || 0);
+      }, 0);
+      if (totalMinutes > 0) {
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        duration = hours > 0 ? `${hours}h ${minutes}min` : `${minutes} min`;
+      }
     }
-  ];
+    
+    // Map backend status to UI status
+    let status = 'not_started';
+    if (journey.status === 'completed' || journey.journeyStatus === 'completed') {
+      status = 'completed';
+    } else if (journey.status === 'in_progress' || journey.journeyStatus === 'in_progress' || journey.status === 'active') {
+      status = 'in_progress';
+    }
+    
+    return {
+      id: journey._id || journey.id,
+      title: journey.title || journey.name || 'Untitled Training',
+      description: journey.description || '',
+      duration: duration,
+      type: journey.type || 'course',
+      required: journey.required !== false, // Default to required
+      status: status,
+      progress: journey.progress || (status === 'completed' ? 100 : status === 'in_progress' ? 50 : 0),
+      modules: journey.modules || []
+    };
+  };
 
   const assessments = [
     {
@@ -159,8 +156,10 @@ const RepOnboarding = () => {
     try {
       const trainingBackendUrl = getTrainingBackendUrl();
       const response = await axios.get(
-        `${trainingBackendUrl}/training_journeys/company/${companyId}`
+        `${trainingBackendUrl}/training_journeys/trainer/companyId/${companyId}`
       );
+      
+      console.log('Training API Response:', response.data);
       
       if (response.data && response.data.success && response.data.data) {
         setTrainings(Array.isArray(response.data.data) ? response.data.data : []);
@@ -285,7 +284,14 @@ const RepOnboarding = () => {
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="text-lg font-medium text-gray-900">Training & Certification</h3>
         <div className="mt-4 space-y-4">
-          {trainingModules.map((module) => (
+          {loadingTrainings ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-gray-500">Loading trainings...</p>
+            </div>
+          ) : trainings.length > 0 ? (
+            trainings.map((journey) => {
+              const module = formatTrainingJourney(journey);
+              return (
             <div
               key={module.id}
               className="rounded-lg border border-gray-200 bg-white"
@@ -316,6 +322,9 @@ const RepOnboarding = () => {
                         </span>
                       )}
                     </div>
+                    {module.description && (
+                      <p className="mt-1 text-xs text-gray-400 line-clamp-1">{module.description}</p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
@@ -335,7 +344,10 @@ const RepOnboarding = () => {
                       <span className="text-sm text-gray-500">{module.progress}%</span>
                     </div>
                   ) : (
-                    <button className="flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
+                    <button 
+                      onClick={() => navigateToUrl(`/training/${module.id}`)}
+                      className="flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+                    >
                       <Play className="mr-1 h-4 w-4" />
                       Start
                     </button>
@@ -343,7 +355,16 @@ const RepOnboarding = () => {
                 </div>
               </div>
             </div>
-          ))}
+              );
+            })
+          ) : (
+            <div className="text-center py-8">
+              <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
+              <p className="mt-4 text-sm text-gray-500">
+                No trainings available yet.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
