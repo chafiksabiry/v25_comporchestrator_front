@@ -102,6 +102,88 @@ const RepOnboarding = () => {
     };
   };
 
+  // Extract all documents from training modules sections
+  const extractDocumentsFromTrainings = (): Array<{
+    id: string;
+    title: string;
+    type: string;
+    size: string;
+    url?: string;
+  }> => {
+    const documents: Array<{
+      id: string;
+      title: string;
+      type: string;
+      size: string;
+      url?: string;
+    }> = [];
+
+    trainings.forEach((journey: any) => {
+      if (journey.modules && Array.isArray(journey.modules)) {
+        journey.modules.forEach((module: any) => {
+          if (module.sections && Array.isArray(module.sections)) {
+            module.sections.forEach((section: any) => {
+              // Check if section has a file in content
+              if (section.content && section.content.file) {
+                const file = section.content.file;
+                const fileName = file.name || section.title || 'Untitled Document';
+                const fileType = file.type || file.mimeType?.split('/')[1]?.toUpperCase() || 'FILE';
+                const fileSize = file.size 
+                  ? file.size > 1024 * 1024 
+                    ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+                    : `${(file.size / 1024).toFixed(1)} KB`
+                  : 'Unknown size';
+                
+                documents.push({
+                  id: file.id || file.publicId || `${journey.id}-${module._id}-${section._id}`,
+                  title: fileName,
+                  type: fileType,
+                  size: fileSize,
+                  url: file.url
+                });
+              }
+            });
+          }
+        });
+      }
+    });
+
+    // Remove duplicates based on URL or ID
+    const uniqueDocuments = documents.filter((doc, index, self) =>
+      index === self.findIndex((d) => d.id === doc.id || d.url === doc.url)
+    );
+
+    return uniqueDocuments;
+  };
+
+  // Get documents from trainings
+  const trainingDocuments = extractDocumentsFromTrainings();
+
+  // Format file type for display
+  const formatFileType = (type: string): string => {
+    const typeMap: Record<string, string> = {
+      'pdf': 'PDF',
+      'doc': 'DOC',
+      'docx': 'DOCX',
+      'xls': 'XLS',
+      'xlsx': 'XLSX',
+      'ppt': 'PPT',
+      'pptx': 'PPTX',
+      'mp4': 'VIDEO',
+      'mov': 'VIDEO',
+      'avi': 'VIDEO',
+      'zip': 'ZIP',
+      'rar': 'RAR',
+      'jpg': 'IMAGE',
+      'jpeg': 'IMAGE',
+      'png': 'IMAGE',
+      'gif': 'IMAGE'
+    };
+    
+    const normalizedType = type.toLowerCase();
+    return typeMap[normalizedType] || type.toUpperCase();
+  };
+
   const assessments = [
     {
       id: 1,
@@ -550,34 +632,56 @@ const RepOnboarding = () => {
       <div className="rounded-lg bg-white p-6 shadow">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium text-gray-900">Documentation & Resources</h3>
-          <button className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500">
-            <Download className="mr-1 h-4 w-4" />
-            Download All
-          </button>
+          {trainingDocuments.length > 0 && (
+            <button 
+              onClick={() => {
+                // Download all documents
+                trainingDocuments.forEach((doc) => {
+                  if (doc.url) {
+                    window.open(doc.url, '_blank');
+                  }
+                });
+              }}
+              className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500"
+            >
+              <Download className="mr-1 h-4 w-4" />
+              Download All
+            </button>
+          )}
         </div>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {[
-            { title: 'Onboarding Guide', type: 'PDF', size: '2.4 MB' },
-            { title: 'Channel Setup Manual', type: 'PDF', size: '1.8 MB' },
-            { title: 'Best Practices', type: 'PDF', size: '3.2 MB' },
-            { title: 'Training Videos', type: 'ZIP', size: '156 MB' }
-          ].map((doc, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between rounded-lg border border-gray-200 p-4"
-            >
-              <div className="flex items-center">
-                <FileText className="h-5 w-5 text-gray-400" />
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-900">{doc.title}</p>
-                  <p className="text-xs text-gray-500">{doc.type} • {doc.size}</p>
+          {trainingDocuments.length > 0 ? (
+            trainingDocuments.map((doc) => (
+              <div
+                key={doc.id}
+                className="flex items-center justify-between rounded-lg border border-gray-200 p-4 hover:border-indigo-300 hover:shadow-md transition-all"
+              >
+                <div className="flex items-center flex-1 min-w-0">
+                  <FileText className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                  <div className="ml-3 min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900 truncate">{doc.title}</p>
+                    <p className="text-xs text-gray-500">{formatFileType(doc.type)} • {doc.size}</p>
+                  </div>
                 </div>
+                {doc.url && (
+                  <button 
+                    onClick={() => window.open(doc.url, '_blank')}
+                    className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-indigo-600 flex-shrink-0 ml-2"
+                    title="Download"
+                  >
+                    <Download className="h-4 w-4" />
+                  </button>
+                )}
               </div>
-              <button className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500">
-                <Download className="h-4 w-4" />
-              </button>
+            ))
+          ) : (
+            <div className="col-span-2 text-center py-8">
+              <FileText className="mx-auto h-12 w-12 text-gray-400" />
+              <p className="mt-4 text-sm text-gray-500">
+                No documents available in training modules yet.
+              </p>
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>
