@@ -149,27 +149,41 @@ const RepOnboarding = () => {
   // Function to fetch trainings for the company
   const fetchCompanyTrainings = useCallback(async () => {
     if (!companyId) {
+      console.log('[RepOnboarding] No companyId available, skipping training fetch');
       return;
     }
 
     setLoadingTrainings(true);
     try {
       const trainingBackendUrl = getTrainingBackendUrl();
-      const response = await axios.get(
-        `${trainingBackendUrl}/training_journeys/trainer/companyId/${companyId}`
-      );
+      const apiUrl = `${trainingBackendUrl}/training_journeys/trainer/companyId/${companyId}`;
       
-      console.log('Training API Response:', response.data);
+      console.log('[RepOnboarding] Fetching trainings from:', apiUrl);
+      console.log('[RepOnboarding] Company ID:', companyId);
+      console.log('[RepOnboarding] Training Backend URL:', trainingBackendUrl);
+      
+      const response = await axios.get(apiUrl);
+      
+      console.log('[RepOnboarding] Training API Response:', response.data);
       
       if (response.data && response.data.success && response.data.data) {
-        setTrainings(Array.isArray(response.data.data) ? response.data.data : []);
+        const trainingsData = Array.isArray(response.data.data) ? response.data.data : [];
+        console.log('[RepOnboarding] Found', trainingsData.length, 'trainings');
+        setTrainings(trainingsData);
       } else if (Array.isArray(response.data)) {
+        console.log('[RepOnboarding] Response is array, found', response.data.length, 'trainings');
         setTrainings(response.data);
       } else {
+        console.log('[RepOnboarding] No trainings found in response');
         setTrainings([]);
       }
-    } catch (error) {
-      console.error('Error fetching company trainings:', error);
+    } catch (error: any) {
+      console.error('[RepOnboarding] Error fetching company trainings:', error);
+      if (error.response) {
+        console.error('[RepOnboarding] Error response status:', error.response.status);
+        console.error('[RepOnboarding] Error response data:', error.response.data);
+        console.error('[RepOnboarding] Requested URL:', error.config?.url);
+      }
       setTrainings([]);
     } finally {
       setLoadingTrainings(false);
