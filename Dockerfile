@@ -13,12 +13,12 @@ RUN npm install
 
 COPY . .
 
-ENV VITE_GIGS_API=https://preprod-api-gigsmanual.harx.ai/api
+ENV VITE_GIGS_API=https://prod-api-gigsmanual.harx.ai/api
 ENV NODE_ENV=sandbox
-ENV VITE_API_BASE_URL=https://preprod-api-Comp-Orchestrator.harx.ai/api
-ENV VITE_COMPANY_API_URL=https://preprod-api-companysearchwizard.harx.ai/api
-ENV VITE_DASHBOARD_API=https://preprod-api-dashboard.harx.ai/api
-ENV VITE_REP_API=https://preprod-api-repcreationwizard.harx.ai/api
+ENV VITE_API_BASE_URL=https://prod-api-Comp-Orchestrator.harx.ai/api
+ENV VITE_COMPANY_API_URL=https://prod-api-companysearchwizard.harx.ai/api
+ENV VITE_DASHBOARD_API=https://prod-api-dashboard.harx.ai/api
+ENV VITE_REP_API=https://prod-api-repcreationwizard.harx.ai/api
 ENV VITE_GOOGLE_API_KEY=AIzaSyCHEKiraViKIrgvloZI-ZBIJqtDMeBuQD0
 ENV VITE_KNOWLEDGE_BASE_URL=/knowledgebase/upload
 ENV VITE_OPENAI_API_KEY=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
