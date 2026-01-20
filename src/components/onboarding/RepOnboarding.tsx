@@ -80,7 +80,7 @@ const RepOnboarding = () => {
         duration = hours > 0 ? `${hours}h ${minutes}min` : `${minutes} min`;
       }
     }
-    
+
     // Map backend status to UI status
     let status = 'not_started';
     if (journey.status === 'completed' || journey.journeyStatus === 'completed') {
@@ -88,7 +88,7 @@ const RepOnboarding = () => {
     } else if (journey.status === 'in_progress' || journey.journeyStatus === 'in_progress' || journey.status === 'active') {
       status = 'in_progress';
     }
-    
+
     return {
       id: journey._id || journey.id,
       title: journey.title || journey.name || 'Untitled Training',
@@ -128,12 +128,12 @@ const RepOnboarding = () => {
                 const file = section.content.file;
                 const fileName = file.name || section.title || 'Untitled Document';
                 const fileType = file.type || file.mimeType?.split('/')[1]?.toUpperCase() || 'FILE';
-                const fileSize = file.size 
-                  ? file.size > 1024 * 1024 
+                const fileSize = file.size
+                  ? file.size > 1024 * 1024
                     ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
                     : `${(file.size / 1024).toFixed(1)} KB`
                   : 'Unknown size';
-                
+
                 documents.push({
                   id: file.id || file.publicId || `${journey.id}-${module._id}-${section._id}`,
                   title: fileName,
@@ -179,7 +179,7 @@ const RepOnboarding = () => {
       'png': 'IMAGE',
       'gif': 'IMAGE'
     };
-    
+
     const normalizedType = type.toLowerCase();
     return typeMap[normalizedType] || type.toUpperCase();
   };
@@ -219,13 +219,13 @@ const RepOnboarding = () => {
       return customUrl;
     }
     // Check if running locally
-    const isLocal = typeof window !== 'undefined' && 
+    const isLocal = typeof window !== 'undefined' &&
       (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     if (isLocal) {
       return 'http://localhost:5010';
     }
     // Default to sandbox API
-    return 'https://api-training.harx.ai';
+    return 'https://v25platformtrainingbackend-production.up.railway.app';
   };
 
   // Function to fetch trainings for the company
@@ -239,15 +239,15 @@ const RepOnboarding = () => {
     try {
       const trainingBackendUrl = getTrainingBackendUrl();
       const apiUrl = `${trainingBackendUrl}/training_journeys/trainer/companyId/${companyId}`;
-      
+
       console.log('[RepOnboarding] Fetching trainings from:', apiUrl);
       console.log('[RepOnboarding] Company ID:', companyId);
       console.log('[RepOnboarding] Training Backend URL:', trainingBackendUrl);
-      
+
       const response = await axios.get(apiUrl);
-      
+
       console.log('[RepOnboarding] Training API Response:', response.data);
-      
+
       if (response.data && response.data.success && response.data.data) {
         const trainingsData = Array.isArray(response.data.data) ? response.data.data : [];
         console.log('[RepOnboarding] Found', trainingsData.length, 'trainings');
@@ -336,7 +336,7 @@ const RepOnboarding = () => {
         <div className="mt-4">
           <div className="relative">
             <div className="absolute left-0 top-2 h-0.5 w-full bg-gray-200">
-              <div 
+              <div
                 className="absolute h-0.5 bg-indigo-600 transition-all duration-500"
                 style={{ width: `${((activeStep - 1) / 3) * 100}%` }}
               />
@@ -344,27 +344,24 @@ const RepOnboarding = () => {
             <div className="relative flex justify-between">
               {onboardingSteps.map((step, index) => (
                 <div key={index} className="flex flex-col items-center">
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${
-                    step.status === 'completed' ? 'border-indigo-600 bg-indigo-600' :
-                    step.status === 'current' ? 'border-indigo-600 bg-white' :
-                    'border-gray-300 bg-white'
-                  }`}>
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${step.status === 'completed' ? 'border-indigo-600 bg-indigo-600' :
+                      step.status === 'current' ? 'border-indigo-600 bg-white' :
+                        'border-gray-300 bg-white'
+                    }`}>
                     {step.status === 'completed' ? (
                       <CheckCircle className="h-5 w-5 text-white" />
                     ) : (
-                      <span className={`text-sm font-medium ${
-                        step.status === 'current' ? 'text-indigo-600' : 'text-gray-500'
-                      }`}>
+                      <span className={`text-sm font-medium ${step.status === 'current' ? 'text-indigo-600' : 'text-gray-500'
+                        }`}>
                         {index + 1}
                       </span>
                     )}
                   </div>
                   <div className="mt-2 text-center">
-                    <p className={`text-sm font-medium ${
-                      step.status === 'completed' ? 'text-indigo-600' :
-                      step.status === 'current' ? 'text-gray-900' :
-                      'text-gray-500'
-                    }`}>
+                    <p className={`text-sm font-medium ${step.status === 'completed' ? 'text-indigo-600' :
+                        step.status === 'current' ? 'text-gray-900' :
+                          'text-gray-500'
+                      }`}>
                       {step.title}
                     </p>
                     <p className="mt-1 text-xs text-gray-500">{step.description}</p>
@@ -388,69 +385,68 @@ const RepOnboarding = () => {
             trainings.map((journey) => {
               const module = formatTrainingJourney(journey);
               return (
-            <div
-              key={module.id}
-              className="rounded-lg border border-gray-200 bg-white"
-            >
-              <div className="flex items-center justify-between p-4">
-                <div className="flex items-center space-x-4">
-                  <div className={`rounded-lg p-2 ${
-                    module.status === 'completed' ? 'bg-green-100 text-green-600' :
-                    module.status === 'in_progress' ? 'bg-yellow-100 text-yellow-600' :
-                    'bg-gray-100 text-gray-600'
-                  }`}>
-                    {module.type === 'video' ? (
-                      <Video className="h-5 w-5" />
-                    ) : module.type === 'interactive' ? (
-                      <MessageSquare className="h-5 w-5" />
-                    ) : (
-                      <BookOpen className="h-5 w-5" />
-                    )}
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">{module.title}</h4>
-                    <div className="mt-1 flex items-center space-x-2 text-sm text-gray-500">
-                      <Clock className="h-4 w-4" />
-                      <span>{module.duration}</span>
-                      {module.required && (
-                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
-                          Required
+                <div
+                  key={module.id}
+                  className="rounded-lg border border-gray-200 bg-white"
+                >
+                  <div className="flex items-center justify-between p-4">
+                    <div className="flex items-center space-x-4">
+                      <div className={`rounded-lg p-2 ${module.status === 'completed' ? 'bg-green-100 text-green-600' :
+                          module.status === 'in_progress' ? 'bg-yellow-100 text-yellow-600' :
+                            'bg-gray-100 text-gray-600'
+                        }`}>
+                        {module.type === 'video' ? (
+                          <Video className="h-5 w-5" />
+                        ) : module.type === 'interactive' ? (
+                          <MessageSquare className="h-5 w-5" />
+                        ) : (
+                          <BookOpen className="h-5 w-5" />
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">{module.title}</h4>
+                        <div className="mt-1 flex items-center space-x-2 text-sm text-gray-500">
+                          <Clock className="h-4 w-4" />
+                          <span>{module.duration}</span>
+                          {module.required && (
+                            <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
+                              Required
+                            </span>
+                          )}
+                        </div>
+                        {module.description && (
+                          <p className="mt-1 text-xs text-gray-400 line-clamp-1">{module.description}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      {module.status === 'completed' ? (
+                        <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-sm font-medium text-green-800">
+                          <CheckCircle className="mr-1 h-4 w-4" />
+                          Completed
                         </span>
+                      ) : module.status === 'in_progress' ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="h-2 w-24 rounded-full bg-gray-200">
+                            <div
+                              className="h-2 rounded-full bg-indigo-600"
+                              style={{ width: `${module.progress}%` }}
+                            />
+                          </div>
+                          <span className="text-sm text-gray-500">{module.progress}%</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => navigateToUrl(`/training/${module.id}`)}
+                          className="flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+                        >
+                          <Play className="mr-1 h-4 w-4" />
+                          Start
+                        </button>
                       )}
                     </div>
-                    {module.description && (
-                      <p className="mt-1 text-xs text-gray-400 line-clamp-1">{module.description}</p>
-                    )}
                   </div>
                 </div>
-                <div className="flex items-center space-x-4">
-                  {module.status === 'completed' ? (
-                    <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-sm font-medium text-green-800">
-                      <CheckCircle className="mr-1 h-4 w-4" />
-                      Completed
-                    </span>
-                  ) : module.status === 'in_progress' ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="h-2 w-24 rounded-full bg-gray-200">
-                        <div
-                          className="h-2 rounded-full bg-indigo-600"
-                          style={{ width: `${module.progress}%` }}
-                        />
-                      </div>
-                      <span className="text-sm text-gray-500">{module.progress}%</span>
-                    </div>
-                  ) : (
-                    <button 
-                      onClick={() => navigateToUrl(`/training/${module.id}`)}
-                      className="flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
-                    >
-                      <Play className="mr-1 h-4 w-4" />
-                      Start
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
               );
             })
           ) : (
@@ -476,7 +472,7 @@ const RepOnboarding = () => {
             <span>Go to Training</span>
           </button>
         </div>
-        
+
         {loadingTrainings ? (
           <div className="text-center py-8">
             <p className="text-sm text-gray-500">Loading trainings...</p>
@@ -543,11 +539,10 @@ const RepOnboarding = () => {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <div className={`rounded-lg p-2 ${
-                    assessment.status === 'completed' ? 'bg-green-100 text-green-600' :
-                    assessment.status === 'in_progress' ? 'bg-yellow-100 text-yellow-600' :
-                    'bg-gray-100 text-gray-600'
-                  }`}>
+                  <div className={`rounded-lg p-2 ${assessment.status === 'completed' ? 'bg-green-100 text-green-600' :
+                      assessment.status === 'in_progress' ? 'bg-yellow-100 text-yellow-600' :
+                        'bg-gray-100 text-gray-600'
+                    }`}>
                     <Award className="h-5 w-5" />
                   </div>
                   <div>
@@ -598,27 +593,25 @@ const RepOnboarding = () => {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <div className={`rounded-lg p-2 ${
-                      channel.status === 'configured' ? 'bg-green-100 text-green-600' :
-                      channel.status === 'pending' ? 'bg-yellow-100 text-yellow-600' :
-                      'bg-gray-100 text-gray-600'
-                    }`}>
+                    <div className={`rounded-lg p-2 ${channel.status === 'configured' ? 'bg-green-100 text-green-600' :
+                        channel.status === 'pending' ? 'bg-yellow-100 text-yellow-600' :
+                          'bg-gray-100 text-gray-600'
+                      }`}>
                       <Icon className="h-5 w-5" />
                     </div>
                     <div>
                       <h4 className="font-medium text-gray-900">{channel.name}</h4>
                       <p className="text-sm text-gray-500">
                         {channel.status === 'configured' ? 'Ready to use' :
-                         channel.status === 'pending' ? 'Configuration pending' :
-                         'Not configured'}
+                          channel.status === 'pending' ? 'Configuration pending' :
+                            'Not configured'}
                       </p>
                     </div>
                   </div>
-                  <button className={`rounded-md px-3 py-1.5 text-sm font-medium shadow-sm ${
-                    channel.status === 'configured'
+                  <button className={`rounded-md px-3 py-1.5 text-sm font-medium shadow-sm ${channel.status === 'configured'
                       ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                  }`}>
+                    }`}>
                     {channel.status === 'configured' ? 'Reconfigure' : 'Configure'}
                   </button>
                 </div>
@@ -633,7 +626,7 @@ const RepOnboarding = () => {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium text-gray-900">Documentation & Resources</h3>
           {trainingDocuments.length > 0 && (
-            <button 
+            <button
               onClick={() => {
                 // Download all documents
                 trainingDocuments.forEach((doc) => {
@@ -664,7 +657,7 @@ const RepOnboarding = () => {
                   </div>
                 </div>
                 {doc.url && (
-                  <button 
+                  <button
                     onClick={() => window.open(doc.url, '_blank')}
                     className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-indigo-600 flex-shrink-0 ml-2"
                     title="Download"

@@ -6,7 +6,7 @@
 
 **Error Message:**
 ```
-PUT https://api-companysearchwizard.harx.ai/api/onboarding/companies/undefined/onboarding/phases/2/steps/5 500 (Internal Server Error)
+PUT https://v25searchcompanywizardbackend-production.up.railway.app/api/onboarding/companies/undefined/onboarding/phases/2/steps/5 500 (Internal Server Error)
 ```
 
 **Cause:**
@@ -23,7 +23,7 @@ The `companyId` cookie is missing or not properly set when making API calls.
 #### B. Verify Environment Variables
 Ensure these environment variables are properly set:
 ```env
-VITE_COMPANY_API_URL=https://api-companysearchwizard.harx.ai
+VITE_COMPANY_API_URL=https://v25searchcompanywizardbackend-production.up.railway.app
 VITE_DASHBOARD_API=https://your-dashboard-api.com
 VITE_GIGS_API=https://your-gigs-api.com
 ```
