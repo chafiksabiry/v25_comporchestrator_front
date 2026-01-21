@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import qiankun from 'vite-plugin-qiankun';
@@ -16,9 +16,7 @@ const removeReactRefreshScript = () => {
   };
 };
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
-
+export default defineConfig(() => {
   return {
     base: 'https://harxv25comporchestratorfront.netlify.app/',
     plugins: [
@@ -31,9 +29,6 @@ export default defineConfig(({ mode }) => {
       removeReactRefreshScript(), // Add the script removal plugin
     ],
 
-    define: {
-      'import.meta.env': env,
-    },
     server: {
       port: 5183,
       cors: true,
@@ -54,7 +49,7 @@ export default defineConfig(({ mode }) => {
           name: 'app11',
           entryFileNames: 'index.js', // Fixed name for the JS entry file
           chunkFileNames: 'chunk-[name].js', // Fixed name for chunks
-          assetFileNames: (assetInfo) => {
+          assetFileNames: (assetInfo: { name: string; }) => {
             // Ensure CSS files are consistently named
             if (assetInfo.name.endsWith('.css')) {
               return 'index.css';
