@@ -46,7 +46,7 @@ const api = axios.create({
   },
   // Add timeout and validation
   timeout: 30000, // 30 seconds
-  validateStatus: (status) => {
+  validateStatus: (status: number) => {
     return status >= 200 && status < 500; // Don't reject if status is 4xx to handle it in service
   },
 });
@@ -181,7 +181,7 @@ export const phoneNumberService = {
       }
 
       // Add provider info to each number
-      const numbers = response.data.map(number => ({
+      const numbers = response.data.map((number: any) => ({
         ...number,
         provider
       }));
