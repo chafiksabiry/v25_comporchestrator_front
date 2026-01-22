@@ -1,4 +1,4 @@
-import React,{ useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   Phone,
@@ -76,9 +76,9 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
   useEffect(() => {
     const readCookies = () => {
       const newCompanyId = Cookies.get('companyId');
-      
+
       console.log('📝 Reading companyId cookie:', newCompanyId);
-      
+
       if (newCompanyId) {
         setCompanyId(newCompanyId);
         setCookieError(null);
@@ -90,7 +90,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     // Première lecture
     if (!readCookies()) {
       console.log('⚠️ CompanyId cookie not found on first read, setting up retry interval');
-      
+
       // Si le cookie n'est pas trouvé, réessayer toutes les 2 secondes
       const interval = setInterval(() => {
         if (readCookies()) {
@@ -202,7 +202,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
   // Rafraîchir les numéros toutes les 30 secondes si il y a des numéros en attente
   useEffect(() => {
     const hasPendingNumbers = phoneNumbers.some((number: PhoneNumber) => number.status === 'pending');
-    
+
     if (hasPendingNumbers) {
       console.log('🔄 Setting up auto-refresh for pending numbers');
       const interval = setInterval(fetchExistingNumbers, 30000);
@@ -210,37 +210,37 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     }
   }, [phoneNumbers]);
 
-    const checkGigPhoneNumber = async () => {
-      if (!selectedGigId) return false;
-      
-      try {
-        console.log('🔍 Checking if gig has a phone number:', selectedGigId);
-        const result = await phoneNumberService.listPhoneNumbers(selectedGigId);
-        
-        if (result?.hasNumber && result.number) {
-          // Case 1.1: Gig already has a number
-          console.log('✅ Found existing number for gig');
-          setPhoneNumbers([result.number]);
-          setRequirementStatus({
-            isChecking: false,
-            hasRequirements: false,
-                isComplete: true,
-            error: null
-          });
-          // Even if gig has a number, we still want to search available numbers for Telnyx
-          if (provider === 'telnyx') {
-            searchAvailableNumbers();
-          }
-          return true;
-        }
-        return false;
-          } catch (error) {
-        console.error('❌ Error checking gig numbers:', error);
-            return false;
-          }
-        };
+  const checkGigPhoneNumber = async () => {
+    if (!selectedGigId) return false;
 
-  const handleTelnyxProvider = async () => {
+    try {
+      console.log('🔍 Checking if gig has a phone number:', selectedGigId);
+      const result = await phoneNumberService.listPhoneNumbers(selectedGigId);
+
+      if (result?.hasNumber && result.number) {
+        // Case 1.1: Gig already has a number
+        console.log('✅ Found existing number for gig');
+        setPhoneNumbers([result.number]);
+        setRequirementStatus({
+          isChecking: false,
+          hasRequirements: false,
+          isComplete: true,
+          error: null
+        });
+        // Even if gig has a number, we still want to search available numbers for Telnyx
+        if (provider === 'telnyx') {
+          searchAvailableNumbers();
+        }
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('❌ Error checking gig numbers:', error);
+      return false;
+    }
+  };
+
+  const handleTelnyxProvider = async (zoneOverride?: string) => {
     if (!selectedGigId || !companyId) return;
 
     // First check if gig has a number
@@ -254,14 +254,14 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       return;
     }
 
-    const destZone = selectedGig.destination_zone.cca2;
+    const destZone = zoneOverride || selectedGig.destination_zone.cca2;
     setDestinationZone(destZone); // Set destination zone for number search
-    
+
     // Check for available numbers first
     try {
       const numbers = await phoneNumberService.searchPhoneNumbers(destZone, 'telnyx');
       setAvailableNumbers(Array.isArray(numbers) ? numbers : []);
-      
+
       // If no numbers available, don't proceed with requirements
       if (!Array.isArray(numbers) || numbers.length === 0) {
         console.log('No available numbers for this destination zone, skipping requirements check');
@@ -286,21 +286,21 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       try {
         // Get the existing group first
         const { group } = await requirementService.getOrCreateGroup(companyId, destZone);
-        
+
         // Then get the status with a small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 1000));
         const detailedStatus = await requirementService.getDetailedGroupStatus(savedGroupId);
-        
+
         const completionPercentage = Math.round(
           (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
         );
 
         if (detailedStatus.isComplete) {
           // Case 1.2.3: Requirements completed, no number yet
-        setRequirementStatus({
-          isChecking: false,
-          hasRequirements: false,
-          isComplete: true,
+          setRequirementStatus({
+            isChecking: false,
+            hasRequirements: false,
+            isComplete: true,
             error: null,
             groupId: savedGroupId,
             telnyxId: group.telnyxId,
@@ -331,58 +331,58 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         Cookies.remove(`telnyxRequirementGroup_${companyId}_${destZone}`);
         handleTelnyxProvider(); // Retry without saved group
       }
-      } else {
-        // Case 1.2.2: Check for existing group first, even without cookie
-        try {
-          // First check if country has requirements
-          const response = await requirementService.checkCountryRequirements(destZone);
-          setCountryReq(response);
+    } else {
+      // Case 1.2.2: Check for existing group first, even without cookie
+      try {
+        // First check if country has requirements
+        const response = await requirementService.checkCountryRequirements(destZone);
+        setCountryReq(response);
 
-          if (response.hasRequirements) {
-            // Try to get existing group or create new one
-            const { group, isNew } = await requirementService.getOrCreateGroup(companyId, destZone);
-            
-            if (isNew) {
-              // New group created
-              setRequirementStatus({
-                isChecking: false,
-                hasRequirements: true,
-                isComplete: false,
-                error: null,
-                groupId: group._id,
-                telnyxId: group.telnyxId,
-                completionPercentage: 0,
-                completedRequirements: [],
-                totalRequirements: response.requirements?.length || 0,
-                pendingRequirements: response.requirements?.length || 0
-              });
-            } else {
-              // Existing group found, get its status
-        const detailedStatus = await requirementService.getDetailedGroupStatus(group._id);
-        const completionPercentage = Math.round(
-          (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
-        );
+        if (response.hasRequirements) {
+          // Try to get existing group or create new one
+          const { group, isNew } = await requirementService.getOrCreateGroup(companyId, destZone);
 
-              setRequirementStatus({
-          isChecking: false,
-          hasRequirements: true,
-          isComplete: detailedStatus.isComplete,
-          error: null,
-          groupId: group._id,
-          telnyxId: group.telnyxId,
-          completionPercentage,
-          completedRequirements: detailedStatus.completedRequirements,
-          totalRequirements: detailedStatus.totalRequirements,
-          pendingRequirements: detailedStatus.pendingRequirements
-              });
-            }
-
-            // Save group ID in cookie
-      Cookies.set(
-              `telnyxRequirementGroup_${companyId}_${destZone}`,
-        group._id,
-              { expires: 30 }
+          if (isNew) {
+            // New group created
+            setRequirementStatus({
+              isChecking: false,
+              hasRequirements: true,
+              isComplete: false,
+              error: null,
+              groupId: group._id,
+              telnyxId: group.telnyxId,
+              completionPercentage: 0,
+              completedRequirements: [],
+              totalRequirements: response.requirements?.length || 0,
+              pendingRequirements: response.requirements?.length || 0
+            });
+          } else {
+            // Existing group found, get its status
+            const detailedStatus = await requirementService.getDetailedGroupStatus(group._id);
+            const completionPercentage = Math.round(
+              (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
             );
+
+            setRequirementStatus({
+              isChecking: false,
+              hasRequirements: true,
+              isComplete: detailedStatus.isComplete,
+              error: null,
+              groupId: group._id,
+              telnyxId: group.telnyxId,
+              completionPercentage,
+              completedRequirements: detailedStatus.completedRequirements,
+              totalRequirements: detailedStatus.totalRequirements,
+              pendingRequirements: detailedStatus.pendingRequirements
+            });
+          }
+
+          // Save group ID in cookie
+          Cookies.set(
+            `telnyxRequirementGroup_${companyId}_${destZone}`,
+            group._id,
+            { expires: 30 }
+          );
         } else {
           // No requirements needed
           setRequirementStatus({
@@ -394,12 +394,12 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         }
         // Always search for available numbers
         searchAvailableNumbers();
-    } catch (error) {
+      } catch (error) {
         console.error('Failed to check country requirements:', error);
-      setRequirementStatus({
-        isChecking: false,
-        hasRequirements: false,
-        isComplete: false,
+        setRequirementStatus({
+          isChecking: false,
+          hasRequirements: false,
+          isComplete: false,
           error: 'Failed to check requirements'
         });
       }
@@ -421,16 +421,22 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     setSelectedNumber(null);
     setShowPurchaseModal(false);
     setShowRequirementModal(false);
-    
+
     // Only proceed if we have necessary data
     if (!selectedGigId || !companyId) return;
 
+    // Get destination zone from selected gig to avoid race condition
+    const selectedGig = gigs.find((gig: Gig) => gig._id === selectedGigId);
+    const zone = selectedGig?.destination_zone?.cca2;
+
     if (provider === 'telnyx') {
-      handleTelnyxProvider();
+      handleTelnyxProvider(zone);
     } else {
       // For other providers, just check for existing numbers and search available ones
       checkGigPhoneNumber();
-      searchAvailableNumbers();
+      if (zone) {
+        searchAvailableNumbers(zone);
+      }
     }
   }, [provider]);
 
@@ -446,12 +452,18 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     setShowPurchaseModal(false);
     setShowRequirementModal(false);
 
+    // Get destination zone from selected gig to avoid race condition
+    const selectedGig = gigs.find((gig: Gig) => gig._id === selectedGigId);
+    const zone = selectedGig?.destination_zone?.cca2;
+
     if (provider === 'telnyx') {
-      handleTelnyxProvider();
+      handleTelnyxProvider(zone);
     } else {
       // For other providers, just check for existing numbers and search available ones
       checkGigPhoneNumber();
-      searchAvailableNumbers();
+      if (zone) {
+        searchAvailableNumbers(zone);
+      }
     }
   }, [selectedGigId]);
 
@@ -459,16 +471,16 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
   const checkCompletedSteps = async () => {
     try {
       if (!companyId) return;
-      
+
       console.log('🔍 Checking step 5 status for company:', companyId);
-      
+
       try {
         const response = await axios.get(
           `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
         );
-        
+
         console.log('📡 API response for onboarding:', response.data);
-        
+
         if (response.data && (response.data as any).completedSteps && Array.isArray((response.data as any).completedSteps)) {
           const completedSteps = (response.data as any).completedSteps;
           if (completedSteps.includes(5)) {
@@ -482,7 +494,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       } catch (apiError) {
         console.log('⚠️ Could not fetch onboarding status from API, falling back to localStorage');
       }
-      
+
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
       if (storedProgress) {
         try {
@@ -495,7 +507,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           console.error('Error parsing stored progress:', e);
         }
       }
-      
+
     } catch (error) {
       console.error('Error checking completed steps:', error);
     }
@@ -503,18 +515,18 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
   const fetchGigs = async () => {
     if (!companyId) return;
-    
+
     try {
       setIsLoadingGigs(true);
       console.log('🔍 Fetching gigs for company:', companyId);
-      
+
       const response = await axios.get(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`);
       console.log('✅ Gigs response:', response.data);
-      
-        const responseData = response.data as { data: Gig[] };
-        if (responseData && Array.isArray(responseData.data)) {
-          setGigs(responseData.data);
-          console.log('📋 Loaded gigs:', responseData.data.length);
+
+      const responseData = response.data as { data: Gig[] };
+      if (responseData && Array.isArray(responseData.data)) {
+        setGigs(responseData.data);
+        console.log('📋 Loaded gigs:', responseData.data.length);
       } else {
         setGigs([]);
         console.log('⚠️ No gigs found in response');
@@ -538,7 +550,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       console.log('📞 Checking numbers for gig:', selectedGigId);
       const result = await phoneNumberService.listPhoneNumbers(selectedGigId);
       console.log('📞 Check result:', result);
-      
+
       // Si un numéro est trouvé, le mettre dans le tableau
       if (result?.hasNumber && result.number) {
         setPhoneNumbers([result.number]);
@@ -556,17 +568,18 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     return number.phoneNumber || number.phone_number || '';
   };
 
-  const searchAvailableNumbers = async () => {
-    if (!destinationZone) {
+  const searchAvailableNumbers = async (zoneOverride?: string) => {
+    const zone = zoneOverride || destinationZone;
+    if (!zone) {
       console.error('Destination zone not available');
       return;
     }
-    
-    console.log('🔍 Searching phone numbers with destination zone:', destinationZone);
+
+    console.log('🔍 Searching phone numbers with destination zone:', zone);
     console.log('🔍 Using provider:', provider);
-    
+
     try {
-      const data = await phoneNumberService.searchPhoneNumbers(destinationZone, provider);
+      const data = await phoneNumberService.searchPhoneNumbers(zone, provider);
       console.log('📞 Phone numbers found:', data);
       setAvailableNumbers(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -623,7 +636,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
       setPurchaseError(null);
       setPurchaseStatus('purchasing');
-      
+
       // Préparer les données pour l'achat
       if (!companyId) {
         throw new Error('Company ID is required');
@@ -638,7 +651,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       };
 
       console.log('📝 Purchase request data:', purchaseData);
-      
+
       const response = await phoneNumberService.purchasePhoneNumber(purchaseData);
       console.log('📞 Purchase response:', response);
 
@@ -662,7 +675,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         },
         provider
       });
-      
+
     } catch (error) {
       console.error('❌ Error purchasing number:', error);
       setPurchaseStatus('error');
@@ -684,28 +697,28 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       }
 
       console.log('🚀 Completing telephony setup...');
-      
+
       try {
         const onboardingResponse = await axios.get(
           `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
         );
-        
+
         const currentCompletedSteps = (onboardingResponse.data as any)?.completedSteps || [];
         const newCompletedSteps = currentCompletedSteps.includes(5) ? currentCompletedSteps : [...currentCompletedSteps, 5];
-        
+
         const updateResponse = await axios.put(
           `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`,
-          { 
+          {
             completedSteps: newCompletedSteps,
             currentPhase: 2
           }
         );
-        
+
         console.log('✅ Telephony setup step 5 marked as completed via general onboarding:', updateResponse.data);
-        
+
       } catch (apiError) {
         console.log('⚠️ Could not update via general onboarding API, trying individual step endpoint...');
-        
+
         try {
           const response = await axios.put(
             `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
@@ -716,24 +729,24 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           console.log('⚠️ Individual step endpoint also failed, proceeding with localStorage only');
         }
       }
-      
+
       setCompletedSteps((prev: number[]) => {
         const newCompletedSteps = prev.includes(5) ? prev : [...prev, 5];
-      
+
         const currentProgress = {
           currentPhase: 2,
           completedSteps: newCompletedSteps,
           lastUpdated: new Date().toISOString()
         };
         localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-        
+
         return newCompletedSteps;
       });
-      
+
       Cookies.set('telephonyStepCompleted', 'true', { expires: 7 });
-      
+
       await new Promise(resolve => setTimeout(resolve, 200));
-      
+
       if (onBackToOnboarding) {
         setTimeout(() => {
           onBackToOnboarding();
@@ -743,12 +756,12 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           window.history.pushState({}, '', '/app11');
           window.dispatchEvent(new PopStateEvent('popstate'));
         } else {
-          window.dispatchEvent(new CustomEvent('telephonySetupCompleted', { 
-            detail: { stepId: 5, status: 'completed' } 
+          window.dispatchEvent(new CustomEvent('telephonySetupCompleted', {
+            detail: { stepId: 5, status: 'completed' }
           }));
         }
       }
-      
+
     } catch (error) {
       console.error('Error updating onboarding progress:', error);
       if (error instanceof Error) {
@@ -762,14 +775,14 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
   const handleSubmitRequirements = async (values: Record<string, any>) => {
     try {
       console.log('📝 Submitting requirements:', values);
-      
+
       // 1. Utiliser le groupe existant ou en créer un nouveau
       if (!companyId) throw new Error('Company ID is required');
-      
+
       let groupId = requirementStatus.groupId;
-      
+
       if (!groupId) {
-      const { group } = await requirementService.getOrCreateGroup(companyId, destinationZone);
+        const { group } = await requirementService.getOrCreateGroup(companyId, destinationZone);
         groupId = group._id;
         console.log('✅ Created new requirement group:', group);
       } else {
@@ -843,14 +856,13 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           <p className="text-sm text-gray-500">Configure your call center infrastructure</p>
         </div>
         <div className="flex space-x-3">
-          <button 
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
-              completedSteps.includes(5)
+          <button
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${completedSteps.includes(5)
                 ? 'bg-green-600 text-white cursor-not-allowed'
                 : !selectedGigId
-                ? 'bg-gray-400 text-white cursor-not-allowed'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md'
-            }`}
+                  ? 'bg-gray-400 text-white cursor-not-allowed'
+                  : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md'
+              }`}
             onClick={completedSteps.includes(5) || !selectedGigId ? undefined : handleSaveConfiguration}
             disabled={completedSteps.includes(5) || !selectedGigId}
             title={!selectedGigId ? 'Please select a gig first' : ''}
@@ -890,7 +902,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
             <p className="mt-1 text-sm text-blue-700">Choose the gig for which you want to configure telephony <span className="text-blue-600 font-medium">*</span></p>
           </div>
         </div>
-        
+
         {isLoadingGigs ? (
           <div className="mt-6 flex items-center justify-center space-x-3 p-4 rounded-lg bg-white/50 backdrop-blur-sm">
             <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-200 border-t-blue-600"></div>
@@ -902,11 +914,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
               {/* Custom Dropdown */}
               <button
                 type="button"
-                className={`relative w-full rounded-xl border-2 py-4 pl-5 pr-12 text-left text-base font-medium transition-all duration-300 shadow-md ${
-                  selectedGigId 
-                    ? 'border-blue-400 bg-blue-50 text-blue-900 focus:border-blue-500 focus:ring-blue-500 shadow-blue-200/50' 
+                className={`relative w-full rounded-xl border-2 py-4 pl-5 pr-12 text-left text-base font-medium transition-all duration-300 shadow-md ${selectedGigId
+                    ? 'border-blue-400 bg-blue-50 text-blue-900 focus:border-blue-500 focus:ring-blue-500 shadow-blue-200/50'
                     : 'border-blue-200 bg-white text-blue-800 focus:border-blue-400 focus:ring-blue-400 hover:border-blue-300'
-                } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
+                  } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               >
                 <span className="flex items-center">
@@ -915,9 +926,9 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                       const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
                       return selectedGig ? (
                         <>
-                           {selectedGig.title} - {selectedGig.destination_zone.name.common}
-                          <img 
-                            src={selectedGig.destination_zone.flags?.png} 
+                          {selectedGig.title} - {selectedGig.destination_zone.name.common}
+                          <img
+                            src={selectedGig.destination_zone.flags?.png}
                             alt={selectedGig.destination_zone.flags?.alt}
                             className="inline-block w-6 h-4 ml-2 rounded-sm border border-gray-200 object-cover"
                           />
@@ -950,8 +961,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                         <span className="text-blue-800 font-medium">
                           📋 {gig.title} - {gig.destination_zone.name.common}
                         </span>
-                        <img 
-                          src={gig.destination_zone.flags?.png} 
+                        <img
+                          src={gig.destination_zone.flags?.png}
                           alt={gig.destination_zone.flags?.alt}
                           className="inline-block w-6 h-4 ml-2 rounded-sm border border-gray-200 object-cover"
                         />
@@ -994,11 +1005,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
             return (
               <button
                 key={p.id}
-                className={`flex items-center justify-center rounded-lg border p-4 ${
-                  provider === p.id 
-                    ? 'border-indigo-500 bg-indigo-50' 
+                className={`flex items-center justify-center rounded-lg border p-4 ${provider === p.id
+                    ? 'border-indigo-500 bg-indigo-50'
                     : 'border-gray-200 hover:bg-gray-50'
-                }`}
+                  }`}
                 onClick={() => setProvider(p.id)}
               >
                 <Logo className="mr-2 h-5 w-5 text-indigo-600" />
@@ -1034,7 +1044,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                 <h3 className="text-sm font-medium text-yellow-800">Requirements Needed</h3>
                 <div className="mt-2 text-sm text-yellow-700">
                   <p>To purchase numbers in this country, you need to complete all required information.</p>
-                  
+
                   {/* Progress bar */}
                   {requirementStatus.completionPercentage !== undefined && (
                     <div className="mt-2">
@@ -1083,8 +1093,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           </div>
         )}
 
-      {/* Purchased Numbers Section */}
-      {provider === 'telnyx' ? (
+        {/* Purchased Numbers Section */}
+        {provider === 'telnyx' ? (
           <div className="mb-6 space-y-2">
             <h4 className="text-sm font-medium text-gray-700">Purchased Telnyx Numbers</h4>
             <div className="grid gap-2">
@@ -1093,7 +1103,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                 phoneNumbers
                   .filter(number => number.provider === 'telnyx')
                   .map((number) => (
-                    <div 
+                    <div
                       key={number.phoneNumber}
                       className="flex items-center justify-between rounded-lg border p-3"
                     >
@@ -1104,11 +1114,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                         </span>
                       </div>
                       <div className="flex items-center">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          number.status === 'active' ? 'bg-green-100 text-green-800' :
-                          number.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span className={`px-2 py-1 text-xs rounded-full ${number.status === 'active' ? 'bg-green-100 text-green-800' :
+                            number.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                          }`}>
                           {number.status}
                         </span>
                       </div>
@@ -1122,110 +1131,108 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
               )}
             </div>
           </div>
-      ) : provider === 'twilio' && (
-        // Pour Twilio, toujours afficher
-        <div className="mb-6 space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">Purchased Twilio Numbers</h4>
-          <div className="grid gap-2">
-            {Array.isArray(phoneNumbers) && phoneNumbers.filter(number => number.provider === 'twilio').length > 0 ? (
-              phoneNumbers
-                .filter(number => number.provider === 'twilio')
-                .map((number) => (
-                  <div 
-                    key={number.phoneNumber}
-                    className="flex items-center justify-between rounded-lg border p-3"
-                  >
-                    <div className="flex flex-col">
-                      <span className="font-medium">{number.phoneNumber}</span>
-                      <span className="text-sm text-gray-500">
-                        Status: {number.status}
-                      </span>
+        ) : provider === 'twilio' && (
+          // Pour Twilio, toujours afficher
+          <div className="mb-6 space-y-2">
+            <h4 className="text-sm font-medium text-gray-700">Purchased Twilio Numbers</h4>
+            <div className="grid gap-2">
+              {Array.isArray(phoneNumbers) && phoneNumbers.filter(number => number.provider === 'twilio').length > 0 ? (
+                phoneNumbers
+                  .filter(number => number.provider === 'twilio')
+                  .map((number) => (
+                    <div
+                      key={number.phoneNumber}
+                      className="flex items-center justify-between rounded-lg border p-3"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium">{number.phoneNumber}</span>
+                        <span className="text-sm text-gray-500">
+                          Status: {number.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className={`px-2 py-1 text-xs rounded-full ${number.status === 'active' ? 'bg-green-100 text-green-800' :
+                            number.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                          }`}>
+                          {number.status}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        number.status === 'active' ? 'bg-green-100 text-green-800' :
-                        number.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {number.status}
-                      </span>
+                  ))
+              ) : (
+                <div className="rounded-lg border border-gray-200 p-4 text-center text-gray-500">
+                  No Twilio numbers purchased yet
+                </div>
+              )}
+            </div>
+
+            {/* Available Numbers or Warning */}
+            {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Available Numbers</h4>
+                <div className="grid gap-2">
+                  {availableNumbers.map((number) => {
+                    const phoneNumber = getPhoneNumber(number);
+                    return (
+                      <div
+                        key={phoneNumber}
+                        className="flex items-center justify-between rounded-lg border p-3"
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">{phoneNumber}</span>
+                          {number.locality && (
+                            <span className="text-sm text-gray-500">
+                              {number.locality}, {number.region}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedNumber(phoneNumber);
+                            setPurchaseStatus('confirming');
+                            setShowPurchaseModal(true);
+                          }}
+                          disabled={phoneNumbers.length > 0}
+                          className={`rounded-md px-3 py-1 text-sm text-white ${phoneNumbers.length > 0
+                              ? 'bg-gray-400 cursor-not-allowed'
+                              : 'bg-green-600 hover:bg-green-700'
+                            }`}
+                          title={phoneNumbers.length > 0 ? 'A number is already purchased for this gig' : undefined}
+                        >
+                          Purchase
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : destinationZone && (
+              <div className="mt-4 rounded-lg bg-yellow-50 p-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-5 w-5 text-yellow-400" />
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <h3 className="text-sm font-medium text-yellow-800">No Numbers Available</h3>
+                    <div className="mt-2 text-sm text-yellow-700">
+                      <p>No phone numbers available for this destination with Twilio.</p>
+                      <p className="mt-1">Try Telnyx instead or contact support if the issue persists.</p>
+                    </div>
+                    <div className="mt-3">
+                      <button
+                        onClick={() => setProvider('telnyx')}
+                        className="rounded-md px-3 py-1 text-xs text-white bg-indigo-600 hover:bg-indigo-700"
+                      >
+                        Try Telnyx Instead
+                      </button>
                     </div>
                   </div>
-                ))
-            ) : (
-              <div className="rounded-lg border border-gray-200 p-4 text-center text-gray-500">
-                No Twilio numbers purchased yet
+                </div>
               </div>
             )}
           </div>
-
-          {/* Available Numbers or Warning */}
-        {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
-            <div className="mt-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Available Numbers</h4>
-            <div className="grid gap-2">
-              {availableNumbers.map((number) => {
-                const phoneNumber = getPhoneNumber(number);
-                return (
-                  <div 
-                    key={phoneNumber}
-                    className="flex items-center justify-between rounded-lg border p-3"
-                  >
-                    <div className="flex flex-col">
-                      <span className="font-medium">{phoneNumber}</span>
-                      {number.locality && (
-                        <span className="text-sm text-gray-500">
-                          {number.locality}, {number.region}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => {
-                        setSelectedNumber(phoneNumber);
-                        setPurchaseStatus('confirming');
-                        setShowPurchaseModal(true);
-                      }}
-                        disabled={phoneNumbers.length > 0}
-                      className={`rounded-md px-3 py-1 text-sm text-white ${
-                          phoneNumbers.length > 0
-                          ? 'bg-gray-400 cursor-not-allowed'
-                          : 'bg-green-600 hover:bg-green-700'
-                      }`}
-                        title={phoneNumbers.length > 0 ? 'A number is already purchased for this gig' : undefined}
-                    >
-                      Purchase
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          ) : destinationZone && (
-            <div className="mt-4 rounded-lg bg-yellow-50 p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <AlertCircle className="h-5 w-5 text-yellow-400" />
-              </div>
-              <div className="ml-3 flex-1">
-                  <h3 className="text-sm font-medium text-yellow-800">No Numbers Available</h3>
-                <div className="mt-2 text-sm text-yellow-700">
-                    <p>No phone numbers available for this destination with Twilio.</p>
-                    <p className="mt-1">Try Telnyx instead or contact support if the issue persists.</p>
-                </div>
-                  <div className="mt-3">
-                  <button
-                    onClick={() => setProvider('telnyx')}
-                    className="rounded-md px-3 py-1 text-xs text-white bg-indigo-600 hover:bg-indigo-700"
-                  >
-                    Try Telnyx Instead
-                  </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+        )}
 
         {/* Available Numbers List */}
         {destinationZone && provider === 'telnyx' && (
@@ -1239,14 +1246,14 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                 availableNumbers.map((number) => {
                   const phoneNumber = getPhoneNumber(number);
                   const isDisabled = phoneNumbers.length > 0 || (requirementStatus.hasRequirements && !requirementStatus.isComplete);
-                  const tooltipMessage = phoneNumbers.length > 0 
+                  const tooltipMessage = phoneNumbers.length > 0
                     ? 'A number is already purchased for this gig'
                     : requirementStatus.hasRequirements && !requirementStatus.isComplete
                       ? 'Please complete the requirements before purchasing'
                       : undefined;
 
                   return (
-                    <div 
+                    <div
                       key={phoneNumber}
                       className="flex items-center justify-between rounded-lg border p-3"
                     >
@@ -1264,24 +1271,23 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                             {tooltipMessage}
                           </span>
                         )}
-                  <button
-                    onClick={() => {
+                        <button
+                          onClick={() => {
                             setSelectedNumber(phoneNumber);
                             setPurchaseStatus('confirming');
                             setShowPurchaseModal(true);
                           }}
                           disabled={isDisabled}
-                          className={`rounded-md px-3 py-1 text-sm text-white ${
-                            isDisabled
+                          className={`rounded-md px-3 py-1 text-sm text-white ${isDisabled
                               ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-green-600 hover:bg-green-700'
-                    }`}
+                              : 'bg-green-600 hover:bg-green-700'
+                            }`}
                           title={tooltipMessage}
-                  >
+                        >
                           Purchase
-                  </button>
-                </div>
-              </div>
+                        </button>
+                      </div>
+                    </div>
                   );
                 })
               ) : (
@@ -1341,7 +1347,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           if (requirementStatus.groupId) {
             try {
               const detailedStatus = await requirementService.getDetailedGroupStatus(requirementStatus.groupId);
-              
+
               const completionPercentage = Math.round(
                 (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
               );
@@ -1378,7 +1384,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
             // After submitting, update the status
             if (requirementStatus.groupId) {
               const detailedStatus = await requirementService.getDetailedGroupStatus(requirementStatus.groupId);
-              
+
               const completionPercentage = Math.round(
                 (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
               );
