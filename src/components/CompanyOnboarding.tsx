@@ -122,13 +122,13 @@ const CompanyOnboarding = () => {
   useEffect(() => {
     const hasParsedLeads = localStorage.getItem("parsedLeads");
     const wasManuallyClosed = sessionStorage.getItem("uploadContactsManuallyClosed");
-    
+
     // Only restore if we have leads AND we're not manually closed AND we're in the right phase
     if (hasParsedLeads && !wasManuallyClosed && displayedPhase >= 2 && !showUploadContacts) {
       console.log("🔄 Restoring UploadContacts view - parsed leads exist and phase allows it");
       setShowUploadContacts(true);
     }
-    
+
     // Debug: log the current state
     console.log("🔍 UploadContacts restoration check:", {
       hasParsedLeads: !!hasParsedLeads,
@@ -255,11 +255,11 @@ const CompanyOnboarding = () => {
     const handleStepCompleted = (event: CustomEvent) => {
       const { stepId, phaseId, status, completedSteps } = event.detail;
       console.log('🎯 Step completion event received:', { stepId, phaseId, status, completedSteps });
-      
+
       // Mettre à jour l'état local des étapes complétées
       if (completedSteps && Array.isArray(completedSteps)) {
         setCompletedSteps(completedSteps);
-        
+
         // Mettre à jour le localStorage
         const currentProgress = {
           currentPhase: phaseId,
@@ -267,9 +267,9 @@ const CompanyOnboarding = () => {
           lastUpdated: new Date().toISOString()
         };
         localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-        
+
         console.log('💾 Local state updated from step completion event');
-        
+
         // Force reload onboarding progress to get fresh data from API
         setTimeout(() => {
           console.log('🔄 Reloading onboarding progress after step completion');
@@ -292,11 +292,11 @@ const CompanyOnboarding = () => {
         loadCompanyProgress();
       }, 1000);
     };
-    
+
     // Ajouter l'écouteur d'événement
     window.addEventListener('stepCompleted', handleStepCompleted as EventListener);
     window.addEventListener('contactsUploadCompleted', handleContactsUploadCompleted);
-    
+
     // Nettoyer l'écouteur d'événement
     return () => {
       window.removeEventListener('stepCompleted', handleStepCompleted as EventListener);
@@ -338,7 +338,7 @@ const CompanyOnboarding = () => {
       const response = await axios.get<HasLeadsResponse>(
         `${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads`
       );
-      
+
       if (response.data.hasLeads && response.data.count > 0) {
         console.log('✅ Company has leads - auto-completing step 6');
         try {
@@ -346,13 +346,13 @@ const CompanyOnboarding = () => {
             `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
             { status: 'completed' }
           );
-          
+
           // Update local state to reflect the completed step
           setCompletedSteps((prev: any) => {
             if (!prev.includes(6)) {
               const newSteps = [...prev, 6];
               console.log('✅ Step 6 auto-completed successfully - updating local state');
-              
+
               // Update localStorage as well
               const currentProgress = {
                 currentPhase: 2,
@@ -360,15 +360,15 @@ const CompanyOnboarding = () => {
                 lastUpdated: new Date().toISOString()
               };
               localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-              
+
               return newSteps;
             }
             return prev;
           });
-          
+
           // Set hasLeads state
           setHasLeads(true);
-          
+
         } catch (error) {
           console.error('Error auto-completing step 6:', error);
         }
@@ -405,8 +405,7 @@ const CompanyOnboarding = () => {
       if (hasGigs) {
         try {
           await axios.put(
-            `${
-              import.meta.env.VITE_COMPANY_API_URL
+            `${import.meta.env.VITE_COMPANY_API_URL
             }/onboarding/companies/${companyId}/onboarding/phases/2/steps/4`,
             { status: "completed" }
           );
@@ -432,8 +431,7 @@ const CompanyOnboarding = () => {
       }
 
       const response = await axios.get<HasLeadsResponse>(
-        `${
-          import.meta.env.VITE_DASHBOARD_API
+        `${import.meta.env.VITE_DASHBOARD_API
         }/leads/company/${companyId}/has-leads`
       );
       const hasLeads = response.data.hasLeads;
@@ -444,8 +442,7 @@ const CompanyOnboarding = () => {
         console.log("✅ Company has leads - auto-completing step 6");
         try {
           await axios.put(
-            `${
-              import.meta.env.VITE_COMPANY_API_URL
+            `${import.meta.env.VITE_COMPANY_API_URL
             }/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
             { status: "completed" }
           );
@@ -511,14 +508,12 @@ const CompanyOnboarding = () => {
           if (previousPhaseCompleted) {
             validPhase = phaseId;
             console.log(
-              `✅ Phase ${
-                phaseId - 1
+              `✅ Phase ${phaseId - 1
               } is fully completed, allowing access to phase ${phaseId}`
             );
           } else {
             console.log(
-              `⚠️ Phase ${
-                phaseId - 1
+              `⚠️ Phase ${phaseId - 1
               } is not fully completed, stopping at phase ${validPhase}`
             );
             break; // Arrêter ici, ne pas avancer plus loin
@@ -623,8 +618,7 @@ const CompanyOnboarding = () => {
           try {
             console.log("✅ Found active gig - completing last phase and step");
             const completeResponse = await axios.put(
-              `${
-                import.meta.env.VITE_COMPANY_API_URL
+              `${import.meta.env.VITE_COMPANY_API_URL
               }/onboarding/companies/${companyId}/onboarding/complete-last`
             );
 
@@ -668,8 +662,7 @@ const CompanyOnboarding = () => {
             // Mark step 13 as in_progress - seulement si on est en phase 4
             if (currentPhase >= 4) {
               await axios.put(
-                `${
-                  import.meta.env.VITE_COMPANY_API_URL
+                `${import.meta.env.VITE_COMPANY_API_URL
                 }/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
                 { status: "in_progress" }
               );
@@ -737,8 +730,7 @@ const CompanyOnboarding = () => {
       }
 
       const response = await axios.get<OnboardingProgressResponse>(
-        `${
-          import.meta.env.VITE_COMPANY_API_URL
+        `${import.meta.env.VITE_COMPANY_API_URL
         }/onboarding/companies/${companyId}/onboarding`
       );
       const progress = response.data;
@@ -775,14 +767,12 @@ const CompanyOnboarding = () => {
           if (previousPhaseCompleted) {
             validPhase = phaseId;
             console.log(
-              `✅ Phase ${
-                phaseId - 1
+              `✅ Phase ${phaseId - 1
               } is fully completed, allowing access to phase ${phaseId}`
             );
           } else {
             console.log(
-              `⚠️ Phase ${
-                phaseId - 1
+              `⚠️ Phase ${phaseId - 1
               } is not fully completed, stopping at phase ${validPhase}`
             );
             break; // Arrêter ici, ne pas avancer plus loin
@@ -898,7 +888,7 @@ const CompanyOnboarding = () => {
     try {
       // Vérifier si le step est déjà complété
       const isStepCompleted = completedSteps.includes(stepId);
-      
+
       // Si le step est déjà complété, ne pas changer son statut
       if (isStepCompleted) {
         console.log(`✅ Step ${stepId} is already completed, not changing status`);
@@ -910,8 +900,7 @@ const CompanyOnboarding = () => {
           ) + 1;
 
         await axios.put(
-          `${
-            import.meta.env.VITE_COMPANY_API_URL
+          `${import.meta.env.VITE_COMPANY_API_URL
           }/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
           { status: "in_progress" }
         );
@@ -927,9 +916,9 @@ const CompanyOnboarding = () => {
         return;
       }
 
-      // Special handling for Call Script step (redirect to external script app)
+      // Special handling for Call Script step (redirect to script generator in KB app)
       if (stepId === 8) {
-        window.location.replace(import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL);
+        window.location.replace(`${import.meta.env.VITE_KNOWLEDGE_BASE_URL}/script-generator`);
         return;
       }
 
@@ -973,7 +962,7 @@ const CompanyOnboarding = () => {
 
     try {
       console.log(`🔍 Reviewing step ${stepId} (already completed)`);
-      
+
       const allSteps = phases.flatMap((phase) => phase.steps);
       const step = allSteps.find((s) => s.id === stepId);
 
@@ -983,9 +972,9 @@ const CompanyOnboarding = () => {
         return;
       }
 
-      // Special handling for Call Script step
+      // Special handling for Call Script step (redirect to script generator in KB app)
       if (stepId === 8) {
-        window.location.replace(import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL);
+        window.location.replace(`${import.meta.env.VITE_KNOWLEDGE_BASE_URL}/script-generator`);
         return;
       }
 
@@ -1032,8 +1021,7 @@ const CompanyOnboarding = () => {
         ) + 1;
 
       await axios.put(
-        `${
-          import.meta.env.VITE_COMPANY_API_URL
+        `${import.meta.env.VITE_COMPANY_API_URL
         }/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
         { status: "completed" }
       );
@@ -1091,8 +1079,7 @@ const CompanyOnboarding = () => {
       ) {
         try {
           await axios.put(
-            `${
-              import.meta.env.VITE_COMPANY_API_URL
+            `${import.meta.env.VITE_COMPANY_API_URL
             }/onboarding/companies/${companyId}/onboarding/current-phase`,
             { phase: newPhase }
           );
@@ -1441,7 +1428,7 @@ const CompanyOnboarding = () => {
     // Pour Call Script
     if (stepId === 8) {
       if (allPreviousCompleted) {
-        window.location.replace(import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL);
+        window.location.replace(`${import.meta.env.VITE_KNOWLEDGE_BASE_URL}/script-generator`);
       }
       return;
     }
@@ -1451,10 +1438,10 @@ const CompanyOnboarding = () => {
       console.log('Call Script step clicked');
       console.log('All previous completed:', allPreviousCompleted);
       console.log('Step completed:', completedSteps.includes(stepId));
-      console.log('Script Generation URL:', import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL);
-      
+      console.log('Script Generation URL (Target):', `${import.meta.env.VITE_KNOWLEDGE_BASE_URL}/script-generator`);
+
       if (allPreviousCompleted) {
-        const baseUrl = import.meta.env.VITE_SCRIPT_GENERATION_BASE_URL;
+        const baseUrl = `${import.meta.env.VITE_KNOWLEDGE_BASE_URL}/script-generator`;
         console.log('Redirecting to script generation:', baseUrl);
         window.location.replace(baseUrl);
       }
@@ -1507,8 +1494,8 @@ const CompanyOnboarding = () => {
   // Find the active step component
   const ActiveStepComponent = activeStep
     ? phases
-        .flatMap((phase) => phase.steps)
-        .find((step) => step.id === activeStep)?.component
+      .flatMap((phase) => phase.steps)
+      .find((step) => step.id === activeStep)?.component
     : null;
 
   if (isLoading) {
@@ -1524,7 +1511,7 @@ const CompanyOnboarding = () => {
 
   // Déterminer quel composant afficher
   let activeComponent = null;
-  let onBack: () => void = () => {};
+  let onBack: () => void = () => { };
 
   if (showGigDetails) {
     activeComponent = <GigDetails />;
@@ -1624,28 +1611,26 @@ const CompanyOnboarding = () => {
           return (
             <div
               key={phase.id}
-              className={`relative rounded-lg p-4 ${
-                isActive
-                  ? "bg-indigo-50 border-2 border-indigo-500"
-                  : isCompleted
+              className={`relative rounded-lg p-4 ${isActive
+                ? "bg-indigo-50 border-2 border-indigo-500"
+                : isCompleted
                   ? "bg-green-50 border border-green-500"
                   : !isAccessible
-                  ? "bg-gray-50 border border-gray-300"
-                  : "bg-white border border-gray-200"
-              } cursor-pointer`}
+                    ? "bg-gray-50 border border-gray-300"
+                    : "bg-white border border-gray-200"
+                } cursor-pointer`}
               onClick={() => handlePhaseChange(phase.id)}
             >
               <div className="flex items-center space-x-3">
                 <div
-                  className={`rounded-full p-2 ${
-                    isActive
-                      ? "bg-indigo-100 text-indigo-600"
-                      : isCompleted
+                  className={`rounded-full p-2 ${isActive
+                    ? "bg-indigo-100 text-indigo-600"
+                    : isCompleted
                       ? "bg-green-100 text-green-600"
                       : !isAccessible
-                      ? "bg-gray-200 text-gray-500"
-                      : "bg-gray-100 text-gray-500"
-                  }`}
+                        ? "bg-gray-200 text-gray-500"
+                        : "bg-gray-100 text-gray-500"
+                    }`}
                 >
                   <PhaseIcon className="h-5 w-5" />
                 </div>
@@ -1703,21 +1688,19 @@ const CompanyOnboarding = () => {
             return (
               <div
                 key={step.id}
-                className={`rounded-lg border p-4 ${
-                  !canAccessStep
-                    ? "opacity-50 cursor-not-allowed border-gray-200 bg-gray-50"
-                    : step.disabled
+                className={`rounded-lg border p-4 ${!canAccessStep
+                  ? "opacity-50 cursor-not-allowed border-gray-200 bg-gray-50"
+                  : step.disabled
                     ? "opacity-50 cursor-not-allowed"
                     : isCompleted
-                    ? "border-green-200 bg-green-50"
-                    : isCurrentStep
-                    ? "border-indigo-200 bg-indigo-50 ring-2 ring-indigo-500"
-                    : "border-gray-200 bg-white"
-                } ${
-                  isClickable && !step.disabled && canAccessStep
+                      ? "border-green-200 bg-green-50"
+                      : isCurrentStep
+                        ? "border-indigo-200 bg-indigo-50 ring-2 ring-indigo-500"
+                        : "border-gray-200 bg-white"
+                  } ${isClickable && !step.disabled && canAccessStep
                     ? "cursor-pointer hover:border-indigo-300"
                     : ""
-                }`}
+                  }`}
                 onClick={() =>
                   isClickable &&
                   !step.disabled &&
@@ -1727,17 +1710,16 @@ const CompanyOnboarding = () => {
               >
                 <div className="flex items-start space-x-4">
                   <div
-                    className={`rounded-full p-2 ${
-                      !canAccessStep
-                        ? "bg-gray-200 text-gray-400"
-                        : step.disabled
+                    className={`rounded-full p-2 ${!canAccessStep
+                      ? "bg-gray-200 text-gray-400"
+                      : step.disabled
                         ? "bg-gray-200 text-gray-400"
                         : isCompleted
-                        ? "bg-green-100 text-green-600"
-                        : isCurrentStep
-                        ? "bg-indigo-100 text-indigo-600"
-                        : "bg-gray-100 text-gray-500"
-                    }`}
+                          ? "bg-green-100 text-green-600"
+                          : isCurrentStep
+                            ? "bg-indigo-100 text-indigo-600"
+                            : "bg-gray-100 text-gray-500"
+                      }`}
                   >
                     <StepIcon className="h-5 w-5" />
                   </div>
