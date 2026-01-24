@@ -228,7 +228,7 @@ const CompanyOnboarding = () => {
         const { stepId, phaseId, data } = event.data;
 
         // Update local state
-        setCompletedSteps((prev) => {
+        setCompletedSteps((prev: string | any[]) => {
           if (!prev.includes(stepId)) {
             return [...prev, stepId];
           }
@@ -410,7 +410,7 @@ const CompanyOnboarding = () => {
             { status: "completed" }
           );
           // Update local state to reflect the completed step
-          setCompletedSteps((prev) => [...prev, 4]);
+          setCompletedSteps((prev: any) => [...prev, 4]);
         } catch (error) {
           console.error("Error updating onboarding progress:", error);
           // Ne pas faire échouer toute la fonction si cette mise à jour échoue
@@ -447,7 +447,7 @@ const CompanyOnboarding = () => {
             { status: "completed" }
           );
           // Update local state to reflect the completed step
-          setCompletedSteps((prev) => {
+          setCompletedSteps((prev: number[]) => {
             if (!prev.includes(6)) {
               return [...prev, 6];
             }
@@ -628,7 +628,7 @@ const CompanyOnboarding = () => {
                 completeResponse.data
               );
               // Update local state without reloading the entire project
-              setCompletedSteps((prev) => {
+              setCompletedSteps((prev: any) => {
                 const newSteps = [...prev];
                 if (!newSteps.includes(13)) {
                   newSteps.push(13);
@@ -669,7 +669,7 @@ const CompanyOnboarding = () => {
             }
 
             // Update local state to remove the completed step
-            setCompletedSteps((prev) => prev.filter((step) => step !== 13));
+            setCompletedSteps((prev: any[]) => prev.filter((step: number) => step !== 13));
             console.log(
               "⚠️ Step 13 removed from completed steps and marked as in_progress"
             );
@@ -677,7 +677,7 @@ const CompanyOnboarding = () => {
             // Mettre à jour les cookies avec le nouveau progrès
             const currentProgress = {
               currentPhase: 3, // Retour à la phase 3 car step 13 n'est plus complété
-              completedSteps: completedSteps.filter((step) => step !== 13),
+              completedSteps: completedSteps.filter((step: number) => step !== 13),
             };
             Cookies.set(
               "companyOnboardingProgress",
@@ -850,7 +850,7 @@ const CompanyOnboarding = () => {
       // Force a re-render to ensure the UI updates
       setTimeout(() => {
         console.log("🔄 Forcing re-render after state update");
-        setCurrentPhase((prev) => prev); // This will trigger a re-render
+        setCurrentPhase((prev: any) => prev); // This will trigger a re-render
       }, 50);
     } catch (error) {
       console.error("Error loading company progress:", error);
@@ -910,15 +910,25 @@ const CompanyOnboarding = () => {
       const allSteps = phases.flatMap((phase) => phase.steps);
       const step = allSteps.find((s) => s.id === stepId);
 
-      // Special handling for Knowledge Base step (always go to main KB app)
+      // Special handling for Knowledge Base step
       if (stepId === 7) {
-        window.location.replace(import.meta.env.VITE_KNOWLEDGE_BASE_URL);
+        localStorage.setItem("activeTab", "knowledge-base");
+        window.dispatchEvent(
+          new CustomEvent("tabChange", {
+            detail: { tab: "knowledge-base" },
+          })
+        );
         return;
       }
 
-      // Special handling for Call Script step (redirect to script generator in KB app)
+      // Special handling for Call Script step
       if (stepId === 8) {
-        window.location.replace(`${import.meta.env.VITE_KNOWLEDGE_BASE_URL}/script-generator`);
+        localStorage.setItem("activeTab", "script-generator");
+        window.dispatchEvent(
+          new CustomEvent("tabChange", {
+            detail: { tab: "script-generator" },
+          })
+        );
         return;
       }
 
@@ -968,13 +978,23 @@ const CompanyOnboarding = () => {
 
       // Special handling for Knowledge Base step
       if (stepId === 7) {
-        window.location.replace(import.meta.env.VITE_KNOWLEDGE_BASE_URL);
+        localStorage.setItem("activeTab", "knowledge-base");
+        window.dispatchEvent(
+          new CustomEvent("tabChange", {
+            detail: { tab: "knowledge-base" },
+          })
+        );
         return;
       }
 
-      // Special handling for Call Script step (redirect to script generator in KB app)
+      // Special handling for Call Script step
       if (stepId === 8) {
-        window.location.replace(`${import.meta.env.VITE_KNOWLEDGE_BASE_URL}/script-generator`);
+        localStorage.setItem("activeTab", "script-generator");
+        window.dispatchEvent(
+          new CustomEvent("tabChange", {
+            detail: { tab: "script-generator" },
+          })
+        );
         return;
       }
 
@@ -1026,7 +1046,7 @@ const CompanyOnboarding = () => {
         { status: "completed" }
       );
 
-      setCompletedSteps((prev) => [...prev, stepId]);
+      setCompletedSteps((prev: any) => [...prev, stepId]);
     } catch (error) {
       console.error("Error completing step:", error);
       // Afficher un message d'erreur plus informatif
@@ -1420,7 +1440,12 @@ const CompanyOnboarding = () => {
     // Pour Knowledge Base
     if (stepId === 7) {
       if (allPreviousCompleted) {
-        window.location.replace(import.meta.env.VITE_KNOWLEDGE_BASE_URL);
+        localStorage.setItem("activeTab", "knowledge-base");
+        window.dispatchEvent(
+          new CustomEvent("tabChange", {
+            detail: { tab: "knowledge-base" },
+          })
+        );
       }
       return;
     }
@@ -1428,22 +1453,12 @@ const CompanyOnboarding = () => {
     // Pour Call Script
     if (stepId === 8) {
       if (allPreviousCompleted) {
-        window.location.replace(`${import.meta.env.VITE_KNOWLEDGE_BASE_URL}/script-generator`);
-      }
-      return;
-    }
-
-    // Pour Call Script
-    if (stepId === 8) {
-      console.log('Call Script step clicked');
-      console.log('All previous completed:', allPreviousCompleted);
-      console.log('Step completed:', completedSteps.includes(stepId));
-      console.log('Script Generation URL (Target):', `${import.meta.env.VITE_KNOWLEDGE_BASE_URL}/script-generator`);
-
-      if (allPreviousCompleted) {
-        const baseUrl = `${import.meta.env.VITE_KNOWLEDGE_BASE_URL}/script-generator`;
-        console.log('Redirecting to script generation:', baseUrl);
-        window.location.replace(baseUrl);
+        localStorage.setItem("activeTab", "script-generator");
+        window.dispatchEvent(
+          new CustomEvent("tabChange", {
+            detail: { tab: "script-generator" },
+          })
+        );
       }
       return;
     }
