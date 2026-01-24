@@ -6,9 +6,7 @@ import {
   Settings,
   HelpCircle,
   LogOut,
-  Building2,
-  BookOpen,
-  Headphones
+  Building2
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import Cookies from 'js-cookie';
@@ -161,22 +159,7 @@ function App() {
               <Building2 className="h-5 w-5" />
               <span>Company Onboarding</span>
             </button>
-            <button
-              className={`flex w-full items-center space-x-2 rounded-lg py-2 px-3 ${activeTab === 'knowledge-base' ? 'bg-indigo-800' : 'hover:bg-indigo-800'
-                }`}
-              onClick={() => setActiveTab('knowledge-base')}
-            >
-              <BookOpen className="h-5 w-5" />
-              <span>Knowledge Base</span>
-            </button>
-            <button
-              className={`flex w-full items-center space-x-2 rounded-lg py-2 px-3 ${activeTab === 'script-generator' ? 'bg-indigo-800' : 'hover:bg-indigo-800'
-                }`}
-              onClick={() => setActiveTab('script-generator')}
-            >
-              <Headphones className="h-5 w-5" />
-              <span>Script Generator</span>
-            </button>
+
             {/* 
             <button
               className={`flex w-full items-center space-x-2 rounded-lg py-2 px-3 ${

@@ -837,6 +837,19 @@ const ScriptGenerator: React.FC = () => {
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
                     <div>
+                        <button
+                            onClick={() => {
+                                window.dispatchEvent(
+                                    new CustomEvent('tabChange', {
+                                        detail: { tab: 'company-onboarding' },
+                                    })
+                                );
+                            }}
+                            className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+                        >
+                            <ArrowLeft className="h-5 w-5 mr-2" />
+                            <span>Back to Onboarding</span>
+                        </button>
                         <h1 className="text-2xl font-bold text-gray-900 mb-1 flex items-center">
                             <Headphones className="mr-3 text-blue-600" size={28} />
                             Script Generator
@@ -895,8 +908,8 @@ const ScriptGenerator: React.FC = () => {
                                 <button
                                     onClick={() => setStatusFilter('all')}
                                     className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${statusFilter === 'all'
-                                            ? 'bg-white text-gray-800 shadow-sm border border-gray-200'
-                                            : 'text-gray-500 hover:text-gray-700'
+                                        ? 'bg-white text-gray-800 shadow-sm border border-gray-200'
+                                        : 'text-gray-500 hover:text-gray-700'
                                         }`}
                                 >
                                     All
@@ -904,8 +917,8 @@ const ScriptGenerator: React.FC = () => {
                                 <button
                                     onClick={() => setStatusFilter('active')}
                                     className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${statusFilter === 'active'
-                                            ? 'bg-white text-green-700 shadow-sm border border-green-100'
-                                            : 'text-gray-500 hover:text-gray-700'
+                                        ? 'bg-white text-green-700 shadow-sm border border-green-100'
+                                        : 'text-gray-500 hover:text-gray-700'
                                         }`}
                                 >
                                     Active
@@ -913,8 +926,8 @@ const ScriptGenerator: React.FC = () => {
                                 <button
                                     onClick={() => setStatusFilter('inactive')}
                                     className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${statusFilter === 'inactive'
-                                            ? 'bg-white text-gray-800 shadow-sm border border-gray-200'
-                                            : 'text-gray-500 hover:text-gray-700'
+                                        ? 'bg-white text-gray-800 shadow-sm border border-gray-200'
+                                        : 'text-gray-500 hover:text-gray-700'
                                         }`}
                                 >
                                     Inactive
@@ -1041,8 +1054,8 @@ const ScriptGenerator: React.FC = () => {
                                     <div className="flex items-center gap-3 mb-2">
                                         <h2 className="text-xl font-bold text-gray-900">{selectedScript.gig?.title}</h2>
                                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${selectedScript.isActive
-                                                ? 'bg-green-50 text-green-700 border-green-200'
-                                                : 'bg-gray-100 text-gray-600 border-gray-200'
+                                            ? 'bg-green-50 text-green-700 border-green-200'
+                                            : 'bg-gray-100 text-gray-600 border-gray-200'
                                             }`}>
                                             {selectedScript.isActive ? 'Active' : 'Inactive'}
                                         </span>
@@ -1119,8 +1132,8 @@ const ScriptGenerator: React.FC = () => {
                                                         <div key={stepIdx} className={`p-6 hover:bg-gray-50 transition-colors ${step.actor === 'agent' ? 'bg-white' : 'bg-gray-50/50'}`}>
                                                             <div className="flex items-start gap-4">
                                                                 <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm ${step.actor === 'agent'
-                                                                        ? 'bg-blue-100 text-blue-700 ring-4 ring-blue-50'
-                                                                        : 'bg-amber-100 text-amber-700 ring-4 ring-amber-50'
+                                                                    ? 'bg-blue-100 text-blue-700 ring-4 ring-blue-50'
+                                                                    : 'bg-amber-100 text-amber-700 ring-4 ring-amber-50'
                                                                     }`}>
                                                                     {step.actor === 'agent' ? 'AG' : 'CL'}
                                                                 </div>
