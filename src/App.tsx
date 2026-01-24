@@ -1,12 +1,14 @@
-import React,{ useState, useEffect } from 'react';
-import { 
-  ArrowRightLeft, 
-  Menu, 
+import React, { useState, useEffect } from 'react';
+import {
+  ArrowRightLeft,
+  Menu,
   X,
   Settings,
   HelpCircle,
   LogOut,
-  Building2
+  Building2,
+  BookOpen,
+  Headphones
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import Cookies from 'js-cookie';
@@ -18,6 +20,8 @@ import Optimization from './components/Optimization';
 import CompanyOnboarding from './components/CompanyOnboarding';
 import ZohoCallback from './components/onboarding/ZohoCallback';
 import ZohoAuth from './components/onboarding/ZohoAuth';
+import KnowledgeBase from './components/KnowledgeBase';
+import ScriptGenerator from './components/ScriptGenerator';
 import ZohoService from './services/zohoService';
 
 function App() {
@@ -105,6 +109,10 @@ function App() {
         return <ApprovalPublishing />;
       case 'optimization':
         return <Optimization />;
+      case 'knowledge-base':
+        return <KnowledgeBase />;
+      case 'script-generator':
+        return <ScriptGenerator />;
       case 'company-onboarding':
       default:
         return <CompanyOnboarding />;
@@ -127,18 +135,17 @@ function App() {
     <div className="flex h-screen bg-gray-50">
       <Toaster position="top-right" />
       {/* Sidebar */}
-      <div 
-        className={`${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } fixed inset-y-0 left-0 z-30 w-64 bg-indigo-900 text-white transition-transform duration-300 ease-in-out md:relative md:translate-x-0`}
+      <div
+        className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          } fixed inset-y-0 left-0 z-30 w-64 bg-indigo-900 text-white transition-transform duration-300 ease-in-out md:relative md:translate-x-0`}
       >
         <div className="flex h-16 items-center justify-between px-4 border-b border-indigo-800">
           <div className="flex items-center space-x-2">
             <ArrowRightLeft className="h-6 w-6" />
             <span className="text-xl font-bold">Smart Orchestrator</span>
           </div>
-          <button 
-            className="md:hidden" 
+          <button
+            className="md:hidden"
             onClick={() => setIsSidebarOpen(false)}
           >
             <X className="h-6 w-6" />
@@ -147,13 +154,28 @@ function App() {
         <nav className="mt-6 px-4">
           <div className="space-y-4">
             <button
-              className={`flex w-full items-center space-x-2 rounded-lg py-2 px-3 ${
-                activeTab === 'company-onboarding' ? 'bg-indigo-800' : 'hover:bg-indigo-800'
-              }`}
+              className={`flex w-full items-center space-x-2 rounded-lg py-2 px-3 ${activeTab === 'company-onboarding' ? 'bg-indigo-800' : 'hover:bg-indigo-800'
+                }`}
               onClick={() => setActiveTab('company-onboarding')}
             >
               <Building2 className="h-5 w-5" />
               <span>Company Onboarding</span>
+            </button>
+            <button
+              className={`flex w-full items-center space-x-2 rounded-lg py-2 px-3 ${activeTab === 'knowledge-base' ? 'bg-indigo-800' : 'hover:bg-indigo-800'
+                }`}
+              onClick={() => setActiveTab('knowledge-base')}
+            >
+              <BookOpen className="h-5 w-5" />
+              <span>Knowledge Base</span>
+            </button>
+            <button
+              className={`flex w-full items-center space-x-2 rounded-lg py-2 px-3 ${activeTab === 'script-generator' ? 'bg-indigo-800' : 'hover:bg-indigo-800'
+                }`}
+              onClick={() => setActiveTab('script-generator')}
+            >
+              <Headphones className="h-5 w-5" />
+              <span>Script Generator</span>
             </button>
             {/* 
             <button
@@ -177,7 +199,7 @@ function App() {
                 <HelpCircle className="h-5 w-5" />
                 <span>Help</span>
               </button>
-              <button 
+              <button
                 onClick={handleLogout}
                 className="flex w-full items-center space-x-2 rounded-lg py-2 px-3 hover:bg-indigo-800"
               >
@@ -194,8 +216,8 @@ function App() {
         {/* Top Navigation */}
         <header className="bg-white shadow-sm">
           <div className="flex h-16 items-center justify-between px-4">
-            <button 
-              className="md:hidden" 
+            <button
+              className="md:hidden"
               onClick={() => setIsSidebarOpen(true)}
             >
               <Menu className="h-6 w-6" />
