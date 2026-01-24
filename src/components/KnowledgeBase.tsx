@@ -972,122 +972,157 @@ const KnowledgeBase: React.FC = () => {
 
                         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-                        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full">
                             <form onSubmit={activeTab === 'documents' ? handleSubmit : handleCallSubmit}>
-                                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                    <div className="sm:flex sm:items-start">
-                                        <div className={`mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full ${activeTab === 'documents' ? 'bg-blue-100' : 'bg-purple-100'
-                                            } sm:mx-0 sm:h-10 sm:w-10`}>
-                                            {activeTab === 'documents' ? (
-                                                <Upload size={20} className="text-blue-600" />
-                                            ) : (
-                                                <Mic size={20} className="text-purple-600" />
-                                            )}
-                                        </div>
-                                        <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                                            <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                                                {activeTab === 'documents' ? 'Upload Resource' : 'Upload Call Recording'}
-                                            </h3>
-                                            <div className="mt-2 space-y-4">
-                                                {activeTab === 'documents' && (
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-700 mb-1">Resource Type</label>
-                                                        <select
-                                                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                                            value={uploadType}
-                                                            onChange={(e) => setUploadType(e.target.value)}
+                                <div className="bg-white px-4 pt-5 pb-4 sm:p-6">
+                                    <div className="flex justify-between items-center mb-5">
+                                        <h3 className="text-xl font-semibold text-gray-900" id="modal-title">
+                                            {activeTab === 'documents' ? 'Add to Knowledge Base' : 'Upload Call Recording'}
+                                        </h3>
+                                        <button type="button" onClick={handleUploadModalClose} className="text-gray-400 hover:text-gray-500">
+                                            <X size={24} />
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-5">
+                                        {/* Resource Type Selection */}
+                                        {activeTab === 'documents' && (
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Resource Type</label>
+                                                <div className="grid grid-cols-4 gap-3">
+                                                    {[
+                                                        { id: 'document', icon: FileText, label: 'Document' },
+                                                        { id: 'video', icon: Video, label: 'Video' },
+                                                        { id: 'link', icon: LinkIcon, label: 'Link' },
+                                                        { id: 'audio', icon: Mic, label: 'Audio' }
+                                                    ].map((type) => (
+                                                        <button
+                                                            key={type.id}
+                                                            type="button"
+                                                            onClick={() => setUploadType(type.id)}
+                                                            className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-all ${uploadType === type.id
+                                                                ? 'border-blue-500 bg-blue-50 text-blue-700 ring-1 ring-blue-500'
+                                                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-600'
+                                                                }`}
                                                         >
-                                                            <option value="document">Document (PDF, Word, etc.)</option>
-                                                            <option value="video">Video</option>
-                                                            <option value="link">Link / URL</option>
-                                                        </select>
-                                                    </div>
-                                                )}
+                                                            <type.icon size={20} className="mb-2" />
+                                                            <span className="text-xs font-medium">{type.label}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
 
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                        {activeTab === 'documents' ? 'Title' : 'Contact Name / ID'}
-                                                    </label>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Name
+                                            </label>
+                                            <input
+                                                type="text"
+                                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                                placeholder={activeTab === 'documents' ? "Enter a name for this resource" : "Ex: John Doe - Initial Consultation"}
+                                                value={uploadName}
+                                                onChange={(e) => setUploadName(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Description
+                                            </label>
+                                            <textarea
+                                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                                placeholder="Describe what this resource contains"
+                                                rows={3}
+                                                value={uploadDescription}
+                                                onChange={(e) => setUploadDescription(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+
+                                        {/* Dynamic Input based on Type */}
+                                        {uploadType === 'link' && activeTab === 'documents' ? (
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">URL</label>
+                                                <div className="relative">
+                                                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                                        <LinkIcon size={16} className="text-gray-400" />
+                                                    </div>
                                                     <input
-                                                        type="text"
-                                                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                                        placeholder={activeTab === 'documents' ? "Ex: Product Guide 2024" : "Ex: John Doe - Initial Consultation"}
-                                                        value={uploadName}
-                                                        onChange={(e) => setUploadName(e.target.value)}
+                                                        type="url"
+                                                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5"
+                                                        placeholder="https://example.com/resource"
+                                                        value={uploadUrl}
+                                                        onChange={(e) => setUploadUrl(e.target.value)}
                                                         required
                                                     />
                                                 </div>
-
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                        {activeTab === 'documents' ? 'Description' : 'Call Summary'}
-                                                    </label>
-                                                    <textarea
-                                                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                                        placeholder={activeTab === 'documents' ? "Brief description of this resource..." : "What was discussed in this call?"}
-                                                        rows={3}
-                                                        value={uploadDescription}
-                                                        onChange={(e) => setUploadDescription(e.target.value)}
-                                                        required
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Tags (comma separated)</label>
-                                                    <input
-                                                        type="text"
-                                                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                                        placeholder="sales, technical, product..."
-                                                        value={uploadTags}
-                                                        onChange={(e) => setUploadTags(e.target.value)}
-                                                    />
-                                                </div>
-
-                                                {uploadType === 'link' && activeTab === 'documents' ? (
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-700 mb-1">URL</label>
-                                                        <input
-                                                            type="url"
-                                                            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                                            placeholder="https://example.com/resource"
-                                                            value={uploadUrl}
-                                                            onChange={(e) => setUploadUrl(e.target.value)}
-                                                            required
-                                                        />
-                                                    </div>
-                                                ) : (
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-700 mb-1">File</label>
-                                                        <input
-                                                            type="file"
-                                                            className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
-                                                            onChange={handleFileChange}
-                                                            accept={activeTab === 'documents' ?
-                                                                uploadType === 'image' ? "image/*" :
-                                                                    uploadType === 'video' ? "video/*" : ".pdf,.doc,.docx,.txt" :
-                                                                "audio/*"
-                                                            }
-                                                            required
-                                                        />
-                                                        <p className="mt-1 text-xs text-gray-500">
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">Upload File</label>
+                                                <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group bg-white"
+                                                    onClick={() => document.getElementById('file-upload')?.click()}
+                                                >
+                                                    <div className="space-y-1 text-center">
+                                                        <Upload className="mx-auto h-12 w-12 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                                                        <div className="flex text-sm text-gray-600 justify-center">
+                                                            <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                                                                <span>Click to upload</span>
+                                                                {/* Hidden input needs to be accessible but custom styled */}
+                                                            </label>
+                                                            <span className="pl-1">or drag and drop</span>
+                                                        </div>
+                                                        <p className="text-xs text-gray-500">
                                                             {activeTab === 'documents'
-                                                                ? "Supported formats: PDF, Word, Images, Videos"
-                                                                : "Supported formats: MP3, WAV, M4A"
+                                                                ? (uploadType === 'video' ? "MP4, WebM (max 50MB)" : "PDF, DOCX, TXT, Images")
+                                                                : "MP3, WAV, M4A"
                                                             }
                                                         </p>
+                                                        {uploadFile && (
+                                                            <p className="text-sm font-medium text-green-600 mt-2">
+                                                                Selected: {uploadFile.name}
+                                                            </p>
+                                                        )}
                                                     </div>
-                                                )}
+                                                    <input
+                                                        id="file-upload"
+                                                        name="file-upload"
+                                                        type="file"
+                                                        className="sr-only"
+                                                        onChange={handleFileChange}
+                                                        accept={activeTab === 'documents' ?
+                                                            uploadType === 'image' ? "image/*" :
+                                                                uploadType === 'video' ? "video/*" : ".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg" :
+                                                            "audio/*"
+                                                        }
+                                                        required={!uploadFile}
+                                                    />
+                                                </div>
                                             </div>
+                                        )}
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+                                            <input
+                                                type="text"
+                                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                                placeholder="sales, technical, product..."
+                                                value={uploadTags}
+                                                onChange={(e) => setUploadTags(e.target.value)}
+                                            />
                                         </div>
                                     </div>
                                 </div>
-                                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                                <div className="bg-gray-50 px-4 py-3 sm:px-6 flex flex-row-reverse">
                                     <button
                                         type="submit"
                                         disabled={isUploading}
-                                        className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+                                        className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
                                     >
-                                        {isUploading ? 'Uploading...' : 'Upload'}
+                                        <Plus size={18} className="mr-2" />
+                                        {isUploading ? 'Uploading...' : 'Add Resource'}
                                     </button>
                                     <button
                                         type="button"
