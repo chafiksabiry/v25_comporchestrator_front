@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, File, FileText, Video, Link as LinkIcon, Plus, Search, Trash2, Filter, Download, Mic, Play, Clock, Pause, ChevronDown, ChevronUp, X, ExternalLink, Eye, ArrowLeft } from 'lucide-react';
+import { Upload, File, FileText, Video, Link as LinkIcon, Plus, Search, Trash2, Filter, Mic, Play, Clock, Pause, ChevronDown, ChevronUp, X, ExternalLink, Eye, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types/knowledgeTypes';
 import apiClient from '../api/knowledgeClient';
@@ -838,7 +838,7 @@ const KnowledgeBase: React.FC = () => {
                                         <p className="text-sm text-gray-700 mb-3 break-words overflow-hidden">{call.summary}</p>
 
                                         <div className="flex flex-wrap gap-1 mb-3">
-                                            {call.tags.map((tag: string, index: number) => (
+                                            {call.tags.map((tag: string) => (
                                                 <span
                                                     key={`${call.id}-${tag}`}
                                                     className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 whitespace-nowrap"
@@ -1140,20 +1140,38 @@ const KnowledgeBase: React.FC = () => {
 
             {/* Details/Preview Modal */}
             {isModalOpen && selectedItem && (
-                <div className="fixed inset-0 z-50 overflow-y-auto">
-                    <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-                            <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={handleDetailsModalClose}></div>
-                        </div>
+                <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                    <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={handleDetailsModalClose}></div>
 
                         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-                        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+                        <div className="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
                             <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                <div className="flex justify-between items-start mb-4">
-                                    <h3 className="text-xl font-medium text-gray-900" id="modal-title">
-                                        {'name' in selectedItem ? selectedItem.name : selectedItem.contactId}
-                                    </h3>
+                                <div className="flex justify-between items-start mb-5">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg ${'type' in selectedItem
+                                            ? selectedItem.type === 'video' ? 'bg-red-100 text-red-600'
+                                                : selectedItem.type === 'audio' ? 'bg-purple-100 text-purple-600'
+                                                    : selectedItem.type === 'link' ? 'bg-green-100 text-green-600'
+                                                        : 'bg-blue-100 text-blue-600'
+                                            : 'bg-purple-100 text-purple-600'
+                                            }`}>
+                                            {'type' in selectedItem ? (
+                                                selectedItem.type === 'video' ? <Video size={20} /> :
+                                                    selectedItem.type === 'audio' ? <Mic size={20} /> :
+                                                        selectedItem.type === 'link' ? <LinkIcon size={20} /> :
+                                                            <FileText size={20} />
+                                            ) : (
+                                                <Mic size={20} />
+                                            )}
+                                        </div>
+                                        <h3 className="text-lg leading-6 font-semibold text-gray-900" id="modal-title">
+                                            {'type' in selectedItem
+                                                ? selectedItem.type.charAt(0).toUpperCase() + selectedItem.type.slice(1) + ' Details'
+                                                : 'Call Recording Details'}
+                                        </h3>
+                                    </div>
                                     <button
                                         onClick={handleDetailsModalClose}
                                         className="text-gray-400 hover:text-gray-500 focus:outline-none"
@@ -1162,155 +1180,73 @@ const KnowledgeBase: React.FC = () => {
                                     </button>
                                 </div>
 
-                                <div className="mt-2">
-                                    <div className="flex flex-wrap gap-2 mb-4">
+                                <div className="space-y-6">
+                                    {/* Name */}
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-500">Name</h4>
+                                        <p className="mt-1 text-base text-gray-900 font-medium">
+                                            {'name' in selectedItem ? selectedItem.name : selectedItem.contactId}
+                                        </p>
+                                    </div>
+
+                                    {/* Description */}
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-500">
+                                            {'description' in selectedItem ? 'Description' : 'Summary'}
+                                        </h4>
+                                        <p className="mt-1 text-sm text-gray-700 whitespace-pre-wrap">
+                                            {'description' in selectedItem ? selectedItem.description : selectedItem.summary}
+                                        </p>
+                                    </div>
+
+                                    {/* Type */}
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-500 mb-1">Type</h4>
                                         {'type' in selectedItem ? (
-                                            <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${selectedItem.type === 'document' ? 'bg-blue-100 text-blue-800' :
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${selectedItem.type === 'document' ? 'bg-blue-100 text-blue-800' :
                                                 selectedItem.type === 'video' ? 'bg-red-100 text-red-800' :
                                                     selectedItem.type === 'audio' ? 'bg-purple-100 text-purple-800' :
                                                         'bg-green-100 text-green-800'
                                                 }`}>
-                                                {selectedItem.type.toUpperCase()}
+                                                {selectedItem.type.charAt(0).toUpperCase() + selectedItem.type.slice(1)}
                                             </span>
                                         ) : (
-                                            <span className="px-2 py-1 text-xs rounded-full whitespace-nowrap bg-purple-100 text-purple-800">
-                                                CALL RECORDING
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                Call Recording
                                             </span>
-                                        )}
-
-                                        {selectedItem.tags.map((tag: string) => (
-                                            <span key={tag} className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700">
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-
-                                    <p className="text-gray-600 mb-6">
-                                        {'description' in selectedItem ? selectedItem.description : selectedItem.summary}
-                                    </p>
-
-                                    {/* Content Preview area */}
-                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6 min-h-[200px] flex items-center justify-center">
-                                        {'fileUrl' in selectedItem ? (
-                                            selectedItem.type === 'image' || selectedItem.fileUrl.match(/\.(jpeg|jpg|gif|png)$/) ? (
-                                                <div className="text-center">
-                                                    <img src={selectedItem.fileUrl} alt={selectedItem.name} className="max-h-96 mx-auto mb-4" />
-                                                    <button
-                                                        onClick={() => openInNewTab(selectedItem.fileUrl)}
-                                                        className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
-                                                    >
-                                                        <ExternalLink size={16} className="mr-2" />
-                                                        Open Original
-                                                    </button>
-                                                </div>
-                                            ) : selectedItem.type === 'video' || selectedItem.fileUrl.match(/\.(mp4|webm|ogg)$/) ? (
-                                                <div className="w-full">
-                                                    <video controls className="w-full max-h-96 rounded-lg">
-                                                        <source src={selectedItem.fileUrl} type="video/mp4" />
-                                                        Your browser does not support the video tag.
-                                                    </video>
-                                                </div>
-                                            ) : (
-                                                <div className="text-center">
-                                                    <FileText size={48} className="text-gray-400 mx-auto mb-4" />
-                                                    <p className="text-gray-500 mb-4">Preview not available for this file type</p>
-                                                    <button
-                                                        onClick={() => openInNewTab(selectedItem.fileUrl)}
-                                                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
-                                                    >
-                                                        <Download size={16} className="mr-2" />
-                                                        Download / View
-                                                    </button>
-                                                </div>
-                                            )
-                                        ) : (
-                                            // Audio player for call recordings
-                                            <div className="w-full" onClick={(e) => e.stopPropagation()}>
-                                                <div className="flex items-center justify-center p-8 bg-white rounded-full shadow-sm w-24 h-24 mx-auto mb-6">
-                                                    <Mic size={40} className="text-purple-600" />
-                                                </div>
-
-                                                <div className="max-w-md mx-auto bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                                                    <div className="flex items-center space-x-3 mb-2">
-                                                        <button
-                                                            className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors flex-shrink-0"
-                                                            onClick={() => {
-                                                                console.log('Playing audio from modal');
-                                                                handlePlayRecording(selectedItem.recordingUrl, selectedItem.id);
-                                                            }}
-                                                        >
-                                                            {playingCallId === selectedItem.id && isPlaying ? (
-                                                                <Pause size={20} />
-                                                            ) : (
-                                                                <Play size={20} />
-                                                            )}
-                                                        </button>
-
-                                                        <div className="flex-1">
-                                                            <div className="relative h-2 bg-gray-200 rounded-full cursor-pointer">
-                                                                {/* Invisible range input for seeking */}
-                                                                <input
-                                                                    type="range"
-                                                                    min="0"
-                                                                    max={duration || 100}
-                                                                    value={playingCallId === selectedItem.id ? currentTime : 0}
-                                                                    onChange={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleTimeChange(Number(e.target.value));
-                                                                    }}
-                                                                    className="absolute w-full h-full opacity-0 cursor-pointer z-10"
-                                                                    disabled={!duration || playingCallId !== selectedItem.id}
-                                                                />
-                                                                {/* Progress Bar */}
-                                                                <div
-                                                                    className="absolute h-full bg-blue-600 rounded-full"
-                                                                    style={{
-                                                                        width: `${duration && playingCallId === selectedItem.id
-                                                                            ? (currentTime / duration) * 100
-                                                                            : 0}%`
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                            <div className="flex justify-between mt-1 text-xs text-gray-500">
-                                                                <span>{playingCallId === selectedItem.id ? formatTime(currentTime) : '0:00'}</span>
-                                                                <span>{playingCallId === selectedItem.id ? formatTime(duration) : formatTime(selectedItem.duration * 60)}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Insights Section for Calls */}
-                                                    {selectedItem.aiInsights && selectedItem.aiInsights.length > 0 && (
-                                                        <div className="mt-4 pt-4 border-t border-gray-100">
-                                                            <h4 className="text-sm font-medium text-gray-700 mb-2">Key Insights</h4>
-                                                            <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                                                                {selectedItem.aiInsights.map((insight: string, idx: number) => (
-                                                                    <li key={idx} className="break-words">{insight}</li>
-                                                                ))}
-                                                            </ul>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
                                         )}
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4 text-sm text-gray-500 items-center">
-                                        <div className="flex items-center">
-                                            <Clock size={16} className="mr-2" />
-                                            Uploaded {('uploadedAt' in selectedItem) ? selectedItem.uploadedAt : selectedItem.date}
-                                        </div>
-                                        {/* Add other details as needed */}
+                                    {/* Upload Date */}
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-500">
+                                            {'uploadedAt' in selectedItem ? 'Upload Date' : 'Date'}
+                                        </h4>
+                                        <p className="mt-1 text-sm text-gray-900">
+                                            {'uploadedAt' in selectedItem ? selectedItem.uploadedAt : selectedItem.date}
+                                        </p>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                                <button
-                                    type="button"
-                                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
-                                    onClick={handleDetailsModalClose}
-                                >
-                                    Close
-                                </button>
+
+                                <div className="mt-8">
+                                    <button
+                                        type="button"
+                                        className="w-full inline-flex justify-center items-center px-4 py-3 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                        onClick={() => {
+                                            const url = 'fileUrl' in selectedItem ? selectedItem.fileUrl : selectedItem.recordingUrl;
+                                            openInNewTab(url);
+                                        }}
+                                    >
+                                        <ExternalLink size={18} className="mr-2" />
+                                        {'type' in selectedItem ? (
+                                            selectedItem.type === 'video' ? 'Watch Video' :
+                                                selectedItem.type === 'audio' ? 'Play Audio' :
+                                                    selectedItem.type === 'link' ? 'Open Link' :
+                                                        selectedItem.type === 'image' ? 'View Image' :
+                                                            'Open Document'
+                                        ) : 'Play Recording'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
