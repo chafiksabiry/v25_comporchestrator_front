@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, File, FileText, Video, Link as LinkIcon, Plus, Search, Trash2, Filter, Download, Mic, Play, Clock, Pause, ChevronDown, ChevronUp, X, ExternalLink, Eye } from 'lucide-react';
+import { Upload, File, FileText, Video, Link as LinkIcon, Plus, Search, Trash2, Filter, Download, Mic, Play, Clock, Pause, ChevronDown, ChevronUp, X, ExternalLink, Eye, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types/knowledgeTypes';
 import apiClient from '../api/knowledgeClient';
@@ -615,6 +615,19 @@ const KnowledgeBase: React.FC = () => {
     return (
         <div className="p-6 bg-gray-50 min-h-screen">
             <div className="mb-6">
+                <button
+                    onClick={() => {
+                        window.dispatchEvent(
+                            new CustomEvent('tabChange', {
+                                detail: { tab: 'company-onboarding' },
+                            })
+                        );
+                    }}
+                    className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+                >
+                    <ArrowLeft className="h-5 w-5 mr-2" />
+                    <span>Back to Onboarding</span>
+                </button>
                 <h1 className="text-2xl font-bold text-gray-800 mb-2">Knowledge Base</h1>
                 <p className="text-gray-600">
                     Upload documentation, videos, links, and call recordings to build your company's knowledge base.
