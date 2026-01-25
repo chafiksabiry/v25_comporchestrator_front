@@ -1916,7 +1916,7 @@ const KnowledgeBase: React.FC = () => {
         className="mb-6 flex items-center text-gray-600 hover:text-gray-900 transition-colors"
       >
         <ArrowLeft size={20} className="mr-2" />
-        <span>Go back to orchestrator</span>
+        <span>Back to Onboarding</span>
       </button>
 
       <div className="mb-6">
