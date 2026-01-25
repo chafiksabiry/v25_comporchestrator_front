@@ -59,22 +59,22 @@ const CreateGig = () => {
   const checkStepStatus = async () => {
     try {
       if (!companyId) return;
-      
+
       console.log('🔍 Checking step 4 status for company:', companyId);
-      
+
       // Vérifier l'état de l'étape 4 via l'API d'onboarding
       const response = await axios.get(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/4`
       );
-      
+
       console.log('📡 API response for step 4:', response.data);
-      
+
       if (response.data && (response.data as any).status === 'completed') {
         console.log('✅ Step 4 is already completed according to API');
         setIsStepCompleted(true);
         return;
       }
-      
+
       // Vérifier aussi le localStorage pour la cohérence
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
       if (storedProgress) {
@@ -89,15 +89,15 @@ const CreateGig = () => {
           console.error('❌ Error parsing stored progress:', e);
         }
       }
-      
+
       // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
       // marquer automatiquement l'étape comme complétée localement
       if (hasBasicInfo() && !isStepCompleted) {
         console.log('🎯 Auto-completing step 4 locally because basic info is present');
-        
+
         // Marquer l'étape comme complétée localement
         setIsStepCompleted(true);
-        
+
         // Mettre à jour le localStorage avec l'étape 4 marquée comme complétée
         const currentCompletedSteps = [4];
         const currentProgress = {
@@ -106,26 +106,26 @@ const CreateGig = () => {
           lastUpdated: new Date().toISOString()
         };
         localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-        
+
         // Synchroniser avec les cookies
         Cookies.set('createGigStepCompleted', 'true', { expires: 7 });
-        
+
         // Notifier le composant parent CompanyOnboarding via un événement personnalisé
-        window.dispatchEvent(new CustomEvent('stepCompleted', { 
-          detail: { 
-            stepId: 4, 
-            phaseId: 2, 
+        window.dispatchEvent(new CustomEvent('stepCompleted', {
+          detail: {
+            stepId: 4,
+            phaseId: 2,
             status: 'completed',
             completedSteps: currentCompletedSteps
-          } 
+          }
         }));
-        
+
         console.log('💾 Step 4 marked as completed locally and parent component notified');
       }
-      
+
     } catch (error) {
       console.error('❌ Error checking step status:', error);
-      
+
       // En cas d'erreur API, vérifier le localStorage
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
       if (storedProgress) {
@@ -160,18 +160,18 @@ const CreateGig = () => {
       }
 
       console.log('🚀 Publishing gig...');
-      
+
       // Marquer l'étape 4 comme complétée
       const stepResponse = await axios.put(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/4`,
         { status: 'completed' }
       );
-      
+
       console.log('✅ Step 4 marked as completed:', stepResponse.data);
-      
+
       // Mettre à jour l'état local
       setIsStepCompleted(true);
-      
+
       // Mettre à jour le localStorage
       const currentProgress = {
         currentPhase: 2,
@@ -179,22 +179,22 @@ const CreateGig = () => {
         lastUpdated: new Date().toISOString()
       };
       localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-      
+
       // Synchroniser avec les cookies
       Cookies.set('createGigStepCompleted', 'true', { expires: 7 });
-      
+
       // Notifier le composant parent
-      window.dispatchEvent(new CustomEvent('stepCompleted', { 
-        detail: { 
-          stepId: 4, 
-          phaseId: 2, 
+      window.dispatchEvent(new CustomEvent('stepCompleted', {
+        detail: {
+          stepId: 4,
+          phaseId: 2,
           status: 'completed',
           completedSteps: [4]
-        } 
+        }
       }));
-      
+
       console.log('💾 Gig published and step 4 marked as completed');
-      
+
     } catch (error) {
       console.error('❌ Error publishing gig:', error);
     }
@@ -251,13 +251,12 @@ const CreateGig = () => {
             <Save className="mr-2 h-4 w-4" />
             Save Draft
           </button>
-          <button 
+          <button
             onClick={isStepCompleted ? undefined : handlePublishGig}
-            className={`flex items-center rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition-all ${
-              isStepCompleted
+            className={`flex items-center rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition-all ${isStepCompleted
                 ? 'bg-green-600 text-white cursor-not-allowed'
                 : 'bg-indigo-600 text-white hover:bg-indigo-700'
-            }`}
+              }`}
             disabled={isStepCompleted}
           >
             {isStepCompleted ? (
@@ -291,7 +290,7 @@ const CreateGig = () => {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Department</label>
-            <select 
+            <select
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
@@ -309,26 +308,24 @@ const CreateGig = () => {
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="text-lg font-medium text-gray-900">Communication Channels</h3>
         <p className="mt-1 text-sm text-gray-500">Select the channels this gig will handle</p>
-        
+
         <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {channels.map((channel) => {
             const Icon = channel.icon;
             const isSelected = selectedChannels.includes(channel.id);
-            
+
             return (
               <div
                 key={channel.id}
-                className={`cursor-pointer rounded-lg border p-4 ${
-                  isSelected
+                className={`cursor-pointer rounded-lg border p-4 ${isSelected
                     ? 'border-indigo-500 bg-indigo-50'
                     : 'border-gray-200 hover:bg-gray-50'
-                }`}
+                  }`}
                 onClick={() => toggleChannel(channel.id)}
               >
                 <div className="flex items-center space-x-3">
-                  <div className={`rounded-lg p-2 ${
-                    isSelected ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-500'
-                  }`}>
+                  <div className={`rounded-lg p-2 ${isSelected ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-500'
+                    }`}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <span className="font-medium text-gray-900">{channel.name}</span>

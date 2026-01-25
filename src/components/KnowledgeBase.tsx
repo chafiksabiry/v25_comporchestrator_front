@@ -5,7 +5,6 @@ import { KnowledgeItem, CallRecord } from '../types/knowledgeTypes';
 import apiClient, { knowledgeApi } from '../api/knowledgeClient';
 
 const KnowledgeBase: React.FC = () => {
-    const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState<string>('all');
     const [showUploadModal, setShowUploadModal] = useState(false);
@@ -158,7 +157,7 @@ const KnowledgeBase: React.FC = () => {
                         if (companyId) {
                             console.log('🎯 Existing documents found, ensuring onboarding step 7 is completed...');
                             await fetch(
-                                `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`,
+                                `${import.meta.env.VITE_API_URL_ONBOARDING}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`,
                                 {
                                     method: 'PUT',
                                     headers: { 'Content-Type': 'application/json' },
@@ -274,7 +273,7 @@ const KnowledgeBase: React.FC = () => {
                     console.log('🎯 Auto-completing onboarding step 7 after document upload...');
 
                     const stepResponse = await fetch(
-                        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`,
+                        `${import.meta.env.VITE_API_URL_ONBOARDING}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`,
                         {
                             method: 'PUT',
                             headers: {

@@ -22,7 +22,6 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 const KYCVerification = () => {
-  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
   const [verificationMethod, setVerificationMethod] = useState('automatic');
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [verificationStatus, setVerificationStatus] = useState<'pending' | 'in_progress' | 'completed' | 'failed'>('pending');
@@ -56,7 +55,7 @@ const KYCVerification = () => {
 
       // Vérifier l'état de l'étape 2 via l'API d'onboarding
       const response = await axios.get(
-        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/2`
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/2`
       );
 
       console.log('📡 API response for step 2:', response.data);
@@ -154,7 +153,7 @@ const KYCVerification = () => {
 
       // Marquer l'étape 2 comme complétée
       const stepResponse = await axios.put(
-        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/2`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/2`,
         { status: 'completed' }
       );
 

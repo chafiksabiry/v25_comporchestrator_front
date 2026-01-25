@@ -19,13 +19,15 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 const KnowledgeBase = () => {
-  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
   const [expandedSection, setExpandedSection] = useState<string | null>('product');
   const [searchQuery, setSearchQuery] = useState('');
   const [isStepCompleted, setIsStepCompleted] = useState(false);
   const [articles, setArticles] = useState<any[]>([]);
 
   const companyId = Cookies.get('companyId');
+
+  // Define API URL with fallback
+  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
 
   // Vérifier l'état de l'étape au chargement
   useEffect(() => {
