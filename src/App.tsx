@@ -47,16 +47,27 @@ function App() {
       if (userId) {
         try {
           const registrationBackendUrl = import.meta.env.VITE_REGISTRATION_BACKEND_URL;
+          console.log('Fetching user details for userId:', userId);
+          console.log('Registration backend URL:', registrationBackendUrl);
           const response = await fetch(`${registrationBackendUrl}/api/users/${userId}`);
+          console.log('Response status:', response.status);
           if (response.ok) {
             const userData = await response.json();
+            console.log('User data received:', userData);
             if (userData.fullName) {
+              console.log('Setting user full name to:', userData.fullName);
               setUserFullName(userData.fullName);
+            } else {
+              console.log('No fullName in user data');
             }
+          } else {
+            console.error('Response not OK:', response.status, response.statusText);
           }
         } catch (error) {
           console.error('Error fetching user details:', error);
         }
+      } else {
+        console.log('No userId found in cookies');
       }
     };
 
