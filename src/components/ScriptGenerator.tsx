@@ -318,7 +318,7 @@ const ScriptGenerator: React.FC = () => {
         setGigsError(null);
 
         try {
-            const gigsApiUrl = import.meta.env.VITE_GIGS_API_URL;
+            const gigsApiUrl = import.meta.env.VITE_GIGS_API_URL || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
             if (!gigsApiUrl) {
                 throw new Error('Gigs API URL not configured');
             }
