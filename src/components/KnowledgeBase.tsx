@@ -503,89 +503,97 @@ const KnowledgeBase: React.FC = () => {
   // Unified handleView for both documents and call recordings
   const handleView = async (item: any) => {
     if (item.isCallRecording || item.recordingUrl) {
-      // Handle call recording view
-      setSelectedItem(item);
-      setIsModalOpen(true);
-      // Fetch summary
-      if (!documentAnalysis[item.id] || !(documentAnalysis[item.id] as CallAnalysis).summary) {
-        setLoadingSummary(prev => ({ ...prev, [item.id]: true }));
-        try {
-          const summaryResponse = await apiClient.post(`/call-recordings/${item.id}/analyze/summary`);
-          setDocumentAnalysis(prev => ({
-            ...prev,
-            [item.id]: {
-              ...(prev[item.id] || {}),
-              summary: summaryResponse.data.summary
-            }
-          }));
-        } catch (error) {
-          setDocumentAnalysis(prev => ({
-            ...prev,
-            [item.id]: {
-              ...(prev[item.id] || {}),
-              summary: { keyIdeas: [], lastUpdated: null, error: 'Failed to load summary.' }
-            }
-          }));
-        } finally {
-          setLoadingSummary(prev => ({ ...prev, [item.id]: false }));
+      // Handle call recording view - toggle inline display
+      if (selectedItem?.id === item.id) {
+        // If clicking the same item, close it
+        setSelectedItem(null);
+      } else {
+        setSelectedItem(item);
+        // Fetch summary
+        if (!documentAnalysis[item.id] || !(documentAnalysis[item.id] as CallAnalysis).summary) {
+          setLoadingSummary(prev => ({ ...prev, [item.id]: true }));
+          try {
+            const summaryResponse = await apiClient.post(`/call-recordings/${item.id}/analyze/summary`);
+            setDocumentAnalysis(prev => ({
+              ...prev,
+              [item.id]: {
+                ...(prev[item.id] || {}),
+                summary: summaryResponse.data.summary
+              }
+            }));
+          } catch (error) {
+            setDocumentAnalysis(prev => ({
+              ...prev,
+              [item.id]: {
+                ...(prev[item.id] || {}),
+                summary: { keyIdeas: [], lastUpdated: null, error: 'Failed to load summary.' }
+              }
+            }));
+          } finally {
+            setLoadingSummary(prev => ({ ...prev, [item.id]: false }));
+          }
         }
-      }
-      // Fetch transcription
-      if (!documentAnalysis[item.id] || !(documentAnalysis[item.id] as CallAnalysis).transcription) {
-        setLoadingTranscription(prev => ({ ...prev, [item.id]: true }));
-        try {
-          const transcriptionResponse = await apiClient.post(`/call-recordings/${item.id}/analyze/transcription`);
-          setDocumentAnalysis(prev => ({
-            ...prev,
-            [item.id]: {
-              ...(prev[item.id] || {}),
-              transcription: transcriptionResponse.data.transcription
-            }
-          }));
-          setTranscriptionShowCount(prev => ({ ...prev, [item.id]: TRANSCRIPTION_PAGE_SIZE }));
-        } catch (error) {
-          setDocumentAnalysis(prev => ({
-            ...prev,
-            [item.id]: {
-              ...(prev[item.id] || {}),
-              transcription: { status: 'failed', segments: [], lastUpdated: null, error: 'Failed to load transcription.' }
-            }
-          }));
-        } finally {
-          setLoadingTranscription(prev => ({ ...prev, [item.id]: false }));
+        // Fetch transcription
+        if (!documentAnalysis[item.id] || !(documentAnalysis[item.id] as CallAnalysis).transcription) {
+          setLoadingTranscription(prev => ({ ...prev, [item.id]: true }));
+          try {
+            const transcriptionResponse = await apiClient.post(`/call-recordings/${item.id}/analyze/transcription`);
+            setDocumentAnalysis(prev => ({
+              ...prev,
+              [item.id]: {
+                ...(prev[item.id] || {}),
+                transcription: transcriptionResponse.data.transcription
+              }
+            }));
+            setTranscriptionShowCount(prev => ({ ...prev, [item.id]: TRANSCRIPTION_PAGE_SIZE }));
+          } catch (error) {
+            setDocumentAnalysis(prev => ({
+              ...prev,
+              [item.id]: {
+                ...(prev[item.id] || {}),
+                transcription: { status: 'failed', segments: [], lastUpdated: null, error: 'Failed to load transcription.' }
+              }
+            }));
+          } finally {
+            setLoadingTranscription(prev => ({ ...prev, [item.id]: false }));
+          }
         }
-      }
-      // Fetch scoring
-      if (!documentAnalysis[item.id] || !(documentAnalysis[item.id] as any).scoring) {
-        setLoadingScoring(prev => ({ ...prev, [item.id]: true }));
-        try {
-          const scoringResponse = await apiClient.post(`/call-recordings/${item.id}/analyze/scoring`);
-          setDocumentAnalysis(prev => ({
-            ...prev,
-            [item.id]: {
-              ...(prev[item.id] || {}),
-              scoring: scoringResponse.data.scoring
-            }
-          }));
-        } catch (error) {
-          setDocumentAnalysis(prev => ({
-            ...prev,
-            [item.id]: {
-              ...(prev[item.id] || {}),
-              scoring: { status: 'failed', result: null, lastUpdated: null, error: 'Failed to load scoring.' }
-            }
-          }));
-        } finally {
-          setLoadingScoring(prev => ({ ...prev, [item.id]: false }));
+        // Fetch scoring
+        if (!documentAnalysis[item.id] || !(documentAnalysis[item.id] as any).scoring) {
+          setLoadingScoring(prev => ({ ...prev, [item.id]: true }));
+          try {
+            const scoringResponse = await apiClient.post(`/call-recordings/${item.id}/analyze/scoring`);
+            setDocumentAnalysis(prev => ({
+              ...prev,
+              [item.id]: {
+                ...(prev[item.id] || {}),
+                scoring: scoringResponse.data.scoring
+              }
+            }));
+          } catch (error) {
+            setDocumentAnalysis(prev => ({
+              ...prev,
+              [item.id]: {
+                ...(prev[item.id] || {}),
+                scoring: { status: 'failed', result: null, lastUpdated: null, error: 'Failed to load scoring.' }
+              }
+            }));
+          } finally {
+            setLoadingScoring(prev => ({ ...prev, [item.id]: false }));
+          }
         }
       }
     } else {
-      // Handle document view
-      setSelectedDocumentForAnalysis(item);
-      setShowAnalysisPage(true);
-      // Always trigger analysis if it doesn't exist or is incomplete
-      if (!documentAnalysis[item.id] || !documentAnalysis[item.id].summary) {
-        await analyzeDocument(item.id);
+      // Handle document view - toggle inline display
+      if (selectedDocumentForAnalysis?.id === item.id) {
+        // If clicking the same document, close it
+        setSelectedDocumentForAnalysis(null);
+      } else {
+        setSelectedDocumentForAnalysis(item);
+        // Always trigger analysis if it doesn't exist or is incomplete
+        if (!documentAnalysis[item.id] || !documentAnalysis[item.id].summary) {
+          await analyzeDocument(item.id);
+        }
       }
     }
   };
@@ -899,112 +907,330 @@ const KnowledgeBase: React.FC = () => {
               // Charger la durée si pas déjà chargée
               fetchAudioDuration(call.recordingUrl, call.id);
               return (
-                <div key={call.id} className="bg-white p-5 rounded-lg shadow-sm border border-gray-100">
-                  <div className="flex items-start">
-                    <div className="p-3 rounded-lg bg-purple-100 mr-4 flex-shrink-0">
-                      <Mic size={20} className="text-purple-500" />
-                    </div>
-                    <div className="flex-grow min-w-0">
-                      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                        <h3 className="text-lg font-medium text-gray-900 truncate">{call.contactId}</h3>
-                        <div className="flex items-center space-x-2 flex-shrink-0">
-                          <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">
-                            Call Recording
-                          </span>
-                          {call.processingOptions?.sentiment && call.sentiment && (
-                            <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${call.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
+                <React.Fragment key={call.id}>
+                  <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100">
+                    <div className="flex items-start">
+                      <div className="p-3 rounded-lg bg-purple-100 mr-4 flex-shrink-0">
+                        <Mic size={20} className="text-purple-500" />
+                      </div>
+                      <div className="flex-grow min-w-0">
+                        <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                          <h3 className="text-lg font-medium text-gray-900 truncate">{call.contactId}</h3>
+                          <div className="flex items-center space-x-2 flex-shrink-0">
+                            <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">
+                              Call Recording
+                            </span>
+                            {call.processingOptions?.sentiment && call.sentiment && (
+                              <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${call.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
                                 call.sentiment === 'negative' ? 'bg-red-100 text-red-800' :
                                   'bg-gray-100 text-gray-800'
-                              }`}>
-                              {call.sentiment.charAt(0).toUpperCase() + call.sentiment.slice(1)} Sentiment
-                            </span>
-                          )}
-                          <button
-                            onClick={() => handleView(call)}
-                            className="text-blue-600 hover:text-blue-800 p-1"
-                            title="View details"
-                          >
-                            <Eye size={16} />
-                          </button>
-                          <button
-                            className="text-red-600 hover:text-red-800 p-1"
-                            onClick={() => handleDelete(call.id)}
-                            title="Delete call recording"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                                }`}>
+                                {call.sentiment.charAt(0).toUpperCase() + call.sentiment.slice(1)} Sentiment
+                              </span>
+                            )}
+                            <button
+                              onClick={() => handleView(call)}
+                              className="text-blue-600 hover:text-blue-800 p-1"
+                              title="View details"
+                            >
+                              <Eye size={16} />
+                            </button>
+                            <button
+                              className="text-red-600 hover:text-red-800 p-1"
+                              onClick={() => handleDelete(call.id)}
+                              title="Delete call recording"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-500 mb-3 whitespace-nowrap">
-                        <Clock size={14} className="mr-1 flex-shrink-0" />
-                        {formatDate(call.date)} • {callDurations[call.id] !== undefined ? formatTime(callDurations[call.id]) : '...'}
-                      </div>
-                      <p className="text-sm text-gray-700 mb-3 break-words overflow-hidden">{call.summary}</p>
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {call.tags.map((tag: string, index: number) => (
-                          <span
-                            key={`${call.id}-${tag}`}
-                            className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 whitespace-nowrap"
-                          >
-                            {tag}
-                          </span>
-                        ))}
+                        <div className="flex items-center text-sm text-gray-500 mb-3 whitespace-nowrap">
+                          <Clock size={14} className="mr-1 flex-shrink-0" />
+                          {formatDate(call.date)} • {callDurations[call.id] !== undefined ? formatTime(callDurations[call.id]) : '...'}
+                        </div>
+                        <p className="text-sm text-gray-700 mb-3 break-words overflow-hidden">{call.summary}</p>
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {call.tags.map((tag: string, index: number) => (
+                            <span
+                              key={`${call.id}-${tag}`}
+                              className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 whitespace-nowrap"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+
+                  {/* Inline Call Recording Analysis */}
+                  {selectedItem?.id === call.id && (
+                    <div className="bg-purple-50 border-l-4 border-purple-500 p-6 rounded-lg shadow-sm ml-4 mb-4">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center">
+                          <Mic size={20} className="text-purple-600 mr-2" />
+                          <h3 className="text-xl font-semibold text-gray-900">Call Recording Details</h3>
+                        </div>
+                        <button
+                          onClick={() => setSelectedItem(null)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X size={20} />
+                        </button>
+                      </div>
+
+                      <div className="mb-6">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h2 className="text-2xl font-semibold text-gray-900 mb-2">{selectedItem.contactId}</h2>
+                            <p className="text-gray-600 mb-2">{selectedItem.summary}</p>
+                            <div className="flex items-center text-gray-500 mb-2">
+                              <Clock size={16} className="mr-2" />
+                              {formatDate(selectedItem.date)} • {callDurations[selectedItem.id] !== undefined ? formatTime(callDurations[selectedItem.id]) : '...'}
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                            <button
+                              className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                              onClick={() => handlePlayRecording(selectedItem.recordingUrl, selectedItem.id)}
+                              title={playingCallId === selectedItem.id && isPlaying ? "Pause" : "Play"}
+                            >
+                              {playingCallId === selectedItem.id && isPlaying ? <Pause size={18} /> : <Play size={18} />}
+                              <span className="ml-2">{playingCallId === selectedItem.id && isPlaying ? 'Pause' : 'Play'} Audio</span>
+                            </button>
+                            <span className="text-xs text-gray-500">
+                              {playingCallId === selectedItem.id ? `${formatTime(currentTime)} / ${formatTime(duration)}` : '0:00 / 0:00'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Call Analysis Section */}
+                      <div className="mt-6 w-full">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-6">Call Analysis</h2>
+                        {/* Key Points Section */}
+                        <details className="mb-4" open>
+                          <summary className="cursor-pointer text-gray-700 font-semibold py-2">Key Points</summary>
+                          <div className="space-y-4 p-2">
+                            {loadingSummary[selectedItem.id] ? (
+                              <div className="flex items-center space-x-2 text-blue-600">
+                                <Loader2 className="animate-spin" size={20} />
+                                <span>Analyzing call, please wait...</span>
+                              </div>
+                            ) : documentAnalysis[selectedItem.id] && 'summary' in documentAnalysis[selectedItem.id] && (documentAnalysis[selectedItem.id] as CallAnalysis).summary?.keyIdeas?.length > 0 ? (
+                              <>
+                                {(documentAnalysis[selectedItem.id] as CallAnalysis).summary.keyIdeas.map((idea, idx) => (
+                                  <div key={idx} className="bg-gray-50 p-4 rounded-lg">
+                                    <h5 className="font-medium text-gray-900 mb-2">{idea.title}</h5>
+                                    <p className="text-gray-700">{idea.description}</p>
+                                  </div>
+                                ))}
+                                <div className="mt-4 text-sm text-gray-500">
+                                  Last updated: {format(new Date((documentAnalysis[selectedItem.id] as CallAnalysis).summary.lastUpdated), 'PPpp')}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-gray-500 italic">No analysis available yet.</div>
+                            )}
+                          </div>
+                        </details>
+                        {/* Transcription Section */}
+                        <details className="mb-4" open>
+                          <summary className="cursor-pointer text-gray-700 font-semibold py-2">Transcription</summary>
+                          <div className="p-4">
+                            {loadingTranscription[selectedItem.id] ? (
+                              <div className="flex items-center space-x-2 text-blue-600">
+                                <Loader2 className="animate-spin" size={20} />
+                                <span>Generating transcription, please wait...</span>
+                              </div>
+                            ) : (() => {
+                              if (!documentAnalysis || !selectedItem?.id) {
+                                return <div className="text-gray-500 italic">No transcription available yet.</div>;
+                              }
+                              const analysis = documentAnalysis[selectedItem.id];
+                              if (!analysis || !('transcription' in analysis)) {
+                                return <div className="text-gray-500 italic">No transcription available yet.</div>;
+                              }
+                              const callAnalysis = analysis as CallAnalysis;
+                              if (callAnalysis.transcription?.status !== 'completed' || !callAnalysis.transcription?.segments?.length) {
+                                return <div className="text-gray-500 italic">No transcription available yet.</div>;
+                              }
+                              const showCount = transcriptionShowCount[selectedItem.id] || TRANSCRIPTION_PAGE_SIZE;
+                              const segmentsToShow = callAnalysis.transcription.segments.slice(0, showCount);
+                              return (
+                                <div className="space-y-4">
+                                  {segmentsToShow.map((segment: any, idx: number) => (
+                                    <div key={idx} className="bg-gray-50 p-4 rounded-lg">
+                                      <div className="flex justify-between items-center mb-2 text-sm text-gray-500">
+                                        <span>{typeof segment.start === 'string' ? segment.start : formatTime(segment.start)} - {typeof segment.end === 'string' ? segment.end : formatTime(segment.end)}</span>
+                                        {segment.speaker && <span className="font-medium">{segment.speaker}</span>}
+                                      </div>
+                                      <p className="text-gray-700">{segment.text}</p>
+                                    </div>
+                                  ))}
+                                  {showCount < callAnalysis.transcription.segments.length && (
+                                    <button
+                                      className="mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                      onClick={() => setTranscriptionShowCount(prev => ({ ...prev, [selectedItem.id]: showCount + TRANSCRIPTION_PAGE_SIZE }))}
+                                    >
+                                      Show more
+                                    </button>
+                                  )}
+                                  {showCount > TRANSCRIPTION_PAGE_SIZE && (
+                                    <button
+                                      className="mt-2 ml-2 px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                                      onClick={() => setTranscriptionShowCount(prev => ({ ...prev, [selectedItem.id]: TRANSCRIPTION_PAGE_SIZE }))}
+                                    >
+                                      Show less
+                                    </button>
+                                  )}
+                                  {callAnalysis.transcription.lastUpdated && (
+                                    <div className="mt-4 text-sm text-gray-500">
+                                      Last updated: {format(new Date(callAnalysis.transcription.lastUpdated), 'PPpp')}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </details>
+                        {/* Scoring Section */}
+                        <details className="mb-4" open>
+                          <summary className="cursor-pointer text-gray-700 font-semibold py-2">Scoring</summary>
+                          <div className="p-4">
+                            {loadingScoring[selectedItem.id] ? (
+                              <div className="flex items-center space-x-2 text-blue-600">
+                                <Loader2 className="animate-spin" size={20} />
+                                <span>Generating scoring, please wait...</span>
+                              </div>
+                            ) : (() => {
+                              if (!documentAnalysis || !selectedItem?.id) {
+                                return <div className="text-gray-500 italic">No scoring available yet.</div>;
+                              }
+                              const analysis = documentAnalysis[selectedItem.id];
+                              if (!analysis || !('scoring' in analysis)) {
+                                return <div className="text-gray-500 italic">No scoring available yet.</div>;
+                              }
+                              const scoring = (analysis as any).scoring;
+                              if (scoring?.status !== 'completed' || !scoring?.result) {
+                                return <div className="text-gray-500 italic">No scoring available yet.</div>;
+                              }
+                              return (
+                                <div className="space-y-4">
+                                  {Object.entries(scoring.result).map(([section, value]: [string, any]) => (
+                                    <div key={section} className="bg-gray-50 p-4 rounded-lg">
+                                      <div className="flex justify-between items-center mb-2 text-sm text-gray-500">
+                                        <span className="font-medium">{section}</span>
+                                        <span>Score: {value.score}</span>
+                                      </div>
+                                      <p className="text-gray-700">{value.feedback}</p>
+                                    </div>
+                                  ))}
+                                  {scoring.lastUpdated && (
+                                    <div className="mt-4 text-sm text-gray-500">
+                                      Last updated: {format(new Date(scoring.lastUpdated), 'PPpp')}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </details>
+                      </div>
+                    </div>
+                  )}
+                </React.Fragment>
               );
             } else {
               // Document item
               return (
-                <div key={item.id} className="bg-white p-5 rounded-lg shadow-sm border border-gray-100">
-                  <div className="flex items-start">
-                    <div className="p-3 rounded-lg bg-gray-100 mr-4 flex-shrink-0">
-                      {getItemIcon(item.type)}
-                    </div>
-                    <div className="flex-grow min-w-0">
-                      <h3 className="text-lg font-medium text-gray-900 mb-1 truncate">{item.name}</h3>
-                      <p className="text-sm text-gray-500 mb-3 break-words line-clamp-2">{item.description}</p>
-
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {item.tags.map((tag: string, index: number) => (
-                          <span
-                            key={`${item.id}-${tag}`}
-                            className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 whitespace-nowrap"
-                          >
-                            {tag}
-                          </span>
-                        ))}
+                <React.Fragment key={item.id}>
+                  <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100">
+                    <div className="flex items-start">
+                      <div className="p-3 rounded-lg bg-gray-100 mr-4 flex-shrink-0">
+                        {getItemIcon(item.type)}
                       </div>
+                      <div className="flex-grow min-w-0">
+                        <h3 className="text-lg font-medium text-gray-900 mb-1 truncate">{item.name}</h3>
+                        <p className="text-sm text-gray-500 mb-3 break-words line-clamp-2">{item.description}</p>
 
-                      <div className="flex items-center justify-between">
-                        <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${item.type === 'document' ? 'bg-blue-100 text-blue-800' :
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {item.tags.map((tag: string, index: number) => (
+                            <span
+                              key={`${item.id}-${tag}`}
+                              className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 whitespace-nowrap"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${item.type === 'document' ? 'bg-blue-100 text-blue-800' :
                             item.type === 'audio' ? 'bg-purple-100 text-purple-800' :
                               'bg-gray-100 text-gray-800'
-                          }`}>
-                          {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-                        </span>
+                            }`}>
+                            {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                          </span>
 
-                        <div className="flex space-x-2 flex-shrink-0">
-                          <button
-                            onClick={() => handleView(item)}
-                            className="text-blue-600 hover:text-blue-800 p-1"
-                            title="View details"
-                          >
-                            <Eye size={16} />
-                          </button>
-                          <button
-                            className="text-red-600 hover:text-red-800 p-1"
-                            onClick={() => handleDelete(item.id)}
-                            title="Delete"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          <div className="flex space-x-2 flex-shrink-0">
+                            <button
+                              onClick={() => handleView(item)}
+                              className="text-blue-600 hover:text-blue-800 p-1"
+                              title="View details"
+                            >
+                              <Eye size={16} />
+                            </button>
+                            <button
+                              className="text-red-600 hover:text-red-800 p-1"
+                              onClick={() => handleDelete(item.id)}
+                              title="Delete"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
+
+                  {/* Inline Document Analysis */}
+                  {selectedDocumentForAnalysis?.id === item.id && (
+                    <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg shadow-sm ml-4 mb-4">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center">
+                          <Brain size={20} className="text-blue-600 mr-2" />
+                          <h3 className="text-xl font-semibold text-gray-900">Document Analysis</h3>
+                        </div>
+                        <button
+                          onClick={() => setSelectedDocumentForAnalysis(null)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X size={20} />
+                        </button>
+                      </div>
+
+                      {analyzingDocument === item.id ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="animate-spin text-blue-600 mr-3" size={24} />
+                          <span className="text-gray-600">Analyzing document...</span>
+                        </div>
+                      ) : documentAnalysis[item.id] ? (
+                        renderAnalysisContent(documentAnalysis[item.id], item.id)
+                      ) : (
+                        <div className="text-center py-8">
+                          <p className="text-gray-600 mb-4">No analysis available yet.</p>
+                          <button
+                            onClick={() => analyzeDocument(item.id)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                          >
+                            Analyze Document
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </React.Fragment>
               );
             }
           })}
@@ -1252,8 +1478,8 @@ const KnowledgeBase: React.FC = () => {
                     <button
                       type="button"
                       className={`p-4 rounded-lg border ${uploadType === 'document'
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:bg-gray-50'
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:bg-gray-50'
                         } flex flex-col items-center justify-center`}
                       onClick={() => setUploadType('document')}
                     >
@@ -1264,8 +1490,8 @@ const KnowledgeBase: React.FC = () => {
                     <button
                       type="button"
                       className={`p-4 rounded-lg border ${uploadType === 'audio'
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:bg-gray-50'
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:bg-gray-50'
                         } flex flex-col items-center justify-center`}
                       onClick={() => setUploadType('audio')}
                     >
