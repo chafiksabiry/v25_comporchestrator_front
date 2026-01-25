@@ -253,7 +253,6 @@ const groupScriptByPhase = (script: { phase: string; actor: string; replica: str
 };
 
 const ScriptGenerator: React.FC = () => {
-    const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
     const [isLoading, setIsLoading] = useState(false);
     const [response, setResponse] = useState<ScriptResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -319,9 +318,9 @@ const ScriptGenerator: React.FC = () => {
         setGigsError(null);
 
         try {
-            const gigsApiUrl = import.meta.env.VITE_GIGS_API;
+            const gigsApiUrl = import.meta.env.VITE_GIGS_API_URL;
             if (!gigsApiUrl) {
-                console.warn('Gigs API URL not configured, using fallback');
+                throw new Error('Gigs API URL not configured');
             }
 
             const response = await fetch(`${gigsApiUrl}/gigs/company/${companyId}`);
@@ -346,7 +345,8 @@ const ScriptGenerator: React.FC = () => {
         try {
             const companyId = getCompanyId();
             if (!companyId) throw new Error('Company ID not found');
-            const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API || 'https://v25knowledgebasebackend-production.up.railway.app';
+            const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API;
+            if (!backendUrl) throw new Error('Backend API URL not configured');
 
             // Add status filter to URL if not 'all'
             let url = `${backendUrl}/api/scripts/company/${companyId}`;
@@ -372,7 +372,8 @@ const ScriptGenerator: React.FC = () => {
         setIsLoadingScripts(true);
         setScriptsError(null);
         try {
-            const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API || 'https://v25knowledgebasebackend-production.up.railway.app';
+            const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API;
+            if (!backendUrl) throw new Error('Backend API URL not configured');
             const url = `${backendUrl}/scripts/gig/${gigId}`;
             console.log('[SCRIPTS] Fetching scripts for gigId:', gigId, 'URL:', url);
             const response = await fetch(url);
@@ -408,7 +409,7 @@ const ScriptGenerator: React.FC = () => {
         try {
             const companyId = getCompanyId();
             if (!companyId) throw new Error('Company ID not found');
-            const apiUrl = API_BASE_URL;
+            const apiUrl = import.meta.env.VITE_API_URL_ONBOARDING;
             const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/2/steps/8`;
             const response = await apiClient.put(endpoint, { status: 'completed' });
             console.log('Onboarding progress (script) update response:', response.data);
@@ -502,7 +503,8 @@ const ScriptGenerator: React.FC = () => {
     const handleUpdateScriptStatus = async (scriptId: string, isActive: boolean) => {
         setUpdatingScriptId(scriptId);
         try {
-            const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API || 'https://v25knowledgebasebackend-production.up.railway.app';
+            const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API;
+            if (!backendUrl) throw new Error('Backend API URL not configured');
 
             const response = await fetch(`${backendUrl}/api/scripts/${scriptId}/status`, {
                 method: 'PUT',
@@ -548,7 +550,8 @@ const ScriptGenerator: React.FC = () => {
 
         setDeletingScriptId(scriptId);
         try {
-            const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API || 'https://v25knowledgebasebackend-production.up.railway.app';
+            const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API;
+            if (!backendUrl) throw new Error('Backend API URL not configured');
 
             const response = await fetch(`${backendUrl}/api/scripts/${scriptId}`, {
                 method: 'DELETE',
@@ -586,7 +589,9 @@ const ScriptGenerator: React.FC = () => {
 
         setRegeneratingScriptId(scriptId);
         try {
-            const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API || 'https://v25knowledgebasebackend-production.up.railway.app';
+            const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API;
+            const companyId = getCompanyId();
+            if (!backendUrl) throw new Error('Backend API URL not configured');
             if (!companyId) throw new Error('Company ID not found');
 
             const response = await fetch(`${backendUrl}/api/scripts/${scriptId}/regenerate`, {
@@ -628,7 +633,9 @@ const ScriptGenerator: React.FC = () => {
     const handleRefineScriptPart = async (scriptId: string, stepIndex: number, refinementPrompt: string) => {
         try {
             setProcessingSteps(prev => [...prev, stepIndex]);
-            const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API || 'https://v25knowledgebasebackend-production.up.railway.app';
+            const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API;
+            const companyId = getCompanyId();
+            if (!backendUrl) throw new Error('Backend API URL not configured');
             if (!companyId) throw new Error('Company ID not found');
 
             const response = await fetch(`${backendUrl}/api/scripts/${scriptId}/refine`, {
@@ -677,7 +684,8 @@ const ScriptGenerator: React.FC = () => {
             // Mettre à jour l'état avant la requête
             setProcessingSteps(prev => [...prev, stepIndex]);
 
-            const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API || 'https://v25knowledgebasebackend-production.up.railway.app';
+            const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API;
+            if (!backendUrl) throw new Error('Backend API URL not configured');
 
             // Petit délai pour assurer que l'état est mis à jour
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -725,7 +733,8 @@ const ScriptGenerator: React.FC = () => {
     // Add new handlers for replica management
     const handleAddReplica = async (scriptId: string, phase: string, actor: string) => {
         try {
-            const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API || 'https://v25knowledgebasebackend-production.up.railway.app';
+            const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API;
+            if (!backendUrl) throw new Error('Backend API URL not configured');
 
             // Find the index where to insert the new replica
             const phaseSteps = selectedScript?.script.filter(s => s.phase === phase) || [];
@@ -782,7 +791,8 @@ const ScriptGenerator: React.FC = () => {
         }
 
         try {
-            const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API || 'https://v25knowledgebasebackend-production.up.railway.app';
+            const backendUrl = import.meta.env.VITE_BACKEND_API;
+            if (!backendUrl) throw new Error('Backend API URL not configured');
 
             // Use the new dedicated endpoint
             const response = await fetch(`${backendUrl}/api/scripts/${scriptId}/replicas/${stepIndex}`, {

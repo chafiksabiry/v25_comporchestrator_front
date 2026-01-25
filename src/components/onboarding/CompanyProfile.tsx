@@ -55,7 +55,6 @@ interface CompanyResponse {
 }
 
 function CompanyProfile() {
-  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
   const [company, setCompany] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -127,7 +126,7 @@ function CompanyProfile() {
 
       // Vérifier l'état de l'étape 1 via l'API d'onboarding principale
       const response = await axios.get(
-        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding`
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
       );
 
       console.log('📡 API response for onboarding:', response.data);
@@ -340,7 +339,7 @@ function CompanyProfile() {
     try {
       setLoading(true);
       const response = await axios.get<CompanyResponse>(
-        `${API_BASE_URL}/companies/${companyId}/details`
+        `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/details`
       );
       setCompany(response.data.data);
       if ((response.data.data as any).logo) {
@@ -403,7 +402,7 @@ function CompanyProfile() {
 
       // Sauvegarder les informations de l'entreprise
       await axios.put(
-        `${API_BASE_URL}/companies/${companyId}`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}`,
         company
       );
 
@@ -417,7 +416,7 @@ function CompanyProfile() {
 
           // Récupérer l'état actuel de l'onboarding
           const onboardingResponse = await axios.get(
-            `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding`
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
           );
 
           const currentCompletedSteps = (onboardingResponse.data as any)?.completedSteps || [];
@@ -425,7 +424,7 @@ function CompanyProfile() {
 
           // Mettre à jour l'onboarding avec l'étape 1 marquée comme complétée
           const updateResponse = await axios.put(
-            `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding`,
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`,
             {
               completedSteps: newCompletedSteps,
               currentPhase: 1

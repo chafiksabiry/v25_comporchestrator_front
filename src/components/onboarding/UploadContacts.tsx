@@ -67,20 +67,20 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
   // Function to cancel processing
   const cancelProcessing = () => {
-    
+
     // Abort any ongoing OpenAI requests
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-    
+
     // Stop all processing immediately
     setIsProcessing(false);
     processingRef.current = false;
     setUploadProgress(0);
     setUploadError(null);
     setUploadSuccess(false);
-    
+
     // Reset all processing states
     setProcessingProgress({
       current: 0,
@@ -88,30 +88,30 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       status: 'Cancelled by user (Back to Onboarding)',
       isProcessing: false
     });
-    
-      // Clear all storage items
-      localStorage.removeItem('uploadProcessing');
-      localStorage.removeItem('parsedLeads');
+
+    // Clear all storage items
+    localStorage.removeItem('uploadProcessing');
+    localStorage.removeItem('parsedLeads');
     localStorage.removeItem('validationResults');
-      sessionStorage.removeItem('uploadProcessing');
-      sessionStorage.removeItem('parsedLeads');
+    sessionStorage.removeItem('uploadProcessing');
+    sessionStorage.removeItem('parsedLeads');
     sessionStorage.removeItem('validationResults');
-    
+
     // Remove processing indicators
     document.body.removeAttribute('data-processing');
-    
+
     // Reset file-related states
     setSelectedFile(null);
     setParsedLeads([]);
     setValidationResults(null);
-    
+
     // Reset file input
     const fileInput = document.getElementById('file-upload') as HTMLInputElement;
     if (fileInput) {
       fileInput.value = '';
     }
-    
-    
+
+
     // Call the parent callback if provided
     if (onCancelProcessing) {
       onCancelProcessing();
@@ -120,21 +120,21 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
   // Emergency cancel function that can be called even during processing
   const emergencyCancel = () => {
-    
+
     // Force abort any ongoing requests
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-    
+
     // Force stop all processing
     processingRef.current = false;
     setIsProcessing(false);
-    
+
     // Clear all storage immediately
     localStorage.clear();
     sessionStorage.clear();
-    
+
     // Reset all states
     setUploadProgress(0);
     setUploadError(null);
@@ -142,10 +142,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     setParsedLeads([]);
     setValidationResults(null);
     setSelectedFile(null);
-    
+
     // Remove all processing indicators
     document.body.removeAttribute('data-processing');
-    
+
     // Force reset all progress
     setProcessingProgress({
       current: 0,
@@ -153,7 +153,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       status: 'EMERGENCY CANCELLED',
       isProcessing: false
     });
-    
+
   };
 
   // Expose both cancel functions to parent component
@@ -169,13 +169,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
   // Add a ref to track if the component has been initialized
   const componentInitializedRef = useRef(false);
-  
+
   // Add a ref to track if we should prevent re-mounting
   const preventRemountRef = useRef(false);
-  
+
   // Add AbortController for cancelling OpenAI requests
   const abortControllerRef = useRef<AbortController | null>(null);
-  
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['all']);
@@ -222,7 +222,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   const processingRef = useRef(false);
   const dataRestoredRef = useRef(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // State for progress tracking
   const [processingProgress, setProcessingProgress] = useState<{
     current: number;
@@ -265,10 +265,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const limitedData = limitDataSize(data, 50); // Limit to 50 items for storage
       const compressedData = compressData(limitedData);
       const dataString = JSON.stringify(compressedData);
-      
+
       // Check data size (1MB limit for localStorage, 3MB for sessionStorage)
       const maxSize = useSessionStorage ? 3 * 1024 * 1024 : 1 * 1024 * 1024;
-      
+
       if (dataString.length > maxSize) {
         if (useSessionStorage) {
           console.warn(`⚠️ Data for ${key} too large for sessionStorage (${Math.round(dataString.length / 1024 / 1024)}MB)`);
@@ -278,7 +278,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           return safeStorageSet(key, data, true);
         }
       }
-      
+
       if (useSessionStorage) {
         sessionStorage.setItem(key, dataString);
       } else {
@@ -287,15 +287,15 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       return true;
     } catch (error) {
       console.warn(`⚠️ Storage full for ${key}, cleaning up and retrying`);
-      
+
       // Clean up storage and try again
       cleanupLocalStorage();
-      
+
       try {
         const limitedData = limitDataSize(data, 25); // Further limit to 25 items
         const compressedData = compressData(limitedData);
         const dataString = JSON.stringify(compressedData);
-        
+
         if (useSessionStorage) {
           sessionStorage.setItem(key, dataString);
         } else {
@@ -322,13 +322,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       if (data) {
         return JSON.parse(data);
       }
-      
+
       // Try sessionStorage if not found in localStorage
       data = sessionStorage.getItem(key);
       if (data) {
         return JSON.parse(data);
       }
-      
+
       return null;
     } catch (error) {
       console.error(`❌ Error parsing data for ${key}:`, error);
@@ -384,17 +384,17 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       // Remove old processing data
       localStorage.removeItem('uploadProcessing');
       sessionStorage.removeItem('uploadProcessing');
-      
+
       // Keep only essential data, remove large datasets
       const keysToKeep = ['companyOnboardingProgress', 'kycVerificationStepCompleted'];
       const allKeys = Object.keys(localStorage);
-      
+
       allKeys.forEach(key => {
         if (!keysToKeep.includes(key) && (key.includes('leads') || key.includes('parsed'))) {
           localStorage.removeItem(key);
         }
       });
-      
+
       // Also clean sessionStorage
       const sessionKeys = Object.keys(sessionStorage);
       sessionKeys.forEach(key => {
@@ -402,7 +402,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           sessionStorage.removeItem(key);
         }
       });
-      
+
       console.log('🧹 Cleaned up localStorage and sessionStorage to free space');
     } catch (error) {
       console.error('❌ Error cleaning up localStorage:', error);
@@ -415,7 +415,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     if (!processingRef.current) {
       return;
     }
-    
+
     // Update both progress states immediately - no artificial delays
     setUploadProgress(progress);
     setProcessingProgress({
@@ -431,7 +431,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     const isCurrentlyProcessing = localStorage.getItem('uploadProcessing') === 'true';
     const hasSelectedFile = selectedFile !== null;
     const hasParsedLeads = parsedLeads.length > 0;
-    
+
     // If we have processing state but no file and no leads, clean it up
     if (isCurrentlyProcessing && !hasSelectedFile && !hasParsedLeads) {
       setIsProcessing(false);
@@ -440,30 +440,30 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       sessionStorage.removeItem('uploadProcessing');
       return;
     }
-    
+
     if (isCurrentlyProcessing && (hasSelectedFile || hasParsedLeads)) {
       processingRef.current = true;
       setIsProcessing(true);
-      
+
       // Prevent any other effects from running during processing
       return () => {
         // Cleanup function to prevent interference
       };
     }
-    
+
     // Restore parsed leads if they exist and we haven't already restored them
     if (!dataRestoredRef.current && !componentInitializedRef.current) {
       const savedParsedLeads = safeStorageGet('parsedLeads');
       const savedValidationResults = safeStorageGet('validationResults');
-      
+
       if (savedParsedLeads && !parsedLeads.length) {
         setParsedLeads(savedParsedLeads);
       }
-      
+
       if (savedValidationResults && !validationResults) {
         setValidationResults(savedValidationResults);
       }
-      
+
       dataRestoredRef.current = true;
       componentInitializedRef.current = true;
     }
@@ -481,12 +481,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         setParsedLeads(prev => prev.map(lead => ({ ...lead, _memoryOnly: true })));
       }
     }
-    
+
     // Ensure cancelProcessing function is always available
     if (!(window as any).cancelUploadProcessing) {
       (window as any).cancelUploadProcessing = cancelProcessing;
     }
-    
+
     // Ensure emergency cancel function is always available
     if (!(window as any).emergencyCancelUpload) {
       (window as any).emergencyCancelUpload = emergencyCancel;
@@ -537,13 +537,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
 
 
-  const processFileWithBackend = async (file: File): Promise<{leads: any[], validation: any}> => {
+  const processFileWithBackend = async (file: File): Promise<{ leads: any[], validation: any }> => {
     try {
       // Check if processing was cancelled
       if (!processingRef.current) {
         throw new Error('Processing cancelled by user');
       }
-      
+
       // Create new AbortController for this request
       abortControllerRef.current = new AbortController();
 
@@ -592,13 +592,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
       // Parse response immediately
       const data = await response.json();
-      
+
       if (!data.success) {
         throw new Error(data.error || 'Backend processing failed');
       }
 
       const result = data.data;
-      
+
       if (!result || !result.leads || !Array.isArray(result.leads)) {
         throw new Error('Invalid response format from backend');
       }
@@ -636,11 +636,11 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         toast.error('Please select a gig first before uploading a file');
         return;
       }
-      
+
       // Store current leads before resetting
       const currentLeads = [...leads];
       const currentFilteredLeads = [...filteredLeads];
-      
+
       // Reset file processing state only (keep existing leads)
       setSelectedFile(null);
       setUploadError(null);
@@ -652,10 +652,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       // Don't clear existing leads - they will be restored after processing
       setShowSaveButton(true);
       setShowFileName(true);
-      
+
       // Reset OpenAI processing progress
       resetProgress();
-      
+
       // Clear ALL localStorage and sessionStorage items
       localStorage.removeItem('parsedLeads');
       localStorage.removeItem('validationResults');
@@ -664,17 +664,17 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       sessionStorage.removeItem('uploadProcessing');
       sessionStorage.removeItem('parsedLeads');
       sessionStorage.removeItem('validationResults');
-      
+
       // Remove processing indicators
       document.body.removeAttribute('data-processing');
       processingRef.current = false;
-      
+
       // Reset file input to allow re-upload of same file
       const fileInput = document.getElementById('file-upload') as HTMLInputElement;
       if (fileInput) {
         fileInput.value = '';
       }
-      
+
       // Now set the new file and start processing
       setSelectedFile(file);
       setUploadError(null);
@@ -682,19 +682,19 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       setIsProcessing(true);
       setUploadProgress(10);
       setParsedLeads([]);
-      
+
       // Add processing indicator to prevent refresh
       document.body.setAttribute('data-processing', 'true');
       processingRef.current = true;
       localStorage.setItem('uploadProcessing', 'true');
       sessionStorage.setItem('uploadProcessing', 'true');
-      
+
       try {
-            // Check if processing was cancelled before starting
-            if (!processingRef.current) {
-              return;
-            }
-            
+        // Check if processing was cancelled before starting
+        if (!processingRef.current) {
+          return;
+        }
+
         // Process with backend - optimized
         const result = await processFileWithBackend(file);
 
@@ -710,13 +710,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         if (result.validation) {
           setValidationResults(result.validation);
         }
-        
+
         setParsedLeads(result.leads);
-        
+
         // Store results safely - only if not too large
         const leadsStored = safeStorageSet('parsedLeads', result.leads);
         const validationStored = safeStorageSet('validationResults', result.validation);
-        
+
         if (!leadsStored) {
           console.warn('⚠️ Could not save leads to storage - data too large, keeping in memory only');
           setDataTooLarge(true);
@@ -724,16 +724,16 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         if (!validationStored) {
           console.warn('⚠️ Could not save validation results to storage - data too large');
         }
-        
+
         // Restore existing leads after processing
         if (currentLeads.length > 0) {
           setLeads(currentLeads);
           setFilteredLeads(currentFilteredLeads);
         }
-        
+
         setIsProcessing(false);
         setUploadProgress(100);
-        
+
         // Remove processing indicator
         document.body.removeAttribute('data-processing');
         processingRef.current = false;
@@ -755,7 +755,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       setSelectedChannels(['all']);
       return;
     }
-    
+
     if (selectedChannels.includes('all')) {
       setSelectedChannels([channelId]);
       return;
@@ -771,13 +771,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
   const handleSaveLeads = async () => {
     if (!parsedLeads || parsedLeads.length === 0) return;
-    
+
     // Début de la sauvegarde (séparé du processing)
     setIsSavingLeads(true);
     setSavedLeadsCount(0);
     setRecentlySavedLeads([]);
     setShowSaveButton(false);
-    
+
     // Utiliser la référence pour suivre l'état de traitement de manière fiable
     processingRef.current = true;
 
@@ -786,7 +786,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const currentUserId = Cookies.get('userId');
       const currentGigId = selectedGigId;
       const currentCompanyId = Cookies.get('companyId');
-      
+
       // Debug: Log the IDs being used for lead saving
       console.log('💾 Saving leads with IDs:');
       console.log(`   currentUserId: ${currentUserId}`);
@@ -794,7 +794,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       console.log(`   currentCompanyId: ${currentCompanyId}`);
       console.log(`   Cookie gigId: ${Cookies.get('gigId')}`);
       console.log(`   selectedGigId: ${selectedGigId}`);
-      
+
       const leadsForAPI = parsedLeads.map((lead: any) => ({
         userId: lead.userId?.$oid || currentUserId,
         companyId: lead.companyId?.$oid || currentCompanyId,
@@ -813,31 +813,31 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       // Sauvegarder les leads un par un pour affichage immédiat
       const savedLeads: any[] = [];
       const failedLeads: { index: number; error: string }[] = [];
-      
+
       for (let i = 0; i < leadsForAPI.length; i++) {
         // Vérifier si le traitement a été annulé avec la référence fiable
         if (!processingRef.current) {
           throw new Error('Processing cancelled by user');
         }
-        
+
         const lead = leadsForAPI[i];
-        
-          try {
-            const response = await axios.post(
-              `${import.meta.env.VITE_DASHBOARD_API}/leads`, 
-              lead,
-              {
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${currentGigId}:${currentUserId}`
-                },
-                timeout: 10000 // 10 secondes de timeout
-              }
-            );
-            
-            if (response.status === 200 || response.status === 201) {
+
+        try {
+          const response = await axios.post(
+            `${import.meta.env.VITE_DASHBOARD_API}/leads`,
+            lead,
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentGigId}:${currentUserId}`
+              },
+              timeout: 10000 // 10 secondes de timeout
+            }
+          );
+
+          if (response.status === 200 || response.status === 201) {
             savedLeads.push(response.data);
-            
+
             // Ajouter le lead sauvegardé à la liste des leads récemment sauvegardés
             const responseData = response.data as any;
             const savedLead: Lead = {
@@ -852,51 +852,51 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
               Pipeline: responseData.Pipeline || lead.Pipeline,
               updatedAt: new Date().toISOString()
             };
-            
+
             setRecentlySavedLeads(prev => [...prev, savedLead]);
-            
+
             // Ajouter immédiatement le lead sauvegardé à la liste principale
             setLeads(prevLeads => [...prevLeads, savedLead]);
             setFilteredLeads(prevFilteredLeads => [...prevFilteredLeads, savedLead]);
             setTotalCount(prevCount => prevCount + 1);
-            
+
             // Mettre à jour la progression et le compteur immédiatement
             const progress = Math.round(((i + 1) / leadsForAPI.length) * 100);
             setUploadProgress(progress);
             setSavedLeadsCount(savedLeads.length);
-            
+
             // Les leads sont maintenant ajoutés en temps réel, plus besoin de fetchLeads
           } else {
             failedLeads.push({ index: i, error: response.statusText });
           }
         } catch (error: any) {
-          failedLeads.push({ 
-            index: i, 
+          failedLeads.push({
+            index: i,
             error: error.message || 'Network error'
           });
         }
-        
+
         // Petite pause entre chaque lead pour éviter de surcharger l'API
         if (i < leadsForAPI.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 50));
         }
       }
-      
+
       // Résultats finaux
       const savedCount = savedLeads.length;
       const totalCount = leadsForAPI.length;
       const failedCount = failedLeads.length;
-      
+
       if (savedCount === totalCount) {
         // Tous les leads ont été sauvegardés
         setUploadSuccess(true);
         setUploadProgress(100);
         toast.success(`Successfully saved ${savedCount} contacts!`);
-        
+
         // Les leads ont été ajoutés en temps réel, effacer seulement les leads parsés
         setParsedLeads([]);
         setRecentlySavedLeads([]);
-        
+
         // Mettre à jour l'onboarding
         try {
           const companyId = Cookies.get('companyId');
@@ -905,7 +905,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
               { status: 'completed' }
             );
-            
+
             localStorage.setItem('stepCompleted', JSON.stringify({
               stepId: 6,
               phaseId: 2,
@@ -916,41 +916,41 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           console.error('Error updating onboarding progress:', error);
           // Ne pas bloquer le processus si l'onboarding échoue
         }
-        
+
       } else if (savedCount > 0) {
         // Certains leads ont été sauvegardés
         setUploadError(`${savedCount} leads saved, ${failedCount} failed`);
         // Afficher les erreurs dans la console
         console.warn('Failed leads:', failedLeads);
-        
+
         // Les leads sauvegardés ont été ajoutés en temps réel
         // Garder seulement les leads parsés qui ont échoué pour permettre une nouvelle tentative
-        const failedParsedLeads = parsedLeads.filter((_, index) => 
+        const failedParsedLeads = parsedLeads.filter((_, index) =>
           failedLeads.some(failed => failed.index === index)
         );
         setParsedLeads(failedParsedLeads);
         setRecentlySavedLeads([]);
-        
+
       } else {
         // Aucun lead n'a été sauvegardé
         setUploadError('Failed to save any leads');
         toast.error('Failed to save any leads. Check console for details.');
         console.error('All leads failed to save:', failedLeads);
       }
-      
+
     } catch (error: any) {
       console.error('Error in handleSaveLeads:', error);
       const errorMessage = error.message || 'Error saving leads';
       setUploadError(errorMessage);
       toast.error(errorMessage);
-      
+
     } finally {
       // TOUJOURS réinitialiser l'état, même en cas d'erreur
       setIsSavingLeads(false);
       processingRef.current = false; // Réinitialiser la référence aussi
       setShowSaveButton(true);
       setShowFileName(true);
-      
+
       // Reset après un délai pour permettre à l'utilisateur de voir le résultat
       setTimeout(() => {
         setSelectedFile(null);
@@ -960,7 +960,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         setUploadError(null);
         setValidationResults(null);
         setRecentlySavedLeads([]);
-        
+
         // Clear storage
         localStorage.removeItem('parsedLeads');
         localStorage.removeItem('validationResults');
@@ -968,11 +968,11 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         sessionStorage.removeItem('uploadProcessing');
         sessionStorage.removeItem('parsedLeads');
         sessionStorage.removeItem('validationResults');
-        
+
         // Remove processing indicators
         document.body.removeAttribute('data-processing');
         processingRef.current = false;
-        
+
         // Reset file input
         const fileInput = document.getElementById('file-upload') as HTMLInputElement;
         if (fileInput) {
@@ -987,19 +987,19 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   const handleZohoConnect = async () => {
     try {
       const userId = Cookies.get('userId');
-  
+
       if (!userId) {
         console.error('No userId found in cookies');
         toast.error('User ID not found. Please log in again.');
         return;
       }
-  
+
       const redirectUri = `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback`;
       const encodedRedirectUri = encodeURIComponent(redirectUri);
       const encodedState = encodeURIComponent(userId);
-  
+
       const authUrl = `${import.meta.env.VITE_DASHBOARD_API}/zoho/auth?redirect_uri=${encodedRedirectUri}&state=${encodedState}`;
-  
+
       const response = await fetch(authUrl, {
         method: 'GET',
         headers: {
@@ -1007,15 +1007,15 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           Authorization: `Bearer ${userId}`,
         },
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Error response:', errorData);
         throw new Error(errorData.error || 'Failed to get Zoho auth URL');
       }
-  
+
       const data = await response.json();
-  
+
       const redirectUrl = new URL(data.authUrl);
       redirectUrl.searchParams.set('state', userId);
       window.location.href = redirectUrl.toString();
@@ -1033,12 +1033,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     // if (!confirmed) {
     //   return;
     // }
-    
+
     setIsDisconnectingZoho(true);
     try {
       const userId = Cookies.get('userId');
       const gigId = selectedGigId || Cookies.get('gigId');
-      
+
       if (!userId) {
         console.error('No userId found in cookies');
         toast.error('User ID not found. Please log in again.');
@@ -1065,10 +1065,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         // Reset Zoho service configuration
         const zohoService = ZohoService.getInstance();
         zohoService.resetConfiguration();
-        
+
         setHasZohoConfig(false);
         setHasZohoAccessToken(false);
-        
+
         // Clear any cached Zoho data
         setRealtimeLeads([]);
         setParsedLeads([]);
@@ -1091,7 +1091,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       const state = urlParams.get('state');
       const location = urlParams.get('location');
       const accountsServer = urlParams.get('accounts-server');
-      
+
       const params = new URLSearchParams(window.location.search);
       // Vérifier si l'URL contient le paramètre startStep=6
       if (params.get('session') === 'someGeneratedSessionId') {
@@ -1102,14 +1102,14 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         window.history.replaceState({}, '', `${window.location.pathname}${newSearch ? '?' + newSearch : ''}`);
       }
 
-      
+
       if (code) {
         if (!state) {
           console.error('No state parameter found in URL');
           toast.error('Authentication state not found. Please try connecting again.');
           return;
-      }
-    
+        }
+
         handleOAuthCallback(code, state, location || undefined, accountsServer || undefined);
       }
     };
@@ -1122,10 +1122,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   }, []);
 
   const handleOAuthCallback = async (code: string, state: string, location?: string, accountsServer?: string) => {
-    
+
     try {
       const userId = state || Cookies.get('userId');
-      
+
       if (!userId) {
         throw new Error('User ID not found in state parameter or cookies');
       }
@@ -1136,7 +1136,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         ...(location && { location }),
         ...(accountsServer && { accountsServer })
       }).toString();
-  
+
       const response = await fetch(`${import.meta.env.VITE_DASHBOARD_API}/zoho/auth/callback?${queryParams}`, {
         method: 'GET',
         headers: {
@@ -1145,15 +1145,15 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           'Authorization': `Bearer ${selectedGigId || Cookies.get('gigId')}:${userId}`
         }
       });
-  
+
       const data = await response.json();
-  
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed to exchange code for tokens');
       }
-  
+
       setHasZohoConfig(true);
-  
+
     } catch (error: any) {
       console.error('Error handling OAuth callback:', error);
       toast.error(error.message || 'Failed to complete Zoho authentication');
@@ -1165,7 +1165,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     if (isProcessing || processingRef.current) {
       return;
     }
-    
+
   }, [hasZohoConfig, isProcessing]);
 
   // Ajout d'une fonction utilitaire pour fetch Zoho avec refresh automatique
@@ -1257,7 +1257,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       setParsedLeads(leadsFromApi);
       console.log('🔄 Appel fetchLeads après import Zoho');
       await fetchLeads(1, '');
-      
+
       // Déclencher une mise à jour de l'état d'onboarding pour marquer le step 6 comme complété
       if (leadsFromApi.length > 0) {
         try {
@@ -1310,7 +1310,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     setError(null);
     try {
       let apiUrl: string;
-      
+
       if (searchQuery.trim()) {
         // Utiliser l'endpoint de recherche dédié
         apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}/search?search=${encodeURIComponent(searchQuery.trim())}`;
@@ -1320,21 +1320,21 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=50`;
         console.log('📄 Récupération leads avec URL:', apiUrl);
       }
-      
+
       const response = await fetch(apiUrl, {
         headers: {
           'Authorization': `Bearer ${selectedGigId}:${Cookies.get('userId')}`,
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch leads: ${response.statusText}`);
       }
 
       const responseData: ApiResponse = await response.json();
       console.log('📊 Réponse API leads:', responseData);
-      
+
       if (!responseData.success) {
         throw new Error('Failed to fetch leads: API returned unsuccessful response');
       }
@@ -1345,13 +1345,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
       setLeads(responseData.data);
       setFilteredLeads(responseData.data); // Initialiser les leads filtrés
-      
+
       // Nettoyer realtimeLeads quand on charge des leads depuis l'API
       if (responseData.data.length > 0) {
         setRealtimeLeads([]);
         setParsedLeads([]);
       }
-      
+
       if (searchQuery.trim()) {
         // Pour la recherche, afficher tous les résultats sur une seule page
         setTotalPages(1);
@@ -1376,7 +1376,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   // useEffect pour charger les leads normalement
   useEffect(() => {
     console.log('🔍 useEffect principal - selectedGigId:', selectedGigId, 'isProcessing:', isProcessing, 'parsedLeads:', parsedLeads.length);
-    
+
     // Skip this effect if we're currently processing a file
     if (isProcessing || processingRef.current) {
       console.log('⏸️ Skipping - processing in progress');
@@ -1419,7 +1419,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   // useEffect pour charger les leads au montage du composant
   useEffect(() => {
     console.log('🚀 useEffect montage - selectedGigId:', selectedGigId, 'parsedLeads:', parsedLeads.length, 'realtimeLeads:', realtimeLeads.length);
-    
+
     // Charger les leads si on a un gigId et qu'on n'a pas encore de leads affichés
     if (selectedGigId && leads.length === 0 && realtimeLeads.length === 0 && !isProcessing) {
       console.log('🔄 Chargement initial des leads');
@@ -1437,7 +1437,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     }
 
     // Component will handle leads display normally
-    
+
     // If we have parsed leads, don't show empty leads list
     if (parsedLeads.length > 0) {
       return;
@@ -1449,21 +1449,21 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       return;
     }
 
-      // If we have leads in localStorage but not in state, restore them
-  if (savedParsedLeads && parsedLeads.length === 0) {
-    try {
-      const leads = JSON.parse(savedParsedLeads);
-      setParsedLeads(leads);
-      return;
-    } catch (error) {
-      console.error('Error restoring parsed leads during render:', error);
+    // If we have leads in localStorage but not in state, restore them
+    if (savedParsedLeads && parsedLeads.length === 0) {
+      try {
+        const leads = JSON.parse(savedParsedLeads);
+        setParsedLeads(leads);
+        return;
+      } catch (error) {
+        console.error('Error restoring parsed leads during render:', error);
+      }
     }
-  }
 
-  // If we have parsed leads, force the display to show them
-  if (parsedLeads.length > 0) {
-    return;
-  }
+    // If we have parsed leads, force the display to show them
+    if (parsedLeads.length > 0) {
+      return;
+    }
   }, [leads, parsedLeads.length]);
 
   const renderPaginationButtons = () => {
@@ -1477,11 +1477,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           <button
             key={i}
             onClick={() => fetchLeads(i)}
-            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-              i === currentPage
+            className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${i === currentPage
                 ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
                 : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
-            }`}
+              }`}
           >
             {i}
           </button>
@@ -1495,11 +1494,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       <button
         key={1}
         onClick={() => fetchLeads(1, searchQuery)}
-        className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-          1 === currentPage
+        className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${1 === currentPage
             ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
             : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
-        }`}
+          }`}
       >
         1
       </button>
@@ -1531,11 +1529,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         <button
           key={i}
           onClick={() => fetchLeads(i, searchQuery)}
-          className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-            i === currentPage
+          className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${i === currentPage
               ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
               : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
-          }`}
+            }`}
         >
           {i}
         </button>
@@ -1557,11 +1554,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         <button
           key={totalPages}
           onClick={() => fetchLeads(totalPages, searchQuery)}
-          className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-            totalPages === currentPage
+          className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${totalPages === currentPage
               ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
               : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
-          }`}
+            }`}
         >
           {totalPages}
         </button>
@@ -1651,12 +1647,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   // Fonction de filtrage des leads - maintenant déclenche une recherche API
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
-    
+
     // Annuler le timeout précédent s'il existe
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-    
+
     // Délai pour éviter trop d'appels API pendant la frappe
     searchTimeoutRef.current = setTimeout(async () => {
       // Si on a une requête de recherche, récupérer tous les résultats
@@ -1672,7 +1668,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   // Fonction de filtrage par statut (local uniquement)
   const filterLeadsByStatus = (leads: Lead[], status: string) => {
     if (status === 'all') return leads;
-    
+
     return leads.filter(lead => {
       if (status === 'active') {
         return lead.Stage !== 'Closed';
@@ -1770,9 +1766,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
             {/* Header */}
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-blue-200 shadow-sm">
-                <img 
-                  src={zohoLogo} 
-                  alt="Zoho CRM" 
+                <img
+                  src={zohoLogo}
+                  alt="Zoho CRM"
                   className="h-7 w-7 object-contain"
                 />
               </div>
@@ -1781,7 +1777,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                 <p className="text-sm text-blue-700">Connect and sync with your Zoho CRM</p>
               </div>
             </div>
-            
+
             {/* Connection Status */}
             <div className="mb-4">
               {hasZohoAccessToken ? (
@@ -1807,7 +1803,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                 </div>
               )}
             </div>
-            
+
             {/* Action Button - Pushed to bottom */}
             <div className="mt-auto">
               <button
@@ -1828,18 +1824,18 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                   </>
                 ) : !hasZohoAccessToken ? (
                   <>
-                    <img 
-                      src={zohoLogo} 
-                      alt="Zoho" 
+                    <img
+                      src={zohoLogo}
+                      alt="Zoho"
                       className="h-5 w-5 mr-3 object-contain"
                     />
                     Connect to Zoho CRM First
                   </>
                 ) : (
                   <>
-                    <img 
-                      src={zohoLogo} 
-                      alt="Zoho" 
+                    <img
+                      src={zohoLogo}
+                      alt="Zoho"
                       className="h-5 w-5 mr-3 object-contain"
                     />
                     Sync with Zoho CRM
@@ -1861,14 +1857,14 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                 <p className="text-sm text-blue-700">Upload and process contact files</p>
               </div>
             </div>
-            
+
             {/* File Info */}
             <div className="mb-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <span className="text-sm font-medium text-blue-800">📁 Supported: CSV, Excel, JSON, TXT</span>
               </div>
             </div>
-            
+
             {/* Upload Button - Pushed to bottom */}
             <div className="mt-auto">
               <div className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl cursor-pointer flex items-center justify-center">
@@ -1921,10 +1917,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
               <div className="relative">
                 <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
                   <div
-                    className={`h-3 rounded-full transition-all duration-300 ${
-                      uploadError ? 'bg-red-500' : uploadSuccess ? 'bg-green-500' : 'bg-gradient-to-r from-blue-500 to-indigo-500'
-                    }`}
-                    style={{ 
+                    className={`h-3 rounded-full transition-all duration-300 ${uploadError ? 'bg-red-500' : uploadSuccess ? 'bg-green-500' : 'bg-gradient-to-r from-blue-500 to-indigo-500'
+                      }`}
+                    style={{
                       width: `${uploadProgress}%`,
                       background: isProcessing && !uploadError && !uploadSuccess ? 'linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%)' : undefined
                     }}
@@ -1933,14 +1928,14 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
               </div>
               <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
                 <span>
-                  {isProcessing && !uploadError && !uploadSuccess 
-                    ? `Analyse en cours... ${uploadProgress}%` 
+                  {isProcessing && !uploadError && !uploadSuccess
+                    ? `Analyse en cours... ${uploadProgress}%`
                     : uploadProgress > 0 ? `${uploadProgress}% terminé` : 'Prêt'
                   }
                 </span>
                 <span>{Math.round(selectedFile.size / 1024)} KB</span>
               </div>
-              
+
               {/* Real-time Progress Status for OpenAI Processing */}
               {isProcessing && !uploadError && !uploadSuccess && (
                 <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
@@ -1949,7 +1944,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                       {processingProgress.status || 'Traitement OpenAI en cours...'}
                     </span>
                   </div>
-                  
+
                   {/* Animated activity indicator */}
                   <div className="mt-2 flex items-center space-x-1">
                     <div className="flex space-x-1">
@@ -1969,38 +1964,38 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                 </div>
               )}
             </div>
-            
-              {uploadError && (
-                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-                  {uploadError}
-                </div>
-              )}
-              {uploadSuccess && (
-                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-600">
-                  File uploaded successfully!
-                </div>
-              )}
-              {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
-                <div className="mt-4 space-y-4">
-                  {validationResults && (
+
+            {uploadError && (
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                {uploadError}
+              </div>
+            )}
+            {uploadSuccess && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-600">
+                File uploaded successfully!
+              </div>
+            )}
+            {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
+              <div className="mt-4 space-y-4">
+                {validationResults && (
                   <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3">
                     <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
                       <Info className="mr-2 h-4 w-4" />
-                        AI Processing Results
+                      AI Processing Results
                     </h4>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                          <span className="text-blue-600 font-medium">Total Rows:</span> {validationResults.totalRows}
+                        <span className="text-blue-600 font-medium">Total Rows:</span> {validationResults.totalRows}
                       </div>
                       <div>
-                          <span className="text-green-600 font-medium">Valid Rows:</span> {validationResults.validRows > 0 ? validationResults.validRows : parsedLeads.length}
+                        <span className="text-green-600 font-medium">Valid Rows:</span> {validationResults.validRows > 0 ? validationResults.validRows : parsedLeads.length}
                       </div>
-                        {validationResults.invalidRows > 0 && (
-                          <div className="col-span-2">
-                            <span className="text-red-600 font-medium">Invalid Rows:</span> {validationResults.invalidRows}
+                      {validationResults.invalidRows > 0 && (
+                        <div className="col-span-2">
+                          <span className="text-red-600 font-medium">Invalid Rows:</span> {validationResults.invalidRows}
+                        </div>
+                      )}
                     </div>
-                        )}
-                  </div>
 
                     {validationResults.errors && validationResults.errors.length > 0 && (
                       <div className="mt-3">
@@ -2008,234 +2003,233 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                           <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
                             View validation errors ({validationResults.errors.length})
                           </summary>
-                            <div className="mt-2 space-y-1">
-                              {validationResults.errors.map((error: string, index: number) => (
-                                <div key={index} className="text-red-600 bg-red-50 p-2 rounded">
-                                  {error}
-                                </div>
-                              ))}
-                            </div>
-                          </details>
-                        </div>
+                          <div className="mt-2 space-y-1">
+                            {validationResults.errors.map((error: string, index: number) => (
+                              <div key={index} className="text-red-600 bg-red-50 p-2 rounded">
+                                {error}
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Preview Section */}
+                <div className="bg-white border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center">
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      <h4 className="text-sm font-semibold text-gray-800">
+                        Confirm & Edit Leads ({parsedLeads.length})
+                      </h4>
+                      {dataTooLarge && (
+                        <span className="ml-2 inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800">
+                          <AlertTriangle className="mr-1 h-3 w-3" />
+                          Large dataset - memory only
+                        </span>
                       )}
                     </div>
-                  )}
-                  
-                  {/* Preview Section */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center">
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        <h4 className="text-sm font-semibold text-gray-800">
-                          Confirm & Edit Leads ({parsedLeads.length})
-                        </h4>
-                        {dataTooLarge && (
-                          <span className="ml-2 inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800">
-                            <AlertTriangle className="mr-1 h-3 w-3" />
-                            Large dataset - memory only
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => setShowLeadsPreview(!showLeadsPreview)}
-                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200"
-                        title={showLeadsPreview ? "Hide leads preview" : "Show leads preview"}
-                      >
-                        {showLeadsPreview ? (
-                          <ChevronUp className="h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                    {showLeadsPreview && (
-                      <>
-                        <p className="text-xs text-gray-600 mb-3">Review and edit your leads before saving. Click the edit icon to modify any field.</p>
-                        <div className="max-h-60 overflow-y-auto">
-                          <div className="space-y-2">
-                            {parsedLeads.map((lead: any, index: number) => (
-                                                          <div key={index} className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-lg p-3 border border-gray-200 hover:border-slate-300 transition-all duration-200">
+                    <button
+                      onClick={() => setShowLeadsPreview(!showLeadsPreview)}
+                      className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                      title={showLeadsPreview ? "Hide leads preview" : "Show leads preview"}
+                    >
+                      {showLeadsPreview ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  {showLeadsPreview && (
+                    <>
+                      <p className="text-xs text-gray-600 mb-3">Review and edit your leads before saving. Click the edit icon to modify any field.</p>
+                      <div className="max-h-60 overflow-y-auto">
+                        <div className="space-y-2">
+                          {parsedLeads.map((lead: any, index: number) => (
+                            <div key={index} className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-lg p-3 border border-gray-200 hover:border-slate-300 transition-all duration-200">
                               <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center space-x-3">
                                   <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
                                     <span className="text-xs font-bold text-slate-600">{index + 1}</span>
                                   </div>
-                                    <span className="text-sm font-semibold text-gray-900">
-                                      {lead.Deal_Name || 'Unnamed Lead'}
-                                    </span>
+                                  <span className="text-sm font-semibold text-gray-900">
+                                    {lead.Deal_Name || 'Unnamed Lead'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    onClick={() => setEditingLeadIndex(editingLeadIndex === index ? null : index)}
+                                    className="text-slate-600 hover:text-slate-800 p-2 rounded-md hover:bg-slate-50 transition-colors duration-200"
+                                    title="Edit lead"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      const newLeads = [...parsedLeads];
+                                      newLeads.splice(index, 1);
+                                      setParsedLeads(newLeads);
+                                    }}
+                                    className="text-red-500 hover:text-red-700 p-2 rounded-md hover:bg-red-50 transition-colors duration-200"
+                                    title="Delete lead"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {editingLeadIndex === index ? (
+                                <div className="space-y-3 bg-white rounded-lg p-3 border border-slate-200 shadow-sm">
+                                  <div className="grid grid-cols-1 gap-3">
+                                    <div>
+                                      <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
+                                      <input
+                                        type="text"
+                                        value={lead.Deal_Name || ''}
+                                        onChange={(e) => handleEditLead(index, 'Deal_Name', e.target.value)}
+                                        placeholder="Enter lead name"
+                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                                      <input
+                                        type="email"
+                                        value={lead.Email_1 || ''}
+                                        onChange={(e) => handleEditLead(index, 'Email_1', e.target.value)}
+                                        placeholder="Enter email address"
+                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
+                                      <input
+                                        type="tel"
+                                        value={lead.Phone || ''}
+                                        onChange={(e) => handleEditLead(index, 'Phone', e.target.value)}
+                                        placeholder="Enter phone number"
+                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                      />
+                                    </div>
                                   </div>
-                                  <div className="flex items-center space-x-2">
+                                  <div className="flex justify-end space-x-2 pt-2 border-t border-gray-100">
                                     <button
-                                      onClick={() => setEditingLeadIndex(editingLeadIndex === index ? null : index)}
-                                      className="text-slate-600 hover:text-slate-800 p-2 rounded-md hover:bg-slate-50 transition-colors duration-200"
-                                      title="Edit lead"
+                                      onClick={() => setEditingLeadIndex(null)}
+                                      className="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 border border-gray-300"
                                     >
-                                      <Edit className="h-4 w-4" />
+                                      Cancel
                                     </button>
                                     <button
                                       onClick={() => {
-                                        const newLeads = [...parsedLeads];
-                                        newLeads.splice(index, 1);
-                                        setParsedLeads(newLeads);
+                                        setEditingLeadIndex(null);
                                       }}
-                                      className="text-red-500 hover:text-red-700 p-2 rounded-md hover:bg-red-50 transition-colors duration-200"
-                                      title="Delete lead"
+                                      className="px-3 py-1 text-sm font-medium text-white bg-gradient-to-r from-slate-700 to-slate-900 rounded-lg hover:from-slate-800 hover:to-slate-950 transition-all duration-200 shadow-sm"
                                     >
-                                      <Trash2 className="h-4 w-4" />
+                                      Save Changes
                                     </button>
                                   </div>
                                 </div>
-                                
-                                {editingLeadIndex === index ? (
-                                  <div className="space-y-3 bg-white rounded-lg p-3 border border-slate-200 shadow-sm">
-                                    <div className="grid grid-cols-1 gap-3">
-                                      <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
-                                        <input
-                                          type="text"
-                                          value={lead.Deal_Name || ''}
-                                          onChange={(e) => handleEditLead(index, 'Deal_Name', e.target.value)}
-                                          placeholder="Enter lead name"
-                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
-                                        <input
-                                          type="email"
-                                          value={lead.Email_1 || ''}
-                                          onChange={(e) => handleEditLead(index, 'Email_1', e.target.value)}
-                                          placeholder="Enter email address"
-                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
-                                        <input
-                                          type="tel"
-                                          value={lead.Phone || ''}
-                                          onChange={(e) => handleEditLead(index, 'Phone', e.target.value)}
-                                          placeholder="Enter phone number"
-                                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="flex justify-end space-x-2 pt-2 border-t border-gray-100">
-                                      <button
-                                        onClick={() => setEditingLeadIndex(null)}
-                                        className="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 border border-gray-300"
-                                      >
-                                        Cancel
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          setEditingLeadIndex(null);
-                                        }}
-                                        className="px-3 py-1 text-sm font-medium text-white bg-gradient-to-r from-slate-700 to-slate-900 rounded-lg hover:from-slate-800 hover:to-slate-950 transition-all duration-200 shadow-sm"
-                                      >
-                                        Save Changes
-                                      </button>
-                                    </div>
+                              ) : (
+                                <div className="grid grid-cols-1 gap-2 text-sm">
+                                  <div className="flex items-center space-x-2">
+                                    <Mail className="h-4 w-4 text-gray-400" />
+                                    <span className="text-gray-600">
+                                      <span className="font-medium">Email:</span> {lead.Email_1 || 'No email'}
+                                    </span>
                                   </div>
-                                ) : (
-                                  <div className="grid grid-cols-1 gap-2 text-sm">
-                                    <div className="flex items-center space-x-2">
-                                      <Mail className="h-4 w-4 text-gray-400" />
-                                      <span className="text-gray-600">
-                                        <span className="font-medium">Email:</span> {lead.Email_1 || 'No email'}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                      <Phone className="h-4 w-4 text-gray-400" />
-                                      <span className="text-gray-600">
-                                        <span className="font-medium">Phone:</span> {lead.Phone || 'No phone'}
-                                      </span>
-                                    </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Phone className="h-4 w-4 text-gray-400" />
+                                    <span className="text-gray-600">
+                                      <span className="font-medium">Phone:</span> {lead.Phone || 'No phone'}
+                                    </span>
                                   </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
                         </div>
-                      </>
-                    )}
-                  </div>
-                  
-                                <button
-                className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-white font-bold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                onClick={handleSaveLeads}
-                disabled={isSavingLeads}
-              >
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <button
+                  className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-white font-bold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  onClick={handleSaveLeads}
+                  disabled={isSavingLeads}
+                >
                   <div className="flex items-center justify-center">
                     <UserPlus className="mr-2 h-5 w-5" />
                     Save {parsedLeads.length} Contacts
                   </div>
-              </button>
-              
-              {/* Bouton de sauvegarde séparé qui apparaît pendant la sauvegarde */}
-              {isSavingLeads && (
-                <div className="mt-4 space-y-3">
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <RefreshCw className="mr-3 h-5 w-5 text-green-600 animate-spin" />
-                        <div>
-                          <h4 className="text-sm font-semibold text-green-800">Saving Contacts...</h4>
-                          <p className="text-xs text-green-600">
-                            {savedLeadsCount} of {parsedLeads.length} contacts saved
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-bold text-green-700">{Math.round((savedLeadsCount / parsedLeads.length) * 100)}%</div>
-                        <div className="w-16 h-2 bg-green-200 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-300"
-                            style={{ width: `${(savedLeadsCount / parsedLeads.length) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <button
-                    className="w-full rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-4 py-3 text-white font-bold hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                    disabled
-                  >
-                    <div className="flex items-center justify-center">
-                      <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-                      Saving {savedLeadsCount}/{parsedLeads.length} Contacts...
-                    </div>
-                  </button>
-                </div>
-              )}
-              
+                </button>
 
-                </div>
-              )}
+                {/* Bouton de sauvegarde séparé qui apparaît pendant la sauvegarde */}
+                {isSavingLeads && (
+                  <div className="mt-4 space-y-3">
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <RefreshCw className="mr-3 h-5 w-5 text-green-600 animate-spin" />
+                          <div>
+                            <h4 className="text-sm font-semibold text-green-800">Saving Contacts...</h4>
+                            <p className="text-xs text-green-600">
+                              {savedLeadsCount} of {parsedLeads.length} contacts saved
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-bold text-green-700">{Math.round((savedLeadsCount / parsedLeads.length) * 100)}%</div>
+                          <div className="w-16 h-2 bg-green-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-300"
+                              style={{ width: `${(savedLeadsCount / parsedLeads.length) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      className="w-full rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-4 py-3 text-white font-bold hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                      disabled
+                    >
+                      <div className="flex items-center justify-center">
+                        <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                        Saving {savedLeadsCount}/{parsedLeads.length} Contacts...
+                      </div>
+                    </button>
+                  </div>
+                )}
+
+
+              </div>
+            )}
           </div>
         )}
       </div>
 
       {/* Channel Filter */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-            <Globe className="mr-2 h-5 w-5 text-blue-600" />
-            Channel Filter
-          </h3>
+        <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+          <Globe className="mr-2 h-5 w-5 text-blue-600" />
+          Channel Filter
+        </h3>
         <div className="flex flex-wrap gap-2">
           {channels.map((channel) => {
             const Icon = channel.icon;
             const isSelected = selectedChannels.includes(channel.id);
-            
+
             return (
               <button
                 key={channel.id}
-                className={`flex items-center space-x-2 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 transform hover:scale-105 ${
-                  isSelected
+                className={`flex items-center space-x-2 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 transform hover:scale-105 ${isSelected
                     ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
-                }`}
+                  }`}
                 onClick={() => toggleChannel(channel.id)}
               >
                 <Icon className="h-4 w-4" />
@@ -2251,11 +2245,11 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         <div className="border-b border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-                          <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-              <FileText className="mr-2 h-5 w-5 text-blue-600" />
-              Leads List
-            </h3>
-                            <div className="mt-2">
+              <h3 className="text-xl font-semibold text-gray-900 flex items-center">
+                <FileText className="mr-2 h-5 w-5 text-blue-600" />
+                Leads List
+              </h3>
+              <div className="mt-2">
                 {selectedGigId ? (
                   <div className="text-sm text-gray-600">
                     {parsedLeads.length > 0 && leads.length === 0 ? (
@@ -2382,40 +2376,40 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                     </tr>
                   ) : (
                     // Afficher les leads récemment sauvegardés pendant la sauvegarde, sinon les leads filtrés, sinon les leads importés de Zoho
-                    (isSavingLeads && recentlySavedLeads.length > 0 ? recentlySavedLeads : 
-                     filteredLeads.length > 0 ? filteredLeads : 
-                     realtimeLeads.length > 0 ? realtimeLeads : []).map((lead, index) => (
-                      <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-orange-400' : ''}`}>
-                        <td className="whitespace-nowrap px-6 py-4">
-                          <div className="flex items-center">
-                            <div className={`h-10 w-10 flex-shrink-0 rounded-full flex items-center justify-center ${(lead as any)._isPlaceholder ? 'bg-orange-100' : 'bg-blue-100'}`}>
-                              {(lead as any)._isPlaceholder ? (
-                                <AlertTriangle className="h-6 w-6 text-orange-700" />
-                              ) : (
-                                <UserPlus className="h-6 w-6 text-blue-700" />
-                              )}
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900 flex items-center">
-                                {lead.Email_1 || 'No Email'}
-                                {(lead as any)._isPlaceholder && (
-                                  <span className="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-800">
-                                    Invalid
-                                  </span>
-                                )}
+                    (isSavingLeads && recentlySavedLeads.length > 0 ? recentlySavedLeads :
+                      filteredLeads.length > 0 ? filteredLeads :
+                        realtimeLeads.length > 0 ? realtimeLeads : []).map((lead, index) => (
+                          <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-orange-400' : ''}`}>
+                            <td className="whitespace-nowrap px-6 py-4">
+                              <div className="flex items-center">
+                                <div className={`h-10 w-10 flex-shrink-0 rounded-full flex items-center justify-center ${(lead as any)._isPlaceholder ? 'bg-orange-100' : 'bg-blue-100'}`}>
+                                  {(lead as any)._isPlaceholder ? (
+                                    <AlertTriangle className="h-6 w-6 text-orange-700" />
+                                  ) : (
+                                    <UserPlus className="h-6 w-6 text-blue-700" />
+                                  )}
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900 flex items-center">
+                                    {lead.Email_1 || 'No Email'}
+                                    {(lead as any)._isPlaceholder && (
+                                      <span className="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-800">
+                                        Invalid
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-sm text-gray-500">{lead.Phone || 'No Phone'}</div>
+                                </div>
                               </div>
-                              <div className="text-sm text-gray-500">{lead.Phone || 'No Phone'}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                          {lead.Deal_Name || 'N/A'}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                          {lead.Pipeline || 'N/A'}
-                        </td>
-                      </tr>
-                    ))
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                              {lead.Deal_Name || 'N/A'}
+                            </td>
+                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                              {lead.Pipeline || 'N/A'}
+                            </td>
+                          </tr>
+                        ))
                   )}
                 </tbody>
               </table>
@@ -2442,7 +2436,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                   )}
                 </span>
               </div>
-              
+
               {/* Pagination Buttons - seulement si pas en mode recherche */}
               {!searchQuery && totalPages > 1 && (
                 <div className="flex items-center space-x-2">
@@ -2453,11 +2447,11 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                   >
                     Previous
                   </button>
-                  
+
                   <div className="flex items-center space-x-1">
                     {renderPaginationButtons()}
                   </div>
-                  
+
                   <button
                     onClick={() => fetchLeads(currentPage + 1)}
                     disabled={currentPage === totalPages}
@@ -2520,9 +2514,9 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
               </button>
             </div>
             <div className="text-center">
-                          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-              <Cloud className="h-6 w-6 text-blue-700" />
-            </div>
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+                <Cloud className="h-6 w-6 text-blue-700" />
+              </div>
               <h3 className="mb-2 text-lg font-semibold text-gray-900">
                 Choose your import method
               </h3>
@@ -2532,21 +2526,21 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
               </p>
             </div>
             <div className="mt-6 flex justify-between space-x-3">
-                              <button
-                  onClick={handleCancelModal}
-                  className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    localStorage.setItem('hasSeenImportChoiceModal', 'true');
-                    setShowImportChoiceModal(false);
-                  }}
-                  className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                >
-                  Next
-                </button>
+              <button
+                onClick={handleCancelModal}
+                className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.setItem('hasSeenImportChoiceModal', 'true');
+                  setShowImportChoiceModal(false);
+                }}
+                className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+              >
+                Next
+              </button>
             </div>
           </div>
         </div>

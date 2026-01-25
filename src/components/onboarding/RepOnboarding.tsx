@@ -345,8 +345,8 @@ const RepOnboarding = () => {
               {onboardingSteps.map((step, index) => (
                 <div key={index} className="flex flex-col items-center">
                   <div className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${step.status === 'completed' ? 'border-indigo-600 bg-indigo-600' :
-                      step.status === 'current' ? 'border-indigo-600 bg-white' :
-                        'border-gray-300 bg-white'
+                    step.status === 'current' ? 'border-indigo-600 bg-white' :
+                      'border-gray-300 bg-white'
                     }`}>
                     {step.status === 'completed' ? (
                       <CheckCircle className="h-5 w-5 text-white" />
@@ -359,8 +359,8 @@ const RepOnboarding = () => {
                   </div>
                   <div className="mt-2 text-center">
                     <p className={`text-sm font-medium ${step.status === 'completed' ? 'text-indigo-600' :
-                        step.status === 'current' ? 'text-gray-900' :
-                          'text-gray-500'
+                      step.status === 'current' ? 'text-gray-900' :
+                        'text-gray-500'
                       }`}>
                       {step.title}
                     </p>
@@ -392,8 +392,8 @@ const RepOnboarding = () => {
                   <div className="flex items-center justify-between p-4">
                     <div className="flex items-center space-x-4">
                       <div className={`rounded-lg p-2 ${module.status === 'completed' ? 'bg-green-100 text-green-600' :
-                          module.status === 'in_progress' ? 'bg-yellow-100 text-yellow-600' :
-                            'bg-gray-100 text-gray-600'
+                        module.status === 'in_progress' ? 'bg-yellow-100 text-yellow-600' :
+                          'bg-gray-100 text-gray-600'
                         }`}>
                         {module.type === 'video' ? (
                           <Video className="h-5 w-5" />
@@ -540,8 +540,8 @@ const RepOnboarding = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className={`rounded-lg p-2 ${assessment.status === 'completed' ? 'bg-green-100 text-green-600' :
-                      assessment.status === 'in_progress' ? 'bg-yellow-100 text-yellow-600' :
-                        'bg-gray-100 text-gray-600'
+                    assessment.status === 'in_progress' ? 'bg-yellow-100 text-yellow-600' :
+                      'bg-gray-100 text-gray-600'
                     }`}>
                     <Award className="h-5 w-5" />
                   </div>
@@ -594,8 +594,8 @@ const RepOnboarding = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div className={`rounded-lg p-2 ${channel.status === 'configured' ? 'bg-green-100 text-green-600' :
-                        channel.status === 'pending' ? 'bg-yellow-100 text-yellow-600' :
-                          'bg-gray-100 text-gray-600'
+                      channel.status === 'pending' ? 'bg-yellow-100 text-yellow-600' :
+                        'bg-gray-100 text-gray-600'
                       }`}>
                       <Icon className="h-5 w-5" />
                     </div>
@@ -609,8 +609,8 @@ const RepOnboarding = () => {
                     </div>
                   </div>
                   <button className={`rounded-md px-3 py-1.5 text-sm font-medium shadow-sm ${channel.status === 'configured'
-                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
                     }`}>
                     {channel.status === 'configured' ? 'Reconfigure' : 'Configure'}
                   </button>

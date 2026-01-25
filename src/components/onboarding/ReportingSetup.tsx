@@ -39,7 +39,6 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 const ReportingSetup = () => {
-  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['calls', 'conversion']);
   const [reportSchedule, setReportSchedule] = useState('weekly');
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['voice', 'email', 'chat']);
@@ -75,7 +74,7 @@ const ReportingSetup = () => {
 
       // Vérifier l'état de l'étape 9 via l'API d'onboarding
       const response = await axios.get(
-        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/9`
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/9`
       );
 
       console.log('📡 API response for step 9:', response.data);
@@ -176,7 +175,7 @@ const ReportingSetup = () => {
 
       // Marquer l'étape 9 comme complétée
       const stepResponse = await axios.put(
-        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/9`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/9`,
         { status: 'completed' }
       );
 
