@@ -840,10 +840,10 @@ const ScriptGenerator: React.FC = () => {
                         {isInAppMode() && (
                             <button
                                 onClick={handleBackToOrchestrator}
-                                className="p-3 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200 group"
-                                title="Back to Orchestrator"
+                                className="px-4 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200 font-medium border border-gray-200 hover:border-blue-300"
+                                title="Back to Onboarding"
                             >
-                                <ArrowLeft className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                                Back to Onboarding
                             </button>
                         )}
                         <div className="flex items-center gap-3">
