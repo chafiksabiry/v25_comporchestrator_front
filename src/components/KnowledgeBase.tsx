@@ -755,8 +755,10 @@ const KnowledgeBase: React.FC = () => {
   }, []);
 
   const handleBackToOrchestrator = () => {
-    const orchestratorUrl = import.meta.env.VITE_COMPANY_ORCHESTRATOR_URL;
-    window.location.href = orchestratorUrl;
+    const event = new CustomEvent('tabChange', {
+      detail: { tab: 'company-onboarding' }
+    });
+    window.dispatchEvent(event);
   };
 
   // Ajouter une fonction pour retourner à la liste

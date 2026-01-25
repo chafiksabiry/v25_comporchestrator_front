@@ -296,10 +296,10 @@ const ScriptGenerator: React.FC = () => {
   };
 
   const handleBackToOrchestrator = () => {
-    const orchestratorUrl = import.meta.env.VITE_COMPANY_ORCHESTRATOR_URL;
-    if (orchestratorUrl) {
-      window.location.href = orchestratorUrl;
-    }
+    const event = new CustomEvent('tabChange', {
+      detail: { tab: 'company-onboarding' }
+    });
+    window.dispatchEvent(event);
   };
 
   const fetchGigs = async () => {
@@ -1039,8 +1039,8 @@ const ScriptGenerator: React.FC = () => {
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
                               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${script.isActive
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-gray-100 text-gray-800'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-gray-100 text-gray-800'
                                 }`}>
                                 <div className={`w-2 h-2 rounded-full mr-1 ${script.isActive ? 'bg-green-500' : 'bg-gray-500'
                                   }`}></div>
@@ -1066,8 +1066,8 @@ const ScriptGenerator: React.FC = () => {
                               </button>
                               <button
                                 className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed ${script.isActive
-                                    ? 'text-orange-600 hover:text-orange-800 hover:bg-orange-50'
-                                    : 'text-green-600 hover:text-green-800 hover:bg-green-50'
+                                  ? 'text-orange-600 hover:text-orange-800 hover:bg-orange-50'
+                                  : 'text-green-600 hover:text-green-800 hover:bg-green-50'
                                   }`}
                                 onClick={() => handleUpdateScriptStatus(script._id, !script.isActive)}
                                 disabled={updatingScriptId === script._id}
