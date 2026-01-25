@@ -300,10 +300,13 @@ const ScriptGenerator: React.FC = () => {
     };
 
     const handleBackToOrchestrator = () => {
-        const orchestratorUrl = import.meta.env.VITE_COMPANY_ORCHESTRATOR_URL;
-        if (orchestratorUrl) {
-            window.location.href = orchestratorUrl;
-        }
+        // Set the active tab to company-onboarding in localStorage
+        localStorage.setItem('activeTab', 'company-onboarding');
+
+        // Dispatch a custom event to notify App.tsx to change the tab
+        window.dispatchEvent(new CustomEvent('tabChange', {
+            detail: { tab: 'company-onboarding' }
+        }));
     };
 
     const fetchGigs = async () => {
