@@ -182,7 +182,7 @@ const CompanyOnboarding = () => {
 
       try {
         const response = await axios.get<CompanyResponse>(
-          `${import.meta.env.VITE_COMPANY_API_URL}/companies/user/${userId}`
+          `${import.meta.env.VITE_API_URL_ONBOARDING}/companies/user/${userId}`
         );
         if (response.data.success && response.data.data) {
           setCompanyId(response.data.data._id);
@@ -343,7 +343,7 @@ const CompanyOnboarding = () => {
         console.log('✅ Company has leads - auto-completing step 6');
         try {
           await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
+            `${import.meta.env.VITE_API_URL_ONBOARDING}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
             { status: 'completed' }
           );
 
