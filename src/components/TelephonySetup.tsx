@@ -167,6 +167,9 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
   ];
 
 
+  // Define API URL with fallback
+  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
+
   useEffect(() => {
     if (!companyId) {
       console.log('Waiting for company ID...');
@@ -476,7 +479,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+          `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding`
         );
 
         console.log('📡 API response for onboarding:', response.data);
@@ -700,14 +703,14 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
       try {
         const onboardingResponse = await axios.get(
-          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+          `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding`
         );
 
         const currentCompletedSteps = (onboardingResponse.data as any)?.completedSteps || [];
         const newCompletedSteps = currentCompletedSteps.includes(5) ? currentCompletedSteps : [...currentCompletedSteps, 5];
 
         const updateResponse = await axios.put(
-          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`,
+          `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding`,
           {
             completedSteps: newCompletedSteps,
             currentPhase: 2
@@ -721,7 +724,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
         try {
           const response = await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
+            `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
             { status: 'completed' }
           );
           console.log('✅ Telephony setup step 5 marked as completed via individual endpoint:', response.data);
@@ -765,7 +768,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     } catch (error) {
       console.error('Error updating onboarding progress:', error);
       if (error instanceof Error) {
-        console.log(`Error: ${error.message}`);
+        console.log(`Error: ${error.message} `);
       } else {
         console.log('An error occurred while saving the configuration. Please try again.');
       }
@@ -857,12 +860,12 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         </div>
         <div className="flex space-x-3">
           <button
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${completedSteps.includes(5)
+            className={`rounded - lg px - 4 py - 2 text - sm font - medium transition - all duration - 200 ${completedSteps.includes(5)
                 ? 'bg-green-600 text-white cursor-not-allowed'
                 : !selectedGigId
                   ? 'bg-gray-400 text-white cursor-not-allowed'
                   : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md'
-              }`}
+              } `}
             onClick={completedSteps.includes(5) || !selectedGigId ? undefined : handleSaveConfiguration}
             disabled={completedSteps.includes(5) || !selectedGigId}
             title={!selectedGigId ? 'Please select a gig first' : ''}
@@ -914,10 +917,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
               {/* Custom Dropdown */}
               <button
                 type="button"
-                className={`relative w-full rounded-xl border-2 py-4 pl-5 pr-12 text-left text-base font-medium transition-all duration-300 shadow-md ${selectedGigId
+                className={`relative w - full rounded - xl border - 2 py - 4 pl - 5 pr - 12 text - left text - base font - medium transition - all duration - 300 shadow - md ${selectedGigId
                     ? 'border-blue-400 bg-blue-50 text-blue-900 focus:border-blue-500 focus:ring-blue-500 shadow-blue-200/50'
                     : 'border-blue-200 bg-white text-blue-800 focus:border-blue-400 focus:ring-blue-400 hover:border-blue-300'
-                  } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
+                  } focus: outline - none focus: ring - 2 focus: ring - opacity - 50`}
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               >
                 <span className="flex items-center">
@@ -940,7 +943,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                   )}
                 </span>
                 <span className="absolute inset-y-0 right-0 flex items-center pr-4">
-                  <ChevronDown className={`h-5 w-5 text-blue-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h - 5 w - 5 text - blue - 400 transition - transform ${isDropdownOpen ? 'rotate-180' : ''} `} />
                 </span>
               </button>
 
@@ -1005,10 +1008,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
             return (
               <button
                 key={p.id}
-                className={`flex items-center justify-center rounded-lg border p-4 ${provider === p.id
+                className={`flex items - center justify - center rounded - lg border p - 4 ${provider === p.id
                     ? 'border-indigo-500 bg-indigo-50'
                     : 'border-gray-200 hover:bg-gray-50'
-                  }`}
+                  } `}
                 onClick={() => setProvider(p.id)}
               >
                 <Logo className="mr-2 h-5 w-5 text-indigo-600" />
@@ -1059,7 +1062,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                       <div className="w-full bg-yellow-200 rounded-full h-2">
                         <div
                           className="bg-yellow-600 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${requirementStatus.completionPercentage}%` }}
+                          style={{ width: `${requirementStatus.completionPercentage}% ` }}
                         />
                       </div>
                     </div>
@@ -1114,10 +1117,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                         </span>
                       </div>
                       <div className="flex items-center">
-                        <span className={`px-2 py-1 text-xs rounded-full ${number.status === 'active' ? 'bg-green-100 text-green-800' :
+                        <span className={`px - 2 py - 1 text - xs rounded - full ${number.status === 'active' ? 'bg-green-100 text-green-800' :
                             number.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                               'bg-gray-100 text-gray-800'
-                          }`}>
+                          } `}>
                           {number.status}
                         </span>
                       </div>
@@ -1151,10 +1154,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                         </span>
                       </div>
                       <div className="flex items-center">
-                        <span className={`px-2 py-1 text-xs rounded-full ${number.status === 'active' ? 'bg-green-100 text-green-800' :
+                        <span className={`px - 2 py - 1 text - xs rounded - full ${number.status === 'active' ? 'bg-green-100 text-green-800' :
                             number.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                               'bg-gray-100 text-gray-800'
-                          }`}>
+                          } `}>
                           {number.status}
                         </span>
                       </div>
@@ -1194,10 +1197,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                             setShowPurchaseModal(true);
                           }}
                           disabled={phoneNumbers.length > 0}
-                          className={`rounded-md px-3 py-1 text-sm text-white ${phoneNumbers.length > 0
+                          className={`rounded - md px - 3 py - 1 text - sm text - white ${phoneNumbers.length > 0
                               ? 'bg-gray-400 cursor-not-allowed'
                               : 'bg-green-600 hover:bg-green-700'
-                            }`}
+                            } `}
                           title={phoneNumbers.length > 0 ? 'A number is already purchased for this gig' : undefined}
                         >
                           Purchase
@@ -1278,10 +1281,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                             setShowPurchaseModal(true);
                           }}
                           disabled={isDisabled}
-                          className={`rounded-md px-3 py-1 text-sm text-white ${isDisabled
+                          className={`rounded - md px - 3 py - 1 text - sm text - white ${isDisabled
                               ? 'bg-gray-400 cursor-not-allowed'
                               : 'bg-green-600 hover:bg-green-700'
-                            }`}
+                            } `}
                           title={tooltipMessage}
                         >
                           Purchase

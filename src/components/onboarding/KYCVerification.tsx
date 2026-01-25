@@ -22,6 +22,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 const KYCVerification = () => {
+  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
   const [verificationMethod, setVerificationMethod] = useState('automatic');
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [verificationStatus, setVerificationStatus] = useState<'pending' | 'in_progress' | 'completed' | 'failed'>('pending');
@@ -50,22 +51,22 @@ const KYCVerification = () => {
   const checkStepStatus = async () => {
     try {
       if (!companyId) return;
-      
+
       console.log('🔍 Checking step 2 status for company:', companyId);
-      
+
       // Vérifier l'état de l'étape 2 via l'API d'onboarding
       const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/2`
+        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/2`
       );
-      
+
       console.log('📡 API response for step 2:', response.data);
-      
+
       if (response.data && (response.data as any).status === 'completed') {
         console.log('✅ Step 2 is already completed according to API');
         setIsStepCompleted(true);
         return;
       }
-      
+
       // Vérifier aussi le localStorage pour la cohérence
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
       if (storedProgress) {
@@ -80,15 +81,15 @@ const KYCVerification = () => {
           console.error('❌ Error parsing stored progress:', e);
         }
       }
-      
+
       // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
       // marquer automatiquement l'étape comme complétée localement
       if (hasBasicInfo() && !isStepCompleted) {
         console.log('🎯 Auto-completing step 2 locally because basic info is present');
-        
+
         // Marquer l'étape comme complétée localement
         setIsStepCompleted(true);
-        
+
         // Mettre à jour le localStorage avec l'étape 2 marquée comme complétée
         const currentCompletedSteps = [2];
         const currentProgress = {
@@ -97,26 +98,26 @@ const KYCVerification = () => {
           lastUpdated: new Date().toISOString()
         };
         localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-        
+
         // Synchroniser avec les cookies
         Cookies.set('kycVerificationStepCompleted', 'true', { expires: 7 });
-        
+
         // Notifier le composant parent CompanyOnboarding via un événement personnalisé
-        window.dispatchEvent(new CustomEvent('stepCompleted', { 
-          detail: { 
-            stepId: 2, 
-            phaseId: 1, 
+        window.dispatchEvent(new CustomEvent('stepCompleted', {
+          detail: {
+            stepId: 2,
+            phaseId: 1,
             status: 'completed',
             completedSteps: currentCompletedSteps
-          } 
+          }
         }));
-        
+
         console.log('💾 Step 2 marked as completed locally and parent component notified');
       }
-      
+
     } catch (error) {
       console.error('❌ Error checking step status:', error);
-      
+
       // En cas d'erreur API, vérifier le localStorage
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
       if (storedProgress) {
@@ -150,18 +151,18 @@ const KYCVerification = () => {
       }
 
       console.log('🚀 Completing KYC verification...');
-      
+
       // Marquer l'étape 2 comme complétée
       const stepResponse = await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/2`,
+        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/2`,
         { status: 'completed' }
       );
-      
+
       console.log('✅ Step 2 marked as completed:', stepResponse.data);
-      
+
       // Mettre à jour l'état local
       setIsStepCompleted(true);
-      
+
       // Mettre à jour le localStorage
       const currentProgress = {
         currentPhase: 1,
@@ -169,22 +170,22 @@ const KYCVerification = () => {
         lastUpdated: new Date().toISOString()
       };
       localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-      
+
       // Synchroniser avec les cookies
       Cookies.set('kycVerificationStepCompleted', 'true', { expires: 7 });
-      
+
       // Notifier le composant parent
-      window.dispatchEvent(new CustomEvent('stepCompleted', { 
-        detail: { 
-          stepId: 2, 
-          phaseId: 1, 
+      window.dispatchEvent(new CustomEvent('stepCompleted', {
+        detail: {
+          stepId: 2,
+          phaseId: 1,
           status: 'completed',
           completedSteps: [2]
-        } 
+        }
       }));
-      
+
       console.log('💾 KYC verification completed and step 2 marked as completed');
-      
+
     } catch (error) {
       console.error('❌ Error completing KYC verification:', error);
     }
@@ -291,7 +292,7 @@ const KYCVerification = () => {
             Save Progress
           </button>
           {!isStepCompleted ? (
-            <button 
+            <button
               onClick={handleCompleteVerification}
               className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
               disabled={!hasBasicInfo()}
@@ -317,7 +318,7 @@ const KYCVerification = () => {
         <div className="mt-4">
           <div className="relative">
             <div className="absolute left-0 top-2 h-0.5 w-full bg-gray-200">
-              <div 
+              <div
                 className="absolute h-0.5 bg-indigo-600 transition-all duration-500"
                 style={{ width: `${(currentStep - 1) * 33.33}%` }}
               />
@@ -325,27 +326,24 @@ const KYCVerification = () => {
             <div className="relative flex justify-between">
               {verificationSteps.map((step, index) => (
                 <div key={index} className="flex flex-col items-center">
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${
-                    step.status === 'completed' ? 'border-indigo-600 bg-indigo-600' :
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${step.status === 'completed' ? 'border-indigo-600 bg-indigo-600' :
                     step.status === 'current' ? 'border-indigo-600 bg-white' :
-                    'border-gray-300 bg-white'
-                  }`}>
+                      'border-gray-300 bg-white'
+                    }`}>
                     {step.status === 'completed' ? (
                       <CheckCircle className="h-5 w-5 text-white" />
                     ) : (
-                      <span className={`text-sm font-medium ${
-                        step.status === 'current' ? 'text-indigo-600' : 'text-gray-500'
-                      }`}>
+                      <span className={`text-sm font-medium ${step.status === 'current' ? 'text-indigo-600' : 'text-gray-500'
+                        }`}>
                         {index + 1}
                       </span>
                     )}
                   </div>
                   <div className="mt-2 text-center">
-                    <p className={`text-sm font-medium ${
-                      step.status === 'completed' ? 'text-indigo-600' :
+                    <p className={`text-sm font-medium ${step.status === 'completed' ? 'text-indigo-600' :
                       step.status === 'current' ? 'text-gray-900' :
-                      'text-gray-500'
-                    }`}>
+                        'text-gray-500'
+                      }`}>
                       {step.title}
                     </p>
                     <p className="mt-1 text-xs text-gray-500">{step.description}</p>
@@ -362,11 +360,10 @@ const KYCVerification = () => {
         <h3 className="text-lg font-medium text-gray-900">Choose Verification Method</h3>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <button
-            className={`flex items-center justify-between rounded-lg border p-4 ${
-              verificationMethod === 'automatic'
-                ? 'border-indigo-500 bg-indigo-50'
-                : 'border-gray-200 hover:bg-gray-50'
-            }`}
+            className={`flex items-center justify-between rounded-lg border p-4 ${verificationMethod === 'automatic'
+              ? 'border-indigo-500 bg-indigo-50'
+              : 'border-gray-200 hover:bg-gray-50'
+              }`}
             onClick={() => setVerificationMethod('automatic')}
           >
             <div className="flex items-center">
@@ -382,11 +379,10 @@ const KYCVerification = () => {
           </button>
 
           <button
-            className={`flex items-center justify-between rounded-lg border p-4 ${
-              verificationMethod === 'manual'
-                ? 'border-indigo-500 bg-indigo-50'
-                : 'border-gray-200 hover:bg-gray-50'
-            }`}
+            className={`flex items-center justify-between rounded-lg border p-4 ${verificationMethod === 'manual'
+              ? 'border-indigo-500 bg-indigo-50'
+              : 'border-gray-200 hover:bg-gray-50'
+              }`}
             onClick={() => setVerificationMethod('manual')}
           >
             <div className="flex items-center">
@@ -471,8 +467,8 @@ const KYCVerification = () => {
                   {uploadedFiles.length} of {requiredDocuments.length} uploaded
                 </span>
                 <div className="h-2 w-24 rounded-full bg-gray-200">
-                  <div 
-                    className="h-2 rounded-full bg-indigo-600" 
+                  <div
+                    className="h-2 rounded-full bg-indigo-600"
                     style={{ width: `${(uploadedFiles.length / requiredDocuments.length) * 100}%` }}
                   />
                 </div>
@@ -502,7 +498,7 @@ const KYCVerification = () => {
                             <div className="flex items-center space-x-2">
                               {uploadedFiles.includes(doc.title) ? (
                                 <div className="flex items-center space-x-2">
-                                  <button 
+                                  <button
                                     onClick={() => handleDocumentPreview(doc.title)}
                                     className="rounded-md bg-gray-100 p-1 text-gray-600 hover:bg-gray-200"
                                   >
@@ -613,19 +609,19 @@ const KYCVerification = () => {
                   {verificationStatus === 'completed'
                     ? 'Verification Complete'
                     : verificationStatus === 'failed'
-                    ? 'Verification Failed'
-                    : verificationStatus === 'in_progress'
-                    ? 'Verification in Progress'
-                    : 'Verification Pending'}
+                      ? 'Verification Failed'
+                      : verificationStatus === 'in_progress'
+                        ? 'Verification in Progress'
+                        : 'Verification Pending'}
                 </p>
                 <p className="text-sm text-gray-500">
                   {verificationStatus === 'completed'
                     ? 'Your company has been successfully verified'
                     : verificationStatus === 'failed'
-                    ? 'Please review and resubmit your documents'
-                    : verificationStatus === 'in_progress'
-                    ? 'This process may take 1-2 business days'
-                    : 'Please submit all required documents'}
+                      ? 'Please review and resubmit your documents'
+                      : verificationStatus === 'in_progress'
+                        ? 'This process may take 1-2 business days'
+                        : 'Please submit all required documents'}
                 </p>
               </div>
             </div>

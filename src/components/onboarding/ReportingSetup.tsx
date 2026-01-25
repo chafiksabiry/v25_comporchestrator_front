@@ -39,6 +39,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 const ReportingSetup = () => {
+  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['calls', 'conversion']);
   const [reportSchedule, setReportSchedule] = useState('weekly');
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['voice', 'email', 'chat']);
@@ -69,22 +70,22 @@ const ReportingSetup = () => {
   const checkStepStatus = async () => {
     try {
       if (!companyId) return;
-      
+
       console.log('🔍 Checking step 9 status for company:', companyId);
-      
+
       // Vérifier l'état de l'étape 9 via l'API d'onboarding
       const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/9`
+        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/9`
       );
-      
+
       console.log('📡 API response for step 9:', response.data);
-      
+
       if (response.data && (response.data as any).status === 'completed') {
         console.log('✅ Step 9 is already completed according to API');
         setIsStepCompleted(true);
         return;
       }
-      
+
       // Vérifier aussi le localStorage pour la cohérence
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
       if (storedProgress) {
@@ -99,15 +100,15 @@ const ReportingSetup = () => {
           console.error('❌ Error parsing stored progress:', e);
         }
       }
-      
+
       // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
       // marquer automatiquement l'étape comme complétée localement
       if (hasBasicInfo() && !isStepCompleted) {
         console.log('🎯 Auto-completing step 9 locally because basic info is present');
-        
+
         // Marquer l'étape comme complétée localement
         setIsStepCompleted(true);
-        
+
         // Mettre à jour le localStorage avec l'étape 9 marquée comme complétée
         const currentCompletedSteps = [9];
         const currentProgress = {
@@ -116,26 +117,26 @@ const ReportingSetup = () => {
           lastUpdated: new Date().toISOString()
         };
         localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-        
+
         // Synchroniser avec les cookies
         Cookies.set('reportingSetupStepCompleted', 'true', { expires: 7 });
-        
+
         // Notifier le composant parent CompanyOnboarding via un événement personnalisé
-        window.dispatchEvent(new CustomEvent('stepCompleted', { 
-          detail: { 
-            stepId: 9, 
-            phaseId: 2, 
+        window.dispatchEvent(new CustomEvent('stepCompleted', {
+          detail: {
+            stepId: 9,
+            phaseId: 2,
             status: 'completed',
             completedSteps: currentCompletedSteps
-          } 
+          }
         }));
-        
+
         console.log('💾 Step 9 marked as completed locally and parent component notified');
       }
-      
+
     } catch (error) {
       console.error('❌ Error checking step status:', error);
-      
+
       // En cas d'erreur API, vérifier le localStorage
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
       if (storedProgress) {
@@ -154,7 +155,7 @@ const ReportingSetup = () => {
   const hasBasicInfo = () => {
     // Check if we have selected metrics and channels
     const hasInfo = selectedMetrics.length > 0 && selectedChannels.length > 0 && reportSchedule;
-    
+
     console.log('🔍 Checking basic info for ReportingSetup:', {
       selectedMetrics: selectedMetrics.length,
       selectedChannels: selectedChannels.length,
@@ -172,18 +173,18 @@ const ReportingSetup = () => {
       }
 
       console.log('🚀 Completing reporting setup...');
-      
+
       // Marquer l'étape 9 comme complétée
       const stepResponse = await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/9`,
+        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/9`,
         { status: 'completed' }
       );
-      
+
       console.log('✅ Step 9 marked as completed:', stepResponse.data);
-      
+
       // Mettre à jour l'état local
       setIsStepCompleted(true);
-      
+
       // Mettre à jour le localStorage
       const currentProgress = {
         currentPhase: 2,
@@ -191,22 +192,22 @@ const ReportingSetup = () => {
         lastUpdated: new Date().toISOString()
       };
       localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-      
+
       // Synchroniser avec les cookies
       Cookies.set('reportingSetupStepCompleted', 'true', { expires: 7 });
-      
+
       // Notifier le composant parent
-      window.dispatchEvent(new CustomEvent('stepCompleted', { 
-        detail: { 
-          stepId: 9, 
-          phaseId: 2, 
+      window.dispatchEvent(new CustomEvent('stepCompleted', {
+        detail: {
+          stepId: 9,
+          phaseId: 2,
           status: 'completed',
           completedSteps: [9]
-        } 
+        }
       }));
-      
+
       console.log('💾 Reporting setup completed and step 9 marked as completed');
-      
+
     } catch (error) {
       console.error('❌ Error completing reporting setup:', error);
     }
@@ -405,26 +406,24 @@ const ReportingSetup = () => {
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="text-lg font-medium text-gray-900">Communication Channels</h3>
         <p className="mt-1 text-sm text-gray-500">Select channels to include in your reports</p>
-        
+
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {channels.map((channel) => {
             const Icon = channel.icon;
             const isSelected = selectedChannels.includes(channel.id);
-            
+
             return (
               <div
                 key={channel.id}
-                className={`cursor-pointer rounded-lg border p-4 ${
-                  isSelected
-                    ? 'border-indigo-500 bg-indigo-50'
-                    : 'border-gray-200 hover:bg-gray-50'
-                }`}
+                className={`cursor-pointer rounded-lg border p-4 ${isSelected
+                  ? 'border-indigo-500 bg-indigo-50'
+                  : 'border-gray-200 hover:bg-gray-50'
+                  }`}
                 onClick={() => toggleChannel(channel.id)}
               >
                 <div className="flex items-center space-x-3">
-                  <div className={`rounded-lg p-2 ${
-                    isSelected ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-500'
-                  }`}>
+                  <div className={`rounded-lg p-2 ${isSelected ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-500'
+                    }`}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <div>
@@ -454,26 +453,24 @@ const ReportingSetup = () => {
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="text-lg font-medium text-gray-900">Cross-Channel Metrics</h3>
         <p className="mt-1 text-sm text-gray-500">Select metrics to track across all channels</p>
-        
+
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {metrics.map((metric) => {
             const Icon = metric.icon;
             const isSelected = selectedMetrics.includes(metric.id);
-            
+
             return (
               <div
                 key={metric.id}
-                className={`cursor-pointer rounded-lg border p-4 ${
-                  isSelected
-                    ? 'border-indigo-500 bg-indigo-50'
-                    : 'border-gray-200 hover:bg-gray-50'
-                }`}
+                className={`cursor-pointer rounded-lg border p-4 ${isSelected
+                  ? 'border-indigo-500 bg-indigo-50'
+                  : 'border-gray-200 hover:bg-gray-50'
+                  }`}
                 onClick={() => toggleMetric(metric.id)}
               >
                 <div className="flex items-center space-x-3">
-                  <div className={`rounded-lg p-2 ${
-                    isSelected ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-500'
-                  }`}>
+                  <div className={`rounded-lg p-2 ${isSelected ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-500'
+                    }`}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <div>
@@ -501,7 +498,7 @@ const ReportingSetup = () => {
                     {dashboard.metrics.map((metricId) => {
                       const metric = metrics.find(m => m.id === metricId);
                       if (!metric) return null;
-                      
+
                       return (
                         <span
                           key={metricId}

@@ -55,6 +55,7 @@ interface CompanyResponse {
 }
 
 function CompanyProfile() {
+  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
   const [company, setCompany] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +97,7 @@ function CompanyProfile() {
       isStepCompleted,
       hasBasicInfo: hasBasicInfo()
     });
-    
+
     if (company && !isStepCompleted && hasBasicInfo()) {
       console.log('🎯 Triggering automatic step completion check');
       // Si l'entreprise a les informations de base, on peut marquer l'étape comme complétée
@@ -121,16 +122,16 @@ function CompanyProfile() {
         console.log('❌ No companyId available for step status check');
         return;
       }
-      
+
       console.log('🔍 Checking step 1 status for company:', companyId);
-      
+
       // Vérifier l'état de l'étape 1 via l'API d'onboarding principale
       const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding`
       );
-      
+
       console.log('📡 API response for onboarding:', response.data);
-      
+
       if (response.data && (response.data as any).completedSteps && Array.isArray((response.data as any).completedSteps)) {
         if ((response.data as any).completedSteps.includes(1)) {
           console.log('✅ Step 1 is already completed according to API');
@@ -140,7 +141,7 @@ function CompanyProfile() {
           console.log('⚠️ Step 1 is not completed according to API');
         }
       }
-      
+
       // Vérifier aussi le localStorage pour la cohérence
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
       if (storedProgress) {
@@ -158,45 +159,45 @@ function CompanyProfile() {
       } else {
         console.log('💾 No stored progress found in localStorage');
       }
-      
+
       // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
       // marquer automatiquement l'étape comme complétée localement
       if (hasBasicInfo()) {
         console.log('🎯 Auto-completing step 1 locally because basic info is present');
-        
+
         // Marquer l'étape comme complétée localement
         setIsStepCompleted(true);
-        
+
         // Mettre à jour le localStorage avec l'étape 1 marquée comme complétée
         const currentCompletedSteps = (response.data as any)?.completedSteps || [];
         const newCompletedSteps = currentCompletedSteps.includes(1) ? currentCompletedSteps : [...currentCompletedSteps, 1];
-        
+
         const currentProgress = {
           currentPhase: 1,
           completedSteps: newCompletedSteps,
           lastUpdated: new Date().toISOString()
         };
         localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-        
+
         // Synchroniser avec les cookies
         Cookies.set('companyProfileStepCompleted', 'true', { expires: 7 });
-        
+
         // Notifier le composant parent CompanyOnboarding via un événement personnalisé
-        window.dispatchEvent(new CustomEvent('stepCompleted', { 
-          detail: { 
-            stepId: 1, 
-            phaseId: 1, 
+        window.dispatchEvent(new CustomEvent('stepCompleted', {
+          detail: {
+            stepId: 1,
+            phaseId: 1,
             status: 'completed',
             completedSteps: newCompletedSteps
-          } 
+          }
         }));
-        
+
         console.log('💾 Step 1 marked as completed locally and parent component notified');
-        
+
       } else {
         console.log('⚠️ Cannot auto-complete step 1 because basic info is missing');
       }
-      
+
     } catch (error) {
       console.error('❌ Error checking step status:', error);
     }
@@ -204,21 +205,21 @@ function CompanyProfile() {
 
   // Helper functions for the new UI
   const hasContactInfo = company.contact && (
-    company.contact.email || 
-    company.contact.phone || 
-    company.contact.website || 
+    company.contact.email ||
+    company.contact.phone ||
+    company.contact.website ||
     company.contact.address
   );
 
   const hasSocialMedia = company.socialMedia && (
-    company.socialMedia.linkedin || 
-    company.socialMedia.twitter || 
-    company.socialMedia.facebook || 
+    company.socialMedia.linkedin ||
+    company.socialMedia.twitter ||
+    company.socialMedia.facebook ||
     company.socialMedia.instagram
   );
 
   const hasLocation = company.location && (
-    company.location.lat && 
+    company.location.lat &&
     company.location.lng
   );
 
@@ -250,19 +251,19 @@ function CompanyProfile() {
   };
 
   // EditableField component
-  const EditableField = ({ 
-    value, 
-    field, 
-    icon: Icon, 
+  const EditableField = ({
+    value,
+    field,
+    icon: Icon,
     className = ""
-  }: { 
-    value: any; 
-    field: string; 
-    icon?: React.ElementType; 
+  }: {
+    value: any;
+    field: string;
+    icon?: React.ElementType;
     className?: string;
   }) => {
     const isEditing = editingField === field && editMode;
-    
+
     const handleFieldEdit = () => {
       if (editMode) {
         setEditingField(field);
@@ -272,11 +273,11 @@ function CompanyProfile() {
         }));
       }
     };
-    
+
     const handleFieldSave = () => {
       handleApplyChanges(field);
     };
-    
+
     const handleFieldCancel = () => {
       setEditingField(null);
       setTempValues((prev) => ({
@@ -284,11 +285,11 @@ function CompanyProfile() {
         [field]: undefined,
       }));
     };
-    
+
     return (
       <div className={`relative ${className}`} onClick={handleFieldEdit}>
         {Icon && !isEditing && <Icon size={18} className="flex-shrink-0" />}
-        
+
         {isEditing ? (
           <div className="mt-2 w-full">
             <input
@@ -339,7 +340,7 @@ function CompanyProfile() {
     try {
       setLoading(true);
       const response = await axios.get<CompanyResponse>(
-        `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/details`
+        `${API_BASE_URL}/companies/${companyId}/details`
       );
       setCompany(response.data.data);
       if ((response.data.data as any).logo) {
@@ -367,7 +368,7 @@ function CompanyProfile() {
       setCompany((prev) => {
         const newCompany = { ...prev };
         let current = newCompany;
-        
+
         // Navigate to the nested object
         for (let i = 0; i < parts.length - 1; i++) {
           if (!current[parts[i]]) {
@@ -375,19 +376,19 @@ function CompanyProfile() {
           }
           current = current[parts[i]];
         }
-        
+
         // Set the value on the deepest level
         current[parts[parts.length - 1]] = tempValues[field];
         return newCompany;
       });
     } else {
       // Simple field, use original logic
-    setCompany((prev) => ({
-      ...prev,
-      [field]: tempValues[field],
-    }));
+      setCompany((prev) => ({
+        ...prev,
+        [field]: tempValues[field],
+      }));
     }
-    
+
     setEditingField(null);
     setTempValues({});
     setHasChanges(true);
@@ -399,43 +400,43 @@ function CompanyProfile() {
       console.log('📊 Current company data:', company);
       console.log('🔍 Has basic info:', hasBasicInfo());
       console.log('📝 Is step completed:', isStepCompleted);
-      
+
       // Sauvegarder les informations de l'entreprise
       await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}`,
+        `${API_BASE_URL}/companies/${companyId}`,
         company
       );
-      
+
       console.log('✅ Company data saved successfully');
-      
+
       // Marquer l'étape 1 comme complétée dans l'onboarding si les informations de base sont présentes
       if (!isStepCompleted && hasBasicInfo()) {
         console.log('🎯 Marking step 1 as completed...');
         try {
           console.log('🎯 Marking step 1 as completed in onboarding...');
-          
+
           // Récupérer l'état actuel de l'onboarding
           const onboardingResponse = await axios.get(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+            `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding`
           );
-          
+
           const currentCompletedSteps = (onboardingResponse.data as any)?.completedSteps || [];
           const newCompletedSteps = currentCompletedSteps.includes(1) ? currentCompletedSteps : [...currentCompletedSteps, 1];
-          
+
           // Mettre à jour l'onboarding avec l'étape 1 marquée comme complétée
           const updateResponse = await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`,
-            { 
+            `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding`,
+            {
               completedSteps: newCompletedSteps,
               currentPhase: 1
             }
           );
-          
+
           console.log('✅ Company Profile step 1 marked as completed:', updateResponse.data);
-          
+
           // Mettre à jour l'état local
           setIsStepCompleted(true);
-          
+
           // Mettre à jour le localStorage
           const currentProgress = {
             currentPhase: 1,
@@ -443,12 +444,12 @@ function CompanyProfile() {
             lastUpdated: new Date().toISOString()
           };
           localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-          
+
           // Synchroniser avec les cookies
           Cookies.set('companyProfileStepCompleted', 'true', { expires: 7 });
-          
+
           console.log('💾 Local state and storage updated after step completion');
-          
+
         } catch (onboardingError) {
           console.error('❌ Error updating onboarding progress:', onboardingError);
         }
@@ -458,7 +459,7 @@ function CompanyProfile() {
           hasBasicInfo: hasBasicInfo()
         });
       }
-      
+
       setHasChanges(false);
       setSaveSuccess(true);
 
@@ -515,7 +516,7 @@ function CompanyProfile() {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="bg-white rounded-2xl shadow-xl w-full p-8">
-      <div className="animate-pulse space-y-6">
+          <div className="animate-pulse space-y-6">
             <div className="h-20 bg-gray-200 rounded-xl w-full"></div>
             <div className="flex gap-6">
               <div className="h-24 w-24 bg-gray-200 rounded-xl"></div>
@@ -524,10 +525,10 @@ function CompanyProfile() {
                 <div className="h-6 bg-gray-200 rounded w-1/2"></div>
               </div>
             </div>
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
                 <div key={i} className="h-16 bg-gray-200 rounded-xl"></div>
-          ))}
+              ))}
             </div>
           </div>
         </div>
@@ -609,149 +610,148 @@ function CompanyProfile() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow-xl">
-          {/* Hero Section */}
-          <div className="relative h-80">
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{
-                backgroundImage:
-                  "url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80')",
-              }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/90 via-indigo-800/85 to-blue-900/80" />
+        {/* Hero Section */}
+        <div className="relative h-80">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage:
+                "url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80')",
+            }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/90 via-indigo-800/85 to-blue-900/80" />
 
-            
 
-            
 
-              <style>
-                {`
+
+
+            <style>
+              {`
                   @keyframes shine {
                     0% { transform: translateX(-200%); }
                     100% { transform: translateX(200%); }
                   }
                 `}
-              </style>
+            </style>
           </div>
 
-            <div className="relative h-full flex flex-col justify-end p-12 space-y-6">
-              <div className="flex items-center gap-6">
-                <div className="relative group">
-                  <div
-                    className={`w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center p-4 overflow-hidden ${
-                      editMode ? "cursor-pointer" : ""
+          <div className="relative h-full flex flex-col justify-end p-12 space-y-6">
+            <div className="flex items-center gap-6">
+              <div className="relative group">
+                <div
+                  className={`w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center p-4 overflow-hidden ${editMode ? "cursor-pointer" : ""
                     }`}
-                  >
-                    {logoUrl ? (
-                      <img
-                        src={logoUrl}
-                        alt={profile.name}
-                        className="w-full h-full object-contain"
-                        onError={(e) => {
-                          e.currentTarget.src = "";
-                          setLogoUrl("");
-                        }}
-                      />
-                    ) : (
-                      <Globe className="w-full h-full text-indigo-600" />
-                    )}
-                    {editMode && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="text-white text-center">
-                          <Upload size={20} className="mx-auto mb-1" />
-                          <span className="text-xs">Edit Logo</span>
-                        </div>
-          </div>
-        )}
-                </div>
-                  {editMode && editingField === "logo" && (
-                    <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg p-3 border border-gray-200">
-                      <div className="space-y-2">
-                        <label className="text-sm text-gray-600 block">
-                          Logo URL
-                        </label>
-                        <input
-                          type="text"
-                          value={logoUrl}
-                          onChange={handleLogoChange}
-                          placeholder="Enter logo URL..."
-                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                        />
-                        <div className="flex justify-end gap-2 mt-2">
-                          <button
-                            onClick={() => setEditingField(null)}
-                            className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
-                          >
-                            Cancel
-                          </button>
-                    <button
-                            onClick={() => {
-                              setCompany((prev) => ({
-                                ...prev,
-                                logo: logoUrl
-                              }));
-                              setEditingField(null);
-                              setHasChanges(true);
-                            }}
-                            className="px-3 py-1 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                          >
-                            Save
-                    </button>
-                        </div>
+                >
+                  {logoUrl ? (
+                    <img
+                      src={logoUrl}
+                      alt={profile.name}
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        e.currentTarget.src = "";
+                        setLogoUrl("");
+                      }}
+                    />
+                  ) : (
+                    <Globe className="w-full h-full text-indigo-600" />
+                  )}
+                  {editMode && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="text-white text-center">
+                        <Upload size={20} className="mx-auto mb-1" />
+                        <span className="text-xs">Edit Logo</span>
                       </div>
                     </div>
                   )}
-                  {editMode && (
-                    <button
-                      onClick={() =>
-                        setEditingField(editingField === "logo" ? null : "logo")
-                      }
-                      className="absolute -right-2 -top-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center text-gray-600 hover:text-indigo-600 transition-colors"
-                    >
-                      <Edit2 size={12} />
-                    </button>
-                  )}
                 </div>
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
+                {editMode && editingField === "logo" && (
+                  <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg p-3 border border-gray-200">
+                    <div className="space-y-2">
+                      <label className="text-sm text-gray-600 block">
+                        Logo URL
+                      </label>
+                      <input
+                        type="text"
+                        value={logoUrl}
+                        onChange={handleLogoChange}
+                        placeholder="Enter logo URL..."
+                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                      />
+                      <div className="flex justify-end gap-2 mt-2">
+                        <button
+                          onClick={() => setEditingField(null)}
+                          className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => {
+                            setCompany((prev) => ({
+                              ...prev,
+                              logo: logoUrl
+                            }));
+                            setEditingField(null);
+                            setHasChanges(true);
+                          }}
+                          className="px-3 py-1 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {editMode && (
+                  <button
+                    onClick={() =>
+                      setEditingField(editingField === "logo" ? null : "logo")
+                    }
+                    className="absolute -right-2 -top-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center text-gray-600 hover:text-indigo-600 transition-colors"
+                  >
+                    <Edit2 size={12} />
+                  </button>
+                )}
+              </div>
+              <div>
+                <div className="flex items-center gap-3 mb-2">
                   <EditableField
                     value={profile.name}
                     field="name"
-                      className="text-5xl font-bold text-white tracking-tight"
+                    className="text-5xl font-bold text-white tracking-tight"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-6 text-white/90">
+                  {profile.industry && (
+                    <EditableField
+                      value={profile.industry}
+                      field="industry"
+                      icon={Factory}
+                      className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm"
                     />
-                  </div>
-                  <div className="flex flex-wrap gap-6 text-white/90">
-                    {profile.industry && (
-                      <EditableField
-                        value={profile.industry}
-                        field="industry"
-                        icon={Factory}
-                        className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm"
-                      />
-                    )}
-                    {profile.founded && (
-                      <EditableField
-                        value={profile.founded}
-                        field="founded"
-                        icon={Calendar}
-                        className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm"
-                      />
-                    )}
-                    {profile.headquarters && (
-                      <EditableField
-                        value={profile.headquarters}
-                        field="headquarters"
-                        icon={MapPin}
-                        className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm"
-                      />
-                    )}
-                  </div>
+                  )}
+                  {profile.founded && (
+                    <EditableField
+                      value={profile.founded}
+                      field="founded"
+                      icon={Calendar}
+                      className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm"
+                    />
+                  )}
+                  {profile.headquarters && (
+                    <EditableField
+                      value={profile.headquarters}
+                      field="headquarters"
+                      icon={MapPin}
+                      className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full backdrop-blur-sm"
+                    />
+                  )}
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* What Makes Your Company Unique Button */}
-         
+          {/* What Makes Your Company Unique Button */}
+
         </div>
 
         {/* Main Content */}
@@ -799,7 +799,7 @@ function CompanyProfile() {
                         className="flex items-start gap-3 text-gray-600 text-sm"
                       />
                     )}
-            </div>
+                  </div>
 
                   {/* Map Integration */}
                   {(profile.contact?.address || hasLocation) && (
@@ -832,7 +832,7 @@ function CompanyProfile() {
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
                             <span>Map not available</span>
-          </div>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -1111,8 +1111,8 @@ function CompanyProfile() {
                             <div className="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-300 text-center text-gray-500 w-full">
                               Add technologies in edit mode
                             </div>
-                )}
-              </div>
+                          )}
+                        </div>
                       </div>
                       <div>
                         <h3 className="text-xl font-semibold text-gray-800 mb-4">
@@ -1129,48 +1129,46 @@ function CompanyProfile() {
                 </div>
               </section>
             </div>
-            </div>
           </div>
         </div>
+      </div>
 
       {/* Edit and Save buttons */}
       <div className="fixed right-6 top-6 flex items-center gap-3 z-10">
-          <button
-            onClick={() => setEditMode(!editMode)}
-            className={`p-2 rounded-full transition-all duration-300 ${
-              editMode
-                ? "bg-green-500 text-white hover:bg-green-600"
-                : "bg-white text-gray-600 hover:bg-gray-100"
+        <button
+          onClick={() => setEditMode(!editMode)}
+          className={`p-2 rounded-full transition-all duration-300 ${editMode
+            ? "bg-green-500 text-white hover:bg-green-600"
+            : "bg-white text-gray-600 hover:bg-gray-100"
             }`}
+        >
+          <Edit2 size={20} />
+        </button>
+      </div>
+
+      {/* Save Changes Button */}
+      {editMode && hasChanges && (
+        <div className="fixed bottom-6 right-6 z-10">
+          <button
+            onClick={handleSaveAll}
+            className={`px-6 py-3 rounded-xl shadow-lg transition-all flex items-center gap-2 ${isStepCompleted
+              ? 'bg-blue-600 text-white hover:bg-blue-700'
+              : 'bg-green-600 text-white hover:bg-green-700'
+              }`}
           >
-            <Edit2 size={20} />
+            <Save size={18} />
+            {isStepCompleted ? 'Update Profile' : 'Save & Complete Step'}
           </button>
         </div>
+      )}
 
-        {/* Save Changes Button */}
-        {editMode && hasChanges && (
-        <div className="fixed bottom-6 right-6 z-10">
-            <button
-              onClick={handleSaveAll}
-              className={`px-6 py-3 rounded-xl shadow-lg transition-all flex items-center gap-2 ${
-                isStepCompleted
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-green-600 text-white hover:bg-green-700'
-              }`}
-            >
-              <Save size={18} />
-              {isStepCompleted ? 'Update Profile' : 'Save & Complete Step'}
-            </button>
-          </div>
-        )}
-
-        {/* Success message */}
-        {saveSuccess && (
+      {/* Success message */}
+      {saveSuccess && (
         <div className="fixed bottom-6 left-6 z-10 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-600 shadow-lg">
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-            <span>Company profile saved successfully</span>
+          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+          <span>Company profile saved successfully</span>
         </div>
-        )}
+      )}
     </div>
   );
 }
