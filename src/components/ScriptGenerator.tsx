@@ -402,7 +402,7 @@ const ScriptGenerator: React.FC = () => {
 
     const handleGigSelection = (gig: Gig) => {
         setSelectedGig(gig);
-        setDomaine(gig.category || '');
+        setDomaine(typeof gig.category === 'object' ? (gig.category as any).name : gig.category || '');
     };
 
     const updateOnboardingProgress = async () => {
@@ -482,7 +482,7 @@ const ScriptGenerator: React.FC = () => {
     const handleGigSelectInForm = (gigId: string) => {
         const gig = gigs.find(g => g._id === gigId) || null;
         setSelectedGig(gig);
-        setDomaine(gig?.category || '');
+        setDomaine(typeof gig?.category === 'object' ? (gig.category as any).name : gig?.category || '');
     };
 
     const handleShowScript = (script: Script) => {
