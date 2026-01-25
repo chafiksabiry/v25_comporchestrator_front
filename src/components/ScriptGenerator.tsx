@@ -466,7 +466,7 @@ const ScriptGenerator: React.FC = () => {
             if (scriptId) {
                 setTimeout(() => {
                     setSelectedScript(
-                        prev => scripts.find(s => s._id === scriptId) || null
+                        (prev: any) => scripts.find((s: { _id: any; }) => s._id === scriptId) || null
                     );
                 }, 300);
             } else {
@@ -480,7 +480,7 @@ const ScriptGenerator: React.FC = () => {
     };
 
     const handleGigSelectInForm = (gigId: string) => {
-        const gig = gigs.find(g => g._id === gigId) || null;
+        const gig = gigs.find((g: { _id: string; }) => g._id === gigId) || null;
         setSelectedGig(gig);
         setDomaine(typeof gig?.category === 'object' ? (gig.category as any).name : gig?.category || '');
     };
@@ -491,7 +491,7 @@ const ScriptGenerator: React.FC = () => {
     };
 
     const handleShowFormClick = () => {
-        setView(view => view === 'form' ? 'table' : 'form');
+        setView((view: string) => view === 'form' ? 'table' : 'form');
         setSelectedScript(null);
     };
 
@@ -522,8 +522,8 @@ const ScriptGenerator: React.FC = () => {
             console.log('[SCRIPTS] Script status updated successfully:', data);
 
             // Update the script in the local state
-            setScripts(prevScripts =>
-                prevScripts.map(script =>
+            setScripts((prevScripts: any[]) =>
+                prevScripts.map((script: { _id: string; }) =>
                     script._id === scriptId
                         ? { ...script, isActive }
                         : script
@@ -532,7 +532,7 @@ const ScriptGenerator: React.FC = () => {
 
             // If the updated script was selected, update the selected script as well
             if (selectedScript?._id === scriptId) {
-                setSelectedScript(prev => prev ? { ...prev, isActive } : null);
+                setSelectedScript((prev: any) => prev ? { ...prev, isActive } : null);
             }
 
         } catch (err: any) {
@@ -565,7 +565,7 @@ const ScriptGenerator: React.FC = () => {
             console.log('[SCRIPTS] Script deleted successfully:', data);
 
             // Remove the script from the local state
-            setScripts(prevScripts => prevScripts.filter(script => script._id !== scriptId));
+            setScripts((prevScripts: any[]) => prevScripts.filter((script: { _id: string; }) => script._id !== scriptId));
 
             // If the deleted script was selected, clear the selection and go back to table
             if (selectedScript?._id === scriptId) {
@@ -609,8 +609,8 @@ const ScriptGenerator: React.FC = () => {
             console.log('[SCRIPTS] Script regenerated successfully:', data);
 
             // Update the script in the local state
-            setScripts(prevScripts =>
-                prevScripts.map(script =>
+            setScripts((prevScripts: any[]) =>
+                prevScripts.map((script: { _id: string; }) =>
                     script._id === scriptId
                         ? data.data
                         : script
@@ -632,7 +632,7 @@ const ScriptGenerator: React.FC = () => {
 
     const handleRefineScriptPart = async (scriptId: string, stepIndex: number, refinementPrompt: string) => {
         try {
-            setProcessingSteps(prev => [...prev, stepIndex]);
+            setProcessingSteps((prev: any) => [...prev, stepIndex]);
             const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API;
             const companyId = getCompanyId();
             if (!backendUrl) throw new Error('Backend API URL not configured');
@@ -655,8 +655,8 @@ const ScriptGenerator: React.FC = () => {
             console.log('[SCRIPTS] Script part refined successfully:', data);
 
             // Update the script in the local state
-            setScripts(prevScripts =>
-                prevScripts.map(script =>
+            setScripts((prevScripts: any[]) =>
+                prevScripts.map((script: { _id: string; }) =>
                     script._id === scriptId
                         ? data.data.fullScript
                         : script
@@ -672,7 +672,7 @@ const ScriptGenerator: React.FC = () => {
             console.error('[SCRIPTS] Error refining script:', err);
             alert(`Failed to refine script: ${err.message}`);
         } finally {
-            setProcessingSteps(prev => prev.filter(id => id !== stepIndex));
+            setProcessingSteps((prev: any[]) => prev.filter((id: number) => id !== stepIndex));
         }
     };
 
@@ -682,7 +682,7 @@ const ScriptGenerator: React.FC = () => {
             const replicaText = newContent.replica.trim() === '' ? ' ' : newContent.replica;
 
             // Mettre à jour l'état avant la requête
-            setProcessingSteps(prev => [...prev, stepIndex]);
+            setProcessingSteps((prev: any) => [...prev, stepIndex]);
 
             const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API;
             if (!backendUrl) throw new Error('Backend API URL not configured');
@@ -709,8 +709,8 @@ const ScriptGenerator: React.FC = () => {
             console.log('[SCRIPTS] Script content updated successfully:', data);
 
             // Update the script in the local state
-            setScripts(prevScripts =>
-                prevScripts.map(script =>
+            setScripts((prevScripts: any[]) =>
+                prevScripts.map((script: { _id: string; }) =>
                     script._id === scriptId
                         ? data.data.fullScript
                         : script
@@ -726,7 +726,7 @@ const ScriptGenerator: React.FC = () => {
             console.error('[SCRIPTS] Error updating script content:', err);
             alert(`Failed to update script content: ${err.message}`);
         } finally {
-            setProcessingSteps(prev => prev.filter(id => id !== stepIndex));
+            setProcessingSteps((prev: any[]) => prev.filter((id: number) => id !== stepIndex));
         }
     };
 
@@ -737,8 +737,8 @@ const ScriptGenerator: React.FC = () => {
             if (!backendUrl) throw new Error('Backend API URL not configured');
 
             // Find the index where to insert the new replica
-            const phaseSteps = selectedScript?.script.filter(s => s.phase === phase) || [];
-            const lastPhaseStepIndex = selectedScript?.script.findIndex(s => s.phase === phase && s.replica === phaseSteps[phaseSteps.length - 1].replica);
+            const phaseSteps = selectedScript?.script.filter((s: { phase: string; }) => s.phase === phase) || [];
+            const lastPhaseStepIndex = selectedScript?.script.findIndex((s: { phase: string; replica: any; }) => s.phase === phase && s.replica === phaseSteps[phaseSteps.length - 1].replica);
             const insertIndex = lastPhaseStepIndex !== undefined ? lastPhaseStepIndex + 1 : selectedScript?.script.length || 0;
 
             // Use the new dedicated endpoint
@@ -761,8 +761,8 @@ const ScriptGenerator: React.FC = () => {
             const data = await response.json();
 
             // Update local state
-            setScripts(prevScripts =>
-                prevScripts.map(script =>
+            setScripts((prevScripts: any[]) =>
+                prevScripts.map((script: { _id: string; }) =>
                     script._id === scriptId
                         ? data.data.fullScript
                         : script
@@ -809,8 +809,8 @@ const ScriptGenerator: React.FC = () => {
             const data = await response.json();
 
             // Update local state
-            setScripts(prevScripts =>
-                prevScripts.map(script =>
+            setScripts((prevScripts: any[]) =>
+                prevScripts.map((script: { _id: string; }) =>
                     script._id === scriptId
                         ? data.data.fullScript
                         : script
@@ -969,10 +969,10 @@ const ScriptGenerator: React.FC = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
-                                        {scripts.map((script) => (
+                                        {scripts.map((script: Script) => (
                                             <tr key={script._id} className="hover:bg-gray-50 transition-colors group">
                                                 <td className="p-4 sticky left-0 bg-white group-hover:bg-gray-50">
-                                                    <div className="font-medium text-gray-900">{script.gig?.title || 'Unknown Gig'}</div>
+                                                    <div className="font-medium text-gray-900">{(typeof script.gig?.title === 'object' ? (script.gig.title as any).name || 'Gig' : script.gig?.title) || 'Unknown Gig'}</div>
                                                     <div className="text-xs text-gray-500 mt-1">{(typeof script.gig?.category === 'object' ? (script.gig.category as any).name : script.gig?.category) || 'No Category'}</div>
                                                 </td>
                                                 <td className="p-4">
@@ -991,7 +991,7 @@ const ScriptGenerator: React.FC = () => {
                                                 </td>
                                                 <td className="p-4">
                                                     <button
-                                                        onClick={(e) => {
+                                                        onClick={(e: { stopPropagation: () => void; }) => {
                                                             e.stopPropagation();
                                                             handleUpdateScriptStatus(script._id, !script.isActive);
                                                         }}
@@ -1021,7 +1021,7 @@ const ScriptGenerator: React.FC = () => {
                                                             <Eye size={18} />
                                                         </button>
                                                         <button
-                                                            onClick={(e) => {
+                                                            onClick={(e: { stopPropagation: () => void; }) => {
                                                                 e.stopPropagation();
                                                                 handleDeleteScript(script._id);
                                                             }}
@@ -1124,7 +1124,7 @@ const ScriptGenerator: React.FC = () => {
 
                                             <div className="divide-y divide-gray-100">
                                                 {group.steps.map((step, stepIdx) => {
-                                                    const absoluteIndex = selectedScript.script.findIndex(s => s === step);
+                                                    const absoluteIndex = selectedScript.script.findIndex((s: { phase: string; actor: string; replica: string; }) => s === step);
                                                     const isProcessing = processingSteps.includes(absoluteIndex);
                                                     const isEditing = editingStep?.index === absoluteIndex;
 
@@ -1169,7 +1169,7 @@ const ScriptGenerator: React.FC = () => {
                                                                         <div className="space-y-3">
                                                                             <textarea
                                                                                 value={editingStep.text}
-                                                                                onChange={(e) => setEditingStep({ ...editingStep, text: e.target.value })}
+                                                                                onChange={(e: { target: { value: any; }; }) => setEditingStep({ ...editingStep, text: e.target.value })}
                                                                                 className="w-full p-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none text-gray-800 text-base"
                                                                                 rows={3}
                                                                                 autoFocus
@@ -1206,7 +1206,7 @@ const ScriptGenerator: React.FC = () => {
                                                                                     type="text"
                                                                                     placeholder="Ask AI to refine this part (e.g., 'make it more persuasive', 'shorter', 'more formal')"
                                                                                     className="w-full bg-gray-50 border border-gray-200 rounded-full py-1.5 pl-4 pr-10 text-xs focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300 transition-all hover:bg-white"
-                                                                                    onKeyDown={(e) => {
+                                                                                    onKeyDown={(e: { key: string; currentTarget: { value: string; }; }) => {
                                                                                         if (e.key === 'Enter') {
                                                                                             handleRefineScriptPart(selectedScript._id, absoluteIndex, e.currentTarget.value);
                                                                                             e.currentTarget.value = '';
@@ -1262,7 +1262,7 @@ const ScriptGenerator: React.FC = () => {
                                         <div className="h-12 bg-gray-50 animate-pulse rounded-lg border border-gray-100"></div>
                                     ) : (
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {gigs.map(gig => (
+                                            {gigs.map((gig: { _id: string; title: any; category: any; skills: { professional: string | any[]; }; }) => (
                                                 <div
                                                     key={gig._id}
                                                     className={`
@@ -1275,16 +1275,16 @@ const ScriptGenerator: React.FC = () => {
                                                     onClick={() => handleGigSelectInForm(gig._id)}
                                                 >
                                                     <div className="flex justify-between items-start mb-2">
-                                                        <h3 className="font-semibold text-gray-900 line-clamp-1">{gig.title}</h3>
+                                                        <h3 className="font-semibold text-gray-900 line-clamp-1">{(typeof gig.title === 'object' ? (gig.title as any).name : gig.title)}</h3>
                                                         {selectedGig?._id === gig._id && (
                                                             <CheckCircle size={18} className="text-blue-600" />
                                                         )}
                                                     </div>
                                                     <div className="text-xs text-gray-500 mb-3">{typeof gig.category === 'object' ? (gig.category as any).name : gig.category}</div>
                                                     <div className="flex flex-wrap gap-1">
-                                                        {(gig.skills?.professional || []).slice(0, 2).map((s, idx) => (
+                                                        {(gig.skills?.professional || []).slice(0, 2).map((s: { skill: any; }, idx: any) => (
                                                             <span key={idx} className="inline-flex text-[10px] px-1.5 py-0.5 bg-gray-100 rounded text-gray-600">
-                                                                {s.skill}
+                                                                {typeof s.skill === 'object' ? (s.skill as any).name || 'Skill' : s.skill}
                                                             </span>
                                                         ))}
                                                         {(gig.skills?.professional?.length || 0) > 2 && (
@@ -1310,7 +1310,7 @@ const ScriptGenerator: React.FC = () => {
                                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all"
                                                     placeholder="e.g. CMOs of SaaS companies, Homeowners"
                                                     value={typeClient}
-                                                    onChange={(e) => setTypeClient(e.target.value)}
+                                                    onChange={(e: { target: { value: any; }; }) => setTypeClient(e.target.value)}
                                                     required
                                                 />
                                             </div>
@@ -1322,7 +1322,7 @@ const ScriptGenerator: React.FC = () => {
                                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all"
                                                     placeholder="e.g. French, Professional but friendly"
                                                     value={langueTon}
-                                                    onChange={(e) => setLangueTon(e.target.value)}
+                                                    onChange={(e: { target: { value: any; }; }) => setLangueTon(e.target.value)}
                                                     required
                                                 />
                                             </div>
@@ -1336,7 +1336,7 @@ const ScriptGenerator: React.FC = () => {
                                                 placeholder="Additional context: campaign goals, specific offers, key selling points..."
                                                 rows={4}
                                                 value={contexte}
-                                                onChange={(e) => setContexte(e.target.value)}
+                                                onChange={(e: { target: { value: any; }; }) => setContexte(e.target.value)}
                                                 required
                                             />
                                         </div>
