@@ -973,7 +973,7 @@ const ScriptGenerator: React.FC = () => {
                                             <tr key={script._id} className="hover:bg-gray-50 transition-colors group">
                                                 <td className="p-4 sticky left-0 bg-white group-hover:bg-gray-50">
                                                     <div className="font-medium text-gray-900">{script.gig?.title || 'Unknown Gig'}</div>
-                                                    <div className="text-xs text-gray-500 mt-1">{script.gig?.category || 'No Category'}</div>
+                                                    <div className="text-xs text-gray-500 mt-1">{(typeof script.gig?.category === 'object' ? (script.gig.category as any).name : script.gig?.category) || 'No Category'}</div>
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="text-sm text-gray-800">{script.targetClient || 'N/A'}</div>
@@ -1025,7 +1025,7 @@ const ScriptGenerator: React.FC = () => {
                                                                 e.stopPropagation();
                                                                 handleDeleteScript(script._id);
                                                             }}
-                                                            disabled={deletingScriptId === script.script}
+                                                            disabled={deletingScriptId === script._id}
                                                             className={`p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ${deletingScriptId === script._id ? 'opacity-50 cursor-not-allowed' : ''
                                                                 }`}
                                                             title="Delete Script"
@@ -1280,7 +1280,7 @@ const ScriptGenerator: React.FC = () => {
                                                             <CheckCircle size={18} className="text-blue-600" />
                                                         )}
                                                     </div>
-                                                    <div className="text-xs text-gray-500 mb-3">{gig.category}</div>
+                                                    <div className="text-xs text-gray-500 mb-3">{typeof gig.category === 'object' ? (gig.category as any).name : gig.category}</div>
                                                     <div className="flex flex-wrap gap-1">
                                                         {(gig.skills?.professional || []).slice(0, 2).map((s, idx) => (
                                                             <span key={idx} className="inline-flex text-[10px] px-1.5 py-0.5 bg-gray-100 rounded text-gray-600">
