@@ -1052,7 +1052,7 @@ const ScriptGenerator: React.FC = () => {
                             <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-start md:space-y-0">
                                 <div>
                                     <div className="flex items-center gap-3 mb-2">
-                                        <h2 className="text-xl font-bold text-gray-900">{selectedScript.gig?.title}</h2>
+                                        <h2 className="text-xl font-bold text-gray-900">{(typeof selectedScript.gig?.title === 'object' ? (selectedScript.gig.title as any).name : selectedScript.gig?.title) || 'Gig'}</h2>
                                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${selectedScript.isActive
                                             ? 'bg-green-50 text-green-700 border-green-200'
                                             : 'bg-gray-100 text-gray-600 border-gray-200'
