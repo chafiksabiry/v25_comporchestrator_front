@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Upload, File, FileText, Video, Link as LinkIcon, Plus, Search, Trash2, Filter, Mic, Play, Clock, Pause, ChevronDown, ChevronUp, X, ExternalLink, Eye, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types/knowledgeTypes';
-import apiClient from '../api/knowledgeClient';
+import apiClient, { knowledgeApi } from '../api/knowledgeClient';
 
 const KnowledgeBase: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -497,7 +497,6 @@ const KnowledgeBase: React.FC = () => {
             // Reset form
             setUploadName('');
             setUploadDescription('');
-            setUploadFile(null);
             setUploadTags('');
             setShowUploadModal(false);
         } catch (error) {
@@ -505,6 +504,33 @@ const KnowledgeBase: React.FC = () => {
             alert('There was an error uploading your call recording. Please try again.');
         } finally {
             setIsUploading(false);
+        }
+    };
+
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    const handleAnalyze = async () => {
+        try {
+            const companyId = localStorage.getItem('companyId');
+            if (!companyId) {
+                alert('Company ID not found');
+                return;
+            }
+
+            setIsAnalyzing(true);
+            await knowledgeApi.analyzeKnowledgeBase(companyId);
+            alert('Analysis started! This may take a few minutes. Checking status...');
+
+            // Poll for status or just let the user know it's running in background
+        } catch (error: any) {
+            console.error('Error starting analysis:', error);
+            if (error.response?.status === 429) {
+                alert('Analysis already in progress or rate limit exceeded.');
+            } else {
+                alert('Failed to start analysis. Please try again.');
+            }
+        } finally {
+            setIsAnalyzing(false);
         }
     };
 
@@ -694,6 +720,15 @@ const KnowledgeBase: React.FC = () => {
                                 </select>
                             </div>
                         )}
+
+                        <button
+                            className={`px-4 py-2 rounded-lg flex items-center border ${isAnalyzing ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+                            onClick={handleAnalyze}
+                            disabled={isAnalyzing}
+                        >
+                            <Search size={18} className={`mr-2 ${isAnalyzing ? 'animate-pulse' : ''}`} />
+                            {isAnalyzing ? 'Analyzing...' : 'Analyze Base'}
+                        </button>
 
                         <button
                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center"
