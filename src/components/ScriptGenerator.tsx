@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import apiClient from '../api/knowledgeClient';
 import Cookies from 'js-cookie';
 import {
-    User, Headphones, Plus, ArrowLeft, Eye, Calendar, Target, Globe, Trash2, ToggleLeft, ToggleRight, Filter, X,
+    User, Headphones, Plus, ArrowLeft, Eye, Calendar, Target, Globe, Trash2, ToggleLeft, ToggleRight, Filter,
     FileText, HandHeart, Shield, Search, Star, FileCheck, AlertTriangle, CheckCircle, RefreshCw, Edit2, MessageSquare
 } from 'lucide-react';
 
@@ -318,7 +318,7 @@ const ScriptGenerator: React.FC = () => {
         setGigsError(null);
 
         try {
-            const gigsApiUrl = import.meta.env.VITE_GIGS_API_URL || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
+            const gigsApiUrl = import.meta.env.VITE_GIGS_API_URL;
             if (!gigsApiUrl) {
                 throw new Error('Gigs API URL not configured');
             }
@@ -402,7 +402,7 @@ const ScriptGenerator: React.FC = () => {
 
     const handleGigSelection = (gig: Gig) => {
         setSelectedGig(gig);
-        setDomaine(typeof gig.category === 'object' ? (gig.category as any).name : gig.category || '');
+        setDomaine(gig.category || '');
     };
 
     const updateOnboardingProgress = async () => {
@@ -466,7 +466,7 @@ const ScriptGenerator: React.FC = () => {
             if (scriptId) {
                 setTimeout(() => {
                     setSelectedScript(
-                        (prev: any) => scripts.find((s: { _id: any; }) => s._id === scriptId) || null
+                        prev => scripts.find(s => s._id === scriptId) || null
                     );
                 }, 300);
             } else {
@@ -480,9 +480,9 @@ const ScriptGenerator: React.FC = () => {
     };
 
     const handleGigSelectInForm = (gigId: string) => {
-        const gig = gigs.find((g: { _id: string; }) => g._id === gigId) || null;
+        const gig = gigs.find(g => g._id === gigId) || null;
         setSelectedGig(gig);
-        setDomaine(typeof gig?.category === 'object' ? (gig.category as any).name : gig?.category || '');
+        setDomaine(gig?.category || '');
     };
 
     const handleShowScript = (script: Script) => {
@@ -491,7 +491,7 @@ const ScriptGenerator: React.FC = () => {
     };
 
     const handleShowFormClick = () => {
-        setView((view: string) => view === 'form' ? 'table' : 'form');
+        setView(view => view === 'form' ? 'table' : 'form');
         setSelectedScript(null);
     };
 
@@ -522,8 +522,8 @@ const ScriptGenerator: React.FC = () => {
             console.log('[SCRIPTS] Script status updated successfully:', data);
 
             // Update the script in the local state
-            setScripts((prevScripts: any[]) =>
-                prevScripts.map((script: { _id: string; }) =>
+            setScripts(prevScripts =>
+                prevScripts.map(script =>
                     script._id === scriptId
                         ? { ...script, isActive }
                         : script
@@ -532,7 +532,7 @@ const ScriptGenerator: React.FC = () => {
 
             // If the updated script was selected, update the selected script as well
             if (selectedScript?._id === scriptId) {
-                setSelectedScript((prev: any) => prev ? { ...prev, isActive } : null);
+                setSelectedScript(prev => prev ? { ...prev, isActive } : null);
             }
 
         } catch (err: any) {
@@ -565,7 +565,7 @@ const ScriptGenerator: React.FC = () => {
             console.log('[SCRIPTS] Script deleted successfully:', data);
 
             // Remove the script from the local state
-            setScripts((prevScripts: any[]) => prevScripts.filter((script: { _id: string; }) => script._id !== scriptId));
+            setScripts(prevScripts => prevScripts.filter(script => script._id !== scriptId));
 
             // If the deleted script was selected, clear the selection and go back to table
             if (selectedScript?._id === scriptId) {
@@ -609,8 +609,8 @@ const ScriptGenerator: React.FC = () => {
             console.log('[SCRIPTS] Script regenerated successfully:', data);
 
             // Update the script in the local state
-            setScripts((prevScripts: any[]) =>
-                prevScripts.map((script: { _id: string; }) =>
+            setScripts(prevScripts =>
+                prevScripts.map(script =>
                     script._id === scriptId
                         ? data.data
                         : script
@@ -632,7 +632,7 @@ const ScriptGenerator: React.FC = () => {
 
     const handleRefineScriptPart = async (scriptId: string, stepIndex: number, refinementPrompt: string) => {
         try {
-            setProcessingSteps((prev: any) => [...prev, stepIndex]);
+            setProcessingSteps(prev => [...prev, stepIndex]);
             const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API;
             const companyId = getCompanyId();
             if (!backendUrl) throw new Error('Backend API URL not configured');
@@ -655,8 +655,8 @@ const ScriptGenerator: React.FC = () => {
             console.log('[SCRIPTS] Script part refined successfully:', data);
 
             // Update the script in the local state
-            setScripts((prevScripts: any[]) =>
-                prevScripts.map((script: { _id: string; }) =>
+            setScripts(prevScripts =>
+                prevScripts.map(script =>
                     script._id === scriptId
                         ? data.data.fullScript
                         : script
@@ -672,7 +672,7 @@ const ScriptGenerator: React.FC = () => {
             console.error('[SCRIPTS] Error refining script:', err);
             alert(`Failed to refine script: ${err.message}`);
         } finally {
-            setProcessingSteps((prev: any[]) => prev.filter((id: number) => id !== stepIndex));
+            setProcessingSteps(prev => prev.filter(id => id !== stepIndex));
         }
     };
 
@@ -682,7 +682,7 @@ const ScriptGenerator: React.FC = () => {
             const replicaText = newContent.replica.trim() === '' ? ' ' : newContent.replica;
 
             // Mettre à jour l'état avant la requête
-            setProcessingSteps((prev: any) => [...prev, stepIndex]);
+            setProcessingSteps(prev => [...prev, stepIndex]);
 
             const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API;
             if (!backendUrl) throw new Error('Backend API URL not configured');
@@ -709,8 +709,8 @@ const ScriptGenerator: React.FC = () => {
             console.log('[SCRIPTS] Script content updated successfully:', data);
 
             // Update the script in the local state
-            setScripts((prevScripts: any[]) =>
-                prevScripts.map((script: { _id: string; }) =>
+            setScripts(prevScripts =>
+                prevScripts.map(script =>
                     script._id === scriptId
                         ? data.data.fullScript
                         : script
@@ -726,7 +726,7 @@ const ScriptGenerator: React.FC = () => {
             console.error('[SCRIPTS] Error updating script content:', err);
             alert(`Failed to update script content: ${err.message}`);
         } finally {
-            setProcessingSteps((prev: any[]) => prev.filter((id: number) => id !== stepIndex));
+            setProcessingSteps(prev => prev.filter(id => id !== stepIndex));
         }
     };
 
@@ -737,8 +737,8 @@ const ScriptGenerator: React.FC = () => {
             if (!backendUrl) throw new Error('Backend API URL not configured');
 
             // Find the index where to insert the new replica
-            const phaseSteps = selectedScript?.script.filter((s: { phase: string; }) => s.phase === phase) || [];
-            const lastPhaseStepIndex = selectedScript?.script.findIndex((s: { phase: string; replica: any; }) => s.phase === phase && s.replica === phaseSteps[phaseSteps.length - 1].replica);
+            const phaseSteps = selectedScript?.script.filter(s => s.phase === phase) || [];
+            const lastPhaseStepIndex = selectedScript?.script.findIndex(s => s.phase === phase && s.replica === phaseSteps[phaseSteps.length - 1].replica);
             const insertIndex = lastPhaseStepIndex !== undefined ? lastPhaseStepIndex + 1 : selectedScript?.script.length || 0;
 
             // Use the new dedicated endpoint
@@ -761,8 +761,8 @@ const ScriptGenerator: React.FC = () => {
             const data = await response.json();
 
             // Update local state
-            setScripts((prevScripts: any[]) =>
-                prevScripts.map((script: { _id: string; }) =>
+            setScripts(prevScripts =>
+                prevScripts.map(script =>
                     script._id === scriptId
                         ? data.data.fullScript
                         : script
@@ -791,7 +791,7 @@ const ScriptGenerator: React.FC = () => {
         }
 
         try {
-            const backendUrl = import.meta.env.VITE_BACKEND_API;
+            const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API;
             if (!backendUrl) throw new Error('Backend API URL not configured');
 
             // Use the new dedicated endpoint
@@ -799,7 +799,7 @@ const ScriptGenerator: React.FC = () => {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
-                },
+                }
             });
 
             if (!response.ok) {
@@ -809,8 +809,8 @@ const ScriptGenerator: React.FC = () => {
             const data = await response.json();
 
             // Update local state
-            setScripts((prevScripts: any[]) =>
-                prevScripts.map((script: { _id: string; }) =>
+            setScripts(prevScripts =>
+                prevScripts.map(script =>
                     script._id === scriptId
                         ? data.data.fullScript
                         : script
@@ -827,553 +827,779 @@ const ScriptGenerator: React.FC = () => {
         }
     };
 
-    // State to track which step is being edited
-    const [editingStep, setEditingStep] = useState<{ index: number, text: string } | null>(null);
+    // État pour gérer l'édition
+    const [editingStep, setEditingStep] = useState<{ index: number; text: string } | null>(null);
+    const [refiningStep, setRefiningStep] = useState<{ index: number; prompt: string } | null>(null);
 
     return (
-        <div className="p-6 bg-gray-50 min-h-screen font-sans text-gray-800">
-            <div className="max-w-7xl mx-auto">
-
-                {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-                    <div>
-                        <button
-                            onClick={() => {
-                                window.dispatchEvent(
-                                    new CustomEvent('tabChange', {
-                                        detail: { tab: 'company-onboarding' },
-                                    })
-                                );
-                            }}
-                            className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors"
-                        >
-                            <ArrowLeft className="h-5 w-5 mr-2" />
-                            <span>Back to Onboarding</span>
-                        </button>
-                        <h1 className="text-2xl font-bold text-gray-900 mb-1 flex items-center">
-                            <Headphones className="mr-3 text-blue-600" size={28} />
-                            Script Generator
-                        </h1>
-                        <p className="text-gray-500 text-sm">Create and manage call scripts powered by AI</p>
-                    </div>
-                    <div className="mt-4 md:mt-0 flex items-center gap-3">
-                        <button
-                            onClick={handleBackToOrchestrator}
-                            className="group flex items-center px-4 py-2 bg-white text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
-                        >
-                            <ArrowLeft size={16} className="mr-2 group-hover:-translate-x-1 transition-transform" />
-                            Back to Dashboard
-                        </button>
-                        {view === 'table' && (
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+            <div className="max-w-6xl mx-auto p-6">
+                {/* Header */}
+                <div className="mb-8 flex items-center justify-between bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                    <div className="flex items-center gap-4">
+                        {isInAppMode() && (
                             <button
-                                onClick={handleShowFormClick}
-                                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm hover:shadow-md"
+                                onClick={handleBackToOrchestrator}
+                                className="p-3 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200 group"
+                                title="Back to Orchestrator"
                             >
-                                <Plus size={16} className="mr-2" />
-                                New Script
+                                <ArrowLeft className="w-6 h-6 group-hover:scale-110 transition-transform" />
                             </button>
                         )}
-                    </div>
-                </div>
-
-                {/* Error Messages */}
-                {(gigsError || scriptsError) && (
-                    <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm animate-fade-in">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <AlertTriangle className="h-5 w-5 text-red-500" />
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
+                                <Headphones className="w-8 h-8 text-white" />
                             </div>
-                            <div className="ml-3">
-                                <p className="text-sm text-red-700">
-                                    {gigsError && <span className="block">{gigsError}</span>}
-                                    {scriptsError && <span className="block">{scriptsError}</span>}
-                                </p>
+                            <div>
+                                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                                    Script Generator
+                                </h1>
+                                <p className="text-gray-500 text-sm">Create personalized call scripts for your gigs</p>
                             </div>
                         </div>
                     </div>
-                )}
+                    {view !== 'form' && (
+                        <button
+                            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 font-medium"
+                            onClick={handleShowFormClick}
+                        >
+                            <Plus className="w-5 h-5" />
+                            Generate New Script
+                        </button>
+                    )}
+                    {(view === 'form' || view === 'script') && (
+                        <button
+                            className="px-6 py-3 bg-white text-gray-700 border-2 border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 font-medium"
+                            onClick={handleBackToTable}
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                            Back to Scripts
+                        </button>
+                    )}
+                </div>
 
-                {/* View Switching Logic */}
-                {view === 'table' ? (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <h2 className="text-lg font-semibold text-gray-800 flex items-center">
-                                <FileText className="mr-2 text-gray-400" size={20} />
-                                Your Scripts
-                            </h2>
+                {/* Table view */}
+                {view === 'table' && (
+                    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                                        <Target className="w-6 h-6 text-blue-600" />
+                                        Your Generated Scripts
+                                    </h3>
+                                    <p className="text-gray-600 text-sm mt-1">Manage and view all your call scripts</p>
+                                </div>
 
-                            {/* Status Filter */}
-                            <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-lg border border-gray-100">
-                                <Filter size={14} className="text-gray-400 ml-2" />
-                                <button
-                                    onClick={() => setStatusFilter('all')}
-                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${statusFilter === 'all'
-                                        ? 'bg-white text-gray-800 shadow-sm border border-gray-200'
-                                        : 'text-gray-500 hover:text-gray-700'
-                                        }`}
-                                >
-                                    All
-                                </button>
-                                <button
-                                    onClick={() => setStatusFilter('active')}
-                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${statusFilter === 'active'
-                                        ? 'bg-white text-green-700 shadow-sm border border-green-100'
-                                        : 'text-gray-500 hover:text-gray-700'
-                                        }`}
-                                >
-                                    Active
-                                </button>
-                                <button
-                                    onClick={() => setStatusFilter('inactive')}
-                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${statusFilter === 'inactive'
-                                        ? 'bg-white text-gray-800 shadow-sm border border-gray-200'
-                                        : 'text-gray-500 hover:text-gray-700'
-                                        }`}
-                                >
-                                    Inactive
-                                </button>
+                                {/* Status Filter */}
+                                <div className="flex items-center gap-2">
+                                    <Filter className="w-4 h-4 text-gray-500" />
+                                    <select
+                                        value={statusFilter}
+                                        onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+                                        className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                    >
+                                        <option value="all">All Scripts</option>
+                                        <option value="active">Active Scripts</option>
+                                        <option value="inactive">Inactive Scripts</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
                         {isLoadingScripts ? (
-                            <div className="p-12 flex flex-col items-center justify-center text-gray-500">
-                                <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mb-3" />
-                                <p>Loading scripts...</p>
+                            <div className="p-12 text-center">
+                                <div className="inline-flex items-center gap-3 text-gray-600">
+                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                    Loading your scripts...
+                                </div>
+                            </div>
+                        ) : scriptsError ? (
+                            <div className="p-8 m-6 bg-red-50 border border-red-200 rounded-xl">
+                                <div className="flex items-center gap-3 text-red-700">
+                                    <div className="p-2 bg-red-100 rounded-lg">
+                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p className="font-medium">Error loading scripts</p>
+                                        <p className="text-sm">{scriptsError}</p>
+                                    </div>
+                                </div>
                             </div>
                         ) : scripts.length === 0 ? (
-                            <div className="p-16 text-center">
-                                <div className="bg-gray-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                                    <FileText className="text-gray-400" size={32} />
+                            <div className="p-12 text-center">
+                                <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                                    <Headphones className="w-8 h-8 text-gray-400" />
                                 </div>
-                                <h3 className="text-lg font-medium text-gray-900 mb-1">No scripts found</h3>
-                                <p className="text-gray-500 mb-6">Get started by generating your first call script.</p>
-                                <button
-                                    onClick={handleShowFormClick}
-                                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                                >
-                                    <Plus size={16} className="mr-2" />
-                                    Generate Script
-                                </button>
+
+                                {/* Different messages based on the current filter */}
+                                {statusFilter === 'all' ? (
+                                    <>
+                                        <h4 className="text-lg font-medium text-gray-700 mb-2">No scripts yet</h4>
+                                        <p className="text-gray-500 mb-6">Create your first call script to get started</p>
+                                        <button
+                                            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 font-medium mx-auto"
+                                            onClick={handleShowFormClick}
+                                        >
+                                            <Plus className="w-5 h-5" />
+                                            Generate Your First Script
+                                        </button>
+                                    </>
+                                ) : statusFilter === 'active' ? (
+                                    <>
+                                        <h4 className="text-lg font-medium text-gray-700 mb-2">No active scripts</h4>
+                                        <p className="text-gray-500 mb-6">All your scripts are currently inactive. You can activate them or create new ones.</p>
+                                        <div className="space-y-3">
+                                            <button
+                                                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 font-medium mx-auto"
+                                                onClick={handleShowFormClick}
+                                            >
+                                                <Plus className="w-5 h-5" />
+                                                Create New Script
+                                            </button>
+                                            <button
+                                                className="px-6 py-3 bg-white text-gray-700 border-2 border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 font-medium mx-auto"
+                                                onClick={() => setStatusFilter('all')}
+                                            >
+                                                <Filter className="w-5 h-5" />
+                                                View All Scripts
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <h4 className="text-lg font-medium text-gray-700 mb-2">No inactive scripts</h4>
+                                        <p className="text-gray-500 mb-6">All your scripts are currently active. Great job keeping your scripts organized!</p>
+                                        <div className="space-y-3">
+                                            <button
+                                                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 font-medium mx-auto"
+                                                onClick={handleShowFormClick}
+                                            >
+                                                <Plus className="w-5 h-5" />
+                                                Create New Script
+                                            </button>
+                                            <button
+                                                className="px-6 py-3 bg-white text-gray-700 border-2 border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 font-medium mx-auto"
+                                                onClick={() => setStatusFilter('all')}
+                                            >
+                                                <Filter className="w-5 h-5" />
+                                                View All Scripts
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100">
-                                            <th className="p-4 font-medium sticky left-0 bg-gray-50">Gig / Campaign</th>
-                                            <th className="p-4 font-medium">Target / Language</th>
-                                            <th className="p-4 font-medium">Steps</th>
-                                            <th className="p-4 font-medium">Status</th>
-                                            <th className="p-4 font-medium">Created</th>
-                                            <th className="p-4 font-medium text-right">Actions</th>
+                                <table className="min-w-full">
+                                    <thead className="bg-gradient-to-r from-gray-50 to-blue-50">
+                                        <tr>
+                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Gig</th>
+                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Target Client</th>
+                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Language</th>
+                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
+                                            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Created</th>
+                                            <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
-                                        {scripts.map((script: Script) => (
-                                            <tr key={script._id} className="hover:bg-gray-50 transition-colors group">
-                                                <td className="p-4 sticky left-0 bg-white group-hover:bg-gray-50">
-                                                    <div className="font-medium text-gray-900">{(typeof script.gig?.title === 'object' ? (script.gig.title as any).name || 'Gig' : script.gig?.title) || 'Unknown Gig'}</div>
-                                                    <div className="text-xs text-gray-500 mt-1">{(typeof script.gig?.category === 'object' ? (script.gig.category as any).name : script.gig?.category) || 'No Category'}</div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <div className="text-sm text-gray-800">{script.targetClient || 'N/A'}</div>
-                                                    <div className="flex items-center mt-1">
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">
-                                                            <Globe size={10} className="mr-1" />
-                                                            {script.language || 'N/A'}
+                                        {scripts.map((script, idx) => {
+                                            const gig = script.gig || gigs.find(g => g._id === script.gigId);
+                                            return (
+                                                <tr
+                                                    key={script._id}
+                                                    className="hover:bg-blue-50 transition-colors duration-150 group"
+                                                >
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                                                                <Target className="w-4 h-4 text-blue-600" />
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <p className="font-semibold text-gray-800">
+                                                                        {script.gig?.title || 'Untitled Gig'}
+                                                                    </p>
+                                                                </div>
+                                                                <p className="text-sm text-gray-500">
+                                                                    {script.gig?.category || 'No category'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                                                            {script.targetClient}
                                                         </span>
-                                                    </div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                                        {script.script.length} steps
-                                                    </span>
-                                                </td>
-                                                <td className="p-4">
-                                                    <button
-                                                        onClick={(e: { stopPropagation: () => void; }) => {
-                                                            e.stopPropagation();
-                                                            handleUpdateScriptStatus(script._id, !script.isActive);
-                                                        }}
-                                                        disabled={updatingScriptId === script._id}
-                                                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${script.isActive ? 'bg-green-600' : 'bg-gray-200'
-                                                            }`}
-                                                        title={script.isActive ? "Deactivate script" : "Activate script"}
-                                                    >
-                                                        <span className="sr-only">Use setting</span>
-                                                        <span
-                                                            aria-hidden="true"
-                                                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${script.isActive ? 'translate-x-5' : 'translate-x-0'
-                                                                }`}
-                                                        />
-                                                    </button>
-                                                </td>
-                                                <td className="p-4 text-sm text-gray-500">
-                                                    {new Date(script.createdAt).toLocaleDateString()}
-                                                </td>
-                                                <td className="p-4 text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <button
-                                                            onClick={() => handleShowScript(script)}
-                                                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                            title="View Script"
-                                                        >
-                                                            <Eye size={18} />
-                                                        </button>
-                                                        <button
-                                                            onClick={(e: { stopPropagation: () => void; }) => {
-                                                                e.stopPropagation();
-                                                                handleDeleteScript(script._id);
-                                                            }}
-                                                            disabled={deletingScriptId === script._id}
-                                                            className={`p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors ${deletingScriptId === script._id ? 'opacity-50 cursor-not-allowed' : ''
-                                                                }`}
-                                                            title="Delete Script"
-                                                        >
-                                                            {deletingScriptId === script._id ? (
-                                                                <RefreshCw size={18} className="animate-spin" />
-                                                            ) : (
-                                                                <Trash2 size={18} />
-                                                            )}
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <Globe className="w-4 h-4 text-gray-400" />
+                                                            <span className="text-gray-700">{script.language}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${script.isActive
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : 'bg-gray-100 text-gray-800'
+                                                                }`}>
+                                                                <div className={`w-2 h-2 rounded-full mr-1 ${script.isActive ? 'bg-green-500' : 'bg-gray-500'
+                                                                    }`}></div>
+                                                                {script.isActive ? 'Active' : 'Inactive'}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2 text-gray-600">
+                                                            <Calendar className="w-4 h-4" />
+                                                            <span className="text-sm">{new Date(script.createdAt).toLocaleDateString()}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <button
+                                                                className="inline-flex items-center gap-1 px-3 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all duration-200 font-medium"
+                                                                onClick={() => handleShowScript(script)}
+                                                                title="View script"
+                                                            >
+                                                                <Eye className="w-4 h-4" />
+                                                                View
+                                                            </button>
+                                                            <button
+                                                                className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed ${script.isActive
+                                                                    ? 'text-orange-600 hover:text-orange-800 hover:bg-orange-50'
+                                                                    : 'text-green-600 hover:text-green-800 hover:bg-green-50'
+                                                                    }`}
+                                                                onClick={() => handleUpdateScriptStatus(script._id, !script.isActive)}
+                                                                disabled={updatingScriptId === script._id}
+                                                                title={script.isActive ? 'Deactivate script' : 'Activate script'}
+                                                            >
+                                                                {updatingScriptId === script._id ? (
+                                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                                                                ) : script.isActive ? (
+                                                                    <ToggleRight className="w-4 h-4" />
+                                                                ) : (
+                                                                    <ToggleLeft className="w-4 h-4" />
+                                                                )}
+                                                                {updatingScriptId === script._id
+                                                                    ? 'Updating...'
+                                                                    : script.isActive
+                                                                        ? 'Deactivate'
+                                                                        : 'Activate'
+                                                                }
+                                                            </button>
+                                                            <button
+                                                                className="inline-flex items-center gap-1 px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                onClick={() => handleDeleteScript(script._id)}
+                                                                disabled={deletingScriptId === script._id}
+                                                                title="Delete script"
+                                                            >
+                                                                {deletingScriptId === script._id ? (
+                                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                                                                ) : (
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                )}
+                                                                {deletingScriptId === script._id ? 'Deleting...' : 'Delete'}
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
                         )}
                     </div>
-                ) : view === 'script' && selectedScript ? (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        {/* Script View Header */}
-                        <div className="border-b border-gray-200 bg-white p-6 sticky top-0 z-10">
-                            <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-start md:space-y-0">
-                                <div>
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <h2 className="text-xl font-bold text-gray-900">{(typeof selectedScript.gig?.title === 'object' ? (selectedScript.gig.title as any).name : selectedScript.gig?.title) || 'Gig'}</h2>
-                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${selectedScript.isActive
-                                            ? 'bg-green-50 text-green-700 border-green-200'
-                                            : 'bg-gray-100 text-gray-600 border-gray-200'
-                                            }`}>
-                                            {selectedScript.isActive ? 'Active' : 'Inactive'}
-                                        </span>
+                )}
+
+                {/* Script detail view */}
+                {view === 'script' && selectedScript && (
+                    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden animate-fade-in">
+                        <div className="p-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-white/20 rounded-xl">
+                                        <Headphones className="w-8 h-8" />
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                                        <div className="flex items-center bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-                                            <Target size={16} className="mr-2 text-indigo-500" />
-                                            <span>{selectedScript.targetClient}</span>
+                                    <div>
+                                        <div className="flex items-center gap-3 mb-1">
+                                            <h3 className="text-2xl font-bold">Call Script</h3>
+                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-white/20 text-white border border-white/30">
+                                                Structured Call
+                                            </span>
                                         </div>
-                                        <div className="flex items-center bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-                                            <Globe size={16} className="mr-2 text-blue-500" />
-                                            <span>{selectedScript.language}</span>
-                                        </div>
+                                        <p className="text-blue-100">Ready to use conversation guide with structured phases</p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        onClick={() => handleRegenerateScript(selectedScript._id)}
-                                        disabled={regeneratingScriptId === selectedScript._id}
-                                        className="flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors border border-indigo-200"
-                                        title="Regenerate entire script"
-                                    >
-                                        <RefreshCw size={16} className={`mr-2 ${regeneratingScriptId === selectedScript._id ? 'animate-spin' : ''}`} />
-                                        {regeneratingScriptId === selectedScript._id ? 'Regenerating...' : 'Regenerate'}
-                                    </button>
-                                    <button
-                                        onClick={handleBackToTable}
-                                        className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
-                                    >
-                                        <ArrowLeft size={16} className="mr-2" />
-                                        Back to List
-                                    </button>
-                                </div>
+
+                                {/* Add Regenerate button */}
+                                <button
+                                    onClick={() => handleRegenerateScript(selectedScript._id)}
+                                    disabled={regeneratingScriptId === selectedScript._id}
+                                    className="px-4 py-2 bg-white/20 hover:bg-white/30 disabled:bg-white/10 disabled:cursor-not-allowed rounded-lg flex items-center gap-2 transition-all duration-200"
+                                >
+                                    {regeneratingScriptId === selectedScript._id ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                            Regenerating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <RefreshCw className="w-4 h-4" />
+                                            Regenerate Script
+                                        </>
+                                    )}
+                                </button>
                             </div>
                         </div>
 
-                        {/* Script Content */}
-                        <div className="p-6 bg-gray-50 min-h-[500px]">
-                            <div className="max-w-4xl mx-auto space-y-8">
-                                {groupScriptByPhase(selectedScript.script).map((group, groupIdx) => {
-                                    const phaseConfig = getPhaseConfig(group.phaseName);
-                                    const Icon = phaseConfig.icon;
+                        <div className="p-6 border-b border-gray-100 bg-gray-50">
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                <div className="flex items-center gap-2">
+                                    <Target className="w-4 h-4 text-blue-600" />
+                                    <div>
+                                        <p className="text-xs text-gray-500 uppercase tracking-wide">Gig</p>
+                                        <p className="font-medium text-gray-800">
+                                            {selectedScript.gig?.title || 'Untitled Gig'}
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                            {selectedScript.gig?.category || 'No category'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <User className="w-4 h-4 text-purple-600" />
+                                    <div>
+                                        <p className="text-xs text-gray-500 uppercase tracking-wide">Target Client</p>
+                                        <p className="font-medium text-gray-800">{selectedScript.targetClient}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Globe className="w-4 h-4 text-green-600" />
+                                    <div>
+                                        <p className="text-xs text-gray-500 uppercase tracking-wide">Language</p>
+                                        <p className="font-medium text-gray-800">{selectedScript.language}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {selectedScript.isActive ? (
+                                        <ToggleRight className="w-4 h-4 text-green-600" />
+                                    ) : (
+                                        <ToggleLeft className="w-4 h-4 text-gray-600" />
+                                    )}
+                                    <div>
+                                        <p className="text-xs text-gray-500 uppercase tracking-wide">Status</p>
+                                        <p className={`font-medium ${selectedScript.isActive ? 'text-green-800' : 'text-gray-800'}`}>
+                                            {selectedScript.isActive ? 'Active' : 'Inactive'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 text-orange-600" />
+                                    <div>
+                                        <p className="text-xs text-gray-500 uppercase tracking-wide">Created</p>
+                                        <p className="font-medium text-gray-800">{new Date(selectedScript.createdAt).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            {selectedScript.details && (
+                                <div className="mt-4 p-4 bg-blue-50 rounded-xl">
+                                    <p className="text-sm text-gray-600"><span className="font-medium">Context:</span> {selectedScript.details}</p>
+                                </div>
+                            )}
+                        </div>
 
-                                    return (
-                                        <div key={groupIdx} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                                            <div className={`px-6 py-4 border-b ${phaseConfig.borderColor} ${phaseConfig.bgColor} flex items-center justify-between`}>
-                                                <div className="flex items-center">
-                                                    <div className={`p-2 rounded-lg bg-white bg-opacity-60 mr-4 shadow-sm`}>
-                                                        <Icon size={20} className={phaseConfig.color} />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className={`font-semibold ${phaseConfig.color} text-lg`}>
-                                                            {phaseConfig.name}
-                                                        </h3>
-                                                        <p className="text-xs text-gray-500 mt-0.5">{phaseConfig.description}</p>
+                        {/* Script content with edit options */}
+                        <div className="p-6">
+                            <div className="space-y-8">
+                                {regeneratingScriptId === selectedScript?._id ? (
+                                    <div className="flex flex-col items-center justify-center py-12">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                                        <p className="text-gray-600 font-medium">Regenerating Script...</p>
+                                        <p className="text-sm text-gray-500 mt-2">This may take a few moments</p>
+                                    </div>
+                                ) : Array.isArray(selectedScript?.script) && selectedScript.script.length > 0 ? (
+                                    groupScriptByPhase(selectedScript.script).map((phaseGroup, phaseIdx) => {
+                                        const phaseConfig = getPhaseConfig(phaseGroup.phaseName);
+                                        const PhaseIcon = phaseConfig.icon;
+
+                                        return (
+                                            <div key={phaseIdx} className="relative">
+                                                {/* Phase Header */}
+                                                <div className={`mb-6 p-4 rounded-xl border-2 ${phaseConfig.bgColor} ${phaseConfig.borderColor} shadow-sm`}>
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`p-3 bg-white rounded-lg shadow-md ${phaseConfig.color}`}>
+                                                                <PhaseIcon className="w-6 h-6" />
+                                                            </div>
+                                                            <div>
+                                                                <h4 className={`text-lg font-bold ${phaseConfig.color}`}>
+                                                                    {phaseGroup.phaseName}
+                                                                </h4>
+                                                                <p className="text-sm text-gray-600 mt-1">
+                                                                    {phaseConfig.description}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Add Replica Buttons */}
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => handleAddReplica(selectedScript._id, phaseGroup.phaseName, 'agent')}
+                                                                className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-1"
+                                                            >
+                                                                <Plus className="w-4 h-4" />
+                                                                Add Agent Response
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleAddReplica(selectedScript._id, phaseGroup.phaseName, 'lead')}
+                                                                className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors flex items-center gap-1"
+                                                            >
+                                                                <Plus className="w-4 h-4" />
+                                                                Add Lead Response
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <button
-                                                    onClick={() => handleAddReplica(selectedScript._id, group.phaseName, 'agent')}
-                                                    className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-white rounded-lg transition-colors"
-                                                    title="Add new replica to this phase"
-                                                >
-                                                    <Plus size={18} />
-                                                </button>
-                                            </div>
 
-                                            <div className="divide-y divide-gray-100">
-                                                {group.steps.map((step, stepIdx) => {
-                                                    const absoluteIndex = selectedScript.script.findIndex((s: { phase: string; actor: string; replica: string; }) => s === step);
-                                                    const isProcessing = processingSteps.includes(absoluteIndex);
-                                                    const isEditing = editingStep?.index === absoluteIndex;
+                                                {/* Phase Steps with edit options */}
+                                                <div className="space-y-4 ml-4 border-l-2 border-gray-200 pl-6 relative">
+                                                    {phaseGroup.steps.map((step, stepIdx) => {
+                                                        const globalStepIdx = selectedScript.script.findIndex(s =>
+                                                            s.phase === step.phase && s.actor === step.actor && s.replica === step.replica
+                                                        );
 
-                                                    return (
-                                                        <div key={stepIdx} className={`p-6 hover:bg-gray-50 transition-colors ${step.actor === 'agent' ? 'bg-white' : 'bg-gray-50/50'}`}>
-                                                            <div className="flex items-start gap-4">
-                                                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm ${step.actor === 'agent'
-                                                                    ? 'bg-blue-100 text-blue-700 ring-4 ring-blue-50'
-                                                                    : 'bg-amber-100 text-amber-700 ring-4 ring-amber-50'
-                                                                    }`}>
-                                                                    {step.actor === 'agent' ? 'AG' : 'CL'}
+                                                        return (
+                                                            <div key={stepIdx} className="flex items-start gap-4 group relative">
+                                                                {/* Connection line dot */}
+                                                                <div className={`absolute -left-7 top-4 w-3 h-3 rounded-full border-2 border-white shadow-sm ${phaseConfig.bgColor} ${phaseConfig.borderColor}`}></div>
+
+                                                                <div className="flex-shrink-0">
+                                                                    {step.actor === 'agent' ? (
+                                                                        <div className="p-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg">
+                                                                            <Headphones className="w-5 h-5 text-white" />
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="p-3 bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg">
+                                                                            <User className="w-5 h-5 text-white" />
+                                                                        </div>
+                                                                    )}
                                                                 </div>
 
-                                                                <div className="flex-grow min-w-0 space-y-3">
-                                                                    <div className="flex items-center justify-between mb-1">
-                                                                        <span className={`text-xs font-semibold uppercase tracking-wider ${step.actor === 'agent' ? 'text-blue-600' : 'text-amber-600'
-                                                                            }`}>
-                                                                            {step.actor === 'agent' ? 'Agent / Sales Rep' : 'Client / Prospect'}
-                                                                        </span>
-
-                                                                        <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                            {!isEditing && (
-                                                                                <button
-                                                                                    onClick={() => setEditingStep({ index: absoluteIndex, text: step.replica })}
-                                                                                    className="p-1.5 text-gray-400 hover:text-blue-600 rounded"
-                                                                                    title="Edit text"
-                                                                                >
-                                                                                    <Edit2 size={14} />
-                                                                                </button>
-                                                                            )}
-                                                                            <button
-                                                                                onClick={() => handleDeleteReplica(selectedScript._id, absoluteIndex)}
-                                                                                className="p-1.5 text-gray-400 hover:text-red-600 rounded"
-                                                                                title="Delete replica"
-                                                                            >
-                                                                                <Trash2 size={14} />
-                                                                            </button>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className={
+                                                                        'rounded-2xl px-6 py-4 shadow-md border-l-4 transition-all duration-200 group-hover:shadow-lg ' +
+                                                                        (step.actor === 'agent'
+                                                                            ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-500 text-blue-900'
+                                                                            : 'bg-gradient-to-r from-green-50 to-green-100 border-green-500 text-green-900')
+                                                                    }>
+                                                                        <div className="flex flex-col gap-2">
+                                                                            <span className="font-bold text-sm uppercase tracking-wide opacity-75">
+                                                                                {step.actor === 'agent' ? 'Agent' : 'Lead'}:
+                                                                            </span>
+                                                                            <div className="min-h-[24px]"> {/* Hauteur minimale pour éviter les sauts */}
+                                                                                {processingSteps.includes(globalStepIdx) ? (
+                                                                                    <div className="flex items-center gap-3">
+                                                                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current"></div>
+                                                                                        <span className="text-sm font-medium">Updating response...</span>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <p className="leading-relaxed whitespace-pre-wrap">{step.replica}</p>
+                                                                                )}
+                                                                            </div>
                                                                         </div>
                                                                     </div>
+                                                                </div>
 
-                                                                    {isEditing ? (
-                                                                        <div className="space-y-3">
-                                                                            <textarea
-                                                                                value={editingStep.text}
-                                                                                onChange={(e: { target: { value: any; }; }) => setEditingStep({ ...editingStep, text: e.target.value })}
-                                                                                className="w-full p-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none text-gray-800 text-base"
-                                                                                rows={3}
-                                                                                autoFocus
-                                                                            />
-                                                                            <div className="flex justify-end gap-2">
+                                                                {/* Edit options */}
+                                                                <div className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                                                                    {/* Delete button */}
+                                                                    <button
+                                                                        onClick={() => handleDeleteReplica(selectedScript._id, globalStepIdx)}
+                                                                        className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                                                                        title="Delete replica"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </button>
+
+                                                                    {/* Direct edit */}
+                                                                    <button
+                                                                        onClick={() => setEditingStep({ index: globalStepIdx, text: step.replica })}
+                                                                        className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                                                                        title="Edit directly"
+                                                                    >
+                                                                        <Edit2 className="w-4 h-4" />
+                                                                    </button>
+
+                                                                    {/* Refine with prompt */}
+                                                                    <button
+                                                                        onClick={() => setRefiningStep({ index: globalStepIdx, prompt: '' })}
+                                                                        className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                                                                        title="Refine with prompt"
+                                                                    >
+                                                                        <MessageSquare className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+
+                                                                {/* Edit modal */}
+                                                                {editingStep?.index === globalStepIdx && (
+                                                                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                                                                        <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] flex flex-col">
+                                                                            <h3 className="text-lg font-bold mb-4">Edit Response</h3>
+                                                                            <div className="flex-1 min-h-0 overflow-y-auto">
+                                                                                <textarea
+                                                                                    value={editingStep.text}
+                                                                                    onChange={e => setEditingStep({ ...editingStep, text: e.target.value })}
+                                                                                    className="w-full h-full min-h-[200px] p-3 border-2 border-gray-200 rounded-lg mb-4 resize-none"
+                                                                                />
+                                                                            </div>
+                                                                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
                                                                                 <button
                                                                                     onClick={() => setEditingStep(null)}
-                                                                                    className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md"
+                                                                                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
                                                                                 >
                                                                                     Cancel
                                                                                 </button>
                                                                                 <button
                                                                                     onClick={() => {
-                                                                                        handleUpdateScriptContent(selectedScript._id, absoluteIndex, { replica: editingStep.text });
+                                                                                        handleUpdateScriptContent(selectedScript._id, globalStepIdx, { replica: editingStep.text });
                                                                                         setEditingStep(null);
                                                                                     }}
-                                                                                    className="px-3 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-md shadow-sm"
+                                                                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                                                                                 >
                                                                                     Save Changes
                                                                                 </button>
                                                                             </div>
                                                                         </div>
-                                                                    ) : (
-                                                                        <p className="text-gray-800 leading-relaxed text-base whitespace-pre-wrap">
-                                                                            {step.replica}
-                                                                        </p>
-                                                                    )}
+                                                                    </div>
+                                                                )}
 
-                                                                    {/* AI Refinement Tool */}
-                                                                    {!isEditing && (
-                                                                        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center">
-                                                                            <div className="relative flex-grow">
-                                                                                <input
-                                                                                    type="text"
-                                                                                    placeholder="Ask AI to refine this part (e.g., 'make it more persuasive', 'shorter', 'more formal')"
-                                                                                    className="w-full bg-gray-50 border border-gray-200 rounded-full py-1.5 pl-4 pr-10 text-xs focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-300 transition-all hover:bg-white"
-                                                                                    onKeyDown={(e: { key: string; currentTarget: { value: string; }; }) => {
-                                                                                        if (e.key === 'Enter') {
-                                                                                            handleRefineScriptPart(selectedScript._id, absoluteIndex, e.currentTarget.value);
-                                                                                            e.currentTarget.value = '';
-                                                                                        }
-                                                                                    }}
-                                                                                />
-                                                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-purple-400">
-                                                                                    {isProcessing ? (
-                                                                                        <RefreshCw size={12} className="animate-spin" />
-                                                                                    ) : (
-                                                                                        <MessageSquare size={12} />
-                                                                                    )}
+                                                                {/* Refine modal */}
+                                                                {refiningStep?.index === globalStepIdx && (
+                                                                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                                                                        <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] flex flex-col">
+                                                                            <h3 className="text-lg font-bold mb-4">Refine Response</h3>
+                                                                            <div className="flex-1 min-h-0 overflow-y-auto">
+                                                                                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                                                                                    <p className="text-sm text-gray-600 mb-2">Current response:</p>
+                                                                                    <p className="text-gray-800">{step.replica}</p>
                                                                                 </div>
+                                                                                <textarea
+                                                                                    value={refiningStep.prompt}
+                                                                                    onChange={e => setRefiningStep({ ...refiningStep, prompt: e.target.value })}
+                                                                                    placeholder="Describe how you want to refine this response..."
+                                                                                    className="w-full h-full min-h-[200px] p-3 border-2 border-gray-200 rounded-lg resize-none"
+                                                                                />
+                                                                            </div>
+                                                                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                                                                                <button
+                                                                                    onClick={() => setRefiningStep(null)}
+                                                                                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                                                                                >
+                                                                                    Cancel
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        handleRefineScriptPart(selectedScript._id, globalStepIdx, refiningStep.prompt);
+                                                                                        setRefiningStep(null);
+                                                                                    }}
+                                                                                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                                                                                >
+                                                                                    Refine Response
+                                                                                </button>
                                                                             </div>
                                                                         </div>
-                                                                    )}
-                                                                </div>
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="p-8 border-b border-gray-100 flex items-center justify-between">
-                            <div>
-                                <h2 className="text-xl font-bold text-gray-900 mb-2">New Call Script</h2>
-                                <p className="text-gray-500">Configure parameters to generate a tailored script</p>
-                            </div>
-                            <button
-                                onClick={handleShowFormClick}
-                                className="text-gray-400 hover:text-gray-600 transition-colors"
-                            >
-                                <X size={24} />
-                            </button>
-                        </div>
-
-                        <div className="p-8">
-                            <form onSubmit={handleSubmit} className="space-y-8 max-w-3xl mx-auto">
-                                {/* 1. Select Gig */}
-                                <div className="space-y-4">
-                                    <label className="block text-sm font-semibold text-gray-900">
-                                        Select Gig / Campaign <span className="text-red-500">*</span>
-                                    </label>
-
-                                    {isLoadingGigs ? (
-                                        <div className="h-12 bg-gray-50 animate-pulse rounded-lg border border-gray-100"></div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {gigs.map((gig: { _id: string; title: any; category: any; skills: { professional: string | any[]; }; }) => (
-                                                <div
-                                                    key={gig._id}
-                                                    className={`
-                            relative rounded-xl border-2 p-4 cursor-pointer transition-all hover:shadow-md
-                            ${selectedGig?._id === gig._id
-                                                            ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-500'
-                                                            : 'border-gray-200 hover:border-gray-300 bg-white'
-                                                        }
-                          `}
-                                                    onClick={() => handleGigSelectInForm(gig._id)}
-                                                >
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <h3 className="font-semibold text-gray-900 line-clamp-1">{(typeof gig.title === 'object' ? (gig.title as any).name : gig.title)}</h3>
-                                                        {selectedGig?._id === gig._id && (
-                                                            <CheckCircle size={18} className="text-blue-600" />
-                                                        )}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500 mb-3">{typeof gig.category === 'object' ? (gig.category as any).name : gig.category}</div>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {(gig.skills?.professional || []).slice(0, 2).map((s: { skill: any; }, idx: any) => (
-                                                            <span key={idx} className="inline-flex text-[10px] px-1.5 py-0.5 bg-gray-100 rounded text-gray-600">
-                                                                {typeof s.skill === 'object' ? (s.skill as any).name || 'Skill' : s.skill}
-                                                            </span>
-                                                        ))}
-                                                        {(gig.skills?.professional?.length || 0) > 2 && (
-                                                            <span className="inline-flex text-[10px] px-1.5 py-0.5 bg-gray-100 rounded text-gray-600">
-                                                                +{(gig.skills?.professional?.length || 0) - 2}
-                                                            </span>
-                                                        )}
-                                                    </div>
+                                                        );
+                                                    })}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {selectedGig && (
-                                    <div className="space-y-6 animate-fade-in">
-                                        {/* 2. Target Details */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="space-y-2">
-                                                <label className="block text-sm font-medium text-gray-700">Target Audience</label>
-                                                <input
-                                                    type="text"
-                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all"
-                                                    placeholder="e.g. CMOs of SaaS companies, Homeowners"
-                                                    value={typeClient}
-                                                    onChange={(e: { target: { value: any; }; }) => setTypeClient(e.target.value)}
-                                                    required
-                                                />
                                             </div>
-
-                                            <div className="space-y-2">
-                                                <label className="block text-sm font-medium text-gray-700">Language & Tone</label>
-                                                <input
-                                                    type="text"
-                                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all"
-                                                    placeholder="e.g. French, Professional but friendly"
-                                                    value={langueTon}
-                                                    onChange={(e: { target: { value: any; }; }) => setLangueTon(e.target.value)}
-                                                    required
-                                                />
-                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="text-center py-12">
+                                        <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                                            <Headphones className="w-8 h-8 text-gray-400" />
                                         </div>
-
-                                        {/* 3. Context */}
-                                        <div className="space-y-2">
-                                            <label className="block text-sm font-medium text-gray-700">Campaign Context</label>
-                                            <textarea
-                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all"
-                                                placeholder="Additional context: campaign goals, specific offers, key selling points..."
-                                                rows={4}
-                                                value={contexte}
-                                                onChange={(e: { target: { value: any; }; }) => setContexte(e.target.value)}
-                                                required
-                                            />
-                                        </div>
-
-                                        {/* Submit Button */}
-                                        <div className="pt-4 flex items-center justify-end">
-                                            <button
-                                                type="submit"
-                                                disabled={isLoading}
-                                                className={`
-                          flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-all transform hover:-translate-y-0.5 active:translate-y-0
-                          ${isLoading ? 'opacity-75 cursor-wait' : ''}
-                        `}
-                                            >
-                                                {isLoading ? (
-                                                    <>
-                                                        <RefreshCw className="animate-spin mr-3" size={20} />
-                                                        Generating Script...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Star className="mr-2" size={20} />
-                                                        Generate with AI
-                                                    </>
-                                                )}
-                                            </button>
-                                        </div>
+                                        <p className="text-gray-500">No script content available</p>
                                     </div>
                                 )}
-                            </form>
+                            </div>
                         </div>
                     </div>
                 )}
+
+                {/* Script Generation Form */}
+                {view === 'form' && (
+                    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden animate-fade-in">
+                        <div className="p-6 bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-white/20 rounded-xl">
+                                    <Plus className="w-8 h-8" />
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-bold">Create New Script</h3>
+                                    <p className="text-purple-100">Generate a personalized call script for your gig</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                            {/* Script Structure Info */}
+                            <div className="mb-8 p-6 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-xl">
+                                <h4 className="text-lg font-bold text-purple-800 mb-2 flex items-center gap-2">
+                                    <Target className="w-5 h-5" />
+                                    Structured Call Script
+                                </h4>
+                                <p className="text-purple-700 mb-4">Your script will be generated following a proven methodology with these key phases:</p>
+
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    {REPS_PHASES.map((phase, idx) => {
+                                        const PhaseIcon = phase.icon;
+                                        return (
+                                            <div key={idx} className={`p-3 rounded-lg border ${phase.bgColor} ${phase.borderColor} transition-all duration-200 hover:shadow-md`}>
+                                                <div className="flex items-center gap-2">
+                                                    <PhaseIcon className={`w-4 h-4 ${phase.color}`} />
+                                                    <p className={`text-xs font-semibold ${phase.color} leading-tight`}>
+                                                        {phase.name}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        Select Gig <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={selectedGig?._id || ''}
+                                        onChange={e => handleGigSelectInForm(e.target.value)}
+                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                                        required
+                                    >
+                                        <option value="">Choose a gig to create script for...</option>
+                                        {gigs.map(gig => (
+                                            <option key={gig._id} value={gig._id}>{gig.title || gig.category}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Domain</label>
+                                    <input
+                                        type="text"
+                                        value={domaine}
+                                        readOnly
+                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed"
+                                        placeholder="Auto-filled from selected gig"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Target Client (DISC Profile) <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    value={typeClient}
+                                    onChange={e => setTypeClient(e.target.value)}
+                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                                    required
+                                >
+                                    <option value="">Select client personality type...</option>
+                                    <option value="D">🎯 D: Direct and results-oriented</option>
+                                    <option value="I">🤝 I: Enthusiastic and relational</option>
+                                    <option value="S">🛡️ S: Reassuring and stable</option>
+                                    <option value="C">📊 C: Structured and analytical</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Context <span className="text-gray-400">(optional but recommended)</span>
+                                </label>
+                                <textarea
+                                    value={contexte}
+                                    onChange={e => setContexte(e.target.value)}
+                                    placeholder="Provide additional context like client history, emotional state, common objections, or specific situation details..."
+                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white resize-none"
+                                    rows={3}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Language & Tone <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={langueTon}
+                                    onChange={e => setLangueTon(e.target.value)}
+                                    placeholder="e.g., Professional yet warm, Casual and friendly, Formal and authoritative..."
+                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                                    required
+                                />
+                            </div>
+
+                            <div className="pt-4">
+                                <button
+                                    type="submit"
+                                    disabled={
+                                        isLoading ||
+                                        !selectedGig ||
+                                        !domaine.trim() ||
+                                        !typeClient.trim() ||
+                                        !langueTon.trim()
+                                    }
+                                    className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                                >
+                                    {isLoading ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                                            Generating Your Script...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Plus className="w-6 h-6" />
+                                            Generate Script
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+
+                            {error && (
+                                <div className="p-6 bg-red-50 border-2 border-red-200 rounded-xl animate-bounce">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-red-100 rounded-lg">
+                                            <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-red-800 font-semibold">Something went wrong</p>
+                                            <p className="text-red-700 text-sm mt-1">{error}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </form>
+                    </div>
+                )}
             </div>
+
+
         </div>
     );
 };
 
-export default ScriptGenerator;
-
+export default ScriptGenerator; 
