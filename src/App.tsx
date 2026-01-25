@@ -27,6 +27,7 @@ function App() {
 
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [userFullName, setUserFullName] = useState('Admin User');
 
   // Vérifier si nous sommes sur une page spéciale
   const isZohoCallback = window.location.pathname === '/zoho-callback';
@@ -40,6 +41,26 @@ function App() {
       window.location.href = '/auth';
       return;
     }
+
+    // Fetch user details to get full name
+    const fetchUserDetails = async () => {
+      if (userId) {
+        try {
+          const registrationBackendUrl = import.meta.env.VITE_REGISTRATION_BACKEND_URL;
+          const response = await fetch(`${registrationBackendUrl}/api/users/${userId}`);
+          if (response.ok) {
+            const userData = await response.json();
+            if (userData.fullName) {
+              setUserFullName(userData.fullName);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching user details:', error);
+        }
+      }
+    };
+
+    fetchUserDetails();
 
     // Initialize Zoho configuration
     const initializeZoho = async () => {
@@ -209,9 +230,9 @@ function App() {
               <div className="relative">
                 <div className="flex items-center space-x-2">
                   <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center text-white">
-                    A
+                    {userFullName.charAt(0).toUpperCase()}
                   </div>
-                  <span className="font-medium">Admin User</span>
+                  <span className="font-medium">{userFullName}</span>
                 </div>
               </div>
             </div>
