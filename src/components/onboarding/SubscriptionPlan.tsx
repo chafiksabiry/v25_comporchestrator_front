@@ -1,244 +1,276 @@
-import React, { useState, useEffect } from 'react';
-import { Check, CheckCircle2 } from 'lucide-react';
-import axios from 'axios';
-import Cookies from 'js-cookie';
+import React, { useState } from 'react';
+import {
+  CheckCircle,
+  XCircle,
+  CreditCard,
+  Building2,
+  Users,
+  Phone,
+  BarChart,
+  MessageSquare,
+  HelpCircle
+} from 'lucide-react';
 
 const SubscriptionPlan = () => {
-  const [isStepCompleted, setIsStepCompleted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const companyId = Cookies.get('companyId');
+  const [selectedPlan, setSelectedPlan] = useState('standard');
+  const [billingCycle, setBillingCycle] = useState('monthly');
 
-  // Vérifier l'état de l'étape au chargement
-  useEffect(() => {
-    if (companyId) {
-      checkStepStatus();
-      checkExistingSubscription();
+  const plans = [
+    {
+      id: 'free',
+      name: 'Free',
+      price: { monthly: 0, annual: 0 },
+      description: 'Perfect for trying out our services',
+      features: [
+        { name: 'Up to 5 active gigs', included: true },
+        { name: 'Basic REP matching', included: true },
+        { name: 'Standard support', included: true },
+        { name: 'Basic analytics', included: true },
+        { name: 'Single phone number', included: true },
+        { name: 'Email support', included: true },
+        { name: 'API access', included: false },
+        { name: 'Custom branding', included: false },
+        { name: 'Priority matching', included: false },
+        { name: 'Advanced analytics', included: false }
+      ]
+    },
+    {
+      id: 'standard',
+      name: 'Standard',
+      price: { monthly: 99, annual: 990 },
+      description: 'Great for growing businesses',
+      features: [
+        { name: 'Up to 20 active gigs', included: true },
+        { name: 'Advanced REP matching', included: true },
+        { name: 'Priority support', included: true },
+        { name: 'Advanced analytics', included: true },
+        { name: 'Multiple phone numbers', included: true },
+        { name: 'Chat support', included: true },
+        { name: 'API access', included: true },
+        { name: 'Custom branding', included: true },
+        { name: 'Priority matching', included: false },
+        { name: 'White-label solution', included: false }
+      ]
+    },
+    {
+      id: 'premium',
+      name: 'Premium',
+      price: { monthly: 299, annual: 2990 },
+      description: 'For enterprises with advanced needs',
+      features: [
+        { name: 'Unlimited active gigs', included: true },
+        { name: 'Premium REP matching', included: true },
+        { name: 'Dedicated support', included: true },
+        { name: 'Enterprise analytics', included: true },
+        { name: 'Unlimited phone numbers', included: true },
+        { name: '24/7 phone support', included: true },
+        { name: 'Advanced API access', included: true },
+        { name: 'Custom branding', included: true },
+        { name: 'Priority matching', included: true },
+        { name: 'White-label solution', included: true }
+      ]
     }
-  }, [companyId]);
+  ];
 
-  const checkExistingSubscription = async () => {
-    try {
-      if (!companyId) return;
-      
-      // Vérifier si l'entreprise a déjà un abonnement
-      const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/subscription`
-      );
-      
-      if (response.data && (response.data as any).subscription) {
-        // Si un abonnement existe, marquer automatiquement l'étape comme complétée
-        if (!isStepCompleted) {
-          try {
-            const stepResponse = await axios.put(
-              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/3`,
-              { status: 'completed' }
-            );
-            
-            console.log('✅ Subscription step 3 automatically marked as completed:', stepResponse.data);
-            
-            // Mettre à jour l'état local
-            setIsStepCompleted(true);
-            
-            // Mettre à jour le localStorage
-            const currentProgress = {
-              currentPhase: 1,
-              completedSteps: [3],
-              lastUpdated: new Date().toISOString()
-            };
-            localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-            
-            // Synchroniser avec les cookies
-            Cookies.set('subscriptionStepCompleted', 'true', { expires: 7 });
-            
-          } catch (autoCompleteError) {
-            console.error('Error auto-completing subscription step:', autoCompleteError);
-          }
-        }
-      }
-      
-    } catch (error) {
-      console.error('Error checking existing subscription:', error);
-    }
-  };
-
-  const checkStepStatus = async () => {
-    try {
-      if (!companyId) return;
-      
-      // Vérifier l'état de l'étape 3 (Subscription Plan) dans la phase 1
-      const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/3`
-      );
-      
-      if (response.data && (response.data as any).status === 'completed') {
-        setIsStepCompleted(true);
-        return;
-      }
-      
-      // Vérifier aussi le localStorage pour la cohérence
-      const storedProgress = localStorage.getItem('companyOnboardingProgress');
-      if (storedProgress) {
-        try {
-          const progress = JSON.parse(storedProgress);
-          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(3)) {
-            setIsStepCompleted(true);
-            return;
-          }
-        } catch (e) {
-          console.error('Error parsing stored progress:', e);
-        }
-      }
-      
-    } catch (error) {
-      console.error('Error checking step status:', error);
-    }
-  };
-
-  const freePlan = {
-    name: 'Free',
-    value: 'free',
-    price: '0',
-    description: 'Perfect for trying out our platform',
-    features: [
-      'Up to 5 active gigs',
-      'Basic reporting',
-      'Email support',
-      'Community access',
-      'Standard support',
-      'Basic analytics',
-      'Single phone number'
-    ]
-  };
-
-  const handleActivatePlan = async () => {
-    try {
-      setIsLoading(true);
-      console.log('Starting plan activation...');
-      console.log('Company ID:', companyId);
-      
-      // Mettre à jour le plan d'abonnement
-      const subscriptionResponse = await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/subscription`,
-        {
-          subscription: 'free'
-        }
-      );
-      
-      if (!subscriptionResponse.data) {
-        throw new Error('Pas de réponse du serveur pour la mise à jour du plan');
-      }
-      console.log('Subscription update response:', subscriptionResponse.data);
-
-      // Marquer l'étape comme complétée
-      const stepId = 3; // ID du step Subscription Plan
-      const phaseId = 1; // ID de la phase Company Account Setup
-      const stepResponse = await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
-        { status: 'completed' }
-      );
-      
-      if (!stepResponse.data) {
-        throw new Error('Pas de réponse du serveur pour la mise à jour de l\'étape');
-      }
-      console.log('Step completion response:', stepResponse.data);
-      
-      // Mettre à jour l'état local
-      setIsStepCompleted(true);
-      
-      // Mettre à jour le localStorage
-      const currentProgress = {
-        currentPhase: 1,
-        completedSteps: [3],
-        lastUpdated: new Date().toISOString()
-      };
-      localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-      
-      // Synchroniser avec les cookies
-      Cookies.set('subscriptionStepCompleted', 'true', { expires: 7 });
-      
-      // Attendre un moment pour que l'API soit traitée
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Recharger la page pour mettre à jour l'interface
-      window.location.reload();
-      
-    } catch (error: any) {
-      console.error('Error details:', error);
-      if (error.response) {
-        console.error('API Error:', {
-          status: error.response.status,
-          data: error.response.data,
-          url: error.config?.url
-        });
-        console.log(`Erreur lors de l'activation du plan: ${error.response.data?.message || error.message}`);
-      } else {
-        console.log('Une erreur est survenue lors de l\'activation du plan');
-      }
-    } finally {
-      setIsLoading(false);
+  const getFeatureIcon = (feature: string) => {
+    switch (feature) {
+      case 'Up to 5 active gigs':
+      case 'Up to 20 active gigs':
+      case 'Unlimited active gigs':
+        return Building2;
+      case 'Basic REP matching':
+      case 'Advanced REP matching':
+      case 'Premium REP matching':
+        return Users;
+      case 'Single phone number':
+      case 'Multiple phone numbers':
+      case 'Unlimited phone numbers':
+        return Phone;
+      case 'Basic analytics':
+      case 'Advanced analytics':
+      case 'Enterprise analytics':
+        return BarChart;
+      case 'Email support':
+      case 'Chat support':
+      case '24/7 phone support':
+        return MessageSquare;
+      default:
+        return HelpCircle;
     }
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-      <div>
-          <div className="flex items-center gap-3">
-        <h2 className="text-2xl font-bold text-gray-900">Free Plan</h2>
-          </div>
-        <p className="mt-2 text-gray-600">
-          Start using our platform with our comprehensive free plan.
-        </p>
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Choose Your Plan</h2>
+          <p className="text-sm text-gray-500">Select the plan that best fits your needs</p>
+        </div>
+        <div className="flex items-center space-x-2 rounded-lg bg-gray-100 p-1">
+          <button
+            className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+              billingCycle === 'monthly'
+                ? 'bg-white text-gray-900 shadow'
+                : 'text-gray-500 hover:text-gray-900'
+            }`}
+            onClick={() => setBillingCycle('monthly')}
+          >
+            Monthly
+          </button>
+          <button
+            className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+              billingCycle === 'annual'
+                ? 'bg-white text-gray-900 shadow'
+                : 'text-gray-500 hover:text-gray-900'
+            }`}
+            onClick={() => setBillingCycle('annual')}
+          >
+            Annual
+            <span className="ml-1 text-xs text-green-600">Save 20%</span>
+          </button>
         </div>
       </div>
 
-      <div className="max-w-xl">
-        <div className="rounded-lg border border-indigo-600 p-8 shadow-sm ring-1 ring-indigo-600">
-          <div className="flex items-center justify-between">
-            <h3 className="text-2xl font-bold text-gray-900">{freePlan.name}</h3>
-            <span className="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-sm font-medium text-indigo-800">
-              Recommended
-            </span>
-          </div>
-          
-          <p className="mt-4 text-gray-500">{freePlan.description}</p>
-          
-          <p className="mt-6">
-            <span className="text-5xl font-bold text-gray-900">${freePlan.price}</span>
-            <span className="text-base font-medium text-gray-500">/month</span>
-          </p>
+      {/* Plan Comparison */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {plans.map((plan) => {
+          const isSelected = selectedPlan === plan.id;
+          return (
+            <div
+              key={plan.id}
+              className={`relative rounded-lg bg-white p-6 shadow ${
+                isSelected ? 'ring-2 ring-indigo-600' : ''
+              }`}
+            >
+              {isSelected && (
+                <div className="absolute -top-2 -right-2 rounded-full bg-indigo-600 p-1 text-white">
+                  <CheckCircle className="h-4 w-4" />
+                </div>
+              )}
+              <div className="mb-4">
+                <h3 className="text-lg font-medium text-gray-900">{plan.name}</h3>
+                <p className="mt-1 text-sm text-gray-500">{plan.description}</p>
+              </div>
+              <div className="mb-6">
+                <p className="text-3xl font-bold text-gray-900">
+                  ${plan.price[billingCycle]}
+                  <span className="text-base font-normal text-gray-500">
+                    /{billingCycle === 'monthly' ? 'mo' : 'yr'}
+                  </span>
+                </p>
+              </div>
+              <ul className="mb-6 space-y-4">
+                {plan.features.map((feature, index) => {
+                  const FeatureIcon = getFeatureIcon(feature.name);
+                  return (
+                    <li key={index} className="flex items-start">
+                      {feature.included ? (
+                        <CheckCircle className="mr-2 h-5 w-5 text-green-500" />
+                      ) : (
+                        <XCircle className="mr-2 h-5 w-5 text-gray-300" />
+                      )}
+                      <span
+                        className={`text-sm ${
+                          feature.included ? 'text-gray-900' : 'text-gray-500'
+                        }`}
+                      >
+                        {feature.name}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+              <button
+                onClick={() => setSelectedPlan(plan.id)}
+                className={`w-full rounded-lg px-4 py-2 text-sm font-medium ${
+                  isSelected
+                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                    : 'bg-white text-indigo-600 ring-1 ring-inset ring-indigo-200 hover:ring-indigo-300'
+                }`}
+              >
+                {isSelected ? 'Current Plan' : 'Select Plan'}
+              </button>
+            </div>
+          );
+        })}
+      </div>
 
-          <ul className="mt-8 space-y-4">
-            {freePlan.features.map((feature) => (
-              <li key={feature} className="flex items-center">
-                <Check className="h-5 w-5 text-indigo-600" />
-                <span className="ml-3 text-gray-700">{feature}</span>
-              </li>
-            ))}
-          </ul>
-
-          <button
-            onClick={isStepCompleted ? undefined : handleActivatePlan}
-            disabled={isStepCompleted || isLoading}
-            className={`mt-8 w-full rounded-lg px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-all ${
-              isStepCompleted
-                ? 'bg-green-600 cursor-not-allowed'
-                : isLoading
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-indigo-600 hover:bg-indigo-700'
-            }`}
-          >
-            {isStepCompleted ? (
-              <span className="flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-5 h-5" />
-                Plan Already Activated
+      {/* Payment Information */}
+      <div className="rounded-lg bg-white p-6 shadow">
+        <h3 className="text-lg font-medium text-gray-900">Payment Information</h3>
+        <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+          <div className="sm:col-span-4">
+            <label className="block text-sm font-medium text-gray-700">Card Number</label>
+            <div className="mt-1 flex rounded-md shadow-sm">
+              <span className="inline-flex items-center rounded-l-md border border-r-0 border-gray-300 bg-gray-50 px-3 text-gray-500 sm:text-sm">
+                <CreditCard className="h-4 w-4" />
               </span>
-            ) : isLoading ? (
-              'Activating Plan...'
-            ) : (
-              'Activate Free Plan'
-            )}
+              <input
+                type="text"
+                className="block w-full flex-1 rounded-none rounded-r-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                placeholder="4242 4242 4242 4242"
+              />
+            </div>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-gray-700">Expiration</label>
+            <input
+              type="text"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="MM/YY"
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-gray-700">CVC</label>
+            <input
+              type="text"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="123"
+            />
+          </div>
+
+          <div className="sm:col-span-4">
+            <label className="block text-sm font-medium text-gray-700">Name on Card</label>
+            <input
+              type="text"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="John Smith"
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <button className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
+            Confirm Subscription
           </button>
+        </div>
+      </div>
+
+      {/* Additional Information */}
+      <div className="rounded-lg bg-gray-50 p-6">
+        <div className="flex items-start">
+          <div className="flex-shrink-0">
+            <HelpCircle className="h-5 w-5 text-gray-400" />
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-gray-900">Need help choosing?</h3>
+            <div className="mt-2 text-sm text-gray-500">
+              <p>
+                Our team is here to help you select the best plan for your needs. Contact us for a
+                personalized consultation.
+              </p>
+            </div>
+            <div className="mt-4">
+              <a
+                href="#"
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                Schedule a Call →
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </div>

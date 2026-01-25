@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   BarChart2,
   LineChart,
@@ -32,11 +32,8 @@ import {
   Filter,
   Inbox,
   BarChart,
-  Activity,
-  CheckCircle2
+  Activity
 } from 'lucide-react';
-import axios from 'axios';
-import Cookies from 'js-cookie';
 
 const ReportingSetup = () => {
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['calls', 'conversion']);
@@ -47,170 +44,6 @@ const ReportingSetup = () => {
     push: false,
     threshold: true
   });
-  const [isStepCompleted, setIsStepCompleted] = useState(false);
-
-  const companyId = Cookies.get('companyId');
-
-  // Vérifier l'état de l'étape au chargement
-  useEffect(() => {
-    if (companyId) {
-      checkStepStatus();
-    }
-  }, [companyId]);
-
-  // Vérifier l'état de l'étape quand les données changent
-  useEffect(() => {
-    if (companyId && hasBasicInfo() && !isStepCompleted) {
-      console.log('🎯 Reporting setup data changed, checking if step should be auto-completed...');
-      checkStepStatus();
-    }
-  }, [selectedMetrics, selectedChannels, reportSchedule, companyId, isStepCompleted]);
-
-  const checkStepStatus = async () => {
-    try {
-      if (!companyId) return;
-      
-      console.log('🔍 Checking step 9 status for company:', companyId);
-      
-      // Vérifier l'état de l'étape 9 via l'API d'onboarding
-      const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/9`
-      );
-      
-      console.log('📡 API response for step 9:', response.data);
-      
-      if (response.data && (response.data as any).status === 'completed') {
-        console.log('✅ Step 9 is already completed according to API');
-        setIsStepCompleted(true);
-        return;
-      }
-      
-      // Vérifier aussi le localStorage pour la cohérence
-      const storedProgress = localStorage.getItem('companyOnboardingProgress');
-      if (storedProgress) {
-        try {
-          const progress = JSON.parse(storedProgress);
-          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(9)) {
-            console.log('✅ Step 9 found in localStorage, setting as completed');
-            setIsStepCompleted(true);
-            return;
-          }
-        } catch (e) {
-          console.error('❌ Error parsing stored progress:', e);
-        }
-      }
-      
-      // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
-      // marquer automatiquement l'étape comme complétée localement
-      if (hasBasicInfo() && !isStepCompleted) {
-        console.log('🎯 Auto-completing step 9 locally because basic info is present');
-        
-        // Marquer l'étape comme complétée localement
-        setIsStepCompleted(true);
-        
-        // Mettre à jour le localStorage avec l'étape 9 marquée comme complétée
-        const currentCompletedSteps = [9];
-        const currentProgress = {
-          currentPhase: 2,
-          completedSteps: currentCompletedSteps,
-          lastUpdated: new Date().toISOString()
-        };
-        localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-        
-        // Synchroniser avec les cookies
-        Cookies.set('reportingSetupStepCompleted', 'true', { expires: 7 });
-        
-        // Notifier le composant parent CompanyOnboarding via un événement personnalisé
-        window.dispatchEvent(new CustomEvent('stepCompleted', { 
-          detail: { 
-            stepId: 9, 
-            phaseId: 2, 
-            status: 'completed',
-            completedSteps: currentCompletedSteps
-          } 
-        }));
-        
-        console.log('💾 Step 9 marked as completed locally and parent component notified');
-      }
-      
-    } catch (error) {
-      console.error('❌ Error checking step status:', error);
-      
-      // En cas d'erreur API, vérifier le localStorage
-      const storedProgress = localStorage.getItem('companyOnboardingProgress');
-      if (storedProgress) {
-        try {
-          const progress = JSON.parse(storedProgress);
-          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(9)) {
-            setIsStepCompleted(true);
-          }
-        } catch (e) {
-          console.error('❌ Error parsing stored progress:', e);
-        }
-      }
-    }
-  };
-
-  const hasBasicInfo = () => {
-    // Check if we have selected metrics and channels
-    const hasInfo = selectedMetrics.length > 0 && selectedChannels.length > 0 && reportSchedule;
-    
-    console.log('🔍 Checking basic info for ReportingSetup:', {
-      selectedMetrics: selectedMetrics.length,
-      selectedChannels: selectedChannels.length,
-      reportSchedule,
-      hasInfo
-    });
-    return hasInfo;
-  };
-
-  const handleCompleteReportingSetup = async () => {
-    try {
-      if (!companyId) {
-        console.error('❌ No companyId available');
-        return;
-      }
-
-      console.log('🚀 Completing reporting setup...');
-      
-      // Marquer l'étape 9 comme complétée
-      const stepResponse = await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/9`,
-        { status: 'completed' }
-      );
-      
-      console.log('✅ Step 9 marked as completed:', stepResponse.data);
-      
-      // Mettre à jour l'état local
-      setIsStepCompleted(true);
-      
-      // Mettre à jour le localStorage
-      const currentProgress = {
-        currentPhase: 2,
-        completedSteps: [9],
-        lastUpdated: new Date().toISOString()
-      };
-      localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-      
-      // Synchroniser avec les cookies
-      Cookies.set('reportingSetupStepCompleted', 'true', { expires: 7 });
-      
-      // Notifier le composant parent
-      window.dispatchEvent(new CustomEvent('stepCompleted', { 
-        detail: { 
-          stepId: 9, 
-          phaseId: 2, 
-          status: 'completed',
-          completedSteps: [9]
-        } 
-      }));
-      
-      console.log('💾 Reporting setup completed and step 9 marked as completed');
-      
-    } catch (error) {
-      console.error('❌ Error completing reporting setup:', error);
-    }
-  };
 
   const channels = [
     {
@@ -367,15 +200,7 @@ const ReportingSetup = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-gray-900">Multi-Channel Reporting Setup</h2>
-            {isStepCompleted && (
-              <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                <CheckCircle2 className="w-4 h-4" />
-                Completed
-              </div>
-            )}
-          </div>
+          <h2 className="text-xl font-bold text-gray-900">Multi-Channel Reporting Setup</h2>
           <p className="text-sm text-gray-500">Configure reporting across all communication channels</p>
         </div>
         <div className="flex space-x-3">
@@ -383,21 +208,10 @@ const ReportingSetup = () => {
             <Settings className="mr-2 h-4 w-4" />
             Settings
           </button>
-          {!isStepCompleted ? (
-            <button
-              onClick={handleCompleteReportingSetup}
-              className="flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
-              disabled={!hasBasicInfo()}
-            >
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Complete Setup
-            </button>
-          ) : (
-            <button className="flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm cursor-not-allowed">
-              <CheckCircle2 className="mr-2 h-4 w-4" />
-              Setup Completed
-            </button>
-          )}
+          <button className="flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
+            <Plus className="mr-2 h-4 w-4" />
+            New Dashboard
+          </button>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API ? `${import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API}/api` : 'http://localhost:3001/api', // Fallback to likely backend port
+    baseURL: `${import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API}/api`
 });
 
 export const knowledgeApi = {
