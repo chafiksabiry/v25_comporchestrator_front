@@ -19,6 +19,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 const KnowledgeBase = () => {
+  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
   const [expandedSection, setExpandedSection] = useState<string | null>('product');
   const [searchQuery, setSearchQuery] = useState('');
   const [isStepCompleted, setIsStepCompleted] = useState(false);
@@ -44,22 +45,22 @@ const KnowledgeBase = () => {
   const checkStepStatus = async () => {
     try {
       if (!companyId) return;
-      
+
       console.log('🔍 Checking step 7 status for company:', companyId);
-      
+
       // Vérifier l'état de l'étape 7 via l'API d'onboarding
       const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`
+        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`
       );
-      
+
       console.log('📡 API response for step 7:', response.data);
-      
+
       if (response.data && (response.data as any).status === 'completed') {
         console.log('✅ Step 7 is already completed according to API');
         setIsStepCompleted(true);
         return;
       }
-      
+
       // Vérifier aussi le localStorage pour la cohérence
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
       if (storedProgress) {
@@ -74,15 +75,15 @@ const KnowledgeBase = () => {
           console.error('❌ Error parsing stored progress:', e);
         }
       }
-      
+
       // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
       // marquer automatiquement l'étape comme complétée localement
       if (hasBasicInfo() && !isStepCompleted) {
         console.log('🎯 Auto-completing step 7 locally because basic info is present');
-        
+
         // Marquer l'étape comme complétée localement
         setIsStepCompleted(true);
-        
+
         // Mettre à jour le localStorage avec l'étape 7 marquée comme complétée
         const currentCompletedSteps = [7];
         const currentProgress = {
@@ -91,26 +92,26 @@ const KnowledgeBase = () => {
           lastUpdated: new Date().toISOString()
         };
         localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-        
+
         // Synchroniser avec les cookies
         Cookies.set('knowledgeBaseStepCompleted', 'true', { expires: 7 });
-        
+
         // Notifier le composant parent CompanyOnboarding via un événement personnalisé
-        window.dispatchEvent(new CustomEvent('stepCompleted', { 
-          detail: { 
-            stepId: 7, 
-            phaseId: 2, 
+        window.dispatchEvent(new CustomEvent('stepCompleted', {
+          detail: {
+            stepId: 7,
+            phaseId: 2,
             status: 'completed',
             completedSteps: currentCompletedSteps
-          } 
+          }
         }));
-        
+
         console.log('💾 Step 7 marked as completed locally and parent component notified');
       }
-      
+
     } catch (error) {
       console.error('❌ Error checking step status:', error);
-      
+
       // En cas d'erreur API, vérifier le localStorage
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
       if (storedProgress) {
@@ -128,11 +129,11 @@ const KnowledgeBase = () => {
 
   const hasBasicInfo = () => {
     // Check if we have at least 3 published articles across different sections
-    const publishedArticles = sections.flatMap(section => 
+    const publishedArticles = sections.flatMap(section =>
       section.articles.filter(article => article.status === 'published')
     );
     const hasInfo = publishedArticles.length >= 3;
-    
+
     console.log('🔍 Checking basic info for KnowledgeBase:', {
       publishedArticles: publishedArticles.length,
       hasInfo
@@ -148,18 +149,18 @@ const KnowledgeBase = () => {
       }
 
       console.log('🚀 Completing knowledge base setup...');
-      
+
       // Marquer l'étape 7 comme complétée
       const stepResponse = await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`,
+        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`,
         { status: 'completed' }
       );
-      
+
       console.log('✅ Step 7 marked as completed:', stepResponse.data);
-      
+
       // Mettre à jour l'état local
       setIsStepCompleted(true);
-      
+
       // Mettre à jour le localStorage
       const currentProgress = {
         currentPhase: 2,
@@ -167,22 +168,22 @@ const KnowledgeBase = () => {
         lastUpdated: new Date().toISOString()
       };
       localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-      
+
       // Synchroniser avec les cookies
       Cookies.set('knowledgeBaseStepCompleted', 'true', { expires: 7 });
-      
+
       // Notifier le composant parent
-      window.dispatchEvent(new CustomEvent('stepCompleted', { 
-        detail: { 
-          stepId: 7, 
-          phaseId: 2, 
+      window.dispatchEvent(new CustomEvent('stepCompleted', {
+        detail: {
+          stepId: 7,
+          phaseId: 2,
           status: 'completed',
           completedSteps: [7]
-        } 
+        }
       }));
-      
+
       console.log('💾 Knowledge base setup completed and step 7 marked as completed');
-      
+
     } catch (error) {
       console.error('❌ Error completing knowledge base setup:', error);
     }
@@ -363,11 +364,10 @@ const KnowledgeBase = () => {
                           <div className="mt-2 flex items-center space-x-4 text-xs text-gray-500">
                             <span>Last updated {article.lastUpdated}</span>
                             <span
-                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                                article.status === 'published'
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-yellow-100 text-yellow-800'
-                              }`}
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${article.status === 'published'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                                }`}
                             >
                               {article.status === 'published' ? (
                                 <CheckCircle className="mr-1 h-3 w-3" />
