@@ -518,7 +518,7 @@ const KnowledgeBase: React.FC = () => {
             }
 
             if (documentId) {
-                setAnalyzingIds(prev => {
+                setAnalyzingIds((prev: Set<string>) => {
                     const newSet = new Set(prev);
                     newSet.add(documentId);
                     return newSet;
@@ -539,7 +539,7 @@ const KnowledgeBase: React.FC = () => {
         } finally {
             if (documentId) {
                 setTimeout(() => {
-                    setAnalyzingIds(prev => {
+                    setAnalyzingIds((prev: Set<string>) => {
                         const newSet = new Set(prev);
                         newSet.delete(documentId);
                         return newSet;
