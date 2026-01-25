@@ -163,8 +163,8 @@ const CompanyOnboarding = () => {
   const [showGigDetails, setShowGigDetails] = useState(false);
   const userId = Cookies.get("userId");
 
-  // Fallback to production URL if env var is missing
-  const API_BASE_URL = import.meta.env.VITE_API_URL_ONBOARDING || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
+  // Define API URL with fallback
+  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
 
   // Fetch company ID using user ID
   useEffect(() => {
