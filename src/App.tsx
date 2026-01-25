@@ -54,9 +54,10 @@ function App() {
           if (response.ok) {
             const userData = await response.json();
             console.log('User data received:', userData);
-            if (userData.fullName) {
-              console.log('Setting user full name to:', userData.fullName);
-              setUserFullName(userData.fullName);
+            // The API returns data in userData.data.fullName format
+            if (userData.data && userData.data.fullName) {
+              console.log('Setting user full name to:', userData.data.fullName);
+              setUserFullName(userData.data.fullName);
             } else {
               console.log('No fullName in user data');
             }
