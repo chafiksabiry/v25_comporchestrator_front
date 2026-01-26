@@ -626,8 +626,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           return;
         }
 
-        // 4. Vérifier si nous avons l'ID du groupe de requirements
-        if (!requirementStatus.groupId) {
+        // 4. Vérifier si nous avons l'ID du groupe de requirements (seulement si des requirements sont nécessaires)
+        if (requirementStatus.hasRequirements && !requirementStatus.groupId) {
           setPurchaseError('Missing requirement group ID. Please try again.');
           setPurchaseStatus('error');
           return;
