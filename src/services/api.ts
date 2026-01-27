@@ -265,6 +265,73 @@ export const phoneNumberService = {
     } catch (error) {
       return handleApiError(error, 'purchasePhoneNumber');
     }
+  },
+
+  // Twilio Regulatory Compliance Methods
+  getTwilioRequirements: async (countryCode: string, type: string = 'local'): Promise<any> => {
+    try {
+      const response = await api.get('/phone-numbers/twilio/requirements', {
+        params: { countryCode, type }
+      });
+      return response.data;
+    } catch (error) {
+      return handleApiError(error, 'getTwilioRequirements');
+    }
+  },
+
+  createTwilioEndUser: async (data: { friendlyName: string; type: string; attributes: any }): Promise<any> => {
+    try {
+      const response = await api.post('/phone-numbers/twilio/end-users', data);
+      return response.data;
+    } catch (error) {
+      return handleApiError(error, 'createTwilioEndUser');
+    }
+  },
+
+  createTwilioDocument: async (file: File, friendlyName: string, type: string, attributes: any): Promise<any> => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('friendlyName', friendlyName);
+      formData.append('type', type);
+      formData.append('attributes', JSON.stringify(attributes));
+
+      const response = await api.post('/phone-numbers/twilio/documents', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      return response.data;
+    } catch (error) {
+      return handleApiError(error, 'createTwilioDocument');
+    }
+  },
+
+  createTwilioBundle: async (data: { friendlyName: string; email: string; regulationSid: string; isoCountry: string }): Promise<any> => {
+    try {
+      const response = await api.post('/phone-numbers/twilio/bundles', data);
+      return response.data;
+    } catch (error) {
+      return handleApiError(error, 'createTwilioBundle');
+    }
+  },
+
+  assignItemToBundle: async (bundleSid: string, objectSid: string): Promise<any> => {
+    try {
+      const response = await api.post(`/phone-numbers/twilio/bundles/${bundleSid}/items`, { objectSid });
+      return response.data;
+    } catch (error) {
+      return handleApiError(error, 'assignItemToBundle');
+    }
+  },
+
+  submitTwilioBundle: async (bundleSid: string): Promise<any> => {
+    try {
+      const response = await api.post(`/phone-numbers/twilio/bundles/${bundleSid}/submit`);
+      return response.data;
+    } catch (error) {
+      return handleApiError(error, 'submitTwilioBundle');
+    }
   }
 };
 

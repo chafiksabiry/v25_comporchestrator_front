@@ -210,6 +210,9 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     }
   }, [phoneNumbers]);
 
+  /* New state for Twilio SIDs */
+  const [twilioRegulatorySids, setTwilioRegulatorySids] = useState<{ bundleSid?: string; addressSid?: string } | null>(null);
+
   const checkGigPhoneNumber = async () => {
     if (!selectedGigId) return false;
 
@@ -227,8 +230,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           isComplete: true,
           error: null
         });
-        // Even if gig has a number, we still want to search available numbers for Telnyx
-        if (provider === 'telnyx') {
+        // Even if gig has a number, we still want to search available numbers for Telnyx/Twilio
+        if (provider === 'telnyx' || provider === 'twilio') {
           searchAvailableNumbers();
         }
         return true;
@@ -237,6 +240,93 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     } catch (error) {
       console.error('❌ Error checking gig numbers:', error);
       return false;
+    }
+  };
+
+  const handleTwilioProvider = async (zoneOverride?: string) => {
+    if (!selectedGigId || !companyId) return;
+
+    const hasNumber = await checkGigPhoneNumber();
+    if (hasNumber) return;
+
+    const selectedGig = gigs.find(g => g._id === selectedGigId);
+    if (!selectedGig?.destination_zone?.cca2) {
+      console.error('No destination zone found for gig');
+      return;
+    }
+
+    const destZone = zoneOverride || selectedGig.destination_zone.cca2;
+    setDestinationZone(destZone);
+
+    // Search available numbers
+    searchAvailableNumbers(destZone);
+
+    try {
+      setRequirementStatus(prev => ({ ...prev, isChecking: true }));
+      const response = await phoneNumberService.getTwilioRequirements(destZone);
+
+      console.log('Twilio Requirements:', response);
+
+      if (response && response.requirements) {
+        // Map Twilio requirements to frontend structure
+        const mappedRequirements: Requirement[] = [];
+
+        // Add End User requirement if type is present
+        if (response.endUserType) {
+          mappedRequirements.push({
+            id: 'end_user',
+            name: `${response.endUserType} Information`,
+            type: 'textual',
+            description: `Please provide details for ${response.endUserType}`,
+            example: 'Business Name / Individual Name',
+            acceptance_criteria: {}
+          });
+        }
+
+        // Add Document requirements
+        // Note: Twilio requirements array logic is simplified here. 
+        // In reality, we traverse the graph. For now, assuming direct document requirements.
+        if (Array.isArray(response.requirements)) {
+          response.requirements.forEach((req: any, index: number) => {
+            mappedRequirements.push({
+              id: req.sid || `doc_${index}`,
+              name: req.friendlyName || req.name || 'Supporting Document',
+              type: 'document',
+              description: req.description || 'Upload required document',
+              example: 'Passport, Utility Bill',
+              acceptance_criteria: {}
+            });
+          });
+        }
+
+        setCountryReq({
+          hasRequirements: mappedRequirements.length > 0,
+          requirements: mappedRequirements
+        });
+
+        setRequirementStatus({
+          isChecking: false,
+          hasRequirements: mappedRequirements.length > 0,
+          isComplete: false, // Assume false initially
+          error: null,
+          // Store regulationSid in groupId for convenience
+          groupId: response.regulationSid,
+          totalRequirements: mappedRequirements.length,
+          pendingRequirements: mappedRequirements.length,
+          completedRequirements: []
+        });
+      } else {
+        setRequirementStatus({
+          isChecking: false,
+          hasRequirements: false,
+          isComplete: true,
+          error: null
+        });
+      }
+
+    } catch (error) {
+      console.error('Error fetching Twilio requirements:', error);
+      setRequirementStatus(prev => ({ ...prev, isChecking: false, error: 'Failed to fetch requirements' }));
     }
   };
 
@@ -779,41 +869,105 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
   const handleSubmitRequirements = async (values: Record<string, any>) => {
     try {
       console.log('📝 Submitting requirements:', values);
-
-      // 1. Utiliser le groupe existant ou en créer un nouveau
       if (!companyId) throw new Error('Company ID is required');
 
-      let groupId = requirementStatus.groupId;
+      if (provider === 'twilio') {
+        // Handle Twilio Submission
+        const regulationSid = requirementStatus.groupId; // We stored regulationSid here
+        if (!regulationSid) throw new Error('Regulation SID missing');
 
-      if (!groupId) {
-        const { group } = await requirementService.getOrCreateGroup(companyId, destinationZone);
-        groupId = group._id;
-        console.log('✅ Created new requirement group:', group);
-      } else {
-        console.log('✅ Using existing requirement group:', groupId);
-      }
-
-      // 2. Soumettre chaque requirement
-      for (const [field, value] of Object.entries(values)) {
-        if (value instanceof File) {
-          await requirementService.submitDocument(groupId, field, value);
-        } else {
-          await requirementService.submitTextValue(groupId, field, value as string);
+        // 1. Create End User
+        const endUserVal = values['end_user'];
+        let endUserSid;
+        if (endUserVal) {
+          // Assuming textual input contains JSON or simple string name
+          const endUser = await phoneNumberService.createTwilioEndUser({
+            friendlyName: typeof endUserVal === 'string' ? endUserVal : 'End User',
+            type: countryReq.requirements?.find(r => r.id === 'end_user')?.name.split(' ')[0].toLowerCase() || 'individual',
+            attributes: {
+              // business_name: ... if strictly structured input.
+              // For simplicity, we create generic end user.
+            }
+          });
+          endUserSid = endUser.sid;
+          console.log('✅ Created Twilio End User:', endUserSid);
         }
-      }
 
-      // 3. Valider les requirements
-      const validation = await requirementService.validateRequirements(groupId);
-      console.log('✅ Validation result:', validation);
+        // 2. Create Bundle
+        const bundle = await phoneNumberService.createTwilioBundle({
+          friendlyName: `Bundle for ${destinationZone}`,
+          email: 'admin@example.com', // Should be dynamic
+          regulationSid: regulationSid,
+          isoCountry: destinationZone
+        });
+        const bundleSid = bundle.sid;
+        console.log('✅ Created Twilio Bundle:', bundleSid);
 
-      if (validation.isValid) {
-        setRequirementStatus(prev => ({
-          ...prev,
-          isComplete: true
-        }));
+        // 3. Assign End User to Bundle
+        if (endUserSid) {
+          await phoneNumberService.assignItemToBundle(bundleSid, endUserSid);
+        }
+
+        // 4. Upload Documents and Assign
+        for (const [field, value] of Object.entries(values)) {
+          if (field === 'end_user') continue;
+
+          if (value instanceof File) {
+            const docType = 'supporting_document'; // Should map from requirement type
+            const doc = await phoneNumberService.createTwilioDocument(
+              value,
+              value.name,
+              docType, // Simplified type
+              {} // attributes
+            );
+            console.log(`✅ Uploaded Document ${field}:`, doc.sid);
+            await phoneNumberService.assignItemToBundle(bundleSid, doc.sid);
+          }
+        }
+
+        // 5. Submit Bundle
+        await phoneNumberService.submitTwilioBundle(bundleSid);
+        console.log('✅ Submitted Twilio Bundle');
+
+        // Store SIDs for Purchase
+        setTwilioRegulatorySids({ bundleSid });
+        setRequirementStatus(prev => ({ ...prev, isComplete: true }));
         setPurchaseStatus('confirming');
+
       } else {
-        throw new Error('Some requirements are still missing or invalid');
+        // Handle Telnyx Submission (Existing Logic)
+        let groupId = requirementStatus.groupId;
+
+        if (!groupId) {
+          const { group } = await requirementService.getOrCreateGroup(companyId, destinationZone);
+          groupId = group._id;
+          console.log('✅ Created new requirement group:', group);
+        } else {
+          console.log('✅ Using existing requirement group:', groupId);
+        }
+
+        // 2. Soumettre chaque requirement
+        for (const [field, value] of Object.entries(values)) {
+          if (value instanceof File) {
+            await requirementService.submitDocument(groupId, field, value);
+          } else {
+            await requirementService.submitTextValue(groupId, field, value as string);
+          }
+        }
+
+        // 3. Valider les requirements
+        const validation = await requirementService.validateRequirements(groupId);
+        console.log('✅ Validation result:', validation);
+
+        if (validation.isValid) {
+          setRequirementStatus(prev => ({
+            ...prev,
+            isComplete: true
+          }));
+          setPurchaseStatus('confirming');
+        } else {
+          throw new Error('Some requirements are still missing or invalid');
+        }
       }
     } catch (error) {
       console.error('❌ Error submitting requirements:', error);
@@ -826,7 +980,9 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     if (!selectedNumber) return;
     setPurchaseStatus('purchasing');
     try {
-      await purchaseNumber(selectedNumber, sids);
+      // Use provided sids (manual entry) or state sids (automated flow)
+      const purchaseSids = sids || twilioRegulatorySids || {};
+      await purchaseNumber(selectedNumber, purchaseSids);
       // Success state is already set in purchaseNumber function
     } catch (error) {
       setPurchaseStatus('error');
