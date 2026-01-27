@@ -169,7 +169,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                     </div>
                   )}
                 </div>
-              )}
+              ))}
             {purchaseStatus === 'purchasing' && (
               <div className="flex items-center justify-center space-x-2">
                 <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-indigo-600"></div>
