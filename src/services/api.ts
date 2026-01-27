@@ -84,7 +84,7 @@ const handleApiError = (error: unknown, context: string): never => {
   if (isAxiosError(error)) {
     const status = error.response?.status;
     const data = error.response?.data;
-    
+
     console.error('❌ Response status:', status);
     console.error('❌ Response data:', data);
     console.error('❌ Request config:', error.config);
@@ -165,7 +165,7 @@ export const phoneNumberService = {
     provider: 'telnyx' | 'twilio' = 'telnyx'
   ): Promise<AvailablePhoneNumber[]> => {
     try {
-      const endpoint = provider === 'twilio' 
+      const endpoint = provider === 'twilio'
         ? '/phone-numbers/search/twilio'
         : '/phone-numbers/search';
       console.log(`🔍 Searching ${provider} numbers for ${countryCode}`);
@@ -192,8 +192,8 @@ export const phoneNumberService = {
       // Special case: return empty array for 500 errors
       if (isAxiosError(error) && error.response?.status === 500) {
         console.warn(`⚠️ ${provider} API error, returning empty array`);
-          return [];
-        }
+        return [];
+      }
       return handleApiError(error, 'searchPhoneNumbers');
     }
   },
@@ -204,8 +204,10 @@ export const phoneNumberService = {
     gigId: string;
     companyId: string;
     requirementGroupId?: string;
+    bundleSid?: string;
+    addressSid?: string;
   }): Promise<PhoneNumber> => {
-    const { phoneNumber, provider, gigId, requirementGroupId } = data;
+    const { phoneNumber, provider, gigId, requirementGroupId, bundleSid, addressSid } = data;
 
     if (!gigId) {
       throw new PhoneNumberServiceError(
@@ -240,17 +242,24 @@ export const phoneNumberService = {
       const endpoint = provider === 'twilio'
         ? '/phone-numbers/purchase/twilio'
         : '/phone-numbers/purchase';
-      console.log(`🛒 Purchasing ${provider} number ${phoneNumber} for gig ${gigId}`, 
+      console.log(`🛒 Purchasing ${provider} number ${phoneNumber} for gig ${gigId}`,
         requirementGroupId ? `with requirement group ${requirementGroupId}` : '');
 
-      const response = await api.post<PhoneNumber>(endpoint, {
+      const payload: any = {
         phoneNumber,
         provider,
         gigId,
         companyId: data.companyId,
         requirementGroupId
-      });
-      
+      };
+
+      if (provider === 'twilio') {
+        if (bundleSid) payload.bundleSid = bundleSid;
+        if (addressSid) payload.addressSid = addressSid;
+      }
+
+      const response = await api.post<PhoneNumber>(endpoint, payload);
+
       console.log('✅ Purchase successful:', response.data);
       return response.data;
     } catch (error) {

@@ -25,7 +25,7 @@ interface PurchaseModalProps {
   provider: string;
   purchaseError: string | null;
   onSubmitRequirements: (values: Record<string, any>) => Promise<void>;
-  onConfirmPurchase: () => Promise<void>;
+  onConfirmPurchase: (sids?: { bundleSid?: string; addressSid?: string }) => Promise<void>;
   onSetPurchaseStatus: (status: 'idle' | 'confirming' | 'requirements' | 'purchasing' | 'success' | 'error') => void;
   onSetSelectedNumber: (number: string | null) => void;
   onSetShowPurchaseModal: (show: boolean) => void;
@@ -47,13 +47,25 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
   onSetSelectedNumber,
   onSetShowPurchaseModal
 }) => {
+  const [bundleSid, setBundleSid] = React.useState('');
+  const [addressSid, setAddressSid] = React.useState('');
+
+  // Reset SIDs when modal closes or opens
+  React.useEffect(() => {
+    if (isOpen) {
+      setBundleSid('');
+      setAddressSid('');
+    }
+  }, [isOpen]);
+
+
   if (!isOpen) return null;
 
   return (
     <>
       {/* Overlay avec effet de flou - pas de clic extérieur */}
       <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm pointer-events-none" />
-      
+
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="w-full max-w-2xl rounded-lg bg-white shadow-2xl">
@@ -94,42 +106,70 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                 }}
               />
             ) : (
-              <div className="space-y-4">
-                <p className="text-sm text-gray-500">
-                  Are you sure you want to purchase the number <span className="font-medium">{selectedNumber}</span>?
-                </p>
-                {provider === 'telnyx' && (
-                  <div className={`rounded-lg ${
-                    requirementStatus.isComplete ? 'bg-green-50' : 'bg-yellow-50'
-                  } p-4`}>
-                    <div className="flex">
-                      {requirementStatus.isComplete ? (
-                        <CheckCircle className="h-5 w-5 text-green-400" />
-                      ) : (
-                        <AlertCircle className="h-5 w-5 text-yellow-400" />
-                      )}
-                      <div className="ml-3">
-                        <p className="text-sm text-gray-600">
-                          {requirementStatus.isComplete
-                            ? 'Your company is approved to purchase numbers.'
-                            : (
-                              <>
-                                Requirements are needed for this number.
-                                <button
-                                  onClick={() => onSetPurchaseStatus('requirements')}
-                                  className="ml-2 text-indigo-600 hover:text-indigo-500"
-                                >
-                                  Complete now
-                                </button>
-                              </>
-                            )}
-                        </p>
+              purchaseStatus === 'confirming' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-500">
+                    Are you sure you want to purchase the number <span className="font-medium">{selectedNumber}</span>?
+                  </p>
+                  {provider === 'twilio' && (
+                    <div className="space-y-3 mt-4 p-4 bg-gray-50 rounded-lg">
+                      <h4 className="text-sm font-medium text-gray-700">Regulatory Requirements (Optional)</h4>
+                      <p className="text-xs text-gray-500">For some countries (e.g. France), you may need to provide regulatory SIDs.</p>
+                      <div>
+                        <label htmlFor="bundleSid" className="block text-xs font-medium text-gray-700">Bundle SID</label>
+                        <input
+                          type="text"
+                          id="bundleSid"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                          placeholder="BU..."
+                          value={bundleSid}
+                          onChange={(e) => setBundleSid(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="addressSid" className="block text-xs font-medium text-gray-700">Address SID</label>
+                        <input
+                          type="text"
+                          id="addressSid"
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                          placeholder="AD..."
+                          value={addressSid}
+                          onChange={(e) => setAddressSid(e.target.value)}
+                        />
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                  {provider === 'telnyx' && (
+                    <div className={`rounded-lg ${requirementStatus.isComplete ? 'bg-green-50' : 'bg-yellow-50'
+                      } p-4`}>
+                      <div className="flex">
+                        {requirementStatus.isComplete ? (
+                          <CheckCircle className="h-5 w-5 text-green-400" />
+                        ) : (
+                          <AlertCircle className="h-5 w-5 text-yellow-400" />
+                        )}
+                        <div className="ml-3">
+                          <p className="text-sm text-gray-600">
+                            {requirementStatus.isComplete
+                              ? 'Your company is approved to purchase numbers.'
+                              : (
+                                <>
+                                  Requirements are needed for this number.
+                                  <button
+                                    onClick={() => onSetPurchaseStatus('requirements')}
+                                    className="ml-2 text-indigo-600 hover:text-indigo-500"
+                                  >
+                                    Complete now
+                                  </button>
+                                </>
+                              )}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             {purchaseStatus === 'purchasing' && (
               <div className="flex items-center justify-center space-x-2">
                 <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-indigo-600"></div>
@@ -143,19 +183,17 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                   Number <span className="font-medium">{purchaseResponse?.phoneNumber || selectedNumber}</span> has been ordered!
                 </p>
                 <p className="mt-2 text-sm text-gray-600">
-                  Status: <span className={`font-medium ${
-                    purchaseResponse?.status === 'active' ? 'text-green-600' :
+                  Status: <span className={`font-medium ${purchaseResponse?.status === 'active' ? 'text-green-600' :
                     purchaseResponse?.status === 'pending' ? 'text-yellow-600' :
-                    'text-gray-600'
-                  }`}>{purchaseResponse?.status || 'Unknown'}</span>
+                      'text-gray-600'
+                    }`}>{purchaseResponse?.status || 'Unknown'}</span>
                 </p>
                 <div className="mt-4 text-sm text-gray-500">
                   <p>Features:</p>
                   <div className="mt-2 flex justify-center space-x-4">
                     {purchaseResponse?.features && Object.entries(purchaseResponse.features).map(([feature, enabled]) => (
-                      <span key={feature} className={`px-2 py-1 rounded-full ${
-                        enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span key={feature} className={`px-2 py-1 rounded-full ${enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
                         {feature}
                       </span>
                     ))}
@@ -201,7 +239,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                     Cancel
                   </button>
                   <button
-                    onClick={onConfirmPurchase}
+                    onClick={() => onConfirmPurchase({ bundleSid, addressSid })}
                     className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
                   >
                     Confirm Purchase

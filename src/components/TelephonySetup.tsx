@@ -588,7 +588,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     }
   };
 
-  const purchaseNumber = async (phoneNumber: string) => {
+  const purchaseNumber = async (phoneNumber: string, options?: { bundleSid?: string; addressSid?: string }) => {
     if (!selectedGigId || !companyId) {
       console.error('❌ Required IDs missing:', { selectedGigId, companyId });
       setPurchaseError('Configuration error: Required IDs not found');
@@ -601,7 +601,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         phoneNumber,
         provider,
         selectedGigId,
-        requirementStatus
+        requirementStatus,
+        options
       });
 
       if (provider === 'telnyx') {
@@ -647,7 +648,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         provider,
         gigId: selectedGigId,
         companyId,
-        requirementGroupId: provider === 'telnyx' ? requirementStatus.telnyxId : undefined
+
+        requirementGroupId: provider === 'telnyx' ? requirementStatus.telnyxId : undefined,
+        bundleSid: options?.bundleSid,
+        addressSid: options?.addressSid
       };
 
       console.log('📝 Purchase request data:', purchaseData);
@@ -818,11 +822,11 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     }
   };
 
-  const handleConfirmPurchase = async () => {
+  const handleConfirmPurchase = async (sids?: { bundleSid?: string; addressSid?: string }) => {
     if (!selectedNumber) return;
     setPurchaseStatus('purchasing');
     try {
-      await purchaseNumber(selectedNumber);
+      await purchaseNumber(selectedNumber, sids);
       // Success state is already set in purchaseNumber function
     } catch (error) {
       setPurchaseStatus('error');
