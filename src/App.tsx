@@ -113,8 +113,12 @@ function App() {
     // Supprimer tous les cookies
     const cookies = Cookies.get();
     Object.keys(cookies).forEach(cookieName => {
-      Cookies.remove(cookieName);
+      Cookies.remove(cookieName, { path: '/' });
+      Cookies.remove(cookieName); // Fallback for cookies set without specific path
     });
+
+    // Clear localStorage
+    localStorage.clear();
 
     // Rediriger vers /app1
     window.location.href = '/app1';
