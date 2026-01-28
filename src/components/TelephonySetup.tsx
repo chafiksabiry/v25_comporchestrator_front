@@ -765,7 +765,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       // Store the purchased number details for display
       setPurchaseResponse((response as any)?.data || {
         phoneNumber,
-        status: 'pending',
+        status: provider === 'twilio' ? 'active' : 'pending',
         features: {
           voice: true,
           sms: true,
