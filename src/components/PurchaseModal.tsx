@@ -49,6 +49,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
 }) => {
   const [bundleSid, setBundleSid] = React.useState('');
   const [addressSid, setAddressSid] = React.useState('');
+  const [showAdvanced, setShowAdvanced] = React.useState(false);
 
   // Reset SIDs when modal closes or opens
   React.useEffect(() => {
@@ -112,31 +113,43 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                     Are you sure you want to purchase the number <span className="font-medium">{selectedNumber}</span>?
                   </p>
                   {provider === 'twilio' && (
-                    <div className="space-y-3 mt-4 p-4 bg-gray-50 rounded-lg">
-                      <h4 className="text-sm font-medium text-gray-700">Regulatory Requirements (Optional)</h4>
-                      <p className="text-xs text-gray-500">For some countries (e.g. France), you may need to provide regulatory SIDs.</p>
-                      <div>
-                        <label htmlFor="bundleSid" className="block text-xs font-medium text-gray-700">Bundle SID</label>
-                        <input
-                          type="text"
-                          id="bundleSid"
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
-                          placeholder="BU..."
-                          value={bundleSid}
-                          onChange={(e) => setBundleSid(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="addressSid" className="block text-xs font-medium text-gray-700">Address SID</label>
-                        <input
-                          type="text"
-                          id="addressSid"
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
-                          placeholder="AD..."
-                          value={addressSid}
-                          onChange={(e) => setAddressSid(e.target.value)}
-                        />
-                      </div>
+                    <div className="space-y-3 mt-4">
+                      <button
+                        type="button"
+                        onClick={() => setShowAdvanced(!showAdvanced)}
+                        className="text-xs text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1"
+                      >
+                        {showAdvanced ? 'Hide' : 'Show'} Advanced Options
+                      </button>
+
+                      {showAdvanced && (
+                        <div className="p-4 bg-gray-50 rounded-lg space-y-3">
+                          <h4 className="text-sm font-medium text-gray-700">Regulatory Requirements (Optional)</h4>
+                          <p className="text-xs text-gray-500">For some countries (e.g. France), you may need to provide regulatory SIDs.</p>
+                          <div>
+                            <label htmlFor="bundleSid" className="block text-xs font-medium text-gray-700">Bundle SID</label>
+                            <input
+                              type="text"
+                              id="bundleSid"
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                              placeholder="BU..."
+                              value={bundleSid}
+                              onChange={(e) => setBundleSid(e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <label htmlFor="addressSid" className="block text-xs font-medium text-gray-700">Address SID</label>
+                            <input
+                              type="text"
+                              id="addressSid"
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                              placeholder="AD..."
+                              value={addressSid}
+                              onChange={(e) => setAddressSid(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                   {provider === 'telnyx' && (
