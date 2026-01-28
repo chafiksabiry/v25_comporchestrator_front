@@ -262,7 +262,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     searchAvailableNumbers(destZone);
 
     try {
-      setRequirementStatus(prev => ({ ...prev, isChecking: true }));
+      setRequirementStatus((prev: any) => ({ ...prev, isChecking: true }));
       const response = await phoneNumberService.getTwilioRequirements(destZone);
 
       console.log('Twilio Requirements:', response);
@@ -326,7 +326,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
     } catch (error) {
       console.error('Error fetching Twilio requirements:', error);
-      setRequirementStatus(prev => ({ ...prev, isChecking: false, error: 'Failed to fetch requirements' }));
+      setRequirementStatus((prev: any) => ({ ...prev, isChecking: false, error: 'Failed to fetch requirements' }));
     }
   };
 
@@ -521,6 +521,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
     if (provider === 'telnyx') {
       handleTelnyxProvider(zone);
+    } else if (provider === 'twilio') {
+      handleTwilioProvider(zone);
     } else {
       // For other providers, just check for existing numbers and search available ones
       checkGigPhoneNumber();
@@ -548,6 +550,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
     if (provider === 'telnyx') {
       handleTelnyxProvider(zone);
+    } else if (provider === 'twilio') {
+      handleTwilioProvider(zone);
     } else {
       // For other providers, just check for existing numbers and search available ones
       checkGigPhoneNumber();
