@@ -344,13 +344,13 @@ function CompanyProfile() {
             <div className="absolute right-0 top-full mt-2 flex gap-2">
               <button
                 onClick={handleFieldSave}
-                className="p-1.5 bg-green-500 text-white rounded-md hover:bg-green-600"
+                className="p-1.5 bg-green-500 text-blue rounded-md hover:bg-green-600"
               >
                 <CheckCircle2 size={14} />
               </button>
               <button
                 onClick={handleFieldCancel}
-                className="p-1.5 bg-red-500 text-white rounded-md hover:bg-red-600"
+                className="p-1.5 bg-red-500 text-blue rounded-md hover:bg-red-600"
               >
                 <X size={14} />
               </button>
