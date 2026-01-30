@@ -313,11 +313,13 @@ function CompanyProfile() {
       }
     };
 
-    const handleFieldSave = () => {
+    const handleFieldSave = (e: React.MouseEvent) => {
+      e.stopPropagation();
       handleApplyChanges(field);
     };
 
-    const handleFieldCancel = () => {
+    const handleFieldCancel = (e: React.MouseEvent) => {
+      e.stopPropagation();
       setEditingField(null);
       setTempValues((prev) => ({
         ...prev,
@@ -334,6 +336,7 @@ function CompanyProfile() {
             <input
               type="text"
               value={tempValues[field] || ""}
+              onClick={(e) => e.stopPropagation()}
               onChange={(e) =>
                 setTempValues((prev) => ({
                   ...prev,
@@ -346,7 +349,7 @@ function CompanyProfile() {
                 }`}
               placeholder={isHeroField ? value || "Enter text..." : ""}
             />
-            <div className="absolute right-0 top-full mt-2 flex gap-2">
+            <div className="absolute right-0 top-full mt-2 flex gap-2 z-50">
               <button
                 onClick={handleFieldSave}
                 className="p-1.5 bg-green-500 text-white rounded-md hover:bg-green-600 shadow-lg"
@@ -807,8 +810,8 @@ function CompanyProfile() {
                   }
                 }}
                 className={`p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 ${editMode
-                    ? "bg-indigo-600 text-white"
-                    : "bg-white/90 backdrop-blur-sm text-indigo-600 hover:bg-white"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-white/90 backdrop-blur-sm text-indigo-600 hover:bg-white"
                   }`}
               >
                 {editMode ? <Save size={20} /> : <Pencil size={20} />}
