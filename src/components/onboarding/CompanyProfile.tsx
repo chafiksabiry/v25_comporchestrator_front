@@ -341,8 +341,8 @@ function CompanyProfile() {
                 }))
               }
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${isHeroField
-                  ? 'border-white/30 bg-white/20 backdrop-blur-sm text-white placeholder-white/70'
-                  : 'border-indigo-300 bg-white !text-black'
+                ? 'border-white/30 bg-white/20 backdrop-blur-sm text-white placeholder-white/70'
+                : 'border-indigo-300 bg-white !text-black'
                 }`}
               placeholder={isHeroField ? value || "Enter text..." : ""}
             />
@@ -367,8 +367,8 @@ function CompanyProfile() {
             {editMode && (
               <button
                 className={`absolute -right-3 -top-3 opacity-0 group-hover:opacity-100 p-1 rounded-full shadow-md transition-all ${isHeroField
-                    ? 'bg-white/20 backdrop-blur-sm text-white hover:text-yellow-300'
-                    : 'bg-white text-gray-600 hover:text-indigo-600'
+                  ? 'bg-white/20 backdrop-blur-sm text-white hover:text-yellow-300'
+                  : 'bg-white text-gray-600 hover:text-indigo-600'
                   }`}
                 onClick={() => handleFieldEdit()}
               >
@@ -796,6 +796,24 @@ function CompanyProfile() {
                 </div>
               </div>
             </div>
+            {/* Edit Mode Toggle */}
+            <div className="absolute top-6 right-6 z-10">
+              <button
+                onClick={() => {
+                  const newMode = !editMode;
+                  setEditMode(newMode);
+                  if (!newMode && hasChanges) {
+                    handleSaveAll();
+                  }
+                }}
+                className={`p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 ${editMode
+                    ? "bg-indigo-600 text-white"
+                    : "bg-white/90 backdrop-blur-sm text-indigo-600 hover:bg-white"
+                  }`}
+              >
+                {editMode ? <Save size={20} /> : <Pencil size={20} />}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1127,23 +1145,7 @@ function CompanyProfile() {
             </div>
           </div>
           {/* Edit Mode Toggle */}
-          <div className="fixed bottom-6 right-6 z-50">
-            <button
-              onClick={() => {
-                const newMode = !editMode;
-                setEditMode(newMode);
-                if (!newMode && hasChanges) {
-                  handleSaveAll();
-                }
-              }}
-              className={`p-4 rounded-full shadow-2xl transition-all duration-300 transform hover:scale-110 ${editMode
-                  ? "bg-indigo-600 text-white rotate-0"
-                  : "bg-white text-indigo-600 hover:bg-gray-50 -rotate-12"
-                }`}
-            >
-              {editMode ? <Save size={24} /> : <Pencil size={24} />}
-            </button>
-          </div>
+
         </div>
       </div>
     </ErrorBoundary>
