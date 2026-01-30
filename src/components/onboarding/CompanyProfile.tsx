@@ -301,6 +301,7 @@ function CompanyProfile() {
     className?: string;
   }) => {
     const isEditing = editingField === field && editMode;
+    const isHeroField = className.includes('text-white') || className.includes('text-5xl');
 
     const handleFieldEdit = () => {
       if (editMode) {
@@ -325,7 +326,7 @@ function CompanyProfile() {
     };
 
     return (
-      <div className={`relative ${className}`} onClick={handleFieldEdit}>
+      <div className={`relative group ${className}`} onClick={handleFieldEdit}>
         {Icon && !isEditing && <Icon size={18} className="flex-shrink-0" />}
 
         {isEditing ? (
@@ -339,18 +340,22 @@ function CompanyProfile() {
                   [field]: e.target.value,
                 }))
               }
-              className="w-full px-3 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none !text-black !bg-white"
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${isHeroField
+                  ? 'border-white/30 bg-white/20 backdrop-blur-sm text-white placeholder-white/70'
+                  : 'border-indigo-300 bg-white !text-black'
+                }`}
+              placeholder={isHeroField ? value || "Enter text..." : ""}
             />
             <div className="absolute right-0 top-full mt-2 flex gap-2">
               <button
                 onClick={handleFieldSave}
-                className="p-1.5 bg-green-500 text-blue rounded-md hover:bg-green-600"
+                className="p-1.5 bg-green-500 text-white rounded-md hover:bg-green-600 shadow-lg"
               >
                 <CheckCircle2 size={14} />
               </button>
               <button
                 onClick={handleFieldCancel}
-                className="p-1.5 bg-red-500 text-blue rounded-md hover:bg-red-600"
+                className="p-1.5 bg-red-500 text-white rounded-md hover:bg-red-600 shadow-lg"
               >
                 <X size={14} />
               </button>
@@ -358,10 +363,13 @@ function CompanyProfile() {
           </div>
         ) : (
           <>
-            <span>{value || "Not set"}</span>
+            <span className={isHeroField ? "" : "text-gray-800"}>{value || "Not set"}</span>
             {editMode && (
               <button
-                className="absolute -right-3 -top-3 opacity-0 group-hover:opacity-100 p-1 bg-white rounded-full shadow-md text-gray-600 hover:text-indigo-600 transition-all"
+                className={`absolute -right-3 -top-3 opacity-0 group-hover:opacity-100 p-1 rounded-full shadow-md transition-all ${isHeroField
+                    ? 'bg-white/20 backdrop-blur-sm text-white hover:text-yellow-300'
+                    : 'bg-white text-gray-600 hover:text-indigo-600'
+                  }`}
                 onClick={() => handleFieldEdit()}
               >
                 <Pencil size={12} />
@@ -653,7 +661,6 @@ function CompanyProfile() {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-gray-50">
-
         <div className="bg-white shadow-xl">
           {/* Hero Section */}
           <div className="relative h-80">
@@ -665,11 +672,6 @@ function CompanyProfile() {
               }}
             >
               <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/90 via-indigo-800/85 to-blue-900/80" />
-
-
-
-
-
               <style>
                 {`
                   @keyframes shine {
@@ -794,436 +796,358 @@ function CompanyProfile() {
                 </div>
               </div>
             </div>
-
-            {/* What Makes Your Company Unique Button */}
-
           </div>
+        </div>
 
-          {/* Main Content */}
-          <div className="flex">
-            {/* Sidebar - Contact & Digital Presence */}
-            <div className="w-80 flex-shrink-0 bg-gradient-to-b from-gray-50 to-white border-r border-gray-200">
-              <div className="p-6 space-y-8">
-                {/* Contact Information */}
-                {hasContactInfo && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                      <Mail className="text-blue-600" size={20} />
-                      Contact Information
-                    </h3>
-                    <div className="space-y-3">
-                      {profile.contact?.email && (
-                        <EditableField
-                          value={profile.contact.email}
-                          field="contact.email"
-                          icon={Mail}
-                          className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                        />
-                      )}
-                      {profile.contact?.phone && (
-                        <EditableField
-                          value={profile.contact.phone}
-                          field="contact.phone"
-                          icon={Phone}
-                          className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                        />
-                      )}
-                      {profile.contact?.website && (
-                        <EditableField
-                          value={profile.contact.website}
-                          field="contact.website"
-                          icon={Globe}
-                          className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors text-sm"
-                        />
-                      )}
-                      {profile.contact?.address && (
-                        <EditableField
-                          value={profile.contact.address}
-                          field="contact.address"
-                          icon={MapPin}
-                          className="flex items-start gap-3 text-gray-600 text-sm"
-                        />
-                      )}
-                    </div>
-
-                    {/* Map Integration */}
-                    {(profile.contact?.address || hasLocation) && (
-                      <div className="mt-4">
-                        <div className="relative w-full h-[160px] rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
-                          {getGoogleMapsUrl() ? (
-                            <>
-                              <iframe
-                                src={getGoogleMapsUrl()!}
-                                width="100%"
-                                height="100%"
-                                style={{ border: 0 }}
-                                allowFullScreen
-                                loading="lazy"
-                                referrerPolicy="no-referrer-when-downgrade"
-                                className="absolute inset-0"
-                              />
-                              {getGoogleMapsDirectionsUrl() && (
-                                <a
-                                  href={getGoogleMapsDirectionsUrl()!}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-sm text-blue-600 rounded-lg shadow-lg backdrop-blur-sm flex items-center gap-1.5 transition-all hover:scale-105"
-                                >
-                                  <MapPin size={14} />
-                                  Get Directions
-                                </a>
-                              )}
-                            </>
-                          ) : (
-                            <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
-                              <span>Map not available</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Digital Presence */}
-                {hasSocialMedia && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                      <Globe className="text-blue-600" size={20} />
-                      Digital Presence
-                    </h3>
-                    <div className="flex gap-3">
-                      {profile.socialMedia?.linkedin && (
-                        <a
-                          href={profile.socialMedia.linkedin}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:text-blue-600 transition-all duration-300 text-gray-600"
-                        >
-                          <Linkedin size={20} />
-                        </a>
-                      )}
-                      {profile.socialMedia?.twitter && (
-                        <a
-                          href={profile.socialMedia.twitter}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:text-blue-600 transition-all duration-300 text-gray-600"
-                        >
-                          <Twitter size={20} />
-                        </a>
-                      )}
-                      {profile.socialMedia?.facebook && (
-                        <a
-                          href={profile.socialMedia.facebook}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:text-blue-600 transition-all duration-300 text-gray-600"
-                        >
-                          <Facebook size={20} />
-                        </a>
-                      )}
-                      {profile.socialMedia?.instagram && (
-                        <a
-                          href={profile.socialMedia.instagram}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:text-blue-600 transition-all duration-300 text-gray-600"
-                        >
-                          <Instagram size={20} />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Main Content Area */}
-            <div className="flex-1">
-              <div className="p-12 space-y-16">
-                {/* Overview Section */}
-                <section className="relative">
-                  <div className="absolute -left-6 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-blue-500 rounded-full" />
-                  <div className="space-y-8">
-                    <div className="flex items-start gap-6">
-                      <div className="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                        <Building2 className="text-indigo-600" size={24} />
-                      </div>
-                      <div className="flex-1">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                          Company Overview
-                        </h2>
-                        <EditableField
-                          value={profile.overview}
-                          field="overview"
-                          className="text-gray-700 leading-relaxed text-lg"
-                        />
-                      </div>
-                    </div>
-
-                    {profile.mission && (
-                      <div className="ml-18 p-8 bg-gradient-to-br from-indigo-50 via-blue-50 to-white rounded-2xl border border-indigo-100/50 shadow-sm">
-                        <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center">
-                            <Target className="text-white" size={24} />
-                          </div>
-                          <div>
-                            <h3 className="text-xl font-bold text-indigo-700 mb-3">
-                              Our Mission
-                            </h3>
-                            <EditableField
-                              value={profile.mission}
-                              field="mission"
-                              className="text-gray-700"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </section>
-
-                {/* Culture & Benefits Grid */}
-                <div className="grid md:grid-cols-2 gap-10">
-                  {/* Culture Section */}
-                  <section className="space-y-8">
-                    <div className="flex items-start gap-6">
-                      <div className="w-12 h-12 rounded-2xl bg-rose-100 flex items-center justify-center flex-shrink-0">
-                        <Heart className="text-rose-600" size={24} />
-                      </div>
-                      <div className="flex-1">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                          Culture & Values
-                        </h2>
-                        <div className="space-y-4">
-                          {profile.culture.values && Array.isArray(profile.culture.values) && profile.culture.values.map((value: string, index: number) => (
-                            <EditableField
-                              key={index}
-                              value={value}
-                              field={`culture.values.${index}`}
-                              icon={Coffee}
-                              className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:scale-[1.02] transition-all duration-300"
-                            />
-                          ))}
-                          {editMode && profile.culture.values && profile.culture.values.length === 0 && (
-                            <div className="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-300 text-center text-gray-500">
-                              Add company values in edit mode
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-
-                  {/* Benefits Section */}
-                  <section className="space-y-8">
-                    <div className="flex items-start gap-6">
-                      <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center flex-shrink-0">
-                        <Trophy className="text-amber-600" size={24} />
-                      </div>
-                      <div className="flex-1">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                          Benefits & Perks
-                        </h2>
-                        <div className="space-y-4">
-                          {profile.culture.benefits && Array.isArray(profile.culture.benefits) && profile.culture.benefits.map((benefit: string, index: number) => (
-                            <EditableField
-                              key={index}
-                              value={benefit}
-                              field={`culture.benefits.${index}`}
-                              icon={Award}
-                              className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:scale-[1.02] transition-all duration-300"
-                            />
-                          ))}
-                          {editMode && profile.culture.benefits && profile.culture.benefits.length === 0 && (
-                            <div className="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-300 text-center text-gray-500">
-                              Add company benefits in edit mode
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-                </div>
-
-                {/* Work Environment */}
-                <section className="bg-gradient-to-br from-gray-50 via-white to-gray-50 rounded-2xl p-8 border border-gray-100/50 shadow-sm">
-                  <div className="flex items-start gap-6">
-                    <div className="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center flex-shrink-0">
-                      <Users className="text-purple-600" size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                        Work Environment
-                      </h3>
+        {/* Main Content */}
+        <div className="flex">
+          {/* Sidebar - Contact & Digital Presence */}
+          <div className="w-80 flex-shrink-0 bg-gradient-to-b from-gray-50 to-white border-r border-gray-200">
+            <div className="p-6 space-y-8">
+              {/* Contact Information */}
+              {hasContactInfo && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <Mail className="text-blue-600" size={20} />
+                    Contact Information
+                  </h3>
+                  <div className="space-y-3">
+                    {profile.contact?.email && (
                       <EditableField
-                        value={profile.culture.workEnvironment}
-                        field="culture.workEnvironment"
-                        className="text-gray-700 leading-relaxed"
+                        value={profile.contact.email}
+                        field="contact.email"
+                        icon={Mail}
+                        className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors text-sm"
                       />
-                    </div>
+                    )}
+                    {profile.contact?.phone && (
+                      <EditableField
+                        value={profile.contact.phone}
+                        field="contact.phone"
+                        icon={Phone}
+                        className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                      />
+                    )}
+                    {profile.contact?.website && (
+                      <EditableField
+                        value={profile.contact.website}
+                        field="contact.website"
+                        icon={Globe}
+                        className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors text-sm"
+                      />
+                    )}
+                    {profile.contact?.address && (
+                      <EditableField
+                        value={profile.contact.address}
+                        field="contact.address"
+                        icon={MapPin}
+                        className="flex items-start gap-3 text-gray-600 text-sm"
+                      />
+                    )}
                   </div>
-                </section>
 
-                {/* Career Growth */}
-                <section className="space-y-8">
-                  <div className="flex items-start gap-6">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                      <Rocket className="text-blue-600" size={24} />
-                    </div>
-                    <div className="flex-1">
-                      <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                        Career Growth & Opportunities
-                      </h2>
-                      <div className="grid md:grid-cols-2 gap-8">
-                        <div className="space-y-4">
-                          <h3 className="text-xl font-semibold text-gray-800">
-                            Available Roles
-                          </h3>
-                        </h3>
-                        {profile.opportunities.roles && Array.isArray(profile.opportunities.roles) && profile.opportunities.roles.map((role: string, index: number) => (
-                          <EditableField
-                            key={index}
-                            value={role}
-                            field={`opportunities.roles.${index}`}
-                            icon={Briefcase}
-                            className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:scale-[1.02] transition-all duration-300"
-                          />
-                        ))}
-                        {editMode && profile.opportunities.roles && profile.opportunities.roles.length === 0 && (
-                          <div className="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-300 text-center text-gray-500">
-                            Add available roles in edit mode
+                  {/* Map Integration */}
+                  {(profile.contact?.address || hasLocation) && (
+                    <div className="mt-4">
+                      <div className="relative w-full h-[160px] rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                        {getGoogleMapsUrl() ? (
+                          <>
+                            <iframe
+                              src={getGoogleMapsUrl()!}
+                              width="100%"
+                              height="100%"
+                              style={{ border: 0 }}
+                              allowFullScreen
+                              loading="lazy"
+                              referrerPolicy="no-referrer-when-downgrade"
+                              className="absolute inset-0"
+                            />
+                            {getGoogleMapsDirectionsUrl() && (
+                              <a
+                                href={getGoogleMapsDirectionsUrl()!}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="absolute bottom-2 right-2 px-3 py-1.5 bg-white/90 hover:bg-white text-sm text-blue-600 rounded-lg shadow-lg backdrop-blur-sm flex items-center gap-1.5 transition-all hover:scale-105"
+                              >
+                                <MapPin size={14} />
+                                Get Directions
+                              </a>
+                            )}
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
+                            <span>Map not available</span>
                           </div>
                         )}
                       </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
-                      <div className="space-y-6">
-                        <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100/50">
-                          <h3 className="text-xl font-semibold text-gray-800 mb-3">
-                            Growth Potential
-                          </h3>
-                          <EditableField
-                            value={profile.opportunities.growthPotential}
-                            field="opportunities.growthPotential"
-                            className="text-gray-700"
-                          />
+              {/* Digital Presence */}
+              {hasSocialMedia && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <Globe className="text-blue-600" size={20} />
+                    Digital Presence
+                  </h3>
+                  <div className="flex gap-3">
+                    {profile.socialMedia?.linkedin && (
+                      <a
+                        href={profile.socialMedia.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:text-blue-600 transition-all duration-300 text-gray-600"
+                      >
+                        <Linkedin size={20} />
+                      </a>
+                    )}
+                    {profile.socialMedia?.twitter && (
+                      <a
+                        href={profile.socialMedia.twitter}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:text-blue-600 transition-all duration-300 text-gray-600"
+                      >
+                        <Twitter size={20} />
+                      </a>
+                    )}
+                    {profile.socialMedia?.facebook && (
+                      <a
+                        href={profile.socialMedia.facebook}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:text-blue-600 transition-all duration-300 text-gray-600"
+                      >
+                        <Facebook size={20} />
+                      </a>
+                    )}
+                    {profile.socialMedia?.instagram && (
+                      <a
+                        href={profile.socialMedia.instagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-10 h-10 flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:text-blue-600 transition-all duration-300 text-gray-600"
+                      >
+                        <Instagram size={20} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Main Content Area */}
+          <div className="flex-1">
+            <div className="p-12 space-y-16">
+              {/* Overview Section */}
+              <section className="relative">
+                <div className="absolute -left-6 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-blue-500 rounded-full" />
+                <div className="space-y-8">
+                  <div className="flex items-start gap-6">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                      <Building2 className="text-indigo-600" size={24} />
+                    </div>
+                    <div className="flex-1">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                        Company Overview
+                      </h2>
+                      <EditableField
+                        value={profile.overview}
+                        field="overview"
+                        className="text-gray-700 leading-relaxed text-lg"
+                      />
+                    </div>
+                  </div>
+
+                  {profile.mission && (
+                    <div className="ml-18 p-8 bg-gradient-to-br from-indigo-50 via-blue-50 to-white rounded-2xl border border-indigo-100/50 shadow-sm">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-500 flex items-center justify-center">
+                          <Target className="text-white" size={24} />
                         </div>
-                        <div className="p-6 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100/50">
-                          <h3 className="text-xl font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                            <GraduationCap
-                              size={20}
-                              className="text-indigo-500"
-                            />
-                            Training & Development
+                        <div>
+                          <h3 className="text-xl font-bold text-indigo-700 mb-3">
+                            Our Mission
                           </h3>
                           <EditableField
-                            value={profile.opportunities.training}
-                            field="opportunities.training"
+                            value={profile.mission}
+                            field="mission"
                             className="text-gray-700"
                           />
                         </div>
                       </div>
                     </div>
-                  </div>
-              </div>
-            </section>
-
-            {/* Technology Stack */}
-            <section className="space-y-8">
-              <div className="flex items-start gap-6">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                  <Code className="text-emerald-600" size={24} />
+                  )}
                 </div>
-                <div className="flex-1">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                    Technology & Innovation
-                  </h2>
-                  <div className="grid md:grid-cols-2 gap-8">
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                        Tech Stack
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        <div className="flex flex-wrap gap-2">
-                          {profile.technology.stack && Array.isArray(profile.technology.stack) && profile.technology.stack.map((tech: string, index: number) => (
+              </section>
+
+              {/* Culture & Benefits Grid */}
+              <div className="grid md:grid-cols-2 gap-10">
+                {/* Culture Section */}
+                <section className="space-y-8">
+                  <div className="flex items-start gap-6">
+                    <div className="w-12 h-12 rounded-2xl bg-rose-100 flex items-center justify-center flex-shrink-0">
+                      <Heart className="text-rose-600" size={24} />
+                    </div>
+                    <div className="flex-1">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                        Culture & Values
+                      </h2>
+                      <div className="space-y-4">
+                        {profile.culture.values && profile.culture.values.map((value: string, index: number) => (
+                          <EditableField
+                            key={index}
+                            value={value}
+                            field={`culture.values.${index}`}
+                            icon={Coffee}
+                            className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:scale-[1.02] transition-all duration-300"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Benefits Section */}
+                <section className="space-y-8">
+                  <div className="flex items-start gap-6">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                      <Trophy className="text-emerald-600" size={24} />
+                    </div>
+                    <div className="flex-1">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                        Key Benefits
+                      </h2>
+                      <div className="space-y-4">
+                        {profile.culture.benefits && profile.culture.benefits.map((benefit: string, index: number) => (
+                          <EditableField
+                            key={index}
+                            value={benefit}
+                            field={`culture.benefits.${index}`}
+                            icon={Award}
+                            className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:scale-[1.02] transition-all duration-300"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              {/* Technologies Section */}
+              <section className="relative">
+                <div className="absolute -left-6 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full" />
+                <div className="flex items-start gap-6">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <Code className="text-blue-600" size={24} />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                      Tech Stack
+                    </h2>
+                    <div className="flex flex-wrap gap-3">
+                      {profile.technology.stack && profile.technology.stack.map((tech: string, index: number) => (
+                        <EditableField
+                          key={index}
+                          value={tech}
+                          field={`technology.stack.${index}`}
+                          className="px-4 py-2 bg-gray-100/50 rounded-lg text-gray-700 font-medium hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                        />
+                      ))}
+                    </div>
+                    {profile.technology.innovation && (
+                      <div className="mt-6 p-6 bg-blue-50 rounded-xl border border-blue-100">
+                        <div className="flex items-start gap-3">
+                          <Rocket className="text-blue-600 mt-1" size={20} />
+                          <div>
+                            <h4 className="font-semibold text-blue-900 mb-1">
+                              Innovation Focus
+                            </h4>
                             <EditableField
-                              key={index}
-                              value={tech}
-                              field={`technology.stack.${index}`}
-                              className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100"
+                              value={profile.technology.innovation}
+                              field="technology.innovation"
+                              className="text-blue-800"
                             />
-                          ))}
-                          {editMode && profile.technology.stack && profile.technology.stack.length === 0 && (
-                            <div className="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-300 text-center text-gray-500 w-full">
-                              Add technologies in edit mode
-                            </div>
-                          )}
+                          </div>
                         </div>
                       </div>
-                      <div>
-                        <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                          Innovation
-                        </h3>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {/* Opportunities Section */}
+              <section className="space-y-8">
+                <div className="flex items-start gap-6">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center flex-shrink-0">
+                    <Briefcase className="text-purple-600" size={24} />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                      Career Growth
+                    </h2>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="p-2 bg-purple-50 rounded-lg">
+                            <ArrowRight className="text-purple-600" size={18} />
+                          </div>
+                          <h3 className="font-semibold text-gray-900">
+                            Growth Potential
+                          </h3>
+                        </div>
                         <EditableField
-                          value={profile.technology.innovation}
-                          field="technology.innovation"
-                          className="text-gray-700"
+                          value={profile.opportunities.growthPotential}
+                          field="opportunities.growthPotential"
+                          className="text-gray-600"
+                        />
+                      </div>
+                      <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-100">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="p-2 bg-purple-50 rounded-lg">
+                            <GraduationCap className="text-purple-600" size={18} />
+                          </div>
+                          <h3 className="font-semibold text-gray-900">
+                            Learning & Development
+                          </h3>
+                        </div>
+                        <EditableField
+                          value={profile.opportunities.training}
+                          field="opportunities.training"
+                          className="text-gray-600"
                         />
                       </div>
                     </div>
                   </div>
                 </div>
-            </section>
+              </section>
+            </div>
+          </div>
+          {/* Edit Mode Toggle */}
+          <div className="fixed bottom-6 right-6 z-50">
+            <button
+              onClick={() => {
+                const newMode = !editMode;
+                setEditMode(newMode);
+                if (!newMode && hasChanges) {
+                  handleSaveAll();
+                }
+              }}
+              className={`p-4 rounded-full shadow-2xl transition-all duration-300 transform hover:scale-110 ${editMode
+                  ? "bg-indigo-600 text-white rotate-0"
+                  : "bg-white text-indigo-600 hover:bg-gray-50 -rotate-12"
+                }`}
+            >
+              {editMode ? <Save size={24} /> : <Pencil size={24} />}
+            </button>
           </div>
         </div>
       </div>
-    </div>
-
-      {/* Edit and Save buttons */ }
-  <div className="fixed right-6 top-6 flex items-center gap-3 z-10">
-    <button
-      onClick={() => setEditMode(!editMode)}
-      className={`p-2 rounded-full transition-all duration-300 ${editMode
-        ? "bg-green-500 text-white hover:bg-green-600"
-        : "bg-white text-gray-600 hover:bg-gray-100"
-        }`}
-    >
-      <Edit2 size={20} />
-    </button>
-  </div>
-
-  {/* Save Changes Button */ }
-  {
-    editMode && hasChanges && (
-      <div className="fixed bottom-6 right-6 z-10">
-        <button
-          onClick={handleSaveAll}
-          className={`px-6 py-3 rounded-xl shadow-lg transition-all flex items-center gap-2 ${isStepCompleted
-            ? 'bg-blue-600 text-white hover:bg-blue-700'
-            : 'bg-green-600 text-white hover:bg-green-700'
-            }`}
-        >
-          <Save size={18} />
-          {isStepCompleted ? 'Update Profile' : 'Save & Complete Step'}
-        </button>
-      </div>
-    )
-  }
-
-  {/* Success message */ }
-  {
-    saveSuccess && (
-      <div className="fixed bottom-6 left-6 z-10 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-600 shadow-lg">
-        <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-        <span>Company profile saved successfully</span>
-      </div>
-    )
-  }
-    </div >
-    </ErrorBoundary >
+    </ErrorBoundary>
   );
-
 }
 
 export default CompanyProfile;
