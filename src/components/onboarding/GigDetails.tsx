@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import Swal from 'sweetalert2';
 import GigDetailsView from './GigDetailsView';
 
 interface Gig {
@@ -240,14 +241,34 @@ const GigDetails = () => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (window.confirm('Are you sure you want to delete this gig?')) {
-      try {
-        await axios.delete(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`);
-        setGigs((prev: any[]) => prev.filter(g => g._id !== gigId));
-      } catch (err) {
-        console.error('Error deleting gig:', err);
-        alert('Failed to delete gig');
-      }
+    try {
+      await axios.delete(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`);
+      setGigs((prev: any[]) => prev.filter(g => g._id !== gigId));
+
+      const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+      });
+      Toast.fire({
+        icon: 'success',
+        title: 'Gig deleted successfully'
+      });
+
+    } catch (err) {
+      console.error('Error deleting gig:', err);
+      const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000
+      });
+      Toast.fire({
+        icon: 'error',
+        title: 'Failed to delete gig'
+      });
     }
   };
 
