@@ -854,6 +854,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         // Les leads ont été ajoutés, effacer les leads parsés
         setParsedLeads([]);
 
+        // Clear validation results immediately after save
+        setValidationResults(null);
+        localStorage.removeItem('validationResults');
+        sessionStorage.removeItem('validationResults');
+
+
         // Mettre à jour l'onboarding
         try {
           const companyId = Cookies.get('companyId');
