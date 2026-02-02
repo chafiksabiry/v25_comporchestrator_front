@@ -182,9 +182,9 @@ const GigDetails = () => {
 
   const formatCommission = (commission: Gig['commission']) => {
     if (!commission) return 'Not specified';
-    
+
     const currencySymbol = commission.currency?.symbol || '€';
-    
+
     if (commission.transactionCommission?.amount) {
       return `${commission.transactionCommission.amount} ${currencySymbol}`;
     }
@@ -196,7 +196,7 @@ const GigDetails = () => {
 
   const getAvailabilityText = (availability: Gig['availability']) => {
     if (!availability) return 'Not specified';
-    
+
     if (availability.schedule && availability.schedule.length > 0) {
       const days = availability.schedule.length;
       return `${days} day${days > 1 ? 's' : ''}/week`;
@@ -229,12 +229,27 @@ const GigDetails = () => {
   if (selectedGig) {
     console.log('Rendering GigDetailsView with gig:', selectedGig);
     return (
-      <GigDetailsView 
-        gig={selectedGig} 
-        onBack={() => setSelectedGig(null)} 
+      <GigDetailsView
+        gig={selectedGig}
+        onBack={() => setSelectedGig(null)}
       />
     );
   }
+
+  const handleDelete = async (e: React.MouseEvent, gigId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (window.confirm('Are you sure you want to delete this gig?')) {
+      try {
+        await axios.delete(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`);
+        setGigs((prev: any[]) => prev.filter(g => g._id !== gigId));
+      } catch (err) {
+        console.error('Error deleting gig:', err);
+        alert('Failed to delete gig');
+      }
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -252,7 +267,7 @@ const GigDetails = () => {
           </button>
         </div>
       </div>
-      
+
       {gigs.length === 0 ? (
         <div className="text-center py-12">
           <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -267,7 +282,7 @@ const GigDetails = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {gigs.map((gig, index) => {
             const statusColors = getStatusColor(gig.status);
-            
+
             return (
               <div
                 key={gig._id}
@@ -283,7 +298,7 @@ const GigDetails = () => {
                       {gig.status}
                     </div>
                   </div>
-                  
+
                   {/* Category Badge */}
                   {gig.category && (
                     <div className="mb-3">
@@ -292,7 +307,7 @@ const GigDetails = () => {
                       </span>
                     </div>
                   )}
-                  
+
                   {/* Description */}
                   <p className="text-white/90 text-sm leading-relaxed mb-4 overflow-hidden" style={{
                     display: '-webkit-box',
@@ -303,7 +318,7 @@ const GigDetails = () => {
                   }}>
                     {gig.description || 'No description available'}
                   </p>
-                  
+
                   {/* Key Info Grid */}
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     {/* Seniority */}
@@ -315,7 +330,7 @@ const GigDetails = () => {
                         </div>
                       </div>
                     )}
-                    
+
                     {/* Commission */}
                     {gig.commission && (
                       <div className="bg-white/10 rounded-lg p-3">
@@ -325,7 +340,7 @@ const GigDetails = () => {
                         </div>
                       </div>
                     )}
-                    
+
                     {/* Availability */}
                     {gig.availability && (
                       <div className="bg-white/10 rounded-lg p-3">
@@ -335,7 +350,7 @@ const GigDetails = () => {
                         </div>
                       </div>
                     )}
-                    
+
                     {/* Team Size */}
                     {gig.team && gig.team.size && (
                       <div className="bg-white/10 rounded-lg p-3">
@@ -346,7 +361,7 @@ const GigDetails = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Footer */}
                   <div className="flex items-center justify-between pt-4 border-t border-white/20">
                     <div className="flex items-center text-white/80 text-xs">
@@ -355,22 +370,33 @@ const GigDetails = () => {
                       </svg>
                       {gig.createdAt ? new Date(gig.createdAt).toLocaleDateString() : 'Date unknown'}
                     </div>
-                    
-                    <button 
-                      className="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 relative z-10"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('View Details clicked for gig:', gig);
-                        console.log('Setting selectedGig to:', gig);
-                        setSelectedGig(gig);
-                      }}
-                    >
-                      View Details
-                    </button>
+
+                    <div className="flex gap-2">
+                      <button
+                        className="bg-red-500/20 hover:bg-red-500/40 text-white p-2 rounded-lg transition-all duration-200 relative z-20"
+                        onClick={(e) => handleDelete(e, gig._id)}
+                        title="Delete Gig"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                      <button
+                        className="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 relative z-10"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('View Details clicked for gig:', gig);
+                          console.log('Setting selectedGig to:', gig);
+                          setSelectedGig(gig);
+                        }}
+                      >
+                        View Details
+                      </button>
+                    </div>
                   </div>
                 </div>
-                
+
                 {/* Hover Effect Overlay */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 pointer-events-none"></div>
               </div>
