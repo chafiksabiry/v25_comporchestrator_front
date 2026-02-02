@@ -810,92 +810,49 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         Project_Tags: lead.Project_Tags || []
       }));
 
-      // Sauvegarder les leads un par un pour affichage immédiat
-      const savedLeads: any[] = [];
-      const failedLeads: { index: number; error: string }[] = [];
-
-      for (let i = 0; i < leadsForAPI.length; i++) {
-        // Vérifier si le traitement a été annulé avec la référence fiable
-        if (!processingRef.current) {
-          throw new Error('Processing cancelled by user');
-        }
-
-        const lead = leadsForAPI[i];
-
-        try {
-          const response = await axios.post(
-            `${import.meta.env.VITE_DASHBOARD_API}/leads`,
-            lead,
-            {
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${currentGigId}:${currentUserId}`
-              },
-              timeout: 10000 // 10 secondes de timeout
-            }
-          );
-
-          if (response.status === 200 || response.status === 201) {
-            savedLeads.push(response.data);
-
-            // Ajouter le lead sauvegardé à la liste des leads récemment sauvegardés
-            const responseData = response.data as any;
-            const savedLead: Lead = {
-              _id: responseData._id || `temp_${Date.now()}_${i}`,
-              gigId: responseData.gigId || selectedGigId,
-              userId: responseData.userId || currentUserId || '',
-              companyId: responseData.companyId || currentCompanyId || '',
-              Email_1: responseData.Email_1 || lead.Email_1,
-              Phone: responseData.Phone || lead.Phone,
-              Deal_Name: responseData.Deal_Name || lead.Deal_Name,
-              Stage: responseData.Stage || lead.Stage,
-              Pipeline: responseData.Pipeline || lead.Pipeline,
-              updatedAt: new Date().toISOString()
-            };
-
-            setRecentlySavedLeads(prev => [...prev, savedLead]);
-
-            // Ajouter immédiatement le lead sauvegardé à la liste principale
-            setLeads(prevLeads => [...prevLeads, savedLead]);
-            setFilteredLeads(prevFilteredLeads => [...prevFilteredLeads, savedLead]);
-            setTotalCount(prevCount => prevCount + 1);
-
-            // Mettre à jour la progression et le compteur immédiatement
-            const progress = Math.round(((i + 1) / leadsForAPI.length) * 100);
-            setUploadProgress(progress);
-            setSavedLeadsCount(savedLeads.length);
-
-            // Les leads sont maintenant ajoutés en temps réel, plus besoin de fetchLeads
-          } else {
-            failedLeads.push({ index: i, error: response.statusText });
-          }
-        } catch (error: any) {
-          failedLeads.push({
-            index: i,
-            error: error.message || 'Network error'
-          });
-        }
-
-        // Petite pause entre chaque lead pour éviter de surcharger l'API
-        if (i < leadsForAPI.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 50));
-        }
+      // Sauvegarde en masse via le nouvel endpoint
+      if (!processingRef.current) {
+        throw new Error('Processing cancelled by user');
       }
 
-      // Résultats finaux
-      const savedCount = savedLeads.length;
-      const totalCount = leadsForAPI.length;
-      const failedCount = failedLeads.length;
+      // Progression fictive pour montrer que ça travaille
+      setUploadProgress(30);
 
-      if (savedCount === totalCount) {
-        // Tous les leads ont été sauvegardés
+      const response = await axios.post(
+        `${import.meta.env.VITE_DASHBOARD_API}/leads/bulk`,
+        { leads: leadsForAPI },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentGigId}:${currentUserId}`
+          },
+          timeout: 60000 // 60 secondes pour le bulk
+        }
+      );
+
+      setUploadProgress(90);
+
+      if (response.status === 201 || response.status === 207) {
+        const responseData = response.data;
+        const savedCount = responseData.count || (responseData.data ? responseData.data.length : 0);
+
+        // Tous les leads ont été sauvegardés (ou tentative faite)
         setUploadSuccess(true);
         setUploadProgress(100);
         toast.success(`Successfully saved ${savedCount} contacts!`);
 
-        // Les leads ont été ajoutés en temps réel, effacer seulement les leads parsés
+        // Les leads sont maintenant ajoutés, on peut mettre à jour l'état local si nécessaire
+        // Pour l'instant, on se fie au rechargement ou à la réponse
+        if (responseData.data && Array.isArray(responseData.data)) {
+          setRecentlySavedLeads(responseData.data);
+          setLeads(prev => [...prev, ...responseData.data]);
+          setFilteredLeads(prev => [...prev, ...responseData.data]);
+          setTotalCount(prev => prev + savedCount);
+          setSavedLeadsCount(savedCount);
+        }
+
+        // Les leads ont été ajoutés, effacer les leads parsés
         setParsedLeads([]);
-        setRecentlySavedLeads([]);
 
         // Mettre à jour l'onboarding
         try {
@@ -914,28 +871,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           }
         } catch (error) {
           console.error('Error updating onboarding progress:', error);
-          // Ne pas bloquer le processus si l'onboarding échoue
         }
 
-      } else if (savedCount > 0) {
-        // Certains leads ont été sauvegardés
-        setUploadError(`${savedCount} leads saved, ${failedCount} failed`);
-        // Afficher les erreurs dans la console
-        console.warn('Failed leads:', failedLeads);
-
-        // Les leads sauvegardés ont été ajoutés en temps réel
-        // Garder seulement les leads parsés qui ont échoué pour permettre une nouvelle tentative
-        const failedParsedLeads = parsedLeads.filter((_, index) =>
-          failedLeads.some(failed => failed.index === index)
-        );
-        setParsedLeads(failedParsedLeads);
-        setRecentlySavedLeads([]);
-
       } else {
-        // Aucun lead n'a été sauvegardé
-        setUploadError('Failed to save any leads');
-        toast.error('Failed to save any leads. Check console for details.');
-        console.error('All leads failed to save:', failedLeads);
+        throw new Error(response.statusText || 'Bulk save failed');
       }
 
     } catch (error: any) {
@@ -1478,8 +1417,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
             key={i}
             onClick={() => fetchLeads(i)}
             className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${i === currentPage
-                ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
-                : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+              ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+              : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
               }`}
           >
             {i}
@@ -1495,8 +1434,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         key={1}
         onClick={() => fetchLeads(1, searchQuery)}
         className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${1 === currentPage
-            ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
-            : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+          ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+          : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
           }`}
       >
         1
@@ -1530,8 +1469,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           key={i}
           onClick={() => fetchLeads(i, searchQuery)}
           className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${i === currentPage
-              ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
-              : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+            ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+            : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
             }`}
         >
           {i}
@@ -1555,8 +1494,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           key={totalPages}
           onClick={() => fetchLeads(totalPages, searchQuery)}
           className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${totalPages === currentPage
-              ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
-              : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+            ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+            : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
             }`}
         >
           {totalPages}
@@ -2227,8 +2166,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
               <button
                 key={channel.id}
                 className={`flex items-center space-x-2 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200 transform hover:scale-105 ${isSelected
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
                   }`}
                 onClick={() => toggleChannel(channel.id)}
               >
