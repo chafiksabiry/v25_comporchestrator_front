@@ -205,7 +205,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
     if (hasPendingNumbers) {
       console.log('🔄 Setting up auto-refresh for pending numbers');
-      const interval = setInterval(fetchExistingNumbers, 30000);
+      const interval = setInterval(fetchExistingNumbers, 300000);
       return () => clearInterval(interval);
     }
   }, [phoneNumbers]);

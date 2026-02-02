@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  AlertTriangle, 
-  Eye, 
-  Edit, 
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  AlertTriangle,
+  Eye,
+  Edit,
   Briefcase,
   ChevronDown,
   ChevronUp,
@@ -127,8 +127,8 @@ const ApprovalPublishing = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<'main' | 'preview' | 'edit'>('main');
   const [currentGigData, setCurrentGigData] = useState<any>(null);
-  const [skillsData, setSkillsData] = useState<{[key: string]: any}>({});
-  const [timezoneData, setTimezoneData] = useState<{[key: string]: any}>({});
+  const [skillsData, setSkillsData] = useState<{ [key: string]: any }>({});
+  const [timezoneData, setTimezoneData] = useState<{ [key: string]: any }>({});
   const [selectedDays, setSelectedDays] = useState<string[]>(['Monday', 'Tuesday']);
   const [workingHours, setWorkingHours] = useState({ start: '09:00', end: '17:00' });
   const [schedules, setSchedules] = useState<any[]>([]);
@@ -146,7 +146,7 @@ const ApprovalPublishing = () => {
     fetchLanguages();
   }, []);
 
-    const fetchCompanyDetails = async () => {
+  const fetchCompanyDetails = async () => {
     try {
       const companyId = Cookies.get('companyId');
       if (!companyId) {
@@ -238,14 +238,14 @@ const ApprovalPublishing = () => {
     console.log('🔄 Starting fetchGigs...');
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const companyId = Cookies.get('companyId');
       const gigId = Cookies.get('gigId');
       const userId = Cookies.get('userId');
-      
+
       console.log('📋 Cookies found:', { companyId, gigId, userId });
-      
+
       if (!companyId) {
         console.error('❌ Company ID not found in cookies');
         throw new Error('Company ID not found');
@@ -253,7 +253,7 @@ const ApprovalPublishing = () => {
 
       const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`;
       console.log('🌐 Fetching from API:', apiUrl);
-      
+
       const response = await fetch(apiUrl, {
         headers: {
           'Authorization': `Bearer ${gigId}:${userId}`,
@@ -271,7 +271,7 @@ const ApprovalPublishing = () => {
 
       const data = await response.json();
       console.log('📦 Raw API data:', data);
-      
+
       if (data.data) {
         console.log('📊 Found gigs data, transforming...');
         // Transformer les données pour correspondre à l'interface attendue
@@ -293,7 +293,7 @@ const ApprovalPublishing = () => {
           console.log('🔄 Transformed gig:', transformed);
           return transformed;
         });
-        
+
         console.log('✅ Setting gigs state with', transformedGigs.length, 'gigs');
         setGigs(transformedGigs);
       } else {
@@ -334,7 +334,7 @@ const ApprovalPublishing = () => {
 
   const filteredGigs = gigs.filter(gig => {
     if (filter === 'all') return true;
-    
+
     // Mapping des statuts pour la compatibilité
     const statusMapping: { [key: string]: string[] } = {
       'pending': ['pending', 'to_activate', 'draft', 'submitted'],
@@ -342,41 +342,41 @@ const ApprovalPublishing = () => {
       'rejected': ['rejected', 'declined', 'cancelled', 'inactive'],
       'archived': ['archived']
     };
-    
+
     const validStatuses = statusMapping[filter] || [filter];
     const isMatch = validStatuses.includes(gig.status);
-    
+
     console.log(`🔍 Filtering gig ${gig._id} (${gig.title}): status="${gig.status}", filter="${filter}", validStatuses=${JSON.stringify(validStatuses)}, isMatch=${isMatch}`);
-    
+
     return isMatch;
   });
-  
-  console.log('🔍 Filtered gigs:', { 
-    filter, 
-    totalGigs: gigs.length, 
+
+  console.log('🔍 Filtered gigs:', {
+    filter,
+    totalGigs: gigs.length,
     filteredCount: filteredGigs.length,
     gigs: filteredGigs.map(g => ({ id: g._id, title: g.title, status: g.status }))
   });
 
   const formatDate = (dateString: string) => {
     console.log('📅 Formatting date:', dateString);
-    
+
     if (!dateString) {
       console.log('📅 No date string provided');
       return 'Invalid date';
     }
-    
+
     try {
       const date = new Date(dateString);
-      
+
       if (isNaN(date.getTime())) {
         console.log('📅 Invalid date format');
         return 'Invalid date';
       }
-      
+
       const now = new Date();
       const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-      
+
       let result;
       if (diffInHours < 1) result = 'Just now';
       else if (diffInHours < 24) result = `${diffInHours} hours ago`;
@@ -385,7 +385,7 @@ const ApprovalPublishing = () => {
         if (diffInDays === 1) result = '1 day ago';
         else result = `${diffInDays} days ago`;
       }
-      
+
       console.log('📅 Formatted result:', result);
       return result;
     } catch (error) {
@@ -410,12 +410,12 @@ const ApprovalPublishing = () => {
       'inactive': 'Inactive',
       'archived': 'Archived'
     };
-    
+
     // Si le statut n'est pas dans le mapping, formater en remplaçant les underscores
     if (statusMapping[status]) {
       return statusMapping[status];
     }
-    
+
     // Fallback: remplacer les underscores par des espaces et capitaliser
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
@@ -427,21 +427,21 @@ const ApprovalPublishing = () => {
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
       const gigIdCookie = Cookies.get('gigId');
-      
+
       console.log('🔑 Auth tokens:', { companyId, userId, gigId: gigIdCookie });
-      
+
       if (!companyId || !userId) {
         throw new Error('Missing authentication tokens');
       }
 
       const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
       console.log('🌐 API URL:', apiUrl);
-      
+
       const requestBody = {
         status: 'active'
       };
       console.log('📦 Request body:', requestBody);
-      
+
       const response = await fetch(apiUrl, {
         method: 'PUT',
         headers: {
@@ -462,9 +462,9 @@ const ApprovalPublishing = () => {
 
       const responseData = await response.json();
       console.log('✅ Gig approved successfully:', responseData);
-      
+
       // Update the gig status locally instead of refreshing
-      setGigs(prevGigs => prevGigs.map(gig => 
+      setGigs(prevGigs => prevGigs.map(gig =>
         gig._id === gigId ? { ...gig, status: 'active' } : gig
       ));
 
@@ -512,21 +512,21 @@ const ApprovalPublishing = () => {
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
       const gigIdCookie = Cookies.get('gigId');
-      
+
       console.log('🔑 Auth tokens:', { companyId, userId, gigId: gigIdCookie });
-      
+
       if (!companyId || !userId) {
         throw new Error('Missing authentication tokens');
       }
 
       const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
       console.log('🌐 API URL:', apiUrl);
-      
+
       const requestBody = {
         status: 'inactive'
       };
       console.log('📦 Request body:', requestBody);
-      
+
       const response = await fetch(apiUrl, {
         method: 'PUT',
         headers: {
@@ -547,9 +547,9 @@ const ApprovalPublishing = () => {
 
       const responseData = await response.json();
       console.log('✅ Gig rejected successfully:', responseData);
-      
+
       // Update the gig status locally instead of refreshing
-      setGigs(prevGigs => prevGigs.map(gig => 
+      setGigs(prevGigs => prevGigs.map(gig =>
         gig._id === gigId ? { ...gig, status: 'inactive' } : gig
       ));
 
@@ -570,19 +570,19 @@ const ApprovalPublishing = () => {
       }
 
       // Check if any gigs are still active
-      const hasActiveGig = gigs.some(gig => 
+      const hasActiveGig = gigs.some(gig =>
         gig.status === 'active' || gig.status === 'approved' || gig.status === 'published'
       );
 
-      console.log('🔍 Checking step 13 status after gig status change:', { 
-        totalGigs: gigs.length, 
-        hasActiveGig, 
-        gigStatuses: gigs.map(g => g.status) 
+      console.log('🔍 Checking step 13 status after gig status change:', {
+        totalGigs: gigs.length,
+        hasActiveGig,
+        gigStatuses: gigs.map(g => g.status)
       });
 
       if (!hasActiveGig) {
         console.log('⚠️ No active gigs found - updating phase and step statuses');
-        
+
         // Mark step 13 as in_progress
         const stepResponse = await fetch(
           `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
@@ -624,14 +624,14 @@ const ApprovalPublishing = () => {
   const fetchSkillsData = async (gigData: any) => {
     try {
       console.log('🔍 Fetching skills data for gig');
-      
+
       // Collect skill IDs by category
       const professionalIds: string[] = [];
       const technicalIds: string[] = [];
       const softIds: string[] = [];
-      
+
       console.log('🔍 Gig skills structure:', gigData.skills);
-      
+
       if (gigData.skills?.professional) {
         gigData.skills.professional.forEach((skill: any) => {
           console.log('🔍 Professional skill object:', skill);
@@ -645,7 +645,7 @@ const ApprovalPublishing = () => {
           }
         });
       }
-      
+
       if (gigData.skills?.technical) {
         gigData.skills.technical.forEach((skill: any) => {
           console.log('🔍 Technical skill object:', skill);
@@ -659,7 +659,7 @@ const ApprovalPublishing = () => {
           }
         });
       }
-      
+
       if (gigData.skills?.soft) {
         gigData.skills.soft.forEach((skill: any) => {
           console.log('🔍 Soft skill object:', skill);
@@ -673,15 +673,15 @@ const ApprovalPublishing = () => {
           }
         });
       }
-      
+
       console.log('📋 Skills IDs by category:', {
         professional: professionalIds,
         technical: technicalIds,
         soft: softIds
       });
-      
-      const skillsDataMap: {[key: string]: any} = {};
-      
+
+      const skillsDataMap: { [key: string]: any } = {};
+
       // Fetch professional skills
       if (professionalIds.length > 0) {
         try {
@@ -691,11 +691,11 @@ const ApprovalPublishing = () => {
             if (contentType && contentType.includes('application/json')) {
               const responseData = await response.json();
               console.log('✅ Fetched professional skills response:', responseData);
-              
+
               if (responseData.success && responseData.data && Array.isArray(responseData.data)) {
                 const professionalSkills = responseData.data;
                 console.log('✅ Professional skills data:', professionalSkills);
-                
+
                 professionalIds.forEach(skillId => {
                   const skill = professionalSkills.find((s: any) => s._id === skillId);
                   if (skill) {
@@ -718,7 +718,7 @@ const ApprovalPublishing = () => {
           console.warn('⚠️ Error fetching professional skills:', error);
         }
       }
-      
+
       // Fetch technical skills
       if (technicalIds.length > 0) {
         try {
@@ -728,11 +728,11 @@ const ApprovalPublishing = () => {
             if (contentType && contentType.includes('application/json')) {
               const responseData = await response.json();
               console.log('✅ Fetched technical skills response:', responseData);
-              
+
               if (responseData.success && responseData.data && Array.isArray(responseData.data)) {
                 const technicalSkills = responseData.data;
                 console.log('✅ Technical skills data:', technicalSkills);
-                
+
                 technicalIds.forEach(skillId => {
                   const skill = technicalSkills.find((s: any) => s._id === skillId);
                   if (skill) {
@@ -755,7 +755,7 @@ const ApprovalPublishing = () => {
           console.warn('⚠️ Error fetching technical skills:', error);
         }
       }
-      
+
       // Fetch soft skills
       if (softIds.length > 0) {
         try {
@@ -765,11 +765,11 @@ const ApprovalPublishing = () => {
             if (contentType && contentType.includes('application/json')) {
               const responseData = await response.json();
               console.log('✅ Fetched soft skills response:', responseData);
-              
+
               if (responseData.success && responseData.data && Array.isArray(responseData.data)) {
                 const softSkills = responseData.data;
                 console.log('✅ Soft skills data:', softSkills);
-                
+
                 softIds.forEach(skillId => {
                   const skill = softSkills.find((s: any) => s._id === skillId);
                   if (skill) {
@@ -792,7 +792,7 @@ const ApprovalPublishing = () => {
           console.warn('⚠️ Error fetching soft skills:', error);
         }
       }
-      
+
       setSkillsData(skillsDataMap);
       console.log('✅ All skills data fetched and set:', skillsDataMap);
     } catch (error) {
@@ -803,16 +803,16 @@ const ApprovalPublishing = () => {
   const fetchTimezoneData = async (gigData: any) => {
     try {
       console.log('🌍 Fetching timezone data for gig');
-      
+
       // Get timezone ID from gig data
       const timezoneId = gigData.availability?.time_zone;
       console.log('🔍 Timezone ID from gig:', timezoneId);
-      
+
       if (!timezoneId) {
         console.log('⚠️ No timezone ID found in gig data');
         return;
       }
-      
+
       // Fetch timezone data from API
       try {
         const response = await fetch(`${import.meta.env.VITE_REP_API}/timezones`);
@@ -821,11 +821,11 @@ const ApprovalPublishing = () => {
           if (contentType && contentType.includes('application/json')) {
             const responseData = await response.json();
             console.log('✅ Fetched timezones response:', responseData);
-            
+
             if (responseData.success && responseData.data && Array.isArray(responseData.data)) {
               const timezones = responseData.data;
               console.log('✅ Timezones data:', timezones);
-              
+
               // Find the matching timezone
               const timezone = timezones.find((tz: any) => tz._id === timezoneId);
               if (timezone) {
@@ -854,16 +854,16 @@ const ApprovalPublishing = () => {
   const fetchDestinationZoneData = async (gigData: any) => {
     try {
       console.log('🌍 Fetching destination zone data for gig');
-      
+
       // Get destination zone from gig data
       const destinationZone = gigData.destination_zone;
       console.log('🔍 Destination zone from gig:', destinationZone);
-      
+
       if (!destinationZone) {
         console.log('⚠️ No destination zone found in gig data');
         return;
       }
-      
+
       // Fetch timezone data for the destination zone (using country code)
       try {
         // For now, we'll use FR as default, but this could be enhanced to map destination zones to country codes
@@ -874,12 +874,12 @@ const ApprovalPublishing = () => {
           if (contentType && contentType.includes('application/json')) {
             const responseData = await response.json();
             console.log('✅ Fetched destination zone timezones response:', responseData);
-            
+
             if (responseData.success && responseData.data && Array.isArray(responseData.data) && responseData.data.length > 0) {
               // Use the first element as specified
               const timezone = responseData.data[0];
-              setTimezoneData(prev => ({ 
-                ...prev, 
+              setTimezoneData(prev => ({
+                ...prev,
                 0: timezone // Store as index 0 for easy access
               }));
               console.log(`✅ Set destination zone timezone:`, timezone.countryName);
@@ -906,21 +906,21 @@ const ApprovalPublishing = () => {
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
       const gigIdCookie = Cookies.get('gigId');
-      
+
       console.log('🔑 Auth tokens:', { companyId, userId, gigId: gigIdCookie });
-      
+
       if (!companyId || !userId) {
         throw new Error('Missing authentication tokens');
       }
 
       const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
       console.log('🌐 API URL:', apiUrl);
-      
+
       const requestBody = {
         status: 'archived'
       };
       console.log('📦 Request body:', requestBody);
-      
+
       const response = await fetch(apiUrl, {
         method: 'PUT',
         headers: {
@@ -941,9 +941,9 @@ const ApprovalPublishing = () => {
 
       const responseData = await response.json();
       console.log('✅ Gig archived successfully:', responseData);
-      
+
       // Update the gig status locally instead of refreshing
-      setGigs(prevGigs => prevGigs.map(gig => 
+      setGigs(prevGigs => prevGigs.map(gig =>
         gig._id === gigId ? { ...gig, status: 'archived' } : gig
       ));
 
@@ -961,16 +961,16 @@ const ApprovalPublishing = () => {
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
       const gigIdCookie = Cookies.get('gigId');
-      
+
       console.log('🔑 Auth tokens:', { companyId, userId, gigId: gigIdCookie });
-      
+
       if (!companyId || !userId) {
         throw new Error('Missing authentication tokens');
       }
 
       const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
       console.log('🌐 API URL:', apiUrl);
-      
+
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
@@ -993,18 +993,18 @@ const ApprovalPublishing = () => {
         createdAt: gigData.data?.createdAt,
         updatedAt: gigData.data?.updatedAt
       });
-      
+
       setCurrentGigData(gigData.data);
-      
+
       // Fetch skills data for this gig
       await fetchSkillsData(gigData.data);
-      
+
       // Fetch timezone data for this gig
       await fetchTimezoneData(gigData.data);
-      
+
       // Fetch destination zone data for this gig
       await fetchDestinationZoneData(gigData.data);
-      
+
       setCurrentView('preview');
     } catch (error) {
       console.error('❌ Error previewing gig:', error);
@@ -1018,16 +1018,16 @@ const ApprovalPublishing = () => {
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
       const gigIdCookie = Cookies.get('gigId');
-      
+
       console.log('🔑 Auth tokens:', { companyId, userId, gigId: gigIdCookie });
-      
+
       if (!companyId || !userId) {
         throw new Error('Missing authentication tokens');
       }
 
       const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
       console.log('🌐 API URL:', apiUrl);
-      
+
       // First, get the current gig data
       const getResponse = await fetch(apiUrl, {
         method: 'GET',
@@ -1051,18 +1051,18 @@ const ApprovalPublishing = () => {
         createdAt: gigData.data?.createdAt,
         updatedAt: gigData.data?.updatedAt
       });
-      
+
       setCurrentGigData(gigData.data);
-      
+
       // Fetch skills data for this gig
       await fetchSkillsData(gigData.data);
-      
+
       // Fetch timezone data for this gig
       await fetchTimezoneData(gigData.data);
-      
+
       // Fetch destination zone data for this gig
       await fetchDestinationZoneData(gigData.data);
-      
+
       setCurrentView('edit');
     } catch (error) {
       console.error('❌ Error editing gig:', error);
@@ -1098,8 +1098,8 @@ const ApprovalPublishing = () => {
   };
 
   const toggleDay = (day: string) => {
-    setSelectedDays(prev => 
-      prev.includes(day) 
+    setSelectedDays(prev =>
+      prev.includes(day)
         ? prev.filter(d => d !== day)
         : [...prev, day]
     );
@@ -1124,7 +1124,7 @@ const ApprovalPublishing = () => {
 
   const addSchedule = () => {
     if (selectedDays.length === 0) return;
-    
+
     const newSchedule = {
       id: Date.now(),
       days: [...selectedDays],
@@ -1132,7 +1132,7 @@ const ApprovalPublishing = () => {
       endTime: workingHours.end,
       displayText: `${selectedDays.join(' et ')} de ${workingHours.start} jusqu'à ${workingHours.end}`
     };
-    
+
     setSchedules(prev => [...prev, newSchedule]);
     setSelectedDays(['Monday', 'Tuesday']);
     setWorkingHours({ start: '09:00', end: '17:00' });
@@ -1148,7 +1148,7 @@ const ApprovalPublishing = () => {
 
   const updateSchedule = () => {
     if (!editingSchedule || selectedDays.length === 0) return;
-    
+
     const updatedSchedule = {
       ...editingSchedule,
       days: [...selectedDays],
@@ -1156,7 +1156,7 @@ const ApprovalPublishing = () => {
       endTime: workingHours.end,
       displayText: `${selectedDays.join(' et ')} de ${workingHours.start} jusqu'à ${workingHours.end}`
     };
-    
+
     setSchedules(prev => prev.map(s => s.id === editingSchedule.id ? updatedSchedule : s));
     setEditingSchedule(null);
     setSelectedDays(['Monday', 'Tuesday']);
@@ -1182,7 +1182,7 @@ const ApprovalPublishing = () => {
       const activitiesSelect = document.getElementById('activities') as HTMLSelectElement;
       const industriesSelect = document.getElementById('industries') as HTMLSelectElement;
       const languagesSelect = document.getElementById('languages') as HTMLSelectElement;
-      
+
       const selectedActivities = Array.from(activitiesSelect?.selectedOptions || []).map(option => option.value);
       const selectedIndustries = Array.from(industriesSelect?.selectedOptions || []).map(option => option.value);
       const selectedLanguages = Array.from(languagesSelect?.selectedOptions || []).map(option => option.value);
@@ -1205,7 +1205,7 @@ const ApprovalPublishing = () => {
       console.log('💾 Saving gig changes:', updateData);
 
       // Make API call to update the gig
-      const response = await axios.put<{success: boolean; message?: string}>(
+      const response = await axios.put<{ success: boolean; message?: string }>(
         `${import.meta.env.VITE_GIGS_API}/gigs/${currentGigData._id}`,
         updateData,
         {
@@ -1260,7 +1260,7 @@ const ApprovalPublishing = () => {
           <div className="text-center">
             <AlertTriangle className="h-8 w-8 text-red-500 mx-auto" />
             <p className="mt-2 text-red-600">{error}</p>
-            <button 
+            <button
               onClick={fetchGigs}
               className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
             >
@@ -1273,7 +1273,7 @@ const ApprovalPublishing = () => {
   }
 
   console.log('🎨 Rendering main component with', gigs.length, 'gigs');
-  
+
   // Preview View
   if (currentView === 'preview' && currentGigData) {
     return (
@@ -1291,7 +1291,7 @@ const ApprovalPublishing = () => {
             <h1 className="text-2xl font-bold text-gray-900">Preview: {currentGigData.title}</h1>
           </div>
         </div>
-        
+
         <div className="space-y-6">
           {/* Basic Information */}
           <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 shadow-lg p-6">
@@ -1322,13 +1322,12 @@ const ApprovalPublishing = () => {
                     <TrendingUp className="h-4 w-4 text-green-500" />
                     <span className="text-sm font-semibold text-gray-700">Status</span>
                   </div>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    currentGigData.status === 'active' || currentGigData.status === 'approved' 
-                      ? 'bg-green-100 text-green-800' 
-                      : currentGigData.status === 'pending' || currentGigData.status === 'to_activate'
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${currentGigData.status === 'active' || currentGigData.status === 'approved'
+                    ? 'bg-green-100 text-green-800'
+                    : currentGigData.status === 'pending' || currentGigData.status === 'to_activate'
                       ? 'bg-yellow-100 text-yellow-800'
                       : 'bg-red-100 text-red-800'
-                  }`}>
+                    }`}>
                     {currentGigData.status}
                   </span>
                 </div>
@@ -1637,9 +1636,9 @@ const ApprovalPublishing = () => {
                     {currentGigData.team?.territories?.map((territory: any, index: number) => (
                       <span key={index} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                         {territory.flags && (
-                          <img 
-                            src={territory.flags.png} 
-                            alt={territory.flags.alt} 
+                          <img
+                            src={territory.flags.png}
+                            alt={territory.flags.alt}
                             className="w-3 h-2 rounded-sm"
                           />
                         )}
@@ -1696,7 +1695,7 @@ const ApprovalPublishing = () => {
             <h1 className="text-2xl font-bold text-gray-900">Edit: {currentGigData.title}</h1>
           </div>
         </div>
-        
+
         <div className="space-y-6">
           {/* Basic Information */}
           <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 shadow-lg p-6">
@@ -1722,7 +1721,7 @@ const ApprovalPublishing = () => {
                   placeholder="Enter gig title"
                 />
               </div>
-              
+
               <div className="bg-white rounded-lg p-4 border border-blue-100">
                 <div className="flex items-center gap-2 mb-3">
                   <FileText className="h-4 w-4 text-blue-500" />
@@ -1738,7 +1737,7 @@ const ApprovalPublishing = () => {
                   placeholder="Enter gig description"
                 />
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-lg p-4 border border-blue-100">
                   <div className="flex items-center gap-2 mb-3">
@@ -1755,7 +1754,7 @@ const ApprovalPublishing = () => {
                     placeholder="Enter category"
                   />
                 </div>
-                
+
                 <div className="bg-white rounded-lg p-4 border border-blue-100">
                   <div className="flex items-center gap-2 mb-3">
                     <Globe className="h-4 w-4 text-indigo-500" />
@@ -1893,41 +1892,28 @@ const ApprovalPublishing = () => {
                   <p className="text-sm text-gray-600">Set the fixed base rate and requirements</p>
                 </div>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+              <div className="grid grid-cols-1 gap-6">
                 <div>
-                  <label htmlFor="base_amount" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Base Amount
+                  <label htmlFor="commission_per_call" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Per call compensation
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <span className="text-gray-500 sm:text-sm">$</span>
                     </div>
                     <input
-                      type="text"
-                      id="base_amount"
-                      defaultValue={currentGigData.commission?.baseAmount}
-                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter base amount"
+                      type="number"
+                      id="commission_per_call"
+                      step="0.01"
+                      defaultValue={currentGigData.commission?.commission_per_call}
+                      className="w-full pl-8 pr-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter amount per call"
                     />
                   </div>
                 </div>
-                <div>
-                  <label htmlFor="base_type" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Base Type
-                  </label>
-                  <select
-                    id="base_type"
-                    defaultValue={currentGigData.commission?.base}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Select type</option>
-                    <option value="Fixed Salary">Fixed Salary</option>
-                    <option value="Base + Commission">Base + Commission</option>
-                  </select>
-                </div>
               </div>
-              
+
               {/* Minimum Requirements Card */}
               <div className="mt-6 bg-white rounded-lg p-4 border border-blue-100">
                 <div className="flex items-center gap-2 mb-4">
@@ -1953,12 +1939,13 @@ const ApprovalPublishing = () => {
                     </label>
                     <select
                       id="unit_type"
-                      defaultValue={currentGigData.commission?.unitType}
+                      defaultValue={currentGigData.commission?.minimumVolume?.unit}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Select unit</option>
                       <option value="Calls">Calls</option>
                       <option value="Sales">Sales</option>
+                      <option value="Transactions">Transactions</option>
                     </select>
                   </div>
                   <div>
@@ -1967,7 +1954,7 @@ const ApprovalPublishing = () => {
                     </label>
                     <select
                       id="period"
-                      defaultValue={currentGigData.commission?.period}
+                      defaultValue={currentGigData.commission?.minimumVolume?.period}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Select period</option>
@@ -1991,38 +1978,22 @@ const ApprovalPublishing = () => {
                   <p className="text-sm text-gray-600">Define per-transaction rewards</p>
                 </div>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+              <div className="grid grid-cols-1 gap-6">
                 <div>
-                  <label htmlFor="commission_type" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Commission Type
-                  </label>
-                  <select
-                    id="commission_type"
-                    defaultValue={currentGigData.commission?.transactionCommission?.type}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  >
-                    <option value="">Select type</option>
-                    <option value="Fixed Amount">Fixed Amount</option>
-                    <option value="Percentage">Percentage</option>
-                    <option value="Tiered Amount">Tiered Amount</option>
-                    <option value="Volume Based">Volume Based</option>
-                    <option value="Performance Based">Performance Based</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="commission_amount" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Amount/Percentage
+                  <label htmlFor="transaction_commission" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Commission Amount
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <span className="text-gray-500 sm:text-sm">$</span>
                     </div>
                     <input
-                      type="text"
-                      id="commission_amount"
-                      defaultValue={currentGigData.commission?.transactionCommission?.amount}
-                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      type="number"
+                      id="transaction_commission"
+                      step="0.01"
+                      defaultValue={currentGigData.commission?.transactionCommission}
+                      className="w-full pl-8 pr-3 py-2 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                       placeholder="Enter amount"
                     />
                   </div>
@@ -2041,22 +2012,8 @@ const ApprovalPublishing = () => {
                   <p className="text-sm text-gray-600">Set additional performance-based rewards</p>
                 </div>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="bonus_type" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Bonus Type
-                  </label>
-                  <select
-                    id="bonus_type"
-                    defaultValue={currentGigData.commission?.bonus}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                  >
-                    <option value="">Select bonus type</option>
-                    <option value="Performance Bonus">Performance Bonus</option>
-                    <option value="Team Bonus">Team Bonus</option>
-                  </select>
-                </div>
+
+              <div className="grid grid-cols-1 gap-6">
                 <div>
                   <label htmlFor="bonus_amount" className="block text-sm font-semibold text-gray-700 mb-2">
                     Bonus Amount
@@ -2069,7 +2026,7 @@ const ApprovalPublishing = () => {
                       type="text"
                       id="bonus_amount"
                       defaultValue={currentGigData.commission?.bonusAmount}
-                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                      className="w-full pl-8 pr-3 py-2 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                       placeholder="Enter bonus amount"
                     />
                   </div>
@@ -2088,14 +2045,14 @@ const ApprovalPublishing = () => {
                   <p className="text-sm text-gray-600">Select the currency for all commission calculations</p>
                 </div>
               </div>
-              
+
               <div className="max-w-md">
                 <label htmlFor="currency" className="block text-sm font-semibold text-gray-700 mb-2">
                   Currency
                 </label>
                 <select
                   id="currency"
-                  defaultValue={currentGigData.commission?.currency?.code || currentGigData.commission?.currency}
+                  defaultValue={currentGigData.commission?.currency?.$oid || ""}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
                 >
                   <option value="">Select currency</option>
@@ -2159,7 +2116,7 @@ const ApprovalPublishing = () => {
               </div>
               <h2 className="text-xl font-bold text-gray-900">Schedule & Availability</h2>
             </div>
-            
+
             {/* Time Zone and Flexibility */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="bg-white rounded-lg p-4 border border-cyan-100">
@@ -2173,8 +2130,8 @@ const ApprovalPublishing = () => {
                   type="text"
                   id="timezone"
                   defaultValue={
-                    currentGigData.availability?.time_zone?.zoneName || 
-                    currentGigData.availability?.time_zone || 
+                    currentGigData.availability?.time_zone?.zoneName ||
+                    currentGigData.availability?.time_zone ||
                     ''
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
@@ -2206,11 +2163,10 @@ const ApprovalPublishing = () => {
                   <button
                     key={day}
                     onClick={() => toggleDay(day)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      selectedDays.includes(day)
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedDays.includes(day)
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
                   >
                     {day}
                   </button>
@@ -2222,7 +2178,7 @@ const ApprovalPublishing = () => {
                   <ClockIcon className="h-4 w-4 text-blue-500" />
                   <h4 className="text-sm font-semibold text-gray-700">Working Hours</h4>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
@@ -2397,7 +2353,7 @@ const ApprovalPublishing = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="flex justify-end space-x-3">
             <button
               type="button"
@@ -2428,14 +2384,14 @@ const ApprovalPublishing = () => {
           <h1 className="text-2xl font-bold text-gray-900">Approval & Publishing</h1>
         </div>
         <div className="flex space-x-2">
-          <button 
+          <button
             className={`rounded-lg px-4 py-2 ${selectedGigs.length > 0 ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
             disabled={selectedGigs.length === 0}
             onClick={approveSelectedGigs}
           >
             Approve Selected
           </button>
-          <button 
+          <button
             className={`rounded-lg px-4 py-2 ${selectedGigs.length > 0 ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
             disabled={selectedGigs.length === 0}
             onClick={rejectSelectedGigs}
@@ -2448,9 +2404,8 @@ const ApprovalPublishing = () => {
       {/* Filters */}
       <div className="flex space-x-1 rounded-lg bg-white p-1 shadow">
         <button
-          className={`flex-1 rounded-md py-2 text-sm font-medium ${
-            filter === 'all' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
-          }`}
+          className={`flex-1 rounded-md py-2 text-sm font-medium ${filter === 'all' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
+            }`}
           onClick={() => {
             console.log('🔍 Filter changed to: all');
             setFilter('all');
@@ -2459,9 +2414,8 @@ const ApprovalPublishing = () => {
           All
         </button>
         <button
-          className={`flex-1 rounded-md py-2 text-sm font-medium ${
-            filter === 'approved' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
-          }`}
+          className={`flex-1 rounded-md py-2 text-sm font-medium ${filter === 'approved' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
+            }`}
           onClick={() => {
             console.log('🔍 Filter changed to: approved');
             setFilter('approved');
@@ -2470,9 +2424,8 @@ const ApprovalPublishing = () => {
           Active
         </button>
         <button
-          className={`flex-1 rounded-md py-2 text-sm font-medium ${
-            filter === 'rejected' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
-          }`}
+          className={`flex-1 rounded-md py-2 text-sm font-medium ${filter === 'rejected' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
+            }`}
           onClick={() => {
             console.log('🔍 Filter changed to: rejected');
             setFilter('rejected');
@@ -2481,9 +2434,8 @@ const ApprovalPublishing = () => {
           Inactive
         </button>
         <button
-          className={`flex-1 rounded-md py-2 text-sm font-medium ${
-            filter === 'archived' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
-          }`}
+          className={`flex-1 rounded-md py-2 text-sm font-medium ${filter === 'archived' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
+            }`}
           onClick={() => {
             console.log('🔍 Filter changed to: archived');
             setFilter('archived');
@@ -2531,7 +2483,7 @@ const ApprovalPublishing = () => {
                       )}
                     </button>
                   </div>
-                  <div 
+                  <div
                     className="flex flex-1 cursor-pointer items-center justify-between"
                     onClick={() => toggleGig(gig._id)}
                   >
@@ -2580,7 +2532,7 @@ const ApprovalPublishing = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 {expandedGig === gig._id && (
                   <div className="border-t border-gray-100 bg-gray-50 p-4">
                     <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -2597,14 +2549,14 @@ const ApprovalPublishing = () => {
                         <p className="text-sm font-medium text-gray-900 capitalize">{gig.status}</p>
                       </div>
                     </div>
-                    
+
                     {gig.description && (
                       <div className="mb-4">
                         <p className="text-xs font-medium text-gray-500">Description</p>
                         <p className="text-sm text-gray-900 mt-1">{gig.description}</p>
                       </div>
                     )}
-                    
+
                     {gig.issues && gig.issues.length > 0 && (
                       <div className="mb-4 rounded-md bg-yellow-50 p-3">
                         <div className="flex">
@@ -2624,16 +2576,16 @@ const ApprovalPublishing = () => {
                         </div>
                       </div>
                     )}
-                    
+
                     <div className="flex space-x-3">
-                      <button 
+                      <button
                         onClick={() => previewGig(gig._id)}
                         className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
                       >
                         <Eye className="mr-2 h-4 w-4" />
                         Preview
                       </button>
-                      <button 
+                      <button
                         onClick={() => editGig(gig._id)}
                         className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
                       >
@@ -2644,25 +2596,25 @@ const ApprovalPublishing = () => {
                         <MessageCircle className="mr-2 h-4 w-4" />
                         Comment
                       </button>
-                      
+
                       {/* Boutons d'action selon le statut actuel */}
                       {(gig.status === 'pending' || gig.status === 'to_activate' || gig.status === 'draft' || gig.status === 'submitted') && (
                         <>
-                          <button 
+                          <button
                             onClick={() => approveGig(gig._id)}
                             className="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
                           >
                             <CheckCircle className="mr-2 h-4 w-4" />
                             Active
                           </button>
-                          <button 
+                          <button
                             onClick={() => rejectGig(gig._id)}
                             className="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700"
                           >
                             <XCircle className="mr-2 h-4 w-4" />
                             Inactive
                           </button>
-                          <button 
+                          <button
                             onClick={() => archiveGig(gig._id)}
                             className="inline-flex items-center rounded-md bg-gray-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700"
                           >
@@ -2671,17 +2623,17 @@ const ApprovalPublishing = () => {
                           </button>
                         </>
                       )}
-                      
+
                       {(gig.status === 'approved' || gig.status === 'active' || gig.status === 'published') && (
                         <>
-                          <button 
+                          <button
                             onClick={() => rejectGig(gig._id)}
                             className="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700"
                           >
                             <XCircle className="mr-2 h-4 w-4" />
                             Inactive
                           </button>
-                          <button 
+                          <button
                             onClick={() => archiveGig(gig._id)}
                             className="inline-flex items-center rounded-md bg-gray-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700"
                           >
@@ -2690,17 +2642,17 @@ const ApprovalPublishing = () => {
                           </button>
                         </>
                       )}
-                      
+
                       {(gig.status === 'rejected' || gig.status === 'declined' || gig.status === 'cancelled' || gig.status === 'inactive') && (
                         <>
-                          <button 
+                          <button
                             onClick={() => approveGig(gig._id)}
                             className="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
                           >
                             <CheckCircle className="mr-2 h-4 w-4" />
                             Active
                           </button>
-                          <button 
+                          <button
                             onClick={() => archiveGig(gig._id)}
                             className="inline-flex items-center rounded-md bg-gray-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700"
                           >
@@ -2709,17 +2661,17 @@ const ApprovalPublishing = () => {
                           </button>
                         </>
                       )}
-                      
+
                       {gig.status === 'archived' && (
                         <>
-                          <button 
+                          <button
                             onClick={() => approveGig(gig._id)}
                             className="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
                           >
                             <CheckCircle className="mr-2 h-4 w-4" />
                             Active
                           </button>
-                          <button 
+                          <button
                             onClick={() => rejectGig(gig._id)}
                             className="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700"
                           >
