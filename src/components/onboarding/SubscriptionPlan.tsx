@@ -180,39 +180,39 @@ const SubscriptionPlan = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold text-gray-900">Free Plan</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-gray-900">Free Plan</h2>
           </div>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-1 text-sm text-gray-600">
             Start using our platform with our comprehensive free plan.
           </p>
         </div>
       </div>
 
-      <div className="max-w-xl">
-        <div className="rounded-lg border border-indigo-600 p-8 shadow-sm ring-1 ring-indigo-600">
+      <div className="max-w-md">
+        <div className="rounded-lg border border-indigo-600 p-4 shadow-sm ring-1 ring-indigo-600">
           <div className="flex items-center justify-between">
-            <h3 className="text-2xl font-bold text-gray-900">{freePlan.name}</h3>
-            <span className="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-sm font-medium text-indigo-800">
+            <h3 className="text-xl font-bold text-gray-900">{freePlan.name}</h3>
+            <span className="inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800">
               Recommended
             </span>
           </div>
 
-          <p className="mt-4 text-gray-500">{freePlan.description}</p>
+          <p className="mt-2 text-sm text-gray-500">{freePlan.description}</p>
 
-          <p className="mt-6">
-            <span className="text-5xl font-bold text-gray-900">${freePlan.price}</span>
-            <span className="text-base font-medium text-gray-500">/month</span>
+          <p className="mt-4">
+            <span className="text-3xl font-bold text-gray-900">${freePlan.price}</span>
+            <span className="text-sm font-medium text-gray-500">/month</span>
           </p>
 
-          <ul className="mt-8 space-y-4">
+          <ul className="mt-4 space-y-1">
             {freePlan.features.map((feature) => (
               <li key={feature} className="flex items-center">
-                <Check className="h-5 w-5 text-indigo-600" />
-                <span className="ml-3 text-gray-700">{feature}</span>
+                <Check className="h-4 w-4 text-indigo-600" />
+                <span className="ml-2 text-sm text-gray-700">{feature}</span>
               </li>
             ))}
           </ul>
@@ -220,7 +220,7 @@ const SubscriptionPlan = () => {
           <button
             onClick={isStepCompleted ? undefined : handleActivatePlan}
             disabled={isStepCompleted || isLoading}
-            className={`mt-8 w-full rounded-lg px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-all ${isStepCompleted
+            className={`mt-6 w-full rounded-lg px-4 py-2 text-center text-sm font-semibold text-white shadow-sm transition-all ${isStepCompleted
               ? 'bg-green-600 cursor-not-allowed'
               : isLoading
                 ? 'bg-gray-400 cursor-not-allowed'
@@ -229,7 +229,7 @@ const SubscriptionPlan = () => {
           >
             {isStepCompleted ? (
               <span className="flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-5 h-5" />
+                <CheckCircle2 className="w-4 h-4" />
                 Plan Already Activated
               </span>
             ) : isLoading ? (
