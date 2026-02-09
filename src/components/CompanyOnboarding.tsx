@@ -23,7 +23,6 @@ import KYCVerification from "./onboarding/KYCVerification";
 import SubscriptionPlan from "./onboarding/SubscriptionPlan";
 import CallScript from "./onboarding/CallScript";
 import ReportingSetup from "./onboarding/ReportingSetup";
-import CreateGig from "./onboarding/CreateGig";
 import UploadContacts from "./onboarding/UploadContacts";
 import MatchHarxReps from "./onboarding/MatchHarxReps";
 import RepOnboarding from "./onboarding/RepOnboarding";
@@ -948,10 +947,17 @@ const CompanyOnboarding = () => {
         return;
       }
 
+      if (stepId === 4) {
+        if (hasGigs || completedSteps.includes(4)) {
+          window.location.href = "/app11";
+        } else {
+          window.location.href = "/app6";
+        }
+        return;
+      }
+
       if (step?.component) {
-        if (stepId === 4 && completedSteps.includes(stepId)) {
-          setShowGigDetails(true);
-        } else if (stepId === 5) {
+        if (stepId === 5) {
           setShowTelephonySetup(true);
         } else {
           setActiveStep(stepId);
@@ -1014,10 +1020,13 @@ const CompanyOnboarding = () => {
         return;
       }
 
+      if (stepId === 4) {
+        window.location.href = "/app11";
+        return;
+      }
+
       if (step?.component) {
-        if (stepId === 4) {
-          setShowGigDetails(true);
-        } else if (stepId === 5) {
+        if (stepId === 5) {
           setShowTelephonySetup(true);
         } else {
           setActiveStep(stepId);
@@ -1223,7 +1232,6 @@ const CompanyOnboarding = () => {
           title: "Create Gigs",
           description: "Define multi-channel gigs and requirements",
           status: "pending",
-          component: CreateGig,
         },
         {
           id: 5,
@@ -1691,7 +1699,7 @@ const CompanyOnboarding = () => {
         <div className="space-y-4">
           {displayedPhaseData.steps.map((step) => {
             const StepIcon = getStepIcon(step);
-            const isClickable = !!step.component;
+            const isClickable = !!step.component || step.id === 4;
             const isCompleted = completedSteps.includes(step.id);
             const canAccessPhase = isPhaseAccessible(displayedPhaseData.id);
             const isCurrentStep =
