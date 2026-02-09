@@ -1693,6 +1693,7 @@ const CompanyOnboarding = () => {
             const StepIcon = getStepIcon(step);
             const isClickable = !!step.component;
             const isCompleted = completedSteps.includes(step.id);
+            const canAccessPhase = isPhaseAccessible(displayedPhaseData.id);
             const isCurrentStep =
               !isCompleted &&
               !step.disabled &&
@@ -1702,15 +1703,17 @@ const CompanyOnboarding = () => {
                   displayedPhaseData.steps.findIndex((s) => s.id === step.id)
                 )
                 .every((s) => s.disabled || completedSteps.includes(s.id));
-            const canAccessStep = isPhaseAccessible(displayedPhaseData.id);
+
+            // A step is accessible if phase is accessible AND (it's completed OR it's the current step)
+            const canAccessStep = canAccessPhase && (isCompleted || isCurrentStep);
 
             return (
               <div
                 key={step.id}
-                className={`rounded-lg border p-4 ${!canAccessStep
+                className={`rounded-lg border p-4 ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
                   ? "opacity-50 cursor-not-allowed border-gray-200 bg-gray-50"
                   : step.disabled
-                    ? "opacity-50 cursor-not-allowed"
+                    ? "opacity-50 cursor-not-allowed border-gray-200"
                     : isCompleted
                       ? "border-green-200 bg-green-50"
                       : isCurrentStep
@@ -1729,7 +1732,7 @@ const CompanyOnboarding = () => {
               >
                 <div className="flex items-start space-x-4">
                   <div
-                    className={`rounded-full p-2 ${!canAccessStep
+                    className={`rounded-full p-2 ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
                       ? "bg-gray-200 text-gray-400"
                       : step.disabled
                         ? "bg-gray-200 text-gray-400"
@@ -1747,7 +1750,7 @@ const CompanyOnboarding = () => {
                       <h3 className="text-sm font-medium text-gray-900">
                         {step.title}
                       </h3>
-                      {!canAccessStep ? (
+                      {!canAccessPhase ? (
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
                           Locked
                         </span>
@@ -1777,7 +1780,10 @@ const CompanyOnboarding = () => {
                     {isClickable && !step.disabled && canAccessStep && (
                       <button
                         className="mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-500"
-                        onClick={() => isCompleted ? handleReviewStep(step.id) : handleStartStep(step.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          isCompleted ? handleReviewStep(step.id) : handleStartStep(step.id);
+                        }}
                       >
                         {isCompleted ? "Review Step" : "Start Step"}
                       </button>
