@@ -644,46 +644,46 @@ export const MatchingDashboard = () => {
         });
     };
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 w-full max-w-full overflow-x-hidden">
+        <div className="min-h-screen bg-antigravity-bg w-full max-w-full overflow-x-hidden text-antigravity-text">
             {/* Header with Navigation Tabs */}
-            <header className="bg-gradient-to-r from-harx-600 to-harx-700 text-white shadow-lg">
+            <header className="bg-antigravity-surface border-b border-antigravity-border shadow-lg">
                 {/* Top Header */}
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
-                            <div className="p-2 bg-white/20 rounded-lg">
-                                <Users size={24} className="text-harx-accent-300" />
+                            <div className="p-2 bg-antigravity-primary/20 rounded-lg">
+                                <Users size={24} className="text-antigravity-primary" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold">Reps Management System</h1>
-                                <p className="text-harx-200 text-sm">Manage reps through their complete lifecycle</p>
+                                <h1 className="text-2xl font-bold text-white">Reps Management System</h1>
+                                <p className="text-antigravity-muted text-sm">Manage reps through their complete lifecycle</p>
                             </div>
                         </div>
 
                         {/* Quick Stats */}
-                        <div className="hidden lg:flex items-center space-x-6 px-4 py-2 bg-white/10 rounded-lg text-sm">
+                        <div className="hidden lg:flex items-center space-x-6 px-4 py-2 bg-antigravity-bg/50 border border-antigravity-border rounded-lg text-sm">
                             <div className="text-center">
-                                <div className="font-bold text-lg">{reps.length}</div>
-                                <div className="text-harx-200 text-xs">Total Reps</div>
+                                <div className="font-bold text-lg text-antigravity-secondary">{reps.length}</div>
+                                <div className="text-antigravity-muted text-xs">Total Reps</div>
                             </div>
                             <div className="text-center">
-                                <div className="font-bold text-lg">{invitedAgentsList.length}</div>
-                                <div className="text-harx-200 text-xs">Invited</div>
+                                <div className="font-bold text-lg text-antigravity-accent">{invitedAgentsList.length}</div>
+                                <div className="text-antigravity-muted text-xs">Invited</div>
                             </div>
                             <div className="text-center">
-                                <div className="font-bold text-lg">{enrollmentRequests.length}</div>
-                                <div className="text-harx-200 text-xs">Requests</div>
+                                <div className="font-bold text-lg text-yellow-400">{enrollmentRequests.length}</div>
+                                <div className="text-antigravity-muted text-xs">Requests</div>
                             </div>
                             <div className="text-center">
-                                <div className="font-bold text-lg">{activeAgentsList.length}</div>
-                                <div className="text-harx-200 text-xs">Active</div>
+                                <div className="font-bold text-lg text-green-400">{activeAgentsList.length}</div>
+                                <div className="text-antigravity-muted text-xs">Active</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Navigation Tabs */}
-                <div className="border-t border-white/20">
+                <div className="border-t border-antigravity-border">
                     <div className="container mx-auto px-4">
                         <nav className="flex space-x-0">
                             {[
@@ -696,17 +696,17 @@ export const MatchingDashboard = () => {
                                     key={section.id}
                                     onClick={() => setActiveSection(section.id as any)}
                                     className={`flex-1 px-4 py-4 text-left transition-all duration-200 border-b-2 ${activeSection === section.id
-                                        ? 'border-harx-accent-300 bg-white/10'
-                                        : 'border-transparent hover:bg-white/5'
+                                        ? 'border-antigravity-primary bg-antigravity-primary/10'
+                                        : 'border-transparent hover:bg-antigravity-bg/30 text-antigravity-muted hover:text-white'
                                         }`}
                                 >
                                     <div className="flex items-center space-x-3">
                                         <span className="text-xl">{section.icon}</span>
                                         <div>
-                                            <div className={`font-medium ${activeSection === section.id ? 'text-harx-accent-300' : 'text-white'}`}>
+                                            <div className={`font-medium ${activeSection === section.id ? 'text-antigravity-primary' : 'text-antigravity-muted group-hover:text-white'}`}>
                                                 {section.label}
                                             </div>
-                                            <div className="text-harx-200 text-xs">{section.description}</div>
+                                            <div className="text-antigravity-muted text-xs opacity-80">{section.description}</div>
                                         </div>
                                     </div>
                                 </button>
@@ -721,7 +721,7 @@ export const MatchingDashboard = () => {
 
                 {/* Error Message */}
                 {error && (
-                    <div className="mb-6 bg-red-100 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg shadow-md">
+                    <div className="mb-6 bg-red-900/20 border-l-4 border-antigravity-accent text-antigravity-accent px-4 py-3 rounded-lg shadow-md backdrop-blur-sm">
                         <p className="flex items-center">
                             <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -735,9 +735,9 @@ export const MatchingDashboard = () => {
                 {initialLoading && (
                     <div className="flex justify-center items-center py-20">
                         <div className="relative">
-                            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-orange-500"></div>
+                            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-antigravity-primary"></div>
                             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                                <Zap size={24} className="text-orange-500 animate-pulse" />
+                                <Zap size={24} className="text-antigravity-primary animate-pulse" />
                             </div>
                         </div>
                     </div>
@@ -751,14 +751,14 @@ export const MatchingDashboard = () => {
                             <div className="space-y-6">
                                 <div className="flex justify-between items-center">
                                     <div>
-                                        <h2 className="text-2xl font-bold text-gray-900">🎯 Smart Matching System</h2>
-                                        <p className="text-gray-600">Find and match the perfect reps for your gigs</p>
+                                        <h2 className="text-2xl font-bold text-white">🎯 Smart Matching System</h2>
+                                        <p className="text-antigravity-muted">Find and match the perfect reps for your gigs</p>
                                     </div>
                                     <button
                                         onClick={() => setShowWeights(!showWeights)}
                                         className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 text-sm font-medium ${showWeights
-                                            ? 'bg-harx-600 text-white'
-                                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                            ? 'bg-antigravity-accent text-white hover:bg-red-600'
+                                            : 'bg-antigravity-surface border border-antigravity-border text-antigravity-text hover:bg-antigravity-bg'
                                             }`}
                                     >
                                         <Settings size={16} className={showWeights ? 'rotate-180' : ''} />
@@ -768,17 +768,17 @@ export const MatchingDashboard = () => {
 
                                 {/* Weights Configuration Panel */}
                                 {showWeights && (
-                                    <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg p-4 mb-4 transform transition-all duration-300 ease-in-out border border-gray-200 overflow-hidden">
+                                    <div className="bg-antigravity-surface rounded-xl shadow-lg p-6 mb-6 transform transition-all duration-300 ease-in-out border border-antigravity-border overflow-hidden">
                                         <div className="flex justify-between items-center mb-4">
                                             <div className="flex items-center space-x-3">
-                                                <div className="p-2 bg-gradient-to-r from-harx-500 to-harx-600 rounded-lg shadow-md">
-                                                    <Settings size={20} className="text-white" />
+                                                <div className="p-2 bg-antigravity-primary/20 rounded-lg shadow-sm border border-antigravity-primary/30">
+                                                    <Settings size={20} className="text-antigravity-primary" />
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center space-x-2">
-                                                        <h2 className="text-lg font-bold text-gray-900">Matching Weights Configuration</h2>
+                                                        <h2 className="text-lg font-bold text-white">Matching Weights Configuration</h2>
                                                         {hasUnsavedChanges && (
-                                                            <span className="inline-flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium animate-pulse">
+                                                            <span className="inline-flex items-center px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-sm font-medium animate-pulse border border-yellow-500/30">
                                                                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                                                                 </svg>
@@ -786,14 +786,14 @@ export const MatchingDashboard = () => {
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <p className="text-gray-600 text-sm mt-1">Customize how each factor influences the matching algorithm</p>
+                                                    <p className="text-antigravity-muted text-sm mt-1">Customize how each factor influences the matching algorithm</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center space-x-4">
                                                 <button
                                                     onClick={resetWeights}
                                                     disabled={loading}
-                                                    className="px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl shadow-lg hover:from-gray-600 hover:to-gray-700 transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5 hover:shadow-xl"
+                                                    className="px-6 py-3 bg-antigravity-bg border border-antigravity-border text-antigravity-text hover:text-white rounded-xl shadow-lg hover:border-antigravity-muted transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5"
                                                 >
                                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
