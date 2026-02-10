@@ -596,6 +596,7 @@ export const checkMatchRepsStepCompletion = async (companyId: string): Promise<{
     reason: string;
     enrolledRepsCount: number;
     invitationsSentCount: number;
+    requestedCount: number;
     totalGigs: number;
     message: string;
 }> => {
