@@ -2419,17 +2419,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                             <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-600 border-r border-gray-100">
                               {lead.Address || '-'}
                             </td>
-                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100">
-                              {lead.Postal_Code || '-'}
-                            </td>
-                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100">
-                              {lead.City || '-'}
-                            </td>
-                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100">
-                              {lead.Date_of_Birth || '-'}
-                            </td>
                             <td className="whitespace-nowrap px-3 py-4 text-sm font-semibold text-gray-900">
-                              {lead.Phone || '-'}
+                              +{lead.Phone || '-'}
                             </td>
                           </tr>
                         ))
