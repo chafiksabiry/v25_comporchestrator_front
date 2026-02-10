@@ -18,7 +18,9 @@ import {
   CheckCircle,
   Info,
   LogOut,
-  AlertTriangle
+  AlertTriangle,
+  MapPin,
+  Calendar
 } from 'lucide-react';
 import zohoLogo from '../../assets/public/images/zoho-logo.png';
 import axios from 'axios';
@@ -37,6 +39,12 @@ interface Lead {
   Stage?: string;
   Pipeline?: string;
   updatedAt?: string;
+  First_Name?: string;
+  Last_Name?: string;
+  Address?: string;
+  Postal_Code?: string;
+  City?: string;
+  Date_of_Birth?: string;
   __v?: number;
   _isPlaceholder?: boolean; // Mark for invalid/unprocessed leads
 }
@@ -807,7 +815,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         Pipeline: lead.Pipeline || "Sales Pipeline",
         Activity_Tag: lead.Activity_Tag || '',
         Telephony: lead.Telephony || '',
-        Project_Tags: lead.Project_Tags || []
+        Project_Tags: lead.Project_Tags || [],
+        First_Name: lead.First_Name || '',
+        Last_Name: lead.Last_Name || '',
+        Address: lead.Address || '',
+        Postal_Code: lead.Postal_Code || '',
+        City: lead.City || '',
+        Date_of_Birth: lead.Date_of_Birth || ''
       }));
 
       // Sauvegarde en masse via le nouvel endpoint
@@ -2028,37 +2042,87 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
                               {editingLeadIndex === index ? (
                                 <div className="space-y-3 bg-white rounded-lg p-3 border border-slate-200 shadow-sm">
-                                  <div className="grid grid-cols-1 gap-3">
+                                  <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">First Name</label>
+                                    <input
+                                      type="text"
+                                      value={lead.First_Name || ''}
+                                      onChange={(e) => handleEditLead(index, 'First_Name', e.target.value)}
+                                      placeholder="Enter first name"
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Last Name</label>
+                                    <input
+                                      type="text"
+                                      value={lead.Last_Name || ''}
+                                      onChange={(e) => handleEditLead(index, 'Last_Name', e.target.value)}
+                                      placeholder="Enter last name"
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                                    <input
+                                      type="email"
+                                      value={lead.Email_1 || ''}
+                                      onChange={(e) => handleEditLead(index, 'Email_1', e.target.value)}
+                                      placeholder="Enter email address"
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
+                                    <input
+                                      type="tel"
+                                      value={lead.Phone || ''}
+                                      onChange={(e) => handleEditLead(index, 'Phone', e.target.value)}
+                                      placeholder="Enter phone number"
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Address</label>
+                                    <input
+                                      type="text"
+                                      value={lead.Address || ''}
+                                      onChange={(e) => handleEditLead(index, 'Address', e.target.value)}
+                                      placeholder="Enter address"
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                    />
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                      <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
+                                      <label className="block text-sm font-semibold text-gray-700 mb-2">Postal Code</label>
                                       <input
                                         type="text"
-                                        value={lead.Deal_Name || ''}
-                                        onChange={(e) => handleEditLead(index, 'Deal_Name', e.target.value)}
-                                        placeholder="Enter lead name"
+                                        value={lead.Postal_Code || ''}
+                                        onChange={(e) => handleEditLead(index, 'Postal_Code', e.target.value)}
+                                        placeholder="Zip code"
                                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
                                       />
                                     </div>
                                     <div>
-                                      <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                                      <label className="block text-sm font-semibold text-gray-700 mb-2">City</label>
                                       <input
-                                        type="email"
-                                        value={lead.Email_1 || ''}
-                                        onChange={(e) => handleEditLead(index, 'Email_1', e.target.value)}
-                                        placeholder="Enter email address"
+                                        type="text"
+                                        value={lead.City || ''}
+                                        onChange={(e) => handleEditLead(index, 'City', e.target.value)}
+                                        placeholder="City"
                                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
                                       />
                                     </div>
-                                    <div>
-                                      <label className="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
-                                      <input
-                                        type="tel"
-                                        value={lead.Phone || ''}
-                                        onChange={(e) => handleEditLead(index, 'Phone', e.target.value)}
-                                        placeholder="Enter phone number"
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
-                                      />
-                                    </div>
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Date of Birth</label>
+                                    <input
+                                      type="text"
+                                      value={lead.Date_of_Birth || ''}
+                                      onChange={(e) => handleEditLead(index, 'Date_of_Birth', e.target.value)}
+                                      placeholder="DD/MM/YYYY"
+                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                    />
                                   </div>
                                   <div className="flex justify-end space-x-2 pt-2 border-t border-gray-100">
                                     <button
@@ -2078,10 +2142,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                                   </div>
                                 </div>
                               ) : (
-                                <div className="grid grid-cols-1 gap-2 text-sm">
+                                <div className="grid grid-cols-2 gap-2 text-sm">
                                   <div className="flex items-center space-x-2">
                                     <Mail className="h-4 w-4 text-gray-400" />
-                                    <span className="text-gray-600">
+                                    <span className="text-gray-600 truncate">
                                       <span className="font-medium">Email:</span> {lead.Email_1 || 'No email'}
                                     </span>
                                   </div>
@@ -2089,6 +2153,18 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                                     <Phone className="h-4 w-4 text-gray-400" />
                                     <span className="text-gray-600">
                                       <span className="font-medium">Phone:</span> {lead.Phone || 'No phone'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <MapPin className="h-4 w-4 text-gray-400" />
+                                    <span className="text-gray-600 truncate">
+                                      <span className="font-medium">City:</span> {lead.City || 'N/A'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Calendar className="h-4 w-4 text-gray-400" />
+                                    <span className="text-gray-600">
+                                      <span className="font-medium">DOB:</span> {lead.Date_of_Birth || 'N/A'}
                                     </span>
                                   </div>
                                 </div>
@@ -2270,16 +2346,31 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
             <div className="relative">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
+                <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm text-center">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
-                      Lead
+                    <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
+                      NOM DU CLIENT
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
-                      Lead Name
+                    <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
+                      PRENOM DU CLIENT
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 bg-gray-50">
-                      Pipeline
+                    <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
+                      EMAIL
+                    </th>
+                    <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
+                      ADRESSE
+                    </th>
+                    <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
+                      CODE POSTAL
+                    </th>
+                    <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
+                      VILLE
+                    </th>
+                    <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
+                      DATE DE NAISSANCE
+                    </th>
+                    <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
+                      MOBILE
                     </th>
                   </tr>
                 </thead>
@@ -2324,34 +2415,30 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                     (isSavingLeads && recentlySavedLeads.length > 0 ? recentlySavedLeads :
                       filteredLeads.length > 0 ? filteredLeads :
                         realtimeLeads.length > 0 ? realtimeLeads : []).map((lead, index) => (
-                          <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-orange-400' : ''}`}>
-                            <td className="whitespace-nowrap px-6 py-4">
-                              <div className="flex items-center">
-                                <div className={`h-10 w-10 flex-shrink-0 rounded-full flex items-center justify-center ${(lead as any)._isPlaceholder ? 'bg-orange-100' : 'bg-blue-100'}`}>
-                                  {(lead as any)._isPlaceholder ? (
-                                    <AlertTriangle className="h-6 w-6 text-orange-700" />
-                                  ) : (
-                                    <UserPlus className="h-6 w-6 text-blue-700" />
-                                  )}
-                                </div>
-                                <div className="ml-4">
-                                  <div className="text-sm font-medium text-gray-900 flex items-center">
-                                    {lead.Email_1 || 'No Email'}
-                                    {(lead as any)._isPlaceholder && (
-                                      <span className="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-800">
-                                        Invalid
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="text-sm text-gray-500">{lead.Phone || 'No Phone'}</div>
-                                </div>
-                              </div>
+                          <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 text-center ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-orange-400' : ''}`}>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100">
+                              {lead.Last_Name || '-'}
                             </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {lead.Deal_Name || 'N/A'}
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100">
+                              {lead.First_Name || '-'}
                             </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                              {lead.Pipeline || 'N/A'}
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100 italic text-blue-600">
+                              {lead.Email_1 || '-'}
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-600 border-r border-gray-100">
+                              {lead.Address || '-'}
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100">
+                              {lead.Postal_Code || '-'}
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100">
+                              {lead.City || '-'}
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100">
+                              {lead.Date_of_Birth || '-'}
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm font-semibold text-gray-900">
+                              {lead.Phone || '-'}
                             </td>
                           </tr>
                         ))
