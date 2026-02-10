@@ -1025,8 +1025,8 @@ export const MatchingDashboard = () => {
 
                                                         {/* Expanded Details */}
                                                         {isGigExpanded && (
-                                                            <div className="px-4 pb-4 border-t border-antigravity-border bg-antigravity-bg/30 overflow-hidden">
-                                                                <div className="pt-4 space-y-4 text-sm overflow-hidden">
+                                                            <div className="px-4 pb-4 border-t border-antigravity-border bg-white overflow-hidden">
+                                                                <div className="pt-4 space-y-4 text-sm overflow-hidden text-antigravity-text">
 
                                                                     {/* 1. Industries */}
                                                                     {gig.industries && gig.industries.length > 0 && (
