@@ -41,6 +41,7 @@ export const MatchingDashboard = () => {
     const [gigs, setGigs] = useState<Gig[]>([]);
     const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
     const [matches, setMatches] = useState<Match[]>([]);
+    const [matchStats, setMatchStats] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
     const [showWeights, setShowWeights] = useState(true);
@@ -818,7 +819,7 @@ export const MatchingDashboard = () => {
                                                             }
                                                         }}
                                                         disabled={loading}
-                                                        className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl shadow-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5 hover:shadow-xl"
+                                                        className="px-6 py-3 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 rounded-xl shadow-lg transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5"
                                                     >
                                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -830,23 +831,23 @@ export const MatchingDashboard = () => {
                                         </div>
 
                                         {/* Weights Grid */}
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 w-full overflow-hidden">
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4 w-full overflow-hidden">
                                             {Object.entries(weights).map(([key, value]) => (
-                                                <div key={`weight-${key}`} className="bg-white rounded-lg p-2 shadow-md border border-gray-200 hover:shadow-lg transition-all duration-200 group w-full max-w-full">
-                                                    <div className="flex justify-between items-center mb-2">
-                                                        <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                                <div key={`weight-${key}`} className="bg-antigravity-bg rounded-xl p-3 shadow-md border border-antigravity-border hover:border-antigravity-primary/50 transition-all duration-200 group w-full max-w-full">
+                                                    <div className="flex justify-between items-center mb-3">
+                                                        <label className="text-xs font-bold text-antigravity-muted uppercase tracking-wider">
                                                             {key}
                                                         </label>
-                                                        <div className={`px-2 py-1 rounded text-xs font-bold ${Math.round(value * 100) >= 20 ? 'bg-gradient-to-r from-harx-500 to-harx-600 text-white' :
-                                                            Math.round(value * 100) >= 10 ? 'bg-harx-100 text-harx-800' :
-                                                                'bg-gray-100 text-gray-600'
+                                                        <div className={`px-2 py-1 rounded text-xs font-bold ${Math.round(value * 100) >= 20 ? 'bg-antigravity-primary/20 text-antigravity-primary shadow-sm shadow-antigravity-primary/10' :
+                                                            Math.round(value * 100) >= 10 ? 'bg-antigravity-secondary/20 text-antigravity-secondary' :
+                                                                'bg-antigravity-border text-antigravity-muted'
                                                             }`}>
                                                             {Math.round(value * 100)}%
                                                         </div>
                                                     </div>
 
                                                     {/* Custom Slider */}
-                                                    <div className="relative mb-2">
+                                                    <div className="relative mb-2 px-1">
                                                         <input
                                                             type="range"
                                                             min="0"
@@ -856,14 +857,14 @@ export const MatchingDashboard = () => {
                                                             onChange={(e: { target: { value: string; }; }) =>
                                                                 handleWeightChange(key, parseFloat(e.target.value))
                                                             }
-                                                            className="w-full h-2 bg-gray-200 rounded-full appearance-none cursor-pointer slider"
+                                                            className="w-full h-1.5 bg-antigravity-surface rounded-full appearance-none cursor-pointer slider"
                                                             style={{
-                                                                background: `linear-gradient(to right, #6366f1 0%, #4338ca ${value * 100}%, #e5e7eb ${value * 100}%, #e5e7eb 100%)`
+                                                                background: `linear-gradient(to right, #8b5cf6 0%, #3b82f6 ${value * 100}%, #2D3748 ${value * 100}%, #2D3748 100%)`
                                                             }}
                                                         />
                                                         <div
-                                                            className="absolute top-1/2 transform -translate-y-1/2 w-4 h-4 bg-gradient-to-r from-harx-500 to-harx-600 rounded-full shadow-md border-2 border-white pointer-events-none transition-all duration-200 group-hover:scale-110"
-                                                            style={{ left: `calc(${value * 100}% - 8px)` }}
+                                                            className="absolute top-1/2 transform -translate-y-1/2 w-4 h-4 bg-antigravity-text rounded-full shadow-lg border-2 border-antigravity-primary pointer-events-none transition-all duration-200 group-hover:scale-110 group-hover:bg-white"
+                                                            style={{ left: `calc(${value * 100}% - 4px)` }}
                                                         ></div>
                                                     </div>
 
@@ -881,10 +882,10 @@ export const MatchingDashboard = () => {
                                                     }}
                                                     disabled={loading}
                                                     className={`group relative px-6 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 shadow-lg transform hover:-translate-y-0.5 hover:shadow-xl font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed ${hasUnsavedChanges
-                                                        ? 'bg-gradient-to-r from-harx-accent-500 to-harx-600 hover:from-harx-accent-600 hover:to-harx-700 text-white animate-pulse'
+                                                        ? 'bg-gradient-to-r from-antigravity-accent to-red-600 hover:from-red-500 hover:to-red-700 text-white animate-pulse'
                                                         : gigHasWeights
                                                             ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white'
-                                                            : 'bg-gradient-to-r from-harx-500 to-harx-600 hover:from-harx-600 hover:to-harx-700 text-white'
+                                                            : 'bg-gradient-to-r from-antigravity-primary to-antigravity-secondary hover:from-antigravity-secondary hover:to-antigravity-primary text-white'
                                                         }`}
                                                 >
                                                     {/* Animated Background */}
@@ -909,10 +910,10 @@ export const MatchingDashboard = () => {
 
                                                     {/* Glow Effect */}
                                                     <div className={`absolute inset-0 rounded-lg blur-lg opacity-20 group-hover:opacity-40 transition-opacity duration-200 ${hasUnsavedChanges
-                                                        ? 'bg-gradient-to-r from-harx-accent-500 to-harx-600'
+                                                        ? 'bg-antigravity-accent'
                                                         : gigHasWeights
-                                                            ? 'bg-gradient-to-r from-green-500 to-emerald-600'
-                                                            : 'bg-gradient-to-r from-harx-500 to-harx-600'
+                                                            ? 'bg-green-500'
+                                                            : 'bg-antigravity-primary'
                                                         }`}></div>
                                                 </button>
                                             </div>
@@ -925,7 +926,7 @@ export const MatchingDashboard = () => {
                                     <div className="mb-6">
                                         <div className="relative max-w-md mx-auto">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg className="h-5 w-5 text-antigravity-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                                 </svg>
                                             </div>
@@ -934,14 +935,14 @@ export const MatchingDashboard = () => {
                                                 placeholder="Search reps..."
                                                 value={searchTerm}
                                                 onChange={(e: { target: { value: any; }; }) => setSearchTerm(e.target.value)}
-                                                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
+                                                className="block w-full pl-10 pr-3 py-3 border border-antigravity-border rounded-lg leading-5 bg-antigravity-surface placeholder-antigravity-muted focus:outline-none focus:placeholder-antigravity-text/50 focus:ring-2 focus:ring-antigravity-primary focus:border-antigravity-primary text-sm text-antigravity-text transition-all duration-200"
                                             />
                                             {searchTerm && (
                                                 <button
                                                     onClick={() => setSearchTerm('')}
                                                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                                                 >
-                                                    <svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <svg className="h-5 w-5 text-antigravity-muted hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                                                     </svg>
                                                 </button>
@@ -954,11 +955,11 @@ export const MatchingDashboard = () => {
                                 <div className="resizable-container flex gap-4 w-full max-w-full overflow-hidden">
                                     {/* Left Column: Gig Selection */}
                                     <div
-                                        className="bg-white rounded-xl shadow-lg p-6 overflow-hidden transition-all duration-200 flex-shrink-0"
+                                        className="bg-antigravity-surface rounded-xl shadow-lg p-6 overflow-hidden transition-all duration-200 flex-shrink-0 border border-antigravity-border"
                                         style={{ width: `${leftColumnWidth}%`, minWidth: '280px', maxWidth: '50%' }}
                                     >
-                                        <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center space-x-2">
-                                            <Briefcase size={20} className="text-harx-600" />
+                                        <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
+                                            <Briefcase size={20} className="text-antigravity-primary" />
                                             <span>Available Gigs</span>
                                         </h3>
 
@@ -967,9 +968,9 @@ export const MatchingDashboard = () => {
                                                 const isGigExpanded = expandedGigs.has(gig._id || '');
 
                                                 return (
-                                                    <div key={gig._id} className={`bg-white rounded-lg border-2 transition-all duration-200 ${selectedGig?._id === gig._id
-                                                        ? "border-harx-400 shadow-lg bg-harx-50"
-                                                        : "border-gray-200 hover:border-harx-300 hover:shadow-md"
+                                                    <div key={gig._id} className={`bg-antigravity-bg/50 rounded-lg border transition-all duration-200 ${selectedGig?._id === gig._id
+                                                        ? "border-antigravity-primary shadow-lg bg-antigravity-primary/10"
+                                                        : "border-antigravity-border hover:border-antigravity-muted hover:bg-antigravity-bg"
                                                         }`}>
                                                         {/* Gig Header - Clickable for selection */}
                                                         <div
@@ -977,16 +978,16 @@ export const MatchingDashboard = () => {
                                                             onClick={() => handleGigSelect(gig)}
                                                         >
                                                             <div className="flex items-center space-x-3 mb-3">
-                                                                <div className={`p-2 rounded-lg ${selectedGig?._id === gig._id ? "bg-harx-500" : "bg-gray-400"
+                                                                <div className={`p-2 rounded-lg ${selectedGig?._id === gig._id ? "bg-antigravity-primary" : "bg-antigravity-surface border border-antigravity-border"
                                                                     }`}>
-                                                                    <Briefcase size={16} className="text-white" />
+                                                                    <Briefcase size={16} className={`text-white ${selectedGig?._id === gig._id ? "" : "opacity-50"}`} />
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
-                                                                    <h4 className={`font-bold text-sm ${selectedGig?._id === gig._id ? "text-harx-900" : "text-gray-800"
+                                                                    <h4 className={`font-bold text-sm ${selectedGig?._id === gig._id ? "text-white" : "text-antigravity-text"
                                                                         }`}>
                                                                         {gig.title}
                                                                     </h4>
-                                                                    <p className="text-xs text-gray-600 truncate">{gig.companyName}</p>
+                                                                    <p className="text-xs text-antigravity-muted truncate">{gig.companyName}</p>
                                                                 </div>
                                                             </div>
 
@@ -1006,7 +1007,7 @@ export const MatchingDashboard = () => {
                                                                     e.stopPropagation();
                                                                     toggleGigDetails(gig._id || '');
                                                                 }}
-                                                                className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200 text-sm font-medium text-gray-700"
+                                                                className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-antigravity-bg hover:bg-antigravity-bg/80 rounded-lg transition-all duration-200 text-sm font-medium text-antigravity-text hover:text-white"
                                                             >
                                                                 <span>View Details</span>
                                                                 <svg
@@ -1022,19 +1023,19 @@ export const MatchingDashboard = () => {
 
                                                         {/* Expanded Details */}
                                                         {isGigExpanded && (
-                                                            <div className="px-4 pb-4 border-t border-gray-200 bg-gray-50 overflow-hidden">
+                                                            <div className="px-4 pb-4 border-t border-antigravity-border bg-antigravity-bg/30 overflow-hidden">
                                                                 <div className="pt-4 space-y-4 text-sm overflow-hidden">
 
                                                                     {/* 1. Industries */}
                                                                     {gig.industries && gig.industries.length > 0 && (
                                                                         <div>
-                                                                            <p className="text-gray-700 font-medium mb-2">Industries:</p>
+                                                                            <p className="text-antigravity-muted font-medium mb-2">Industries:</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.industries.map((industry: any, i: number) => {
                                                                                     const displayName = industry.name ||
                                                                                         (typeof industry === 'string' && !industry.match(/^[0-9a-fA-F]{24}$/) ? industry : 'Industry');
                                                                                     return (
-                                                                                        <span key={i} className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">
+                                                                                        <span key={i} className="px-2 py-1 bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded text-xs">
                                                                                             {displayName}
                                                                                         </span>
                                                                                     );
@@ -1046,13 +1047,13 @@ export const MatchingDashboard = () => {
                                                                     {/* 2. Activities */}
                                                                     {gig.activities && gig.activities.length > 0 && (
                                                                         <div>
-                                                                            <p className="text-gray-700 font-medium mb-2">Activities:</p>
+                                                                            <p className="text-antigravity-muted font-medium mb-2">Activities:</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.activities.map((activity: any, i: number) => {
                                                                                     const displayName = activity.name ||
                                                                                         (typeof activity === 'string' && !activity.match(/^[0-9a-fA-F]{24}$/) ? activity : 'Activity');
                                                                                     return (
-                                                                                        <span key={i} className="px-2 py-1 bg-teal-100 text-teal-800 rounded text-xs">
+                                                                                        <span key={i} className="px-2 py-1 bg-teal-500/20 text-teal-300 border border-teal-500/30 rounded text-xs">
                                                                                             {displayName}
                                                                                         </span>
                                                                                     );
@@ -1063,19 +1064,19 @@ export const MatchingDashboard = () => {
 
                                                                     {/* 3. Experience */}
                                                                     <div className="flex items-center justify-between">
-                                                                        <span className="text-gray-600 font-medium">Experience:</span>
-                                                                        <span className="font-semibold">{gig.seniority?.yearsExperience || 'N/A'} years</span>
+                                                                        <span className="text-antigravity-muted font-medium">Experience:</span>
+                                                                        <span className="font-semibold text-white">{gig.seniority?.yearsExperience || 'N/A'} years</span>
                                                                     </div>
 
                                                                     {/* 4. Languages */}
                                                                     {gig.skills?.languages && gig.skills.languages.length > 0 && (
                                                                         <div>
-                                                                            <p className="text-gray-700 font-medium mb-2">Languages:</p>
+                                                                            <p className="text-antigravity-muted font-medium mb-2">Languages:</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.skills.languages.map((lang: any, i: number) => (
-                                                                                    <span key={i} className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">
+                                                                                    <span key={i} className="px-2 py-1 bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded text-xs">
                                                                                         {getLanguageNameByCode(lang.language || lang.iso639_1 || lang)}
-                                                                                        {lang.proficiency && <span className="ml-1 text-purple-600">({lang.proficiency})</span>}
+                                                                                        {lang.proficiency && <span className="ml-1 text-purple-200">({lang.proficiency})</span>}
                                                                                     </span>
                                                                                 ))}
                                                                             </div>
@@ -1085,8 +1086,8 @@ export const MatchingDashboard = () => {
                                                                     {/* 5. Availability */}
                                                                     {gig.availability && (
                                                                         <div>
-                                                                            <span className="text-gray-600 font-medium">Availability:</span>
-                                                                            <p className="font-semibold">
+                                                                            <span className="text-antigravity-muted font-medium">Availability:</span>
+                                                                            <p className="font-semibold text-white">
                                                                                 {gig.availability.schedule ? `${gig.availability.schedule.length} days/week` :
                                                                                     gig.availability.hoursPerWeek ? `${gig.availability.hoursPerWeek}h/week` :
                                                                                         (gig.availability as any).workingHours && typeof (gig.availability as any).workingHours === 'string' ? (gig.availability as any).workingHours :
@@ -1098,10 +1099,10 @@ export const MatchingDashboard = () => {
                                                                     {/* 6. Skills - Professional */}
                                                                     {gig.skills?.professional && gig.skills.professional.length > 0 && (
                                                                         <div>
-                                                                            <p className="text-gray-700 font-medium mb-2">Professional Skills:</p>
+                                                                            <p className="text-antigravity-muted font-medium mb-2">Professional Skills:</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.skills.professional.map((skillItem: any, i: number) => (
-                                                                                    <span key={`prof-${i}`} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                                                                                    <span key={`prof-${i}`} className="px-2 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded text-xs">
                                                                                         {getSkillNameById(skillItem.skill || skillItem, 'professional')}
                                                                                     </span>
                                                                                 ))}
@@ -1112,10 +1113,10 @@ export const MatchingDashboard = () => {
                                                                     {/* 6. Skills - Technical */}
                                                                     {gig.skills?.technical && gig.skills.technical.length > 0 && (
                                                                         <div>
-                                                                            <p className="text-gray-700 font-medium mb-2">Technical Skills:</p>
+                                                                            <p className="text-antigravity-muted font-medium mb-2">Technical Skills:</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.skills.technical.map((skillItem: any, i: number) => (
-                                                                                    <span key={`tech-${i}`} className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
+                                                                                    <span key={`tech-${i}`} className="px-2 py-1 bg-green-500/20 text-green-300 border border-green-500/30 rounded text-xs">
                                                                                         {getSkillNameById(skillItem.skill || skillItem, 'technical')}
                                                                                     </span>
                                                                                 ))}
@@ -1126,10 +1127,10 @@ export const MatchingDashboard = () => {
                                                                     {/* 6. Skills - Soft */}
                                                                     {gig.skills?.soft && gig.skills.soft.length > 0 && (
                                                                         <div>
-                                                                            <p className="text-gray-700 font-medium mb-2">Soft Skills:</p>
+                                                                            <p className="text-antigravity-muted font-medium mb-2">Soft Skills:</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.skills.soft.map((skillItem: any, i: number) => (
-                                                                                    <span key={`soft-${i}`} className="px-2 py-1 bg-pink-100 text-pink-800 rounded text-xs">
+                                                                                    <span key={`soft-${i}`} className="px-2 py-1 bg-pink-500/20 text-pink-300 border border-pink-500/30 rounded text-xs">
                                                                                         {getSkillNameById(skillItem.skill || skillItem, 'soft')}
                                                                                     </span>
                                                                                 ))}
@@ -1142,16 +1143,16 @@ export const MatchingDashboard = () => {
                                                                     <div className="grid grid-cols-2 gap-4 text-sm">
                                                                         {gig.region && (
                                                                             <div>
-                                                                                <span className="text-gray-600 font-medium">Region:</span>
-                                                                                <p className="font-semibold">
+                                                                                <span className="text-antigravity-muted font-medium">Region:</span>
+                                                                                <p className="font-semibold text-white">
                                                                                     {typeof gig.region === 'string' ? gig.region : (gig.region as any).name || 'Unknown Region'}
                                                                                 </p>
                                                                             </div>
                                                                         )}
                                                                         {gig.timezone && (
                                                                             <div>
-                                                                                <span className="text-gray-600 font-medium">Timezone:</span>
-                                                                                <p className="font-semibold">
+                                                                                <span className="text-antigravity-muted font-medium">Timezone:</span>
+                                                                                <p className="font-semibold text-white">
                                                                                     {typeof gig.timezone === 'string'
                                                                                         ? gig.timezone
                                                                                         : (gig.timezone as any).name || (gig.timezone as any).timezoneName || 'Unknown Timezone'}
@@ -1171,36 +1172,36 @@ export const MatchingDashboard = () => {
 
                                     {/* Resize Handle */}
                                     <div
-                                        className={`flex-shrink-0 w-1 bg-gray-200 hover:bg-harx-400 cursor-col-resize transition-colors duration-200 rounded-full flex items-center justify-center group ${isResizing ? 'bg-harx-500' : ''}`}
+                                        className={`flex-shrink-0 w-1 bg-antigravity-border hover:bg-antigravity-primary cursor-col-resize transition-colors duration-200 rounded-full flex items-center justify-center group ${isResizing ? 'bg-antigravity-primary' : ''}`}
                                         onMouseDown={handleMouseDown}
                                         title="Drag to resize"
                                     >
-                                        <div className="w-0.5 h-8 bg-gray-400 group-hover:bg-white rounded-full transition-colors duration-200"></div>
+                                        <div className="w-0.5 h-8 bg-antigravity-muted group-hover:bg-white rounded-full transition-colors duration-200"></div>
                                     </div>
 
                                     {/* Right Column: Matching Results */}
                                     <div
-                                        className="bg-white rounded-xl shadow-lg p-6 overflow-hidden transition-all duration-200 flex-1 min-w-0"
+                                        className="bg-antigravity-surface rounded-xl shadow-lg p-6 overflow-hidden transition-all duration-200 flex-1 min-w-0 border border-antigravity-border"
                                     >
-                                        <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center space-x-2">
-                                            <Users size={20} className="text-harx-600" />
+                                        <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
+                                            <Users size={20} className="text-antigravity-primary" />
                                             <span>{selectedGig ? `Matches for "${selectedGig.title}"` : 'Select a Gig to See Matches'}</span>
                                         </h3>
 
                                         {!selectedGig ? (
                                             <div className="text-center py-12">
-                                                <div className="bg-gray-50 rounded-xl p-8 max-w-md mx-auto">
-                                                    <Briefcase size={48} className="text-gray-400 mx-auto mb-4" />
-                                                    <p className="text-gray-600 text-lg mb-2">No gig selected</p>
-                                                    <p className="text-sm text-gray-400">Choose a gig from the left to see matching reps</p>
+                                                <div className="bg-antigravity-bg rounded-xl p-8 max-w-md mx-auto border border-antigravity-border">
+                                                    <Briefcase size={48} className="text-antigravity-muted mx-auto mb-4" />
+                                                    <p className="text-white text-lg mb-2">No gig selected</p>
+                                                    <p className="text-sm text-antigravity-muted">Choose a gig from the left to see matching reps</p>
                                                 </div>
                                             </div>
                                         ) : loading ? (
                                             <div className="flex justify-center items-center py-12">
                                                 <div className="relative">
-                                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-harx-500"></div>
+                                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-antigravity-primary"></div>
                                                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                                                        <Zap size={16} className="text-harx-500 animate-pulse" />
+                                                        <Zap size={16} className="text-antigravity-primary animate-pulse" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -1227,20 +1228,20 @@ export const MatchingDashboard = () => {
 
 
                                                     const matchScore = Math.round((match.totalMatchingScore || 0) * 100);
-                                                    const cardBgColor = matchScore >= 70 ? 'bg-green-50 border-green-200' :
-                                                        matchScore >= 50 ? 'bg-yellow-50 border-yellow-200' :
-                                                            'bg-red-50 border-red-200';
+                                                    const cardBgColor = matchScore >= 70 ? 'bg-antigravity-bg border-green-500/30 hover:border-green-500/60 shadow-[0_0_15px_rgba(34,197,94,0.1)]' :
+                                                        matchScore >= 50 ? 'bg-antigravity-bg border-yellow-500/30 hover:border-yellow-500/60 shadow-[0_0_15px_rgba(234,179,8,0.1)]' :
+                                                            'bg-antigravity-bg border-red-500/30 hover:border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.1)]';
 
                                                     const isExpanded = expandedReps.has(match.agentId);
 
                                                     return (
-                                                        <div key={`match-${match.agentId}-${index}`} className={`rounded-xl p-6 border-2 hover:shadow-lg transition-all duration-300 ${cardBgColor}`}>
+                                                        <div key={`match-${match.agentId}-${index}`} className={`rounded-xl p-6 border transition-all duration-300 ${cardBgColor}`}>
                                                             {/* Rep Header */}
                                                             <div className="flex items-center justify-between mb-4">
                                                                 <div className="flex-1 min-w-0">
                                                                     <div className="flex items-center gap-3 mb-2">
                                                                         <h4
-                                                                            className="text-lg font-bold text-gray-900 truncate cursor-pointer hover:text-indigo-600 transition-colors"
+                                                                            className="text-lg font-bold text-white truncate cursor-pointer hover:text-antigravity-primary transition-colors"
                                                                             onClick={() => toggleRepDetails(match.agentId)}
                                                                         >
                                                                             {match.agentInfo?.name}
@@ -1252,8 +1253,8 @@ export const MatchingDashboard = () => {
                                                                             {matchScore}% Match
                                                                         </div>
                                                                     </div>
-                                                                    <p className="text-sm text-gray-600 truncate">{match.agentInfo?.email}</p>
-                                                                    <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
+                                                                    <p className="text-sm text-antigravity-muted truncate">{match.agentInfo?.email}</p>
+                                                                    <div className="flex items-center gap-4 text-xs text-antigravity-muted mt-1">
                                                                         {(match.agentInfo?.timezone?.countryName || match.agentInfo?.location) && (
                                                                             <span>📍 {match.agentInfo?.timezone?.countryName || match.agentInfo?.location}</span>
                                                                         )}

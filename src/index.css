@@ -3,8 +3,10 @@
 @tailwind utilities;
 
 body {
-  background-color: #0B0C15; /* antigravity-bg */
-  color: #E2E8F0; /* antigravity-text */
+  background-color: #F8FAFC;
+  /* antigravity-bg (now light) */
+  color: #1E293B;
+  /* antigravity-text (now dark) */
 }
 
 /* Custom scrollbar styles */
