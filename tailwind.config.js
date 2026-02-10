@@ -5,15 +5,15 @@ export default {
     extend: {
       colors: {
         antigravity: {
-          // Remapped to Harx Light Theme (Blue, Grey, White, Green)
-          bg: '#F8FAFC',       // Slate-50 (Very light grey/white)
-          surface: '#FFFFFF',  // White
-          primary: '#0284c7',  // Harx Blue (sky-600/700 equivalent)
-          secondary: '#64748B',// Slate-500 (Grey)
-          accent: '#10B981',   // Emerald-500 (Green)
-          text: '#1E293B',     // Slate-800 (Dark Grey text)
-          muted: '#94A3B8',    // Slate-400 (Muted Grey)
-          border: '#E2E8F0',   // Slate-200 (Light Border)
+          // Harx Dark Theme (Professional Deep Blue/Grey)
+          bg: '#0F172A',       // Slate-900 (Deep Blue Black)
+          surface: '#1E293B',  // Slate-800 (Card Background)
+          primary: '#38BDF8',  // Sky-400 (Bright Blue accent)
+          secondary: '#64748B',// Slate-500 (Muted Blue/Grey)
+          accent: '#34D399',   // Emerald-400 (Bright Green)
+          text: '#F8FAFC',     // Slate-50 (White text)
+          muted: '#94A3B8',    // Slate-400 (Secondary text)
+          border: '#334155',   // Slate-700 (Borders)
         },
         harx: {
           50: '#f0f9ff',
