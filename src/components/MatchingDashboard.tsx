@@ -1287,7 +1287,7 @@ export const MatchingDashboard = () => {
                                                                         </span>
                                                                     ) : (
                                                                         <button
-                                                                            className="inline-flex items-center px-3 py-1 bg-harx-600 text-white rounded-lg hover:bg-harx-700 transition-all duration-200 text-sm font-medium gap-1"
+                                                                            className="inline-flex items-center px-3 py-1 bg-antigravity-primary text-white rounded-lg hover:bg-indigo-700 transition-all duration-200 text-sm font-medium gap-1 shadow-sm"
                                                                             onClick={() => handleCreateGigAgent(match)}
                                                                             disabled={creatingGigAgent}
                                                                         >
@@ -1338,7 +1338,7 @@ export const MatchingDashboard = () => {
                                                                                         <p className="text-xs text-antigravity-muted mb-2">Matched Skills:</p>
                                                                                         <div className="flex flex-wrap gap-1">
                                                                                             {match.skillsMatch.details.matchingSkills.slice(0, 3).map((skill: any, i: number) => (
-                                                                                                <span key={i} className="px-2 py-1 bg-blue-900/30 text-blue-300 rounded text-xs">
+                                                                                                <span key={i} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
                                                                                                     {skill.skill?.name || skill.skillName || getSkillNameById(skill._id || skill.skillId || skill, skill.category || 'professional')}
                                                                                                 </span>
                                                                                             ))}
@@ -1371,9 +1371,9 @@ export const MatchingDashboard = () => {
                                                                                         <p className="text-xs text-antigravity-muted mb-2">Matched Languages:</p>
                                                                                         <div className="flex flex-wrap gap-1">
                                                                                             {match.languageMatch.details.matchingLanguages.slice(0, 3).map((lang: any, i: number) => (
-                                                                                                <span key={i} className="px-2 py-1 bg-purple-900/30 text-purple-300 rounded text-xs">
+                                                                                                <span key={i} className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">
                                                                                                     {lang.language?.name || lang.languageName || getLanguageNameByCode(lang.language || lang.code || lang)}
-                                                                                                    {lang.agentLevel && <span className="ml-1 text-purple-600">({lang.agentLevel})</span>}
+                                                                                                    {lang.agentLevel && <span className="ml-1 text-purple-800">({lang.agentLevel})</span>}
                                                                                                 </span>
                                                                                             ))}
                                                                                             {match.languageMatch.details.matchingLanguages.length > 3 && (
@@ -1405,7 +1405,7 @@ export const MatchingDashboard = () => {
                                                                                         <p className="text-xs text-antigravity-muted mb-2">Matched Industries:</p>
                                                                                         <div className="flex flex-wrap gap-1">
                                                                                             {match.industryMatch.details.matchingIndustries.slice(0, 2).map((industry: any, i: number) => (
-                                                                                                <span key={i} className="px-2 py-1 bg-orange-900/30 text-orange-300 rounded text-xs">
+                                                                                                <span key={i} className="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-medium">
                                                                                                     {industry.industry?.name || industry.industryName || industry.name || industry}
                                                                                                 </span>
                                                                                             ))}
@@ -1519,7 +1519,7 @@ export const MatchingDashboard = () => {
                                                                                         <p className="text-xs text-antigravity-muted mb-2">Matched Activities:</p>
                                                                                         <div className="flex flex-wrap gap-1">
                                                                                             {match.activityMatch.details.matchingActivities.slice(0, 2).map((activity: any, i: number) => (
-                                                                                                <span key={i} className="px-2 py-1 bg-teal-900/30 text-teal-300 rounded text-xs">
+                                                                                                <span key={i} className="px-2 py-1 bg-teal-100 text-teal-700 rounded text-xs font-medium">
                                                                                                     {activity.activity?.name || activity.activityName || activity.name || activity}
                                                                                                 </span>
                                                                                             ))}
