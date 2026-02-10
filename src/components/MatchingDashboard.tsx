@@ -1321,9 +1321,9 @@ export const MatchingDashboard = () => {
 
                                                                         {/* Skills Match */}
                                                                         {match.skillsMatch && (
-                                                                            <div className="bg-white rounded-lg p-4 shadow-sm">
+                                                                            <div className="bg-antigravity-surface rounded-lg p-4 shadow-sm">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-gray-800">Skills Match</h5>
+                                                                                    <h5 className="font-semibold text-white">Skills Match</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.skillsMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.skillsMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
@@ -1333,15 +1333,15 @@ export const MatchingDashboard = () => {
                                                                                 </div>
                                                                                 {match.skillsMatch.details?.matchingSkills && match.skillsMatch.details.matchingSkills.length > 0 && (
                                                                                     <div className="space-y-1">
-                                                                                        <p className="text-xs text-gray-600 mb-2">Matched Skills:</p>
+                                                                                        <p className="text-xs text-antigravity-muted mb-2">Matched Skills:</p>
                                                                                         <div className="flex flex-wrap gap-1">
                                                                                             {match.skillsMatch.details.matchingSkills.slice(0, 3).map((skill: any, i: number) => (
-                                                                                                <span key={i} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                                                                                                <span key={i} className="px-2 py-1 bg-blue-900/30 text-blue-300 rounded text-xs">
                                                                                                     {skill.skill?.name || skill.skillName || getSkillNameById(skill._id || skill.skillId || skill, skill.category || 'professional')}
                                                                                                 </span>
                                                                                             ))}
                                                                                             {match.skillsMatch.details.matchingSkills.length > 3 && (
-                                                                                                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
+                                                                                                <span className="px-2 py-1 bg-antigravity-bg text-antigravity-muted rounded text-xs">
                                                                                                     +{match.skillsMatch.details.matchingSkills.length - 3}
                                                                                                 </span>
                                                                                             )}
@@ -1354,9 +1354,9 @@ export const MatchingDashboard = () => {
 
                                                                         {/* Languages Match */}
                                                                         {match.languageMatch && (
-                                                                            <div className="bg-white rounded-lg p-4 shadow-sm">
+                                                                            <div className="bg-antigravity-surface rounded-lg p-4 shadow-sm">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-gray-800">Languages</h5>
+                                                                                    <h5 className="font-semibold text-white">Languages</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.languageMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.languageMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
@@ -1366,16 +1366,16 @@ export const MatchingDashboard = () => {
                                                                                 </div>
                                                                                 {match.languageMatch.details?.matchingLanguages && match.languageMatch.details.matchingLanguages.length > 0 && (
                                                                                     <div className="space-y-1">
-                                                                                        <p className="text-xs text-gray-600 mb-2">Matched Languages:</p>
+                                                                                        <p className="text-xs text-antigravity-muted mb-2">Matched Languages:</p>
                                                                                         <div className="flex flex-wrap gap-1">
                                                                                             {match.languageMatch.details.matchingLanguages.slice(0, 3).map((lang: any, i: number) => (
-                                                                                                <span key={i} className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">
+                                                                                                <span key={i} className="px-2 py-1 bg-purple-900/30 text-purple-300 rounded text-xs">
                                                                                                     {lang.language?.name || lang.languageName || getLanguageNameByCode(lang.language || lang.code || lang)}
                                                                                                     {lang.agentLevel && <span className="ml-1 text-purple-600">({lang.agentLevel})</span>}
                                                                                                 </span>
                                                                                             ))}
                                                                                             {match.languageMatch.details.matchingLanguages.length > 3 && (
-                                                                                                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
+                                                                                                <span className="px-2 py-1 bg-antigravity-bg text-antigravity-muted rounded text-xs">
                                                                                                     +{match.languageMatch.details.matchingLanguages.length - 3}
                                                                                                 </span>
                                                                                             )}
@@ -1388,9 +1388,9 @@ export const MatchingDashboard = () => {
 
                                                                         {/* Industry Match */}
                                                                         {match.industryMatch && (
-                                                                            <div className="bg-white rounded-lg p-4 shadow-sm">
+                                                                            <div className="bg-antigravity-surface rounded-lg p-4 shadow-sm">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-gray-800">Industry</h5>
+                                                                                    <h5 className="font-semibold text-white">Industry</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.industryMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.industryMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
@@ -1400,15 +1400,15 @@ export const MatchingDashboard = () => {
                                                                                 </div>
                                                                                 {match.industryMatch.details?.matchingIndustries && match.industryMatch.details.matchingIndustries.length > 0 && (
                                                                                     <div className="space-y-1">
-                                                                                        <p className="text-xs text-gray-600 mb-2">Matched Industries:</p>
+                                                                                        <p className="text-xs text-antigravity-muted mb-2">Matched Industries:</p>
                                                                                         <div className="flex flex-wrap gap-1">
                                                                                             {match.industryMatch.details.matchingIndustries.slice(0, 2).map((industry: any, i: number) => (
-                                                                                                <span key={i} className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">
+                                                                                                <span key={i} className="px-2 py-1 bg-orange-900/30 text-orange-300 rounded text-xs">
                                                                                                     {industry.industry?.name || industry.industryName || industry.name || industry}
                                                                                                 </span>
                                                                                             ))}
                                                                                             {match.industryMatch.details.matchingIndustries.length > 2 && (
-                                                                                                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
+                                                                                                <span className="px-2 py-1 bg-antigravity-bg text-antigravity-muted rounded text-xs">
                                                                                                     +{match.industryMatch.details.matchingIndustries.length - 2}
                                                                                                 </span>
                                                                                             )}
@@ -1421,9 +1421,9 @@ export const MatchingDashboard = () => {
 
                                                                         {/* Experience Match */}
                                                                         {match.experienceMatch && (
-                                                                            <div className="bg-white rounded-lg p-4 shadow-sm">
+                                                                            <div className="bg-antigravity-surface rounded-lg p-4 shadow-sm">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-gray-800">Experience</h5>
+                                                                                    <h5 className="font-semibold text-white">Experience</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.experienceMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.experienceMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
@@ -1431,7 +1431,7 @@ export const MatchingDashboard = () => {
                                                                                         {Math.round((match.experienceMatch.score || 0) * 100)}%
                                                                                     </span>
                                                                                 </div>
-                                                                                <div className="text-xs text-gray-600">
+                                                                                <div className="text-xs text-antigravity-muted">
                                                                                     <p>Rep: {match.agentInfo?.professionalSummary?.yearsOfExperience || 'N/A'} years</p>
                                                                                     <p>Required: {selectedGig?.seniority?.yearsExperience || 'N/A'} years</p>
                                                                                 </div>
@@ -1445,9 +1445,9 @@ export const MatchingDashboard = () => {
 
                                                                         {/* Timezone Match */}
                                                                         {match.timezoneMatch && (
-                                                                            <div className="bg-white rounded-lg p-4 shadow-sm">
+                                                                            <div className="bg-antigravity-surface rounded-lg p-4 shadow-sm">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-gray-800">Timezone</h5>
+                                                                                    <h5 className="font-semibold text-white">Timezone</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.timezoneMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.timezoneMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
@@ -1455,7 +1455,7 @@ export const MatchingDashboard = () => {
                                                                                         {Math.round((match.timezoneMatch.score || 0) * 100)}%
                                                                                     </span>
                                                                                 </div>
-                                                                                <div className="text-xs text-gray-600">
+                                                                                <div className="text-xs text-antigravity-muted">
                                                                                     <p>Rep: {match.agentInfo?.timezone?.gmtDisplay || 'N/A'}</p>
                                                                                     <p>Zone: {match.agentInfo?.timezone?.timezoneName || match.agentInfo?.availability?.timeZone?.zoneName || 'N/A'}</p>
                                                                                     <p>Location: {match.agentInfo?.timezone?.countryName || match.agentInfo?.personalInfo?.country?.name || match.agentInfo?.location || 'N/A'}</p>
@@ -1465,9 +1465,9 @@ export const MatchingDashboard = () => {
 
                                                                         {/* Region Match */}
                                                                         {match.regionMatch && (
-                                                                            <div className="bg-white rounded-lg p-4 shadow-sm">
+                                                                            <div className="bg-antigravity-surface rounded-lg p-4 shadow-sm">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-gray-800">Region</h5>
+                                                                                    <h5 className="font-semibold text-white">Region</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.regionMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.regionMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
@@ -1475,7 +1475,7 @@ export const MatchingDashboard = () => {
                                                                                         {Math.round((match.regionMatch.score || 0) * 100)}%
                                                                                     </span>
                                                                                 </div>
-                                                                                <div className="text-xs text-gray-600">
+                                                                                <div className="text-xs text-antigravity-muted">
                                                                                     <p>Country: {match.agentInfo?.timezone?.countryName || match.agentInfo?.personalInfo?.country?.name || 'N/A'}</p>
                                                                                     <p>Code: {match.agentInfo?.timezone?.countryCode || match.agentInfo?.personalInfo?.country?.code || 'N/A'}</p>
                                                                                 </div>
@@ -1484,9 +1484,9 @@ export const MatchingDashboard = () => {
 
                                                                         {/* Availability Match */}
                                                                         {match.availabilityMatch && (
-                                                                            <div className="bg-white rounded-lg p-4 shadow-sm">
+                                                                            <div className="bg-antigravity-surface rounded-lg p-4 shadow-sm">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-gray-800">Availability</h5>
+                                                                                    <h5 className="font-semibold text-white">Availability</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.availabilityMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.availabilityMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
@@ -1494,7 +1494,7 @@ export const MatchingDashboard = () => {
                                                                                         {Math.round((match.availabilityMatch.score || 0) * 100)}%
                                                                                     </span>
                                                                                 </div>
-                                                                                <div className="text-xs text-gray-600">
+                                                                                <div className="text-xs text-antigravity-muted">
                                                                                     <p>Schedule: {match.agentInfo?.availability?.schedule?.length || 0} days/week</p>
                                                                                 </div>
                                                                             </div>
@@ -1502,9 +1502,9 @@ export const MatchingDashboard = () => {
 
                                                                         {/* Activity Match */}
                                                                         {match.activityMatch && (
-                                                                            <div className="bg-white rounded-lg p-4 shadow-sm">
+                                                                            <div className="bg-antigravity-surface rounded-lg p-4 shadow-sm">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-gray-800">Activities</h5>
+                                                                                    <h5 className="font-semibold text-white">Activities</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.activityMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.activityMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
@@ -1514,15 +1514,15 @@ export const MatchingDashboard = () => {
                                                                                 </div>
                                                                                 {match.activityMatch.details?.matchingActivities && match.activityMatch.details.matchingActivities.length > 0 && (
                                                                                     <div className="space-y-1">
-                                                                                        <p className="text-xs text-gray-600 mb-2">Matched Activities:</p>
+                                                                                        <p className="text-xs text-antigravity-muted mb-2">Matched Activities:</p>
                                                                                         <div className="flex flex-wrap gap-1">
                                                                                             {match.activityMatch.details.matchingActivities.slice(0, 2).map((activity: any, i: number) => (
-                                                                                                <span key={i} className="px-2 py-1 bg-teal-100 text-teal-800 rounded text-xs">
+                                                                                                <span key={i} className="px-2 py-1 bg-teal-900/30 text-teal-300 rounded text-xs">
                                                                                                     {activity.activity?.name || activity.activityName || activity.name || activity}
                                                                                                 </span>
                                                                                             ))}
                                                                                             {match.activityMatch.details.matchingActivities.length > 2 && (
-                                                                                                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
+                                                                                                <span className="px-2 py-1 bg-antigravity-bg text-antigravity-muted rounded text-xs">
                                                                                                     +{match.activityMatch.details.matchingActivities.length - 2}
                                                                                                 </span>
                                                                                             )}
@@ -1542,19 +1542,19 @@ export const MatchingDashboard = () => {
                                             </div>
                                         ) : searchTerm ? (
                                             <div className="text-center py-8">
-                                                <div className="bg-gray-50 rounded-xl p-6 max-w-md mx-auto">
-                                                    <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <div className="bg-antigravity-surface rounded-xl p-6 max-w-md mx-auto">
+                                                    <svg className="w-12 h-12 text-antigravity-muted mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                                     </svg>
-                                                    <p className="text-gray-600 mb-2">No reps found for "{searchTerm}"</p>
-                                                    <p className="text-sm text-gray-400">Try adjusting your search terms</p>
+                                                    <p className="text-antigravity-text mb-2">No reps found for "{searchTerm}"</p>
+                                                    <p className="text-sm text-antigravity-muted">Try adjusting your search terms</p>
                                                 </div>
                                             </div>
                                         ) : (
                                             <div className="text-center py-8">
-                                                <div className="bg-gray-50 rounded-xl p-6 max-w-md mx-auto">
-                                                    <Briefcase size={24} className="text-gray-400 mx-auto mb-2" />
-                                                    <p className="text-gray-600">No matches found for this gig.</p>
+                                                <div className="bg-antigravity-surface rounded-xl p-6 max-w-md mx-auto">
+                                                    <Briefcase size={24} className="text-antigravity-muted mx-auto mb-2" />
+                                                    <p className="text-antigravity-text">No matches found for this gig.</p>
                                                 </div>
                                             </div>
                                         )}
@@ -1590,35 +1590,35 @@ export const MatchingDashboard = () => {
                         {activeSection === 'invited' && (
                             <div className="space-y-6">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-gray-900">📧 Invited Reps</h2>
-                                    <p className="text-gray-600">Reps who have been invited but haven't responded yet</p>
+                                    <h2 className="text-2xl font-bold text-white">📧 Invited Reps</h2>
+                                    <p className="text-antigravity-muted">Reps who have been invited but haven't responded yet</p>
                                 </div>
 
-                                <div className="bg-white rounded-xl shadow-lg p-6">
+                                <div className="bg-antigravity-surface rounded-xl shadow-lg p-6">
                                     {invitedAgentsList.length > 0 ? (
                                         <div className="space-y-4">
                                             {invitedAgentsList.map((agent: { _id: any; personalInfo: { name: any; email: any; }; gigId: { title: any; }; gig: { title: any; }; }, index: any) => {
                                                 console.log('🔍 Invited Agent Data:', agent);
 
                                                 return (
-                                                    <div key={`invited-${agent._id}-${index}`} className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                                    <div key={`invited-${agent._id}-${index}`} className="bg-yellow-900/20 border border-yellow-700/30 rounded-lg p-4">
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex-1">
-                                                                <h3 className="text-lg font-bold text-gray-900">{agent.personalInfo?.name}</h3>
-                                                                <p className="text-gray-600">{agent.personalInfo?.email}</p>
+                                                                <h3 className="text-lg font-bold text-white">{agent.personalInfo?.name}</h3>
+                                                                <p className="text-antigravity-muted">{agent.personalInfo?.email}</p>
                                                                 <div className="mt-2 space-y-1">
-                                                                    <p className="text-sm text-yellow-700">
+                                                                    <p className="text-sm text-yellow-400">
                                                                         Invited • Waiting for response
                                                                     </p>
                                                                     {(agent.gigId?.title || agent.gig?.title) && (
-                                                                        <p className="text-sm text-gray-600">
+                                                                        <p className="text-sm text-antigravity-muted">
                                                                             <span className="font-medium">Gig:</span> {agent.gigId?.title || agent.gig?.title}
                                                                         </p>
                                                                     )}
                                                                 </div>
                                                             </div>
                                                             <div className="flex items-center space-x-2">
-                                                                <span className="inline-flex items-center px-3 py-2 bg-yellow-100 text-yellow-800 rounded-lg text-sm font-medium">
+                                                                <span className="inline-flex items-center px-3 py-2 bg-yellow-900/40 text-yellow-300 rounded-lg text-sm font-medium">
                                                                     📧 Pending
                                                                 </span>
                                                             </div>
@@ -1629,10 +1629,10 @@ export const MatchingDashboard = () => {
                                         </div>
                                     ) : (
                                         <div className="text-center py-12">
-                                            <div className="bg-gray-50 rounded-xl p-8 max-w-md mx-auto">
+                                            <div className="bg-antigravity-bg rounded-xl p-8 max-w-md mx-auto">
                                                 <div className="text-6xl mb-4">📧</div>
-                                                <p className="text-gray-600 text-lg mb-2">No pending invitations</p>
-                                                <p className="text-sm text-gray-400">All invitations have been responded to.</p>
+                                                <p className="text-white text-lg mb-2">No pending invitations</p>
+                                                <p className="text-sm text-antigravity-muted">All invitations have been responded to.</p>
                                             </div>
                                         </div>
                                     )}
@@ -1644,30 +1644,30 @@ export const MatchingDashboard = () => {
                         {activeSection === 'enrollment' && (
                             <div className="space-y-6">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-gray-900">📋 Enrollment Requests</h2>
-                                    <p className="text-gray-600">Reps who accepted invitations and are requesting to join</p>
+                                    <h2 className="text-2xl font-bold text-white">📋 Enrollment Requests</h2>
+                                    <p className="text-antigravity-muted">Reps who accepted invitations and are requesting to join</p>
                                 </div>
 
-                                <div className="bg-white rounded-xl shadow-lg p-6">
+                                <div className="bg-antigravity-surface rounded-xl shadow-lg p-6">
                                     {enrollmentRequests.length > 0 ? (
                                         <div className="space-y-4">
                                             {enrollmentRequests.map((agent: { _id: string; agentId: { personalInfo: { name: any; email: any; }; }; enrollmentStatus: any; gigId: { title: any; }; gig: { title: any; }; notes: any; }, index: any) => (
-                                                <div key={`enrollment-${agent._id}-${index}`} className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                                <div key={`enrollment-${agent._id}-${index}`} className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-4">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex-1">
-                                                            <h3 className="text-lg font-bold text-gray-900">{agent.agentId?.personalInfo?.name}</h3>
-                                                            <p className="text-gray-600">{agent.agentId?.personalInfo?.email}</p>
+                                                            <h3 className="text-lg font-bold text-white">{agent.agentId?.personalInfo?.name}</h3>
+                                                            <p className="text-antigravity-muted">{agent.agentId?.personalInfo?.email}</p>
                                                             <div className="mt-2 space-y-1">
-                                                                <p className="text-sm text-blue-700">
+                                                                <p className="text-sm text-blue-400">
                                                                     <span className="font-medium">Status:</span> {agent.enrollmentStatus}
                                                                 </p>
                                                                 {(agent.gigId?.title || agent.gig?.title) && (
-                                                                    <p className="text-sm text-gray-600">
+                                                                    <p className="text-sm text-antigravity-muted">
                                                                         <span className="font-medium">Gig:</span> {agent.gigId?.title || agent.gig?.title}
                                                                     </p>
                                                                 )}
                                                                 {agent.notes && (
-                                                                    <p className="text-sm text-gray-600 italic">
+                                                                    <p className="text-sm text-antigravity-muted italic">
                                                                         "{agent.notes}"
                                                                     </p>
                                                                 )}
@@ -1727,10 +1727,10 @@ export const MatchingDashboard = () => {
                                         </div>
                                     ) : (
                                         <div className="text-center py-12">
-                                            <div className="bg-gray-50 rounded-xl p-8 max-w-md mx-auto">
+                                            <div className="bg-antigravity-bg rounded-xl p-8 max-w-md mx-auto">
                                                 <div className="text-6xl mb-4">📋</div>
-                                                <p className="text-gray-600 text-lg mb-2">No enrollment requests</p>
-                                                <p className="text-sm text-gray-400">No reps are waiting for approval.</p>
+                                                <p className="text-white text-lg mb-2">No enrollment requests</p>
+                                                <p className="text-sm text-antigravity-muted">No reps are waiting for approval.</p>
                                             </div>
                                         </div>
                                     )}
@@ -1742,56 +1742,56 @@ export const MatchingDashboard = () => {
                         {activeSection === 'active' && (
                             <div className="space-y-6">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-gray-900">✅ Active Reps</h2>
-                                    <p className="text-gray-600">Reps who are approved and actively working</p>
+                                    <h2 className="text-2xl font-bold text-white">✅ Active Reps</h2>
+                                    <p className="text-antigravity-muted">Reps who are approved and actively working</p>
                                 </div>
 
-                                <div className="bg-white rounded-xl shadow-lg p-6">
+                                <div className="bg-antigravity-surface rounded-xl shadow-lg p-6">
                                     {activeAgentsList.length > 0 ? (
                                         <div className="space-y-4">
                                             {activeAgentsList.map((agent: { _id: any; agentId: { personalInfo: { name: any; email: any; languages: string | any[]; }; professionalSummary: { yearsOfExperience: any; currentRole: any; keyExpertise: any[]; }; availability: { schedule: string | any[]; }; onboardingProgress: { currentPhase: number; }; }; gigId: { title: any; }; gig: { title: any; }; }, index: any) => (
-                                                <div key={`active-${agent._id}-${index}`} className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                                <div key={`active-${agent._id}-${index}`} className="bg-green-900/20 border border-green-700/30 rounded-lg p-4">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex-1">
                                                             <div className="flex items-center gap-3 mb-2">
-                                                                <h3 className="text-lg font-bold text-gray-900">{agent.agentId?.personalInfo?.name}</h3>
-                                                                <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                                                                <h3 className="text-lg font-bold text-white">{agent.agentId?.personalInfo?.name}</h3>
+                                                                <span className="inline-flex items-center px-3 py-1 bg-green-900/40 text-green-300 rounded-full text-sm font-medium">
                                                                     ✅ Active
                                                                 </span>
                                                             </div>
-                                                            <p className="text-gray-600 mb-2">{agent.agentId?.personalInfo?.email}</p>
+                                                            <p className="text-antigravity-muted mb-2">{agent.agentId?.personalInfo?.email}</p>
 
                                                             <div className="mt-3 space-y-2">
                                                                 {(agent.gigId?.title || agent.gig?.title) && (
                                                                     <div className="mb-2">
-                                                                        <p className="text-sm text-gray-600">
+                                                                        <p className="text-sm text-antigravity-muted">
                                                                             <span className="font-medium">Gig:</span> {agent.gigId?.title || agent.gig?.title}
                                                                         </p>
                                                                     </div>
                                                                 )}
                                                                 <div className="flex items-center gap-4 text-sm">
-                                                                    <span className="text-gray-600">
+                                                                    <span className="text-antigravity-muted">
                                                                         <span className="font-medium">Experience:</span> {agent.agentId?.professionalSummary?.yearsOfExperience} years
                                                                     </span>
-                                                                    <span className="text-gray-600">
+                                                                    <span className="text-antigravity-muted">
                                                                         <span className="font-medium">Role:</span> {agent.agentId?.professionalSummary?.currentRole}
                                                                     </span>
                                                                 </div>
 
                                                                 <div className="flex flex-wrap gap-2">
                                                                     {agent.agentId?.professionalSummary?.keyExpertise?.slice(0, 5).map((skill: any, i: any) => (
-                                                                        <span key={i} className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
+                                                                        <span key={i} className="px-2 py-1 bg-green-900/30 text-green-300 rounded text-xs">
                                                                             {skill}
                                                                         </span>
                                                                     ))}
                                                                     {agent.agentId?.professionalSummary?.keyExpertise?.length > 5 && (
-                                                                        <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
+                                                                        <span className="px-2 py-1 bg-antigravity-bg text-antigravity-muted rounded text-xs">
                                                                             +{agent.agentId.professionalSummary.keyExpertise.length - 5} more
                                                                         </span>
                                                                     )}
                                                                 </div>
 
-                                                                <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                                                                <div className="flex flex-wrap gap-4 text-sm text-antigravity-muted">
                                                                     <div>
                                                                         <span className="font-medium">Availability:</span> {agent.agentId?.availability?.schedule?.length} days/week
                                                                     </div>
@@ -1816,10 +1816,10 @@ export const MatchingDashboard = () => {
                                         </div>
                                     ) : (
                                         <div className="text-center py-12">
-                                            <div className="bg-gray-50 rounded-xl p-8 max-w-md mx-auto">
+                                            <div className="bg-antigravity-bg rounded-xl p-8 max-w-md mx-auto">
                                                 <div className="text-6xl mb-4">✅</div>
-                                                <p className="text-gray-600 text-lg mb-2">No active reps</p>
-                                                <p className="text-sm text-gray-400">Start by finding matches and inviting reps.</p>
+                                                <p className="text-white text-lg mb-2">No active reps</p>
+                                                <p className="text-sm text-antigravity-muted">Start by finding matches and inviting reps.</p>
                                             </div>
                                         </div>
                                     )}
