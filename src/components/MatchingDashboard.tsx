@@ -978,16 +978,16 @@ export const MatchingDashboard = () => {
                                                             onClick={() => handleGigSelect(gig)}
                                                         >
                                                             <div className="flex items-center space-x-3 mb-3">
-                                                                <div className={`p-2 rounded-lg ${selectedGig?._id === gig._id ? "bg-antigravity-primary" : "bg-antigravity-surface border border-antigravity-border"
+                                                                <div className={`p-2 rounded-lg ${selectedGig?._id === gig._id ? "bg-white/20" : "bg-antigravity-primary/10 border border-antigravity-primary/20"
                                                                     }`}>
-                                                                    <Briefcase size={16} className={`${selectedGig?._id === gig._id ? "text-white" : "text-antigravity-muted"}`} />
+                                                                    <Briefcase size={16} className={`${selectedGig?._id === gig._id ? "text-white" : "text-antigravity-primary"}`} />
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
                                                                     <h4 className={`font-bold text-sm ${selectedGig?._id === gig._id ? "text-white" : "text-antigravity-text"
                                                                         }`}>
                                                                         {gig.title}
                                                                     </h4>
-                                                                    <p className="text-xs text-antigravity-muted truncate">{gig.companyName}</p>
+                                                                    <p className={`text-xs truncate ${selectedGig?._id === gig._id ? "text-blue-100" : "text-antigravity-muted"}`}>{gig.companyName}</p>
                                                                 </div>
                                                             </div>
 
