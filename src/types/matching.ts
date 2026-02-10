@@ -144,6 +144,7 @@ export interface Availability {
 
 // Nouvelle interface pour la structure de réponse de l'API
 export interface AgentInfo {
+    availability: any;
     personalInfo: any;
     status: string;
     name: string;
@@ -202,6 +203,7 @@ export interface AgentInfo {
 }
 
 export interface LanguageMatch {
+    matchedLanguages: boolean;
     score: number;
     details: {
         matchingLanguages: Array<{
@@ -220,6 +222,7 @@ export interface LanguageMatch {
 }
 
 export interface SkillsMatch {
+    matchedSkills: boolean;
     score: number;
     details: {
         matchingSkills: Array<{
@@ -412,6 +415,7 @@ export interface MatchingWeights {
 }
 
 export interface IndustryMatch {
+    matchedIndustries: boolean;
     score: number;
     details: {
         matchingIndustries: Array<{
@@ -428,6 +432,7 @@ export interface IndustryMatch {
 }
 
 export interface ActivityMatch {
+    matchedActivities: boolean;
     score: number;
     details: {
         matchingActivities: Array<{
