@@ -1123,7 +1123,7 @@ export const MatchingDashboard = ({ onAgentSelect }: { onAgentSelect: (agentId: 
                                                                             <p className="font-semibold">
                                                                                 {gig.availability.schedule ? `${gig.availability.schedule.length} days/week` :
                                                                                     gig.availability.hoursPerWeek ? `${gig.availability.hoursPerWeek}h/week` :
-                                                                                        gig.availability.workingHours ? gig.availability.workingHours :
+                                                                                        (gig.availability as any).workingHours && typeof (gig.availability as any).workingHours === 'string' ? (gig.availability as any).workingHours :
                                                                                             'Flexible'}
                                                                             </p>
                                                                         </div>
@@ -1171,18 +1171,25 @@ export const MatchingDashboard = ({ onAgentSelect }: { onAgentSelect: (agentId: 
                                                                         </div>
                                                                     )}
 
+
                                                                     {/* Region & Timezone */}
                                                                     <div className="grid grid-cols-2 gap-4 text-sm">
                                                                         {gig.region && (
                                                                             <div>
                                                                                 <span className="text-gray-600 font-medium">Region:</span>
-                                                                                <p className="font-semibold">{gig.region}</p>
+                                                                                <p className="font-semibold">
+                                                                                    {typeof gig.region === 'string' ? gig.region : (gig.region as any).name || 'Unknown Region'}
+                                                                                </p>
                                                                             </div>
                                                                         )}
                                                                         {gig.timezone && (
                                                                             <div>
                                                                                 <span className="text-gray-600 font-medium">Timezone:</span>
-                                                                                <p className="font-semibold">{gig.timezone}</p>
+                                                                                <p className="font-semibold">
+                                                                                    {typeof gig.timezone === 'string'
+                                                                                        ? gig.timezone
+                                                                                        : (gig.timezone as any).name || (gig.timezone as any).timezoneName || 'Unknown Timezone'}
+                                                                                </p>
                                                                             </div>
                                                                         )}
                                                                     </div>
@@ -1236,7 +1243,11 @@ export const MatchingDashboard = ({ onAgentSelect }: { onAgentSelect: (agentId: 
                                                 {filteredMatches.map((match: Match, index: any) => {
                                                     // Check if agent is already enrolled in this specific gig
                                                     const isAlreadyEnrolledInThisGig = activeAgentsList.some(
-                                                        (                                                        agent: { agentId: { _id: any; }; gigId: { _id: any; }; }) => agent.agentId._id === match.agentId && agent.gigId._id === selectedGig?._id
+                                                        (agent: any) => {
+                                                            const agentId = agent.agentId?._id || agent.agentId;
+                                                            const gigId = agent.gigId?._id || agent.gigId;
+                                                            return agentId === match.agentId && gigId === selectedGig?._id;
+                                                        }
                                                     );
 
                                                     const isInvited = match.isInvited !== undefined ? match.isInvited : invitedAgents.has(match.agentId);
