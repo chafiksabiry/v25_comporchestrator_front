@@ -621,7 +621,7 @@ export const MatchingDashboard = ({ onAgentSelect }: { onAgentSelect: (agentId: 
 
     // Toggle rep details expansion
     const toggleRepDetails = (agentId: string) => {
-        setExpandedReps((prev: Iterable<unknown> | null | undefined) => {
+        setExpandedReps((prev) => {
             const newSet = new Set(prev);
             if (newSet.has(agentId)) {
                 newSet.delete(agentId);
@@ -634,7 +634,7 @@ export const MatchingDashboard = ({ onAgentSelect }: { onAgentSelect: (agentId: 
 
     // Toggle gig details expansion
     const toggleGigDetails = (gigId: string) => {
-        setExpandedGigs((prev: Iterable<unknown> | null | undefined) => {
+        setExpandedGigs((prev) => {
             const newSet = new Set(prev);
             if (newSet.has(gigId)) {
                 newSet.delete(gigId);
@@ -1275,7 +1275,7 @@ export const MatchingDashboard = ({ onAgentSelect }: { onAgentSelect: (agentId: 
                                                                     <div className="flex items-center gap-3 mb-2">
                                                                         <h4
                                                                             className="text-lg font-bold text-gray-900 truncate cursor-pointer hover:text-indigo-600 transition-colors"
-                                                                            onClick={() => onAgentSelect(match.agentId, selectedGig?._id)}
+                                                                            onClick={() => toggleRepDetails(match.agentId)}
                                                                         >
                                                                             {match.agentInfo?.name}
                                                                         </h4>
@@ -1332,17 +1332,17 @@ export const MatchingDashboard = ({ onAgentSelect }: { onAgentSelect: (agentId: 
                                                             {/* View Details Button */}
                                                             <div className="flex justify-center mt-4">
                                                                 <button
-                                                                    onClick={() => onAgentSelect(match.agentId, selectedGig?._id)}
+                                                                    onClick={() => toggleRepDetails(match.agentId)}
                                                                     className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-lg transition-all duration-200 text-sm font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                                                                 >
-                                                                    <span>View Full Profile</span>
+                                                                    <span>{isExpanded ? 'Hide Details' : 'View Details'}</span>
                                                                     <svg
-                                                                        className="w-4 h-4"
+                                                                        className={`w-4 h-4 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
                                                                         fill="none"
                                                                         stroke="currentColor"
                                                                         viewBox="0 0 24 24"
                                                                     >
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                                                                     </svg>
                                                                 </button>
                                                             </div>
@@ -1381,24 +1381,7 @@ export const MatchingDashboard = ({ onAgentSelect }: { onAgentSelect: (agentId: 
                                                                                         </div>
                                                                                     </div>
                                                                                 )}
-                                                                                {/* Fallback for old API structure */}
-                                                                                {!match.skillsMatch.details?.matchingSkills && match.skillsMatch.matchedSkills && match.skillsMatch.matchedSkills.length > 0 && (
-                                                                                    <div className="space-y-1">
-                                                                                        <p className="text-xs text-gray-600 mb-2">Matched Skills:</p>
-                                                                                        <div className="flex flex-wrap gap-1">
-                                                                                            {match.skillsMatch.matchedSkills.slice(0, 3).map((skill: any, i: number) => (
-                                                                                                <span key={i} className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                                                                                                    {getSkillNameById(skill._id || skill.skillId || skill, skill.category || 'professional')}
-                                                                                                </span>
-                                                                                            ))}
-                                                                                            {match.skillsMatch.matchedSkills.length > 3 && (
-                                                                                                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
-                                                                                                    +{match.skillsMatch.matchedSkills.length - 3}
-                                                                                                </span>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                )}
+
                                                                             </div>
                                                                         )}
 
@@ -1432,24 +1415,7 @@ export const MatchingDashboard = ({ onAgentSelect }: { onAgentSelect: (agentId: 
                                                                                         </div>
                                                                                     </div>
                                                                                 )}
-                                                                                {/* Fallback for old API structure */}
-                                                                                {!match.languageMatch.details?.matchingLanguages && match.languageMatch.matchedLanguages && match.languageMatch.matchedLanguages.length > 0 && (
-                                                                                    <div className="space-y-1">
-                                                                                        <p className="text-xs text-gray-600 mb-2">Matched Languages:</p>
-                                                                                        <div className="flex flex-wrap gap-1">
-                                                                                            {match.languageMatch.matchedLanguages.slice(0, 3).map((lang: any, i: number) => (
-                                                                                                <span key={i} className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">
-                                                                                                    {getLanguageNameByCode(lang.language || lang.code || lang)}
-                                                                                                </span>
-                                                                                            ))}
-                                                                                            {match.languageMatch.matchedLanguages.length > 3 && (
-                                                                                                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
-                                                                                                    +{match.languageMatch.matchedLanguages.length - 3}
-                                                                                                </span>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                )}
+
                                                                             </div>
                                                                         )}
 
@@ -1482,24 +1448,7 @@ export const MatchingDashboard = ({ onAgentSelect }: { onAgentSelect: (agentId: 
                                                                                         </div>
                                                                                     </div>
                                                                                 )}
-                                                                                {/* Fallback for old API structure */}
-                                                                                {!match.industryMatch.details?.matchingIndustries && match.industryMatch.matchedIndustries && match.industryMatch.matchedIndustries.length > 0 && (
-                                                                                    <div className="space-y-1">
-                                                                                        <p className="text-xs text-gray-600 mb-2">Industries:</p>
-                                                                                        <div className="flex flex-wrap gap-1">
-                                                                                            {match.industryMatch.matchedIndustries.slice(0, 2).map((industry: any, i: number) => (
-                                                                                                <span key={i} className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">
-                                                                                                    {industry.name || industry}
-                                                                                                </span>
-                                                                                            ))}
-                                                                                            {match.industryMatch.matchedIndustries.length > 2 && (
-                                                                                                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
-                                                                                                    +{match.industryMatch.matchedIndustries.length - 2}
-                                                                                                </span>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                )}
+
                                                                             </div>
                                                                         )}
 
@@ -1613,24 +1562,7 @@ export const MatchingDashboard = ({ onAgentSelect }: { onAgentSelect: (agentId: 
                                                                                         </div>
                                                                                     </div>
                                                                                 )}
-                                                                                {/* Fallback for old API structure */}
-                                                                                {!match.activityMatch.details?.matchingActivities && match.activityMatch.matchedActivities && match.activityMatch.matchedActivities.length > 0 && (
-                                                                                    <div className="space-y-1">
-                                                                                        <p className="text-xs text-gray-600 mb-2">Activities:</p>
-                                                                                        <div className="flex flex-wrap gap-1">
-                                                                                            {match.activityMatch.matchedActivities.slice(0, 2).map((activity: any, i: number) => (
-                                                                                                <span key={i} className="px-2 py-1 bg-teal-100 text-teal-800 rounded text-xs">
-                                                                                                    {activity.name || activity}
-                                                                                                </span>
-                                                                                            ))}
-                                                                                            {match.activityMatch.matchedActivities.length > 2 && (
-                                                                                                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
-                                                                                                    +{match.activityMatch.matchedActivities.length - 2}
-                                                                                                </span>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                )}
+
                                                                             </div>
                                                                         )}
 
