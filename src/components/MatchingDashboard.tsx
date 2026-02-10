@@ -656,7 +656,7 @@ export const MatchingDashboard = () => {
                                 <Users size={24} className="text-antigravity-primary" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-white">Reps Management System</h1>
+                                <h1 className="text-2xl font-bold text-gray-900">Reps Management System</h1>
                                 <p className="text-antigravity-muted text-sm">Manage reps through their complete lifecycle</p>
                             </div>
                         </div>
@@ -698,7 +698,7 @@ export const MatchingDashboard = () => {
                                     onClick={() => setActiveSection(section.id as any)}
                                     className={`flex-1 px-4 py-4 text-left transition-all duration-200 border-b-2 ${activeSection === section.id
                                         ? 'border-antigravity-primary bg-antigravity-primary/10'
-                                        : 'border-transparent hover:bg-antigravity-bg/30 text-antigravity-muted hover:text-white'
+                                        : 'border-transparent hover:bg-antigravity-bg/30 text-antigravity-muted hover:text-gray-900'
                                         }`}
                                 >
                                     <div className="flex items-center space-x-3">
@@ -752,7 +752,7 @@ export const MatchingDashboard = () => {
                             <div className="space-y-6">
                                 <div className="flex justify-between items-center">
                                     <div>
-                                        <h2 className="text-2xl font-bold text-white">🎯 Smart Matching System</h2>
+                                        <h2 className="text-2xl font-bold text-gray-900">🎯 Smart Matching System</h2>
                                         <p className="text-antigravity-muted">Find and match the perfect reps for your gigs</p>
                                     </div>
                                     <button
@@ -777,7 +777,7 @@ export const MatchingDashboard = () => {
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center space-x-2">
-                                                        <h2 className="text-lg font-bold text-white">Matching Weights Configuration</h2>
+                                                        <h2 className="text-lg font-bold text-gray-900">Matching Weights Configuration</h2>
                                                         {hasUnsavedChanges && (
                                                             <span className="inline-flex items-center px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-sm font-medium animate-pulse border border-yellow-500/30">
                                                                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -794,7 +794,7 @@ export const MatchingDashboard = () => {
                                                 <button
                                                     onClick={resetWeights}
                                                     disabled={loading}
-                                                    className="px-6 py-3 bg-antigravity-bg border border-antigravity-border text-antigravity-text hover:text-white rounded-xl shadow-lg hover:border-antigravity-muted transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5"
+                                                    className="px-6 py-3 bg-white border border-antigravity-border text-antigravity-text hover:text-gray-900 rounded-xl shadow-lg hover:border-antigravity-muted transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5"
                                                 >
                                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -958,7 +958,7 @@ export const MatchingDashboard = () => {
                                         className="bg-antigravity-surface rounded-xl shadow-lg p-6 overflow-hidden transition-all duration-200 flex-shrink-0 border border-antigravity-border"
                                         style={{ width: `${leftColumnWidth}%`, minWidth: '280px', maxWidth: '50%' }}
                                     >
-                                        <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
+                                        <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center space-x-2">
                                             <Briefcase size={20} className="text-antigravity-primary" />
                                             <span>Available Gigs</span>
                                         </h3>
@@ -980,10 +980,10 @@ export const MatchingDashboard = () => {
                                                             <div className="flex items-center space-x-3 mb-3">
                                                                 <div className={`p-2 rounded-lg ${selectedGig?._id === gig._id ? "bg-antigravity-primary" : "bg-antigravity-surface border border-antigravity-border"
                                                                     }`}>
-                                                                    <Briefcase size={16} className={`text-white ${selectedGig?._id === gig._id ? "" : "opacity-50"}`} />
+                                                                    <Briefcase size={16} className={`${selectedGig?._id === gig._id ? "text-white" : "text-gray-500 opacity-50"}`} />
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
-                                                                    <h4 className={`font-bold text-sm ${selectedGig?._id === gig._id ? "text-white" : "text-antigravity-text"
+                                                                    <h4 className={`font-bold text-sm ${selectedGig?._id === gig._id ? "text-white" : "text-gray-900"
                                                                         }`}>
                                                                         {gig.title}
                                                                     </h4>
@@ -1007,7 +1007,7 @@ export const MatchingDashboard = () => {
                                                                     e.stopPropagation();
                                                                     toggleGigDetails(gig._id || '');
                                                                 }}
-                                                                className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-antigravity-bg hover:bg-antigravity-bg/80 rounded-lg transition-all duration-200 text-sm font-medium text-antigravity-text hover:text-white"
+                                                                className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-all duration-200 text-sm font-medium text-antigravity-text hover:text-gray-900"
                                                             >
                                                                 <span>View Details</span>
                                                                 <svg
@@ -1065,7 +1065,7 @@ export const MatchingDashboard = () => {
                                                                     {/* 3. Experience */}
                                                                     <div className="flex items-center justify-between">
                                                                         <span className="text-antigravity-muted font-medium">Experience:</span>
-                                                                        <span className="font-semibold text-white">{gig.seniority?.yearsExperience || 'N/A'} years</span>
+                                                                        <span className="font-semibold text-gray-900">{gig.seniority?.yearsExperience || 'N/A'} years</span>
                                                                     </div>
 
                                                                     {/* 4. Languages */}
@@ -1087,7 +1087,7 @@ export const MatchingDashboard = () => {
                                                                     {gig.availability && (
                                                                         <div>
                                                                             <span className="text-antigravity-muted font-medium">Availability:</span>
-                                                                            <p className="font-semibold text-white">
+                                                                            <p className="font-semibold text-gray-900">
                                                                                 {gig.availability.schedule ? `${gig.availability.schedule.length} days/week` :
                                                                                     gig.availability.hoursPerWeek ? `${gig.availability.hoursPerWeek}h/week` :
                                                                                         (gig.availability as any).workingHours && typeof (gig.availability as any).workingHours === 'string' ? (gig.availability as any).workingHours :
@@ -1144,7 +1144,7 @@ export const MatchingDashboard = () => {
                                                                         {gig.region && (
                                                                             <div>
                                                                                 <span className="text-antigravity-muted font-medium">Region:</span>
-                                                                                <p className="font-semibold text-white">
+                                                                                <p className="font-semibold text-gray-900">
                                                                                     {typeof gig.region === 'string' ? gig.region : (gig.region as any).name || 'Unknown Region'}
                                                                                 </p>
                                                                             </div>
@@ -1152,7 +1152,7 @@ export const MatchingDashboard = () => {
                                                                         {gig.timezone && (
                                                                             <div>
                                                                                 <span className="text-antigravity-muted font-medium">Timezone:</span>
-                                                                                <p className="font-semibold text-white">
+                                                                                <p className="font-semibold text-gray-900">
                                                                                     {typeof gig.timezone === 'string'
                                                                                         ? gig.timezone
                                                                                         : (gig.timezone as any).name || (gig.timezone as any).timezoneName || 'Unknown Timezone'}
@@ -1183,7 +1183,7 @@ export const MatchingDashboard = () => {
                                     <div
                                         className="bg-antigravity-surface rounded-xl shadow-lg p-6 overflow-hidden transition-all duration-200 flex-1 min-w-0 border border-antigravity-border"
                                     >
-                                        <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
+                                        <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center space-x-2">
                                             <Users size={20} className="text-antigravity-primary" />
                                             <span>{selectedGig ? `Matches for "${selectedGig.title}"` : 'Select a Gig to See Matches'}</span>
                                         </h3>
@@ -1192,7 +1192,7 @@ export const MatchingDashboard = () => {
                                             <div className="text-center py-12">
                                                 <div className="bg-antigravity-bg rounded-xl p-8 max-w-md mx-auto border border-antigravity-border">
                                                     <Briefcase size={48} className="text-antigravity-muted mx-auto mb-4" />
-                                                    <p className="text-white text-lg mb-2">No gig selected</p>
+                                                    <p className="text-gray-900 text-lg mb-2">No gig selected</p>
                                                     <p className="text-sm text-antigravity-muted">Choose a gig from the left to see matching reps</p>
                                                 </div>
                                             </div>
@@ -1228,9 +1228,9 @@ export const MatchingDashboard = () => {
 
 
                                                     const matchScore = Math.round((match.totalMatchingScore || 0) * 100);
-                                                    const cardBgColor = matchScore >= 70 ? 'bg-antigravity-bg border-green-500/30 hover:border-green-500/60 shadow-[0_0_15px_rgba(34,197,94,0.1)]' :
-                                                        matchScore >= 50 ? 'bg-antigravity-bg border-yellow-500/30 hover:border-yellow-500/60 shadow-[0_0_15px_rgba(234,179,8,0.1)]' :
-                                                            'bg-antigravity-bg border-red-500/30 hover:border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.1)]';
+                                                    const cardBgColor = matchScore >= 70 ? 'bg-white border-green-500/30 hover:border-green-500/60 shadow-[0_0_15px_rgba(34,197,94,0.1)]' :
+                                                        matchScore >= 50 ? 'bg-white border-yellow-500/30 hover:border-yellow-500/60 shadow-[0_0_15px_rgba(234,179,8,0.1)]' :
+                                                            'bg-white border-red-500/30 hover:border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.1)]';
 
                                                     const isExpanded = expandedReps.has(match.agentId);
 
@@ -1241,7 +1241,7 @@ export const MatchingDashboard = () => {
                                                                 <div className="flex-1 min-w-0">
                                                                     <div className="flex items-center gap-3 mb-2">
                                                                         <h4
-                                                                            className="text-lg font-bold text-white truncate cursor-pointer hover:text-antigravity-primary transition-colors"
+                                                                            className="text-lg font-bold text-gray-900 truncate cursor-pointer hover:text-antigravity-primary transition-colors"
                                                                             onClick={() => toggleRepDetails(match.agentId)}
                                                                         >
                                                                             {match.agentInfo?.name}
