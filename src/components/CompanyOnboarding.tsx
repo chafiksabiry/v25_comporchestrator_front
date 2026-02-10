@@ -1021,7 +1021,8 @@ const CompanyOnboarding = () => {
       }
 
       if (stepId === 4) {
-        window.location.href = "/app11";
+        console.log("✅ Opening GigDetails for review");
+        setShowGigDetails(true);
         return;
       }
 
