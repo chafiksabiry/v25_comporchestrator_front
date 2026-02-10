@@ -2158,7 +2158,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                                   <div className="flex items-center space-x-2">
                                     <MapPin className="h-4 w-4 text-gray-400" />
                                     <span className="text-gray-600 truncate">
-                                      <span className="font-medium">City:</span> {lead.City || 'N/A'}
+                                      <span className="font-medium">Adresse:</span> {lead.City || 'N/A'}
                                     </span>
                                   </div>
                                   <div className="flex items-center space-x-2">
@@ -2349,25 +2349,16 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                 <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm text-center">
                   <tr>
                     <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
-                      NOM DU CLIENT
+                      Nom
                     </th>
                     <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
-                      PRENOM DU CLIENT
+                      Prénom
                     </th>
                     <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
-                      EMAIL
+                      Email
                     </th>
                     <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
-                      ADRESSE
-                    </th>
-                    <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
-                      CODE POSTAL
-                    </th>
-                    <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
-                      VILLE
-                    </th>
-                    <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
-                      DATE DE NAISSANCE
+                      Adresse
                     </th>
                     <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
                       MOBILE
