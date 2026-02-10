@@ -643,29 +643,6 @@ export const MatchingDashboard = () => {
             return newSet;
         });
     };
-
-    // Handler to go back to onboarding orchestrator
-    const handleBackToOnboarding = async () => {
-        try {
-            const companyId = Cookies.get('companyId');
-            if (!companyId) {
-                console.error('Company ID not found');
-                return;
-            }
-
-            await axios.put(
-                `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/3/steps/10`,
-                { status: "completed" }
-            );
-
-            console.log('Successfully marked step as completed');
-            // Redirect to app11
-            window.location.href = '/app11';
-        } catch (error) {
-            console.error('Error updating onboarding step:', error);
-        }
-    };
-
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 w-full max-w-full overflow-x-hidden">
             {/* Header with Navigation Tabs */}
@@ -674,16 +651,6 @@ export const MatchingDashboard = () => {
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
-                            {/* Back to Onboarding Button */}
-                            <button
-                                onClick={handleBackToOnboarding}
-                                className="flex items-center space-x-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors duration-200"
-                                title="Back to Onboarding Orchestrator"
-                            >
-                                <ArrowLeft size={18} />
-                                <span className="text-sm font-medium">Back to Onboarding</span>
-                            </button>
-
                             <div className="p-2 bg-white/20 rounded-lg">
                                 <Users size={24} className="text-harx-accent-300" />
                             </div>
