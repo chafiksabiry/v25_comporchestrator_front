@@ -36,7 +36,7 @@ import {
 import Cookies from 'js-cookie';
 import axios from 'axios';
 
-export const MatchingDashboard = ({ onAgentSelect }: { onAgentSelect: (agentId: string, gigId?: string) => void }) => {
+export const MatchingDashboard = () => {
     const [reps, setReps] = useState<Rep[]>([]);
     const [gigs, setGigs] = useState<Gig[]>([]);
     const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
@@ -54,7 +54,6 @@ export const MatchingDashboard = ({ onAgentSelect }: { onAgentSelect: (agentId: 
         activities: 0,
         region: 0,
     });
-    const [matchStats, setMatchStats] = useState<MatchResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [invitedAgents, setInvitedAgents] = useState<Set<string>>(new Set());
     const [companyInvitedAgents, setCompanyInvitedAgents] = useState<any[]>([]);
