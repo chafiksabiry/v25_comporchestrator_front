@@ -583,3 +583,36 @@ export const resetGigWeights = async (gigId: string): Promise<void> => {
         throw error;
     }
 };
+
+// ===== ONBOARDING STEP COMPLETION API =====
+
+/**
+ * Check if the "Match HARX REPS" onboarding step is completed for a company
+ * @param companyId - Company ID
+ * @returns Completion status with details
+ */
+export const checkMatchRepsStepCompletion = async (companyId: string): Promise<{
+    completed: boolean;
+    reason: string;
+    enrolledRepsCount: number;
+    invitationsSentCount: number;
+    totalGigs: number;
+    message: string;
+}> => {
+    console.log('🔍 CHECK MATCH REPS STEP COMPLETION CALLED:', companyId);
+    try {
+        const response = await fetch(`${MATCHING_API_URL}/enrollment/company/${companyId}/step-completion`);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to check step completion');
+        }
+
+        const data = await response.json();
+        console.log('✅ MATCH REPS STEP COMPLETION STATUS:', data);
+        return data;
+    } catch (error) {
+        console.error('❌ Error checking Match REPS step completion:', error);
+        throw error;
+    }
+};
