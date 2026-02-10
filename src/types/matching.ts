@@ -81,6 +81,7 @@ export interface Rep {
 }
 
 export interface Gig {
+    region: any;
     _id?: string;
     companyId: string;
     companyName: string;
@@ -110,6 +111,7 @@ export interface Gig {
         languages?: Array<{ language: string; proficiency: string }>;
     };
     availability?: {
+        hoursPerWeek: any;
         schedule?: Array<{ day: string; hours: { start: string; end: string } }>;
         time_zone?: string;
         timeZone?: string;
@@ -142,6 +144,8 @@ export interface Availability {
 
 // Nouvelle interface pour la structure de réponse de l'API
 export interface AgentInfo {
+    personalInfo: any;
+    status: string;
     name: string;
     email: string;
     photo?: string | null;
