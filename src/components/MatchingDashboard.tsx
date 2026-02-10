@@ -647,44 +647,44 @@ export const MatchingDashboard = () => {
     return (
         <div className="min-h-screen bg-antigravity-bg w-full max-w-full overflow-x-hidden text-antigravity-text">
             {/* Header with Navigation Tabs */}
-            <header className="bg-antigravity-surface border-b border-antigravity-border shadow-lg">
+            <header className="bg-antigravity-primary border-b border-antigravity-primary shadow-lg">
                 {/* Top Header */}
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-3">
-                            <div className="p-2 bg-antigravity-primary/20 rounded-lg">
-                                <Users size={24} className="text-antigravity-primary" />
+                            <div className="p-2 bg-white/10 rounded-lg">
+                                <Users size={24} className="text-white" />
                             </div>
                             <div>
                                 <h1 className="text-2xl font-bold text-white">Reps Management System</h1>
-                                <p className="text-antigravity-muted text-sm">Manage reps through their complete lifecycle</p>
+                                <p className="text-blue-100 text-sm">Manage reps through their complete lifecycle</p>
                             </div>
                         </div>
 
                         {/* Quick Stats */}
-                        <div className="hidden lg:flex items-center space-x-6 px-4 py-2 bg-antigravity-bg/50 border border-antigravity-border rounded-lg text-sm">
+                        <div className="hidden lg:flex items-center space-x-6 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-sm">
                             <div className="text-center">
-                                <div className="font-bold text-lg text-antigravity-secondary">{reps.length}</div>
-                                <div className="text-antigravity-muted text-xs">Total Reps</div>
+                                <div className="font-bold text-lg text-white">{reps.length}</div>
+                                <div className="text-blue-100 text-xs">Total Reps</div>
                             </div>
                             <div className="text-center">
-                                <div className="font-bold text-lg text-antigravity-accent">{invitedAgentsList.length}</div>
-                                <div className="text-antigravity-muted text-xs">Invited</div>
+                                <div className="font-bold text-lg text-white">{invitedAgentsList.length}</div>
+                                <div className="text-blue-100 text-xs">Invited</div>
                             </div>
                             <div className="text-center">
-                                <div className="font-bold text-lg text-yellow-400">{enrollmentRequests.length}</div>
-                                <div className="text-antigravity-muted text-xs">Requests</div>
+                                <div className="font-bold text-lg text-white">{enrollmentRequests.length}</div>
+                                <div className="text-blue-100 text-xs">Requests</div>
                             </div>
                             <div className="text-center">
-                                <div className="font-bold text-lg text-green-400">{activeAgentsList.length}</div>
-                                <div className="text-antigravity-muted text-xs">Active</div>
+                                <div className="font-bold text-lg text-white">{activeAgentsList.length}</div>
+                                <div className="text-blue-100 text-xs">Active</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Navigation Tabs */}
-                <div className="border-t border-antigravity-border">
+                <div className="border-t border-white/20">
                     <div className="container mx-auto px-4">
                         <nav className="flex space-x-0">
                             {[
@@ -696,18 +696,18 @@ export const MatchingDashboard = () => {
                                 <button
                                     key={section.id}
                                     onClick={() => setActiveSection(section.id as any)}
-                                    className={`flex-1 px-4 py-4 text-left transition-all duration-200 border-b-2 ${activeSection === section.id
-                                        ? 'border-antigravity-primary bg-antigravity-primary/10'
-                                        : 'border-transparent hover:bg-antigravity-bg/30 text-antigravity-muted hover:text-white'
+                                    className={`flex-1 px-4 py-4 text-left transition-all duration-200 border-b-4 ${activeSection === section.id
+                                        ? 'border-white bg-white/10'
+                                        : 'border-transparent hover:bg-white/5 text-blue-100 hover:text-white'
                                         }`}
                                 >
                                     <div className="flex items-center space-x-3">
                                         <span className="text-xl">{section.icon}</span>
                                         <div>
-                                            <div className={`font-medium ${activeSection === section.id ? 'text-antigravity-primary' : 'text-antigravity-muted group-hover:text-white'}`}>
+                                            <div className={`font-medium ${activeSection === section.id ? 'text-white' : 'text-blue-100 group-hover:text-white'}`}>
                                                 {section.label}
                                             </div>
-                                            <div className="text-antigravity-muted text-xs opacity-80">{section.description}</div>
+                                            <div className={`text-xs opacity-80 ${activeSection === section.id ? 'text-white' : 'text-blue-200'}`}>{section.description}</div>
                                         </div>
                                     </div>
                                 </button>
@@ -752,14 +752,14 @@ export const MatchingDashboard = () => {
                             <div className="space-y-6">
                                 <div className="flex justify-between items-center">
                                     <div>
-                                        <h2 className="text-2xl font-bold text-white">🎯 Smart Matching System</h2>
+                                        <h2 className="text-2xl font-bold text-antigravity-text">🎯 Smart Matching System</h2>
                                         <p className="text-antigravity-muted">Find and match the perfect reps for your gigs</p>
                                     </div>
                                     <button
                                         onClick={() => setShowWeights(!showWeights)}
                                         className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 text-sm font-medium ${showWeights
-                                            ? 'bg-antigravity-accent text-white hover:bg-red-600'
-                                            : 'bg-antigravity-surface border border-antigravity-border text-antigravity-text hover:bg-antigravity-bg'
+                                            ? 'bg-antigravity-primary text-white hover:bg-indigo-700'
+                                            : 'bg-white border border-antigravity-border text-antigravity-text hover:bg-gray-50'
                                             }`}
                                     >
                                         <Settings size={16} className={showWeights ? 'rotate-180' : ''} />
@@ -772,12 +772,12 @@ export const MatchingDashboard = () => {
                                     <div className="bg-antigravity-surface rounded-xl shadow-lg p-6 mb-6 transform transition-all duration-300 ease-in-out border border-antigravity-border overflow-hidden">
                                         <div className="flex justify-between items-center mb-4">
                                             <div className="flex items-center space-x-3">
-                                                <div className="p-2 bg-antigravity-primary/20 rounded-lg shadow-sm border border-antigravity-primary/30">
+                                                <div className="p-2 bg-antigravity-primary/10 rounded-lg shadow-sm border border-antigravity-primary/20">
                                                     <Settings size={20} className="text-antigravity-primary" />
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center space-x-2">
-                                                        <h2 className="text-lg font-bold text-white">Matching Weights Configuration</h2>
+                                                        <h2 className="text-lg font-bold text-antigravity-text">Matching Weights Configuration</h2>
                                                         {hasUnsavedChanges && (
                                                             <span className="inline-flex items-center px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-sm font-medium animate-pulse border border-yellow-500/30">
                                                                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -794,7 +794,7 @@ export const MatchingDashboard = () => {
                                                 <button
                                                     onClick={resetWeights}
                                                     disabled={loading}
-                                                    className="px-6 py-3 bg-antigravity-bg border border-antigravity-border text-antigravity-text hover:text-white rounded-xl shadow-lg hover:border-antigravity-muted transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5"
+                                                    className="px-6 py-3 bg-gray-600 text-white hover:bg-gray-700 rounded-xl shadow-lg transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5"
                                                 >
                                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />

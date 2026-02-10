@@ -3,10 +3,10 @@
 @tailwind utilities;
 
 body {
-  background-color: #0F172A;
-  /* antigravity-bg (Dark Slate) */
-  color: #F8FAFC;
-  /* antigravity-text (White) */
+  background-color: #F8FAFC;
+  /* antigravity-bg (Slate-50) */
+  color: #0F172A;
+  /* antigravity-text (Slate-900) */
 }
 
 /* Custom scrollbar styles */
