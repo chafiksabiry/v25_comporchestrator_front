@@ -958,7 +958,7 @@ export const MatchingDashboard = () => {
                                         className="bg-antigravity-surface rounded-xl shadow-lg p-6 overflow-hidden transition-all duration-200 flex-shrink-0 border border-antigravity-border"
                                         style={{ width: `${leftColumnWidth}%`, minWidth: '280px', maxWidth: '50%' }}
                                     >
-                                        <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
+                                        <h3 className="text-xl font-semibold text-antigravity-text mb-4 flex items-center space-x-2">
                                             <Briefcase size={20} className="text-antigravity-primary" />
                                             <span>Available Gigs</span>
                                         </h3>
@@ -968,9 +968,9 @@ export const MatchingDashboard = () => {
                                                 const isGigExpanded = expandedGigs.has(gig._id || '');
 
                                                 return (
-                                                    <div key={gig._id} className={`bg-antigravity-bg/50 rounded-lg border transition-all duration-200 ${selectedGig?._id === gig._id
-                                                        ? "border-antigravity-primary shadow-lg bg-antigravity-primary/10"
-                                                        : "border-antigravity-border hover:border-antigravity-muted hover:bg-antigravity-bg"
+                                                    <div key={gig._id} className={`bg-white rounded-lg border transition-all duration-200 ${selectedGig?._id === gig._id
+                                                        ? "border-antigravity-primary shadow-lg bg-antigravity-primary text-white"
+                                                        : "border-antigravity-border hover:border-antigravity-muted hover:bg-gray-50"
                                                         }`}>
                                                         {/* Gig Header - Clickable for selection */}
                                                         <div
@@ -980,7 +980,7 @@ export const MatchingDashboard = () => {
                                                             <div className="flex items-center space-x-3 mb-3">
                                                                 <div className={`p-2 rounded-lg ${selectedGig?._id === gig._id ? "bg-antigravity-primary" : "bg-antigravity-surface border border-antigravity-border"
                                                                     }`}>
-                                                                    <Briefcase size={16} className={`text-white ${selectedGig?._id === gig._id ? "" : "opacity-50"}`} />
+                                                                    <Briefcase size={16} className={`${selectedGig?._id === gig._id ? "text-white" : "text-antigravity-muted"}`} />
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
                                                                     <h4 className={`font-bold text-sm ${selectedGig?._id === gig._id ? "text-white" : "text-antigravity-text"
@@ -1007,7 +1007,9 @@ export const MatchingDashboard = () => {
                                                                     e.stopPropagation();
                                                                     toggleGigDetails(gig._id || '');
                                                                 }}
-                                                                className="w-full flex items-center justify-center space-x-2 px-3 py-2 bg-antigravity-bg hover:bg-antigravity-bg/80 rounded-lg transition-all duration-200 text-sm font-medium text-antigravity-text hover:text-white"
+                                                                className={`w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${selectedGig?._id === gig._id
+                                                                    ? "bg-white/20 text-white hover:bg-white/30"
+                                                                    : "bg-gray-100 hover:bg-gray-200 text-antigravity-text hover:text-antigravity-primary"}`}
                                                             >
                                                                 <span>View Details</span>
                                                                 <svg
@@ -1065,7 +1067,7 @@ export const MatchingDashboard = () => {
                                                                     {/* 3. Experience */}
                                                                     <div className="flex items-center justify-between">
                                                                         <span className="text-antigravity-muted font-medium">Experience:</span>
-                                                                        <span className="font-semibold text-white">{gig.seniority?.yearsExperience || 'N/A'} years</span>
+                                                                        <span className="font-semibold">{gig.seniority?.yearsExperience || 'N/A'} years</span>
                                                                     </div>
 
                                                                     {/* 4. Languages */}
@@ -1087,7 +1089,7 @@ export const MatchingDashboard = () => {
                                                                     {gig.availability && (
                                                                         <div>
                                                                             <span className="text-antigravity-muted font-medium">Availability:</span>
-                                                                            <p className="font-semibold text-white">
+                                                                            <p className="font-semibold">
                                                                                 {gig.availability.schedule ? `${gig.availability.schedule.length} days/week` :
                                                                                     gig.availability.hoursPerWeek ? `${gig.availability.hoursPerWeek}h/week` :
                                                                                         (gig.availability as any).workingHours && typeof (gig.availability as any).workingHours === 'string' ? (gig.availability as any).workingHours :
@@ -1144,7 +1146,7 @@ export const MatchingDashboard = () => {
                                                                         {gig.region && (
                                                                             <div>
                                                                                 <span className="text-antigravity-muted font-medium">Region:</span>
-                                                                                <p className="font-semibold text-white">
+                                                                                <p className="font-semibold">
                                                                                     {typeof gig.region === 'string' ? gig.region : (gig.region as any).name || 'Unknown Region'}
                                                                                 </p>
                                                                             </div>
@@ -1152,7 +1154,7 @@ export const MatchingDashboard = () => {
                                                                         {gig.timezone && (
                                                                             <div>
                                                                                 <span className="text-antigravity-muted font-medium">Timezone:</span>
-                                                                                <p className="font-semibold text-white">
+                                                                                <p className="font-semibold">
                                                                                     {typeof gig.timezone === 'string'
                                                                                         ? gig.timezone
                                                                                         : (gig.timezone as any).name || (gig.timezone as any).timezoneName || 'Unknown Timezone'}
@@ -1183,7 +1185,7 @@ export const MatchingDashboard = () => {
                                     <div
                                         className="bg-antigravity-surface rounded-xl shadow-lg p-6 overflow-hidden transition-all duration-200 flex-1 min-w-0 border border-antigravity-border"
                                     >
-                                        <h3 className="text-xl font-semibold text-white mb-4 flex items-center space-x-2">
+                                        <h3 className="text-xl font-semibold text-antigravity-text mb-4 flex items-center space-x-2">
                                             <Users size={20} className="text-antigravity-primary" />
                                             <span>{selectedGig ? `Matches for "${selectedGig.title}"` : 'Select a Gig to See Matches'}</span>
                                         </h3>
@@ -1192,7 +1194,7 @@ export const MatchingDashboard = () => {
                                             <div className="text-center py-12">
                                                 <div className="bg-antigravity-bg rounded-xl p-8 max-w-md mx-auto border border-antigravity-border">
                                                     <Briefcase size={48} className="text-antigravity-muted mx-auto mb-4" />
-                                                    <p className="text-white text-lg mb-2">No gig selected</p>
+                                                    <p className="text-antigravity-text text-lg mb-2">No gig selected</p>
                                                     <p className="text-sm text-antigravity-muted">Choose a gig from the left to see matching reps</p>
                                                 </div>
                                             </div>
@@ -1228,9 +1230,9 @@ export const MatchingDashboard = () => {
 
 
                                                     const matchScore = Math.round((match.totalMatchingScore || 0) * 100);
-                                                    const cardBgColor = matchScore >= 70 ? 'bg-antigravity-bg border-green-500/30 hover:border-green-500/60 shadow-[0_0_15px_rgba(34,197,94,0.1)]' :
-                                                        matchScore >= 50 ? 'bg-antigravity-bg border-yellow-500/30 hover:border-yellow-500/60 shadow-[0_0_15px_rgba(234,179,8,0.1)]' :
-                                                            'bg-antigravity-bg border-red-500/30 hover:border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.1)]';
+                                                    const cardBgColor = matchScore >= 70 ? 'bg-white border-green-500/30 hover:border-green-500/60 shadow-lg' :
+                                                        matchScore >= 50 ? 'bg-white border-yellow-500/30 hover:border-yellow-500/60 shadow-lg' :
+                                                            'bg-white border-red-500/30 hover:border-red-500/60 shadow-lg';
 
                                                     const isExpanded = expandedReps.has(match.agentId);
 
@@ -1241,7 +1243,7 @@ export const MatchingDashboard = () => {
                                                                 <div className="flex-1 min-w-0">
                                                                     <div className="flex items-center gap-3 mb-2">
                                                                         <h4
-                                                                            className="text-lg font-bold text-white truncate cursor-pointer hover:text-antigravity-primary transition-colors"
+                                                                            className="text-lg font-bold text-antigravity-text truncate cursor-pointer hover:text-antigravity-primary transition-colors"
                                                                             onClick={() => toggleRepDetails(match.agentId)}
                                                                         >
                                                                             {match.agentInfo?.name}
@@ -1323,7 +1325,7 @@ export const MatchingDashboard = () => {
                                                                         {match.skillsMatch && (
                                                                             <div className="bg-antigravity-surface rounded-lg p-4 shadow-sm">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-white">Skills Match</h5>
+                                                                                    <h5 className="font-semibold text-antigravity-text">Skills Match</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.skillsMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.skillsMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
@@ -1356,7 +1358,7 @@ export const MatchingDashboard = () => {
                                                                         {match.languageMatch && (
                                                                             <div className="bg-antigravity-surface rounded-lg p-4 shadow-sm">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-white">Languages</h5>
+                                                                                    <h5 className="font-semibold text-antigravity-text">Languages</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.languageMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.languageMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
@@ -1390,7 +1392,7 @@ export const MatchingDashboard = () => {
                                                                         {match.industryMatch && (
                                                                             <div className="bg-antigravity-surface rounded-lg p-4 shadow-sm">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <h5 className="font-semibold text-white">Industry</h5>
+                                                                                    <h5 className="font-semibold text-antigravity-text">Industry</h5>
                                                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${Math.round((match.industryMatch.score || 0) * 100) >= 70 ? 'bg-green-100 text-green-800' :
                                                                                         Math.round((match.industryMatch.score || 0) * 100) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                                                                                             'bg-red-100 text-red-800'
