@@ -1305,7 +1305,7 @@ const CompanyOnboarding = () => {
           description: "Schedule call slots and prioritize leads",
           status: "pending",
           component: SessionPlanning,
-          disabled: true,
+          // disabled: true,
         },
       ],
     },
