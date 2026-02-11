@@ -237,8 +237,11 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         return true;
       }
       return false;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error checking gig numbers:', error);
+      if (error.details) {
+        console.error('❌ Detailed server error:', error.details);
+      }
       return false;
     }
   };
