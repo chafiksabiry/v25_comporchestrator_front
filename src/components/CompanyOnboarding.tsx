@@ -335,6 +335,9 @@ const CompanyOnboarding = () => {
   useEffect(() => {
     if (!companyId) return;
 
+    // Si l'étape 10 est déjà complétée, ne pas lancer l'intervalle
+    if (completedSteps.includes(10)) return;
+
     const interval = setInterval(() => {
       checkMatchRepsStepForAutoCompletion();
     }, 10000); // Vérifier toutes les 10 secondes
