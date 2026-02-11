@@ -334,11 +334,6 @@ const CompanyOnboarding = () => {
   // Vérifier périodiquement si l'étape 10 (Match HARX REPS) doit être marquée comme complétée
   useEffect(() => {
     if (!companyId) return;
-
-    const interval = setInterval(() => {
-      checkMatchRepsStepForAutoCompletion();
-    }, 10000); // Vérifier toutes les 10 secondes
-
     return () => clearInterval(interval);
   }, [companyId, completedSteps]);
 
@@ -797,7 +792,7 @@ const CompanyOnboarding = () => {
       console.log("🔄 Initial check for leads, gigs, and Match REPS...");
       checkCompanyLeads();
       checkActiveGigs();
-      checkMatchRepsStepForAutoCompletion();
+      // checkMatchRepsStepForAutoCompletion();
     }
   }, [companyId]);
 
