@@ -33,7 +33,7 @@ import GigDetails from "./onboarding/GigDetails";
 import KnowledgeBase from "./onboarding/KnowledgeBase";
 import ApprovalPublishing from "./ApprovalPublishing";
 import ZohoService from "../services/zohoService";
-
+import { checkMatchRepsStepCompletion } from "../api/matching";
 
 interface BaseStep {
   id: number;
@@ -331,9 +331,91 @@ const CompanyOnboarding = () => {
     return () => clearInterval(interval);
   }, [companyId, completedSteps]);
 
+  // Vérifier périodiquement si l'étape 10 (Match HARX REPS) doit être marquée comme complétée
+  useEffect(() => {
+    if (!companyId) return;
 
+    const interval = setInterval(() => {
+      checkMatchRepsStepForAutoCompletion();
+    }, 10000); // Vérifier toutes les 10 secondes
 
+    return () => clearInterval(interval);
+  }, [companyId, completedSteps]);
 
+  // Fonction pour auto-compléter l'étape 10 (Match HARX REPS) si des REPS sont invités ou enrolled
+  const checkMatchRepsStepForAutoCompletion = async () => {
+    console.log('🔍 [Step 10 Check] Function called', {
+      companyId,
+      completedSteps,
+      includesStep10: completedSteps.includes(10)
+    });
+
+    try {
+      if (!companyId) {
+        console.log('⚠️ [Step 10 Check] No companyId available');
+        return;
+      }
+
+      if (completedSteps.includes(10)) {
+        console.log('✅ [Step 10 Check] Step already completed, skipping');
+        return; // Step already completed or no company ID
+      }
+
+      console.log('🌐 [Step 10 Check] Calling API endpoint for company:', companyId);
+
+      const response = await checkMatchRepsStepCompletion(companyId);
+      console.log('📥 [Step 10 Check] API Response:', response);
+
+      if (response.completed) {
+        console.log('✅ Company has invited/enrolled REPS - auto-completing step 10');
+        console.log('📊 Details:', {
+          enrolledRepsCount: response.enrolledRepsCount,
+          invitationsSentCount: response.invitationsSentCount,
+          requestedCount: response.requestedCount,
+          reason: response.reason
+        });
+
+        try {
+          await axios.put(
+            `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/3/steps/10`,
+            { status: 'completed' }
+          );
+          console.log('✅ [Step 10 Check] Backend updated successfully');
+
+          // Update local state to reflect the completed step
+          setCompletedSteps((prev: any) => {
+            if (!prev.includes(10)) {
+              const newSteps = [...prev, 10];
+              console.log('✅ Step 10 auto-completed successfully - updating local state');
+
+              // Update localStorage as well
+              const currentProgress = {
+                currentPhase: 3,
+                completedSteps: newSteps,
+                lastUpdated: new Date().toISOString()
+              };
+              localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+
+              return newSteps;
+            }
+            return prev;
+          });
+
+        } catch (error) {
+          console.error('Error auto-completing step 10:', error);
+        }
+      } else {
+        console.log('⏳ [Step 10 Check] Step not yet completed', {
+          enrolledRepsCount: response.enrolledRepsCount,
+          invitationsSentCount: response.invitationsSentCount,
+          requestedCount: response.requestedCount,
+          reason: response.reason
+        });
+      }
+    } catch (error) {
+      console.error('❌ [Step 10 Check] Error checking Match REPS step for auto-completion:', error);
+    }
+  };
 
   // Fonction pour auto-compléter l'étape 6 si des leads existent
   const checkCompanyLeadsForAutoCompletion = async () => {
@@ -715,7 +797,7 @@ const CompanyOnboarding = () => {
       console.log("🔄 Initial check for leads, gigs, and Match REPS...");
       checkCompanyLeads();
       checkActiveGigs();
-
+      checkMatchRepsStepForAutoCompletion();
     }
   }, [companyId]);
 
