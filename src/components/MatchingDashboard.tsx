@@ -955,22 +955,29 @@ export const MatchingDashboard = () => {
                                 <div className="resizable-container flex gap-4 w-full max-w-full overflow-hidden">
                                     {/* Left Column: Gig Selection */}
                                     <div
-                                        className="bg-antigravity-surface rounded-xl shadow-lg p-6 overflow-hidden transition-all duration-200 flex-shrink-0 border border-antigravity-border"
+                                        className="bg-white rounded-xl shadow-xl p-6 overflow-hidden transition-all duration-200 flex-shrink-0 border border-indigo-100/50 backdrop-blur-sm"
                                         style={{ width: `${leftColumnWidth}%`, minWidth: '280px', maxWidth: '50%' }}
                                     >
-                                        <h3 className="text-xl font-semibold text-antigravity-text mb-4 flex items-center space-x-2">
-                                            <Briefcase size={20} className="text-antigravity-primary" />
-                                            <span>Available Gigs</span>
-                                        </h3>
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h3 className="text-xl font-bold text-gray-800 flex items-center space-x-2">
+                                                <div className="p-2 bg-indigo-100 rounded-lg">
+                                                    <Briefcase size={20} className="text-indigo-600" />
+                                                </div>
+                                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">Available Gigs</span>
+                                            </h3>
+                                            <span className="bg-indigo-50 text-indigo-600 py-1 px-3 rounded-full text-xs font-bold border border-indigo-100">
+                                                {gigs.length}
+                                            </span>
+                                        </div>
 
-                                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                                        <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                                             {gigs.map((gig: Gig) => {
                                                 const isGigExpanded = expandedGigs.has(gig._id || '');
 
                                                 return (
-                                                    <div key={gig._id} className={`bg-white rounded-lg border transition-all duration-200 ${selectedGig?._id === gig._id
-                                                        ? "border-antigravity-primary shadow-lg bg-antigravity-primary text-white"
-                                                        : "border-antigravity-border hover:border-antigravity-muted hover:bg-gray-50"
+                                                    <div key={gig._id} className={`group relative rounded-xl border transition-all duration-300 ${selectedGig?._id === gig._id
+                                                        ? "border-indigo-500 shadow-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white transform scale-[1.02] ring-2 ring-indigo-200 ring-offset-2"
+                                                        : "bg-white border-gray-100 hover:border-indigo-200 hover:shadow-lg hover:bg-indigo-50/30"
                                                         }`}>
                                                         {/* Gig Header - Clickable for selection */}
                                                         <div
@@ -978,16 +985,18 @@ export const MatchingDashboard = () => {
                                                             onClick={() => handleGigSelect(gig)}
                                                         >
                                                             <div className="flex items-center space-x-3 mb-3">
-                                                                <div className={`p-2 rounded-lg ${selectedGig?._id === gig._id ? "bg-white/20" : "bg-antigravity-primary/10 border border-antigravity-primary/20"
+                                                                <div className={`p-2.5 rounded-xl transition-colors duration-200 ${selectedGig?._id === gig._id
+                                                                    ? "bg-white/20 backdrop-blur-sm"
+                                                                    : "bg-indigo-50 group-hover:bg-white shadow-sm"
                                                                     }`}>
-                                                                    <Briefcase size={16} className={`${selectedGig?._id === gig._id ? "text-white" : "text-antigravity-primary"}`} />
+                                                                    <Briefcase size={18} className={`${selectedGig?._id === gig._id ? "text-white" : "text-indigo-600"}`} />
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
-                                                                    <h4 className={`font-bold text-sm ${selectedGig?._id === gig._id ? "text-white" : "text-antigravity-text"
+                                                                    <h4 className={`font-bold text-sm mb-0.5 ${selectedGig?._id === gig._id ? "text-white" : "text-gray-800"
                                                                         }`}>
                                                                         {gig.title}
                                                                     </h4>
-                                                                    <p className={`text-xs truncate ${selectedGig?._id === gig._id ? "text-blue-100" : "text-antigravity-muted"}`}>{gig.companyName}</p>
+                                                                    <p className={`text-xs truncate font-medium ${selectedGig?._id === gig._id ? "text-indigo-100" : "text-gray-500"}`}>{gig.companyName}</p>
                                                                 </div>
                                                             </div>
 
@@ -1008,8 +1017,8 @@ export const MatchingDashboard = () => {
                                                                     toggleGigDetails(gig._id || '');
                                                                 }}
                                                                 className={`w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${selectedGig?._id === gig._id
-                                                                    ? "bg-white/20 text-white hover:bg-white/30"
-                                                                    : "bg-gray-100 hover:bg-gray-200 text-antigravity-text hover:text-antigravity-primary"}`}
+                                                                    ? "bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm"
+                                                                    : "bg-indigo-50/50 hover:bg-indigo-100 text-indigo-700"}`}
                                                             >
                                                                 <span>View Details</span>
                                                                 <svg
