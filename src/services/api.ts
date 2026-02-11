@@ -45,7 +45,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   // Add timeout and validation
-  timeout: 300000, // 30 seconds
+  timeout: 30000, // 30 seconds
   validateStatus: (status: number) => {
     return status >= 200 && status < 500; // Don't reject if status is 4xx to handle it in service
   },
