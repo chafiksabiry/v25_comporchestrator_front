@@ -191,7 +191,7 @@ export default function SessionPlanning() {
     if (userRole === 'company') {
       return (
         <CompanyView
-          company={SAMPLE_COMPANIES[0]}
+          company={SAMPLE_COMPANIES[0].name}
           slots={slots}
           projects={SAMPLE_PROJECTS}
           reps={SAMPLE_REPS}
@@ -381,8 +381,8 @@ export default function SessionPlanning() {
               <button
                 onClick={() => setActiveTab('schedule')}
                 className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'schedule'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
                 <span className="flex items-center">
@@ -393,8 +393,8 @@ export default function SessionPlanning() {
               <button
                 onClick={() => setActiveTab('performance')}
                 className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'performance'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
                 <span className="flex items-center">
@@ -405,8 +405,8 @@ export default function SessionPlanning() {
               <button
                 onClick={() => setActiveTab('attendance')}
                 className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'attendance'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
                 <span className="flex items-center">
@@ -417,8 +417,8 @@ export default function SessionPlanning() {
               <button
                 onClick={() => setActiveTab('workload')}
                 className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'workload'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
                 <span className="flex items-center">
