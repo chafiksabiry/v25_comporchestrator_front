@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { format, startOfWeek, addDays, startOfMonth, endOfMonth, endOfWeek, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
 import { TimeSlot } from '../../types/scheduler';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock } from 'lucide-react';
 
 interface CalendarProps {
     selectedDate: Date;
@@ -25,27 +25,32 @@ export function Calendar({ selectedDate, onDateSelect, slots, view = 'month' }: 
 
     const renderHeader = () => {
         return (
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                    <CalendarIcon className="w-5 h-5 text-gray-600 mr-2" />
-                    <h2 className="text-lg font-semibold text-gray-800">
-                        {format(currentMonth, 'MMMM yyyy')}
-                    </h2>
+            <div className="flex items-center justify-between mb-6 px-2">
+                <div className="flex items-center space-x-4">
+                    <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                        <CalendarIcon className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-900 leading-none">
+                            {format(currentMonth, 'MMMM yyyy')}
+                        </h2>
+                        <p className="text-sm text-gray-500 mt-1">Manage your team's schedule</p>
+                    </div>
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex bg-gray-100 rounded-lg p-1 space-x-1">
                     <button
                         onClick={prevMonth}
-                        className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                        className="p-2 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-600 hover:text-gray-900"
                         aria-label="Previous Month"
                     >
-                        <ChevronLeft className="w-5 h-5 text-gray-600" />
+                        <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button
                         onClick={nextMonth}
-                        className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                        className="p-2 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-600 hover:text-gray-900"
                         aria-label="Next Month"
                     >
-                        <ChevronRight className="w-5 h-5 text-gray-600" />
+                        <ChevronRight className="w-5 h-5" />
                     </button>
                 </div>
             </div>
@@ -59,12 +64,12 @@ export function Calendar({ selectedDate, onDateSelect, slots, view = 'month' }: 
 
         for (let i = 0; i < 7; i++) {
             days.push(
-                <div className="text-center font-bold text-gray-500 text-xs uppercase tracking-wider py-2" key={i}>
+                <div className="text-center font-semibold text-gray-400 text-xs uppercase tracking-wider py-3" key={i}>
                     {format(addDays(startDate, i), dateFormat)}
                 </div>
             );
         }
-        return <div className="grid grid-cols-7 mb-2 border-b border-gray-200 pb-2">{days}</div>;
+        return <div className="grid grid-cols-7 mb-2">{days}</div>;
     };
 
     const renderCells = () => {
@@ -85,39 +90,56 @@ export function Calendar({ selectedDate, onDateSelect, slots, view = 'month' }: 
                 const cloneDay = day;
                 const isSelected = isSameDay(day, selectedDate);
                 const isCurrentMonth = isSameMonth(day, monthStart);
+                const isToday = isSameDay(day, new Date());
+
                 const daySlots = slots.filter(slot => slot.date === format(cloneDay, 'yyyy-MM-dd'));
                 const reservedCount = daySlots.filter(s => s.status === 'reserved').length;
+                const availableCount = daySlots.filter(s => s.status === 'available').length;
 
                 days.push(
                     <button
                         key={day.toString()}
                         onClick={() => onDateSelect(cloneDay)}
                         className={`
-                            h-24 p-2 border border-gray-100 flex flex-col justify-start items-start transition-all relative
-                            ${!isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white text-gray-800'}
-                            ${isSelected ? 'ring-2 ring-blue-500 z-10 bg-blue-50' : 'hover:bg-gray-50'}
+                            min-h-[120px] p-3 border border-gray-100 flex flex-col justify-between transition-all relative group
+                            ${!isCurrentMonth ? 'bg-gray-50/50 text-gray-400' : 'bg-white'}
+                            ${isSelected ? 'ring-2 ring-blue-600 shadow-md z-10' : 'hover:border-blue-200 hover:shadow-sm'}
                         `}
                     >
-                        <span className={`text-sm font-medium rounded-full w-7 h-7 flex items-center justify-center ${isSelected ? 'bg-blue-600 text-white' :
-                                isSameDay(day, new Date()) ? 'bg-gray-200 text-gray-800' : ''
-                            }`}>
-                            {formattedDate}
-                        </span>
+                        <div className="flex justify-between items-start w-full">
+                            <span className={`
+                                text-sm font-medium rounded-full w-8 h-8 flex items-center justify-center transition-colors
+                                ${isToday ? 'bg-blue-600 text-white shadow-sm' : isSelected ? 'bg-blue-50 text-blue-700' : 'text-gray-700 group-hover:bg-gray-100'}
+                            `}>
+                                {formattedDate}
+                            </span>
+                            {/* Optional: Add a subtle dot for "Today" if not selected, or just rely on the circle */}
+                        </div>
 
-                        <div className="mt-2 w-full space-y-1 overflow-y-auto max-h-[4rem] custom-scrollbar">
-                            {daySlots.length > 0 && (
+                        <div className="mt-2 w-full space-y-1.5">
+                            {daySlots.length > 0 ? (
                                 <>
                                     {reservedCount > 0 && (
-                                        <div className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-md w-full text-left truncate">
-                                            {reservedCount} scheduled
+                                        <div className="flex items-center text-xs px-2 py-1 bg-purple-50 text-purple-700 rounded-md border border-purple-100">
+                                            <Clock className="w-3 h-3 mr-1" />
+                                            <span className="font-medium">{reservedCount}</span>
+                                            <span className="ml-1 opacity-80">Booked</span>
                                         </div>
                                     )}
-                                    {daySlots.length - reservedCount > 0 && (
-                                        <div className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded-md w-full text-left truncate">
-                                            {daySlots.length - reservedCount} open
+                                    {availableCount > 0 && (
+                                        <div className="flex items-center text-xs px-2 py-1 bg-green-50 text-green-700 rounded-md border border-green-100">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5"></div>
+                                            <span className="font-medium">{availableCount}</span>
+                                            <span className="ml-1 opacity-80">Open</span>
                                         </div>
                                     )}
                                 </>
+                            ) : (
+                                isCurrentMonth && (
+                                    <div className="h-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <span className="text-xs text-gray-400 font-medium">+ Plan</span>
+                                    </div>
+                                )
                             )}
                         </div>
                     </button>
@@ -131,11 +153,11 @@ export function Calendar({ selectedDate, onDateSelect, slots, view = 'month' }: 
             );
             days = [];
         }
-        return <div className="border rounded-lg overflow-hidden bg-white shadow-sm">{rows}</div>;
+        return <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">{rows}</div>;
     };
 
     return (
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             {renderHeader()}
             {renderDays()}
             {renderCells()}
