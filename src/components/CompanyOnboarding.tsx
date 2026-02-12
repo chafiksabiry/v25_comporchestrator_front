@@ -35,7 +35,6 @@ import ApprovalPublishing from "./ApprovalPublishing";
 import ZohoService from "../services/zohoService";
 import { checkMatchRepsStepCompletion } from "../api/matching";
 
-
 interface BaseStep {
   id: number;
   title: string;
@@ -1485,8 +1484,6 @@ const CompanyOnboarding = () => {
       }
       return;
     }
-
-
 
     // Pour Upload Contacts
     if (stepId === 6) {
