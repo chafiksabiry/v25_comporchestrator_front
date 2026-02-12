@@ -4,6 +4,8 @@ import { getGigsByCompanyId, getActiveAgentsForCompany } from '../../api/matchin
 import { TimeSlot, Project, Rep } from '../../types/scheduler';
 import Cookies from 'js-cookie';
 
+import { format, addHours, startOfToday } from 'date-fns';
+
 const SessionPlanning = () => {
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -45,8 +47,35 @@ const SessionPlanning = () => {
         setProjects(mappedProjects);
         setReps(mappedReps);
 
-        // Initialize with some empty slots or fetch if available
-        setSlots([]);
+        // Generate mock slots for demonstration
+        const mockSlots: TimeSlot[] = [];
+        const today = new Date();
+        const dateStr = format(today, 'yyyy-MM-dd');
+
+        if (mappedProjects.length > 0 && mappedReps.length > 0) {
+          // Create 3-5 slots per rep
+          mappedReps.forEach((rep, index) => {
+            const numSlots = 3 + (index % 3);
+            for (let i = 0; i < numSlots; i++) {
+              const startHour = 9 + i * 2; // 9, 11, 13, etc.
+              const projectIndex = (index + i) % mappedProjects.length;
+
+              mockSlots.push({
+                id: `slot-${rep.id}-${i}`,
+                startTime: `${startHour.toString().padStart(2, '0')}:00`,
+                endTime: `${(startHour + 2).toString().padStart(2, '0')}:00`,
+                date: dateStr,
+                projectId: mappedProjects[projectIndex].id,
+                status: 'reserved',
+                duration: 2,
+                notes: `Scheduled session for ${mappedProjects[projectIndex].name}`,
+                repId: rep.id
+              });
+            }
+          });
+        }
+
+        setSlots(mockSlots);
 
       } catch (error) {
         console.error('Error fetching session planning data:', error);
