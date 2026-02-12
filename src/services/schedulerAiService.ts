@@ -161,7 +161,7 @@ export function calculatePerformanceMetrics(
     // Here we're simulating metrics based on slot data
 
     const repSlots = historicalSlots.filter(slot =>
-        rep.id === rep.id && slot.status === 'reserved'
+        slot.repId === rep.id && slot.status === 'reserved'
     );
 
     if (repSlots.length === 0) {
