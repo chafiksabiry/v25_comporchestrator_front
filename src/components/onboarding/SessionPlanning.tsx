@@ -114,15 +114,16 @@ export default function SessionPlanning() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
-  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [userRole, setUserRole] = useState<UserRole>('rep');
   const [selectedRepId, setSelectedRepId] = useState<string>(sampleReps[0].id);
-  const [selectedCompany, setSelectedCompany] = useState<string>(sampleCompanies[0].name);
+  // Replaced selectedCompany with selectedProjectId
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [aiInitialized, setAiInitialized] = useState<boolean>(false);
   const [showAIPanel, setShowAIPanel] = useState<boolean>(false);
   const [showAttendancePanel, setShowAttendancePanel] = useState<boolean>(false);
   const [reps, setReps] = useState<Rep[]>(sampleReps);
-  
+
   // Real Gigs Data
   const [projects, setProjects] = useState<Project[]>([]);
   const [loadingGigs, setLoadingGigs] = useState<boolean>(true);
@@ -141,11 +142,14 @@ export default function SessionPlanning() {
         // Using the API URL from environment matching the user's request
         const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
         const response = await axios.get(`${apiUrl}/gigs/company/${companyId}`);
-        
+
         if (response.data && response.data.data) {
           const mappedProjects = response.data.data.map(mapGigToProject);
           setProjects(mappedProjects);
-          // Only show success if we found gigs, otherwise it might be annoying on every load
+          // Set default selected project
+          if (mappedProjects.length > 0) {
+            setSelectedProjectId(mappedProjects[0].id);
+          }
           if (mappedProjects.length > 0) {
             console.log(`Loaded ${mappedProjects.length} gigs`);
           }
@@ -163,10 +167,10 @@ export default function SessionPlanning() {
       const initialized = await initializeAI();
       setAiInitialized(initialized);
     };
-    
+
     initAI();
     fetchGigs();
-  }, [userRole]); // Reload if role changes, though typically we might only want to load once
+  }, [userRole]);
 
   const selectedRep = useMemo(() => {
     return reps.find(rep => rep.id === selectedRepId) || reps[0];
@@ -181,14 +185,14 @@ export default function SessionPlanning() {
     };
 
     // Filter slots by selected REP if in REP view
-    const filteredSlots = userRole === 'rep' 
+    const filteredSlots = userRole === 'rep'
       ? slots.filter(slot => slot.repId === selectedRepId)
       : slots;
 
     filteredSlots.forEach((slot) => {
       if (slot.status !== 'cancelled') {
         stats.totalHours += slot.duration || 1;
-        
+
         if (slot.status === 'available') {
           stats.availableSlots++;
         } else if (slot.status === 'reserved') {
@@ -210,7 +214,7 @@ export default function SessionPlanning() {
       ...updatedSlot,
       repId: updatedSlot.repId || selectedRepId
     };
-    
+
     const existingSlotIndex = slots.findIndex((slot) => slot.id === slotWithRep.id);
     if (existingSlotIndex >= 0) {
       setSlots((prev) => [
@@ -229,7 +233,7 @@ export default function SessionPlanning() {
         type: 'success'
       });
     }
-    
+
     // Clear notification after 3 seconds
     setTimeout(() => setNotification(null), 3000);
   };
@@ -244,10 +248,10 @@ export default function SessionPlanning() {
       message: 'Time slot cancelled',
       type: 'success'
     });
-    
+
     // Clear notification after 3 seconds
     setTimeout(() => setNotification(null), 3000);
-    
+
     // Clear selected slot if it was cancelled
     if (selectedSlot?.id === slotId) {
       setSelectedSlot(null);
@@ -263,12 +267,12 @@ export default function SessionPlanning() {
     for (let hour = startHour; hour < endHour; hour++) {
       const timeString = `${hour.toString().padStart(2, '0')}:00`;
       const existingSlot = slots.find(
-        (s) => 
-          s.date === format(selectedDate, 'yyyy-MM-dd') && 
+        (s) =>
+          s.date === format(selectedDate, 'yyyy-MM-dd') &&
           s.startTime === timeString &&
           s.repId === selectedRepId
       );
-      
+
       if (!existingSlot) {
         newSlots.push({
           id: crypto.randomUUID(),
@@ -282,7 +286,7 @@ export default function SessionPlanning() {
         });
       }
     }
-    
+
     if (newSlots.length > 0) {
       setSlots((prev) => [...prev, ...newSlots]);
       setNotification({
@@ -296,16 +300,16 @@ export default function SessionPlanning() {
   const handleProjectSelect = (projectId: string) => {
     // Find the optimal time for this project based on AI recommendations
     const optimalHour = selectedRep.preferredHours?.start || 9;
-    
+
     // Check if the slot already exists
     const timeString = `${optimalHour.toString().padStart(2, '0')}:00`;
     const existingSlot = slots.find(
-      (s) => 
-        s.date === format(selectedDate, 'yyyy-MM-dd') && 
+      (s) =>
+        s.date === format(selectedDate, 'yyyy-MM-dd') &&
         s.startTime === timeString &&
         s.repId === selectedRepId
     );
-    
+
     if (existingSlot) {
       // Update existing slot
       handleSlotUpdate({
@@ -334,16 +338,16 @@ export default function SessionPlanning() {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
-    
+
     // Check if there's already a slot at this hour
     const timeString = `${hour.toString().padStart(2, '0')}:00`;
     const existingSlot = slots.find(
-      (s) => 
-        s.date === format(selectedDate, 'yyyy-MM-dd') && 
+      (s) =>
+        s.date === format(selectedDate, 'yyyy-MM-dd') &&
         s.startTime === timeString &&
         s.repId === selectedRepId
     );
-    
+
     if (existingSlot) {
       setSelectedSlot(existingSlot);
     } else {
@@ -357,7 +361,7 @@ export default function SessionPlanning() {
         duration: 1,
         repId: selectedRepId,
       };
-      
+
       handleSlotUpdate(newSlot);
       setSelectedSlot(newSlot);
     }
@@ -365,19 +369,19 @@ export default function SessionPlanning() {
 
   const handleAttendanceUpdate = (slotId: string, attended: boolean, notes?: string) => {
     // Update the slot with attendance information
-    setSlots(prev => prev.map(slot => 
-      slot.id === slotId 
+    setSlots(prev => prev.map(slot =>
+      slot.id === slotId
         ? { ...slot, attended, attendanceNotes: notes }
         : slot
     ));
-    
+
     // Update the rep's attendance history
     const slot = slots.find(s => s.id === slotId);
     if (slot) {
       const repIndex = reps.findIndex(r => r.id === slot.repId);
       if (repIndex >= 0) {
         const rep = reps[repIndex];
-        
+
         // Create attendance record
         const attendanceRecord: AttendanceRecord = {
           date: slot.date,
@@ -385,20 +389,20 @@ export default function SessionPlanning() {
           attended,
           reason: notes
         };
-        
+
         // Update rep's attendance history
         const updatedRep = {
           ...rep,
           attendanceHistory: [...(rep.attendanceHistory || []), attendanceRecord]
         };
-        
+
         // Recalculate attendance score
         const attendedCount = updatedRep.attendanceHistory.filter(record => record.attended).length;
         const totalCount = updatedRep.attendanceHistory.length;
         const attendanceScore = totalCount > 0 ? Math.round((attendedCount / totalCount) * 100) : 0;
-        
+
         updatedRep.attendanceScore = attendanceScore;
-        
+
         // Update reps array
         setReps(prev => [
           ...prev.slice(0, repIndex),
@@ -407,7 +411,7 @@ export default function SessionPlanning() {
         ]);
       }
     }
-    
+
     setNotification({
       message: `Attendance ${attended ? 'confirmed' : 'marked as missed'}`,
       type: 'success'
@@ -418,14 +422,13 @@ export default function SessionPlanning() {
   return (
     <div className="min-h-screen bg-gray-100">
       {notification && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg flex items-center ${
-          notification.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-        }`}>
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg flex items-center ${notification.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
           <AlertCircle className="w-5 h-5 mr-2" />
           <p>{notification.message}</p>
         </div>
       )}
-      
+
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
@@ -451,60 +454,55 @@ export default function SessionPlanning() {
               </div>
             </div>
           </div>
-          
+
           {/* Role Switcher */}
           <div className="mt-6 flex space-x-4">
             <button
               onClick={() => setUserRole('rep')}
-              className={`px-4 py-2 rounded-md flex items-center ${
-                userRole === 'rep' 
-                  ? 'bg-blue-100 text-blue-800 font-medium' 
+              className={`px-4 py-2 rounded-md flex items-center ${userRole === 'rep'
+                  ? 'bg-blue-100 text-blue-800 font-medium'
                   : 'bg-white text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <Users className="w-4 h-4 mr-2" />
               REP View
             </button>
             <button
               onClick={() => setUserRole('company')}
-              className={`px-4 py-2 rounded-md flex items-center ${
-                userRole === 'company' 
-                  ? 'bg-blue-100 text-blue-800 font-medium' 
+              className={`px-4 py-2 rounded-md flex items-center ${userRole === 'company'
+                  ? 'bg-blue-100 text-blue-800 font-medium'
                   : 'bg-white text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <Building className="w-4 h-4 mr-2" />
               Company View
             </button>
             <button
               onClick={() => setUserRole('admin')}
-              className={`px-4 py-2 rounded-md flex items-center ${
-                userRole === 'admin' 
-                  ? 'bg-blue-100 text-blue-800 font-medium' 
+              className={`px-4 py-2 rounded-md flex items-center ${userRole === 'admin'
+                  ? 'bg-blue-100 text-blue-800 font-medium'
                   : 'bg-white text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <LayoutDashboard className="w-4 h-4 mr-2" />
               Admin View
             </button>
             <button
               onClick={() => setShowAIPanel(!showAIPanel)}
-              className={`px-4 py-2 rounded-md flex items-center ${
-                showAIPanel 
-                  ? 'bg-purple-100 text-purple-800 font-medium' 
+              className={`px-4 py-2 rounded-md flex items-center ${showAIPanel
+                  ? 'bg-purple-100 text-purple-800 font-medium'
                   : 'bg-white text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <Brain className="w-4 h-4 mr-2" />
               AI Assistant {showAIPanel ? 'On' : 'Off'}
             </button>
             <button
               onClick={() => setShowAttendancePanel(!showAttendancePanel)}
-              className={`px-4 py-2 rounded-md flex items-center ${
-                showAttendancePanel 
-                  ? 'bg-green-100 text-green-800 font-medium' 
+              className={`px-4 py-2 rounded-md flex items-center ${showAttendancePanel
+                  ? 'bg-green-100 text-green-800 font-medium'
                   : 'bg-white text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <Clock className="w-4 h-4 mr-2" />
               Attendance {showAttendancePanel ? 'On' : 'Off'}
@@ -516,22 +514,25 @@ export default function SessionPlanning() {
       <main className="max-w-7xl mx-auto px-4 py-6">
         {userRole === 'company' ? (
           <div className="grid grid-cols-1 gap-6">
-            <div className="flex space-x-4">
-              {sampleCompanies.map(company => (
-                <button
-                  key={company.id}
-                  onClick={() => setSelectedCompany(company.name)}
-                  className={`px-4 py-2 rounded-md ${
-                    selectedCompany === company.name
-                      ? 'bg-blue-100 text-blue-800 font-medium'
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {company.name}
-                </button>
-              ))}
+            <div className="flex space-x-4 overflow-x-auto pb-2">
+              {projects.length === 0 ? (
+                <div className="text-gray-500 italic px-4 py-2">No active gigs found.</div>
+              ) : (
+                projects.map(project => (
+                  <button
+                    key={project.id}
+                    onClick={() => setSelectedProjectId(project.id)}
+                    className={`px-4 py-2 rounded-md whitespace-nowrap ${selectedProjectId === project.id
+                        ? 'bg-blue-100 text-blue-800 font-medium'
+                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                      }`}
+                  >
+                    {project.name}
+                  </button>
+                ))
+              )}
             </div>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <Calendar
@@ -541,17 +542,14 @@ export default function SessionPlanning() {
                 />
               </div>
               <div className="bg-white rounded-lg shadow p-4">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4">Company Overview</h2>
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">Gig Overview</h2>
                 <div className="space-y-4">
-                  {/* Company stats */}
+                  {/* Gig stats */}
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Total REPs Scheduled</span>
                     <span className="font-medium">
                       {new Set(slots
-                        .filter(slot => {
-                          const project = projects.find(p => p.id === slot.projectId);
-                          return project?.company === selectedCompany && slot.status === 'reserved';
-                        })
+                        .filter(slot => slot.projectId === selectedProjectId && slot.status === 'reserved')
                         .map(slot => slot.repId)
                       ).size}
                     </span>
@@ -560,25 +558,26 @@ export default function SessionPlanning() {
                     <span className="text-gray-600">Total Hours</span>
                     <span className="font-medium">
                       {slots
-                        .filter(slot => {
-                          const project = projects.find(p => p.id === slot.projectId);
-                          return project?.company === selectedCompany && slot.status === 'reserved';
-                        })
+                        .filter(slot => slot.projectId === selectedProjectId && slot.status === 'reserved')
                         .reduce((sum, slot) => sum + slot.duration, 0)}h
                     </span>
                   </div>
                 </div>
               </div>
             </div>
-            
-            <CompanyView 
-              company={selectedCompany}
-              slots={slots}
-              projects={projects}
-              reps={reps}
-              selectedDate={selectedDate}
-            />
-            
+
+            {selectedProjectId && (
+              <CompanyView
+                // Hack: Pass Gig Name as 'company' to trick CompanyView into being a GigView
+                company={projects.find(p => p.id === selectedProjectId)?.name || ''}
+                slots={slots}
+                // Hack: Override project.company with project.name so strict equal check passes in CompanyView
+                projects={projects.filter(p => p.id === selectedProjectId).map(p => ({ ...p, company: p.name }))}
+                reps={reps}
+                selectedDate={selectedDate}
+              />
+            )}
+
             {showAttendancePanel && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <AttendanceTracker
@@ -593,14 +592,14 @@ export default function SessionPlanning() {
                 />
               </div>
             )}
-            
+
             {showAIPanel && (
               <div className="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500">
                 <div className="flex items-center mb-4">
                   <Brain className="w-6 h-6 text-purple-600 mr-2" />
                   <h2 className="text-xl font-bold text-gray-800">AI Insights</h2>
                 </div>
-                
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <WorkloadPrediction slots={slots} />
                 </div>
@@ -609,12 +608,12 @@ export default function SessionPlanning() {
           </div>
         ) : userRole === 'rep' ? (
           <div className="grid grid-cols-1 gap-6">
-            <RepSelector 
+            <RepSelector
               reps={reps}
               selectedRepId={selectedRepId}
               onRepSelect={setSelectedRepId}
             />
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <Calendar
@@ -641,8 +640,8 @@ export default function SessionPlanning() {
                     return (
                       <div key={projectId} className="flex justify-between items-center">
                         <div className="flex items-center">
-                          <div 
-                            className="w-3 h-3 rounded-full mr-2" 
+                          <div
+                            className="w-3 h-3 rounded-full mr-2"
                             style={{ backgroundColor: project?.color || '#ccc' }}
                           ></div>
                           <span className="text-gray-600">{project?.name || 'Unknown Gig'}</span>
@@ -651,10 +650,10 @@ export default function SessionPlanning() {
                       </div>
                     );
                   })}
-                  
+
                   <hr className="my-4" />
                   <h3 className="font-medium text-gray-800 mb-2">Quick Reserve</h3>
-                  <SlotActionPanel 
+                  <SlotActionPanel
                     maxHours={10}
                     slot={selectedSlot || slots[0] || {} as any}
                     availableProjects={projects}
@@ -664,7 +663,7 @@ export default function SessionPlanning() {
                 </div>
               </div>
             </div>
-            
+
             {showAttendancePanel && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <AttendanceScorecard
@@ -679,11 +678,11 @@ export default function SessionPlanning() {
                 />
               </div>
             )}
-            
+
             {showAIPanel && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div>
-                  <AIRecommendations 
+                  <AIRecommendations
                     rep={selectedRep}
                     projects={projects}
                     slots={slots}
@@ -691,21 +690,21 @@ export default function SessionPlanning() {
                   />
                 </div>
                 <div>
-                  <OptimalTimeHeatmap 
+                  <OptimalTimeHeatmap
                     rep={selectedRep}
                     slots={slots}
                     onSelectHour={handleOptimalHourSelect}
                   />
                 </div>
                 <div>
-                  <PerformanceMetrics 
+                  <PerformanceMetrics
                     rep={selectedRep}
                     slots={slots}
                   />
                 </div>
               </div>
             )}
-            
+
             <TimeSlotGrid
               selectedSlotId={selectedSlot?.id || null}
               slots={slots.filter(slot => slot.repId === selectedRepId)}
@@ -733,14 +732,14 @@ export default function SessionPlanning() {
                 </div>
               </div>
             </div>
-            
+
             {showAttendancePanel && (
               <AttendanceReport
                 reps={reps}
                 slots={slots}
               />
             )}
-            
+
             {showAIPanel && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <WorkloadPrediction slots={slots} />
@@ -753,15 +752,15 @@ export default function SessionPlanning() {
                     <div className="p-3 bg-purple-50 rounded-lg">
                       <h3 className="font-medium text-purple-800 mb-2">Scheduling Efficiency</h3>
                       <p className="text-sm text-gray-700">
-                        Based on current scheduling patterns, the system is operating at 
-                        <span className="font-bold text-purple-800"> 78% </span> 
+                        Based on current scheduling patterns, the system is operating at
+                        <span className="font-bold text-purple-800"> 78% </span>
                         efficiency. Consider optimizing REP assignments based on AI recommendations.
                       </p>
                     </div>
                     <div className="p-3 bg-blue-50 rounded-lg">
                       <h3 className="font-medium text-blue-800 mb-2">Resource Allocation</h3>
                       <p className="text-sm text-gray-700">
-                        Tech Co projects are currently overallocated by 
+                        Tech Co projects are currently overallocated by
                         <span className="font-bold text-blue-800"> 12% </span>
                         while Acme Corp is underallocated. Consider rebalancing resources.
                       </p>
@@ -769,7 +768,7 @@ export default function SessionPlanning() {
                     <div className="p-3 bg-green-50 rounded-lg">
                       <h3 className="font-medium text-green-800 mb-2">Performance Insights</h3>
                       <p className="text-sm text-gray-700">
-                        REPs with diverse project assignments show 
+                        REPs with diverse project assignments show
                         <span className="font-bold text-green-800"> 23% higher </span>
                         satisfaction scores. Consider rotating assignments more frequently.
                       </p>
@@ -778,7 +777,7 @@ export default function SessionPlanning() {
                 </div>
               </div>
             )}
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white rounded-lg shadow p-4">
                 <h2 className="text-lg font-semibold text-gray-800 mb-4">REP Overview</h2>
@@ -786,15 +785,15 @@ export default function SessionPlanning() {
                   {reps.map(rep => {
                     const repSlots = slots.filter(slot => slot.repId === rep.id && slot.status === 'reserved');
                     const totalHours = repSlots.reduce((sum, slot) => sum + slot.duration, 0);
-                    
+
                     return (
                       <div key={rep.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center">
                           <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
                             {rep.avatar ? (
-                              <img 
-                                src={rep.avatar} 
-                                alt={rep.name} 
+                              <img
+                                src={rep.avatar}
+                                alt={rep.name}
                                 className="w-full h-full rounded-full object-cover"
                               />
                             ) : (
@@ -825,7 +824,7 @@ export default function SessionPlanning() {
                   })}
                 </div>
               </div>
-              
+
               <div className="bg-white rounded-lg shadow p-4">
                 <h2 className="text-lg font-semibold text-gray-800 mb-4">Company Overview</h2>
                 <div className="space-y-4">
@@ -834,18 +833,18 @@ export default function SessionPlanning() {
                       const project = projects.find(p => p.id === slot.projectId);
                       return project?.company === company.name && slot.status === 'reserved';
                     });
-                    
+
                     const totalHours = companySlots.reduce((sum, slot) => sum + slot.duration, 0);
                     const uniqueReps = new Set(companySlots.map(slot => slot.repId)).size;
-                    
+
                     return (
                       <div key={company.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center">
                           <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
                             {company.logo ? (
-                              <img 
-                                src={company.logo} 
-                                alt={company.name} 
+                              <img
+                                src={company.logo}
+                                alt={company.name}
                                 className="w-full h-full rounded-full object-cover"
                               />
                             ) : (
