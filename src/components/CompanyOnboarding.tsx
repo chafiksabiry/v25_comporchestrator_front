@@ -34,7 +34,7 @@ import KnowledgeBase from "./onboarding/KnowledgeBase";
 import ApprovalPublishing from "./ApprovalPublishing";
 import ZohoService from "../services/zohoService";
 import { checkMatchRepsStepCompletion } from "../api/matching";
-import { CompanyView } from "./scheduler/CompanyView";
+
 
 interface BaseStep {
   id: number;
@@ -1305,7 +1305,7 @@ const CompanyOnboarding = () => {
           title: "Session Planning",
           description: "Schedule call slots and prioritize leads",
           status: "pending",
-          component: CompanyView,
+          component: SessionPlanning,
           // disabled: true,
         },
       ],
