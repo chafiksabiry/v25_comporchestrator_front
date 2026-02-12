@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Calendar,
   Clock,
   Users,
   Phone,
@@ -13,28 +12,27 @@ import {
   Linkedin,
   Youtube,
   Globe,
-  Filter,
   ChevronLeft,
   ChevronRight,
   Plus,
   Edit,
   Trash2,
   CheckCircle,
-  AlertCircle,
   Settings,
-  Save,
-  Download,
   BarChart2,
-  ArrowRight,
   MapPin,
   UserCheck
 } from 'lucide-react';
+
+import { CompanyView } from '../scheduler/CompanyView';
+import { Project, Rep, TimeSlot } from '../../types/scheduler';
+import { format } from 'date-fns';
 
 const SessionPlanning = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedView, setSelectedView] = useState<'day' | 'week' | 'month'>('week');
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['voice', 'email', 'chat']);
-  const [selectedReps, setSelectedReps] = useState<string[]>([]);
+
 
   const channels = [
     { id: 'voice', name: 'Voice Calls', icon: Phone },
@@ -102,6 +100,81 @@ const SessionPlanning = () => {
     }
   ];
 
+  const [projects] = useState<Project[]>([
+    {
+      id: '1',
+      name: 'Customer Support - Tech Co',
+      description: 'Handle incoming customer support tickets for Tech Co',
+      company: 'Tech Co',
+      color: '#4F46E5',
+      skills: ['Customer Support', 'Technical Troubleshooting', 'Communication'],
+      priority: 'high'
+    },
+    {
+      id: '2',
+      name: 'Sales Support - Marketing Inc',
+      description: 'Assist with sales inquiries and follow-ups',
+      company: 'Marketing Inc',
+      color: '#059669',
+      skills: ['Sales', 'Product Demos', 'Communication'],
+      priority: 'medium'
+    },
+    {
+      id: '3',
+      name: 'Product Training - Acme Corp',
+      description: 'Provide product training sessions for new clients',
+      company: 'Acme Corp',
+      color: '#DC2626',
+      skills: ['Training', 'Product Knowledge', 'Presentation'],
+      priority: 'low'
+    }
+  ]);
+
+  // Transform local reps/sessions to scheduler types or create sample data for the view
+  const schedulerReps: Rep[] = reps.map(r => ({
+    id: r.id.toString(),
+    name: r.name,
+    email: `${r.name.toLowerCase().replace(' ', '.')}@harx.com`,
+    specialties: [],
+    avatar: `https://ui-avatars.com/api/?name=${r.name}&background=random`,
+  }));
+
+  const schedulerSlots: TimeSlot[] = [
+    {
+      id: '1',
+      startTime: '09:00',
+      endTime: '10:00',
+      date: format(new Date(), 'yyyy-MM-dd'),
+      projectId: '1',
+      status: 'reserved',
+      duration: 1,
+      repId: '1',
+      notes: 'Morning support session'
+    },
+    {
+      id: '2',
+      startTime: '10:00',
+      endTime: '11:00',
+      date: format(new Date(), 'yyyy-MM-dd'),
+      projectId: '2',
+      status: 'reserved',
+      duration: 1,
+      repId: '2',
+      notes: 'Sales follow-up'
+    },
+    {
+      id: '3',
+      startTime: '14:00',
+      endTime: '15:00',
+      date: format(new Date(), 'yyyy-MM-dd'),
+      projectId: '1',
+      status: 'reserved',
+      duration: 1,
+      repId: '1',
+      notes: 'Tech support escalation'
+    }
+  ];
+
   const toggleChannel = (channelId: string) => {
     if (selectedChannels.includes(channelId)) {
       setSelectedChannels(selectedChannels.filter(id => id !== channelId));
@@ -110,13 +183,7 @@ const SessionPlanning = () => {
     }
   };
 
-  const toggleRep = (repId: string) => {
-    if (selectedReps.includes(repId)) {
-      setSelectedReps(selectedReps.filter(id => id !== repId));
-    } else {
-      setSelectedReps([...selectedReps, repId]);
-    }
-  };
+
 
   return (
     <div className="space-y-6">
@@ -168,31 +235,28 @@ const SessionPlanning = () => {
           <div className="flex items-center space-x-2">
             <div className="flex rounded-lg bg-gray-100 p-1">
               <button
-                className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-                  selectedView === 'day'
-                    ? 'bg-white text-gray-900 shadow'
-                    : 'text-gray-500 hover:text-gray-900'
-                }`}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium ${selectedView === 'day'
+                  ? 'bg-white text-gray-900 shadow'
+                  : 'text-gray-500 hover:text-gray-900'
+                  }`}
                 onClick={() => setSelectedView('day')}
               >
                 Day
               </button>
               <button
-                className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-                  selectedView === 'week'
-                    ? 'bg-white text-gray-900 shadow'
-                    : 'text-gray-500 hover:text-gray-900'
-                }`}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium ${selectedView === 'week'
+                  ? 'bg-white text-gray-900 shadow'
+                  : 'text-gray-500 hover:text-gray-900'
+                  }`}
                 onClick={() => setSelectedView('week')}
               >
                 Week
               </button>
               <button
-                className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-                  selectedView === 'month'
-                    ? 'bg-white text-gray-900 shadow'
-                    : 'text-gray-500 hover:text-gray-900'
-                }`}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium ${selectedView === 'month'
+                  ? 'bg-white text-gray-900 shadow'
+                  : 'text-gray-500 hover:text-gray-900'
+                  }`}
                 onClick={() => setSelectedView('month')}
               >
                 Month
@@ -209,15 +273,14 @@ const SessionPlanning = () => {
           {channels.map((channel) => {
             const Icon = channel.icon;
             const isSelected = selectedChannels.includes(channel.id);
-            
+
             return (
               <button
                 key={channel.id}
-                className={`flex items-center rounded-full px-3 py-1.5 text-sm font-medium ${
-                  isSelected
-                    ? 'bg-indigo-100 text-indigo-700'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`flex items-center rounded-full px-3 py-1.5 text-sm font-medium ${isSelected
+                  ? 'bg-indigo-100 text-indigo-700'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
                 onClick={() => toggleChannel(channel.id)}
               >
                 <Icon className="mr-1.5 h-4 w-4" />
@@ -263,7 +326,7 @@ const SessionPlanning = () => {
           {sessions.map((session) => {
             const channel = channels.find(c => c.id === session.channel);
             const Icon = channel?.icon || Globe;
-            
+
             return (
               <div
                 key={session.id}
@@ -271,11 +334,10 @@ const SessionPlanning = () => {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <div className={`rounded-lg p-2 ${
-                      session.status === 'scheduled' ? 'bg-blue-100 text-blue-600' :
+                    <div className={`rounded-lg p-2 ${session.status === 'scheduled' ? 'bg-blue-100 text-blue-600' :
                       session.status === 'in-progress' ? 'bg-green-100 text-green-600' :
-                      'bg-gray-100 text-gray-600'
-                    }`}>
+                        'bg-gray-100 text-gray-600'
+                      }`}>
                       <Icon className="h-5 w-5" />
                     </div>
                     <div>
@@ -287,11 +349,10 @@ const SessionPlanning = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      session.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${session.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
                       session.status === 'in-progress' ? 'bg-green-100 text-green-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                        'bg-gray-100 text-gray-800'
+                      }`}>
                       {session.status === 'scheduled' && <Clock className="mr-1 h-3 w-3" />}
                       {session.status === 'in-progress' && <CheckCircle className="mr-1 h-3 w-3" />}
                       {session.status === 'completed' && <CheckCircle className="mr-1 h-3 w-3" />}
@@ -352,11 +413,10 @@ const SessionPlanning = () => {
                       );
                     })}
                   </div>
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    rep.status === 'available' ? 'bg-green-100 text-green-800' :
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${rep.status === 'available' ? 'bg-green-100 text-green-800' :
                     rep.status === 'busy' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
+                      'bg-gray-100 text-gray-800'
+                    }`}>
                     {rep.status}
                   </span>
                 </div>
@@ -412,6 +472,27 @@ const SessionPlanning = () => {
             </div>
           </div>
         </div>
+      </div>
+
+
+      {/* Company View Integration */}
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-900">Company Schedule Overview</h2>
+          <div className="flex space-x-2">
+            {/* Simple company selector for demo */}
+            <button className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">Tech Co</button>
+            <button className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium hover:bg-gray-200">Marketing Inc</button>
+          </div>
+        </div>
+
+        <CompanyView
+          company="Tech Co"
+          slots={schedulerSlots}
+          projects={projects}
+          reps={schedulerReps}
+          selectedDate={currentDate}
+        />
       </div>
     </div>
   );
