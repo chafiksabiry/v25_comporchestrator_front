@@ -51,12 +51,15 @@ export function Calendar({ selectedDate, onDateSelect, slots, view = 'month' }: 
                         <CalendarIcon className="w-6 h-6" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900 leading-none">
+                        <h2 className="text-2xl font-black text-gray-900 tracking-tight">
                             {view === '2-weeks'
-                                ? `${format(startOfWeek(currentMonth), 'MMM d')} - ${format(addDays(startOfWeek(currentMonth), 13), 'MMM d, yyyy')}`
+                                ? `${format(startOfWeek(currentMonth), 'MMMM d')} - ${format(addDays(startOfWeek(currentMonth), 13), 'MMMM d, yyyy')}`
                                 : format(currentMonth, 'MMMM yyyy')}
                         </h2>
-                        <p className="text-sm text-gray-500 mt-1">Manage your team's schedule</p>
+                        <div className="flex items-center mt-1">
+                            <div className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></div>
+                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Live Schedule Overview</p>
+                        </div>
                     </div>
                 </div>
                 <div className="flex bg-gray-100 rounded-lg p-1 space-x-1">
@@ -81,17 +84,17 @@ export function Calendar({ selectedDate, onDateSelect, slots, view = 'month' }: 
 
     const renderDays = () => {
         const days = [];
-        const dateFormat = "EEE";
+        const dateFormat = "EEEE";
         const startDate = startOfWeek(currentMonth);
 
         for (let i = 0; i < 7; i++) {
             days.push(
-                <div className="text-center font-semibold text-gray-400 text-xs uppercase tracking-wider py-3" key={i}>
+                <div className="text-center font-bold text-gray-400 text-[10px] uppercase tracking-[0.2em] py-4" key={i}>
                     {format(addDays(startDate, i), dateFormat)}
                 </div>
             );
         }
-        return <div className="grid grid-cols-7 mb-2">{days}</div>;
+        return <div className="grid grid-cols-7 mb-4 bg-gray-50/50 rounded-t-xl">{days}</div>;
     };
 
     const renderCells = () => {
@@ -130,43 +133,56 @@ export function Calendar({ selectedDate, onDateSelect, slots, view = 'month' }: 
                         key={day.toString()}
                         onClick={() => onDateSelect(cloneDay)}
                         className={`
-                            min-h-[120px] p-3 border border-gray-100 flex flex-col justify-between transition-all relative group
-                            ${!isCurrentMonth ? 'bg-gray-50/50 text-gray-400' : 'bg-white'}
-                            ${isSelected ? 'ring-2 ring-blue-600 shadow-md z-10' : 'hover:border-blue-200 hover:shadow-sm'}
+                            min-h-[140px] p-4 border border-gray-100 flex flex-col justify-start transition-all duration-300 relative group
+                            ${!isCurrentMonth ? 'bg-gray-50/30 text-gray-300' : 'bg-white text-gray-700'}
+                            ${isSelected ? 'ring-2 ring-blue-600 shadow-xl z-10 bg-blue-50/30' : 'hover:bg-gray-50/80 hover:scale-[1.02] hover:z-10 hover:shadow-lg'}
                         `}
                     >
-                        <div className="flex justify-between items-start w-full">
+                        <div className="flex justify-between items-start w-full mb-3">
                             <span className={`
-                                text-sm font-medium rounded-full w-8 h-8 flex items-center justify-center transition-colors
-                                ${isToday ? 'bg-blue-600 text-white shadow-sm' : isSelected ? 'bg-blue-50 text-blue-700' : 'text-gray-700 group-hover:bg-gray-100'}
+                                text-sm font-black rounded-xl w-10 h-10 flex items-center justify-center transition-all duration-300
+                                ${isToday ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : isSelected ? 'bg-blue-100 text-blue-700' : 'bg-transparent text-gray-900 group-hover:bg-white group-hover:shadow-sm'}
                             `}>
                                 {formattedDate}
                             </span>
-                            {/* Optional: Add a subtle dot for "Today" if not selected, or just rely on the circle */}
+                            {isToday && (
+                                <span className="flex h-2 w-2 relative">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                                </span>
+                            )}
                         </div>
 
-                        <div className="mt-2 w-full space-y-1.5">
+                        <div className="w-full space-y-2">
                             {daySlots.length > 0 ? (
                                 <>
                                     {reservedCount > 0 && (
-                                        <div className="flex items-center text-xs px-2 py-1 bg-purple-50 text-purple-700 rounded-md border border-purple-100">
-                                            <Clock className="w-3 h-3 mr-1" />
-                                            <span className="font-medium">{reservedCount}</span>
-                                            <span className="ml-1 opacity-80">Booked</span>
+                                        <div className="group/slot flex items-center justify-between text-[10px] px-2.5 py-1.5 bg-purple-50 text-purple-700 rounded-lg border border-purple-100 shadow-sm transition-transform hover:translate-x-1">
+                                            <div className="flex items-center">
+                                                <Clock className="w-3 h-3 mr-1.5 font-bold" />
+                                                <span className="font-extrabold">{reservedCount}</span>
+                                                <span className="ml-1 font-bold uppercase tracking-tight opacity-70">Booked</span>
+                                            </div>
+                                            <div className="w-1.5 h-1.5 rounded-full bg-purple-400"></div>
                                         </div>
                                     )}
                                     {availableCount > 0 && (
-                                        <div className="flex items-center text-xs px-2 py-1 bg-green-50 text-green-700 rounded-md border border-green-100">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5"></div>
-                                            <span className="font-medium">{availableCount}</span>
-                                            <span className="ml-1 opacity-80">Open</span>
+                                        <div className="group/slot flex items-center justify-between text-[10px] px-2.5 py-1.5 bg-green-50 text-green-700 rounded-lg border border-green-100 shadow-sm transition-transform hover:translate-x-1">
+                                            <div className="flex items-center">
+                                                <div className="w-2 h-2 rounded-full bg-green-500 mr-2 shadow-sm shadow-green-200"></div>
+                                                <span className="font-extrabold">{availableCount}</span>
+                                                <span className="ml-1 font-bold uppercase tracking-tight opacity-70">Open</span>
+                                            </div>
                                         </div>
+                                    )}
+                                    {daySlots.length > 2 && (
+                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest text-center mt-1 opacity-60">+{daySlots.length - 2} more</p>
                                     )}
                                 </>
                             ) : (
                                 isCurrentMonth && (
-                                    <div className="h-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <span className="text-xs text-gray-400 font-medium">+ Plan</span>
+                                    <div className="h-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 py-4">
+                                        <span className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-black uppercase tracking-wider shadow-sm border border-blue-100">+ Add Session</span>
                                     </div>
                                 )
                             )}
@@ -176,20 +192,36 @@ export function Calendar({ selectedDate, onDateSelect, slots, view = 'month' }: 
                 day = addDays(day, 1);
             }
             rows.push(
-                <div className="grid grid-cols-7" key={day.toString()}>
+                <div className="grid grid-cols-7 border-l border-t border-gray-100 overflow-hidden" key={day.toString()}>
                     {days}
                 </div>
             );
             days = [];
         }
-        return <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">{rows}</div>;
+        return <div className="border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-2xl transition-all duration-500 hover:shadow-blue-900/10">{rows}</div>;
     };
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 transition-all hover:shadow-2xl">
             {renderHeader()}
-            {renderDays()}
-            {renderCells()}
+            <div className="relative">
+                {renderDays()}
+                {renderCells()}
+            </div>
+            <div className="mt-6 flex items-center justify-end space-x-6 text-xs font-semibold text-gray-500 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <div className="flex items-center">
+                    <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mr-2 shadow-sm shadow-blue-200"></div>
+                    <span>Today</span>
+                </div>
+                <div className="flex items-center">
+                    <div className="w-2.5 h-2.5 rounded-full bg-purple-500 mr-2 shadow-sm shadow-purple-200"></div>
+                    <span>Booked Sessions</span>
+                </div>
+                <div className="flex items-center">
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-500 mr-2 shadow-sm shadow-green-200"></div>
+                    <span>Open Slots</span>
+                </div>
+            </div>
         </div>
     );
 }
