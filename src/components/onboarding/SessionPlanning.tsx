@@ -569,81 +569,83 @@ export default function SessionPlanning() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       {notification && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg flex items-center ${notification.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 ${notification.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'
           }`}>
-          <AlertCircle className="w-5 h-5 mr-2" />
-          <p>{notification.message}</p>
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          <p className="font-medium">{notification.message}</p>
         </div>
       )}
 
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Building className="w-8 h-8 text-blue-600 mr-3" />
-              <h1 className="text-3xl font-bold text-gray-900">HARX Scheduling</h1>
-              {loadingGigs && <span className="ml-4 text-sm text-gray-500 animate-pulse">Loading Gigs...</span>}
+      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-blue-50 rounded-xl">
+                <Building className="w-7 h-7 text-blue-600" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Session Planning</h1>
+                <p className="text-sm text-gray-500 mt-0.5">Schedule and manage time slots</p>
+              </div>
+              {loadingGigs && <span className="text-xs text-blue-500 font-medium animate-pulse">Loading Gigs...</span>}
             </div>
-            <div className="flex items-center space-x-8">
-              <div className="flex items-center">
-                <Clock className="w-5 h-5 text-gray-600 mr-2" />
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-100">
+                <Clock className="w-5 h-5 text-blue-600" />
                 <div>
-                  <p className="text-sm text-gray-600">Weekly Hours</p>
-                  <p className="text-lg font-semibold">{weeklyStats.totalHours}h</p>
+                  <p className="text-xs text-gray-500 font-medium">Weekly Hours</p>
+                  <p className="text-lg font-bold text-gray-900">{weeklyStats.totalHours}h</p>
                 </div>
               </div>
-              <div className="flex items-center">
-                <Briefcase className="w-5 h-5 text-gray-600 mr-2" />
+              <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-100">
+                <Briefcase className="w-5 h-5 text-indigo-600" />
                 <div>
-                  <p className="text-sm text-gray-600">Active Gigs</p>
-                  <p className="text-lg font-semibold">{Object.keys(weeklyStats.projectBreakdown).length}</p>
+                  <p className="text-xs text-gray-500 font-medium">Active Gigs</p>
+                  <p className="text-lg font-bold text-gray-900">{Object.keys(weeklyStats.projectBreakdown).length}</p>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* AI and Attendance Toggles (Role Switcher Removed) */}
-          <div className="mt-6 flex space-x-4">
+          <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
             <button
               onClick={() => setShowAIPanel(!showAIPanel)}
-              className={`px-4 py-2 rounded-md flex items-center ${showAIPanel
-                ? 'bg-purple-100 text-purple-800 font-medium'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
+              className={`px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 ${showAIPanel
+                ? 'bg-purple-100 text-purple-800'
+                : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-100'
                 }`}
             >
-              <Brain className="w-4 h-4 mr-2" />
+              <Brain className="w-4 h-4" />
               AI Assistant {showAIPanel ? 'On' : 'Off'}
             </button>
             <button
               onClick={() => setShowAttendancePanel(!showAttendancePanel)}
-              className={`px-4 py-2 rounded-md flex items-center ${showAttendancePanel
-                ? 'bg-green-100 text-green-800 font-medium'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
+              className={`px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 ${showAttendancePanel
+                ? 'bg-emerald-100 text-emerald-800'
+                : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-100'
                 }`}
             >
-              <Clock className="w-4 h-4 mr-2" />
+              <Clock className="w-4 h-4" />
               Attendance {showAttendancePanel ? 'On' : 'Off'}
             </button>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="space-y-6">
         {userRole === 'company' ? (
           <div className="grid grid-cols-1 gap-6">
-            <div className="flex space-x-4 overflow-x-auto pb-2">
+            <div className="flex space-x-2 overflow-x-auto pb-2 no-scrollbar">
               {projects.length === 0 ? (
-                <div className="text-gray-500 italic px-4 py-2">No active gigs found.</div>
+                <div className="text-gray-500 italic px-4 py-3 bg-white rounded-xl border border-dashed border-gray-200 w-full text-center text-sm">No active gigs found.</div>
               ) : (
                 projects.map(project => (
                   <button
                     key={project.id}
                     onClick={() => setSelectedGigId(project.id)}
-                    className={`px-4 py-2 rounded-md whitespace-nowrap ${selectedGigId === project.id
-                      ? 'bg-blue-100 text-blue-800 font-medium'
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                    className={`px-4 py-2.5 rounded-xl whitespace-nowrap text-sm font-medium transition-all ${selectedGigId === project.id
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                       }`}
                   >
                     {project.name}
@@ -689,12 +691,11 @@ export default function SessionPlanning() {
             )}
 
             {showAIPanel && (
-              <div className="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 border-l-4 border-purple-500">
                 <div className="flex items-center mb-4">
                   <Brain className="w-6 h-6 text-purple-600 mr-2" />
-                  <h2 className="text-xl font-bold text-gray-800">AI Insights</h2>
+                  <h2 className="text-lg font-semibold text-gray-900">AI Insights</h2>
                 </div>
-
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <WorkloadPrediction slots={slots} />
                 </div>
@@ -718,19 +719,19 @@ export default function SessionPlanning() {
                   view="2-weeks"
                 />
               </div>
-              <div className="bg-white rounded-lg shadow p-4">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4">Weekly Overview</h2>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 className="text-base font-semibold text-gray-900 mb-4">Weekly Overview</h2>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Available Slots</span>
-                    <span className="font-medium">{weeklyStats.availableSlots}</span>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Available Slots</span>
+                    <span className="font-semibold text-gray-900">{weeklyStats.availableSlots}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Reserved Slots</span>
-                    <span className="font-medium">{weeklyStats.reservedSlots}</span>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Reserved Slots</span>
+                    <span className="font-semibold text-gray-900">{weeklyStats.reservedSlots}</span>
                   </div>
-                  <hr className="my-4" />
-                  <h3 className="font-medium text-gray-800">Gig Hours</h3>
+                  <hr className="my-4 border-gray-100" />
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Gig Hours</h3>
                   {Object.entries(weeklyStats.projectBreakdown).map(([gigId, hours]) => {
                     const project = projects.find(p => p.id === gigId);
                     return (
@@ -747,8 +748,8 @@ export default function SessionPlanning() {
                     );
                   })}
 
-                  <hr className="my-4" />
-                  <h3 className="font-medium text-gray-800 mb-2">Quick Reserve</h3>
+                  <hr className="my-4 border-gray-100" />
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Quick Reserve</h3>
                   <SlotActionPanel
                     slot={selectedSlot || slots[0] || {} as any}
                     availableProjects={projects}
@@ -810,19 +811,19 @@ export default function SessionPlanning() {
         ) : (
           // Admin view
           <div className="grid grid-cols-1 gap-6">
-            <div className="bg-white rounded-lg shadow p-4">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">Admin Dashboard</h2>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Admin Dashboard</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="font-medium text-blue-800 mb-2">Total REPs</h3>
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                  <h3 className="text-sm font-medium text-blue-800 mb-1">Total REPs</h3>
                   <p className="text-2xl font-bold text-blue-900">{reps.length}</p>
                 </div>
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h3 className="font-medium text-green-800 mb-2">Total Companies</h3>
-                  <p className="text-2xl font-bold text-green-900">{sampleCompanies.length}</p>
+                <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                  <h3 className="text-sm font-medium text-emerald-800 mb-1">Total Companies</h3>
+                  <p className="text-2xl font-bold text-emerald-900">{sampleCompanies.length}</p>
                 </div>
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <h3 className="font-medium text-purple-800 mb-2">Total Gigs</h3>
+                <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
+                  <h3 className="text-sm font-medium text-purple-800 mb-1">Total Gigs</h3>
                   <p className="text-2xl font-bold text-purple-900">{projects.length}</p>
                 </div>
               </div>
@@ -838,30 +839,30 @@ export default function SessionPlanning() {
             {showAIPanel && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <WorkloadPrediction slots={slots} />
-                <div className="bg-white rounded-lg shadow p-4">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                   <div className="flex items-center mb-4">
                     <Brain className="w-5 h-5 text-purple-600 mr-2" />
-                    <h2 className="text-lg font-semibold text-gray-800">AI Insights</h2>
+                    <h2 className="text-lg font-semibold text-gray-900">AI Insights</h2>
                   </div>
                   <div className="space-y-4">
-                    <div className="p-3 bg-purple-50 rounded-lg">
-                      <h3 className="font-medium text-purple-800 mb-2">Scheduling Efficiency</h3>
+                    <div className="p-4 bg-purple-50 rounded-xl border border-purple-100">
+                      <h3 className="text-sm font-medium text-purple-800 mb-2">Scheduling Efficiency</h3>
                       <p className="text-sm text-gray-700">
                         Based on current scheduling patterns, the system is operating at
                         <span className="font-bold text-purple-800"> 78% </span>
                         efficiency. Consider optimizing REP assignments based on AI recommendations.
                       </p>
                     </div>
-                    <div className="p-3 bg-blue-50 rounded-lg">
-                      <h3 className="font-medium text-blue-800 mb-2">Resource Allocation</h3>
+                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                      <h3 className="text-sm font-medium text-blue-800 mb-2">Resource Allocation</h3>
                       <p className="text-sm text-gray-700">
                         Tech Co projects are currently overallocated by
                         <span className="font-bold text-blue-800"> 12% </span>
                         while Acme Corp is underallocated. Consider rebalancing resources.
                       </p>
                     </div>
-                    <div className="p-3 bg-green-50 rounded-lg">
-                      <h3 className="font-medium text-green-800 mb-2">Performance Insights</h3>
+                    <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                      <h3 className="text-sm font-medium text-emerald-800 mb-2">Performance Insights</h3>
                       <p className="text-sm text-gray-700">
                         REPs with diverse project assignments show
                         <span className="font-bold text-green-800"> 23% higher </span>
@@ -874,15 +875,15 @@ export default function SessionPlanning() {
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-lg shadow p-4">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4">REP Overview</h2>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">REP Overview</h2>
                 <div className="space-y-4">
                   {reps.map(rep => {
                     const repSlots = slots.filter(slot => slot.repId === rep.id && slot.status === 'reserved');
                     const totalHours = repSlots.reduce((sum, slot) => sum + (slot.duration || 1), 0);
 
                     return (
-                      <div key={rep.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div key={rep.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
                         <div className="flex items-center">
                           <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
                             {rep.avatar ? (
@@ -920,8 +921,8 @@ export default function SessionPlanning() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-4">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4">Company Overview</h2>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Company Overview</h2>
                 <div className="space-y-4">
                   {sampleCompanies.map(company => {
                     const companySlots = slots.filter(slot => {
@@ -933,7 +934,7 @@ export default function SessionPlanning() {
                     const uniqueReps = new Set(companySlots.map(slot => slot.repId)).size;
 
                     return (
-                      <div key={company.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div key={company.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
                         <div className="flex items-center">
                           <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
                             {company.logo ? (
@@ -969,7 +970,8 @@ export default function SessionPlanning() {
           </div>
         )
         }
-      </main >
-    </div >
+      </main>
+      </div>
+    </div>
   );
 }
