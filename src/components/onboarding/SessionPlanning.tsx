@@ -36,8 +36,8 @@ const mapBackendSlotToSlot = (slot: any): TimeSlot => {
     startTime: slot.startTime,
     endTime: slot.endTime,
     date: slot.date,
-    gigId: slot.gigId?.$oid || slot.gigId,
-    repId: slot.agentId?.$oid || slot.agentId || slot.repId, // Map agentId to repId
+    gigId: String(slot.gigId?.$oid || slot.gigId),
+    repId: String(slot.agentId?.$oid || slot.agentId || slot.repId), // Map agentId to repId
     status: slot.status,
     duration: slot.duration || 1,
     notes: slot.notes,
@@ -199,15 +199,22 @@ export default function SessionPlanning() {
         const agents = await schedulerApi.getGigAgents(selectedGigId);
         if (agents && agents.length > 0) {
           const mappedReps: Rep[] = agents.map(a => {
-            const agentData = a.agentId?._id ? a.agentId : a;
+            // Some APIs return { agentId: { ...agentData } }, others return { ...agentData }
+            const agentData = a.agentId && typeof a.agentId === 'object' ? a.agentId : a;
+
+            // Extract the string ID robustly
             const id = agentData._id?.$oid || agentData._id || agentData.id || a.agentId?.$oid || a.agentId || a._id;
 
+            // Extract personal info robustly
+            const personalInfo = agentData.personalInfo || {};
+            const professionalSummary = agentData.professionalSummary || {};
+
             return {
-              id: id,
-              name: agentData.fullName || agentData.name || 'Unknown Agent',
-              email: agentData.email || '',
-              avatar: agentData.avatar || '',
-              specialties: agentData.specialties || [],
+              id: String(id),
+              name: personalInfo.name || agentData.name || agentData.fullName || 'Unknown Agent',
+              email: personalInfo.email || agentData.email || '',
+              avatar: personalInfo.photo?.url || agentData.avatar || agentData.photo?.url || '',
+              specialties: professionalSummary.keyExpertise || agentData.specialties || [],
               performanceScore: agentData.performanceScore || 85,
               preferredHours: agentData.preferredHours || { start: 9, end: 17 },
               attendanceScore: agentData.attendanceScore || 90,
