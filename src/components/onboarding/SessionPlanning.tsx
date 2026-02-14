@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Calendar } from '../../components/scheduler/Calendar';
 import { TimeSlotGrid } from '../../components/scheduler/TimeSlotGrid';
-import { TimeSlot, Project, WeeklyStats, Rep, UserRole, Company, AttendanceRecord } from '../../types/scheduler';
+import { TimeSlot, Gig, WeeklyStats, Rep, UserRole, Company, AttendanceRecord } from '../../types/scheduler';
 import { Building, Clock, Briefcase, AlertCircle, Users, LayoutDashboard, Brain } from 'lucide-react';
 import { SlotActionPanel } from '../../components/scheduler/SlotActionPanel';
 import { RepSelector } from '../../components/scheduler/RepSelector';
@@ -14,10 +14,11 @@ import { AttendanceTracker } from '../../components/scheduler/AttendanceTracker'
 import { AttendanceScorecard } from '../../components/scheduler/AttendanceScorecard';
 import { AttendanceReport } from '../../components/scheduler/AttendanceReport';
 import { initializeAI } from '../../services/schedulerAiService';
+import { schedulerApi } from '../../services/schedulerService';
 import { format } from 'date-fns';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { Gig } from '../../types/matching';
+import { Gig as MatchingGig } from '../../types/matching';
 
 // Helper to generate a consistent color from a string
 const stringToColor = (str: string) => {
@@ -29,16 +30,16 @@ const stringToColor = (str: string) => {
   return '#' + '00000'.substring(0, 6 - c.length) + c;
 };
 
-// Map Gig to scheduler Project type
-const mapGigToProject = (gig: Gig): Project => {
+// Map Gig from backend to frontend Gig type
+const mapBackendGigToGig = (gig: any): Gig => {
   return {
     id: gig._id || crypto.randomUUID(),
     name: gig.title,
     description: gig.description,
     company: gig.companyName || 'Unknown Company',
     color: stringToColor(gig._id || gig.title),
-    skills: gig.requiredSkills?.map(s => s.name) || [],
-    priority: 'medium' // Default priority, could be derived
+    skills: gig.requiredSkills?.map((s: any) => typeof s === 'string' ? s : s.name) || [],
+    priority: 'medium'
   };
 };
 
@@ -118,14 +119,14 @@ export default function SessionPlanning() {
   const [userRole, setUserRole] = useState<UserRole>('rep');
   const [selectedRepId, setSelectedRepId] = useState<string>(sampleReps[0].id);
   // Replaced selectedCompany with selectedProjectId
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
   const [aiInitialized, setAiInitialized] = useState<boolean>(false);
   const [showAIPanel, setShowAIPanel] = useState<boolean>(false);
   const [showAttendancePanel, setShowAttendancePanel] = useState<boolean>(false);
   const [reps, setReps] = useState<Rep[]>(sampleReps);
 
   // Real Gigs Data
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<Gig[]>([]);
   const [loadingGigs, setLoadingGigs] = useState<boolean>(true);
 
   useEffect(() => {
@@ -143,16 +144,15 @@ export default function SessionPlanning() {
         const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
         const response = await axios.get(`${apiUrl}/gigs/company/${companyId}`);
 
-        if (response.data && response.data.data) {
-          const mappedProjects = response.data.data.map(mapGigToProject);
+        const gigData = (response.data as any).data || response.data;
+        if (Array.isArray(gigData)) {
+          const mappedProjects = gigData.map(mapBackendGigToGig);
           setProjects(mappedProjects);
           // Set default selected project
           if (mappedProjects.length > 0) {
             setSelectedProjectId(mappedProjects[0].id);
           }
-          if (mappedProjects.length > 0) {
-            console.log(`Loaded ${mappedProjects.length} gigs`);
-          }
+          console.log(`Loaded ${mappedProjects.length} gigs`);
         }
       } catch (error) {
         console.error('Error fetching gigs:', error);
@@ -171,6 +171,48 @@ export default function SessionPlanning() {
     initAI();
     fetchGigs();
   }, [userRole]);
+
+  // Fetch Slots and Agents for the selected Gig
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!selectedGigId) return;
+
+      try {
+        setLoadingGigs(true);
+        // Fetch Agents for this Gig
+        const agents = await schedulerApi.getGigAgents(selectedGigId);
+        if (agents && agents.length > 0) {
+          const mappedReps: Rep[] = agents.map(a => ({
+            id: a.agentId?._id || a.agentId || a._id,
+            name: a.agentId?.fullName || a.agentId?.name || 'Unknown Agent',
+            email: a.agentId?.email || '',
+            avatar: a.agentId?.avatar || '',
+            specialties: a.agentId?.specialties || [],
+            performanceScore: a.agentId?.performanceScore || 85,
+            preferredHours: a.agentId?.preferredHours || { start: 9, end: 17 },
+            attendanceScore: a.agentId?.attendanceScore || 90,
+            attendanceHistory: []
+          }));
+          setReps(mappedReps);
+          if (mappedReps.length > 0 && !mappedReps.find(r => r.id === selectedRepId)) {
+            setSelectedRepId(mappedReps[0].id);
+          }
+        }
+
+        // Fetch Slots for this Gig and optionally for the selected Rep
+        const dateStr = format(selectedDate, 'yyyy-MM-dd');
+        const fetchedSlots = await schedulerApi.getTimeSlots(undefined, selectedGigId, dateStr);
+        setSlots(fetchedSlots);
+
+      } catch (error) {
+        console.error('Error fetching gig data:', error);
+      } finally {
+        setLoadingGigs(false);
+      }
+    };
+
+    fetchData();
+  }, [selectedProjectId, selectedDate]);
 
   const selectedRep = useMemo(() => {
     return reps.find(rep => rep.id === selectedRepId) || reps[0];
@@ -199,8 +241,8 @@ export default function SessionPlanning() {
           stats.reservedSlots++;
         }
 
-        if (slot.projectId) {
-          stats.projectBreakdown[slot.projectId] = (stats.projectBreakdown[slot.projectId] || 0) + (slot.duration || 1);
+        if (slot.gigId) {
+          stats.projectBreakdown[slot.gigId] = (stats.projectBreakdown[slot.gigId] || 0) + (slot.duration || 1);
         }
       }
     });
@@ -208,11 +250,13 @@ export default function SessionPlanning() {
     return stats;
   }, [slots, userRole, selectedRepId]);
 
-  const handleSlotUpdate = (updatedSlot: TimeSlot) => {
+  const handleSlotUpdate = (updates: Partial<TimeSlot>) => {
+    if (!updates.id) return;
+
     // Ensure the slot has a repId
     const slotWithRep = {
-      ...updatedSlot,
-      repId: updatedSlot.repId || selectedRepId
+      ...updates as TimeSlot,
+      repId: updates.repId || selectedRepId
     };
 
     const existingSlotIndex = slots.findIndex((slot) => slot.id === slotWithRep.id);
@@ -263,14 +307,14 @@ export default function SessionPlanning() {
   };
 
   const handleBulkReserve = (startHour: number, endHour: number, projectId: string) => {
-    const newSlots = [];
+    const newSlots: any[] = [];
     for (let hour = startHour; hour < endHour; hour++) {
       const timeString = `${hour.toString().padStart(2, '0')}:00`;
       const existingSlot = slots.find(
         (s) =>
           s.date === format(selectedDate, 'yyyy-MM-dd') &&
           s.startTime === timeString &&
-          s.repId === selectedRepId
+          s.gigId === selectedRepId
       );
 
       if (!existingSlot) {
@@ -279,9 +323,9 @@ export default function SessionPlanning() {
           startTime: timeString,
           endTime: `${(hour + 1).toString().padStart(2, '0')}:00`,
           date: format(selectedDate, 'yyyy-MM-dd'),
-          status: 'reserved',
+          status: 'reserved' as const,
           duration: 1,
-          projectId,
+          gigId: projectId,
           repId: selectedRepId,
         });
       }
@@ -314,7 +358,7 @@ export default function SessionPlanning() {
       // Update existing slot
       handleSlotUpdate({
         ...existingSlot,
-        projectId,
+        gigId: projectId,
         status: 'reserved'
       });
     } else {
@@ -324,9 +368,9 @@ export default function SessionPlanning() {
         startTime: timeString,
         endTime: `${(optimalHour + 1).toString().padStart(2, '0')}:00`,
         date: format(selectedDate, 'yyyy-MM-dd'),
-        status: 'reserved',
+        status: 'reserved' as const,
         duration: 1,
-        projectId,
+        gigId: projectId,
         repId: selectedRepId,
       });
     }
@@ -351,19 +395,25 @@ export default function SessionPlanning() {
     if (existingSlot) {
       setSelectedSlot(existingSlot);
     } else {
-      // Create a new available slot
-      const newSlot = {
+      // Create new slot
+      handleSlotUpdate({
         id: crypto.randomUUID(),
         startTime: timeString,
         endTime: `${(hour + 1).toString().padStart(2, '0')}:00`,
         date: format(selectedDate, 'yyyy-MM-dd'),
-        status: 'available',
+        status: 'available' as const,
         duration: 1,
         repId: selectedRepId,
-      };
-
-      handleSlotUpdate(newSlot);
-      setSelectedSlot(newSlot);
+      });
+      setSelectedSlot({
+        id: crypto.randomUUID(),
+        startTime: timeString,
+        endTime: `${(hour + 1).toString().padStart(2, '0')}:00`,
+        date: format(selectedDate, 'yyyy-MM-dd'),
+        status: 'available' as const,
+        duration: 1,
+        repId: selectedRepId,
+      });
     }
   };
 
@@ -460,8 +510,8 @@ export default function SessionPlanning() {
             <button
               onClick={() => setUserRole('rep')}
               className={`px-4 py-2 rounded-md flex items-center ${userRole === 'rep'
-                  ? 'bg-blue-100 text-blue-800 font-medium'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                ? 'bg-blue-100 text-blue-800 font-medium'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
                 }`}
             >
               <Users className="w-4 h-4 mr-2" />
@@ -470,8 +520,8 @@ export default function SessionPlanning() {
             <button
               onClick={() => setUserRole('company')}
               className={`px-4 py-2 rounded-md flex items-center ${userRole === 'company'
-                  ? 'bg-blue-100 text-blue-800 font-medium'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                ? 'bg-blue-100 text-blue-800 font-medium'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
                 }`}
             >
               <Building className="w-4 h-4 mr-2" />
@@ -480,8 +530,8 @@ export default function SessionPlanning() {
             <button
               onClick={() => setUserRole('admin')}
               className={`px-4 py-2 rounded-md flex items-center ${userRole === 'admin'
-                  ? 'bg-blue-100 text-blue-800 font-medium'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                ? 'bg-blue-100 text-blue-800 font-medium'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
                 }`}
             >
               <LayoutDashboard className="w-4 h-4 mr-2" />
@@ -490,8 +540,8 @@ export default function SessionPlanning() {
             <button
               onClick={() => setShowAIPanel(!showAIPanel)}
               className={`px-4 py-2 rounded-md flex items-center ${showAIPanel
-                  ? 'bg-purple-100 text-purple-800 font-medium'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                ? 'bg-purple-100 text-purple-800 font-medium'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
                 }`}
             >
               <Brain className="w-4 h-4 mr-2" />
@@ -500,8 +550,8 @@ export default function SessionPlanning() {
             <button
               onClick={() => setShowAttendancePanel(!showAttendancePanel)}
               className={`px-4 py-2 rounded-md flex items-center ${showAttendancePanel
-                  ? 'bg-green-100 text-green-800 font-medium'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                ? 'bg-green-100 text-green-800 font-medium'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
                 }`}
             >
               <Clock className="w-4 h-4 mr-2" />
@@ -521,10 +571,10 @@ export default function SessionPlanning() {
                 projects.map(project => (
                   <button
                     key={project.id}
-                    onClick={() => setSelectedProjectId(project.id)}
-                    className={`px-4 py-2 rounded-md whitespace-nowrap ${selectedProjectId === project.id
-                        ? 'bg-blue-100 text-blue-800 font-medium'
-                        : 'bg-white text-gray-600 hover:bg-gray-50'
+                    onClick={() => setSelectedGigId(project.id)}
+                    className={`px-4 py-2 rounded-md whitespace-nowrap ${selectedGigId === project.id
+                      ? 'bg-blue-100 text-blue-800 font-medium'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
                       }`}
                   >
                     {project.name}
@@ -549,7 +599,7 @@ export default function SessionPlanning() {
                     <span className="text-gray-600">Total REPs Scheduled</span>
                     <span className="font-medium">
                       {new Set(slots
-                        .filter(slot => slot.projectId === selectedProjectId && slot.status === 'reserved')
+                        .filter(slot => slot.gigId === selectedGigId && slot.status === 'reserved')
                         .map(slot => slot.repId)
                       ).size}
                     </span>
@@ -558,21 +608,21 @@ export default function SessionPlanning() {
                     <span className="text-gray-600">Total Hours</span>
                     <span className="font-medium">
                       {slots
-                        .filter(slot => slot.projectId === selectedProjectId && slot.status === 'reserved')
-                        .reduce((sum, slot) => sum + slot.duration, 0)}h
+                        .filter(slot => slot.gigId === selectedGigId && slot.status === 'reserved')
+                        .reduce((sum, slot) => sum + (slot.duration || 1), 0)}h
                     </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {selectedProjectId && (
+            {selectedGigId && (
               <CompanyView
                 // Hack: Pass Gig Name as 'company' to trick CompanyView into being a GigView
-                company={projects.find(p => p.id === selectedProjectId)?.name || ''}
+                company={projects.find(p => p.id === selectedGigId)?.name || ''}
                 slots={slots}
                 // Hack: Override project.company with project.name so strict equal check passes in CompanyView
-                projects={projects.filter(p => p.id === selectedProjectId).map(p => ({ ...p, company: p.name }))}
+                projects={projects.filter(p => p.id === selectedGigId).map(p => ({ ...p, company: p.name }))}
                 reps={reps}
                 selectedDate={selectedDate}
               />
@@ -611,7 +661,7 @@ export default function SessionPlanning() {
             <RepSelector
               reps={reps}
               selectedRepId={selectedRepId}
-              onRepSelect={setSelectedRepId}
+              onSelectRep={setSelectedRepId}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -635,10 +685,10 @@ export default function SessionPlanning() {
                   </div>
                   <hr className="my-4" />
                   <h3 className="font-medium text-gray-800">Gig Hours</h3>
-                  {Object.entries(weeklyStats.projectBreakdown).map(([projectId, hours]) => {
-                    const project = projects.find(p => p.id === projectId);
+                  {Object.entries(weeklyStats.projectBreakdown).map(([gigId, hours]) => {
+                    const project = projects.find(p => p.id === gigId);
                     return (
-                      <div key={projectId} className="flex justify-between items-center">
+                      <div key={gigId} className="flex justify-between items-center">
                         <div className="flex items-center">
                           <div
                             className="w-3 h-3 rounded-full mr-2"
@@ -784,7 +834,7 @@ export default function SessionPlanning() {
                 <div className="space-y-4">
                   {reps.map(rep => {
                     const repSlots = slots.filter(slot => slot.repId === rep.id && slot.status === 'reserved');
-                    const totalHours = repSlots.reduce((sum, slot) => sum + slot.duration, 0);
+                    const totalHours = repSlots.reduce((sum, slot) => sum + (slot.duration || 1), 0);
 
                     return (
                       <div key={rep.id} className="flex items-center justify-between p-3 border rounded-lg">
@@ -830,11 +880,11 @@ export default function SessionPlanning() {
                 <div className="space-y-4">
                   {sampleCompanies.map(company => {
                     const companySlots = slots.filter(slot => {
-                      const project = projects.find(p => p.id === slot.projectId);
+                      const project = projects.find(p => p.id === slot.gigId);
                       return project?.company === company.name && slot.status === 'reserved';
                     });
 
-                    const totalHours = companySlots.reduce((sum, slot) => sum + slot.duration, 0);
+                    const totalHours = companySlots.reduce((sum, slot) => sum + (slot.duration || 1), 0);
                     const uniqueReps = new Set(companySlots.map(slot => slot.repId)).size;
 
                     return (
@@ -872,8 +922,9 @@ export default function SessionPlanning() {
               </div>
             </div>
           </div>
-        )}
-      </main>
-    </div>
+        )
+        }
+      </main >
+    </div >
   );
 }

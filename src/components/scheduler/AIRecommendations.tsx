@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { AIRecommendation, Project, Rep, TimeSlot } from '../../types/scheduler';
+import { AIRecommendation, Gig, Rep, TimeSlot } from '../../types/scheduler';
 import { getProjectRecommendations } from '../../services/schedulerAiService';
 import { Sparkles, Brain, ArrowRight } from 'lucide-react';
 
 interface AIRecommendationsProps {
     rep: Rep;
-    projects: Project[];
+    projects: Gig[];
     slots: TimeSlot[];
     onSelectProject: (projectId: string) => void;
 }
@@ -54,14 +54,14 @@ export function AIRecommendations({ rep, projects, slots, onSelectProject }: AIR
             {recommendations.length > 0 ? (
                 <div className="space-y-3">
                     {recommendations.slice(0, 3).map(recommendation => {
-                        const project = projects.find(p => p.id === recommendation.projectId);
+                        const project = projects.find(p => p.id === recommendation.gigId);
                         if (!project) return null;
 
                         return (
                             <div
-                                key={recommendation.projectId}
+                                key={recommendation.gigId}
                                 className="border rounded-lg p-3 hover:bg-blue-50 transition-colors cursor-pointer"
-                                onClick={() => onSelectProject(recommendation.projectId)}
+                                onClick={() => onSelectProject(recommendation.gigId)}
                             >
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center">
@@ -88,8 +88,8 @@ export function AIRecommendations({ rep, projects, slots, onSelectProject }: AIR
                                                 s.toLowerCase().includes(skill.toLowerCase()) ||
                                                 skill.toLowerCase().includes(s.toLowerCase())
                                             )
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-gray-100 text-gray-800'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-gray-100 text-gray-800'
                                                 }`}
                                         >
                                             {skill}

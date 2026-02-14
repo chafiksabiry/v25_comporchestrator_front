@@ -1,5 +1,5 @@
 import * as tf from '@tensorflow/tfjs';
-import { Rep, Project, TimeSlot, AIRecommendation, PerformanceMetric, WorkloadPrediction } from '../types/scheduler';
+import { Rep, Gig, TimeSlot, AIRecommendation, PerformanceMetric, WorkloadPrediction } from '../types/scheduler';
 
 // Simple model for rep-project matching
 let matchingModel: tf.LayersModel | null = null;
@@ -58,7 +58,7 @@ function createMatchingModel(): tf.LayersModel {
 // Get rep-project recommendations
 export function getProjectRecommendations(
     rep: Rep,
-    availableProjects: Project[],
+    availableProjects: Gig[],
     historicalSlots: TimeSlot[]
 ): AIRecommendation[] {
     // This is a simplified recommendation algorithm
@@ -69,10 +69,10 @@ export function getProjectRecommendations(
     // Calculate rep's historical project distribution
     const projectCounts: Record<string, number> = {};
     historicalSlots
-        .filter(slot => slot.repId === rep.id && slot.status === 'reserved' && slot.projectId)
+        .filter(slot => slot.repId === rep.id && slot.status === 'reserved' && slot.gigId)
         .forEach(slot => {
-            if (slot.projectId) {
-                projectCounts[slot.projectId] = (projectCounts[slot.projectId] || 0) + 1;
+            if (slot.gigId) {
+                projectCounts[slot.gigId] = (projectCounts[slot.gigId] || 0) + 1;
             }
         });
 
@@ -109,7 +109,7 @@ export function getProjectRecommendations(
 
         recommendations.push({
             repId: rep.id,
-            projectId: project.id,
+            gigId: project.id,
             confidence: Math.min(confidence + priorityBoost, 1),
             reason
         });
@@ -175,7 +175,7 @@ export function calculatePerformanceMetrics(
     // Calculate metrics (in a real system, these would come from actual data)
 
     // Satisfaction: based on project diversity (more diverse = higher satisfaction)
-    const uniqueProjects = new Set(repSlots.map(slot => slot.projectId).filter(Boolean)).size;
+    const uniqueProjects = new Set(repSlots.map(slot => slot.gigId).filter(Boolean)).size;
     const satisfactionScore = Math.min(uniqueProjects * 20, 100); // 5+ projects = 100%
 
     // Efficiency: based on number of slots and notes (more notes = more detailed work)
@@ -216,7 +216,7 @@ export function predictWorkload(
         });
 
         // Calculate average hours for this weekday
-        const totalHours = sameWeekdaySlots.reduce((sum, slot) => sum + slot.duration, 0);
+        const totalHours = sameWeekdaySlots.reduce((sum, slot) => sum + (slot.duration || 1), 0);
         const avgHours = sameWeekdaySlots.length > 0
             ? totalHours / Math.max(1, sameWeekdaySlots.length / 4) // Assuming 4 weeks of data
             : 8; // Default to 8 hours if no data

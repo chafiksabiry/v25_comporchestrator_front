@@ -1,12 +1,11 @@
-import React from 'react';
-import { TimeSlot, Project } from '../../types/scheduler';
+import { TimeSlot, Gig } from '../../types/scheduler';
 import { Clock } from 'lucide-react';
 
 interface TimeSlotGridProps {
     slots: TimeSlot[];
     onSlotClick: (id: string) => void;
     selectedSlotId: string | null;
-    projects?: Project[]; // Optional for color matching
+    projects?: Gig[]; // Optional for color matching
 }
 
 export function TimeSlotGrid({ slots, onSlotClick, selectedSlotId, projects = [] }: TimeSlotGridProps) {
@@ -19,7 +18,7 @@ export function TimeSlotGrid({ slots, onSlotClick, selectedSlotId, projects = []
         let borderColor = 'transparent';
 
         if (slot.status === 'reserved') {
-            const project = projects.find(p => p.id === slot.projectId);
+            const project = projects.find(p => p.id === slot.gigId);
             if (project) {
                 borderColor = project.color;
                 style = 'bg-blue-50 text-blue-700 font-medium';

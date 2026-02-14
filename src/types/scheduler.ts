@@ -3,7 +3,7 @@ export interface TimeSlot {
     startTime: string;
     endTime: string;
     date: string;
-    projectId?: string;
+    gigId?: string;
     status: 'available' | 'reserved' | 'cancelled';
     duration: number; // in hours
     notes?: string;
@@ -12,13 +12,13 @@ export interface TimeSlot {
     attendanceNotes?: string; // Notes about attendance
 }
 
-export interface Project {
+export interface Gig {
     id: string;
     name: string;
     description: string;
     company: string;
     color: string; // for visual identification
-    skills: string[]; // Skills required for this project
+    skills: string[]; // Skills required for this gig
     priority: 'low' | 'medium' | 'high';
 }
 
@@ -68,7 +68,7 @@ export interface User {
 
 export interface AIRecommendation {
     repId: string;
-    projectId: string;
+    gigId: string;
     confidence: number; // 0-1 score of match confidence
     reason: string;
 }
