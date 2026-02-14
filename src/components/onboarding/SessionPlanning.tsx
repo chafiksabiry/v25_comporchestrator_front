@@ -669,6 +669,7 @@ export default function SessionPlanning() {
                 selectedDate={selectedDate}
                 onDateSelect={setSelectedDate}
                 slots={slots}
+                view="2-weeks"
               />
             </div>
 
@@ -726,6 +727,7 @@ export default function SessionPlanning() {
                   selectedDate={selectedDate}
                   onDateSelect={setSelectedDate}
                   slots={slots.filter(slot => slot.repId === selectedRepId)}
+                  view="2-weeks"
                 />
               </div>
               <div className="bg-white rounded-lg shadow p-4">

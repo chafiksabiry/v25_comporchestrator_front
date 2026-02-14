@@ -7,7 +7,7 @@ interface CalendarProps {
     selectedDate: Date;
     onDateSelect: (date: Date) => void;
     slots: TimeSlot[];
-    view?: 'week' | 'month';
+    view?: 'week' | 'month' | '2-weeks';
 }
 
 export function Calendar({ selectedDate, onDateSelect, slots, view = 'month' }: CalendarProps) {
@@ -20,8 +20,21 @@ export function Calendar({ selectedDate, onDateSelect, slots, view = 'month' }: 
         }
     }, [selectedDate]);
 
-    const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
-    const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
+    const nextPeriod = () => {
+        if (view === '2-weeks') {
+            setCurrentMonth(addDays(currentMonth, 14));
+        } else {
+            setCurrentMonth(addMonths(currentMonth, 1));
+        }
+    };
+
+    const prevPeriod = () => {
+        if (view === '2-weeks') {
+            setCurrentMonth(addDays(currentMonth, -14));
+        } else {
+            setCurrentMonth(subMonths(currentMonth, 1));
+        }
+    };
 
     const renderHeader = () => {
         return (
@@ -32,23 +45,25 @@ export function Calendar({ selectedDate, onDateSelect, slots, view = 'month' }: 
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 leading-none">
-                            {format(currentMonth, 'MMMM yyyy')}
+                            {view === '2-weeks'
+                                ? `${format(startOfWeek(currentMonth), 'MMM d')} - ${format(addDays(startOfWeek(currentMonth), 13), 'MMM d, yyyy')}`
+                                : format(currentMonth, 'MMMM yyyy')}
                         </h2>
                         <p className="text-sm text-gray-500 mt-1">Manage your team's schedule</p>
                     </div>
                 </div>
                 <div className="flex bg-gray-100 rounded-lg p-1 space-x-1">
                     <button
-                        onClick={prevMonth}
+                        onClick={prevPeriod}
                         className="p-2 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-600 hover:text-gray-900"
-                        aria-label="Previous Month"
+                        aria-label="Previous"
                     >
                         <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button
-                        onClick={nextMonth}
+                        onClick={nextPeriod}
                         className="p-2 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-600 hover:text-gray-900"
-                        aria-label="Next Month"
+                        aria-label="Next"
                     >
                         <ChevronRight className="w-5 h-5" />
                     </button>
@@ -73,10 +88,17 @@ export function Calendar({ selectedDate, onDateSelect, slots, view = 'month' }: 
     };
 
     const renderCells = () => {
+        let startDate, endDate;
         const monthStart = startOfMonth(currentMonth);
-        const monthEnd = endOfMonth(monthStart);
-        const startDate = startOfWeek(monthStart);
-        const endDate = endOfWeek(monthEnd);
+
+        if (view === '2-weeks') {
+            startDate = startOfWeek(currentMonth);
+            endDate = addDays(startDate, 13);
+        } else {
+            const monthEnd = endOfMonth(monthStart);
+            startDate = startOfWeek(monthStart);
+            endDate = endOfWeek(monthEnd);
+        }
 
         const dateFormat = "d";
         const rows = [];
