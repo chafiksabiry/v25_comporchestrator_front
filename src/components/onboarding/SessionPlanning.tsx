@@ -243,8 +243,7 @@ export default function SessionPlanning() {
         }
 
         // Fetch Slots for this Gig and optionally for the selected Rep
-        const dateStr = format(selectedDate, 'yyyy-MM-dd');
-        const fetchedSlots = await schedulerApi.getTimeSlots(undefined, selectedGigId, dateStr);
+        const fetchedSlots = await schedulerApi.getTimeSlots(undefined, selectedGigId);
         const mappedSlots = Array.isArray(fetchedSlots) ? fetchedSlots.map(mapBackendSlotToSlot) : [];
         setSlots(mappedSlots);
 
