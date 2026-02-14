@@ -18,7 +18,6 @@ import { schedulerApi } from '../../services/schedulerService';
 import { format } from 'date-fns';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { Gig as MatchingGig } from '../../types/matching';
 
 // Helper to generate a consistent color from a string
 const stringToColor = (str: string) => {
@@ -30,14 +29,31 @@ const stringToColor = (str: string) => {
   return '#' + '00000'.substring(0, 6 - c.length) + c;
 };
 
+// Map Slot from backend to frontend TimeSlot type
+const mapBackendSlotToSlot = (slot: any): TimeSlot => {
+  return {
+    id: slot._id?.$oid || slot._id || crypto.randomUUID(),
+    startTime: slot.startTime,
+    endTime: slot.endTime,
+    date: slot.date,
+    gigId: slot.gigId?.$oid || slot.gigId,
+    repId: slot.agentId?.$oid || slot.agentId || slot.repId, // Map agentId to repId
+    status: slot.status,
+    duration: slot.duration || 1,
+    notes: slot.notes,
+    attended: slot.attended,
+    attendanceNotes: slot.attendanceNotes
+  };
+};
+
 // Map Gig from backend to frontend Gig type
 const mapBackendGigToGig = (gig: any): Gig => {
   return {
-    id: gig._id || crypto.randomUUID(),
+    id: gig._id?.$oid || gig._id || crypto.randomUUID(),
     name: gig.title,
     description: gig.description,
     company: gig.companyName || 'Unknown Company',
-    color: stringToColor(gig._id || gig.title),
+    color: stringToColor(gig._id?.$oid || gig._id || gig.title),
     skills: gig.requiredSkills?.map((s: any) => typeof s === 'string' ? s : s.name) || [],
     priority: 'medium'
   };
@@ -182,17 +198,22 @@ export default function SessionPlanning() {
         // Fetch Agents for this Gig
         const agents = await schedulerApi.getGigAgents(selectedGigId);
         if (agents && agents.length > 0) {
-          const mappedReps: Rep[] = agents.map(a => ({
-            id: a.agentId?._id || a.agentId || a._id,
-            name: a.agentId?.fullName || a.agentId?.name || 'Unknown Agent',
-            email: a.agentId?.email || '',
-            avatar: a.agentId?.avatar || '',
-            specialties: a.agentId?.specialties || [],
-            performanceScore: a.agentId?.performanceScore || 85,
-            preferredHours: a.agentId?.preferredHours || { start: 9, end: 17 },
-            attendanceScore: a.agentId?.attendanceScore || 90,
-            attendanceHistory: []
-          }));
+          const mappedReps: Rep[] = agents.map(a => {
+            const agentData = a.agentId?._id ? a.agentId : a;
+            const id = agentData._id?.$oid || agentData._id || agentData.id || a.agentId?.$oid || a.agentId || a._id;
+
+            return {
+              id: id,
+              name: agentData.fullName || agentData.name || 'Unknown Agent',
+              email: agentData.email || '',
+              avatar: agentData.avatar || '',
+              specialties: agentData.specialties || [],
+              performanceScore: agentData.performanceScore || 85,
+              preferredHours: agentData.preferredHours || { start: 9, end: 17 },
+              attendanceScore: agentData.attendanceScore || 90,
+              attendanceHistory: []
+            };
+          });
           setReps(mappedReps);
           if (mappedReps.length > 0 && !mappedReps.find(r => r.id === selectedRepId)) {
             setSelectedRepId(mappedReps[0].id);
@@ -202,7 +223,8 @@ export default function SessionPlanning() {
         // Fetch Slots for this Gig and optionally for the selected Rep
         const dateStr = format(selectedDate, 'yyyy-MM-dd');
         const fetchedSlots = await schedulerApi.getTimeSlots(undefined, selectedGigId, dateStr);
-        setSlots(fetchedSlots);
+        const mappedSlots = Array.isArray(fetchedSlots) ? fetchedSlots.map(mapBackendSlotToSlot) : [];
+        setSlots(mappedSlots);
 
       } catch (error) {
         console.error('Error fetching gig data:', error);
