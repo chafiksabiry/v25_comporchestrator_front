@@ -153,11 +153,11 @@ export function Calendar({ selectedDate, onDateSelect, slots, view = 'month' }: 
                             )}
                         </div>
 
-                        <div className="w-full space-y-2">
-                            {daySlots.length > 0 ? (
+                        <div className="w-full space-y-2 mt-auto">
+                            {daySlots.length > 0 && (
                                 <>
                                     {reservedCount > 0 && (
-                                        <div className="group/slot flex items-center justify-between text-[10px] px-2.5 py-1.5 bg-purple-50 text-purple-700 rounded-lg border border-purple-100 shadow-sm transition-transform hover:translate-x-1">
+                                        <div className="flex items-center justify-between text-[10px] px-2.5 py-1.5 bg-purple-50 text-purple-700 rounded-lg border border-purple-100 shadow-sm transition-all">
                                             <div className="flex items-center">
                                                 <Clock className="w-3 h-3 mr-1.5 font-bold" />
                                                 <span className="font-extrabold">{reservedCount}</span>
@@ -167,7 +167,7 @@ export function Calendar({ selectedDate, onDateSelect, slots, view = 'month' }: 
                                         </div>
                                     )}
                                     {availableCount > 0 && (
-                                        <div className="group/slot flex items-center justify-between text-[10px] px-2.5 py-1.5 bg-green-50 text-green-700 rounded-lg border border-green-100 shadow-sm transition-transform hover:translate-x-1">
+                                        <div className="flex items-center justify-between text-[10px] px-2.5 py-1.5 bg-green-50 text-green-700 rounded-lg border border-green-100 shadow-sm transition-all">
                                             <div className="flex items-center">
                                                 <div className="w-2 h-2 rounded-full bg-green-500 mr-2 shadow-sm shadow-green-200"></div>
                                                 <span className="font-extrabold">{availableCount}</span>
@@ -175,16 +175,7 @@ export function Calendar({ selectedDate, onDateSelect, slots, view = 'month' }: 
                                             </div>
                                         </div>
                                     )}
-                                    {daySlots.length > 2 && (
-                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest text-center mt-1 opacity-60">+{daySlots.length - 2} more</p>
-                                    )}
                                 </>
-                            ) : (
-                                isCurrentMonth && (
-                                    <div className="h-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 py-4">
-                                        <span className="text-[10px] bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-black uppercase tracking-wider shadow-sm border border-blue-100">+ Add Session</span>
-                                    </div>
-                                )
                             )}
                         </div>
                     </button>
