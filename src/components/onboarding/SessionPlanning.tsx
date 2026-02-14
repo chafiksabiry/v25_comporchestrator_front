@@ -583,37 +583,12 @@ export default function SessionPlanning() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <Calendar
-                  selectedDate={selectedDate}
-                  onDateSelect={setSelectedDate}
-                  slots={slots}
-                />
-              </div>
-              <div className="bg-white rounded-lg shadow p-4">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4">Gig Overview</h2>
-                <div className="space-y-4">
-                  {/* Gig stats */}
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Total REPs Scheduled</span>
-                    <span className="font-medium">
-                      {new Set(slots
-                        .filter(slot => slot.gigId === selectedGigId && slot.status === 'reserved')
-                        .map(slot => slot.repId)
-                      ).size}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Total Hours</span>
-                    <span className="font-medium">
-                      {slots
-                        .filter(slot => slot.gigId === selectedGigId && slot.status === 'reserved')
-                        .reduce((sum, slot) => sum + (slot.duration || 1), 0)}h
-                    </span>
-                  </div>
-                </div>
-              </div>
+            <div className="grid grid-cols-1 gap-6">
+              <Calendar
+                selectedDate={selectedDate}
+                onDateSelect={setSelectedDate}
+                slots={slots}
+              />
             </div>
 
             {selectedGigId && (
