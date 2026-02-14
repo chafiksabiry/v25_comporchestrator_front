@@ -1,36 +1,36 @@
 import React, { useState } from 'react';
-import { TimeSlot, Project } from '../../types/scheduler';
+import { TimeSlot, Gig } from '../../types/scheduler';
 import { Edit2, Trash2 } from 'lucide-react';
 
 interface SlotActionPanelProps {
     slot: TimeSlot;
     maxHours: number;
-    availableProjects: Project[];
+    availableProjects: Gig[];
     onUpdate: (updates: Partial<TimeSlot>) => void;
     onClear: () => void;
 }
 
 export function SlotActionPanel({ slot, maxHours, availableProjects, onUpdate, onClear }: SlotActionPanelProps) {
     const [isEditing, setIsEditing] = useState(false);
-    const [projectId, setProjectId] = useState(slot.projectId || '');
+    const [gigId, setGigId] = useState(slot.gigId || '');
     const [notes, setNotes] = useState(slot.notes || '');
 
     const handleSave = () => {
         onUpdate({
-            projectId: projectId || undefined,
+            gigId: gigId || undefined,
             notes: notes || undefined,
-            status: projectId ? 'reserved' : 'available'
+            status: gigId ? 'reserved' : 'available'
         });
         setIsEditing(false);
     };
 
     const handleCancel = () => {
-        setProjectId(slot.projectId || '');
+        setGigId(slot.gigId || '');
         setNotes(slot.notes || '');
         setIsEditing(false);
     };
 
-    if (!isEditing && !slot.projectId) {
+    if (!isEditing && !slot.gigId) {
         return (
             <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-dashed border-gray-300 text-center">
                 <p className="text-gray-500 mb-2">No project assigned to this slot</p>
@@ -52,8 +52,8 @@ export function SlotActionPanel({ slot, maxHours, availableProjects, onUpdate, o
                 <div className="mb-3">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
                     <select
-                        value={projectId}
-                        onChange={(e) => setProjectId(e.target.value)}
+                        value={gigId}
+                        onChange={(e) => setGigId(e.target.value)}
                         className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     >
                         <option value="">Select a project...</option>
@@ -94,7 +94,7 @@ export function SlotActionPanel({ slot, maxHours, availableProjects, onUpdate, o
         );
     }
 
-    const project = availableProjects.find(p => p.id === slot.projectId);
+    const project = availableProjects.find(p => p.id === slot.gigId);
 
     return (
         <div className="mt-4 p-4 bg-white rounded-lg shadow-md border border-l-4" style={{ borderLeftColor: project?.color || '#ccc' }}>

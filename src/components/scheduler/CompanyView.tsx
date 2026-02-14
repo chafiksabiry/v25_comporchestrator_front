@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
 import { format } from 'date-fns';
-import { TimeSlot, Project, Rep } from '../../types/scheduler';
+import { TimeSlot, Gig, Rep } from '../../types/scheduler';
 import { Building, Clock, User } from 'lucide-react';
 
 interface CompanyViewProps {
     company: string;
     slots: TimeSlot[];
-    projects: Project[];
+    projects: Gig[];
     reps: Rep[];
     selectedDate: Date;
 }
@@ -16,7 +16,7 @@ export function CompanyView({ company, slots, projects, reps, selectedDate }: Co
 
     const relevantSlots = useMemo(() => {
         return slots.filter(slot => {
-            const project = projects.find(p => p.id === slot.projectId);
+            const project = projects.find(p => p.id === slot.gigId);
             return project?.company === company &&
                 slot.date === format(selectedDate, 'yyyy-MM-dd') &&
                 slot.status === 'reserved';
@@ -30,7 +30,7 @@ export function CompanyView({ company, slots, projects, reps, selectedDate }: Co
             if (!hours[slot.repId]) {
                 hours[slot.repId] = 0;
             }
-            hours[slot.repId] += slot.duration;
+            hours[slot.repId] += (slot.duration || 1);
         });
 
         return hours;
@@ -93,7 +93,7 @@ export function CompanyView({ company, slots, projects, reps, selectedDate }: Co
 
                                 <div className="space-y-2">
                                     {repSlots.map(slot => {
-                                        const project = projects.find(p => p.id === slot.projectId);
+                                        const project = projects.find(p => p.id === slot.gigId);
 
                                         return (
                                             <div
@@ -104,7 +104,7 @@ export function CompanyView({ company, slots, projects, reps, selectedDate }: Co
                                                 <div>
                                                     <p className="font-medium">{project?.name}</p>
                                                     <p className="text-sm text-gray-500">
-                                                        {slot.startTime} - {slot.endTime} ({slot.duration}h)
+                                                        {slot.startTime} - {slot.endTime} ({slot.duration || 1}h)
                                                     </p>
                                                 </div>
                                                 {slot.notes && (
