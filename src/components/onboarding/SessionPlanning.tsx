@@ -40,6 +40,9 @@ const extractId = (id: any): string => {
 
 // Map Slot from backend to frontend TimeSlot type
 const mapBackendSlotToSlot = (slot: any): TimeSlot => {
+  const agentData = slot.agentId && typeof slot.agentId === 'object' ? slot.agentId : null;
+  const gigData = slot.gigId && typeof slot.gigId === 'object' ? slot.gigId : null;
+
   return {
     id: extractId(slot._id) || crypto.randomUUID(),
     startTime: slot.startTime,
@@ -51,7 +54,9 @@ const mapBackendSlotToSlot = (slot: any): TimeSlot => {
     duration: slot.duration || 1,
     notes: slot.notes,
     attended: slot.attended,
-    attendanceNotes: slot.attendanceNotes
+    attendanceNotes: slot.attendanceNotes,
+    agent: agentData, // Store populated agent data
+    gig: gigData // Store populated gig data
   };
 };
 
@@ -242,6 +247,43 @@ export default function SessionPlanning() {
         const fetchedSlots = await schedulerApi.getTimeSlots(undefined, selectedGigId, dateStr);
         const mappedSlots = Array.isArray(fetchedSlots) ? fetchedSlots.map(mapBackendSlotToSlot) : [];
         setSlots(mappedSlots);
+
+        // Extract and merge agents from populated slots to ensure we have all data
+        const populatedAgents: Rep[] = [];
+        mappedSlots.forEach(slot => {
+          if (slot.agent && slot.agent._id) {
+            const agentData = slot.agent;
+            const personalInfo = agentData.personalInfo || {};
+            const professionalSummary = agentData.professionalSummary || {};
+            const id = extractId(agentData);
+
+            if (!reps.find(r => r.id === id) && !populatedAgents.find(r => r.id === id)) {
+              populatedAgents.push({
+                id: id,
+                name: personalInfo.name || agentData.name || agentData.fullName || 'Unknown Agent',
+                email: personalInfo.email || agentData.email || '',
+                avatar: personalInfo.photo?.url || agentData.avatar || agentData.photo?.url || '',
+                specialties: professionalSummary.keyExpertise || agentData.specialties || [],
+                performanceScore: agentData.performanceScore || 85,
+                preferredHours: agentData.preferredHours || { start: 9, end: 17 },
+                attendanceScore: agentData.attendanceScore || 90,
+                attendanceHistory: []
+              });
+            }
+          }
+        });
+
+        if (populatedAgents.length > 0) {
+          setReps(prev => {
+            const newReps = [...prev];
+            populatedAgents.forEach(pa => {
+              if (!newReps.find(r => r.id === pa.id)) {
+                newReps.push(pa);
+              }
+            });
+            return newReps;
+          });
+        }
 
       } catch (error) {
         console.error('Error fetching gig data:', error);
