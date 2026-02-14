@@ -150,7 +150,7 @@ export default function SessionPlanning() {
           setProjects(mappedProjects);
           // Set default selected project
           if (mappedProjects.length > 0) {
-            setSelectedProjectId(mappedProjects[0].id);
+            setSelectedGigId(mappedProjects[0].id);
           }
           console.log(`Loaded ${mappedProjects.length} gigs`);
         }
@@ -212,7 +212,7 @@ export default function SessionPlanning() {
     };
 
     fetchData();
-  }, [selectedProjectId, selectedDate]);
+  }, [selectedGigId, selectedDate]);
 
   const selectedRep = useMemo(() => {
     return reps.find(rep => rep.id === selectedRepId) || reps[0];
