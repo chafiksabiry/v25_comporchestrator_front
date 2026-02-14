@@ -1,3 +1,4 @@
+import React from 'react';
 import { TimeSlot, Gig } from '../../types/scheduler';
 import { Clock } from 'lucide-react';
 
