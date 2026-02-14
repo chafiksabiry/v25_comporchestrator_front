@@ -29,15 +29,24 @@ const stringToColor = (str: string) => {
   return '#' + '00000'.substring(0, 6 - c.length) + c;
 };
 
+// Helper to robustly extract ID from various MongoDB formats
+const extractId = (id: any): string => {
+  if (!id) return '';
+  if (typeof id === 'string') return id;
+  if (id.$oid) return id.$oid;
+  if (id._id) return extractId(id._id);
+  return String(id);
+};
+
 // Map Slot from backend to frontend TimeSlot type
 const mapBackendSlotToSlot = (slot: any): TimeSlot => {
   return {
-    id: slot._id?.$oid || slot._id || crypto.randomUUID(),
+    id: extractId(slot._id) || crypto.randomUUID(),
     startTime: slot.startTime,
     endTime: slot.endTime,
     date: slot.date,
-    gigId: String(slot.gigId?.$oid || slot.gigId),
-    repId: String(slot.agentId?.$oid || slot.agentId || slot.repId), // Map agentId to repId
+    gigId: extractId(slot.gigId),
+    repId: extractId(slot.agentId || slot.repId), // Map agentId to repId
     status: slot.status,
     duration: slot.duration || 1,
     notes: slot.notes,
@@ -48,12 +57,13 @@ const mapBackendSlotToSlot = (slot: any): TimeSlot => {
 
 // Map Gig from backend to frontend Gig type
 const mapBackendGigToGig = (gig: any): Gig => {
+  const id = extractId(gig._id);
   return {
-    id: gig._id?.$oid || gig._id || crypto.randomUUID(),
+    id: id || crypto.randomUUID(),
     name: gig.title,
     description: gig.description,
     company: gig.companyName || 'Unknown Company',
-    color: stringToColor(gig._id?.$oid || gig._id || gig.title),
+    color: stringToColor(id || gig.title),
     skills: gig.requiredSkills?.map((s: any) => typeof s === 'string' ? s : s.name) || [],
     priority: 'medium'
   };
@@ -203,14 +213,14 @@ export default function SessionPlanning() {
             const agentData = a.agentId && typeof a.agentId === 'object' ? a.agentId : a;
 
             // Extract the string ID robustly
-            const id = agentData._id?.$oid || agentData._id || agentData.id || a.agentId?.$oid || a.agentId || a._id;
+            const id = extractId(agentData);
 
             // Extract personal info robustly
             const personalInfo = agentData.personalInfo || {};
             const professionalSummary = agentData.professionalSummary || {};
 
             return {
-              id: String(id),
+              id: id,
               name: personalInfo.name || agentData.name || agentData.fullName || 'Unknown Agent',
               email: personalInfo.email || agentData.email || '',
               avatar: personalInfo.photo?.url || agentData.avatar || agentData.photo?.url || '',
