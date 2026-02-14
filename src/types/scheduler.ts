@@ -10,6 +10,8 @@ export interface TimeSlot {
     repId: string; // Added to track which REP owns this slot
     attended?: boolean; // Whether the REP attended this slot
     attendanceNotes?: string; // Notes about attendance
+    agent?: any; // Populated agent data
+    gig?: any; // Populated gig data
 }
 
 export interface Gig {
