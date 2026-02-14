@@ -29,27 +29,22 @@ const stringToColor = (str: string) => {
   return '#' + '00000'.substring(0, 6 - c.length) + c;
 };
 
-// Helper to robustly extract ID from various MongoDB formats
-const extractId = (id: any): string => {
-  if (!id) return '';
-  if (typeof id === 'string') return id;
-  if (id.$oid) return id.$oid;
-  if (id._id) return extractId(id._id);
-  return String(id);
-};
-
 // Map Slot from backend to frontend TimeSlot type
 const mapBackendSlotToSlot = (slot: any): TimeSlot => {
   const agentData = slot.agentId && typeof slot.agentId === 'object' ? slot.agentId : null;
   const gigData = slot.gigId && typeof slot.gigId === 'object' ? slot.gigId : null;
 
+  const id = (slot._id as any)?.$oid || slot._id?.toString() || crypto.randomUUID();
+  const repId = (agentData as any)?._id || (agentData as any)?.$oid || slot.agentId?.toString() || slot.repId?.toString() || '';
+  const gigId = (gigData as any)?._id || (gigData as any)?.$oid || slot.gigId?.toString() || '';
+
   return {
-    id: extractId(slot._id) || crypto.randomUUID(),
+    id,
     startTime: slot.startTime,
     endTime: slot.endTime,
     date: slot.date,
-    gigId: extractId(slot.gigId),
-    repId: extractId(slot.agentId || slot.repId), // Map agentId to repId
+    gigId,
+    repId,
     status: slot.status,
     duration: slot.duration || 1,
     notes: slot.notes,
@@ -62,13 +57,13 @@ const mapBackendSlotToSlot = (slot: any): TimeSlot => {
 
 // Map Gig from backend to frontend Gig type
 const mapBackendGigToGig = (gig: any): Gig => {
-  const id = extractId(gig._id);
+  const id = (gig._id as any)?.$oid || gig._id?.toString() || crypto.randomUUID();
   return {
-    id: id || crypto.randomUUID(),
+    id,
     name: gig.title,
     description: gig.description,
     company: gig.companyName || 'Unknown Company',
-    color: stringToColor(id || gig.title),
+    color: stringToColor(id),
     skills: gig.requiredSkills?.map((s: any) => typeof s === 'string' ? s : s.name) || [],
     priority: 'medium'
   };
@@ -218,7 +213,7 @@ export default function SessionPlanning() {
             const agentData = a.agentId && typeof a.agentId === 'object' ? a.agentId : a;
 
             // Extract the string ID robustly
-            const id = extractId(agentData);
+            const id = (agentData as any)?._id || (agentData as any)?.$oid || agentData?.toString() || '';
 
             // Extract personal info robustly
             const personalInfo = agentData.personalInfo || {};
@@ -254,7 +249,7 @@ export default function SessionPlanning() {
             const agentData = slot.agent;
             const personalInfo = agentData.personalInfo || {};
             const professionalSummary = agentData.professionalSummary || {};
-            const id = extractId(agentData);
+            const id = (agentData as any)?._id || (agentData as any)?.$oid || agentData?.toString() || '';
 
             if (!reps.find(r => r.id === id) && !populatedAgents.find(r => r.id === id)) {
               populatedAgents.push({
@@ -330,50 +325,62 @@ export default function SessionPlanning() {
     return stats;
   }, [slots, userRole, selectedRepId]);
 
-  const handleSlotUpdate = (updates: Partial<TimeSlot>) => {
-    if (!updates.id) return;
+  const handleSlotUpdate = async (updates: Partial<TimeSlot>) => {
+    let slotWithRep: TimeSlot;
 
-    // Ensure the slot has a repId
-    const slotWithRep = {
-      ...updates as TimeSlot,
-      repId: updates.repId || selectedRepId
-    };
+    if (updates.id) {
+      const existing = slots.find(s => s.id === updates.id);
+      if (existing) {
+        slotWithRep = { ...existing, ...updates } as TimeSlot;
+      } else {
+        slotWithRep = { ...updates, repId: updates.repId || selectedRepId } as TimeSlot;
+      }
+    } else if (selectedSlot) {
+      slotWithRep = { ...selectedSlot, ...updates } as TimeSlot;
+    } else {
+      return;
+    }
 
-    const existingSlotIndex = slots.findIndex((slot) => slot.id === slotWithRep.id);
-    if (existingSlotIndex >= 0) {
-      setSlots((prev) => [
-        ...prev.slice(0, existingSlotIndex),
-        slotWithRep,
-        ...prev.slice(existingSlotIndex + 1),
-      ]);
+    try {
+      await schedulerApi.upsertTimeSlot(slotWithRep);
+      const updatedSlots = await schedulerApi.getTimeSlots(selectedRepId);
+      const mappedSlots = Array.isArray(updatedSlots) ? updatedSlots.map(mapBackendSlotToSlot) : [];
+      setSlots(mappedSlots);
+
       setNotification({
-        message: 'Time slot updated successfully',
+        message: updates.id ? 'Time slot updated successfully' : 'New time slot created',
         type: 'success'
       });
-    } else {
-      setSlots((prev) => [...prev, slotWithRep]);
+    } catch (error) {
+      console.error('Error saving slot:', error);
       setNotification({
-        message: 'New time slot created',
-        type: 'success'
+        message: 'Failed to save time slot',
+        type: 'error'
       });
     }
 
-    // Clear notification after 3 seconds
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const handleSlotCancel = (slotId: string) => {
-    setSlots((prev) =>
-      prev.map((slot) =>
-        slot.id === slotId ? { ...slot, status: 'cancelled' } : slot
-      )
-    );
-    setNotification({
-      message: 'Time slot cancelled',
-      type: 'success'
-    });
+  const handleSlotCancel = async (slotId: string) => {
+    try {
+      await schedulerApi.cancelTimeSlot(slotId);
+      const updatedSlots = await schedulerApi.getTimeSlots(selectedRepId);
+      const mappedSlots = Array.isArray(updatedSlots) ? updatedSlots.map(mapBackendSlotToSlot) : [];
+      setSlots(mappedSlots);
 
-    // Clear notification after 3 seconds
+      setNotification({
+        message: 'Time slot cancelled',
+        type: 'success'
+      });
+    } catch (error) {
+      console.error('Error cancelling slot:', error);
+      setNotification({
+        message: 'Failed to cancel time slot',
+        type: 'error'
+      });
+    }
+
     setTimeout(() => setNotification(null), 3000);
 
     // Clear selected slot if it was cancelled
@@ -386,8 +393,8 @@ export default function SessionPlanning() {
     setSelectedSlot(slot);
   };
 
-  const handleBulkReserve = (startHour: number, endHour: number, gigId: string) => {
-    const newSlots: any[] = [];
+  const handleBulkReserve = async (startHour: number, endHour: number, gigId: string) => {
+    const newSlotsToCreate: any[] = [];
     for (let hour = startHour; hour < endHour; hour++) {
       const timeString = `${hour.toString().padStart(2, '0')}:00`;
       const existingSlot = slots.find(
@@ -398,7 +405,7 @@ export default function SessionPlanning() {
       );
 
       if (!existingSlot) {
-        newSlots.push({
+        newSlotsToCreate.push({
           id: crypto.randomUUID(),
           startTime: timeString,
           endTime: `${(hour + 1).toString().padStart(2, '0')}:00`,
@@ -411,12 +418,24 @@ export default function SessionPlanning() {
       }
     }
 
-    if (newSlots.length > 0) {
-      setSlots((prev) => [...prev, ...newSlots]);
-      setNotification({
-        message: `${newSlots.length} time slots reserved`,
-        type: 'success'
-      });
+    if (newSlotsToCreate.length > 0) {
+      try {
+        await Promise.all(newSlotsToCreate.map(slot => schedulerApi.upsertTimeSlot(slot)));
+        const updatedSlots = await schedulerApi.getTimeSlots(selectedRepId);
+        const mappedSlots = Array.isArray(updatedSlots) ? updatedSlots.map(mapBackendSlotToSlot) : [];
+        setSlots(mappedSlots);
+
+        setNotification({
+          message: `${newSlotsToCreate.length} time slots reserved`,
+          type: 'success'
+        });
+      } catch (error) {
+        console.error('Error in bulk reserve:', error);
+        setNotification({
+          message: 'Failed to reserve time slots',
+          type: 'error'
+        });
+      }
       setTimeout(() => setNotification(null), 3000);
     }
   };
