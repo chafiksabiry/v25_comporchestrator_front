@@ -11,14 +11,21 @@ interface CalendarProps {
 }
 
 export function Calendar({ selectedDate, onDateSelect, slots, view = 'month' }: CalendarProps) {
-    const [currentMonth, setCurrentMonth] = useState(startOfMonth(selectedDate));
+    const [currentMonth, setCurrentMonth] = useState(view === '2-weeks' ? selectedDate : startOfMonth(selectedDate));
 
     // Sync currentMonth if selectedDate changes drastically
     useEffect(() => {
-        if (!isSameMonth(currentMonth, selectedDate)) {
+        if (view === '2-weeks') {
+            // For 2-weeks view, only sync if selectedDate is outside the current 14-day window
+            const start = startOfWeek(currentMonth);
+            const end = addDays(start, 13);
+            if (selectedDate < start || selectedDate > end) {
+                setCurrentMonth(selectedDate);
+            }
+        } else if (!isSameMonth(currentMonth, selectedDate)) {
             setCurrentMonth(startOfMonth(selectedDate));
         }
-    }, [selectedDate]);
+    }, [selectedDate, view]);
 
     const nextPeriod = () => {
         if (view === '2-weeks') {
