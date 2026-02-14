@@ -1,16 +1,15 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { TimeSlot, Gig } from '../../types/scheduler';
 import { Edit2, Trash2 } from 'lucide-react';
 
 interface SlotActionPanelProps {
     slot: TimeSlot;
-    maxHours: number;
     availableProjects: Gig[];
     onUpdate: (updates: Partial<TimeSlot>) => void;
     onClear: () => void;
 }
 
-export function SlotActionPanel({ slot, maxHours, availableProjects, onUpdate, onClear }: SlotActionPanelProps) {
+export function SlotActionPanel({ slot, availableProjects, onUpdate, onClear }: SlotActionPanelProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [gigId, setGigId] = useState(slot.gigId || '');
     const [notes, setNotes] = useState(slot.notes || '');
@@ -38,7 +37,7 @@ export function SlotActionPanel({ slot, maxHours, availableProjects, onUpdate, o
                     onClick={() => setIsEditing(true)}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                    Assign Project
+                    Assign Gig
                 </button>
             </div>
         );
@@ -50,7 +49,7 @@ export function SlotActionPanel({ slot, maxHours, availableProjects, onUpdate, o
                 <h3 className="font-semibold mb-3">Edit Slot Details</h3>
 
                 <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Gig</label>
                     <select
                         value={gigId}
                         onChange={(e) => setGigId(e.target.value)}
