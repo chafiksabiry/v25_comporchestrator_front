@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Calendar } from '../../components/scheduler/Calendar';
 import { TimeSlotGrid } from '../../components/scheduler/TimeSlotGrid';
 import { TimeSlot, Gig, WeeklyStats, Rep, UserRole, Company, AttendanceRecord } from '../../types/scheduler';
-import { Building, Clock, Briefcase, AlertCircle, Users, LayoutDashboard, Brain } from 'lucide-react';
+import { Building, Clock, Briefcase, AlertCircle, Users, Brain } from 'lucide-react';
 import { SlotActionPanel } from '../../components/scheduler/SlotActionPanel';
 import { RepSelector } from '../../components/scheduler/RepSelector';
 import { CompanyView } from '../../components/scheduler/CompanyView';
@@ -147,7 +147,7 @@ export default function SessionPlanning() {
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
-  const [userRole, setUserRole] = useState<UserRole>('rep');
+  const [userRole] = useState<UserRole>('company');
   const [selectedRepId, setSelectedRepId] = useState<string>(sampleReps[0].id);
   // Replaced selectedCompany with selectedProjectId
   const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
@@ -586,38 +586,8 @@ export default function SessionPlanning() {
             </div>
           </div>
 
-          {/* Role Switcher */}
+          {/* AI and Attendance Toggles (Role Switcher Removed) */}
           <div className="mt-6 flex space-x-4">
-            <button
-              onClick={() => setUserRole('rep')}
-              className={`px-4 py-2 rounded-md flex items-center ${userRole === 'rep'
-                ? 'bg-blue-100 text-blue-800 font-medium'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-                }`}
-            >
-              <Users className="w-4 h-4 mr-2" />
-              REP View
-            </button>
-            <button
-              onClick={() => setUserRole('company')}
-              className={`px-4 py-2 rounded-md flex items-center ${userRole === 'company'
-                ? 'bg-blue-100 text-blue-800 font-medium'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-                }`}
-            >
-              <Building className="w-4 h-4 mr-2" />
-              Company View
-            </button>
-            <button
-              onClick={() => setUserRole('admin')}
-              className={`px-4 py-2 rounded-md flex items-center ${userRole === 'admin'
-                ? 'bg-blue-100 text-blue-800 font-medium'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-                }`}
-            >
-              <LayoutDashboard className="w-4 h-4 mr-2" />
-              Admin View
-            </button>
             <button
               onClick={() => setShowAIPanel(!showAIPanel)}
               className={`px-4 py-2 rounded-md flex items-center ${showAIPanel
