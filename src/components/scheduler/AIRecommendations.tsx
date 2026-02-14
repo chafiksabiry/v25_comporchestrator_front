@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { AIRecommendation, Gig, Rep, TimeSlot } from '../../types/scheduler';
-import { getProjectRecommendations } from '../../services/schedulerAiService';
+import { getGigRecommendations } from '../../services/schedulerAiService';
 import { Sparkles, Brain, ArrowRight } from 'lucide-react';
 
 interface AIRecommendationsProps {
@@ -20,7 +20,7 @@ export function AIRecommendations({ rep, projects, slots, onSelectProject }: AIR
 
         // Small delay to simulate AI processing
         const timer = setTimeout(() => {
-            const newRecommendations = getProjectRecommendations(rep, projects, slots);
+            const newRecommendations = getGigRecommendations(rep, projects, slots);
             setRecommendations(newRecommendations);
             setLoading(false);
         }, 800);
@@ -48,7 +48,7 @@ export function AIRecommendations({ rep, projects, slots, onSelectProject }: AIR
         <div className="bg-white rounded-lg shadow p-4">
             <div className="flex items-center mb-4">
                 <Brain className="w-5 h-5 text-purple-600 mr-2" />
-                <h2 className="text-lg font-semibold text-gray-800">AI Project Recommendations</h2>
+                <h2 className="text-lg font-semibold text-gray-800">AI Gig Recommendations</h2>
             </div>
 
             {recommendations.length > 0 ? (

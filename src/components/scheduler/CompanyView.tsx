@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { TimeSlot, Gig, Rep } from '../../types/scheduler';
 import { Building, Clock, User } from 'lucide-react';
@@ -129,7 +129,7 @@ export function CompanyView({ company, slots, projects, reps, selectedDate }: Co
             </div>
 
             <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">Projects</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">Gigs</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {companyProjects.map(project => (
                         <div

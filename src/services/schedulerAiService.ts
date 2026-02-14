@@ -56,7 +56,7 @@ function createMatchingModel(): tf.LayersModel {
 }
 
 // Get rep-project recommendations
-export function getProjectRecommendations(
+export function getGigRecommendations(
     rep: Rep,
     availableProjects: Gig[],
     historicalSlots: TimeSlot[]

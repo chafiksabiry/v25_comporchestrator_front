@@ -306,7 +306,7 @@ export default function SessionPlanning() {
     setSelectedSlot(slot);
   };
 
-  const handleBulkReserve = (startHour: number, endHour: number, projectId: string) => {
+  const handleBulkReserve = (startHour: number, endHour: number, gigId: string) => {
     const newSlots: any[] = [];
     for (let hour = startHour; hour < endHour; hour++) {
       const timeString = `${hour.toString().padStart(2, '0')}:00`;
@@ -314,7 +314,7 @@ export default function SessionPlanning() {
         (s) =>
           s.date === format(selectedDate, 'yyyy-MM-dd') &&
           s.startTime === timeString &&
-          s.gigId === selectedRepId
+          s.repId === selectedRepId
       );
 
       if (!existingSlot) {
@@ -325,7 +325,7 @@ export default function SessionPlanning() {
           date: format(selectedDate, 'yyyy-MM-dd'),
           status: 'reserved' as const,
           duration: 1,
-          gigId: projectId,
+          gigId: gigId,
           repId: selectedRepId,
         });
       }
@@ -341,7 +341,7 @@ export default function SessionPlanning() {
     }
   };
 
-  const handleProjectSelect = (projectId: string) => {
+  const handleProjectSelect = (gigId: string) => {
     // Find the optimal time for this project based on AI recommendations
     const optimalHour = selectedRep.preferredHours?.start || 9;
 
@@ -358,7 +358,7 @@ export default function SessionPlanning() {
       // Update existing slot
       handleSlotUpdate({
         ...existingSlot,
-        gigId: projectId,
+        gigId: gigId,
         status: 'reserved'
       });
     } else {
@@ -370,7 +370,7 @@ export default function SessionPlanning() {
         date: format(selectedDate, 'yyyy-MM-dd'),
         status: 'reserved' as const,
         duration: 1,
-        gigId: projectId,
+        gigId: gigId,
         repId: selectedRepId,
       });
     }
@@ -704,7 +704,6 @@ export default function SessionPlanning() {
                   <hr className="my-4" />
                   <h3 className="font-medium text-gray-800 mb-2">Quick Reserve</h3>
                   <SlotActionPanel
-                    maxHours={10}
                     slot={selectedSlot || slots[0] || {} as any}
                     availableProjects={projects}
                     onUpdate={handleSlotUpdate}
