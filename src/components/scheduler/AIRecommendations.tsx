@@ -7,7 +7,7 @@ interface AIRecommendationsProps {
     rep: Rep;
     projects: Gig[];
     slots: TimeSlot[];
-    onSelectProject: (projectId: string) => void;
+    onSelectProject: (gigId: string) => void;
 }
 
 export function AIRecommendations({ rep, projects, slots, onSelectProject }: AIRecommendationsProps) {
