@@ -18,26 +18,34 @@ export function SlotGenerator({ gigId, onSlotsGenerated }: SlotGeneratorProps) {
     const [generating, setGenerating] = useState<boolean>(false);
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
+    if (!gigId) {
+        return (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center text-gray-500">
+                Select a gig to generate slots
+            </div>
+        );
+    }
+
     const handleGenerate = async () => {
         if (!gigId) {
             setMessage({ text: 'Please select a gig first', type: 'error' });
             return;
         }
 
-        if (new Date(startDate) > new Date(endDate)) {
-            setMessage({ text: 'End date must be after start date', type: 'error' });
-            return;
-        }
-
-        if (startHour >= endHour) {
-            setMessage({ text: 'End hour must be after start hour', type: 'error' });
-            return;
-        }
-
-        setGenerating(true);
-        setMessage(null);
-
         try {
+            if (new Date(startDate) > new Date(endDate)) {
+                setMessage({ text: 'End date must be after start date', type: 'error' });
+                return;
+            }
+
+            if (startHour >= endHour) {
+                setMessage({ text: 'End hour must be after start hour', type: 'error' });
+                return;
+            }
+
+            setGenerating(true);
+            setMessage(null);
+
             const params: SlotGenerationParams = {
                 gigId,
                 startDate,
@@ -52,13 +60,18 @@ export function SlotGenerator({ gigId, onSlotsGenerated }: SlotGeneratorProps) {
             setMessage({ text: result.message, type: 'success' });
             if (onSlotsGenerated) {
                 setTimeout(() => {
-                    onSlotsGenerated();
+                    try {
+                        onSlotsGenerated();
+                    } catch (err) {
+                        console.error('Error in onSlotsGenerated callback:', err);
+                    }
                     setMessage(null);
                 }, 2000);
             }
         } catch (error: any) {
+            console.error('Error generating slots:', error);
             setMessage({
-                text: error.response?.data?.message || 'Failed to generate slots',
+                text: error.response?.data?.message || error.message || 'Failed to generate slots',
                 type: 'error'
             });
         } finally {
