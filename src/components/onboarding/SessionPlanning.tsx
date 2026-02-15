@@ -15,6 +15,7 @@ import { AttendanceScorecard } from '../../components/scheduler/AttendanceScorec
 import { AttendanceReport } from '../../components/scheduler/AttendanceReport';
 import { initializeAI } from '../../services/schedulerAiService';
 import { schedulerApi } from '../../services/schedulerService';
+import { SlotGenerator } from '../../components/scheduler/SlotGenerator';
 import { format } from 'date-fns';
 import axios from 'axios';
 import Cookies from 'js-cookie';
@@ -725,6 +726,23 @@ export default function SessionPlanning() {
             </div>
 
             {selectedGigId && (
+              <>
+              <SlotGenerator 
+                gigId={selectedGigId} 
+                onSlotsGenerated={() => {
+                  // Refresh slots after generation
+                  const fetchData = async () => {
+                    try {
+                      const fetchedSlots = await schedulerApi.getTimeSlots(undefined, selectedGigId);
+                      const mappedSlots = Array.isArray(fetchedSlots) ? fetchedSlots.map(mapBackendSlotToSlot) : [];
+                      setSlots(mappedSlots);
+                    } catch (error) {
+                      console.error('Error refreshing slots:', error);
+                    }
+                  };
+                  fetchData();
+                }}
+              />
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <h3 className="text-base font-semibold text-gray-900 mb-4">Create slots (by gig)</h3>
                 <p className="text-sm text-gray-500 mb-4">Create reserved slots for a rep on the selected date. Slots are linked to the current gig.</p>
@@ -782,6 +800,7 @@ export default function SessionPlanning() {
                 )}
                 {isPastDate && <p className="text-xs text-amber-600 mt-2">Cannot create slots for past dates.</p>}
               </div>
+              </>
             )}
 
             {selectedGigId && (
