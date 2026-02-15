@@ -114,5 +114,18 @@ export const slotApi = {
             console.error('Error fetching reservations:', error);
             throw error;
         }
+    },
+
+    /**
+     * Delete a slot
+     */
+    deleteSlot: async (slotId: string): Promise<{ message: string }> => {
+        try {
+            const response = await axios.delete(`${MATCHING_API_URL}/slots/${slotId}`);
+            return response.data as any;
+        } catch (error) {
+            console.error('Error deleting slot:', error);
+            throw error;
+        }
     }
 };
