@@ -287,13 +287,23 @@ export default function SessionPlanning() {
         // Extract and merge agents from populated slots to ensure we have all data
         const populatedAgents: Rep[] = [];
         allSlots.forEach(slot => {
-          if (slot.agent && slot.agent._id) {
-            const agentData = slot.agent;
+          // Check both legacy single agent field and new reservations array
+          const agentsToProcess = [];
+          if (slot.agent && slot.agent._id) agentsToProcess.push(slot.agent);
+          if (slot.reservations && Array.isArray(slot.reservations)) {
+            slot.reservations.forEach((r: any) => {
+              if (r.agentId && typeof r.agentId === 'object') {
+                agentsToProcess.push(r.agentId);
+              }
+            });
+          }
+
+          agentsToProcess.forEach(agentData => {
             const personalInfo = agentData.personalInfo || {};
             const professionalSummary = agentData.professionalSummary || {};
             const id = (agentData as any)?._id || (agentData as any)?.$oid || agentData?.toString() || '';
 
-            if (!reps.find(r => r.id === id) && !populatedAgents.find(r => r.id === id)) {
+            if (id && !reps.find(r => r.id === id) && !populatedAgents.find(r => r.id === id)) {
               populatedAgents.push({
                 id: id,
                 name: personalInfo.name || agentData.name || agentData.fullName || 'Unknown Agent',
@@ -306,7 +316,7 @@ export default function SessionPlanning() {
                 attendanceHistory: []
               });
             }
-          }
+          });
         });
 
         if (populatedAgents.length > 0) {

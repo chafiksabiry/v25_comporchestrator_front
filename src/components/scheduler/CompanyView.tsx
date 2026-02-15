@@ -91,29 +91,48 @@ export function CompanyView({ company, slots, projects, reps, selectedDate }: Co
                             <div key={repId} className="space-y-6">
                                 {/* Rep Header matches Image 2 precisely */}
                                 <div className="flex items-center justify-between pb-4 border-b border-gray-100">
-                                    <div className="flex items-center">
-                                        <div className="w-14 h-14 rounded-full overflow-hidden mr-4 border-2 border-white shadow-md bg-gray-50 flex-shrink-0">
-                                            {rep?.avatar ? (
-                                                <img
-                                                    src={rep.avatar}
-                                                    alt={rep.name}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center bg-blue-100 text-blue-600 font-black text-xl">
-                                                    {rep?.name?.charAt(0) || 'R'}
+                                    {(() => {
+                                        // Find the first reservation in this set of slots that contains agent info
+                                        const firstSlotWithAgent = repSlots.find(s => s.reservations?.some(res =>
+                                            ((res.agentId?._id || res.agentId?.$oid || res.agentId)?.toString() === repId) &&
+                                            (typeof res.agentId === 'object')
+                                        ));
+
+                                        const populatedAgent = firstSlotWithAgent?.reservations?.find(res => (res.agentId?._id || res.agentId?.$oid || res.agentId)?.toString() === repId)?.agentId;
+
+                                        const agentName = populatedAgent?.personalInfo?.name || populatedAgent?.name || rep?.name || `Agent ${repId.substring(0, 4)}`;
+                                        const agentAvatar = populatedAgent?.personalInfo?.photo?.url || populatedAgent?.avatar || rep?.avatar;
+                                        const agentRole = populatedAgent?.professionalSummary?.currentRole || (rep?.specialties?.join(', ')) || 'Expert';
+
+                                        return (
+                                            <>
+                                                <div className="w-14 h-14 rounded-full overflow-hidden mr-4 border-2 border-white shadow-md bg-gray-50 flex-shrink-0">
+                                                    {agentAvatar ? (
+                                                        <img
+                                                            src={agentAvatar}
+                                                            alt={agentName}
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                (e.target as any).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(agentName)}&background=DBEAFE&color=2563EB&bold=true`;
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center bg-blue-100 text-blue-600 font-black text-xl">
+                                                            {agentName?.charAt(0) || 'R'}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <h4 className="text-xl font-black text-gray-900 leading-tight">
-                                                {rep?.name || `Agent ${repId.substring(0, 4)}`}
-                                            </h4>
-                                            <p className="text-gray-500 text-sm font-semibold">
-                                                {rep?.specialties?.join(', ') || 'Expert'}
-                                            </p>
-                                        </div>
-                                    </div>
+                                                <div>
+                                                    <h4 className="text-xl font-black text-gray-900 leading-tight">
+                                                        {agentName}
+                                                    </h4>
+                                                    <p className="text-gray-500 text-sm font-semibold">
+                                                        {agentRole}
+                                                    </p>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
                                     <div className="text-right">
                                         <div className="text-2xl font-black text-gray-900 leading-none mb-1">{hours}h</div>
                                         <div className="text-gray-400 text-sm font-bold">{repSlots.length} slots</div>
