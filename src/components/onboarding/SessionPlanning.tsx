@@ -48,10 +48,17 @@ const mapBackendSlotToSlot = (slot: any): TimeSlot => {
     date = slot.startTime.split('T')[0];
   }
 
-  // Support multiple reservations if present
+  // Support multiple reservations if present (Legacy support for embedded array)
   const reservations = slot.reservations || [];
-  const reservedCount = slot.reservedCount || reservations.length || 0;
+  const reservedCount = slot.reservedCount !== undefined ? slot.reservedCount : reservations.length;
   const capacity = slot.capacity || 1;
+  let reservationId = slot.reservationId || '';
+  let isReservation = !!slot.reservationId || !!slot.isMember;
+  let status = slot.status;
+
+  if (slot.reservationId) {
+    status = 'reserved';
+  }
 
   return {
     id,
@@ -60,7 +67,7 @@ const mapBackendSlotToSlot = (slot: any): TimeSlot => {
     date: date || '',
     gigId,
     repId,
-    status: slot.status,
+    status: status as any,
     duration: slot.duration || 1,
     notes: slot.notes,
     capacity,
@@ -69,7 +76,9 @@ const mapBackendSlotToSlot = (slot: any): TimeSlot => {
     attended: slot.attended,
     attendanceNotes: slot.attendanceNotes,
     agent: agentData, // Store populated agent data
-    gig: gigData // Store populated gig data
+    gig: gigData, // Store populated gig data
+    reservationId,
+    isMember: isReservation
   };
 };
 
@@ -264,10 +273,37 @@ export default function SessionPlanning() {
         setCreateSlotRepId('');
       }
 
-      // Fetch all slots for this gig
-      const availableSlots = await slotApi.getSlots(selectedGigId);
-      const allSlots = Array.isArray(availableSlots) ? availableSlots.map(mapBackendSlotToSlot) : [];
+      // Fetch all slots and reservations for this gig
+      const [availableSlotsResponse, reservationsResponse] = await Promise.all([
+        slotApi.getSlots(selectedGigId),
+        slotApi.getReservations(undefined, selectedGigId)
+      ]);
 
+      const availableSlots = Array.isArray(availableSlotsResponse) ? availableSlotsResponse : [];
+      const reservationsList = Array.isArray(reservationsResponse) ? reservationsResponse : [];
+
+      // Merge reservations back into slots for UI compatibility
+      const slotsWithReservations = availableSlots.map((slot: any) => {
+        const slotId = (slot._id as any)?.$oid || slot._id?.toString();
+        const slotReservations = reservationsList
+          .filter((r: any) => {
+            const rSlotId = (r.slotId?._id || r.slotId?.$oid || r.slotId)?.toString();
+            return rSlotId === slotId;
+          })
+          .map((r: any) => ({
+            _id: r._id,
+            agentId: r.agentId,
+            notes: r.notes,
+            reservedAt: r.createdAt
+          }));
+
+        return {
+          ...slot,
+          reservations: slotReservations
+        };
+      });
+
+      const allSlots = slotsWithReservations.map(mapBackendSlotToSlot);
       setSlots(allSlots);
 
       // Extract and merge agents from populated slots to ensure we have all data
@@ -486,52 +522,6 @@ export default function SessionPlanning() {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const handleBulkReserve = async (startHour: number, endHour: number, gigId: string) => {
-    const newSlotsToCreate: any[] = [];
-    for (let hour = startHour; hour < endHour; hour++) {
-      const timeString = `${hour.toString().padStart(2, '0')}:00`;
-      const existingSlot = slots.find(
-        (s) =>
-          s.date === format(selectedDate, 'yyyy-MM-dd') &&
-          s.startTime === timeString &&
-          s.repId === selectedRepId
-      );
-
-      if (!existingSlot) {
-        newSlotsToCreate.push({
-          id: crypto.randomUUID(),
-          startTime: timeString,
-          endTime: `${(hour + 1).toString().padStart(2, '0')}:00`,
-          date: format(selectedDate, 'yyyy-MM-dd'),
-          status: 'reserved' as const,
-          duration: 1,
-          gigId: gigId,
-          repId: selectedRepId,
-        });
-      }
-    }
-
-    if (newSlotsToCreate.length > 0) {
-      try {
-        await Promise.all(newSlotsToCreate.map(slot => schedulerApi.upsertTimeSlot(slot)));
-        const updatedSlots = await schedulerApi.getTimeSlots(selectedRepId);
-        const mappedSlots = Array.isArray(updatedSlots) ? updatedSlots.map(mapBackendSlotToSlot) : [];
-        setSlots(mappedSlots);
-
-        setNotification({
-          message: `${newSlotsToCreate.length} time slots reserved`,
-          type: 'success'
-        });
-      } catch (error) {
-        console.error('Error in bulk reserve:', error);
-        setNotification({
-          message: 'Failed to reserve time slots',
-          type: 'error'
-        });
-      }
-      setTimeout(() => setNotification(null), 3000);
-    }
-  };
 
   const handleProjectSelect = (gigId: string) => {
     // Find the optimal time for this project based on AI recommendations

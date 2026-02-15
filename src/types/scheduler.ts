@@ -19,6 +19,8 @@ export interface TimeSlot {
     attendanceNotes?: string;
     agent?: any;
     gig?: any;
+    reservationId?: string;
+    isMember?: boolean;
 }
 
 export interface Gig {
