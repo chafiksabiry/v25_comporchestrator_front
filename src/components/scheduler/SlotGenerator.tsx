@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Calendar, AlertCircle, CheckCircle } from 'lucide-react';
@@ -101,7 +102,7 @@ export function SlotGenerator({ gigId, companyId, onSlotsGenerated }: SlotGenera
             setGenerating(true);
             setMessage(null);
 
-            // Generate for next 7 days instead of just today/tomorrow to be sure
+            // Create for next 7 days instead of just today/tomorrow to be sure
             const today = new Date();
             const todayStr = format(today, 'yyyy-MM-dd');
             const end = new Date();
@@ -122,7 +123,7 @@ export function SlotGenerator({ gigId, companyId, onSlotsGenerated }: SlotGenera
             const result = await slotApi.generateSlots(params);
 
             setMessage({
-                text: result.message || 'Slots generated successfully for the next 7 days',
+                text: result.message || 'Slots created successfully for the next 7 days',
                 type: 'success'
             });
 
@@ -133,9 +134,9 @@ export function SlotGenerator({ gigId, companyId, onSlotsGenerated }: SlotGenera
                 }, 2000);
             }
         } catch (error: any) {
-            console.error('Error generating slots:', error);
+            console.error('Error creating slots:', error);
             setMessage({
-                text: error.response?.data?.message || error.message || 'Failed to generate slots',
+                text: error.response?.data?.message || error.message || 'Failed to create slots',
                 type: 'error'
             });
         } finally {
@@ -147,7 +148,7 @@ export function SlotGenerator({ gigId, companyId, onSlotsGenerated }: SlotGenera
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center gap-2 mb-4">
                 <Calendar className="w-5 h-5 text-blue-600" />
-                <h3 className="text-base font-semibold text-gray-900">Generate Slots</h3>
+                <h3 className="text-base font-semibold text-gray-900">Create Slots</h3>
             </div>
             <p className="text-sm text-gray-500 mb-4">
                 Automatically create available time slots for this gig based on the parameters below.
@@ -220,12 +221,12 @@ export function SlotGenerator({ gigId, companyId, onSlotsGenerated }: SlotGenera
                 {generating ? (
                     <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Generating...
+                        Creating...
                     </>
                 ) : (
                     <>
                         <Calendar className="w-4 h-4" />
-                        Generate Slots
+                        Create Slots
                     </>
                 )}
             </button>
