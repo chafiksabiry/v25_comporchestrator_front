@@ -731,6 +731,7 @@ export default function SessionPlanning() {
                   <SlotGenerator
                     gigId={selectedGigId || undefined}
                     companyId={Cookies.get('companyId')}
+                    selectedDate={selectedDate}
                     onSlotsGenerated={() => {
                       // Refresh slots after generation
                       if (!selectedGigId) return;
