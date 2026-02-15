@@ -695,367 +695,368 @@ export default function SessionPlanning() {
           </div>
         </div>
 
-      <main className="space-y-6">
-        {userRole === 'company' ? (
-          <div className="grid grid-cols-1 gap-6">
-            <div className="flex space-x-2 overflow-x-auto pb-2 no-scrollbar">
-              {projects.length === 0 ? (
-                <div className="text-gray-500 italic px-4 py-3 bg-white rounded-xl border border-dashed border-gray-200 w-full text-center text-sm">No active gigs found.</div>
-              ) : (
-                projects.map(project => (
-                  <button
-                    key={project.id}
-                    onClick={() => setSelectedGigId(project.id)}
-                    className={`px-4 py-2.5 rounded-xl whitespace-nowrap text-sm font-medium transition-all ${selectedGigId === project.id
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-                      }`}
-                  >
-                    {project.name}
-                  </button>
-                ))
-              )}
-            </div>
-
+        <main className="space-y-6">
+          {userRole === 'company' ? (
             <div className="grid grid-cols-1 gap-6">
-              <Calendar
-                selectedDate={selectedDate}
-                onDateSelect={setSelectedDate}
-                slots={slots}
-                view="2-weeks"
-              />
-            </div>
+              <div className="flex space-x-2 overflow-x-auto pb-2 no-scrollbar">
+                {projects.length === 0 ? (
+                  <div className="text-gray-500 italic px-4 py-3 bg-white rounded-xl border border-dashed border-gray-200 w-full text-center text-sm">No active gigs found.</div>
+                ) : (
+                  projects.map(project => (
+                    <button
+                      key={project.id}
+                      onClick={() => setSelectedGigId(project.id)}
+                      className={`px-4 py-2.5 rounded-xl whitespace-nowrap text-sm font-medium transition-all ${selectedGigId === project.id
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                        }`}
+                    >
+                      {project.name}
+                    </button>
+                  ))
+                )}
+              </div>
 
-            {selectedGigId && (
-              <>
-              <SlotGenerator 
-                gigId={selectedGigId || undefined} 
-                onSlotsGenerated={() => {
-                  // Refresh slots after generation
-                  if (!selectedGigId) return;
-                  const fetchData = async () => {
-                    try {
-                      const fetchedSlots = await schedulerApi.getTimeSlots(undefined, selectedGigId);
-                      const mappedSlots = Array.isArray(fetchedSlots) ? fetchedSlots.map(mapBackendSlotToSlot) : [];
-                      setSlots(mappedSlots);
-                    } catch (error) {
-                      console.error('Error refreshing slots:', error);
-                    }
-                  };
-                  fetchData();
-                }}
-              />
-              </>
-            )}
-
-            {selectedGigId && (
-              <CompanyView
-                // Hack: Pass Gig Name as 'company' to trick CompanyView into being a GigView
-                company={projects.find(p => p.id === selectedGigId)?.name || ''}
-                slots={slots}
-                // Hack: Override project.company with project.name so strict equal check passes in CompanyView
-                projects={projects.filter(p => p.id === selectedGigId).map(p => ({ ...p, company: p.name }))}
-                reps={reps}
-                selectedDate={selectedDate}
-              />
-            )}
-
-            {showAttendancePanel && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <AttendanceTracker
+              <div className="grid grid-cols-1 gap-6">
+                <Calendar
+                  selectedDate={selectedDate}
+                  onDateSelect={setSelectedDate}
                   slots={slots}
+                  view="2-weeks"
+                />
+              </div>
+
+              {selectedGigId && (
+                <>
+                  <SlotGenerator
+                    gigId={selectedGigId || undefined}
+                    companyId={Cookies.get('companyId')}
+                    onSlotsGenerated={() => {
+                      // Refresh slots after generation
+                      if (!selectedGigId) return;
+                      const fetchData = async () => {
+                        try {
+                          const fetchedSlots = await schedulerApi.getTimeSlots(undefined, selectedGigId);
+                          const mappedSlots = Array.isArray(fetchedSlots) ? fetchedSlots.map(mapBackendSlotToSlot) : [];
+                          setSlots(mappedSlots);
+                        } catch (error) {
+                          console.error('Error refreshing slots:', error);
+                        }
+                      };
+                      fetchData();
+                    }}
+                  />
+                </>
+              )}
+
+              {selectedGigId && (
+                <CompanyView
+                  // Hack: Pass Gig Name as 'company' to trick CompanyView into being a GigView
+                  company={projects.find(p => p.id === selectedGigId)?.name || ''}
+                  slots={slots}
+                  // Hack: Override project.company with project.name so strict equal check passes in CompanyView
+                  projects={projects.filter(p => p.id === selectedGigId).map(p => ({ ...p, company: p.name }))}
                   reps={reps}
                   selectedDate={selectedDate}
-                  onAttendanceUpdate={handleAttendanceUpdate}
                 />
+              )}
+
+              {showAttendancePanel && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <AttendanceTracker
+                    slots={slots}
+                    reps={reps}
+                    selectedDate={selectedDate}
+                    onAttendanceUpdate={handleAttendanceUpdate}
+                  />
+                  <AttendanceReport
+                    reps={reps}
+                    slots={slots}
+                  />
+                </div>
+              )}
+
+              {showAIPanel && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 border-l-4 border-purple-500">
+                  <div className="flex items-center mb-4">
+                    <Brain className="w-6 h-6 text-purple-600 mr-2" />
+                    <h2 className="text-lg font-semibold text-gray-900">AI Insights</h2>
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <WorkloadPrediction slots={slots} />
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : userRole === 'rep' ? (
+            <div className="grid grid-cols-1 gap-6">
+              <RepSelector
+                reps={reps}
+                selectedRepId={selectedRepId}
+                onSelectRep={setSelectedRepId}
+              />
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <Calendar
+                    selectedDate={selectedDate}
+                    onDateSelect={setSelectedDate}
+                    slots={slots.filter(slot => slot.repId === selectedRepId)}
+                    view="2-weeks"
+                  />
+                </div>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <h2 className="text-base font-semibold text-gray-900 mb-4">Weekly Overview</h2>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-500">Available Slots</span>
+                      <span className="font-semibold text-gray-900">{weeklyStats.availableSlots}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-500">Reserved Slots</span>
+                      <span className="font-semibold text-gray-900">{weeklyStats.reservedSlots}</span>
+                    </div>
+                    <hr className="my-4 border-gray-100" />
+                    <h3 className="text-sm font-semibold text-gray-900 mb-2">Gig Hours</h3>
+                    {Object.entries(weeklyStats.projectBreakdown).map(([gigId, hours]) => {
+                      const project = projects.find(p => p.id === gigId);
+                      return (
+                        <div key={gigId} className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <div
+                              className="w-3 h-3 rounded-full mr-2"
+                              style={{ backgroundColor: project?.color || '#ccc' }}
+                            ></div>
+                            <span className="text-gray-600">{project?.name || 'Unknown Gig'}</span>
+                          </div>
+                          <span className="font-medium">{hours}h</span>
+                        </div>
+                      );
+                    })}
+
+                    <hr className="my-4 border-gray-100" />
+                    <h3 className="text-sm font-semibold text-gray-900 mb-2">Quick Reserve</h3>
+                    <SlotActionPanel
+                      slot={selectedSlot || slots[0] || {} as any}
+                      availableProjects={projects}
+                      onUpdate={handleSlotUpdate}
+                      onClear={() => handleSlotCancel(selectedSlot?.id || '')}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {showAttendancePanel && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <AttendanceScorecard
+                    rep={selectedRep}
+                    slots={slots}
+                  />
+                  <AttendanceTracker
+                    slots={slots.filter(slot => slot.repId === selectedRepId)}
+                    reps={reps}
+                    selectedDate={selectedDate}
+                    onAttendanceUpdate={handleAttendanceUpdate}
+                  />
+                </div>
+              )}
+
+              {showAIPanel && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div>
+                    <AIRecommendations
+                      rep={selectedRep}
+                      projects={projects}
+                      slots={slots}
+                      onSelectProject={handleProjectSelect}
+                    />
+                  </div>
+                  <div>
+                    <OptimalTimeHeatmap
+                      rep={selectedRep}
+                      slots={slots}
+                      onSelectHour={handleOptimalHourSelect}
+                    />
+                  </div>
+                  <div>
+                    <PerformanceMetrics
+                      rep={selectedRep}
+                      slots={slots}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <TimeSlotGrid
+                selectedSlotId={selectedSlot?.id || null}
+                slots={slots.filter(slot => slot.repId === selectedRepId)}
+                projects={projects}
+                onSlotClick={(id) => handleSlotSelect(slots.find(s => s.id === id)!)}
+              />
+            </div>
+          ) : (
+            // Admin view
+            <div className="grid grid-cols-1 gap-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Admin Dashboard</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <h3 className="text-sm font-medium text-blue-800 mb-1">Total REPs</h3>
+                    <p className="text-2xl font-bold text-blue-900">{reps.length}</p>
+                  </div>
+                  <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                    <h3 className="text-sm font-medium text-emerald-800 mb-1">Total Companies</h3>
+                    <p className="text-2xl font-bold text-emerald-900">{sampleCompanies.length}</p>
+                  </div>
+                  <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
+                    <h3 className="text-sm font-medium text-purple-800 mb-1">Total Gigs</h3>
+                    <p className="text-2xl font-bold text-purple-900">{projects.length}</p>
+                  </div>
+                </div>
+              </div>
+
+              {showAttendancePanel && (
                 <AttendanceReport
                   reps={reps}
                   slots={slots}
                 />
-              </div>
-            )}
+              )}
 
-            {showAIPanel && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 border-l-4 border-purple-500">
-                <div className="flex items-center mb-4">
-                  <Brain className="w-6 h-6 text-purple-600 mr-2" />
-                  <h2 className="text-lg font-semibold text-gray-900">AI Insights</h2>
-                </div>
+              {showAIPanel && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <WorkloadPrediction slots={slots} />
-                </div>
-              </div>
-            )}
-          </div>
-        ) : userRole === 'rep' ? (
-          <div className="grid grid-cols-1 gap-6">
-            <RepSelector
-              reps={reps}
-              selectedRepId={selectedRepId}
-              onSelectRep={setSelectedRepId}
-            />
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <Calendar
-                  selectedDate={selectedDate}
-                  onDateSelect={setSelectedDate}
-                  slots={slots.filter(slot => slot.repId === selectedRepId)}
-                  view="2-weeks"
-                />
-              </div>
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h2 className="text-base font-semibold text-gray-900 mb-4">Weekly Overview</h2>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500">Available Slots</span>
-                    <span className="font-semibold text-gray-900">{weeklyStats.availableSlots}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-500">Reserved Slots</span>
-                    <span className="font-semibold text-gray-900">{weeklyStats.reservedSlots}</span>
-                  </div>
-                  <hr className="my-4 border-gray-100" />
-                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Gig Hours</h3>
-                  {Object.entries(weeklyStats.projectBreakdown).map(([gigId, hours]) => {
-                    const project = projects.find(p => p.id === gigId);
-                    return (
-                      <div key={gigId} className="flex justify-between items-center">
-                        <div className="flex items-center">
-                          <div
-                            className="w-3 h-3 rounded-full mr-2"
-                            style={{ backgroundColor: project?.color || '#ccc' }}
-                          ></div>
-                          <span className="text-gray-600">{project?.name || 'Unknown Gig'}</span>
-                        </div>
-                        <span className="font-medium">{hours}h</span>
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <div className="flex items-center mb-4">
+                      <Brain className="w-5 h-5 text-purple-600 mr-2" />
+                      <h2 className="text-lg font-semibold text-gray-900">AI Insights</h2>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-purple-50 rounded-xl border border-purple-100">
+                        <h3 className="text-sm font-medium text-purple-800 mb-2">Scheduling Efficiency</h3>
+                        <p className="text-sm text-gray-700">
+                          Based on current scheduling patterns, the system is operating at
+                          <span className="font-bold text-purple-800"> 78% </span>
+                          efficiency. Consider optimizing REP assignments based on AI recommendations.
+                        </p>
                       </div>
-                    );
-                  })}
-
-                  <hr className="my-4 border-gray-100" />
-                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Quick Reserve</h3>
-                  <SlotActionPanel
-                    slot={selectedSlot || slots[0] || {} as any}
-                    availableProjects={projects}
-                    onUpdate={handleSlotUpdate}
-                    onClear={() => handleSlotCancel(selectedSlot?.id || '')}
-                  />
+                      <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                        <h3 className="text-sm font-medium text-blue-800 mb-2">Resource Allocation</h3>
+                        <p className="text-sm text-gray-700">
+                          Tech Co projects are currently overallocated by
+                          <span className="font-bold text-blue-800"> 12% </span>
+                          while Acme Corp is underallocated. Consider rebalancing resources.
+                        </p>
+                      </div>
+                      <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                        <h3 className="text-sm font-medium text-emerald-800 mb-2">Performance Insights</h3>
+                        <p className="text-sm text-gray-700">
+                          REPs with diverse project assignments show
+                          <span className="font-bold text-green-800"> 23% higher </span>
+                          satisfaction scores. Consider rotating assignments more frequently.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              )}
 
-            {showAttendancePanel && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <AttendanceScorecard
-                  rep={selectedRep}
-                  slots={slots}
-                />
-                <AttendanceTracker
-                  slots={slots.filter(slot => slot.repId === selectedRepId)}
-                  reps={reps}
-                  selectedDate={selectedDate}
-                  onAttendanceUpdate={handleAttendanceUpdate}
-                />
-              </div>
-            )}
-
-            {showAIPanel && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div>
-                  <AIRecommendations
-                    rep={selectedRep}
-                    projects={projects}
-                    slots={slots}
-                    onSelectProject={handleProjectSelect}
-                  />
-                </div>
-                <div>
-                  <OptimalTimeHeatmap
-                    rep={selectedRep}
-                    slots={slots}
-                    onSelectHour={handleOptimalHourSelect}
-                  />
-                </div>
-                <div>
-                  <PerformanceMetrics
-                    rep={selectedRep}
-                    slots={slots}
-                  />
-                </div>
-              </div>
-            )}
-
-            <TimeSlotGrid
-              selectedSlotId={selectedSlot?.id || null}
-              slots={slots.filter(slot => slot.repId === selectedRepId)}
-              projects={projects}
-              onSlotClick={(id) => handleSlotSelect(slots.find(s => s.id === id)!)}
-            />
-          </div>
-        ) : (
-          // Admin view
-          <div className="grid grid-cols-1 gap-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Admin Dashboard</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                  <h3 className="text-sm font-medium text-blue-800 mb-1">Total REPs</h3>
-                  <p className="text-2xl font-bold text-blue-900">{reps.length}</p>
-                </div>
-                <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
-                  <h3 className="text-sm font-medium text-emerald-800 mb-1">Total Companies</h3>
-                  <p className="text-2xl font-bold text-emerald-900">{sampleCompanies.length}</p>
-                </div>
-                <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
-                  <h3 className="text-sm font-medium text-purple-800 mb-1">Total Gigs</h3>
-                  <p className="text-2xl font-bold text-purple-900">{projects.length}</p>
-                </div>
-              </div>
-            </div>
-
-            {showAttendancePanel && (
-              <AttendanceReport
-                reps={reps}
-                slots={slots}
-              />
-            )}
-
-            {showAIPanel && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <WorkloadPrediction slots={slots} />
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                  <div className="flex items-center mb-4">
-                    <Brain className="w-5 h-5 text-purple-600 mr-2" />
-                    <h2 className="text-lg font-semibold text-gray-900">AI Insights</h2>
-                  </div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">REP Overview</h2>
                   <div className="space-y-4">
-                    <div className="p-4 bg-purple-50 rounded-xl border border-purple-100">
-                      <h3 className="text-sm font-medium text-purple-800 mb-2">Scheduling Efficiency</h3>
-                      <p className="text-sm text-gray-700">
-                        Based on current scheduling patterns, the system is operating at
-                        <span className="font-bold text-purple-800"> 78% </span>
-                        efficiency. Consider optimizing REP assignments based on AI recommendations.
-                      </p>
-                    </div>
-                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-                      <h3 className="text-sm font-medium text-blue-800 mb-2">Resource Allocation</h3>
-                      <p className="text-sm text-gray-700">
-                        Tech Co projects are currently overallocated by
-                        <span className="font-bold text-blue-800"> 12% </span>
-                        while Acme Corp is underallocated. Consider rebalancing resources.
-                      </p>
-                    </div>
-                    <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-                      <h3 className="text-sm font-medium text-emerald-800 mb-2">Performance Insights</h3>
-                      <p className="text-sm text-gray-700">
-                        REPs with diverse project assignments show
-                        <span className="font-bold text-green-800"> 23% higher </span>
-                        satisfaction scores. Consider rotating assignments more frequently.
-                      </p>
-                    </div>
+                    {reps.map(rep => {
+                      const repSlots = slots.filter(slot => slot.repId === rep.id && slot.status === 'reserved');
+                      const totalHours = repSlots.reduce((sum, slot) => sum + (slot.duration || 1), 0);
+
+                      return (
+                        <div key={rep.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                          <div className="flex items-center">
+                            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+                              {rep.avatar ? (
+                                <img
+                                  src={rep.avatar}
+                                  alt={rep.name}
+                                  className="w-full h-full rounded-full object-cover"
+                                />
+                              ) : (
+                                <Users className="w-5 h-5 text-gray-500" />
+                              )}
+                            </div>
+                            <div>
+                              <h4 className="font-medium">{rep.name}</h4>
+                              <p className="text-sm text-gray-500">{rep.email}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold">{totalHours}h</p>
+                            <p className="text-sm text-gray-500">{repSlots.length} slots</p>
+                            {rep.performanceScore && (
+                              <div className="mt-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                Score: {rep.performanceScore}
+                              </div>
+                            )}
+                            {rep.attendanceScore && (
+                              <div className="mt-1 ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                Attendance: {rep.attendanceScore}%
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              </div>
-            )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">REP Overview</h2>
-                <div className="space-y-4">
-                  {reps.map(rep => {
-                    const repSlots = slots.filter(slot => slot.repId === rep.id && slot.status === 'reserved');
-                    const totalHours = repSlots.reduce((sum, slot) => sum + (slot.duration || 1), 0);
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Company Overview</h2>
+                  <div className="space-y-4">
+                    {sampleCompanies.map(company => {
+                      const companySlots = slots.filter(slot => {
+                        const project = projects.find(p => p.id === slot.gigId);
+                        return project?.company === company.name && slot.status === 'reserved';
+                      });
 
-                    return (
-                      <div key={rep.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
-                            {rep.avatar ? (
-                              <img
-                                src={rep.avatar}
-                                alt={rep.name}
-                                className="w-full h-full rounded-full object-cover"
-                              />
-                            ) : (
-                              <Users className="w-5 h-5 text-gray-500" />
+                      const totalHours = companySlots.reduce((sum, slot) => sum + (slot.duration || 1), 0);
+                      const uniqueReps = new Set(companySlots.map(slot => slot.repId)).size;
+
+                      return (
+                        <div key={company.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                          <div className="flex items-center">
+                            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+                              {company.logo ? (
+                                <img
+                                  src={company.logo}
+                                  alt={company.name}
+                                  className="w-full h-full rounded-full object-cover"
+                                />
+                              ) : (
+                                <Building className="w-5 h-5 text-gray-500" />
+                              )}
+                            </div>
+                            <div>
+                              <h4 className="font-medium">{company.name}</h4>
+                              <p className="text-sm text-gray-500">{uniqueReps} REPs assigned</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold">{totalHours}h</p>
+                            <p className="text-sm text-gray-500">{companySlots.length} slots</p>
+                            {company.priority && (
+                              <div className="mt-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                Priority: {company.priority}
+                              </div>
                             )}
                           </div>
-                          <div>
-                            <h4 className="font-medium">{rep.name}</h4>
-                            <p className="text-sm text-gray-500">{rep.email}</p>
-                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold">{totalHours}h</p>
-                          <p className="text-sm text-gray-500">{repSlots.length} slots</p>
-                          {rep.performanceScore && (
-                            <div className="mt-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                              Score: {rep.performanceScore}
-                            </div>
-                          )}
-                          {rep.attendanceScore && (
-                            <div className="mt-1 ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                              Attendance: {rep.attendanceScore}%
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Company Overview</h2>
-                <div className="space-y-4">
-                  {sampleCompanies.map(company => {
-                    const companySlots = slots.filter(slot => {
-                      const project = projects.find(p => p.id === slot.gigId);
-                      return project?.company === company.name && slot.status === 'reserved';
-                    });
-
-                    const totalHours = companySlots.reduce((sum, slot) => sum + (slot.duration || 1), 0);
-                    const uniqueReps = new Set(companySlots.map(slot => slot.repId)).size;
-
-                    return (
-                      <div key={company.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
-                            {company.logo ? (
-                              <img
-                                src={company.logo}
-                                alt={company.name}
-                                className="w-full h-full rounded-full object-cover"
-                              />
-                            ) : (
-                              <Building className="w-5 h-5 text-gray-500" />
-                            )}
-                          </div>
-                          <div>
-                            <h4 className="font-medium">{company.name}</h4>
-                            <p className="text-sm text-gray-500">{uniqueReps} REPs assigned</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold">{totalHours}h</p>
-                          <p className="text-sm text-gray-500">{companySlots.length} slots</p>
-                          {company.priority && (
-                            <div className="mt-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                              Priority: {company.priority}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )
-        }
-      </main>
+          )
+          }
+        </main>
       </div>
     </div>
   );
