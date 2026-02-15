@@ -472,7 +472,7 @@ export default function SessionPlanning() {
         notes: ''
       });
     }
-    setCreatingSlots(true);
+    // Simplified creation without explicit loading state indicator here for now
     try {
       await Promise.all(toCreate.map(slot => schedulerApi.upsertTimeSlot(slot)));
       const updatedSlots = await schedulerApi.getTimeSlots(undefined, selectedGigId);
@@ -482,8 +482,6 @@ export default function SessionPlanning() {
     } catch (error) {
       console.error('Error creating slots:', error);
       setNotification({ message: 'Failed to create slots', type: 'error' });
-    } finally {
-      setCreatingSlots(false);
     }
     setTimeout(() => setNotification(null), 3000);
   };
