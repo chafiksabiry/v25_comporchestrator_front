@@ -177,7 +177,6 @@ export default function SessionPlanning() {
   const [createSlotRepId, setCreateSlotRepId] = useState<string>('');
   const [createStartTime, setCreateStartTime] = useState<string>('09:00');
   const [createEndTime, setCreateEndTime] = useState<string>('10:00');
-  const [creatingSlots, setCreatingSlots] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchGigs = async () => {
@@ -359,7 +358,7 @@ export default function SessionPlanning() {
         }
 
         if (slot.status === 'available' || (slot.capacity && slot.reservedCount && slot.reservedCount < slot.capacity)) {
-          stats.availableSlots += (slot.capacity || 1) - (slot.reservedCount || 0);
+          stats.availableSlots += 1;
         }
 
         if (slot.gigId && count > 0) {

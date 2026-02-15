@@ -127,7 +127,7 @@ export function Calendar({ selectedDate, onDateSelect, slots, view = 'month' }: 
 
                 const daySlots = slots.filter(slot => slot.date === format(cloneDay, 'yyyy-MM-dd'));
                 const reservedCount = daySlots.reduce((acc, s) => acc + (s.reservedCount || 0), 0);
-                const availableCount = daySlots.reduce((acc, s) => acc + ((s.capacity || 1) - (s.reservedCount || 0)), 0);
+                const availableCount = daySlots.filter(s => (s.reservedCount || 0) < (s.capacity || 1)).length;
 
                 days.push(
                     <button
