@@ -745,63 +745,6 @@ export default function SessionPlanning() {
                   fetchData();
                 }}
               />
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h3 className="text-base font-semibold text-gray-900 mb-4">Create slots (by gig)</h3>
-                <p className="text-sm text-gray-500 mb-4">Create reserved slots for a rep on the selected date. Slots are linked to the current gig.</p>
-                {reps.length === 0 ? (
-                  <p className="text-sm text-amber-600">No reps enrolled in this gig. Enroll agents to create slots.</p>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Rep</label>
-                      <select
-                        value={createSlotRepId}
-                        onChange={(e) => setCreateSlotRepId(e.target.value)}
-                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800"
-                      >
-                        {reps.map((r) => (
-                          <option key={r.id} value={r.id}>{r.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Start time</label>
-                      <select
-                        value={createStartTime}
-                        onChange={(e) => setCreateStartTime(e.target.value)}
-                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800"
-                      >
-                        {Array.from({ length: 11 }, (_, i) => i + 8).map((h) => {
-                          const t = `${h.toString().padStart(2, '0')}:00`;
-                          return <option key={t} value={t}>{t}</option>;
-                        })}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">End time</label>
-                      <select
-                        value={createEndTime}
-                        onChange={(e) => setCreateEndTime(e.target.value)}
-                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800"
-                      >
-                        {Array.from({ length: 11 }, (_, i) => i + 8).map((h) => {
-                          const t = `${h.toString().padStart(2, '0')}:00`;
-                          return <option key={t} value={t}>{t}</option>;
-                        })}
-                      </select>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleCreateSlotsForGig}
-                      disabled={creatingSlots || isPastDate}
-                      className="py-2.5 px-4 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {creatingSlots ? 'Creating…' : 'Create slots'}
-                    </button>
-                  </div>
-                )}
-                {isPastDate && <p className="text-xs text-amber-600 mt-2">Cannot create slots for past dates.</p>}
-              </div>
               </>
             )}
 
