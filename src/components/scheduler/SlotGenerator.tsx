@@ -8,10 +8,11 @@ import axios from 'axios';
 interface SlotGeneratorProps {
     gigId: string | null | undefined;
     companyId?: string | null;
+    selectedDate: Date;
     onSlotsGenerated?: () => void;
 }
 
-export function SlotGenerator({ gigId, companyId, onSlotsGenerated }: SlotGeneratorProps) {
+export function SlotGenerator({ gigId, companyId, selectedDate, onSlotsGenerated }: SlotGeneratorProps) {
     const [capacity, setCapacity] = useState<number>(1);
     const [startTime, setStartTime] = useState<string>('09:00');
     const [endTime, setEndTime] = useState<string>('18:00');
@@ -19,8 +20,9 @@ export function SlotGenerator({ gigId, companyId, onSlotsGenerated }: SlotGenera
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
     const [loadingGig, setLoadingGig] = useState<boolean>(false);
     const [availableHours, setAvailableHours] = useState<string[]>([]);
+    const [isAvailableToday, setIsAvailableToday] = useState<boolean>(true);
 
-    // Fetch gig data and extract available hours
+    // Fetch gig data and extract available hours for the selected day
     useEffect(() => {
         const fetchGigData = async () => {
             if (!gigId) {
@@ -35,54 +37,59 @@ export function SlotGenerator({ gigId, companyId, onSlotsGenerated }: SlotGenera
 
                 // Direct handle response data or data.data
                 const gig = (response.data as any).data || response.data;
+                const selectedDayName = format(selectedDate, 'EEEE'); // e.g., 'Monday'
 
-                // Extract available hours from gig availability
+                // Extract available hours from gig availability for the specific day
                 if (gig.availability?.schedule && Array.isArray(gig.availability.schedule)) {
                     const hours = new Set<string>();
 
-                    gig.availability.schedule.forEach((daySchedule: any) => {
-                        if (daySchedule.hours?.start && daySchedule.hours?.end) {
-                            const startHour = parseInt(daySchedule.hours.start.split(':')[0], 10);
-                            const endHour = parseInt(daySchedule.hours.end.split(':')[0], 10);
+                    // Filter schedule for the selected day
+                    const daySchedule = gig.availability.schedule.find(
+                        (s: any) => s.day.toLowerCase() === selectedDayName.toLowerCase()
+                    );
 
-                            for (let h = startHour; h <= endHour; h++) {
-                                hours.add(`${h.toString().padStart(2, '0')}:00`);
-                            }
+                    if (daySchedule && daySchedule.hours?.start && daySchedule.hours?.end) {
+                        const startHour = parseInt(daySchedule.hours.start.split(':')[0], 10);
+                        const endHour = parseInt(daySchedule.hours.end.split(':')[0], 10);
+
+                        for (let h = startHour; h <= endHour; h++) {
+                            hours.add(`${h.toString().padStart(2, '0')}:00`);
                         }
-                    });
 
-                    const sortedHours = Array.from(hours).sort();
-                    setAvailableHours(sortedHours);
+                        const sortedHours = Array.from(hours).sort();
+                        setAvailableHours(sortedHours);
+                        setIsAvailableToday(true);
 
-                    // Set default start and end times
-                    if (sortedHours.length > 0) {
-                        setStartTime(sortedHours[0]);
-                        setEndTime(sortedHours[sortedHours.length - 1]);
+                        // Set default start and end times based on day's hours
+                        if (sortedHours.length > 0) {
+                            setStartTime(sortedHours[0]);
+                            setEndTime(sortedHours[sortedHours.length - 1]);
+                        }
+                    } else {
+                        // Not available on this specific day
+                        setAvailableHours([]);
+                        setIsAvailableToday(false);
                     }
                 } else {
-                    // No availability defined, show all hours
+                    // No availability defined at all, default to full day for backward compat
                     const allHours = Array.from({ length: 15 }, (_, i) => {
                         const h = i + 6;
                         return `${h.toString().padStart(2, '0')}:00`;
                     });
                     setAvailableHours(allHours);
+                    setIsAvailableToday(true);
                 }
             } catch (error) {
                 console.error('Error fetching gig data:', error);
                 setMessage({ text: 'Failed to load gig availability', type: 'error' });
-                // Fallback to default hours
-                const allHours = Array.from({ length: 15 }, (_, i) => {
-                    const h = i + 6;
-                    return `${h.toString().padStart(2, '0')}:00`;
-                });
-                setAvailableHours(allHours);
+                setIsAvailableToday(false);
             } finally {
                 setLoadingGig(false);
             }
         };
 
         fetchGigData();
-    }, [gigId]);
+    }, [gigId, selectedDate]);
 
     const handleGenerate = async () => {
         if (!gigId) {
@@ -102,18 +109,14 @@ export function SlotGenerator({ gigId, companyId, onSlotsGenerated }: SlotGenera
             setGenerating(true);
             setMessage(null);
 
-            // Create for next 7 days instead of just today/tomorrow to be sure
-            const today = new Date();
-            const todayStr = format(today, 'yyyy-MM-dd');
-            const end = new Date();
-            end.setDate(today.getDate() + 7);
-            const endStr = format(end, 'yyyy-MM-dd');
+            // Create for the specific selected date
+            const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
             const params: any = {
                 gigId,
                 companyId,
-                startDate: todayStr,
-                endDate: endStr,
+                startDate: dateStr,
+                endDate: dateStr, // Same day for precise creation
                 slotDuration: 1,
                 capacity,
                 startHour,
@@ -123,7 +126,7 @@ export function SlotGenerator({ gigId, companyId, onSlotsGenerated }: SlotGenera
             const result = await slotApi.generateSlots(params);
 
             setMessage({
-                text: result.message || 'Slots created successfully for the next 7 days',
+                text: result.message || `Slots created successfully for ${dateStr}`,
                 type: 'success'
             });
 
@@ -143,6 +146,11 @@ export function SlotGenerator({ gigId, companyId, onSlotsGenerated }: SlotGenera
             setGenerating(false);
         }
     };
+
+    // If not loading and not available today, hide the component
+    if (!loadingGig && !isAvailableToday && gigId) {
+        return null;
+    }
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
