@@ -16,6 +16,7 @@ import { AttendanceScorecard } from '../../components/scheduler/AttendanceScorec
 import { AttendanceReport } from '../../components/scheduler/AttendanceReport';
 import { initializeAI } from '../../services/schedulerAiService';
 import { schedulerApi } from '../../services/schedulerService';
+import { slotApi } from '../../services/slotService';
 import { SlotGenerator } from '../../components/scheduler/SlotGenerator';
 import { format } from 'date-fns';
 import axios from 'axios';
@@ -40,11 +41,17 @@ const mapBackendSlotToSlot = (slot: any): TimeSlot => {
   const repId = (agentData as any)?._id || (agentData as any)?.$oid || slot.agentId?.toString() || slot.repId?.toString() || '';
   const gigId = (gigData as any)?._id || (gigData as any)?.$oid || slot.gigId?.toString() || '';
 
+  // Ensure date is present (fallback to extracting from startTime if it's an ISO string)
+  let date = slot.date;
+  if (!date && slot.startTime && slot.startTime.includes('T')) {
+    date = slot.startTime.split('T')[0];
+  }
+
   return {
     id,
     startTime: slot.startTime,
     endTime: slot.endTime,
-    date: slot.date,
+    date: date || '',
     gigId,
     repId,
     status: slot.status,
@@ -250,14 +257,28 @@ export default function SessionPlanning() {
           setCreateSlotRepId('');
         }
 
-        // Fetch Slots for this Gig and optionally for the selected Rep
-        const fetchedSlots = await schedulerApi.getTimeSlots(undefined, selectedGigId);
-        const mappedSlots = Array.isArray(fetchedSlots) ? fetchedSlots.map(mapBackendSlotToSlot) : [];
-        setSlots(mappedSlots);
+        // Fetch Slots from both APIs to ensure calendar sync
+        const [timeSlots, availableSlots] = await Promise.all([
+          schedulerApi.getTimeSlots(undefined, selectedGigId),
+          slotApi.getSlots(selectedGigId)
+        ]);
+
+        const mappedTimeSlots = Array.isArray(timeSlots) ? timeSlots.map(mapBackendSlotToSlot) : [];
+        const mappedAvailableSlots = Array.isArray(availableSlots) ? availableSlots.map(mapBackendSlotToSlot) : [];
+
+        // Merge and deduplicate
+        const allSlots = [...mappedTimeSlots];
+        mappedAvailableSlots.forEach(slot => {
+          if (!allSlots.find(s => s.id === slot.id)) {
+            allSlots.push(slot);
+          }
+        });
+
+        setSlots(allSlots);
 
         // Extract and merge agents from populated slots to ensure we have all data
         const populatedAgents: Rep[] = [];
-        mappedSlots.forEach(slot => {
+        allSlots.forEach(slot => {
           if (slot.agent && slot.agent._id) {
             const agentData = slot.agent;
             const personalInfo = agentData.personalInfo || {};
