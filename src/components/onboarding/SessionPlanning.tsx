@@ -728,9 +728,10 @@ export default function SessionPlanning() {
             {selectedGigId && (
               <>
               <SlotGenerator 
-                gigId={selectedGigId} 
+                gigId={selectedGigId || undefined} 
                 onSlotsGenerated={() => {
                   // Refresh slots after generation
+                  if (!selectedGigId) return;
                   const fetchData = async () => {
                     try {
                       const fetchedSlots = await schedulerApi.getTimeSlots(undefined, selectedGigId);

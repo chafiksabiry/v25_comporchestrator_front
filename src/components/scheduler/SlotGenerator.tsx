@@ -4,13 +4,22 @@ import { Calendar, Clock, Users, AlertCircle, CheckCircle } from 'lucide-react';
 import { slotApi, SlotGenerationParams } from '../../services/slotService';
 
 interface SlotGeneratorProps {
-    gigId: string;
+    gigId: string | null | undefined;
     onSlotsGenerated?: () => void;
 }
 
 export function SlotGenerator({ gigId, onSlotsGenerated }: SlotGeneratorProps) {
-    const [startDate, setStartDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
-    const [endDate, setEndDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+    const getDefaultDate = (): string => {
+        try {
+            return format(new Date(), 'yyyy-MM-dd');
+        } catch (error) {
+            console.error('Error formatting default date:', error);
+            return new Date().toISOString().split('T')[0];
+        }
+    };
+
+    const [startDate, setStartDate] = useState<string>(getDefaultDate());
+    const [endDate, setEndDate] = useState<string>(getDefaultDate());
     const [slotDuration, setSlotDuration] = useState<number>(1);
     const [capacity, setCapacity] = useState<number>(1);
     const [startHour, setStartHour] = useState<number>(9);
@@ -18,21 +27,26 @@ export function SlotGenerator({ gigId, onSlotsGenerated }: SlotGeneratorProps) {
     const [generating, setGenerating] = useState<boolean>(false);
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
-    if (!gigId) {
+    if (!gigId || gigId === '') {
         return (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center text-gray-500">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center text-gray-500 text-sm">
                 Select a gig to generate slots
             </div>
         );
     }
 
     const handleGenerate = async () => {
-        if (!gigId) {
+        if (!gigId || gigId === '') {
             setMessage({ text: 'Please select a gig first', type: 'error' });
             return;
         }
 
         try {
+            if (!startDate || !endDate) {
+                setMessage({ text: 'Please select start and end dates', type: 'error' });
+                return;
+            }
+
             if (new Date(startDate) > new Date(endDate)) {
                 setMessage({ text: 'End date must be after start date', type: 'error' });
                 return;
@@ -43,11 +57,16 @@ export function SlotGenerator({ gigId, onSlotsGenerated }: SlotGeneratorProps) {
                 return;
             }
 
+            if (slotDuration <= 0 || capacity <= 0) {
+                setMessage({ text: 'Duration and capacity must be greater than 0', type: 'error' });
+                return;
+            }
+
             setGenerating(true);
             setMessage(null);
 
             const params: SlotGenerationParams = {
-                gigId,
+                gigId: gigId as string,
                 startDate,
                 endDate,
                 slotDuration,
@@ -57,7 +76,12 @@ export function SlotGenerator({ gigId, onSlotsGenerated }: SlotGeneratorProps) {
             };
 
             const result = await slotApi.generateSlots(params);
-            setMessage({ text: result.message, type: 'success' });
+            if (result && result.message) {
+                setMessage({ text: result.message, type: 'success' });
+            } else {
+                setMessage({ text: 'Slots generated successfully', type: 'success' });
+            }
+            
             if (onSlotsGenerated) {
                 setTimeout(() => {
                     try {
@@ -96,7 +120,7 @@ export function SlotGenerator({ gigId, onSlotsGenerated }: SlotGeneratorProps) {
                         type="date"
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
-                        min={format(new Date(), 'yyyy-MM-dd')}
+                        min={getDefaultDate()}
                         className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800"
                     />
                 </div>
