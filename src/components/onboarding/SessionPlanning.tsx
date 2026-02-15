@@ -3,24 +3,12 @@ import { useState, useMemo, useEffect } from 'react';
 import { Calendar } from '../../components/scheduler/Calendar';
 import { TimeSlotGrid } from '../../components/scheduler/TimeSlotGrid';
 import { TimeSlot, Gig, WeeklyStats, Rep, UserRole, Company, AttendanceRecord } from '../../types/scheduler';
-import { Building, Clock, Briefcase, AlertCircle, Users, Brain } from 'lucide-react';
-import { SlotActionPanel } from '../../components/scheduler/SlotActionPanel';
-import { RepSelector } from '../../components/scheduler/RepSelector';
+import { Building, Clock, Users } from 'lucide-react';
 import { CompanyView } from '../../components/scheduler/CompanyView';
 import { AvailableSlotsView } from '../../components/scheduler/AvailableSlotsView';
-import { AIRecommendations } from '../../components/scheduler/AIRecommendations';
-import { OptimalTimeHeatmap } from '../../components/scheduler/OptimalTimeHeatmap';
-import { PerformanceMetrics } from '../../components/scheduler/PerformanceMetrics';
-import { WorkloadPredictionComponent as WorkloadPrediction } from '../../components/scheduler/WorkloadPrediction';
-import { AttendanceTracker } from '../../components/scheduler/AttendanceTracker';
-import { AttendanceScorecard } from '../../components/scheduler/AttendanceScorecard';
-import { AttendanceReport } from '../../components/scheduler/AttendanceReport';
-import { initializeAI } from '../../services/schedulerAiService';
 import { schedulerApi } from '../../services/schedulerService';
 import { slotApi } from '../../services/slotService';
 import { SlotGenerator } from '../../components/scheduler/SlotGenerator';
-import { format } from 'date-fns';
-import axios from 'axios';
 import Cookies from 'js-cookie';
 
 // Helper to generate a consistent color from a string
@@ -265,22 +253,9 @@ export default function SessionPlanning() {
         setCreateSlotRepId('');
       }
 
-      // Fetch Slots from both APIs to ensure calendar sync
-      const [timeSlots, availableSlots] = await Promise.all([
-        schedulerApi.getTimeSlots(undefined, selectedGigId),
-        slotApi.getSlots(selectedGigId)
-      ]);
-
-      const mappedTimeSlots = Array.isArray(timeSlots) ? timeSlots.map(mapBackendSlotToSlot) : [];
-      const mappedAvailableSlots = Array.isArray(availableSlots) ? availableSlots.map(mapBackendSlotToSlot) : [];
-
-      // Merge and deduplicate
-      const allSlots = [...mappedTimeSlots];
-      mappedAvailableSlots.forEach(slot => {
-        if (!allSlots.find(s => s.id === slot.id)) {
-          allSlots.push(slot);
-        }
-      });
+      // Fetch all slots for this gig
+      const availableSlots = await slotApi.getSlots(selectedGigId);
+      const allSlots = Array.isArray(availableSlots) ? availableSlots.map(mapBackendSlotToSlot) : [];
 
       setSlots(allSlots);
 
