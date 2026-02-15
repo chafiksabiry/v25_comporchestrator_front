@@ -1,34 +1,21 @@
-import React from 'react';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Calendar, Clock, AlertCircle, CheckCircle } from 'lucide-react';
-import { slotApi, SlotGenerationParams } from '../../services/slotService';
+import { Calendar, AlertCircle, CheckCircle } from 'lucide-react';
+import { slotApi } from '../../services/slotService';
 import axios from 'axios';
 
 interface SlotGeneratorProps {
     gigId: string | null | undefined;
+    companyId?: string | null;
     onSlotsGenerated?: () => void;
 }
 
-interface GigAvailability {
-    schedule?: Array<{ day: string; hours: { start: string; end: string } }>;
-    time_zone?: string;
-    timeZone?: string;
-}
-
-interface Gig {
-    _id: string;
-    title: string;
-    availability?: GigAvailability;
-}
-
-export function SlotGenerator({ gigId, onSlotsGenerated }: SlotGeneratorProps) {
+export function SlotGenerator({ gigId, companyId, onSlotsGenerated }: SlotGeneratorProps) {
     const [capacity, setCapacity] = useState<number>(1);
     const [startTime, setStartTime] = useState<string>('09:00');
     const [endTime, setEndTime] = useState<string>('18:00');
     const [generating, setGenerating] = useState<boolean>(false);
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-    const [gigData, setGigData] = useState<Gig | null>(null);
     const [loadingGig, setLoadingGig] = useState<boolean>(false);
     const [availableHours, setAvailableHours] = useState<string[]>([]);
 
@@ -45,8 +32,8 @@ export function SlotGenerator({ gigId, onSlotsGenerated }: SlotGeneratorProps) {
                 const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
                 const response = await axios.get(`${apiUrl}/gigs/${gigId}`);
 
-                const gig = response.data?.data || response.data;
-                setGigData(gig);
+                // Direct handle response data or data.data
+                const gig = (response.data as any).data || response.data;
 
                 // Extract available hours from gig availability
                 if (gig.availability?.schedule && Array.isArray(gig.availability.schedule)) {
@@ -96,25 +83,8 @@ export function SlotGenerator({ gigId, onSlotsGenerated }: SlotGeneratorProps) {
         fetchGigData();
     }, [gigId]);
 
-    if (!gigId || gigId === '') {
-        return (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center text-gray-500 text-sm">
-                Select a gig to generate slots
-            </div>
-        );
-    }
-
-    // Don't show the form if gig has no availability for today
-    if (availableHours.length === 0 && !loadingGig) {
-        return (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center text-amber-600 text-sm">
-                This gig has no availability defined. Please configure the gig's schedule first.
-            </div>
-        );
-    }
-
     const handleGenerate = async () => {
-        if (!gigId || gigId === '') {
+        if (!gigId) {
             setMessage({ text: 'Please select a gig first', type: 'error' });
             return;
         }
@@ -128,42 +98,37 @@ export function SlotGenerator({ gigId, onSlotsGenerated }: SlotGeneratorProps) {
                 return;
             }
 
-            if (capacity <= 0) {
-                setMessage({ text: 'Capacity must be greater than 0', type: 'error' });
-                return;
-            }
-
             setGenerating(true);
             setMessage(null);
 
-            // Use today's date and tomorrow's date as default range
-            const today = format(new Date(), 'yyyy-MM-dd');
-            const tomorrow = format(new Date(Date.now() + 86400000), 'yyyy-MM-dd');
+            // Generate for next 7 days instead of just today/tomorrow to be sure
+            const today = new Date();
+            const todayStr = format(today, 'yyyy-MM-dd');
+            const end = new Date();
+            end.setDate(today.getDate() + 7);
+            const endStr = format(end, 'yyyy-MM-dd');
 
-            const params: SlotGenerationParams = {
-                gigId: gigId as string,
-                startDate: today,
-                endDate: tomorrow,
-                slotDuration: 1, // Fixed 1 hour slots
+            const params: any = {
+                gigId,
+                companyId,
+                startDate: todayStr,
+                endDate: endStr,
+                slotDuration: 1,
                 capacity,
                 startHour,
                 endHour
             };
 
             const result = await slotApi.generateSlots(params);
-            if (result && result.message) {
-                setMessage({ text: result.message, type: 'success' });
-            } else {
-                setMessage({ text: 'Slots generated successfully', type: 'success' });
-            }
+
+            setMessage({
+                text: result.message || 'Slots generated successfully for the next 7 days',
+                type: 'success'
+            });
 
             if (onSlotsGenerated) {
                 setTimeout(() => {
-                    try {
-                        onSlotsGenerated();
-                    } catch (err) {
-                        console.error('Error in onSlotsGenerated callback:', err);
-                    }
+                    onSlotsGenerated();
                     setMessage(null);
                 }, 2000);
             }
@@ -235,8 +200,8 @@ export function SlotGenerator({ gigId, onSlotsGenerated }: SlotGeneratorProps) {
 
             {message && (
                 <div className={`mt-4 p-3 rounded-xl flex items-center gap-2 ${message.type === 'success'
-                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                        : 'bg-red-50 text-red-800 border border-red-200'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    : 'bg-red-50 text-red-800 border border-red-200'
                     }`}>
                     {message.type === 'success' ? (
                         <CheckCircle className="w-5 h-5" />
