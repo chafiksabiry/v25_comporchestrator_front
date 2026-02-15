@@ -20,7 +20,7 @@ export function SlotGenerator({ gigId, companyId, selectedDate, onSlotsGenerated
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
     const [loadingGig, setLoadingGig] = useState<boolean>(false);
     const [availableHours, setAvailableHours] = useState<string[]>([]);
-    const [isAvailableToday, setIsAvailableToday] = useState<boolean>(true);
+    const [isAvailableToday, setIsAvailableToday] = useState<boolean>(false);
 
     // Fetch gig data and extract available hours for the selected day
     useEffect(() => {
@@ -32,6 +32,8 @@ export function SlotGenerator({ gigId, companyId, selectedDate, onSlotsGenerated
 
             try {
                 setLoadingGig(true);
+                setIsAvailableToday(false);
+                setAvailableHours([]);
                 const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
                 const response = await axios.get(`${apiUrl}/gigs/${gigId}`);
 
@@ -71,13 +73,9 @@ export function SlotGenerator({ gigId, companyId, selectedDate, onSlotsGenerated
                         setIsAvailableToday(false);
                     }
                 } else {
-                    // No availability defined at all, default to full day for backward compat
-                    const allHours = Array.from({ length: 15 }, (_, i) => {
-                        const h = i + 6;
-                        return `${h.toString().padStart(2, '0')}:00`;
-                    });
-                    setAvailableHours(allHours);
-                    setIsAvailableToday(true);
+                    // No availability schedule defined at all
+                    setAvailableHours([]);
+                    setIsAvailableToday(false);
                 }
             } catch (error) {
                 console.error('Error fetching gig data:', error);
