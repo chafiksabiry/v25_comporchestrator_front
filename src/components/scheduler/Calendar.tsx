@@ -125,8 +125,8 @@ export function Calendar({ selectedDate, onDateSelect, slots, view = 'month' }: 
                 const isToday = isSameDay(day, new Date());
 
                 const daySlots = slots.filter(slot => slot.date === format(cloneDay, 'yyyy-MM-dd'));
-                const reservedCount = daySlots.filter(s => s.status === 'reserved').length;
-                const availableCount = daySlots.filter(s => s.status === 'available').length;
+                const reservedCount = daySlots.reduce((acc, s) => acc + (s.reservedCount || 0), 0);
+                const availableCount = daySlots.reduce((acc, s) => acc + ((s.capacity || 1) - (s.reservedCount || 0)), 0);
 
                 days.push(
                     <button

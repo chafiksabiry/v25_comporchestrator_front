@@ -4,14 +4,21 @@ export interface TimeSlot {
     endTime: string;
     date: string;
     gigId?: string;
-    status: 'available' | 'reserved' | 'cancelled';
+    status: 'available' | 'reserved' | 'full' | 'cancelled';
     duration: number; // in hours
     notes?: string;
-    repId: string; // Added to track which REP owns this slot
-    attended?: boolean; // Whether the REP attended this slot
-    attendanceNotes?: string; // Notes about attendance
-    agent?: any; // Populated agent data
-    gig?: any; // Populated gig data
+    repId: string; // Keep for compatibility with single-reservation components
+    capacity?: number;
+    reservedCount?: number;
+    reservations?: {
+        agentId: any;
+        notes?: string;
+        reservedAt?: string;
+    }[];
+    attended?: boolean;
+    attendanceNotes?: string;
+    agent?: any;
+    gig?: any;
 }
 
 export interface Gig {

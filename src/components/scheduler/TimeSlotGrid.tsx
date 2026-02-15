@@ -18,15 +18,15 @@ export function TimeSlotGrid({ slots, onSlotClick, selectedSlotId, projects = []
         let label = 'Available';
         let borderColor = 'transparent';
 
-        if (slot.status === 'reserved') {
+        if (slot.status === 'reserved' || (slot.reservedCount && slot.reservedCount > 0)) {
             const project = projects.find(p => p.id === slot.gigId);
             if (project) {
                 borderColor = project.color;
                 style = 'bg-blue-50 text-blue-700 font-medium';
-                label = project.name;
+                label = `${project.name} (${slot.reservedCount}/${slot.capacity})`;
             } else {
                 style = 'bg-blue-50 border-blue-200 text-blue-700 font-medium';
-                label = 'Reserved';
+                label = `Reserved (${slot.reservedCount}/${slot.capacity})`;
             }
         } else if (slot.status === 'cancelled') {
             style = 'bg-red-50 border-red-200 text-red-700 opacity-50 cursor-not-allowed';
