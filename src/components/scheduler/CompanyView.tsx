@@ -17,7 +17,7 @@ export function CompanyView({ company, slots, projects, reps, selectedDate }: Co
             const project = projects.find(p => p.id === slot.gigId);
             return project?.company === company &&
                 slot.date === format(selectedDate, 'yyyy-MM-dd') &&
-                slot.status === 'reserved';
+                (slot.status === 'reserved' || (slot.reservedCount && slot.reservedCount > 0));
         });
     }, [slots, projects, company, selectedDate]);
 
@@ -25,16 +25,33 @@ export function CompanyView({ company, slots, projects, reps, selectedDate }: Co
         const hours: Record<string, number> = {};
 
         relevantSlots.forEach(slot => {
-            if (!hours[slot.repId]) {
-                hours[slot.repId] = 0;
+            const duration = slot.duration || 1;
+
+            // If the slot has a reservations array, iterate through it
+            if (slot.reservations && slot.reservations.length > 0) {
+                slot.reservations.forEach(res => {
+                    // agentId might be populated or just an ID
+                    const rId = typeof res.agentId === 'object'
+                        ? (res.agentId?._id || res.agentId?.$oid)
+                        : res.agentId;
+
+                    if (rId) {
+                        const rIdStr = rId.toString();
+                        hours[rIdStr] = (hours[rIdStr] || 0) + duration;
+                    }
+                });
+            } else if (slot.repId) {
+                // Fallback for legacy format
+                hours[slot.repId] = (hours[slot.repId] || 0) + duration;
             }
-            hours[slot.repId] += (slot.duration || 1);
         });
 
         return hours;
     }, [relevantSlots]);
 
-    const totalHours = Object.values(repHours).reduce((sum, hours) => sum + hours, 0);
+    const totalHours = useMemo(() => {
+        return Object.values(repHours).reduce((sum, h) => sum + h, 0);
+    }, [repHours]);
 
     return (
         <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-100">
@@ -64,7 +81,11 @@ export function CompanyView({ company, slots, projects, reps, selectedDate }: Co
                 <div className="space-y-16">
                     {Object.entries(repHours).map(([repId, hours]) => {
                         const rep = reps.find(r => r.id === repId);
-                        const repSlots = relevantSlots.filter(slot => slot.repId === repId);
+                        // Filter slots where this specific rep is present in reservations
+                        const repSlots = relevantSlots.filter(slot =>
+                            (slot.reservations?.some(res => (res.agentId?._id || res.agentId?.$oid || res.agentId)?.toString() === repId)) ||
+                            (slot.repId === repId)
+                        );
 
                         return (
                             <div key={repId} className="space-y-6">
@@ -117,11 +138,15 @@ export function CompanyView({ company, slots, projects, reps, selectedDate }: Co
                                                     <Clock className="w-4 h-4 mr-2 opacity-60" />
                                                     {slot.startTime} - {slot.endTime} ({slot.duration || 1}h)
                                                 </div>
-                                                {slot.notes && (
-                                                    <div className="mt-3 text-sm text-gray-600 bg-white/60 p-3 rounded-lg border border-gray-100 italic">
-                                                        "{slot.notes}"
-                                                    </div>
-                                                )}
+                                                {(() => {
+                                                    const myRes = slot.reservations?.find(res => (res.agentId?._id || res.agentId?.$oid || res.agentId)?.toString() === repId);
+                                                    const displayNotes = myRes?.notes || slot.notes;
+                                                    return displayNotes && (
+                                                        <div className="mt-3 text-sm text-gray-600 bg-white/60 p-3 rounded-lg border border-gray-100 italic">
+                                                            "{displayNotes}"
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
                                         );
                                     })}

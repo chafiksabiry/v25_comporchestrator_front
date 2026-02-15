@@ -47,6 +47,11 @@ const mapBackendSlotToSlot = (slot: any): TimeSlot => {
     date = slot.startTime.split('T')[0];
   }
 
+  // Support multiple reservations if present
+  const reservations = slot.reservations || [];
+  const reservedCount = slot.reservedCount || reservations.length || 0;
+  const capacity = slot.capacity || 1;
+
   return {
     id,
     startTime: slot.startTime,
@@ -57,6 +62,9 @@ const mapBackendSlotToSlot = (slot: any): TimeSlot => {
     status: slot.status,
     duration: slot.duration || 1,
     notes: slot.notes,
+    capacity,
+    reservedCount,
+    reservations,
     attended: slot.attended,
     attendanceNotes: slot.attendanceNotes,
     agent: agentData, // Store populated agent data
@@ -342,16 +350,22 @@ export default function SessionPlanning() {
 
     filteredSlots.forEach((slot) => {
       if (slot.status !== 'cancelled') {
-        stats.totalHours += slot.duration || 1;
+        const duration = slot.duration || 1;
+        const count = slot.reservedCount || (slot.status === 'reserved' ? 1 : 0);
 
-        if (slot.status === 'available') {
-          stats.availableSlots++;
-        } else if (slot.status === 'reserved') {
-          stats.reservedSlots++;
+        // Add to total hours scheduled (total capacity * duration?? or total reservations * duration?)
+        // Usually, for "Scheduled Hours" we mean reserved hours
+        if (count > 0) {
+          stats.totalHours += duration * count;
+          stats.reservedSlots += count;
         }
 
-        if (slot.gigId) {
-          stats.projectBreakdown[slot.gigId] = (stats.projectBreakdown[slot.gigId] || 0) + (slot.duration || 1);
+        if (slot.status === 'available' || (slot.capacity && slot.reservedCount && slot.reservedCount < slot.capacity)) {
+          stats.availableSlots += (slot.capacity || 1) - (slot.reservedCount || 0);
+        }
+
+        if (slot.gigId && count > 0) {
+          stats.projectBreakdown[slot.gigId] = (stats.projectBreakdown[slot.gigId] || 0) + (duration * count);
         }
       }
     });
