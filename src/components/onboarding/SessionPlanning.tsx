@@ -20,6 +20,7 @@ import { schedulerApi } from '../../services/schedulerService';
 import { slotApi } from '../../services/slotService';
 import { SlotGenerator } from '../../components/scheduler/SlotGenerator';
 import { format } from 'date-fns';
+import axios from 'axios';
 import Cookies from 'js-cookie';
 
 // Helper to generate a consistent color from a string
