@@ -1,3 +1,4 @@
+import React from 'react';
 import { format } from 'date-fns';
 import { TimeSlot, Gig } from '../../types/scheduler';
 import { Clock, Trash2, Users } from 'lucide-react';
