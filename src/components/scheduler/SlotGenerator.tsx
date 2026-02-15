@@ -1,37 +1,114 @@
 import React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Calendar, Clock, Users, AlertCircle, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, CheckCircle } from 'lucide-react';
 import { slotApi, SlotGenerationParams } from '../../services/slotService';
+import axios from 'axios';
 
 interface SlotGeneratorProps {
     gigId: string | null | undefined;
     onSlotsGenerated?: () => void;
 }
 
-export function SlotGenerator({ gigId, onSlotsGenerated }: SlotGeneratorProps) {
-    const getDefaultDate = (): string => {
-        try {
-            return format(new Date(), 'yyyy-MM-dd');
-        } catch (error) {
-            console.error('Error formatting default date:', error);
-            return new Date().toISOString().split('T')[0];
-        }
-    };
+interface GigAvailability {
+    schedule?: Array<{ day: string; hours: { start: string; end: string } }>;
+    time_zone?: string;
+    timeZone?: string;
+}
 
-    const [startDate, setStartDate] = useState<string>(getDefaultDate());
-    const [endDate, setEndDate] = useState<string>(getDefaultDate());
-    const [slotDuration, setSlotDuration] = useState<number>(1);
+interface Gig {
+    _id: string;
+    title: string;
+    availability?: GigAvailability;
+}
+
+export function SlotGenerator({ gigId, onSlotsGenerated }: SlotGeneratorProps) {
     const [capacity, setCapacity] = useState<number>(1);
-    const [startHour, setStartHour] = useState<number>(9);
-    const [endHour, setEndHour] = useState<number>(18);
+    const [startTime, setStartTime] = useState<string>('09:00');
+    const [endTime, setEndTime] = useState<string>('18:00');
     const [generating, setGenerating] = useState<boolean>(false);
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+    const [gigData, setGigData] = useState<Gig | null>(null);
+    const [loadingGig, setLoadingGig] = useState<boolean>(false);
+    const [availableHours, setAvailableHours] = useState<string[]>([]);
+
+    // Fetch gig data and extract available hours
+    useEffect(() => {
+        const fetchGigData = async () => {
+            if (!gigId) {
+                setAvailableHours([]);
+                return;
+            }
+
+            try {
+                setLoadingGig(true);
+                const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
+                const response = await axios.get(`${apiUrl}/gigs/${gigId}`);
+
+                const gig = response.data?.data || response.data;
+                setGigData(gig);
+
+                // Extract available hours from gig availability
+                if (gig.availability?.schedule && Array.isArray(gig.availability.schedule)) {
+                    const hours = new Set<string>();
+
+                    gig.availability.schedule.forEach((daySchedule: any) => {
+                        if (daySchedule.hours?.start && daySchedule.hours?.end) {
+                            const startHour = parseInt(daySchedule.hours.start.split(':')[0], 10);
+                            const endHour = parseInt(daySchedule.hours.end.split(':')[0], 10);
+
+                            for (let h = startHour; h <= endHour; h++) {
+                                hours.add(`${h.toString().padStart(2, '0')}:00`);
+                            }
+                        }
+                    });
+
+                    const sortedHours = Array.from(hours).sort();
+                    setAvailableHours(sortedHours);
+
+                    // Set default start and end times
+                    if (sortedHours.length > 0) {
+                        setStartTime(sortedHours[0]);
+                        setEndTime(sortedHours[sortedHours.length - 1]);
+                    }
+                } else {
+                    // No availability defined, show all hours
+                    const allHours = Array.from({ length: 15 }, (_, i) => {
+                        const h = i + 6;
+                        return `${h.toString().padStart(2, '0')}:00`;
+                    });
+                    setAvailableHours(allHours);
+                }
+            } catch (error) {
+                console.error('Error fetching gig data:', error);
+                setMessage({ text: 'Failed to load gig availability', type: 'error' });
+                // Fallback to default hours
+                const allHours = Array.from({ length: 15 }, (_, i) => {
+                    const h = i + 6;
+                    return `${h.toString().padStart(2, '0')}:00`;
+                });
+                setAvailableHours(allHours);
+            } finally {
+                setLoadingGig(false);
+            }
+        };
+
+        fetchGigData();
+    }, [gigId]);
 
     if (!gigId || gigId === '') {
         return (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center text-gray-500 text-sm">
                 Select a gig to generate slots
+            </div>
+        );
+    }
+
+    // Don't show the form if gig has no availability for today
+    if (availableHours.length === 0 && !loadingGig) {
+        return (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center text-amber-600 text-sm">
+                This gig has no availability defined. Please configure the gig's schedule first.
             </div>
         );
     }
@@ -43,34 +120,31 @@ export function SlotGenerator({ gigId, onSlotsGenerated }: SlotGeneratorProps) {
         }
 
         try {
-            if (!startDate || !endDate) {
-                setMessage({ text: 'Please select start and end dates', type: 'error' });
-                return;
-            }
-
-            if (new Date(startDate) > new Date(endDate)) {
-                setMessage({ text: 'End date must be after start date', type: 'error' });
-                return;
-            }
+            const startHour = parseInt(startTime.split(':')[0], 10);
+            const endHour = parseInt(endTime.split(':')[0], 10);
 
             if (startHour >= endHour) {
-                setMessage({ text: 'End hour must be after start hour', type: 'error' });
+                setMessage({ text: 'End time must be after start time', type: 'error' });
                 return;
             }
 
-            if (slotDuration <= 0 || capacity <= 0) {
-                setMessage({ text: 'Duration and capacity must be greater than 0', type: 'error' });
+            if (capacity <= 0) {
+                setMessage({ text: 'Capacity must be greater than 0', type: 'error' });
                 return;
             }
 
             setGenerating(true);
             setMessage(null);
 
+            // Use today's date and tomorrow's date as default range
+            const today = format(new Date(), 'yyyy-MM-dd');
+            const tomorrow = format(new Date(Date.now() + 86400000), 'yyyy-MM-dd');
+
             const params: SlotGenerationParams = {
                 gigId: gigId as string,
-                startDate,
-                endDate,
-                slotDuration,
+                startDate: today,
+                endDate: tomorrow,
+                slotDuration: 1, // Fixed 1 hour slots
                 capacity,
                 startHour,
                 endHour
@@ -82,7 +156,7 @@ export function SlotGenerator({ gigId, onSlotsGenerated }: SlotGeneratorProps) {
             } else {
                 setMessage({ text: 'Slots generated successfully', type: 'success' });
             }
-            
+
             if (onSlotsGenerated) {
                 setTimeout(() => {
                     try {
@@ -114,83 +188,56 @@ export function SlotGenerator({ gigId, onSlotsGenerated }: SlotGeneratorProps) {
                 Automatically create available time slots for this gig based on the parameters below.
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Start Date</label>
-                    <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        min={getDefaultDate()}
-                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800"
-                    />
+            {loadingGig ? (
+                <div className="text-center py-4">
+                    <div className="inline-block w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-sm text-gray-500 mt-2">Loading gig availability...</p>
                 </div>
-                <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">End Date</label>
-                    <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        min={startDate}
-                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800"
-                    />
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Start Time</label>
+                        <select
+                            value={startTime}
+                            onChange={(e) => setStartTime(e.target.value)}
+                            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800"
+                        >
+                            {availableHours.map(hour => (
+                                <option key={hour} value={hour}>{hour}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">End Time</label>
+                        <select
+                            value={endTime}
+                            onChange={(e) => setEndTime(e.target.value)}
+                            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800"
+                        >
+                            {availableHours.map(hour => (
+                                <option key={hour} value={hour}>{hour}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Capacity (reps per slot)</label>
+                        <input
+                            type="number"
+                            value={capacity}
+                            onChange={(e) => setCapacity(parseInt(e.target.value) || 1)}
+                            min={1}
+                            max={50}
+                            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800"
+                        />
+                    </div>
                 </div>
-                <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Slot Duration (hours)</label>
-                    <select
-                        value={slotDuration}
-                        onChange={(e) => setSlotDuration(parseFloat(e.target.value))}
-                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800"
-                    >
-                        <option value="0.5">30 minutes</option>
-                        <option value="1">1 hour</option>
-                        <option value="1.5">1.5 hours</option>
-                        <option value="2">2 hours</option>
-                    </select>
-                </div>
-                <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Capacity (reps per slot)</label>
-                    <input
-                        type="number"
-                        value={capacity}
-                        onChange={(e) => setCapacity(parseInt(e.target.value) || 1)}
-                        min={1}
-                        max={50}
-                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800"
-                    />
-                </div>
-                <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Start Hour</label>
-                    <select
-                        value={startHour}
-                        onChange={(e) => setStartHour(parseInt(e.target.value))}
-                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800"
-                    >
-                        {Array.from({ length: 12 }, (_, i) => i + 6).map(h => (
-                            <option key={h} value={h}>{h}:00</option>
-                        ))}
-                    </select>
-                </div>
-                <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">End Hour</label>
-                    <select
-                        value={endHour}
-                        onChange={(e) => setEndHour(parseInt(e.target.value))}
-                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800"
-                    >
-                        {Array.from({ length: 12 }, (_, i) => i + 6).map(h => (
-                            <option key={h} value={h}>{h}:00</option>
-                        ))}
-                    </select>
-                </div>
-            </div>
+            )}
 
             {message && (
-                <div className={`mt-4 p-3 rounded-xl flex items-center gap-2 ${
-                    message.type === 'success' 
-                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+                <div className={`mt-4 p-3 rounded-xl flex items-center gap-2 ${message.type === 'success'
+                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                         : 'bg-red-50 text-red-800 border border-red-200'
-                }`}>
+                    }`}>
                     {message.type === 'success' ? (
                         <CheckCircle className="w-5 h-5" />
                     ) : (
@@ -202,7 +249,7 @@ export function SlotGenerator({ gigId, onSlotsGenerated }: SlotGeneratorProps) {
 
             <button
                 onClick={handleGenerate}
-                disabled={generating || !gigId}
+                disabled={generating || !gigId || loadingGig}
                 className="mt-4 w-full py-3 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
                 {generating ? (
