@@ -155,6 +155,12 @@ export default function SessionPlanning() {
   const [projects, setProjects] = useState<Gig[]>([]);
   const [loadingGigs, setLoadingGigs] = useState<boolean>(true);
 
+  // Create slots by gig (company view)
+  const [createSlotRepId, setCreateSlotRepId] = useState<string>('');
+  const [createStartTime, setCreateStartTime] = useState<string>('09:00');
+  const [createEndTime, setCreateEndTime] = useState<string>('10:00');
+  const [creatingSlots, setCreatingSlots] = useState<boolean>(false);
+
   useEffect(() => {
     const fetchGigs = async () => {
       const companyId = Cookies.get('companyId');
@@ -235,6 +241,11 @@ export default function SessionPlanning() {
           if (mappedReps.length > 0 && !mappedReps.find(r => r.id === selectedRepId)) {
             setSelectedRepId(mappedReps[0].id);
           }
+          if (mappedReps.length > 0 && !mappedReps.find(r => r.id === createSlotRepId)) {
+            setCreateSlotRepId(mappedReps[0].id);
+          }
+        } else {
+          setCreateSlotRepId('');
         }
 
         // Fetch Slots for this Gig and optionally for the selected Rep
@@ -391,6 +402,56 @@ export default function SessionPlanning() {
 
   const handleSlotSelect = (slot: TimeSlot) => {
     setSelectedSlot(slot);
+  };
+
+  const isPastDate = format(selectedDate, 'yyyy-MM-dd') < format(new Date(), 'yyyy-MM-dd');
+
+  const handleCreateSlotsForGig = async () => {
+    if (!selectedGigId || !createSlotRepId) {
+      setNotification({ message: 'Select a gig and a rep', type: 'error' });
+      setTimeout(() => setNotification(null), 3000);
+      return;
+    }
+    if (isPastDate) {
+      setNotification({ message: 'Cannot create slots for past dates', type: 'error' });
+      setTimeout(() => setNotification(null), 3000);
+      return;
+    }
+    const startH = parseInt(createStartTime.split(':')[0], 10);
+    const endH = parseInt(createEndTime.split(':')[0], 10);
+    if (endH <= startH) {
+      setNotification({ message: 'End time must be after start time', type: 'error' });
+      setTimeout(() => setNotification(null), 3000);
+      return;
+    }
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const toCreate: Partial<TimeSlot>[] = [];
+    for (let h = startH; h < endH; h++) {
+      toCreate.push({
+        repId: createSlotRepId,
+        gigId: selectedGigId,
+        date: dateStr,
+        startTime: `${h.toString().padStart(2, '0')}:00`,
+        endTime: `${(h + 1).toString().padStart(2, '0')}:00`,
+        duration: 1,
+        status: 'reserved',
+        notes: ''
+      });
+    }
+    setCreatingSlots(true);
+    try {
+      await Promise.all(toCreate.map(slot => schedulerApi.upsertTimeSlot(slot)));
+      const updatedSlots = await schedulerApi.getTimeSlots(undefined, selectedGigId);
+      const mappedSlots = Array.isArray(updatedSlots) ? updatedSlots.map(mapBackendSlotToSlot) : [];
+      setSlots(mappedSlots);
+      setNotification({ message: `${toCreate.length} slot(s) created for this gig`, type: 'success' });
+    } catch (error) {
+      console.error('Error creating slots:', error);
+      setNotification({ message: 'Failed to create slots', type: 'error' });
+    } finally {
+      setCreatingSlots(false);
+    }
+    setTimeout(() => setNotification(null), 3000);
   };
 
   const handleBulkReserve = async (startHour: number, endHour: number, gigId: string) => {
@@ -662,6 +723,66 @@ export default function SessionPlanning() {
                 view="2-weeks"
               />
             </div>
+
+            {selectedGigId && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h3 className="text-base font-semibold text-gray-900 mb-4">Create slots (by gig)</h3>
+                <p className="text-sm text-gray-500 mb-4">Create reserved slots for a rep on the selected date. Slots are linked to the current gig.</p>
+                {reps.length === 0 ? (
+                  <p className="text-sm text-amber-600">No reps enrolled in this gig. Enroll agents to create slots.</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Rep</label>
+                      <select
+                        value={createSlotRepId}
+                        onChange={(e) => setCreateSlotRepId(e.target.value)}
+                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800"
+                      >
+                        {reps.map((r) => (
+                          <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Start time</label>
+                      <select
+                        value={createStartTime}
+                        onChange={(e) => setCreateStartTime(e.target.value)}
+                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800"
+                      >
+                        {Array.from({ length: 11 }, (_, i) => i + 8).map((h) => {
+                          const t = `${h.toString().padStart(2, '0')}:00`;
+                          return <option key={t} value={t}>{t}</option>;
+                        })}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">End time</label>
+                      <select
+                        value={createEndTime}
+                        onChange={(e) => setCreateEndTime(e.target.value)}
+                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800"
+                      >
+                        {Array.from({ length: 11 }, (_, i) => i + 8).map((h) => {
+                          const t = `${h.toString().padStart(2, '0')}:00`;
+                          return <option key={t} value={t}>{t}</option>;
+                        })}
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCreateSlotsForGig}
+                      disabled={creatingSlots || isPastDate}
+                      className="py-2.5 px-4 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {creatingSlots ? 'Creating…' : 'Create slots'}
+                    </button>
+                  </div>
+                )}
+                {isPastDate && <p className="text-xs text-amber-600 mt-2">Cannot create slots for past dates.</p>}
+              </div>
+            )}
 
             {selectedGigId && (
               <CompanyView
