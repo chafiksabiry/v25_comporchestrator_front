@@ -23,6 +23,7 @@ export interface SlotGenerationParams {
     capacity: number;
     startHour?: number; // default 9
     endHour?: number; // default 18
+    notes?: string;
 }
 
 export interface Reservation {
@@ -45,7 +46,7 @@ export const slotApi = {
     generateSlots: async (params: SlotGenerationParams): Promise<{ message: string; slots: Slot[] }> => {
         try {
             const response = await axios.post(`${MATCHING_API_URL}/slots/generate`, params);
-            return response.data;
+            return response.data as any;
         } catch (error: any) {
             console.error('Error generating slots:', error);
             throw error;
@@ -62,7 +63,7 @@ export const slotApi = {
             if (date) params.date = date;
 
             const response = await axios.get(`${MATCHING_API_URL}/slots`, { params });
-            return response.data;
+            return response.data as any;
         } catch (error) {
             console.error('Error fetching slots:', error);
             throw error;
@@ -78,7 +79,7 @@ export const slotApi = {
                 agentId,
                 notes
             });
-            return response.data;
+            return response.data as any;
         } catch (error: any) {
             console.error('Error reserving slot:', error);
             throw error;
@@ -91,7 +92,7 @@ export const slotApi = {
     cancelReservation: async (reservationId: string): Promise<{ message: string; reservation: Reservation }> => {
         try {
             const response = await axios.delete(`${MATCHING_API_URL}/slots/reservations/${reservationId}`);
-            return response.data;
+            return response.data as any;
         } catch (error) {
             console.error('Error cancelling reservation:', error);
             throw error;
@@ -108,7 +109,7 @@ export const slotApi = {
             if (gigId) params.gigId = gigId;
 
             const response = await axios.get(`${MATCHING_API_URL}/slots/reservations`, { params });
-            return response.data;
+            return response.data as any;
         } catch (error) {
             console.error('Error fetching reservations:', error);
             throw error;

@@ -16,6 +16,7 @@ export function SlotGenerator({ gigId, companyId, selectedDate, onSlotsGenerated
     const [capacity, setCapacity] = useState<number>(1);
     const [startTime, setStartTime] = useState<string>('09:00');
     const [endTime, setEndTime] = useState<string>('18:00');
+    const [notes, setNotes] = useState<string>('');
     const [generating, setGenerating] = useState<boolean>(false);
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
     const [loadingGig, setLoadingGig] = useState<boolean>(false);
@@ -118,7 +119,8 @@ export function SlotGenerator({ gigId, companyId, selectedDate, onSlotsGenerated
                 slotDuration: 1,
                 capacity,
                 startHour,
-                endHour
+                endHour,
+                notes: notes || ''
             };
 
             const result = await slotApi.generateSlots(params);
@@ -127,6 +129,8 @@ export function SlotGenerator({ gigId, companyId, selectedDate, onSlotsGenerated
                 text: result.message || `Slots created successfully for ${dateStr}`,
                 type: 'success'
             });
+
+            setNotes('');
 
             if (onSlotsGenerated) {
                 setTimeout(() => {
@@ -204,6 +208,16 @@ export function SlotGenerator({ gigId, companyId, selectedDate, onSlotsGenerated
                     </div>
                 </div>
             )}
+
+            <div className="mt-4">
+                <label className="block text-xs font-medium text-gray-500 mb-1">Company Notes (e.g., "We need 5 reps for this project")</label>
+                <textarea
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800 min-h-[80px] resize-none"
+                    placeholder="Add notes for these slots..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                />
+            </div>
 
             {message && (
                 <div className={`mt-4 p-3 rounded-xl flex items-center gap-2 ${message.type === 'success'
