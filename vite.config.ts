@@ -44,22 +44,17 @@ export default defineConfig(() => {
       target: 'esnext',
       cssCodeSplit: false,
       rollupOptions: {
-        external: ['react', 'react-dom'],
         output: {
           format: 'umd',
           name: 'app11',
           entryFileNames: 'index.js', // Fixed name for the JS entry file
           chunkFileNames: 'chunk-[name].js', // Fixed name for chunks
-          assetFileNames: (assetInfo) => {
+          assetFileNames: (assetInfo: { name: string; }) => {
             // Ensure CSS files are consistently named
-            if (assetInfo.name?.endsWith('.css')) {
+            if (assetInfo.name.endsWith('.css')) {
               return 'index.css';
             }
             return '[name].[ext]'; // Default for other asset types
-          },
-          globals: {
-            react: 'React',
-            'react-dom': 'ReactDOM',
           },
         },
       },
