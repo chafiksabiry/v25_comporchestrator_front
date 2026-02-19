@@ -1218,13 +1218,7 @@ const CompanyOnboarding = () => {
           component: KYCVerification,
           disabled: true,
         },
-        {
-          id: 3,
-          title: "Subscription Plan",
-          description: "Select plan: Free, Standard, or Premium",
-          status: "pending",
-          component: SubscriptionPlan,
-        },
+
       ],
     },
     {
@@ -1315,6 +1309,14 @@ const CompanyOnboarding = () => {
       icon: Rocket,
       color: "red",
       steps: [
+        {
+          id: 3,
+          title: "Subscription Plan",
+          description: "Select plan: Free, Standard, or Premium",
+          status: "pending",
+          component: SubscriptionPlan,
+        },
+
         {
           id: 13,
           title: "Gig Activation",
