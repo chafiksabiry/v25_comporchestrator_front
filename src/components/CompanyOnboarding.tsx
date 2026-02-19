@@ -350,7 +350,7 @@ const CompanyOnboarding = () => {
         console.log('✅ Company has leads - auto-completing step 6');
         try {
           await axios.put(
-            `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
+            `${API_BASE_URL}/companies/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
             { status: 'completed' }
           );
 
@@ -413,7 +413,7 @@ const CompanyOnboarding = () => {
         try {
           await axios.put(
             `${import.meta.env.VITE_COMPANY_API_URL
-            }/onboarding/companies/${companyId}/onboarding/phases/2/steps/4`,
+            }/companies/onboarding/companies/${companyId}/onboarding/phases/2/steps/4`,
             { status: "completed" }
           );
           // Update local state to reflect the completed step
@@ -450,7 +450,7 @@ const CompanyOnboarding = () => {
         try {
           await axios.put(
             `${import.meta.env.VITE_COMPANY_API_URL
-            }/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
+            }/companies/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
             { status: "completed" }
           );
           // Update local state to reflect the completed step
@@ -626,7 +626,7 @@ const CompanyOnboarding = () => {
             console.log("✅ Found active gig - completing last phase and step");
             const completeResponse = await axios.put(
               `${import.meta.env.VITE_COMPANY_API_URL
-              }/onboarding/companies/${companyId}/onboarding/complete-last`
+              }/companies/onboarding/companies/${companyId}/onboarding/complete-last`
             );
 
             if (completeResponse.data) {
@@ -670,7 +670,7 @@ const CompanyOnboarding = () => {
             if (currentPhase >= 4) {
               await axios.put(
                 `${import.meta.env.VITE_COMPANY_API_URL
-                }/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
+                }/companies/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
                 { status: "in_progress" }
               );
             }
@@ -738,7 +738,7 @@ const CompanyOnboarding = () => {
 
       const response = await axios.get<OnboardingProgressResponse>(
         `${import.meta.env.VITE_COMPANY_API_URL
-        }/onboarding/companies/${companyId}/onboarding`
+        }/companies/onboarding/companies/${companyId}/onboarding`
       );
       const progress = response.data;
       console.log("🔄 API Response:", response.data);
@@ -908,7 +908,7 @@ const CompanyOnboarding = () => {
 
         await axios.put(
           `${import.meta.env.VITE_COMPANY_API_URL
-          }/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
+          }/companies/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
           { status: "in_progress" }
         );
         console.log(`🔄 Step ${stepId} status updated to in_progress`);
@@ -1060,7 +1060,7 @@ const CompanyOnboarding = () => {
 
       await axios.put(
         `${import.meta.env.VITE_COMPANY_API_URL
-        }/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
+        }/companies/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
         { status: "completed" }
       );
 
@@ -1118,7 +1118,7 @@ const CompanyOnboarding = () => {
         try {
           await axios.put(
             `${import.meta.env.VITE_COMPANY_API_URL
-            }/onboarding/companies/${companyId}/onboarding/current-phase`,
+            }/companies/onboarding/companies/${companyId}/onboarding/current-phase`,
             { phase: newPhase }
           );
           setCurrentPhase(newPhase);
