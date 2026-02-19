@@ -154,7 +154,7 @@ const ApprovalPublishing = () => {
         return;
       }
 
-      const response = await axios.get<CompanyResponse>(`${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/details`);
+      const response = await axios.get<CompanyResponse>(`${import.meta.env.VITE_COMPANY_API_URL}/${companyId}/details`);
       console.log('🏢 Company details fetched:', response.data.data);
       setCompany(response.data.data);
     } catch (err) {
