@@ -1247,13 +1247,7 @@ const CompanyOnboarding = () => {
           status: "pending",
           component: UploadContacts,
         },
-        {
-          id: 7,
-          title: "Knowledge Base",
-          description: "Create training materials and FAQs",
-          status: "pending",
-          component: KnowledgeBase,
-        },
+
         {
           id: 8,
           title: "Call Script",
@@ -1278,6 +1272,13 @@ const CompanyOnboarding = () => {
       icon: Users,
       color: "green",
       steps: [
+        {
+          id: 7,
+          title: "Knowledge Base",
+          description: "Create training materials and FAQs",
+          status: "pending",
+          component: KnowledgeBase,
+        },
         {
           id: 10,
           title: "Match HARX REPS",
