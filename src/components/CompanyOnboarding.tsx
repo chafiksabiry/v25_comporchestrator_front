@@ -163,9 +163,6 @@ const CompanyOnboarding = () => {
   const [showGigDetails, setShowGigDetails] = useState(false);
   const userId = Cookies.get("userId");
 
-  // Define API URL with fallback
-  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
-
   // Fetch company ID using user ID
   useEffect(() => {
     const fetchCompanyId = async () => {
@@ -185,7 +182,7 @@ const CompanyOnboarding = () => {
 
       try {
         const response = await axios.get<CompanyResponse>(
-          `${API_BASE_URL}/companies/user/${userId}`
+          `${import.meta.env.VITE_COMPANY_API_URL}/user/${userId}`
         );
         if (response.data.success && response.data.data) {
           setCompanyId(response.data.data._id);
@@ -350,7 +347,7 @@ const CompanyOnboarding = () => {
         console.log('✅ Company has leads - auto-completing step 6');
         try {
           await axios.put(
-            `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
             { status: 'completed' }
           );
 
