@@ -308,8 +308,8 @@ const CallScript = () => {
                 <button
                   key={script.id}
                   className={`flex w-full items-center justify-between rounded-lg border p-3 text-left ${activeScript === script.id
-                    ? 'border-indigo-500 bg-indigo-50'
-                    : 'border-gray-200 hover:bg-gray-50'
+                      ? 'border-indigo-500 bg-indigo-50'
+                      : 'border-gray-200 hover:bg-gray-50'
                     }`}
                   onClick={() => handleScriptSelect(script.id)}
                 >
@@ -322,8 +322,8 @@ const CallScript = () => {
                     </div>
                   </div>
                   <span className={`rounded-full px-2 py-1 text-xs font-medium ${script.status === 'active'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-yellow-100 text-yellow-800'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-yellow-100 text-yellow-800'
                     }`}>
                     {script.status}
                   </span>
@@ -391,98 +391,40 @@ const CallScript = () => {
                         )}
                       </div>
 
-                      {/* Inline editing removed - moved to modal */}
-                    </div>
-                  ))}
-
-              </div>
-
-              {/* Edit Modal */}
-              {expandedSection && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                  <div
-                    className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
-                    onClick={() => setExpandedSection(null)}
-                  />
-                  <div className="relative w-full max-w-2xl rounded-xl bg-white shadow-2xl z-50 flex flex-col max-h-[90vh]">
-                    {(() => {
-                      const activeScriptData = scripts.find(s => s.id === activeScript);
-                      const section = activeScriptData?.sections.find((s: any) => s.id === expandedSection);
-
-                      if (!section) return null;
-
-                      return (
-                        <>
-                          <div className="flex items-center justify-between border-b border-gray-200 p-6">
-                            <div>
-                              <h3 className="text-xl font-bold text-gray-900">{section.title}</h3>
-                              <p className="text-sm text-gray-500">
-                                {section.variations} variation{section.variations !== 1 ? 's' : ''} • {section.type}
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => setExpandedSection(null)}
-                              className="rounded-full p-1 hover:bg-gray-100 transition-colors"
-                            >
-                              <Plus className="h-6 w-6 transform rotate-45 text-gray-500" />
-                            </button>
-                          </div>
-
-                          <div className="p-6 overflow-y-auto">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Script Content
-                            </label>
-                            <textarea
-                              className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 min-h-[200px] text-base"
-                              rows={8}
-                              defaultValue={section.content}
-                              placeholder="Enter the script text here..."
-                            />
-
-                            <div className="mt-6 flex items-center justify-between">
-                              <div className="flex space-x-2">
-                                <button className="flex items-center rounded-lg bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-100 transition-colors">
-                                  <GitBranch className="mr-2 h-4 w-4" />
-                                  Add Variation
-                                </button>
-                                <button className="flex items-center rounded-lg bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-100 transition-colors">
-                                  <Copy className="mr-2 h-4 w-4" />
-                                  Duplicate
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="border-t border-gray-200 p-6 bg-gray-50 rounded-b-xl flex justify-between items-center">
-                            <button className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-red-600 shadow-sm ring-1 ring-inset ring-red-300 hover:bg-red-50 transition-colors">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete Section
-                            </button>
-                            <div className="flex space-x-3">
-                              <button
-                                onClick={() => setExpandedSection(null)}
-                                className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors"
-                              >
-                                Cancel
+                      {expandedSection === section.id && (
+                        <div className="border-t border-gray-200 p-4">
+                          <textarea
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            rows={4}
+                            defaultValue={section.content}
+                          />
+                          <div className="mt-4 flex items-center justify-between">
+                            <div className="flex space-x-2">
+                              <button className="rounded-md bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                                <GitBranch className="mr-2 h-4 w-4 inline" />
+                                Add Variation
                               </button>
-                              <button
-                                onClick={() => {
-                                  // Save logic would go here
-                                  setExpandedSection(null);
-                                }}
-                                className="flex items-center rounded-lg bg-indigo-600 px-6 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
-                              >
-                                <Save className="mr-2 h-4 w-4" />
+                              <button className="rounded-md bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                                <Copy className="mr-2 h-4 w-4 inline" />
+                                Duplicate
+                              </button>
+                            </div>
+                            <div className="flex space-x-2">
+                              <button className="rounded-md bg-white px-3 py-2 text-sm font-medium text-red-600 shadow-sm ring-1 ring-inset ring-red-300 hover:bg-red-50">
+                                <Trash2 className="mr-2 h-4 w-4 inline" />
+                                Delete
+                              </button>
+                              <button className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
+                                <Save className="mr-2 h-4 w-4 inline" />
                                 Save Changes
                               </button>
                             </div>
                           </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
-              )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
 
               <button className="mt-4 flex w-full items-center justify-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
                 <Plus className="mr-2 h-4 w-4" />
