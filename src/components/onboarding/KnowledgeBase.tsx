@@ -27,7 +27,7 @@ const KnowledgeBase = () => {
   const companyId = Cookies.get('companyId');
 
   // Define API URL with fallback
-  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
+  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL;
 
   // Vérifier l'état de l'étape au chargement
   useEffect(() => {

@@ -163,6 +163,9 @@ const CompanyOnboarding = () => {
   const [showGigDetails, setShowGigDetails] = useState(false);
   const userId = Cookies.get("userId");
 
+  // Define API URL with fallback
+  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
+
   // Fetch company ID using user ID
   useEffect(() => {
     const fetchCompanyId = async () => {
@@ -182,7 +185,7 @@ const CompanyOnboarding = () => {
 
       try {
         const response = await axios.get<CompanyResponse>(
-          `${import.meta.env.VITE_COMPANY_API_URL}/user/${userId}`
+          `${API_BASE_URL}/companies/user/${userId}`
         );
         if (response.data.success && response.data.data) {
           setCompanyId(response.data.data._id);
@@ -347,7 +350,7 @@ const CompanyOnboarding = () => {
         console.log('✅ Company has leads - auto-completing step 6');
         try {
           await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
+            `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
             { status: 'completed' }
           );
 
@@ -1215,6 +1218,13 @@ const CompanyOnboarding = () => {
           component: KYCVerification,
           disabled: true,
         },
+        {
+          id: 3,
+          title: "Subscription Plan",
+          description: "Select plan: Free, Standard, or Premium",
+          status: "pending",
+          component: SubscriptionPlan,
+        },
       ],
     },
     {
@@ -1305,13 +1315,6 @@ const CompanyOnboarding = () => {
       icon: Rocket,
       color: "red",
       steps: [
-        {
-          id: 3,
-          title: "Subscription Plan",
-          description: "Select plan: Free, Standard, or Premium",
-          status: "pending",
-          component: SubscriptionPlan,
-        },
         {
           id: 13,
           title: "Gig Activation",
