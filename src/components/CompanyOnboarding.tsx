@@ -748,6 +748,28 @@ const CompanyOnboarding = () => {
       // Store the progress in cookies
       Cookies.set("companyOnboardingProgress", JSON.stringify(progress));
 
+      // 🛠️ AUTO-FIX: Check if Phase 1 status is mismatching (it should be 'completed' if step 1 is done)
+      // This fixes the 400 Bad Request error when trying to access Phase 2
+      if (progress.phases && progress.phases[0]) {
+        const phase1 = progress.phases[0];
+        const step1Completed = progress.completedSteps.includes(1);
+
+        if (step1Completed && phase1.status !== 'completed') {
+          console.log("🔧 Phase 1 status mismatch detected: Step 1 is done but Phase 1 is not 'completed'. Attempting auto-fix...");
+          try {
+            // Re-complete Step 1 to trigger backend logic to update Phase 1 status
+            await axios.put(
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/1`,
+              { status: "completed" }
+            );
+            console.log("✅ Phase 1 auto-fix request sent successfully");
+            // Optionally reload to reflect changes, but maybe not needed immediately
+          } catch (fixError) {
+            console.error("❌ Failed to auto-fix Phase 1 status:", fixError);
+          }
+        }
+      }
+
       // Fonction pour vérifier si toutes les étapes non-désactivées d'une phase sont complétées
       const isPhaseFullyCompleted = (phaseId: number) => {
         const phase = phases[phaseId - 1];
