@@ -30,7 +30,7 @@ const SubscriptionPlan = () => {
         if (!isStepCompleted) {
           try {
             const stepResponse = await axios.put(
-              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/3`,
+              `${import.meta.env.VITE_COMPANY_API_URL}/companies/onboarding/companies/${companyId}/onboarding/phases/4/steps/3`,
               { status: 'completed' }
             );
 
@@ -67,7 +67,7 @@ const SubscriptionPlan = () => {
 
       // Vérifier l'état de l'étape 3 (Subscription Plan) dans la phase 4
       const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/3`
+        `${import.meta.env.VITE_COMPANY_API_URL}/companies/onboarding/companies/${companyId}/onboarding/phases/4/steps/3`
       );
 
       if (response.data && (response.data as any).status === 'completed') {
@@ -133,7 +133,7 @@ const SubscriptionPlan = () => {
       const stepId = 3; // ID du step Subscription Plan
       const phaseId = 4; // ID de la phase Activation
       const stepResponse = await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/companies/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
         { status: 'completed' }
       );
 
