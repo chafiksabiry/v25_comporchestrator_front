@@ -49,22 +49,22 @@ const CallScript = () => {
   const checkStepStatus = async () => {
     try {
       if (!companyId) return;
-      
+
       console.log('🔍 Checking step 8 status for company:', companyId);
-      
+
       // Vérifier l'état de l'étape 8 via l'API d'onboarding
       const response = await axios.get(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/8`
       );
-      
+
       console.log('📡 API response for step 8:', response.data);
-      
+
       if (response.data && (response.data as any).status === 'completed') {
         console.log('✅ Step 8 is already completed according to API');
         setIsStepCompleted(true);
         return;
       }
-      
+
       // Vérifier aussi le localStorage pour la cohérence
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
       if (storedProgress) {
@@ -79,15 +79,15 @@ const CallScript = () => {
           console.error('❌ Error parsing stored progress:', e);
         }
       }
-      
+
       // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
       // marquer automatiquement l'étape comme complétée localement
       if (hasBasicInfo() && !isStepCompleted) {
         console.log('🎯 Auto-completing step 8 locally because basic info is present');
-        
+
         // Marquer l'étape comme complétée localement
         setIsStepCompleted(true);
-        
+
         // Mettre à jour le localStorage avec l'étape 8 marquée comme complétée
         const currentCompletedSteps = [8];
         const currentProgress = {
@@ -96,26 +96,26 @@ const CallScript = () => {
           lastUpdated: new Date().toISOString()
         };
         localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-        
+
         // Synchroniser avec les cookies
         Cookies.set('callScriptStepCompleted', 'true', { expires: 7 });
-        
+
         // Notifier le composant parent CompanyOnboarding via un événement personnalisé
-        window.dispatchEvent(new CustomEvent('stepCompleted', { 
-          detail: { 
-            stepId: 8, 
-            phaseId: 2, 
+        window.dispatchEvent(new CustomEvent('stepCompleted', {
+          detail: {
+            stepId: 8,
+            phaseId: 2,
             status: 'completed',
             completedSteps: currentCompletedSteps
-          } 
+          }
         }));
-        
+
         console.log('💾 Step 8 marked as completed locally and parent component notified');
       }
-      
+
     } catch (error) {
       console.error('❌ Error checking step status:', error);
-      
+
       // En cas d'erreur API, vérifier le localStorage
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
       if (storedProgress) {
@@ -135,7 +135,7 @@ const CallScript = () => {
     // Check if we have at least 2 active scripts with sections
     const activeScripts = scripts.filter(script => script.status === 'active');
     const hasInfo = activeScripts.length >= 2 && activeScripts.every(script => script.sections && script.sections.length > 0);
-    
+
     console.log('🔍 Checking basic info for CallScript:', {
       activeScripts: activeScripts.length,
       hasInfo
@@ -151,18 +151,18 @@ const CallScript = () => {
       }
 
       console.log('🚀 Completing call script setup...');
-      
+
       // Marquer l'étape 8 comme complétée
       const stepResponse = await axios.put(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/8`,
         { status: 'completed' }
       );
-      
+
       console.log('✅ Step 8 marked as completed:', stepResponse.data);
-      
+
       // Mettre à jour l'état local
       setIsStepCompleted(true);
-      
+
       // Mettre à jour le localStorage
       const currentProgress = {
         currentPhase: 2,
@@ -170,22 +170,22 @@ const CallScript = () => {
         lastUpdated: new Date().toISOString()
       };
       localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-      
+
       // Synchroniser avec les cookies
       Cookies.set('callScriptStepCompleted', 'true', { expires: 7 });
-      
+
       // Notifier le composant parent
-      window.dispatchEvent(new CustomEvent('stepCompleted', { 
-        detail: { 
-          stepId: 8, 
-          phaseId: 2, 
+      window.dispatchEvent(new CustomEvent('stepCompleted', {
+        detail: {
+          stepId: 8,
+          phaseId: 2,
           status: 'completed',
           completedSteps: [8]
-        } 
+        }
       }));
-      
+
       console.log('💾 Call script setup completed and step 8 marked as completed');
-      
+
     } catch (error) {
       console.error('❌ Error completing call script setup:', error);
     }
@@ -307,27 +307,24 @@ const CallScript = () => {
               {scripts.map((script) => (
                 <button
                   key={script.id}
-                  className={`flex w-full items-center justify-between rounded-lg border p-3 text-left ${
-                    activeScript === script.id
-                      ? 'border-indigo-500 bg-indigo-50'
-                      : 'border-gray-200 hover:bg-gray-50'
-                  }`}
+                  className={`flex w-full items-center justify-between rounded-lg border p-3 text-left ${activeScript === script.id
+                    ? 'border-indigo-500 bg-indigo-50'
+                    : 'border-gray-200 hover:bg-gray-50'
+                    }`}
                   onClick={() => handleScriptSelect(script.id)}
                 >
                   <div className="flex items-center space-x-3">
-                    <FileText className={`h-5 w-5 ${
-                      activeScript === script.id ? 'text-indigo-600' : 'text-gray-400'
-                    }`} />
+                    <FileText className={`h-5 w-5 ${activeScript === script.id ? 'text-indigo-600' : 'text-gray-400'
+                      }`} />
                     <div>
                       <p className="font-medium text-gray-900">{script.name}</p>
                       <p className="text-sm text-gray-500">{script.description}</p>
                     </div>
                   </div>
-                  <span className={`rounded-full px-2 py-1 text-xs font-medium ${
-                    script.status === 'active'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
+                  <span className={`rounded-full px-2 py-1 text-xs font-medium ${script.status === 'active'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-yellow-100 text-yellow-800'
+                    }`}>
                     {script.status}
                   </span>
                 </button>
@@ -394,40 +391,98 @@ const CallScript = () => {
                         )}
                       </div>
 
-                      {expandedSection === section.id && (
-                        <div className="border-t border-gray-200 p-4">
-                          <textarea
-                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            rows={4}
-                            defaultValue={section.content}
-                          />
-                          <div className="mt-4 flex items-center justify-between">
-                            <div className="flex space-x-2">
-                              <button className="rounded-md bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                                <GitBranch className="mr-2 h-4 w-4 inline" />
-                                Add Variation
-                              </button>
-                              <button className="rounded-md bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                                <Copy className="mr-2 h-4 w-4 inline" />
-                                Duplicate
-                              </button>
+                      {/* Inline editing removed - moved to modal */}
+                    </div>
+                  ))}
+
+              </div>
+
+              {/* Edit Modal */}
+              {expandedSection && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                  <div
+                    className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+                    onClick={() => setExpandedSection(null)}
+                  />
+                  <div className="relative w-full max-w-2xl rounded-xl bg-white shadow-2xl z-50 flex flex-col max-h-[90vh]">
+                    {(() => {
+                      const activeScriptData = scripts.find(s => s.id === activeScript);
+                      const section = activeScriptData?.sections.find((s: any) => s.id === expandedSection);
+
+                      if (!section) return null;
+
+                      return (
+                        <>
+                          <div className="flex items-center justify-between border-b border-gray-200 p-6">
+                            <div>
+                              <h3 className="text-xl font-bold text-gray-900">{section.title}</h3>
+                              <p className="text-sm text-gray-500">
+                                {section.variations} variation{section.variations !== 1 ? 's' : ''} • {section.type}
+                              </p>
                             </div>
-                            <div className="flex space-x-2">
-                              <button className="rounded-md bg-white px-3 py-2 text-sm font-medium text-red-600 shadow-sm ring-1 ring-inset ring-red-300 hover:bg-red-50">
-                                <Trash2 className="mr-2 h-4 w-4 inline" />
-                                Delete
+                            <button
+                              onClick={() => setExpandedSection(null)}
+                              className="rounded-full p-1 hover:bg-gray-100 transition-colors"
+                            >
+                              <Plus className="h-6 w-6 transform rotate-45 text-gray-500" />
+                            </button>
+                          </div>
+
+                          <div className="p-6 overflow-y-auto">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Script Content
+                            </label>
+                            <textarea
+                              className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 min-h-[200px] text-base"
+                              rows={8}
+                              defaultValue={section.content}
+                              placeholder="Enter the script text here..."
+                            />
+
+                            <div className="mt-6 flex items-center justify-between">
+                              <div className="flex space-x-2">
+                                <button className="flex items-center rounded-lg bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-100 transition-colors">
+                                  <GitBranch className="mr-2 h-4 w-4" />
+                                  Add Variation
+                                </button>
+                                <button className="flex items-center rounded-lg bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-100 transition-colors">
+                                  <Copy className="mr-2 h-4 w-4" />
+                                  Duplicate
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="border-t border-gray-200 p-6 bg-gray-50 rounded-b-xl flex justify-between items-center">
+                            <button className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-red-600 shadow-sm ring-1 ring-inset ring-red-300 hover:bg-red-50 transition-colors">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Section
+                            </button>
+                            <div className="flex space-x-3">
+                              <button
+                                onClick={() => setExpandedSection(null)}
+                                className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors"
+                              >
+                                Cancel
                               </button>
-                              <button className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
-                                <Save className="mr-2 h-4 w-4 inline" />
+                              <button
+                                onClick={() => {
+                                  // Save logic would go here
+                                  setExpandedSection(null);
+                                }}
+                                className="flex items-center rounded-lg bg-indigo-600 px-6 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors"
+                              >
+                                <Save className="mr-2 h-4 w-4" />
                                 Save Changes
                               </button>
                             </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
 
               <button className="mt-4 flex w-full items-center justify-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50">
                 <Plus className="mr-2 h-4 w-4" />

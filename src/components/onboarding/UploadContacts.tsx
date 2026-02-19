@@ -1660,10 +1660,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           <div className="flex-1">
             <h1 className="text-3xl font-bold text-gray-900 mb-3 flex items-center">
               <UserPlus className="mr-3 h-8 w-8 text-blue-600" />
-              Upload Contacts
+              Upload File
             </h1>
             <p className="text-lg text-gray-600">
-              Import, manage, and organize your leads efficiently. Choose between connecting with your CRM system or uploading contact files directly.
+              Import, manage, and organize your leads efficiently by uploading contact files directly.
             </p>
           </div>
 
@@ -1721,7 +1721,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         {/* Import Methods Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
           {/* Zoho Import Card */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] flex flex-col h-full">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] flex flex-col h-full opacity-50 pointer-events-none grayscale">
             {/* Header */}
             <div className="flex items-center mb-4">
               <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-blue-200 shadow-sm">
@@ -1732,7 +1732,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                 />
               </div>
               <div className="flex-1">
-                <h4 className="text-xl font-bold text-blue-900">Zoho CRM Integration</h4>
+                <h4 className="text-xl font-bold text-blue-900">Zoho CRM Integration (Coming Soon)</h4>
                 <p className="text-sm text-blue-700">Connect and sync with your Zoho CRM</p>
               </div>
             </div>
