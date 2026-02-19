@@ -879,16 +879,21 @@ const CompanyOnboarding = () => {
         console.log(`✅ Step ${stepId} is already completed, not changing status`);
       } else {
         // Mettre à jour le statut de l'étape à "in_progress" seulement si pas déjà complétée
-        const phaseId =
-          phases.findIndex((phase) =>
-            phase.steps.some((step) => step.id === stepId)
-          ) + 1;
+        try {
+          const phaseId =
+            phases.findIndex((phase) =>
+              phase.steps.some((step) => step.id === stepId)
+            ) + 1;
 
-        await axios.put(
-          `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
-          { status: "in_progress" }
-        );
-        console.log(`🔄 Step ${stepId} status updated to in_progress`);
+          await axios.put(
+            `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
+            { status: "in_progress" }
+          );
+          console.log(`🔄 Step ${stepId} status updated to in_progress`);
+        } catch (apiError) {
+          console.warn("⚠️ Failed to update step status (non-blocking):", apiError);
+          // Continue execution to allow navigation even if API fails
+        }
       }
 
       const allSteps = phases.flatMap((phase) => phase.steps);
