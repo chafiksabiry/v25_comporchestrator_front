@@ -990,11 +990,32 @@ const CompanyOnboarding = () => {
           setActiveStep(stepId);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating step status:", error);
+
+      // Handle the specific 400 error regarding previous phases
+      if (error.response && error.response.status === 400) {
+        alert("Unable to start this step because previous phases are not fully completed. \n\nPlease try the 'Reset Onboarding' button at the bottom of the page to fix potential data inconsistencies.");
+      }
+
       // Afficher un message d'erreur plus informatif
       if (error instanceof Error) {
         console.error("Error details:", error.message);
+      }
+    }
+  };
+
+  const handleResetOnboarding = async () => {
+    if (!companyId) return;
+
+    if (confirm("⚠️ WARNING: This will reset your onboarding progress tracking. \n\nYour actual company data (created gigs, profile info) will NOT be deleted, but the 'checklist' progress will be reset to the beginning. \n\nThis is useful to fix 'stuck' phases. Do you want to proceed?")) {
+      try {
+        await axios.put(`${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/reset`);
+        alert("Onboarding progress has been reset. The page will now reload.");
+        window.location.reload();
+      } catch (error) {
+        console.error("Error resetting onboarding:", error);
+        alert("Failed to reset onboarding. Please check console for details.");
       }
     }
   };
@@ -1871,6 +1892,23 @@ const CompanyOnboarding = () => {
             </span>
           </button>
         </div>
+      </div>
+
+      {/* Debug / Troubleshooting Section */}
+      <div className="mt-8 pt-8 border-t border-gray-200">
+        <details className="text-xs text-gray-500">
+          <summary className="cursor-pointer hover:text-gray-700">Troubleshooting Tools</summary>
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h4 className="font-medium mb-2 text-gray-700">Fix Stuck Onboarding</h4>
+            <p className="mb-4">If you are unable to proceed to the next phase or get "Bad Request" errors, try resetting the progress tracker.</p>
+            <button
+              onClick={handleResetOnboarding}
+              className="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors text-sm font-medium"
+            >
+              Reset Onboarding Progress
+            </button>
+          </div>
+        </details>
       </div>
     </div>
   );
