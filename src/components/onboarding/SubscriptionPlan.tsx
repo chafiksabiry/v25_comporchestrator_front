@@ -22,7 +22,7 @@ const SubscriptionPlan = () => {
 
       // Vérifier si l'entreprise a déjà un abonnement
       const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/${companyId}/subscription`
+        `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/subscription`
       );
 
       if (response.data && (response.data as any).subscription) {
@@ -30,7 +30,7 @@ const SubscriptionPlan = () => {
         if (!isStepCompleted) {
           try {
             const stepResponse = await axios.put(
-              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/3`,
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/3`,
               { status: 'completed' }
             );
 
@@ -41,7 +41,7 @@ const SubscriptionPlan = () => {
 
             // Mettre à jour le localStorage
             const currentProgress = {
-              currentPhase: 4,
+              currentPhase: 1,
               completedSteps: [3],
               lastUpdated: new Date().toISOString()
             };
@@ -65,9 +65,9 @@ const SubscriptionPlan = () => {
     try {
       if (!companyId) return;
 
-      // Vérifier l'état de l'étape 3 (Subscription Plan) dans la phase 4
+      // Vérifier l'état de l'étape 3 (Subscription Plan) dans la phase 1
       const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/3`
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/3`
       );
 
       if (response.data && (response.data as any).status === 'completed') {
@@ -118,7 +118,7 @@ const SubscriptionPlan = () => {
 
       // Mettre à jour le plan d'abonnement
       const subscriptionResponse = await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/${companyId}/subscription`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/subscription`,
         {
           subscription: 'free'
         }
@@ -131,7 +131,7 @@ const SubscriptionPlan = () => {
 
       // Marquer l'étape comme complétée
       const stepId = 3; // ID du step Subscription Plan
-      const phaseId = 4; // ID de la phase Activation
+      const phaseId = 1; // ID de la phase Company Account Setup
       const stepResponse = await axios.put(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
         { status: 'completed' }
@@ -147,7 +147,7 @@ const SubscriptionPlan = () => {
 
       // Mettre à jour le localStorage
       const currentProgress = {
-        currentPhase: 4,
+        currentPhase: 1,
         completedSteps: [3],
         lastUpdated: new Date().toISOString()
       };
