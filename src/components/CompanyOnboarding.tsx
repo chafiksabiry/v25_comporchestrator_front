@@ -30,10 +30,10 @@ import SessionPlanning from "./onboarding/SessionPlanning";
 import Cookies from "js-cookie";
 import axios from "axios";
 import GigDetails from "./onboarding/GigDetails";
-import KnowledgeBase from "./KnowledgeBase";
+import KnowledgeBase from "./onboarding/KnowledgeBase";
 import ApprovalPublishing from "./ApprovalPublishing";
 import ZohoService from "../services/zohoService";
-import { checkMatchRepsStepCompletion, getGigWeights } from "../api/matching";
+import { checkMatchRepsStepCompletion } from "../api/matching";
 
 interface BaseStep {
   id: number;
@@ -412,7 +412,8 @@ const CompanyOnboarding = () => {
       if (hasGigs) {
         try {
           await axios.put(
-            `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/4`,
+            `${import.meta.env.VITE_COMPANY_API_URL
+            }/onboarding/companies/${companyId}/onboarding/phases/2/steps/4`,
             { status: "completed" }
           );
           // Update local state to reflect the completed step
@@ -448,7 +449,8 @@ const CompanyOnboarding = () => {
         console.log("✅ Company has leads - auto-completing step 6");
         try {
           await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
+            `${import.meta.env.VITE_COMPANY_API_URL
+            }/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
             { status: "completed" }
           );
           // Update local state to reflect the completed step
@@ -502,12 +504,12 @@ const CompanyOnboarding = () => {
       let validPhase = 1;
 
       // Vérifier chaque phase séquentiellement
-      for (let phaseId = 1; phaseId <= 5; phaseId++) {
+      for (let phaseId = 1; phaseId <= 4; phaseId++) {
         if (phaseId === 1) {
           // Phase 1 est toujours accessible
           validPhase = 1;
         } else {
-          // Pour les phases 2, 3, 4, 5, vérifier que la phase précédente est complétée
+          // Pour les phases 2, 3, 4, vérifier que la phase précédente est complétée
           const previousPhaseCompleted = isPhaseFullyCompleted(phaseId - 1);
 
           if (previousPhaseCompleted) {
@@ -528,32 +530,50 @@ const CompanyOnboarding = () => {
 
       // Vérifications spéciales pour les cas particuliers
       if (completedSteps.includes(7) && validPhase < 3) {
-        // Si step 7 (Knowledge Base) est complété, on est au moins en phase 3
+        // Si step 7 (Knowledge Base) est complété, on peut aller en phase 3
+        // MAIS seulement si la phase 2 est complétée
         if (isPhaseFullyCompleted(2)) {
           validPhase = 3;
           console.log(
             "🔄 Step 7 completed and phase 2 is fully completed - setting phase to 3"
           );
+        } else {
+          console.log(
+            "⚠️ Step 7 completed but phase 2 is not fully completed - staying in phase 2"
+          );
+          validPhase = 2;
         }
       }
 
-      if (completedSteps.includes(10) && validPhase < 5) {
-        // Si step 10 (Match HARX REPS) est complété, on peut aller en phase 5
-        if (isPhaseFullyCompleted(4)) {
-          validPhase = 5;
+      if (completedSteps.includes(10) && validPhase < 4) {
+        // Si step 10 (Match HARX REPS) est complété, on peut aller en phase 4
+        // MAIS seulement si la phase 3 est complétée
+        if (isPhaseFullyCompleted(3)) {
+          validPhase = 4;
           console.log(
-            "🔄 Step 10 completed and phase 4 is fully completed - setting phase to 5"
+            "🔄 Step 10 completed and phase 3 is fully completed - setting phase to 4"
           );
+        } else {
+          console.log(
+            "⚠️ Step 10 completed but phase 3 is not fully completed - staying in phase 3"
+          );
+          validPhase = 3;
         }
       }
 
       if (completedSteps.includes(13) && validPhase < 4) {
-        // Si step 13 (Gig Activation) est complété, on est au moins en phase 4
+        // Si step 13 (Gig Activation) est complété, on peut aller en phase 4
+        // MAIS seulement si la phase 3 est complétée
         if (isPhaseFullyCompleted(3)) {
           validPhase = 4;
           console.log(
             "🔄 Step 13 completed and phase 3 is fully completed - setting phase to 4"
           );
+        } else {
+          console.log(
+            "⚠️ Step 13 completed but phase 3 is not fully completed - staying in phase 3"
+          );
+          validPhase = 3;
         }
       }
 
@@ -605,7 +625,8 @@ const CompanyOnboarding = () => {
           try {
             console.log("✅ Found active gig - completing last phase and step");
             const completeResponse = await axios.put(
-              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/complete-last`
+              `${import.meta.env.VITE_COMPANY_API_URL
+              }/onboarding/companies/${companyId}/onboarding/complete-last`
             );
 
             if (completeResponse.data) {
@@ -648,7 +669,8 @@ const CompanyOnboarding = () => {
             // Mark step 13 as in_progress - seulement si on est en phase 4
             if (currentPhase >= 4) {
               await axios.put(
-                `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
+                `${import.meta.env.VITE_COMPANY_API_URL
+                }/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
                 { status: "in_progress" }
               );
             }
@@ -715,7 +737,8 @@ const CompanyOnboarding = () => {
       }
 
       const response = await axios.get<OnboardingProgressResponse>(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+        `${import.meta.env.VITE_COMPANY_API_URL
+        }/onboarding/companies/${companyId}/onboarding`
       );
       const progress = response.data;
       console.log("🔄 API Response:", response.data);
@@ -740,12 +763,12 @@ const CompanyOnboarding = () => {
       let validPhase = 1;
 
       // Vérifier chaque phase séquentiellement
-      for (let phaseId = 1; phaseId <= 5; phaseId++) {
+      for (let phaseId = 1; phaseId <= 4; phaseId++) {
         if (phaseId === 1) {
           // Phase 1 est toujours accessible
           validPhase = 1;
         } else {
-          // Pour les phases 2, 3, 4, 5, vérifier que la phase précédente est complétée
+          // Pour les phases 2, 3, 4, vérifier que la phase précédente est complétée
           const previousPhaseCompleted = isPhaseFullyCompleted(phaseId - 1);
 
           if (previousPhaseCompleted) {
@@ -884,7 +907,8 @@ const CompanyOnboarding = () => {
           ) + 1;
 
         await axios.put(
-          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
+          `${import.meta.env.VITE_COMPANY_API_URL
+          }/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
           { status: "in_progress" }
         );
         console.log(`🔄 Step ${stepId} status updated to in_progress`);
@@ -1035,7 +1059,8 @@ const CompanyOnboarding = () => {
         ) + 1;
 
       await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
+        `${import.meta.env.VITE_COMPANY_API_URL
+        }/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
         { status: "completed" }
       );
 
@@ -1092,7 +1117,8 @@ const CompanyOnboarding = () => {
       ) {
         try {
           await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/current-phase`,
+            `${import.meta.env.VITE_COMPANY_API_URL
+            }/onboarding/companies/${companyId}/onboarding/current-phase`,
             { phase: newPhase }
           );
           setCurrentPhase(newPhase);
@@ -1125,8 +1151,8 @@ const CompanyOnboarding = () => {
     setDisplayedPhase(newPhase);
   };
 
-  const handleNextPhase = async () => {
-    const newPhase = Math.min(5, displayedPhase + 1);
+  const handleNextPhase = () => {
+    const newPhase = Math.min(4, displayedPhase + 1);
 
     // Fonction pour vérifier si toutes les étapes non-désactivées d'une phase sont complétées
     const isPhaseFullyCompleted = (phaseId: number) => {
@@ -1138,7 +1164,7 @@ const CompanyOnboarding = () => {
     };
 
     // Vérifier si la phase actuelle est complétée avant d'avancer
-    if (displayedPhase < 5) {
+    if (displayedPhase < 4) {
       if (isPhaseFullyCompleted(displayedPhase)) {
         console.log(
           `✅ Phase ${displayedPhase} is fully completed, proceeding to phase ${newPhase}`
@@ -1153,28 +1179,8 @@ const CompanyOnboarding = () => {
         );
         return;
       }
-    } else if (displayedPhase === 5) {
-      if (companyId) {
-        try {
-          const status = await checkMatchRepsStepCompletion(companyId);
-          if (status.invitationsSentCount === 0 && status.enrolledRepsCount === 0) {
-            alert("Please invite at least one rep, or have at least one enrolled rep, before finishing onboarding.");
-            return;
-          }
-        } catch (error) {
-          console.error("Error checking Match Reps completion:", error);
-          // Optional: decide whether to block or allow on error. 
-          // For now, we allow proceed if check fails to avoid being stuck due to API error, 
-          // OR we block. User asked for validation.
-          // Let's block only if we are sure it's 0. If error, maybe alert user?
-          // I will just log and let it proceed or return? 
-          // Let's return to be safe, assuming API works.
-          alert("Error checking validation status. Please try again.");
-          return;
-        }
-      }
-
-      // Rediriger seulement si on est déjà en phase 5
+    } else if (displayedPhase === 4) {
+      // Rediriger seulement si on est déjà en phase 4
       window.location.href = "/company#/company";
     }
   };
@@ -1212,6 +1218,13 @@ const CompanyOnboarding = () => {
           component: KYCVerification,
           disabled: true,
         },
+        {
+          id: 3,
+          title: "Subscription Plan",
+          description: "Select plan: Free, Standard, or Premium",
+          status: "pending",
+          component: SubscriptionPlan,
+        },
       ],
     },
     {
@@ -1235,10 +1248,17 @@ const CompanyOnboarding = () => {
         },
         {
           id: 6,
-          title: "Upload File",
+          title: "Upload Contacts",
           description: "Import contacts for multi-channel engagement",
           status: "pending",
           component: UploadContacts,
+        },
+        {
+          id: 7,
+          title: "Knowledge Base",
+          description: "Create training materials and FAQs",
+          status: "pending",
+          component: KnowledgeBase,
         },
         {
           id: 8,
@@ -1265,11 +1285,11 @@ const CompanyOnboarding = () => {
       color: "green",
       steps: [
         {
-          id: 7,
-          title: "Knowledge Base",
-          description: "Create training materials and FAQs",
+          id: 10,
+          title: "Match HARX REPS",
+          description: "Connect with qualified REPS based on requirements",
           status: "pending",
-          component: KnowledgeBase,
+          component: MatchHarxReps,
         },
         {
           id: 11,
@@ -1296,33 +1316,11 @@ const CompanyOnboarding = () => {
       color: "red",
       steps: [
         {
-          id: 3,
-          title: "Subscription Plan",
-          description: "Select plan: Free, Standard, or Premium",
-          status: "pending",
-          component: SubscriptionPlan,
-        },
-        {
           id: 13,
           title: "Gig Activation",
           description: "Launch multi-channel operations",
           status: "pending",
           component: ApprovalPublishing,
-        },
-      ],
-    },
-    {
-      id: 5,
-      title: "Match & Scale",
-      icon: Users,
-      color: "purple",
-      steps: [
-        {
-          id: 10,
-          title: "Match HARX REPS",
-          description: "Connect with qualified REPS based on requirements",
-          status: "pending",
-          component: MatchHarxReps,
         },
       ],
     },

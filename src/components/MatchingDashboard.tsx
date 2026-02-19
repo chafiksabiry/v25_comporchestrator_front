@@ -645,7 +645,7 @@ export const MatchingDashboard = () => {
         });
     };
     return (
-        <div className="flex flex-col h-full bg-antigravity-bg text-antigravity-text font-sans selection:bg-antigravity-primary/30">
+        <div className="min-h-screen bg-antigravity-bg w-full max-w-full overflow-x-hidden text-antigravity-text">
             {/* Header with Navigation Tabs */}
             <header className="bg-antigravity-primary border-b border-antigravity-primary shadow-lg">
                 {/* Top Header */}
@@ -952,10 +952,10 @@ export const MatchingDashboard = () => {
                                 )}
 
                                 {/* Two Column Layout: Gigs and Reps */}
-                                <div className="resizable-container flex gap-4 w-full max-w-full overflow-hidden flex-1 min-h-0">
+                                <div className="resizable-container flex gap-4 w-full max-w-full overflow-hidden">
                                     {/* Left Column: Gig Selection */}
                                     <div
-                                        className="bg-white rounded-xl shadow-xl p-6 overflow-hidden transition-all duration-200 flex-shrink-0 border border-indigo-100/50 backdrop-blur-sm flex flex-col h-full"
+                                        className="bg-white rounded-xl shadow-xl p-6 overflow-hidden transition-all duration-200 flex-shrink-0 border border-indigo-100/50 backdrop-blur-sm"
                                         style={{ width: `${leftColumnWidth}%`, minWidth: '280px', maxWidth: '50%' }}
                                     >
                                         <div className="flex items-center justify-between mb-6">
@@ -970,7 +970,7 @@ export const MatchingDashboard = () => {
                                             </span>
                                         </div>
 
-                                        <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar min-h-0">
+                                        <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                                             {gigs.map((gig: Gig) => {
                                                 const isGigExpanded = expandedGigs.has(gig._id || '');
 
@@ -1192,7 +1192,7 @@ export const MatchingDashboard = () => {
 
                                     {/* Right Column: Matching Results */}
                                     <div
-                                        className="bg-antigravity-surface rounded-xl shadow-lg p-6 overflow-hidden transition-all duration-200 flex-1 min-w-0 border border-antigravity-border flex flex-col h-full"
+                                        className="bg-antigravity-surface rounded-xl shadow-lg p-6 overflow-hidden transition-all duration-200 flex-1 min-w-0 border border-antigravity-border"
                                     >
                                         <h3 className="text-xl font-semibold text-antigravity-text mb-4 flex items-center space-x-2">
                                             <Users size={20} className="text-antigravity-primary" />
@@ -1217,7 +1217,7 @@ export const MatchingDashboard = () => {
                                                 </div>
                                             </div>
                                         ) : filteredMatches.length > 0 ? (
-                                            <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar min-h-0">
+                                            <div className="space-y-3 max-h-96 overflow-y-auto">
                                                 {filteredMatches.map((match: Match, index: any) => {
                                                     // Check if agent is already enrolled in this specific gig
                                                     const isAlreadyEnrolledInThisGig = activeAgentsList.some(
