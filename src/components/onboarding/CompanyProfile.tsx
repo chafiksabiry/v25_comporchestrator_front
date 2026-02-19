@@ -417,7 +417,7 @@ function CompanyProfile() {
     try {
       setLoading(true);
       const response = await axios.get<CompanyResponse>(
-        `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/details`
+        `${import.meta.env.VITE_COMPANY_API_URL}/${companyId}/details`
       );
       setCompany(response.data.data);
       if ((response.data.data as any).logo) {
@@ -485,7 +485,7 @@ function CompanyProfile() {
 
       // Sauvegarder les informations de l'entreprise
       await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/${companyId}`,
         company
       );
 

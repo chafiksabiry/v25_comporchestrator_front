@@ -286,7 +286,7 @@ const RepOnboarding = () => {
       // Try to fetch company ID from user ID
       const userId = Cookies.get('userId');
       if (userId) {
-        axios.get(`${import.meta.env.VITE_COMPANY_API_URL}/companies/user/${userId}`)
+        axios.get(`${import.meta.env.VITE_COMPANY_API_URL}/user/${userId}`)
           .then((response) => {
             if (response.data.success && response.data.data) {
               const companyId = response.data.data._id;
