@@ -1274,13 +1274,6 @@ const CompanyOnboarding = () => {
           component: KnowledgeBase,
         },
         {
-          id: 10,
-          title: "Match HARX REPS",
-          description: "Connect with qualified REPS based on requirements",
-          status: "pending",
-          component: MatchHarxReps,
-        },
-        {
           id: 11,
           title: "REP Onboarding",
           description: "Training, validation, and contract acceptance",
@@ -1318,6 +1311,13 @@ const CompanyOnboarding = () => {
           description: "Launch multi-channel operations",
           status: "pending",
           component: ApprovalPublishing,
+        },
+        {
+          id: 10,
+          title: "MATCH HARX REPS",
+          description: "Connect with qualified REPS based on requirements",
+          status: "pending",
+          component: MatchHarxReps,
         },
       ],
     },
