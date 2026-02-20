@@ -3,7 +3,7 @@ import apiClient from '../api/client';
 import Cookies from 'js-cookie';
 import {
   User, Headphones, Plus, ArrowLeft, Eye, Calendar, Target, Globe, Trash2, ToggleLeft, ToggleRight, Filter,
-  FileText, HandHeart, Shield, Search, Star, FileCheck, AlertTriangle, CheckCircle, RefreshCw, Edit2, MessageSquare
+  FileText, HandHeart, Shield, Search, Star, FileCheck, AlertTriangle, CheckCircle, RefreshCw, Edit2, MessageSquare, X
 } from 'lucide-react';
 
 interface ScriptResponse {
@@ -1343,20 +1343,33 @@ const ScriptGenerator: React.FC = () => {
 
                                 {/* Edit modal */}
                                 {editingStep?.index === globalStepIdx && (
-                                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                                    <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] flex flex-col">
-                                      <h3 className="text-lg font-bold mb-4">Edit Response</h3>
-                                      <div className="flex-1 min-h-0 overflow-y-auto">
+                                  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
+                                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden animate-scale-in">
+                                      <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                                        <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                          <Edit2 className="w-5 h-5 text-blue-600" />
+                                          Edit Response
+                                        </h3>
+                                        <button
+                                          onClick={() => setEditingStep(null)}
+                                          className="text-gray-400 hover:text-gray-600 transition-colors"
+                                        >
+                                          <X size={24} />
+                                        </button>
+                                      </div>
+                                      <div className="p-6 flex-1 overflow-y-auto">
                                         <textarea
                                           value={editingStep.text}
                                           onChange={e => setEditingStep({ ...editingStep, text: e.target.value })}
-                                          className="w-full h-full min-h-[200px] p-3 border-2 border-gray-200 rounded-lg mb-4 resize-none"
+                                          className="w-full h-64 p-4 border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 resize-none font-medium text-gray-800"
+                                          placeholder="Type the response here..."
+                                          autoFocus
                                         />
                                       </div>
-                                      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                                      <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
                                         <button
                                           onClick={() => setEditingStep(null)}
-                                          className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                                          className="px-6 py-2.5 text-gray-600 hover:bg-gray-200 rounded-xl font-semibold transition-all duration-200"
                                         >
                                           Cancel
                                         </button>
@@ -1365,7 +1378,7 @@ const ScriptGenerator: React.FC = () => {
                                             handleUpdateScriptContent(selectedScript._id, globalStepIdx, { replica: editingStep.text });
                                             setEditingStep(null);
                                           }}
-                                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                          className="px-8 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-bold hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-200"
                                         >
                                           Save Changes
                                         </button>
@@ -1376,25 +1389,40 @@ const ScriptGenerator: React.FC = () => {
 
                                 {/* Refine modal */}
                                 {refiningStep?.index === globalStepIdx && (
-                                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                                    <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] flex flex-col">
-                                      <h3 className="text-lg font-bold mb-4">Refine Response</h3>
-                                      <div className="flex-1 min-h-0 overflow-y-auto">
-                                        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                                          <p className="text-sm text-gray-600 mb-2">Current response:</p>
-                                          <p className="text-gray-800">{step.replica}</p>
-                                        </div>
-                                        <textarea
-                                          value={refiningStep.prompt}
-                                          onChange={e => setRefiningStep({ ...refiningStep, prompt: e.target.value })}
-                                          placeholder="Describe how you want to refine this response..."
-                                          className="w-full h-full min-h-[200px] p-3 border-2 border-gray-200 rounded-lg resize-none"
-                                        />
-                                      </div>
-                                      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                                  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
+                                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden animate-scale-in">
+                                      <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                                        <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                          <MessageSquare className="w-5 h-5 text-purple-600" />
+                                          Refine Response
+                                        </h3>
                                         <button
                                           onClick={() => setRefiningStep(null)}
-                                          className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                                          className="text-gray-400 hover:text-gray-600 transition-colors"
+                                        >
+                                          <X size={24} />
+                                        </button>
+                                      </div>
+                                      <div className="p-6 flex-1 overflow-y-auto space-y-4">
+                                        <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl">
+                                          <p className="text-xs font-bold text-purple-600 uppercase tracking-widest mb-1">Current response</p>
+                                          <p className="text-gray-800 leading-relaxed italic">"{step.replica}"</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-sm font-semibold text-gray-700 mb-2">How should we refine it?</p>
+                                          <textarea
+                                            value={refiningStep.prompt}
+                                            onChange={e => setRefiningStep({ ...refiningStep, prompt: e.target.value })}
+                                            placeholder="e.g., Make it more formal, emphasize the warranty, handle price objections more gently..."
+                                            className="w-full h-48 p-4 border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-gray-50 resize-none font-medium text-gray-800"
+                                            autoFocus
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
+                                        <button
+                                          onClick={() => setRefiningStep(null)}
+                                          className="px-6 py-2.5 text-gray-600 hover:bg-gray-200 rounded-xl font-semibold transition-all duration-200"
                                         >
                                           Cancel
                                         </button>
@@ -1403,7 +1431,7 @@ const ScriptGenerator: React.FC = () => {
                                             handleRefineScriptPart(selectedScript._id, globalStepIdx, refiningStep.prompt);
                                             setRefiningStep(null);
                                           }}
-                                          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                                          className="px-8 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-bold hover:from-purple-700 hover:to-purple-800 shadow-lg hover:shadow-xl transition-all duration-200"
                                         >
                                           Refine Response
                                         </button>
