@@ -809,55 +809,6 @@ const CompanyOnboarding = () => {
         }
       }
 
-      // Vérifications spéciales pour les cas particuliers
-      if (progress.completedSteps.includes(7) && validPhase < 3) {
-        // Si step 7 (Knowledge Base) est complété, on peut aller en phase 3
-        // MAIS seulement si la phase 2 est complétée
-        if (isPhaseFullyCompleted(2)) {
-          validPhase = 3;
-          console.log(
-            "🔄 Step 7 completed and phase 2 is fully completed - setting phase to 3"
-          );
-        } else {
-          console.log(
-            "⚠️ Step 7 completed but phase 2 is not fully completed - staying in phase 2"
-          );
-          validPhase = 2;
-        }
-      }
-
-      if (progress.completedSteps.includes(10) && validPhase < 4) {
-        // Si step 10 (Match HARX REPS) est complété, on peut aller en phase 4
-        // MAIS seulement si la phase 3 est complétée
-        if (isPhaseFullyCompleted(3)) {
-          validPhase = 4;
-          console.log(
-            "🔄 Step 10 completed and phase 3 is fully completed - setting phase to 4"
-          );
-        } else {
-          console.log(
-            "⚠️ Step 10 completed but phase 3 is not fully completed - staying in phase 3"
-          );
-          validPhase = 3;
-        }
-      }
-
-      if (progress.completedSteps.includes(13) && validPhase < 4) {
-        // Si step 13 (Gig Activation) est complété, on peut aller en phase 4
-        // MAIS seulement si la phase 3 est complétée
-        if (isPhaseFullyCompleted(3)) {
-          validPhase = 4;
-          console.log(
-            "🔄 Step 13 completed and phase 3 is fully completed - setting phase to 4"
-          );
-        } else {
-          console.log(
-            "⚠️ Step 13 completed but phase 3 is not fully completed - staying in phase 3"
-          );
-          validPhase = 3;
-        }
-      }
-
       console.log(
         "🔄 Final valid phase determined:",
         validPhase,
