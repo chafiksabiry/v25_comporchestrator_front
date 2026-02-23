@@ -765,18 +765,6 @@ const CompanyOnboarding = () => {
       setDisplayedPhase(validPhase);
       setCompletedSteps(progress.completedSteps);
 
-      // Check for leads and auto-complete step 5 if necessary
-      if (!progress.completedSteps.includes(5)) {
-        setTimeout(() => {
-          checkCompanyLeads();
-        }, 100);
-      }
-
-      // Force a re-render to ensure the UI updates
-      setTimeout(() => {
-        console.log("🔄 Forcing re-render after state update");
-        setCurrentPhase((prev: any) => prev); // This will trigger a re-render
-      }, 50);
     } catch (error) {
       console.error("Error loading company progress:", error);
       // En cas d'erreur, utiliser les valeurs par défaut
@@ -985,33 +973,6 @@ const CompanyOnboarding = () => {
     }
   };
 
-  const handleStepComplete = async (stepId: number) => {
-    if (!companyId) {
-      console.error("Company ID not available for step completion");
-      return;
-    }
-
-    try {
-      const phaseId =
-        phases.findIndex((phase) =>
-          phase.steps.some((step) => step.id === stepId)
-        ) + 1;
-
-      await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL
-        }/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
-        { status: "completed" }
-      );
-
-      setCompletedSteps((prev: any) => [...prev, stepId]);
-    } catch (error) {
-      console.error("Error completing step:", error);
-      // Afficher un message d'erreur plus informatif
-      if (error instanceof Error) {
-        console.error("Error details:", error.message);
-      }
-    }
-  };
 
   const handlePhaseChange = async (newPhase: number) => {
     if (!companyId) return;
