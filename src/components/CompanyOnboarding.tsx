@@ -208,20 +208,7 @@ const CompanyOnboarding = () => {
     fetchCompanyId();
   }, [userId]);
 
-  // Load company progress and check gigs when company ID is available
-  useEffect(() => {
-    if (companyId) {
-      console.log(
-        "🔄 Company ID available, loading progress and checking gigs..."
-      );
-      loadCompanyProgress();
-      checkCompanyGigs();
-      // checkCompanyLeads();
 
-      // Vérifier si l'utilisateur vient de se connecter à Zoho
-      checkZohoConnection();
-    }
-  }, [companyId]);
 
   // Add listener for step completion messages from child components
   useEffect(() => {
@@ -231,7 +218,7 @@ const CompanyOnboarding = () => {
         const { stepId, phaseId, data } = event.data;
 
         // Update local state
-        setCompletedSteps((prev: string | any[]) => {
+        setCompletedSteps((prev: number[]) => {
           if (!prev.includes(stepId)) {
             return [...prev, stepId];
           }
@@ -662,8 +649,13 @@ const CompanyOnboarding = () => {
     console.log("🔄 Company ID available, loading progress and checking gigs...");
     const initOnboarding = async () => {
       console.log("🔄 Running auto-completions before loading progress...");
-      // Run both auto-completion checks in parallel
-      await Promise.all([checkCompanyLeads(), checkActiveGigs()]);
+      // Run auto-completion + non-blocking checks in parallel
+      await Promise.all([
+        checkCompanyLeads(),
+        checkActiveGigs(),
+        checkCompanyGigs(),
+        checkZohoConnection(),
+      ]);
       // Then load final state from backend (which now has the updated steps)
       console.log("🔄 Loading company progress on mount...");
       await loadCompanyProgress();
