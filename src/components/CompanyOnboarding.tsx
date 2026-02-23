@@ -554,21 +554,22 @@ const CompanyOnboarding = () => {
           }
         }
 
-        // If at least one gig is active, complete the last phase and step
+        // If at least one gig is active, complete step 12 (Gig Activation)
         if (hasActiveGig) {
           try {
-            console.log("✅ Found active gig - completing last phase and step");
+            console.log("✅ Found active gig - completing Step 12 (Gig Activation)");
             const completeResponse = await axios.put(
               `${import.meta.env.VITE_COMPANY_API_URL
-              }/onboarding/companies/${companyId}/onboarding/complete-last`
+              }/onboarding/companies/${companyId}/onboarding/phases/4/steps/12`,
+              { status: "completed" }
             );
 
             if (completeResponse.data) {
               console.log(
-                "✅ Last phase and step completed successfully:",
+                "✅ Step 12 (Gig Activation) completed successfully:",
                 completeResponse.data
               );
-              // Update local state without reloading the entire project
+              // Update local state
               setCompletedSteps((prev: any) => {
                 const newSteps = [...prev];
                 if (!newSteps.includes(12)) {
@@ -579,7 +580,7 @@ const CompanyOnboarding = () => {
 
               // Mettre à jour les cookies avec le nouveau progrès
               const currentProgress = {
-                currentPhase: 4, // Phase 4 car step 12 est dans la phase 4
+                currentPhase: 4,
                 completedSteps: [...completedSteps, 12],
               };
               Cookies.set(
@@ -590,7 +591,7 @@ const CompanyOnboarding = () => {
               console.log("✅ Step 12 marked as completed - active gig found");
             }
           } catch (error) {
-            console.error("Error completing last phase and step:", error);
+            console.error("Error completing step 12 (Gig Activation):", error);
             // Ne pas faire échouer toute la fonction si cette mise à jour échoue
           }
         }
