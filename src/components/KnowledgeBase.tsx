@@ -189,7 +189,7 @@ const KnowledgeBase: React.FC = () => {
       const apiUrl = import.meta.env.VITE_API_URL_ONBOARDING;
       console.log('Using API URL:', apiUrl);
 
-      const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`;
+      const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/7`;
       console.log('Making request to endpoint:', endpoint);
 
       const response = await axios.put(endpoint, { status: "completed" });
@@ -200,6 +200,16 @@ const KnowledgeBase: React.FC = () => {
       if (response.data) {
         Cookies.set('companyOnboardingProgress', JSON.stringify(response.data), { expires: 7 });
         console.log('Updated companyOnboardingProgress cookie with new data');
+
+        // Notify parent component
+        window.dispatchEvent(new CustomEvent('stepCompleted', {
+          detail: {
+            stepId: 7,
+            phaseId: 3,
+            status: 'completed',
+            completedSteps: (response.data as any).completedSteps || []
+          }
+        }));
       }
 
       return response.data;
@@ -250,6 +260,12 @@ const KnowledgeBase: React.FC = () => {
 
       setIsFirstUpload(!hasMultipleDocuments);
       setKnowledgeItems(documents);
+
+      // Auto-complete if at least one document exists
+      if (documents.length > 0) {
+        console.log('✅ Auto-completing step 7 because documents exist');
+        updateOnboardingProgress().catch(err => console.error('Failed auto-completion on fetch:', err));
+      }
 
       // Mettre à jour documentAnalysis avec les analyses existantes
       const existingAnalyses = documents.reduce((acc: any, doc: any) => {
@@ -311,6 +327,12 @@ const KnowledgeBase: React.FC = () => {
           }
         }));
         setCallRecords(calls);
+
+        // Auto-complete if at least one call record exists
+        if (calls.length > 0) {
+          console.log('✅ Auto-completing step 7 because call records exist');
+          updateOnboardingProgress().catch(err => console.error('Failed auto-completion on fetch:', err));
+        }
       } catch (error) {
         console.error('Error fetching call records:', error);
       }
@@ -376,6 +398,15 @@ const KnowledgeBase: React.FC = () => {
 
         const response = await apiClient.post('/call-recordings/upload', formData);
         console.log('Call recording upload successful:', response.data);
+
+        // Update onboarding progress for call recording upload
+        console.log('Updating onboarding progress for call recording upload');
+        try {
+          await updateOnboardingProgress();
+          console.log('Successfully updated onboarding progress for call recording');
+        } catch (error) {
+          console.error('Failed to update onboarding progress for call recording:', error);
+        }
 
         const newCall: CallRecord = {
           id: response.data.callRecording.id,

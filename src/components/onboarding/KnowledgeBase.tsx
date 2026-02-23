@@ -52,7 +52,7 @@ const KnowledgeBase = () => {
 
       // Vérifier l'état de l'étape 7 via l'API d'onboarding
       const response = await axios.get(
-        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`
+        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/3/steps/7`
       );
 
       console.log('📡 API response for step 7:', response.data);
@@ -89,7 +89,7 @@ const KnowledgeBase = () => {
         // Mettre à jour le localStorage avec l'étape 7 marquée comme complétée
         const currentCompletedSteps = [7];
         const currentProgress = {
-          currentPhase: 2,
+          currentPhase: 3,
           completedSteps: currentCompletedSteps,
           lastUpdated: new Date().toISOString()
         };
@@ -102,7 +102,7 @@ const KnowledgeBase = () => {
         window.dispatchEvent(new CustomEvent('stepCompleted', {
           detail: {
             stepId: 7,
-            phaseId: 2,
+            phaseId: 3,
             status: 'completed',
             completedSteps: currentCompletedSteps
           }
@@ -154,7 +154,7 @@ const KnowledgeBase = () => {
 
       // Marquer l'étape 7 comme complétée
       const stepResponse = await axios.put(
-        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`,
+        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/3/steps/7`,
         { status: 'completed' }
       );
 
@@ -165,7 +165,7 @@ const KnowledgeBase = () => {
 
       // Mettre à jour le localStorage
       const currentProgress = {
-        currentPhase: 2,
+        currentPhase: 3,
         completedSteps: [7],
         lastUpdated: new Date().toISOString()
       };
@@ -178,7 +178,7 @@ const KnowledgeBase = () => {
       window.dispatchEvent(new CustomEvent('stepCompleted', {
         detail: {
           stepId: 7,
-          phaseId: 2,
+          phaseId: 3,
           status: 'completed',
           completedSteps: [7]
         }
