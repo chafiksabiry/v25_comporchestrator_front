@@ -289,7 +289,7 @@ const CompanyOnboarding = () => {
       // Clear manual close flag to allow future auto-restoration if needed
       sessionStorage.removeItem("uploadContactsManuallyClosed");
       // Immediately check for leads and auto-complete step 5
-      checkCompanyLeadsForAutoCompletion();
+      checkCompanyLeads();
       // Also reload progress after a short delay
       setTimeout(() => {
         loadCompanyProgress();
@@ -319,71 +319,13 @@ const CompanyOnboarding = () => {
   //   return () => clearInterval(interval);
   // }, [companyId]);
 
-  // Vérifier périodiquement si l'étape 6 doit être marquée comme complétée
-  useEffect(() => {
-    if (!companyId) return;
-
-    const interval = setInterval(() => {
-      // Vérifier si la company a des leads mais que l'étape 6 n'est pas marquée comme complétée
-      checkCompanyLeadsForAutoCompletion();
-    }, 10000); // Vérifier toutes les 10 secondes
-
-    return () => clearInterval(interval);
-  }, [companyId, completedSteps]);
+  // Auto-completion of steps is handled by checkCompanyLeads (step 5) and checkActiveGigs (step 3) on mount
 
 
 
 
 
-  // Fonction pour auto-compléter l'étape 6 si des leads existent
-  const checkCompanyLeadsForAutoCompletion = async () => {
-    try {
-      if (!companyId || completedSteps.includes(5)) {
-        return; // Step already completed or no company ID
-      }
 
-      const response = await axios.get<HasLeadsResponse>(
-        `${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads`
-      );
-
-      if (response.data.hasLeads && response.data.count > 0) {
-        console.log('✅ Company has leads - auto-completing step 5');
-        try {
-          await axios.put(
-            `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
-            { status: 'completed' }
-          );
-
-          // Update local state to reflect the completed step
-          setCompletedSteps((prev: any) => {
-            if (!prev.includes(6)) {
-              const newSteps = [...prev, 6];
-              console.log('✅ Step 6 auto-completed successfully - updating local state');
-
-              // Update localStorage as well
-              const currentProgress = {
-                currentPhase: 2,
-                completedSteps: newSteps,
-                lastUpdated: new Date().toISOString()
-              };
-              localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-
-              return newSteps;
-            }
-            return prev;
-          });
-
-          // Set hasLeads state
-          setHasLeads(true);
-
-        } catch (error) {
-          console.error('Error auto-completing step 5:', error);
-        }
-      }
-    } catch (error) {
-      console.error('Error checking company leads for auto-completion:', error);
-    }
-  };
 
   // Si l'URL contient ?startStep=6 ou si on est sur l'URL spécifique avec session, on lance handleStartStep(6)
   useEffect(() => {
@@ -825,10 +767,10 @@ const CompanyOnboarding = () => {
       setDisplayedPhase(validPhase);
       setCompletedSteps(progress.completedSteps);
 
-      // Check for leads and auto-complete step 4 if necessary
-      if (!progress.completedSteps.includes(4)) {
+      // Check for leads and auto-complete step 5 if necessary
+      if (!progress.completedSteps.includes(5)) {
         setTimeout(() => {
-          checkCompanyLeadsForAutoCompletion();
+          checkCompanyLeads();
         }, 100);
       }
 
