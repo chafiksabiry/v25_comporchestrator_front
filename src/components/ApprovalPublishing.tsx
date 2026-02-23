@@ -468,15 +468,15 @@ const ApprovalPublishing = () => {
         gig._id === gigId ? { ...gig, status: 'active' } : gig
       ));
 
-      // Mark step 13 (phase 4) as completed since we now have an active gig
-      await markStep13AsCompleted();
+      // Mark step 12 (phase 4) as completed since we now have an active gig
+      await markStep12AsCompleted();
     } catch (error) {
       console.error('❌ Error approving gig:', error);
       setError(error instanceof Error ? error.message : 'Failed to approve gig');
     }
   };
 
-  const markStep13AsCompleted = async () => {
+  const markStep12AsCompleted = async () => {
     try {
       const companyId = Cookies.get('companyId');
       if (!companyId) {
@@ -553,19 +553,19 @@ const ApprovalPublishing = () => {
         gig._id === gigId ? { ...gig, status: 'inactive' } : gig
       ));
 
-      // Check if all gigs are now inactive and mark step 13 as pending if needed
-      await checkAndUpdateStep13Status();
+      // Check if all gigs are now inactive and mark step 12 as pending if needed
+      await checkAndUpdateStep12Status();
     } catch (error) {
       console.error('❌ Error rejecting gig:', error);
       setError(error instanceof Error ? error.message : 'Failed to reject gig');
     }
   };
 
-  const checkAndUpdateStep13Status = async () => {
+  const checkAndUpdateStep12Status = async () => {
     try {
       const companyId = Cookies.get('companyId');
       if (!companyId) {
-        console.warn('Company ID not found, cannot check step 13 status');
+        console.warn('Company ID not found, cannot check step 12 status');
         return;
       }
 
@@ -574,7 +574,7 @@ const ApprovalPublishing = () => {
         gig.status === 'active' || gig.status === 'approved' || gig.status === 'published'
       );
 
-      console.log('🔍 Checking step 13 status after gig status change:', {
+      console.log('🔍 Checking step 12 status after gig status change:', {
         totalGigs: gigs.length,
         hasActiveGig,
         gigStatuses: gigs.map(g => g.status)
@@ -583,9 +583,9 @@ const ApprovalPublishing = () => {
       if (!hasActiveGig) {
         console.log('⚠️ No active gigs found - updating phase and step statuses');
 
-        // Mark step 13 as in_progress
+        // Mark step 12 as in_progress
         const stepResponse = await fetch(
-          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/12`,
           {
             method: 'PUT',
             headers: {
@@ -608,16 +608,16 @@ const ApprovalPublishing = () => {
         );
 
         if (stepResponse.ok && phaseResponse.ok) {
-          console.log('⚠️ Step 13 and phase 4 statuses updated successfully');
+          console.log('⚠️ Step 12 and phase 4 statuses updated successfully');
         } else {
-          console.warn('⚠️ Failed to update step 13 or phase 4 status:', {
+          console.warn('⚠️ Failed to update step 12 or phase 4 status:', {
             stepStatus: stepResponse.status,
             phaseStatus: phaseResponse.status
           });
         }
       }
     } catch (error) {
-      console.error('❌ Error checking step 13 status:', error);
+      console.error('❌ Error checking step 12 status:', error);
     }
   };
 
@@ -947,8 +947,8 @@ const ApprovalPublishing = () => {
         gig._id === gigId ? { ...gig, status: 'archived' } : gig
       ));
 
-      // Check if all gigs are now inactive and mark step 13 as pending if needed
-      await checkAndUpdateStep13Status();
+      // Check if all gigs are now inactive and mark step 12 as pending if needed
+      await checkAndUpdateStep12Status();
     } catch (error) {
       console.error('❌ Error archiving gig:', error);
       setError(error instanceof Error ? error.message : 'Failed to archive gig');

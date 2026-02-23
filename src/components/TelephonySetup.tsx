@@ -566,7 +566,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     try {
       if (!companyId) return;
 
-      console.log('🔍 Checking step 5 status for company:', companyId);
+      console.log('🔍 Checking step 4 status for company:', companyId);
 
       try {
         const response = await axios.get(
@@ -577,12 +577,12 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
         if (response.data && (response.data as any).completedSteps && Array.isArray((response.data as any).completedSteps)) {
           const completedSteps = (response.data as any).completedSteps;
-          if (completedSteps.includes(5)) {
-            console.log('✅ Step 5 is already completed according to API');
+          if (completedSteps.includes(4)) {
+            console.log('✅ Step 4 is already completed according to API');
             setCompletedSteps(completedSteps);
             return;
           } else {
-            console.log('⚠️ Step 5 is not completed according to API');
+            console.log('⚠️ Step 4 is not completed according to API');
           }
         }
       } catch (apiError) {
@@ -802,7 +802,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         );
 
         const currentCompletedSteps = (onboardingResponse.data as any)?.completedSteps || [];
-        const newCompletedSteps = currentCompletedSteps.includes(5) ? currentCompletedSteps : [...currentCompletedSteps, 5];
+        const newCompletedSteps = currentCompletedSteps.includes(4) ? currentCompletedSteps : [...currentCompletedSteps, 4];
 
         const updateResponse = await axios.put(
           `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`,
@@ -812,24 +812,24 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           }
         );
 
-        console.log('✅ Telephony setup step 5 marked as completed via general onboarding:', updateResponse.data);
+        console.log('✅ Telephony setup step 4 marked as completed via general onboarding:', updateResponse.data);
 
       } catch (apiError) {
         console.log('⚠️ Could not update via general onboarding API, trying individual step endpoint...');
 
         try {
           const response = await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/4`,
             { status: 'completed' }
           );
-          console.log('✅ Telephony setup step 5 marked as completed via individual endpoint:', response.data);
+          console.log('✅ Telephony setup step 4 marked as completed via individual endpoint:', response.data);
         } catch (stepError) {
           console.log('⚠️ Individual step endpoint also failed, proceeding with localStorage only');
         }
       }
 
       setCompletedSteps((prev: number[]) => {
-        const newCompletedSteps = prev.includes(5) ? prev : [...prev, 5];
+        const newCompletedSteps = prev.includes(4) ? prev : [...prev, 4];
 
         const currentProgress = {
           currentPhase: 2,

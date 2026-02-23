@@ -164,16 +164,16 @@ const sampleCompanies: Company[] = [
   },
 ];
 
-// Function to update onboarding progress for Step 12 (Session Planning)
+// Function to update onboarding progress for Step 10 (Session Planning)
 const updateOnboardingProgress = async () => {
   try {
     const companyId = Cookies.get('companyId');
     if (!companyId) return;
 
     const apiUrl = import.meta.env.VITE_API_URL_ONBOARDING || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
-    const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/12`;
+    const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/10`;
 
-    console.log('[SessionPlanning] Marking Step 12 as completed:', endpoint);
+    console.log('[SessionPlanning] Marking Step 10 as completed:', endpoint);
     const response = await axios.put(endpoint, { status: "completed" });
 
     if (response.data) {
@@ -183,13 +183,13 @@ const updateOnboardingProgress = async () => {
       // Notify parent component for real-time UI update
       window.dispatchEvent(new CustomEvent('stepCompleted', {
         detail: {
-          stepId: 12,
+          stepId: 10,
           phaseId: 3,
           status: 'completed',
           completedSteps: (response.data as any).completedSteps || []
         }
       }));
-      console.log('[SessionPlanning] Step 12 successfully marked as completed');
+      console.log('[SessionPlanning] Step 10 successfully marked as completed');
     }
   } catch (error) {
     console.error('[SessionPlanning] Failed to update onboarding progress:', error);
