@@ -441,52 +441,44 @@ const CompanyOnboarding = () => {
         }
       }
 
-      // Vérifications spéciales pour les cas particuliers
+      // Vérifications spéciales pour les cas particuliers (overrides)
       if (completedSteps.includes(6) && validPhase < 3) {
-        // Si step 6 (Knowledge Base) est complété, on peut aller en phase 3
-        // MAIS seulement si la phase 2 est complétée
+        // Si step 6 (Call Script) est complété et que la phase 2 est complétée, on peut aller en phase 3
         if (isPhaseFullyCompleted(2)) {
           validPhase = 3;
           console.log(
-            "🔄 Step 6 completed and phase 2 is fully completed - setting phase to 3"
+            "🔄 Step 6 (Call Script) completed and phase 2 is fully completed - unlocking phase 3"
           );
-        } else {
-          console.log(
-            "⚠️ Step 6 completed but phase 2 is not fully completed - staying in phase 2"
-          );
-          validPhase = 2;
         }
       }
 
-      if (completedSteps.includes(12) && validPhase < 4) {
-        // Si step 12 (Match HARX REPS) est complété, on peut aller en phase 4
-        // MAIS seulement si la phase 3 est complétée
-        if (isPhaseFullyCompleted(3)) {
-          validPhase = 4;
-          console.log(
-            "🔄 Step 12 completed and phase 3 is fully completed - setting phase to 4"
-          );
-        } else {
-          console.log(
-            "⚠️ Step 12 completed but phase 3 is not fully completed - staying in phase 3"
-          );
-          validPhase = 3;
-        }
-      }
-
+      // Si step 10 (Session Planning) est complété et que la phase 3 est complétée, on peut aller en phase 4
       if (completedSteps.includes(10) && validPhase < 4) {
-        // Si step 10 (Gig Activation) est complété, on peut aller en phase 4
-        // MAIS seulement si la phase 3 est complétée
         if (isPhaseFullyCompleted(3)) {
           validPhase = 4;
           console.log(
-            "🔄 Step 10 completed and phase 3 is fully completed - setting phase to 4"
+            "🔄 Step 10 (Session Planning) completed and phase 3 is fully completed - unlocking phase 4"
           );
-        } else {
+        }
+      }
+
+      // Si step 12 (Gig Activation) est complété, on reste en phase 4 (déjà débloquée normalement)
+      if (completedSteps.includes(12) && validPhase < 4) {
+        if (isPhaseFullyCompleted(3)) {
+          validPhase = 4;
           console.log(
-            "⚠️ Step 10 completed but phase 3 is not fully completed - staying in phase 3"
+            "🔄 Step 12 (Gig Activation) completed - ensuring phase 4 is active"
           );
-          validPhase = 3;
+        }
+      }
+
+      // Si step 13 (Match HARX REPS) est complété, on reste en phase 4
+      if (completedSteps.includes(13) && validPhase < 4) {
+        if (isPhaseFullyCompleted(3)) {
+          validPhase = 4;
+          console.log(
+            "🔄 Step 13 (Match HARX REPS) completed - ensuring phase 4 is active"
+          );
         }
       }
 
@@ -744,6 +736,35 @@ const CompanyOnboarding = () => {
             );
             break; // Arrêter ici, ne pas avancer plus loin
           }
+        }
+      }
+
+      // Vérifications spéciales pour les cas particuliers (overrides)
+      if (progress.completedSteps.includes(6) && validPhase < 3) {
+        if (isPhaseFullyCompleted(2)) {
+          validPhase = 3;
+          console.log("🔄 Step 6 (Call Script) completed - unlocking phase 3");
+        }
+      }
+
+      if (progress.completedSteps.includes(10) && validPhase < 4) {
+        if (isPhaseFullyCompleted(3)) {
+          validPhase = 4;
+          console.log("🔄 Step 10 (Session Planning) completed - unlocking phase 4");
+        }
+      }
+
+      if (progress.completedSteps.includes(12) && validPhase < 4) {
+        if (isPhaseFullyCompleted(3)) {
+          validPhase = 4;
+          console.log("🔄 Step 12 (Gig Activation) completed - unlocking phase 4");
+        }
+      }
+
+      if (progress.completedSteps.includes(13) && validPhase < 4) {
+        if (isPhaseFullyCompleted(3)) {
+          validPhase = 4;
+          console.log("🔄 Step 13 (Match HARX REPS) completed - unlocking phase 4");
         }
       }
 
