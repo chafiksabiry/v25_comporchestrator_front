@@ -447,6 +447,8 @@ export const MatchingDashboard = () => {
 
     // Handle creating gig-rep (inviting rep to gig)
     const handleCreateGigAgent = async (match: Match) => {
+        const companyId = Cookies.get('companyId') || '685abf28641398dc582f4c95';
+
         if (!selectedGig) {
             setGigAgentError("No gig selected");
             return;
@@ -475,13 +477,13 @@ export const MatchingDashboard = () => {
             const response = await createGigAgent(requestData);
             console.log('Gig-Rep created successfully:', response);
 
-            // Update onboarding progress - Phase 4, Step 10 (MATCH HARX REPS)
+            // Update onboarding progress - Phase 3, Step 10 (MATCH HARX REPS)
             // When at least one invitation is sent, mark the step as completed
             if (companyId) {
                 try {
                     const onboardingApiUrl = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
                     await axios.put(
-                        `${onboardingApiUrl}/onboarding/companies/${companyId}/onboarding/phases/4/steps/10`,
+                        `${onboardingApiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/10`,
                         { status: 'completed' }
                     );
                     console.log('✅ Onboarding progress updated: Match HARX REPS step completed');
@@ -510,7 +512,7 @@ export const MatchingDashboard = () => {
             }, 3000);
 
             // Refresh only essential data
-            const companyId = Cookies.get('companyId') || '685abf28641398dc582f4c95';
+            // companyId is already declared at the top of this function
 
             // Fetch only what we need
             const [invitedAgentsData, enrollmentRequestsData, activeAgentsData] = await Promise.all([
