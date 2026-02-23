@@ -189,7 +189,7 @@ const KnowledgeBase: React.FC = () => {
       const apiUrl = import.meta.env.VITE_API_URL_ONBOARDING;
       console.log('Using API URL:', apiUrl);
 
-      const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/7`;
+      const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/8`;
       console.log('Making request to endpoint:', endpoint);
 
       const response = await axios.put(endpoint, { status: "completed" });
@@ -204,7 +204,7 @@ const KnowledgeBase: React.FC = () => {
         // Notify parent component
         window.dispatchEvent(new CustomEvent('stepCompleted', {
           detail: {
-            stepId: 7,
+            stepId: 8,
             phaseId: 3,
             status: 'completed',
             completedSteps: (response.data as any).completedSteps || []
@@ -263,7 +263,7 @@ const KnowledgeBase: React.FC = () => {
 
       // Auto-complete if at least one document exists
       if (documents.length > 0) {
-        console.log('✅ Auto-completing step 7 because documents exist');
+        console.log('✅ Auto-completing step 8 because documents exist');
         updateOnboardingProgress().catch(err => console.error('Failed auto-completion on fetch:', err));
       }
 
@@ -330,7 +330,7 @@ const KnowledgeBase: React.FC = () => {
 
         // Auto-complete if at least one call record exists
         if (calls.length > 0) {
-          console.log('✅ Auto-completing step 7 because call records exist');
+          console.log('✅ Auto-completing step 8 because call records exist');
           updateOnboardingProgress().catch(err => console.error('Failed auto-completion on fetch:', err));
         }
       } catch (error) {
