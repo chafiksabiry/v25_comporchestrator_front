@@ -1815,7 +1815,7 @@ const CompanyOnboarding = () => {
             disabled={false}
             onClick={handleNextPhase}
           >
-            Next Phase
+            {displayedPhase === 4 ? "Go to Dashboard" : "Next Phase"}
           </button>
         </div>
       </div>

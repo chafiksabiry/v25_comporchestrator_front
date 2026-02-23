@@ -475,6 +475,21 @@ export const MatchingDashboard = () => {
             const response = await createGigAgent(requestData);
             console.log('Gig-Rep created successfully:', response);
 
+            // Update onboarding progress - Phase 4, Step 10 (MATCH HARX REPS)
+            // When at least one invitation is sent, mark the step as completed
+            if (companyId) {
+                try {
+                    const onboardingApiUrl = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
+                    await axios.put(
+                        `${onboardingApiUrl}/onboarding/companies/${companyId}/onboarding/phases/4/steps/10`,
+                        { status: 'completed' }
+                    );
+                    console.log('✅ Onboarding progress updated: Match HARX REPS step completed');
+                } catch (onboardingError) {
+                    console.error('Error updating onboarding progress:', onboardingError);
+                }
+            }
+
             // Add rep to invited list
             setInvitedAgents((prev: any) => new Set([...prev, match.agentId]));
 
