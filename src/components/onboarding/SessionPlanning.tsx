@@ -164,6 +164,38 @@ const sampleCompanies: Company[] = [
   },
 ];
 
+// Function to update onboarding progress for Step 12 (Session Planning)
+const updateOnboardingProgress = async () => {
+  try {
+    const companyId = Cookies.get('companyId');
+    if (!companyId) return;
+
+    const apiUrl = import.meta.env.VITE_API_URL_ONBOARDING || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
+    const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/12`;
+
+    console.log('[SessionPlanning] Marking Step 12 as completed:', endpoint);
+    const response = await axios.put(endpoint, { status: "completed" });
+
+    if (response.data) {
+      // Update the cookie to keep frontend in sync
+      Cookies.set('companyOnboardingProgress', JSON.stringify(response.data), { expires: 7 });
+
+      // Notify parent component for real-time UI update
+      window.dispatchEvent(new CustomEvent('stepCompleted', {
+        detail: {
+          stepId: 12,
+          phaseId: 3,
+          status: 'completed',
+          completedSteps: (response.data as any).completedSteps || []
+        }
+      }));
+      console.log('[SessionPlanning] Step 12 successfully marked as completed');
+    }
+  } catch (error) {
+    console.error('[SessionPlanning] Failed to update onboarding progress:', error);
+  }
+};
+
 export default function SessionPlanning() {
   const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
   const [slots, setSlots] = useState<TimeSlot[]>([]);
@@ -306,6 +338,11 @@ export default function SessionPlanning() {
       const allSlots = slotsWithReservations.map(mapBackendSlotToSlot);
       setSlots(allSlots);
 
+      // Auto-complete step 12 if slots exist
+      if (allSlots.length > 0) {
+        updateOnboardingProgress();
+      }
+
       // Extract and merge agents from populated slots to ensure we have all data
       const populatedAgents: Rep[] = [];
       allSlots.forEach(slot => {
@@ -428,6 +465,9 @@ export default function SessionPlanning() {
       const mappedSlots = Array.isArray(updatedSlots) ? updatedSlots.map(mapBackendSlotToSlot) : [];
       setSlots(mappedSlots);
 
+      // Auto-complete step 12
+      updateOnboardingProgress();
+
       setNotification({
         message: updates.id ? 'Time slot updated successfully' : 'New time slot created',
         type: 'success'
@@ -514,6 +554,10 @@ export default function SessionPlanning() {
       const updatedSlots = await schedulerApi.getTimeSlots(undefined, selectedGigId);
       const mappedSlots = Array.isArray(updatedSlots) ? updatedSlots.map(mapBackendSlotToSlot) : [];
       setSlots(mappedSlots);
+
+      // Auto-complete step 12 after creating multiples slots
+      updateOnboardingProgress();
+
       setNotification({ message: `${toCreate.length} slot(s) created for this gig`, type: 'success' });
     } catch (error) {
       console.error('Error creating slots:', error);
