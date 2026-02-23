@@ -480,29 +480,30 @@ const ApprovalPublishing = () => {
     try {
       const companyId = Cookies.get('companyId');
       if (!companyId) {
-        console.warn('Company ID not found, cannot complete last phase and step');
+        console.warn('Company ID not found, cannot complete step 12');
         return;
       }
 
-      console.log('🎯 Completing last phase and step due to active gig');
+      console.log('🎯 Completing step 12 (Gig Activation) due to active gig');
       const response = await fetch(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/complete-last`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/12`,
         {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
-          }
+          },
+          body: JSON.stringify({ status: 'completed' })
         }
       );
 
       if (response.ok) {
         const responseData = await response.json();
-        console.log('✅ Last phase and step completed successfully:', responseData);
+        console.log('✅ Step 12 (Gig Activation) completed successfully:', responseData);
       } else {
-        console.warn('⚠️ Failed to complete last phase and step:', response.status);
+        console.warn('⚠️ Failed to complete step 12:', response.status);
       }
     } catch (error) {
-      console.error('❌ Error completing last phase and step:', error);
+      console.error('❌ Error completing step 12 (Gig Activation):', error);
     }
   };
 
