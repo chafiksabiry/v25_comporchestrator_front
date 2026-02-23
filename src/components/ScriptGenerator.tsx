@@ -406,7 +406,7 @@ const ScriptGenerator: React.FC = () => {
       const companyId = getCompanyId();
       if (!companyId) throw new Error('Company ID not found');
       const apiUrl = import.meta.env.VITE_API_URL_ONBOARDING;
-      const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/2/steps/8`;
+      const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`;
       const response = await apiClient.put(endpoint, { status: 'completed' });
       console.log('Onboarding progress (script) update response:', response.data);
 
