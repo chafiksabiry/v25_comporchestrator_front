@@ -228,6 +228,38 @@ const RepOnboarding = () => {
     return 'https://v25platformtrainingbackend-production.up.railway.app';
   };
 
+  // Function to update onboarding progress for Step 11 (REP Onboarding)
+  const updateOnboardingProgress = async () => {
+    try {
+      const companyId = Cookies.get('companyId');
+      if (!companyId) return;
+
+      const apiUrl = import.meta.env.VITE_API_URL_ONBOARDING;
+      const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/11`;
+
+      console.log('[RepOnboarding] Marking Step 11 as completed:', endpoint);
+      const response = await axios.put(endpoint, { status: "completed" });
+
+      if (response.data) {
+        // Update the cookie to keep frontend in sync
+        Cookies.set('companyOnboardingProgress', JSON.stringify(response.data), { expires: 7 });
+
+        // Notify parent component for real-time UI update
+        window.dispatchEvent(new CustomEvent('stepCompleted', {
+          detail: {
+            stepId: 11,
+            phaseId: 3,
+            status: 'completed',
+            completedSteps: response.data.completedSteps || []
+          }
+        }));
+        console.log('[RepOnboarding] Step 11 successfully marked as completed');
+      }
+    } catch (error) {
+      console.error('[RepOnboarding] Failed to update onboarding progress:', error);
+    }
+  };
+
   // Function to fetch trainings for the company
   const fetchCompanyTrainings = useCallback(async () => {
     if (!companyId) {
@@ -252,9 +284,19 @@ const RepOnboarding = () => {
         const trainingsData = Array.isArray(response.data.data) ? response.data.data : [];
         console.log('[RepOnboarding] Found', trainingsData.length, 'trainings');
         setTrainings(trainingsData);
+
+        // Auto-complete step 11 if trainings exist
+        if (trainingsData.length > 0) {
+          updateOnboardingProgress();
+        }
       } else if (Array.isArray(response.data)) {
         console.log('[RepOnboarding] Response is array, found', response.data.length, 'trainings');
         setTrainings(response.data);
+
+        // Auto-complete step 11 if trainings exist
+        if (response.data.length > 0) {
+          updateOnboardingProgress();
+        }
       } else {
         console.log('[RepOnboarding] No trainings found in response');
         setTrainings([]);
