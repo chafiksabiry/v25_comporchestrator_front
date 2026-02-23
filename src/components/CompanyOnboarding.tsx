@@ -407,25 +407,9 @@ const CompanyOnboarding = () => {
       );
       const hasGigs = response.data.data.hasGigs;
       setHasGigs(hasGigs);
-
-      // If company has gigs, update the onboarding progress for step 3
-      if (hasGigs) {
-        try {
-          await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL
-            }/onboarding/companies/${companyId}/onboarding/phases/2/steps/4`,
-            { status: "completed" }
-          );
-          // Update local state to reflect the completed step
-          setCompletedSteps((prev: any) => [...prev, 4]);
-        } catch (error) {
-          console.error("Error updating onboarding progress:", error);
-          // Ne pas faire échouer toute la fonction si cette mise à jour échoue
-        }
-      }
+      // Note: step 3 completion is handled by checkActiveGigs - do not duplicate here
     } catch (error) {
       console.error("Error checking company gigs:", error);
-      // Ne pas faire échouer toute la fonction si cette vérification échoue
     }
   };
 
