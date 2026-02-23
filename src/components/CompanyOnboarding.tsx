@@ -1274,13 +1274,6 @@ const CompanyOnboarding = () => {
           component: KnowledgeBase,
         },
         {
-          id: 10,
-          title: "MATCH HARX REPS",
-          description: "Connect with qualified REPS based on requirements",
-          status: "pending",
-          component: MatchHarxReps,
-        },
-        {
           id: 11,
           title: "REP Onboarding",
           description: "Training, validation, and contract acceptance",
@@ -1305,6 +1298,13 @@ const CompanyOnboarding = () => {
       color: "red",
       steps: [
         {
+          id: 3,
+          title: "Subscription Plan",
+          description: "Select plan: Free, Standard, or Premium",
+          status: "pending",
+          component: SubscriptionPlan,
+        },
+        {
           id: 13,
           title: "Gig Activation",
           description: "Launch multi-channel operations",
@@ -1312,11 +1312,11 @@ const CompanyOnboarding = () => {
           component: ApprovalPublishing,
         },
         {
-          id: 3,
-          title: "Subscription Plan",
-          description: "Select plan: Free, Standard, or Premium",
+          id: 10,
+          title: "MATCH HARX REPS",
+          description: "Connect with qualified REPS based on requirements",
           status: "pending",
-          component: SubscriptionPlan,
+          component: MatchHarxReps,
         },
       ],
     },
