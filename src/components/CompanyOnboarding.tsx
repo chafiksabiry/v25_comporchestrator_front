@@ -1250,7 +1250,7 @@ const CompanyOnboarding = () => {
     }
   };
 
-  const handleBackToOnboarding = () => {
+  const handleBackToOnboarding = async () => {
     // If UploadContacts is showing, cancel processing and return immediately
     if (showUploadContacts) {
       console.log(
@@ -1303,6 +1303,11 @@ const CompanyOnboarding = () => {
       setShowUploadContacts(false);
       console.log("✅ Set showUploadContacts to false");
 
+      // Refresh progress
+      if (companyId) {
+        await loadCompanyProgress();
+      }
+
       // Simply close UploadContacts and return to normal CompanyOnboarding state
       console.log(
         "✅ Closing UploadContacts and returning to normal onboarding state"
@@ -1312,6 +1317,11 @@ const CompanyOnboarding = () => {
 
     // For other cases, just close the active step
     setActiveStep(null);
+
+    // Refresh progress
+    if (companyId) {
+      await loadCompanyProgress();
+    }
   };
 
   const handleStepClick = (stepId: number) => {
@@ -1459,10 +1469,7 @@ const CompanyOnboarding = () => {
     };
   } else if (showUploadContacts) {
     activeComponent = <UploadContacts />;
-    onBack = () => {
-      // Navigate to /app11 to reload onboarding with latest progress
-      window.location.href = "/app11";
-    };
+    onBack = handleBackToOnboarding;
   } else if (ActiveStepComponent) {
     activeComponent = <ActiveStepComponent />;
     onBack = handleBackToOnboarding;
