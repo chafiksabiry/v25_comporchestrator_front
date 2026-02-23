@@ -613,12 +613,33 @@ const CompanyOnboarding = () => {
             gig.status === "approved" ||
             gig.status === "published"
         );
+        const hasAnyGig = gigs.length > 0;
 
         console.log("🔍 Active gigs check:", {
           totalGigs: gigs.length,
           hasActiveGig,
+          hasAnyGig,
           gigStatuses: gigs.map((g: any) => g.status),
         });
+
+        // Auto-complete Step 3 (Create Gigs) if the company has ANY gig
+        if (hasAnyGig && !completedSteps.includes(3)) {
+          try {
+            console.log("✅ Company has gigs - auto-completing Step 3 (Create Gigs)");
+            await axios.put(
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/3`,
+              { status: "completed" }
+            );
+            setCompletedSteps((prev: number[]) => {
+              const next = [...prev];
+              if (!next.includes(3)) next.push(3);
+              return next;
+            });
+            console.log("✅ Step 3 marked as completed - gig exists");
+          } catch (error) {
+            console.error("Error auto-completing step 3:", error);
+          }
+        }
 
         // If at least one gig is active, complete the last phase and step
         if (hasActiveGig) {
