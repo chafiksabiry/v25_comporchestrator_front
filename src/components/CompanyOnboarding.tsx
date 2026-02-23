@@ -656,21 +656,19 @@ const CompanyOnboarding = () => {
     }
   };
 
-  // Initial check for leads and gigs when component mounts
+  // Initial check: run auto-completions first, then load progress so state is consistent
   useEffect(() => {
-    if (companyId) {
-      console.log("🔄 Initial check for leads and gigs...");
-      checkCompanyLeads();
-      checkActiveGigs();
-    }
-  }, [companyId]);
-
-  // Load company progress when component mounts
-  useEffect(() => {
-    if (companyId) {
+    if (!companyId) return;
+    console.log("🔄 Company ID available, loading progress and checking gigs...");
+    const initOnboarding = async () => {
+      console.log("🔄 Running auto-completions before loading progress...");
+      // Run both auto-completion checks in parallel
+      await Promise.all([checkCompanyLeads(), checkActiveGigs()]);
+      // Then load final state from backend (which now has the updated steps)
       console.log("🔄 Loading company progress on mount...");
-      loadCompanyProgress();
-    }
+      await loadCompanyProgress();
+    };
+    initOnboarding();
   }, [companyId]);
 
   const loadCompanyProgress = async () => {
