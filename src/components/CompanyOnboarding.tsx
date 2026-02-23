@@ -288,7 +288,7 @@ const CompanyOnboarding = () => {
       setShowUploadContacts(false);
       // Clear manual close flag to allow future auto-restoration if needed
       sessionStorage.removeItem("uploadContactsManuallyClosed");
-      // Immediately check for leads and auto-complete step 6
+      // Immediately check for leads and auto-complete step 5
       checkCompanyLeadsForAutoCompletion();
       // Also reload progress after a short delay
       setTimeout(() => {
@@ -338,7 +338,7 @@ const CompanyOnboarding = () => {
   // Fonction pour auto-compléter l'étape 6 si des leads existent
   const checkCompanyLeadsForAutoCompletion = async () => {
     try {
-      if (!companyId || completedSteps.includes(6)) {
+      if (!companyId || completedSteps.includes(5)) {
         return; // Step already completed or no company ID
       }
 
@@ -347,7 +347,7 @@ const CompanyOnboarding = () => {
       );
 
       if (response.data.hasLeads && response.data.count > 0) {
-        console.log('✅ Company has leads - auto-completing step 6');
+        console.log('✅ Company has leads - auto-completing step 5');
         try {
           await axios.put(
             `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
@@ -377,7 +377,7 @@ const CompanyOnboarding = () => {
           setHasLeads(true);
 
         } catch (error) {
-          console.error('Error auto-completing step 6:', error);
+          console.error('Error auto-completing step 5:', error);
         }
       }
     } catch (error) {
@@ -408,7 +408,7 @@ const CompanyOnboarding = () => {
       const hasGigs = response.data.data.hasGigs;
       setHasGigs(hasGigs);
 
-      // If company has gigs, update the onboarding progress for step 4
+      // If company has gigs, update the onboarding progress for step 3
       if (hasGigs) {
         try {
           await axios.put(
@@ -444,28 +444,28 @@ const CompanyOnboarding = () => {
       const hasLeads = response.data.hasLeads;
       setHasLeads(hasLeads);
 
-      // Auto-complete step 6 if company has leads
+      // Auto-complete step 5 if company has leads
       if (hasLeads) {
-        console.log("✅ Company has leads - auto-completing step 6");
+        console.log("✅ Company has leads - auto-completing step 5");
         try {
           await axios.put(
             `${import.meta.env.VITE_COMPANY_API_URL
-            }/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`,
+            }/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
             { status: "completed" }
           );
           // Update local state to reflect the completed step
           setCompletedSteps((prev: number[]) => {
-            if (!prev.includes(6)) {
-              return [...prev, 6];
+            if (!prev.includes(5)) {
+              return [...prev, 5];
             }
             return prev;
           });
-          console.log("✅ Step 6 auto-completed successfully");
+          console.log("✅ Step 5 auto-completed successfully");
         } catch (error) {
-          console.error("Error auto-completing step 6:", error);
+          console.error("Error auto-completing step 5:", error);
         }
       } else {
-        console.log("⚠️ Company has no leads - step 6 needs manual completion");
+        console.log("⚠️ Company has no leads - step 5 needs manual completion");
       }
     } catch (error) {
       console.error("Error checking company leads:", error);
@@ -529,24 +529,40 @@ const CompanyOnboarding = () => {
       }
 
       // Vérifications spéciales pour les cas particuliers
-      if (completedSteps.includes(7) && validPhase < 3) {
-        // Si step 7 (Knowledge Base) est complété, on peut aller en phase 3
+      if (completedSteps.includes(6) && validPhase < 3) {
+        // Si step 6 (Knowledge Base) est complété, on peut aller en phase 3
         // MAIS seulement si la phase 2 est complétée
         if (isPhaseFullyCompleted(2)) {
           validPhase = 3;
           console.log(
-            "🔄 Step 7 completed and phase 2 is fully completed - setting phase to 3"
+            "🔄 Step 6 completed and phase 2 is fully completed - setting phase to 3"
           );
         } else {
           console.log(
-            "⚠️ Step 7 completed but phase 2 is not fully completed - staying in phase 2"
+            "⚠️ Step 6 completed but phase 2 is not fully completed - staying in phase 2"
           );
           validPhase = 2;
         }
       }
 
+      if (completedSteps.includes(12) && validPhase < 4) {
+        // Si step 12 (Match HARX REPS) est complété, on peut aller en phase 4
+        // MAIS seulement si la phase 3 est complétée
+        if (isPhaseFullyCompleted(3)) {
+          validPhase = 4;
+          console.log(
+            "🔄 Step 12 completed and phase 3 is fully completed - setting phase to 4"
+          );
+        } else {
+          console.log(
+            "⚠️ Step 12 completed but phase 3 is not fully completed - staying in phase 3"
+          );
+          validPhase = 3;
+        }
+      }
+
       if (completedSteps.includes(10) && validPhase < 4) {
-        // Si step 10 (Match HARX REPS) est complété, on peut aller en phase 4
+        // Si step 10 (Gig Activation) est complété, on peut aller en phase 4
         // MAIS seulement si la phase 3 est complétée
         if (isPhaseFullyCompleted(3)) {
           validPhase = 4;
@@ -556,22 +572,6 @@ const CompanyOnboarding = () => {
         } else {
           console.log(
             "⚠️ Step 10 completed but phase 3 is not fully completed - staying in phase 3"
-          );
-          validPhase = 3;
-        }
-      }
-
-      if (completedSteps.includes(13) && validPhase < 4) {
-        // Si step 13 (Gig Activation) est complété, on peut aller en phase 4
-        // MAIS seulement si la phase 3 est complétée
-        if (isPhaseFullyCompleted(3)) {
-          validPhase = 4;
-          console.log(
-            "🔄 Step 13 completed and phase 3 is fully completed - setting phase to 4"
-          );
-        } else {
-          console.log(
-            "⚠️ Step 13 completed but phase 3 is not fully completed - staying in phase 3"
           );
           validPhase = 3;
         }
@@ -637,23 +637,23 @@ const CompanyOnboarding = () => {
               // Update local state without reloading the entire project
               setCompletedSteps((prev: any) => {
                 const newSteps = [...prev];
-                if (!newSteps.includes(13)) {
-                  newSteps.push(13);
+                if (!newSteps.includes(12)) {
+                  newSteps.push(12);
                 }
                 return newSteps;
               });
 
               // Mettre à jour les cookies avec le nouveau progrès
               const currentProgress = {
-                currentPhase: 4, // Phase 4 car step 13 est dans la phase 4
-                completedSteps: [...completedSteps, 13],
+                currentPhase: 4, // Phase 4 car step 12 est dans la phase 4
+                completedSteps: [...completedSteps, 12],
               };
               Cookies.set(
                 "companyOnboardingProgress",
                 JSON.stringify(currentProgress)
               );
 
-              console.log("✅ Step 13 marked as completed - active gig found");
+              console.log("✅ Step 12 marked as completed - active gig found");
             }
           } catch (error) {
             console.error("Error completing last phase and step:", error);
@@ -661,30 +661,30 @@ const CompanyOnboarding = () => {
           }
         }
 
-        // If no gigs are active and step 13 was previously completed, mark it as in_progress
+        // If no gigs are active and step 12 was previously completed, mark it as in_progress
         else {
           try {
-            console.log("⚠️ No active gigs found - updating step 13 status");
+            console.log("⚠️ No active gigs found - updating step 12 status");
 
-            // Mark step 13 as in_progress - seulement si on est en phase 4
+            // Mark step 12 as in_progress - seulement si on est en phase 4
             if (currentPhase >= 4) {
               await axios.put(
                 `${import.meta.env.VITE_COMPANY_API_URL
-                }/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
+                }/onboarding/companies/${companyId}/onboarding/phases/4/steps/12`,
                 { status: "in_progress" }
               );
             }
 
             // Update local state to remove the completed step
-            setCompletedSteps((prev: any[]) => prev.filter((step: number) => step !== 13));
+            setCompletedSteps((prev: any[]) => prev.filter((step: number) => step !== 12));
             console.log(
-              "⚠️ Step 13 removed from completed steps and marked as in_progress"
+              "⚠️ Step 12 removed from completed steps and marked as in_progress"
             );
 
             // Mettre à jour les cookies avec le nouveau progrès
             const currentProgress = {
-              currentPhase: 3, // Retour à la phase 3 car step 13 n'est plus complété
-              completedSteps: completedSteps.filter((step: number) => step !== 13),
+              currentPhase: 3, // Retour à la phase 3 car step 12 n'est plus complété
+              completedSteps: completedSteps.filter((step: number) => step !== 12),
             };
             Cookies.set(
               "companyOnboardingProgress",
@@ -692,11 +692,11 @@ const CompanyOnboarding = () => {
             );
 
             console.log(
-              "⚠️ Step 13 marked as in_progress - no active gigs found"
+              "⚠️ Step 12 marked as in_progress - no active gigs found"
             );
           } catch (error) {
             console.error(
-              "Error updating onboarding progress for step 13:",
+              "Error updating onboarding progress for step 12:",
               error
             );
             // Ne pas faire échouer toute la fonction si cette mise à jour échoue
@@ -820,8 +820,8 @@ const CompanyOnboarding = () => {
       setDisplayedPhase(validPhase);
       setCompletedSteps(progress.completedSteps);
 
-      // Check for leads and auto-complete step 6 if necessary
-      if (!progress.completedSteps.includes(6)) {
+      // Check for leads and auto-complete step 4 if necessary
+      if (!progress.completedSteps.includes(4)) {
         setTimeout(() => {
           checkCompanyLeadsForAutoCompletion();
         }, 100);
@@ -891,7 +891,7 @@ const CompanyOnboarding = () => {
       const step = allSteps.find((s) => s.id === stepId);
 
       // Special handling for Knowledge Base step
-      if (stepId === 7) {
+      if (stepId === 8) {
         localStorage.setItem("activeTab", "knowledge-base");
         window.dispatchEvent(
           new CustomEvent("tabChange", {
@@ -902,7 +902,7 @@ const CompanyOnboarding = () => {
       }
 
       // Special handling for Call Script step
-      if (stepId === 8) {
+      if (stepId === 6) {
         localStorage.setItem("activeTab", "script-generator");
         window.dispatchEvent(
           new CustomEvent("tabChange", {
@@ -912,8 +912,8 @@ const CompanyOnboarding = () => {
         return;
       }
 
-      // Special handling for Gig Activation step (step 13) - redirect to Approval & Publishing
-      if (stepId === 13) {
+      // Special handling for Gig Activation step (step 12) - redirect to Approval & Publishing
+      if (stepId === 12) {
         // Set the active tab to approval-publishing in the App component
         localStorage.setItem("activeTab", "approval-publishing");
         // Trigger a custom event to notify the App component
@@ -925,8 +925,8 @@ const CompanyOnboarding = () => {
         return;
       }
 
-      if (stepId === 4) {
-        if (hasGigs || completedSteps.includes(4)) {
+      if (stepId === 3) {
+        if (hasGigs || completedSteps.includes(3)) {
           window.location.href = "/app11";
         } else {
           window.location.href = "/app6";
@@ -935,7 +935,7 @@ const CompanyOnboarding = () => {
       }
 
       if (step?.component) {
-        if (stepId === 5) {
+        if (stepId === 4) {
           setShowTelephonySetup(true);
         } else {
           setActiveStep(stepId);
@@ -985,7 +985,7 @@ const CompanyOnboarding = () => {
       const step = allSteps.find((s) => s.id === stepId);
 
       // Special handling for Knowledge Base step
-      if (stepId === 7) {
+      if (stepId === 8) {
         localStorage.setItem("activeTab", "knowledge-base");
         window.dispatchEvent(
           new CustomEvent("tabChange", {
@@ -996,7 +996,7 @@ const CompanyOnboarding = () => {
       }
 
       // Special handling for Call Script step
-      if (stepId === 8) {
+      if (stepId === 6) {
         localStorage.setItem("activeTab", "script-generator");
         window.dispatchEvent(
           new CustomEvent("tabChange", {
@@ -1006,8 +1006,8 @@ const CompanyOnboarding = () => {
         return;
       }
 
-      // Special handling for Gig Activation step (step 13) - redirect to Approval & Publishing
-      if (stepId === 13) {
+      // Special handling for Gig Activation step (step 12) - redirect to Approval & Publishing
+      if (stepId === 12) {
         // Set the active tab to approval-publishing in the App component
         localStorage.setItem("activeTab", "approval-publishing");
         // Trigger a custom event to notify the App component
@@ -1019,14 +1019,14 @@ const CompanyOnboarding = () => {
         return;
       }
 
-      if (stepId === 4) {
+      if (stepId === 3) {
         console.log("✅ Opening GigDetails for review");
         setShowGigDetails(true);
         return;
       }
 
       if (step?.component) {
-        if (stepId === 5) {
+        if (stepId === 4) {
           setShowTelephonySetup(true);
         } else {
           setActiveStep(stepId);
@@ -1212,7 +1212,6 @@ const CompanyOnboarding = () => {
           component: KYCVerification,
           disabled: true,
         },
-
       ],
     },
     {
@@ -1222,36 +1221,35 @@ const CompanyOnboarding = () => {
       color: "yellow",
       steps: [
         {
-          id: 4,
+          id: 3,
           title: "Create Gigs",
           description: "Define multi-channel gigs and requirements",
           status: "pending",
+          component: GigDetails,
         },
         {
-          id: 5,
+          id: 4,
           title: "Telephony Setup",
           description: "Phone numbers, call tracking, and dialer configuration",
           status: "pending",
           component: TelephonySetup,
         },
         {
-          id: 6,
+          id: 5,
           title: "Upload Contacts",
           description: "Import contacts for multi-channel engagement",
           status: "pending",
           component: UploadContacts,
         },
-
         {
-          id: 8,
+          id: 6,
           title: "Call Script",
           description: "Define script and conversation flows",
           status: "pending",
           component: CallScript,
-          // disabled: true
         },
         {
-          id: 9,
+          id: 7,
           title: "Reporting Setup",
           description: "Configure KPIs and reporting preferences",
           status: "pending",
@@ -1267,27 +1265,25 @@ const CompanyOnboarding = () => {
       color: "green",
       steps: [
         {
-          id: 7,
+          id: 8,
           title: "Knowledge Base",
           description: "Create training materials and FAQs",
           status: "pending",
           component: KnowledgeBase,
         },
         {
-          id: 11,
+          id: 9,
           title: "REP Onboarding",
           description: "Training, validation, and contract acceptance",
           status: "pending",
           component: RepOnboarding,
-          // disabled: true,
         },
         {
-          id: 12,
+          id: 10,
           title: "Session Planning",
           description: "Schedule call slots and prioritize leads",
           status: "pending",
           component: SessionPlanning,
-          // disabled: true,
         },
       ],
     },
@@ -1298,21 +1294,21 @@ const CompanyOnboarding = () => {
       color: "red",
       steps: [
         {
-          id: 3,
+          id: 11,
           title: "Subscription Plan",
           description: "Select plan: Free, Standard, or Premium",
           status: "pending",
           component: SubscriptionPlan,
         },
         {
-          id: 13,
+          id: 12,
           title: "Gig Activation",
           description: "Launch multi-channel operations",
           status: "pending",
           component: ApprovalPublishing,
         },
         {
-          id: 10,
+          id: 13,
           title: "MATCH HARX REPS",
           description: "Connect with qualified REPS based on requirements",
           status: "pending",
@@ -1329,27 +1325,27 @@ const CompanyOnboarding = () => {
       case 2:
         return Shield;
       case 3:
-        return FileText;
-      case 4:
         return MessageSquare;
-      case 5:
+      case 4:
         return Phone;
-      case 6:
+      case 5:
         return Upload;
-      case 7:
-        return BookOpen;
-      case 8:
+      case 6:
         return FileText;
-      case 9:
+      case 7:
         return BarChart;
-      case 10:
-        return Users;
-      case 11:
+      case 8:
         return BookOpen;
-      case 12:
+      case 9:
+        return Users;
+      case 10:
         return Calendar;
-      case 13:
+      case 11:
+        return FileText; // Subscription Plan
+      case 12:
         return Rocket;
+      case 13:
+        return Users; // MATCH HARX REPS
       default:
         return CheckCircle;
     }
@@ -1434,7 +1430,7 @@ const CompanyOnboarding = () => {
     );
 
     // Redirection spéciale pour Create Gigs
-    if (stepId === 4) {
+    if (stepId === 3) {
       if (completedSteps.includes(stepId)) {
         setShowGigDetails(true);
       } else if (hasGigs) {
@@ -1445,10 +1441,8 @@ const CompanyOnboarding = () => {
       return;
     }
 
-
-
     // Pour Knowledge Base
-    if (stepId === 7) {
+    if (stepId === 8) {
       if (allPreviousCompleted) {
         localStorage.setItem("activeTab", "knowledge-base");
         window.dispatchEvent(
@@ -1461,7 +1455,7 @@ const CompanyOnboarding = () => {
     }
 
     // Pour Call Script
-    if (stepId === 8) {
+    if (stepId === 6) {
       if (allPreviousCompleted) {
         localStorage.setItem("activeTab", "script-generator");
         window.dispatchEvent(
@@ -1474,7 +1468,7 @@ const CompanyOnboarding = () => {
     }
 
     // Pour Telephony Setup
-    if (stepId === 5) {
+    if (stepId === 4) {
       if (allPreviousCompleted) {
         setShowTelephonySetup(true);
       }
@@ -1482,7 +1476,7 @@ const CompanyOnboarding = () => {
     }
 
     // Pour Upload Contacts
-    if (stepId === 6) {
+    if (stepId === 5) {
       if (allPreviousCompleted) {
         // Check if UploadContacts was manually closed
         const wasManuallyClosed = sessionStorage.getItem("uploadContactsManuallyClosed");
@@ -1697,7 +1691,7 @@ const CompanyOnboarding = () => {
         <div className="space-y-4">
           {displayedPhaseData.steps.map((step) => {
             const StepIcon = getStepIcon(step);
-            const isClickable = !!step.component || step.id === 4;
+            const isClickable = !!step.component || step.id === 3;
             const isCompleted = completedSteps.includes(step.id);
             const canAccessPhase = isPhaseAccessible(displayedPhaseData.id);
             const isCurrentStep =

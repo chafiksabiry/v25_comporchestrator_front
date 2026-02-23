@@ -70,17 +70,17 @@ const ReportingSetup = () => {
     try {
       if (!companyId) return;
 
-      console.log('🔍 Checking step 9 status for company:', companyId);
+      console.log('🔍 Checking step 7 status for company:', companyId);
 
-      // Vérifier l'état de l'étape 9 via l'API d'onboarding
+      // Vérifier l'état de l'étape 7 via l'API d'onboarding
       const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/9`
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`
       );
 
-      console.log('📡 API response for step 9:', response.data);
+      console.log('📡 API response for step 7:', response.data);
 
       if (response.data && (response.data as any).status === 'completed') {
-        console.log('✅ Step 9 is already completed according to API');
+        console.log('✅ Step 7 is already completed according to API');
         setIsStepCompleted(true);
         return;
       }
@@ -90,8 +90,8 @@ const ReportingSetup = () => {
       if (storedProgress) {
         try {
           const progress = JSON.parse(storedProgress);
-          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(9)) {
-            console.log('✅ Step 9 found in localStorage, setting as completed');
+          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(7)) {
+            console.log('✅ Step 7 found in localStorage, setting as completed');
             setIsStepCompleted(true);
             return;
           }
@@ -103,13 +103,13 @@ const ReportingSetup = () => {
       // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
       // marquer automatiquement l'étape comme complétée localement
       if (hasBasicInfo() && !isStepCompleted) {
-        console.log('🎯 Auto-completing step 9 locally because basic info is present');
+        console.log('🎯 Auto-completing step 7 locally because basic info is present');
 
         // Marquer l'étape comme complétée localement
         setIsStepCompleted(true);
 
-        // Mettre à jour le localStorage avec l'étape 9 marquée comme complétée
-        const currentCompletedSteps = [9];
+        // Mettre à jour le localStorage avec l'étape 7 marquée comme complétée
+        const currentCompletedSteps = [7];
         const currentProgress = {
           currentPhase: 2,
           completedSteps: currentCompletedSteps,
@@ -123,14 +123,14 @@ const ReportingSetup = () => {
         // Notifier le composant parent CompanyOnboarding via un événement personnalisé
         window.dispatchEvent(new CustomEvent('stepCompleted', {
           detail: {
-            stepId: 9,
+            stepId: 7,
             phaseId: 2,
             status: 'completed',
             completedSteps: currentCompletedSteps
           }
         }));
 
-        console.log('💾 Step 9 marked as completed locally and parent component notified');
+        console.log('💾 Step 7 marked as completed locally and parent component notified');
       }
 
     } catch (error) {
@@ -141,7 +141,7 @@ const ReportingSetup = () => {
       if (storedProgress) {
         try {
           const progress = JSON.parse(storedProgress);
-          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(9)) {
+          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(7)) {
             setIsStepCompleted(true);
           }
         } catch (e) {
@@ -173,13 +173,13 @@ const ReportingSetup = () => {
 
       console.log('🚀 Completing reporting setup...');
 
-      // Marquer l'étape 9 comme complétée
+      // Marquer l'étape 7 comme complétée
       const stepResponse = await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/9`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`,
         { status: 'completed' }
       );
 
-      console.log('✅ Step 9 marked as completed:', stepResponse.data);
+      console.log('✅ Step 7 marked as completed:', stepResponse.data);
 
       // Mettre à jour l'état local
       setIsStepCompleted(true);
@@ -187,7 +187,7 @@ const ReportingSetup = () => {
       // Mettre à jour le localStorage
       const currentProgress = {
         currentPhase: 2,
-        completedSteps: [9],
+        completedSteps: [7],
         lastUpdated: new Date().toISOString()
       };
       localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
@@ -198,14 +198,14 @@ const ReportingSetup = () => {
       // Notifier le composant parent
       window.dispatchEvent(new CustomEvent('stepCompleted', {
         detail: {
-          stepId: 9,
+          stepId: 7,
           phaseId: 2,
           status: 'completed',
-          completedSteps: [9]
+          completedSteps: [7]
         }
       }));
 
-      console.log('💾 Reporting setup completed and step 9 marked as completed');
+      console.log('💾 Reporting setup completed and step 7 marked as completed');
 
     } catch (error) {
       console.error('❌ Error completing reporting setup:', error);

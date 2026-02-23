@@ -483,7 +483,7 @@ export const MatchingDashboard = () => {
                 try {
                     const onboardingApiUrl = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
                     await axios.put(
-                        `${onboardingApiUrl}/onboarding/companies/${companyId}/onboarding/phases/4/steps/10`,
+                        `${onboardingApiUrl}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
                         { status: 'completed' }
                     );
                     console.log('✅ Onboarding progress updated: Match HARX REPS step completed');

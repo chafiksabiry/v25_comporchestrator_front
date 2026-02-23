@@ -60,17 +60,17 @@ const CreateGig = () => {
     try {
       if (!companyId) return;
 
-      console.log('🔍 Checking step 4 status for company:', companyId);
+      console.log('🔍 Checking step 3 status for company:', companyId);
 
-      // Vérifier l'état de l'étape 4 via l'API d'onboarding
+      // Vérifier l'état de l'étape 3 via l'API d'onboarding
       const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/4`
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/3`
       );
 
-      console.log('📡 API response for step 4:', response.data);
+      console.log('📡 API response for step 3:', response.data);
 
       if (response.data && (response.data as any).status === 'completed') {
-        console.log('✅ Step 4 is already completed according to API');
+        console.log('✅ Step 3 is already completed according to API');
         setIsStepCompleted(true);
         return;
       }
@@ -80,8 +80,8 @@ const CreateGig = () => {
       if (storedProgress) {
         try {
           const progress = JSON.parse(storedProgress);
-          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(4)) {
-            console.log('✅ Step 4 found in localStorage, setting as completed');
+          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(3)) {
+            console.log('✅ Step 3 found in localStorage, setting as completed');
             setIsStepCompleted(true);
             return;
           }
@@ -93,13 +93,13 @@ const CreateGig = () => {
       // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
       // marquer automatiquement l'étape comme complétée localement
       if (hasBasicInfo() && !isStepCompleted) {
-        console.log('🎯 Auto-completing step 4 locally because basic info is present');
+        console.log('🎯 Auto-completing step 3 locally because basic info is present');
 
         // Marquer l'étape comme complétée localement
         setIsStepCompleted(true);
 
-        // Mettre à jour le localStorage avec l'étape 4 marquée comme complétée
-        const currentCompletedSteps = [4];
+        // Mettre à jour le localStorage avec l'étape 3 marquée comme complétée
+        const currentCompletedSteps = [3];
         const currentProgress = {
           currentPhase: 2,
           completedSteps: currentCompletedSteps,
@@ -113,14 +113,14 @@ const CreateGig = () => {
         // Notifier le composant parent CompanyOnboarding via un événement personnalisé
         window.dispatchEvent(new CustomEvent('stepCompleted', {
           detail: {
-            stepId: 4,
+            stepId: 3,
             phaseId: 2,
             status: 'completed',
             completedSteps: currentCompletedSteps
           }
         }));
 
-        console.log('💾 Step 4 marked as completed locally and parent component notified');
+        console.log('💾 Step 3 marked as completed locally and parent component notified');
       }
 
     } catch (error) {
@@ -131,7 +131,7 @@ const CreateGig = () => {
       if (storedProgress) {
         try {
           const progress = JSON.parse(storedProgress);
-          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(4)) {
+          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(3)) {
             setIsStepCompleted(true);
           }
         } catch (e) {
@@ -161,13 +161,13 @@ const CreateGig = () => {
 
       console.log('🚀 Publishing gig...');
 
-      // Marquer l'étape 4 comme complétée
+      // Marquer l'étape 3 comme complétée
       const stepResponse = await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/4`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/3`,
         { status: 'completed' }
       );
 
-      console.log('✅ Step 4 marked as completed:', stepResponse.data);
+      console.log('✅ Step 3 marked as completed:', stepResponse.data);
 
       // Mettre à jour l'état local
       setIsStepCompleted(true);
@@ -175,7 +175,7 @@ const CreateGig = () => {
       // Mettre à jour le localStorage
       const currentProgress = {
         currentPhase: 2,
-        completedSteps: [4],
+        completedSteps: [3],
         lastUpdated: new Date().toISOString()
       };
       localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
@@ -186,14 +186,14 @@ const CreateGig = () => {
       // Notifier le composant parent
       window.dispatchEvent(new CustomEvent('stepCompleted', {
         detail: {
-          stepId: 4,
+          stepId: 3,
           phaseId: 2,
           status: 'completed',
-          completedSteps: [4]
+          completedSteps: [3]
         }
       }));
 
-      console.log('💾 Gig published and step 4 marked as completed');
+      console.log('💾 Gig published and step 3 marked as completed');
 
     } catch (error) {
       console.error('❌ Error publishing gig:', error);
@@ -254,8 +254,8 @@ const CreateGig = () => {
           <button
             onClick={isStepCompleted ? undefined : handlePublishGig}
             className={`flex items-center rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition-all ${isStepCompleted
-                ? 'bg-green-600 text-white cursor-not-allowed'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+              ? 'bg-green-600 text-white cursor-not-allowed'
+              : 'bg-indigo-600 text-white hover:bg-indigo-700'
               }`}
             disabled={isStepCompleted}
           >
@@ -318,8 +318,8 @@ const CreateGig = () => {
               <div
                 key={channel.id}
                 className={`cursor-pointer rounded-lg border p-4 ${isSelected
-                    ? 'border-indigo-500 bg-indigo-50'
-                    : 'border-gray-200 hover:bg-gray-50'
+                  ? 'border-indigo-500 bg-indigo-50'
+                  : 'border-gray-200 hover:bg-gray-50'
                   }`}
                 onClick={() => toggleChannel(channel.id)}
               >

@@ -30,11 +30,11 @@ const SubscriptionPlan = () => {
         if (!isStepCompleted) {
           try {
             const stepResponse = await axios.put(
-              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/3`,
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/11`,
               { status: 'completed' }
             );
 
-            console.log('✅ Subscription step 3 automatically marked as completed:', stepResponse.data);
+            console.log('✅ Subscription step 11 automatically marked as completed:', stepResponse.data);
 
             // Mettre à jour l'état local
             setIsStepCompleted(true);
@@ -42,7 +42,7 @@ const SubscriptionPlan = () => {
             // Mettre à jour le localStorage
             const currentProgress = {
               currentPhase: 4,
-              completedSteps: [3],
+              completedSteps: [11],
               lastUpdated: new Date().toISOString()
             };
             localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
@@ -65,9 +65,9 @@ const SubscriptionPlan = () => {
     try {
       if (!companyId) return;
 
-      // Vérifier l'état de l'étape 3 (Subscription Plan) dans la phase 1
+      // Vérifier l'état de l'étape 11 (Subscription Plan) dans la phase 4
       const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/3`
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/11`
       );
 
       if (response.data && (response.data as any).status === 'completed') {
@@ -80,7 +80,7 @@ const SubscriptionPlan = () => {
       if (storedProgress) {
         try {
           const progress = JSON.parse(storedProgress);
-          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(3)) {
+          if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(11)) {
             setIsStepCompleted(true);
             return;
           }
@@ -130,7 +130,7 @@ const SubscriptionPlan = () => {
       console.log('Subscription update response:', subscriptionResponse.data);
 
       // Marquer l'étape comme complétée
-      const stepId = 3; // ID du step Subscription Plan
+      const stepId = 11; // ID du step Subscription Plan
       const phaseId = 4; // ID de la phase Activation
       const stepResponse = await axios.put(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
@@ -148,7 +148,7 @@ const SubscriptionPlan = () => {
       // Mettre à jour le localStorage
       const currentProgress = {
         currentPhase: 4,
-        completedSteps: [3],
+        completedSteps: [11],
         lastUpdated: new Date().toISOString()
       };
       localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
