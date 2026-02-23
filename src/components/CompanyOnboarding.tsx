@@ -1467,16 +1467,8 @@ const CompanyOnboarding = () => {
   } else if (showUploadContacts) {
     activeComponent = <UploadContacts />;
     onBack = () => {
-      // Clean up localStorage when manually closing UploadContacts
-      localStorage.removeItem("parsedLeads");
-      localStorage.removeItem("validationResults");
-      localStorage.removeItem("uploadProcessing");
-      sessionStorage.removeItem("uploadProcessing");
-      sessionStorage.removeItem("parsedLeads");
-      sessionStorage.removeItem("validationResults");
-      sessionStorage.removeItem("uploadContactsManuallyClosed");
-      console.log("🧹 Manual cleanup - UploadContacts closed");
-      setShowUploadContacts(false);
+      // Navigate to /app11 to reload onboarding with latest progress
+      window.location.href = "/app11";
     };
   } else if (ActiveStepComponent) {
     activeComponent = <ActiveStepComponent />;
