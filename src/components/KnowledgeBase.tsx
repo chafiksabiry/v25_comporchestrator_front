@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, File, FileText, Video, Link as LinkIcon, Plus, Trash2, Filter, Download, Mic, Play, Clock, Pause, ChevronDown, ChevronUp, X, ExternalLink, Eye, ArrowLeft, Brain, Loader2, RefreshCw, Languages, CheckCircle } from 'lucide-react';
+import { Upload, File, FileText, Video, Link as LinkIcon, Plus, Trash2, Filter, Download, Mic, Play, Clock, Pause, ChevronDown, ChevronUp, X, ExternalLink, Eye, ArrowLeft, Brain, Loader2, RefreshCw, Languages, CheckCircle, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types';
 import apiClient from '../api/knowledgeClient';
@@ -1767,9 +1767,9 @@ const KnowledgeBase: React.FC = () => {
     <div className="p-6 bg-gray-50 min-h-screen">
       <button
         onClick={handleBackToOrchestrator}
-        className="mb-6 flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+        className="mb-6 flex items-center transition-colors text-gray-600 hover:text-gray-900"
       >
-        <ArrowLeft size={20} className="mr-2" />
+        <ChevronRight className="h-5 w-5 rotate-180" />
         <span>Back to Onboarding</span>
       </button>
 

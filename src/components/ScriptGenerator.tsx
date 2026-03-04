@@ -3,7 +3,8 @@ import apiClient from '../api/client';
 import Cookies from 'js-cookie';
 import {
   User, Headphones, Plus, ArrowLeft, Eye, Calendar, Target, Globe, Trash2, ToggleLeft, ToggleRight, Filter,
-  FileText, HandHeart, Shield, Search, Star, FileCheck, AlertTriangle, CheckCircle, RefreshCw, Edit2, MessageSquare, X
+  FileText, HandHeart, Shield, Search, Star, FileCheck, AlertTriangle, CheckCircle, RefreshCw, Edit2, MessageSquare, X,
+  ChevronRight
 } from 'lucide-react';
 
 interface ScriptResponse {
@@ -834,9 +835,9 @@ const ScriptGenerator: React.FC = () => {
           <div className="mb-6 flex items-center space-x-4">
             <button
               onClick={handleBackToOrchestrator}
-              className="flex items-center transition-colors text-gray-600 hover:text-gray-900 group"
+              className="flex items-center transition-colors text-gray-600 hover:text-gray-900"
             >
-              <ArrowLeft className="h-5 w-5 mr-2 group-hover:-translate-x-1 transition-transform" />
+              <ChevronRight className="h-5 w-5 rotate-180" />
               <span>Back to Onboarding</span>
             </button>
           </div>
