@@ -357,6 +357,7 @@ const RepOnboarding = () => {
           <h2 className="text-xl font-bold text-gray-900">REP Onboarding</h2>
           <p className="text-sm text-gray-500">Guide new REPS through the onboarding process</p>
         </div>
+        {/* 
         <div className="flex space-x-3">
           <button className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
             <Settings className="mr-2 h-4 w-4" />
@@ -367,6 +368,7 @@ const RepOnboarding = () => {
             New REP
           </button>
         </div>
+        */}
       </div>
 
       {/* Progress Steps 
