@@ -813,6 +813,12 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           lastUpdated: new Date().toISOString()
         };
         localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+
+        // Dispatch event to explicitly notify CompanyOnboarding
+        window.dispatchEvent(new CustomEvent('stepCompleted', {
+          detail: { stepId: 4, phaseId: 2, status: 'completed', completedSteps: newCompletedSteps }
+        }));
+
         return newCompletedSteps;
       });
 
@@ -995,10 +1001,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         <div className="flex space-x-3">
           <button
             className={`flex items-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${!selectedGigId
-                ? 'bg-gray-400 text-white cursor-not-allowed'
-                : completedSteps.includes(4)
-                  ? 'bg-green-600 text-white hover:bg-green-700 hover:shadow-md'
-                  : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md'
+              ? 'bg-gray-400 text-white cursor-not-allowed'
+              : completedSteps.includes(4)
+                ? 'bg-green-600 text-white hover:bg-green-700 hover:shadow-md'
+                : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md'
               }`}
             onClick={!selectedGigId ? undefined : handleSaveConfiguration}
             disabled={!selectedGigId}
