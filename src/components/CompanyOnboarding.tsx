@@ -1472,6 +1472,7 @@ const CompanyOnboarding = () => {
       <TelephonySetup
         onBackToOnboarding={async () => {
           setShowTelephonySetup(false);
+          setActiveStep(null);
 
           // Force reload onboarding state after telephony setup completion
           if (companyId) {
