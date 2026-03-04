@@ -1021,7 +1021,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         </div>
         <div className="flex space-x-3">
           <button
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${completedSteps.includes(5)
+            className={`flex items-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${completedSteps.includes(5)
               ? 'bg-green-600 text-white cursor-not-allowed'
               : !selectedGigId
                 ? 'bg-gray-400 text-white cursor-not-allowed'
@@ -1032,17 +1032,17 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
             title={!selectedGigId ? 'Please select a gig first' : ''}
           >
             {completedSteps.includes(5) ? (
-              <span className="flex items-center">
+              <>
                 <CheckCircle className="mr-2 h-4 w-4" />
                 Configuration Saved
-              </span>
+              </>
             ) : !selectedGigId ? (
-              <span className="flex items-center">
+              <>
                 <AlertCircle className="mr-2 h-4 w-4" />
                 Select Gig First
-              </span>
+              </>
             ) : (
-              'Save Configuration'
+              'Back to Onboarding'
             )}
           </button>
         </div>
