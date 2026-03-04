@@ -369,7 +369,7 @@ const RepOnboarding = () => {
         </div>
       </div>
 
-      {/* Progress Steps */}
+      {/* Progress Steps 
       <div className="rounded-lg bg-white p-6 shadow">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium text-gray-900">Onboarding Progress</h3>
@@ -414,6 +414,7 @@ const RepOnboarding = () => {
           </div>
         </div>
       </div>
+      */}
 
       {/* Training Modules */}
       <div className="rounded-lg bg-white p-6 shadow">
@@ -570,7 +571,7 @@ const RepOnboarding = () => {
         )}
       </div>
 
-      {/* Skills Assessment */}
+      {/* Skills Assessment 
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="text-lg font-medium text-gray-900">Skills Assessment</h3>
         <div className="mt-4 space-y-4">
@@ -616,8 +617,9 @@ const RepOnboarding = () => {
           ))}
         </div>
       </div>
+      */}
 
-      {/* Channel Setup */}
+      {/* Channel Setup 
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="text-lg font-medium text-gray-900">Channel Configuration</h3>
         <div className="mt-4 space-y-4">
@@ -662,6 +664,7 @@ const RepOnboarding = () => {
           })}
         </div>
       </div>
+      */}
 
       {/* Documentation */}
       <div className="rounded-lg bg-white p-6 shadow">
