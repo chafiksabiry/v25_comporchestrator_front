@@ -774,6 +774,9 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         provider
       });
 
+      // ✅ Trigger the auto-save sequence since a number was bought.
+      await handleSaveConfiguration();
+
     } catch (error) {
       console.error('❌ Error purchasing number:', error);
       setPurchaseStatus('error');
@@ -790,7 +793,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
       // Vérifier qu'un gig est sélectionné
       if (!selectedGigId) {
-        alert('⚠️ Please select a gig before saving the configuration.');
+        console.log('⚠️ Please select a gig before saving the configuration.');
         return;
       }
 
@@ -867,6 +870,15 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       } else {
         console.log('An error occurred while saving the configuration. Please try again.');
       }
+    }
+  };
+
+  const handleBackToOnboardingOnly = () => {
+    if (onBackToOnboarding) {
+      onBackToOnboarding();
+    } else if (window.history && window.history.pushState) {
+      window.history.pushState({}, '', '/app11');
+      window.dispatchEvent(new PopStateEvent('popstate'));
     }
   };
 
@@ -1021,29 +1033,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         </div>
         <div className="flex space-x-3">
           <button
-            className={`flex items-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${completedSteps.includes(5)
-              ? 'bg-green-600 text-white cursor-not-allowed'
-              : !selectedGigId
-                ? 'bg-gray-400 text-white cursor-not-allowed'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md'
-              }`}
-            onClick={completedSteps.includes(5) || !selectedGigId ? undefined : handleSaveConfiguration}
-            disabled={completedSteps.includes(5) || !selectedGigId}
-            title={!selectedGigId ? 'Please select a gig first' : ''}
+            className="flex items-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900 shadow-sm"
+            onClick={handleBackToOnboardingOnly}
           >
-            {completedSteps.includes(5) ? (
-              <>
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Configuration Saved
-              </>
-            ) : !selectedGigId ? (
-              <>
-                <AlertCircle className="mr-2 h-4 w-4" />
-                Select Gig First
-              </>
-            ) : (
-              'Back to Onboarding'
-            )}
+            Go Back
           </button>
         </div>
       </div>
