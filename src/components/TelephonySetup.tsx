@@ -994,20 +994,20 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         </div>
         <div className="flex space-x-3">
           <button
-            className={`flex items-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${completedSteps.includes(5)
-              ? 'bg-green-600 text-white cursor-not-allowed'
-              : !selectedGigId
+            className={`flex items-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${!selectedGigId
                 ? 'bg-gray-400 text-white cursor-not-allowed'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md'
+                : completedSteps.includes(4)
+                  ? 'bg-green-600 text-white hover:bg-green-700 hover:shadow-md'
+                  : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md'
               }`}
-            onClick={completedSteps.includes(5) || !selectedGigId ? undefined : handleSaveConfiguration}
-            disabled={completedSteps.includes(5) || !selectedGigId}
+            onClick={!selectedGigId ? undefined : handleSaveConfiguration}
+            disabled={!selectedGigId}
             title={!selectedGigId ? 'Please select a gig first' : ''}
           >
-            {completedSteps.includes(5) ? (
+            {completedSteps.includes(4) ? (
               <>
                 <CheckCircle className="mr-2 h-4 w-4" />
-                Configuration Saved
+                Back to Onboarding
               </>
             ) : !selectedGigId ? (
               <>
