@@ -211,6 +211,7 @@ function App() {
           </div>
           <div className="absolute bottom-0 left-0 right-0 border-t border-indigo-800 p-4">
             <div className="space-y-4">
+              {/* 
               <button className="flex w-full items-center space-x-2 rounded-lg py-2 px-3 hover:bg-indigo-800">
                 <Settings className="h-5 w-5" />
                 <span>Settings</span>
@@ -219,6 +220,7 @@ function App() {
                 <HelpCircle className="h-5 w-5" />
                 <span>Help</span>
               </button>
+              */}
               <button
                 onClick={handleLogout}
                 className="flex w-full items-center space-x-2 rounded-lg py-2 px-3 hover:bg-indigo-800"
