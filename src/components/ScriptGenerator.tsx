@@ -830,18 +830,21 @@ const ScriptGenerator: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="max-w-6xl mx-auto p-6">
+        {isInAppMode() && (
+          <div className="mb-6 flex items-center space-x-4">
+            <button
+              onClick={handleBackToOrchestrator}
+              className="flex items-center transition-colors text-gray-600 hover:text-gray-900 group"
+            >
+              <ArrowLeft className="h-5 w-5 mr-2 group-hover:-translate-x-1 transition-transform" />
+              <span>Back to Onboarding</span>
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-8 flex items-center justify-between bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
           <div className="flex items-center gap-4">
-            {isInAppMode() && (
-              <button
-                onClick={handleBackToOrchestrator}
-                className="p-3 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200 group"
-                title="Back to Orchestrator"
-              >
-                <ArrowLeft className="w-6 h-6 group-hover:scale-110 transition-transform" />
-              </button>
-            )}
             <div className="flex items-center gap-3">
               <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
                 <Headphones className="w-8 h-8 text-white" />
