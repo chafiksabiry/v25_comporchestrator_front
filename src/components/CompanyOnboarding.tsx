@@ -1472,22 +1472,13 @@ const CompanyOnboarding = () => {
       <TelephonySetup
         onBackToOnboarding={async () => {
           setShowTelephonySetup(false);
-          setActiveStep(null);
-
-          // Force reload onboarding state after telephony setup completion
-          if (companyId) {
-            try {
-              await loadCompanyProgress();
-              console.log("✅ Onboarding state reloaded successfully");
-            } catch (error) {
-              console.error("❌ Error reloading onboarding state:", error);
-            }
-          }
+          await handleBackToOnboarding();
         }}
       />
     );
-    onBack = () => {
+    onBack = async () => {
       setShowTelephonySetup(false);
+      await handleBackToOnboarding();
     };
   } else if (showUploadContacts) {
     activeComponent = <UploadContacts />;
