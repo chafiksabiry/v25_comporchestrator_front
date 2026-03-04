@@ -774,31 +774,8 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         provider
       });
 
-      // ✅ Trigger the auto-save sequence since a number was bought.
-      await handleSaveConfiguration();
-
-    } catch (error) {
-      console.error('❌ Error purchasing number:', error);
-      setPurchaseStatus('error');
-      setPurchaseError(error instanceof Error ? error.message : 'Failed to purchase number. Please try again.');
-    }
-  };
-
-  const handleSaveConfiguration = async () => {
-    try {
-      if (!companyId) {
-        console.error('Company ID not found in cookies');
-        throw new Error('Company ID not found. Please refresh the page and try again.');
-      }
-
-      // Vérifier qu'un gig est sélectionné
-      if (!selectedGigId) {
-        console.log('⚠️ Please select a gig before saving the configuration.');
-        return;
-      }
-
-      console.log('🚀 Completing telephony setup...');
-
+      // --- Auto-Complete Onboarding Step 4 Here ---
+      console.log('🚀 Completing telephony setup silently...');
       try {
         const onboardingResponse = await axios.get(
           `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
@@ -814,12 +791,9 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
             currentPhase: 2
           }
         );
-
         console.log('✅ Telephony setup step 4 marked as completed via general onboarding:', updateResponse.data);
-
       } catch (apiError) {
         console.log('⚠️ Could not update via general onboarding API, trying individual step endpoint...');
-
         try {
           const response = await axios.put(
             `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/4`,
@@ -833,52 +807,39 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
 
       setCompletedSteps((prev: number[]) => {
         const newCompletedSteps = prev.includes(4) ? prev : [...prev, 4];
-
         const currentProgress = {
           currentPhase: 2,
           completedSteps: newCompletedSteps,
           lastUpdated: new Date().toISOString()
         };
         localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-
         return newCompletedSteps;
       });
 
       Cookies.set('telephonyStepCompleted', 'true', { expires: 7 });
 
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      if (onBackToOnboarding) {
-        setTimeout(() => {
-          onBackToOnboarding();
-        }, 100);
-      } else {
-        if (window.history && window.history.pushState) {
-          window.history.pushState({}, '', '/app11');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        } else {
-          window.dispatchEvent(new CustomEvent('telephonySetupCompleted', {
-            detail: { stepId: 5, status: 'completed' }
-          }));
-        }
-      }
-
     } catch (error) {
-      console.error('Error updating onboarding progress:', error);
-      if (error instanceof Error) {
-        console.log(`Error: ${error.message}`);
-      } else {
-        console.log('An error occurred while saving the configuration. Please try again.');
-      }
+      console.error('❌ Error purchasing number:', error);
+      setPurchaseStatus('error');
+      setPurchaseError(error instanceof Error ? error.message : 'Failed to purchase number. Please try again.');
     }
   };
 
-  const handleBackToOnboardingOnly = () => {
+  const handleSaveConfiguration = async () => {
+    // We strictly go back to the orchestrator here. Saving is handled by the purchase process automatically now.
     if (onBackToOnboarding) {
-      onBackToOnboarding();
-    } else if (window.history && window.history.pushState) {
-      window.history.pushState({}, '', '/app11');
-      window.dispatchEvent(new PopStateEvent('popstate'));
+      setTimeout(() => {
+        onBackToOnboarding();
+      }, 100);
+    } else {
+      if (window.history && window.history.pushState) {
+        window.history.pushState({}, '', '/app11');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      } else {
+        window.dispatchEvent(new CustomEvent('telephonySetupCompleted', {
+          detail: { stepId: 5, status: 'completed' }
+        }));
+      }
     }
   };
 
@@ -1033,10 +994,29 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         </div>
         <div className="flex space-x-3">
           <button
-            className="flex items-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900 shadow-sm"
-            onClick={handleBackToOnboardingOnly}
+            className={`flex items-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${completedSteps.includes(5)
+              ? 'bg-green-600 text-white cursor-not-allowed'
+              : !selectedGigId
+                ? 'bg-gray-400 text-white cursor-not-allowed'
+                : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md'
+              }`}
+            onClick={completedSteps.includes(5) || !selectedGigId ? undefined : handleSaveConfiguration}
+            disabled={completedSteps.includes(5) || !selectedGigId}
+            title={!selectedGigId ? 'Please select a gig first' : ''}
           >
-            Go Back
+            {completedSteps.includes(5) ? (
+              <>
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Configuration Saved
+              </>
+            ) : !selectedGigId ? (
+              <>
+                <AlertCircle className="mr-2 h-4 w-4" />
+                Select Gig First
+              </>
+            ) : (
+              'Back to Onboarding'
+            )}
           </button>
         </div>
       </div>
