@@ -211,7 +211,6 @@ export default function SessionPlanning() {
   const [showAIPanel, setShowAIPanel] = useState<boolean>(false);
   const [showAttendancePanel, setShowAttendancePanel] = useState<boolean>(false);
   const [reps, setReps] = useState<Rep[]>(sampleReps);
-  const [viewMode, setViewMode] = useState<'calendar' | 'matrix'>('matrix');
 
   // Real Gigs Data
   const [projects, setProjects] = useState<Gig[]>([]);
@@ -759,22 +758,6 @@ export default function SessionPlanning() {
               <Clock className="w-4 h-4" />
               Attendance {showAttendancePanel ? 'On' : 'Off'}
             </button>
-            <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100 ml-auto">
-              <button
-                onClick={() => setViewMode('matrix')}
-                className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${viewMode === 'matrix' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-              >
-                <LayoutGrid className="w-4 h-4" />
-                Planning Matrix
-              </button>
-              <button
-                onClick={() => setViewMode('calendar')}
-                className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${viewMode === 'calendar' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-              >
-                <CalendarIcon className="w-4 h-4" />
-                Standard View
-              </button>
-            </div>
           </div>
         </div>
 
@@ -800,27 +783,7 @@ export default function SessionPlanning() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 gap-6">
-                <Calendar
-                  selectedDate={selectedDate}
-                  onDateSelect={setSelectedDate}
-                  slots={slots}
-                  view="2-weeks"
-                />
-              </div>
-
               {selectedGigId && (
-                <>
-                  <SlotGenerator
-                    gigId={selectedGigId || undefined}
-                    companyId={Cookies.get('companyId')}
-                    selectedDate={selectedDate}
-                    onSlotsGenerated={fetchData}
-                  />
-                </>
-              )}
-
-              {selectedGigId && viewMode === 'matrix' && (
                 <PlanningMatrix
                   selectedDate={selectedDate}
                   gigId={selectedGigId}
@@ -830,17 +793,7 @@ export default function SessionPlanning() {
                 />
               )}
 
-              {selectedGigId && viewMode === 'calendar' && (
-                <AvailableSlotsView
-                  slots={slots}
-                  projects={projects}
-                  selectedDate={selectedDate}
-                  selectedGigId={selectedGigId}
-                  onRefresh={fetchData}
-                />
-              )}
-
-              {selectedGigId && viewMode === 'calendar' && (
+              {selectedGigId && (
                 <CompanyView
                   // Hack: Pass Gig Name as 'company' to trick CompanyView into being a GigView
                   company={projects.find(p => p.id === selectedGigId)?.name || ''}
