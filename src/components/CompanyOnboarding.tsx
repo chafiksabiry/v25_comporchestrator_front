@@ -1521,12 +1521,12 @@ const CompanyOnboarding = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Company Onboarding</h1>
         <button className="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
           Save Progress
         </button>
-      </div>
+      </div> */}
 
       {/* Progress Overview */}
       <div className="grid grid-cols-5 gap-4">
