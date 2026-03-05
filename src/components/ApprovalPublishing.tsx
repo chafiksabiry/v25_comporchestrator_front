@@ -251,7 +251,7 @@ const ApprovalPublishing = () => {
         throw new Error('Company ID not found');
       }
 
-      const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`;
+      const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}?populate=companyId`;
       console.log('🌐 Fetching from API:', apiUrl);
 
       const response = await fetch(apiUrl, {

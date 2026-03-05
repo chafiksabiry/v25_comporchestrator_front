@@ -124,7 +124,7 @@ const GigDetails = () => {
       }
 
       try {
-        const response = await axios.get<GigResponse>(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`);
+        const response = await axios.get<GigResponse>(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}?populate=companyId`);
         setGigs(response.data.data);
       } catch (err) {
         setError('Failed to fetch gigs');

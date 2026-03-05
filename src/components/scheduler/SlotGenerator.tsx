@@ -36,7 +36,7 @@ export function SlotGenerator({ gigId, companyId, selectedDate, onSlotsGenerated
                 setIsAvailableToday(false);
                 setAvailableHours([]);
                 const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
-                const response = await axios.get(`${apiUrl}/gigs/${gigId}`);
+                const response = await axios.get(`${apiUrl}/gigs/${gigId}?populate=companyId`);
 
                 // Direct handle response data or data.data
                 const gig = (response.data as any).data || response.data;

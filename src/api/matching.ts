@@ -62,7 +62,7 @@ export const getGigs = async (): Promise<Gig[]> => {
 export const getGigsByCompanyId = async (companyId: string): Promise<Gig[]> => {
     console.log('getGigsByCompanyId called with:', companyId);
     try {
-        const response = await fetch(`${GIGS_API_URL}/gigs/company/${companyId}`);
+        const response = await fetch(`${GIGS_API_URL}/gigs/company/${companyId}?populate=companyId`);
 
         if (!response.ok) {
             throw new Error('Failed to fetch gigs by company');

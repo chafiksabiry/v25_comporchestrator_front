@@ -320,7 +320,7 @@ const ScriptGenerator: React.FC = () => {
         throw new Error('Gigs API URL not configured');
       }
 
-      const response = await fetch(`${gigsApiUrl}/gigs/company/${companyId}`);
+      const response = await fetch(`${gigsApiUrl}/gigs/company/${companyId}?populate=companyId`);
       if (!response.ok) {
         throw new Error(`Failed to fetch gigs: ${response.statusText}`);
       }
