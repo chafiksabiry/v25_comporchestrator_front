@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { TimeSlot, Rep } from '../../types/scheduler';
 import { Clock, Calendar, Save } from 'lucide-react';
@@ -126,9 +126,6 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
     const totalReps = useMemo(() => {
         return dayTotals.reduce((sum, val) => sum + val, 0);
     }, [dayTotals]);
-    const hourlyRate = 17; // Based on whiteboard image "96R x 17" -> maybe 17 is rate?
-    const totalValue = totalReps * hourlyRate; // Total reps * rate
-
     return (
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
             {/* Header */}
@@ -227,50 +224,6 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                         </tr>
                     </tfoot>
                 </table>
-            </div>
-
-            {/* Calculations Footer - Inspired by whiteboard */}
-            <div className="p-4 border-t-2 border-gray-100 bg-gray-50/30">
-                <div className="flex flex-wrap items-center gap-6 justify-center lg:justify-start">
-                    {/* Big Summary Box */}
-                    <div className="relative">
-                        <div className="absolute -top-3 -left-3 px-3 py-1 bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest rounded-md shadow-lg">
-                            Total Units
-                        </div>
-                        <div className="w-24 h-16 bg-white border-4 border-gray-900 rounded-xl flex items-center justify-center shadow-xl">
-                            <span className="text-3xl font-black text-gray-900 tracking-tighter">
-                                {totalReps}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col gap-4">
-                        <div className="flex items-center gap-4">
-                            <div className="flex flex-col">
-                                <span className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Weekly Volume</span>
-                                <div className="flex items-end gap-1.5">
-                                    <span className="text-xl font-black text-gray-900 underline decoration-blue-500 decoration-4 underline-offset-4">
-                                        {totalReps}R
-                                    </span>
-                                    <span className="text-lg font-black text-gray-400 mb-0.5">×</span>
-                                    <span className="text-xl font-black text-gray-900 underline decoration-indigo-500 decoration-4 underline-offset-4">
-                                        {hourlyRate}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="text-2xl text-gray-400 font-light">→</div>
-
-                            <div className="flex flex-col">
-                                <span className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Projected Total</span>
-                                <div className="text-2xl font-black text-blue-700 tracking-tighter">
-                                    {totalValue.toLocaleString()} €
-                                    <span className="w-8 h-1 bg-blue-700 block mt-0.5"></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     );
