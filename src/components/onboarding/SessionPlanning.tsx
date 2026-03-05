@@ -87,11 +87,15 @@ const mapBackendSlotToSlot = (slot: any): TimeSlot => {
 // Map Gig from backend to frontend Gig type
 const mapBackendGigToGig = (gig: any): Gig => {
   const id = (gig._id as any)?.$oid || gig._id?.toString() || crypto.randomUUID();
+
+  // Try to get company name from populated companyId object or fallback to companyName string
+  const companyName = gig.companyId?.name || gig.companyName || 'Unknown Company';
+
   return {
     id,
     name: gig.title,
     description: gig.description,
-    company: gig.companyName || 'Unknown Company',
+    company: companyName,
     color: stringToColor(id),
     skills: gig.requiredSkills?.map((s: any) => typeof s === 'string' ? s : s.name) || [],
     priority: 'medium'
@@ -231,7 +235,7 @@ export default function SessionPlanning() {
       try {
         // Using the API URL from environment matching the user's request
         const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
-        const response = await axios.get(`${apiUrl}/gigs/company/${companyId}`);
+        const response = await axios.get(`${apiUrl}/gigs/company/${companyId}?populate=companyId`);
 
         const gigData = (response.data as any).data || response.data;
         if (Array.isArray(gigData)) {
