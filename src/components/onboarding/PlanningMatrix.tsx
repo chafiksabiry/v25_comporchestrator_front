@@ -138,7 +138,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                         <Calendar className="w-8 h-8" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold">Weekly Planning Matrix</h2>
+                        <h2 className="text-2xl font-bold">Weekly Planning</h2>
                         <p className="text-blue-100 text-sm opacity-90">
                             Week of {weekStart instanceof Date && !isNaN(weekStart.getTime()) ? format(weekStart, 'MMMM d, yyyy') : 'Loading...'}
                         </p>
