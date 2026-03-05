@@ -516,7 +516,8 @@ export default function SessionPlanning() {
     setSelectedSlot(slot);
   };
 
-  const isPastDate = format(selectedDate, 'yyyy-MM-dd') < format(new Date(), 'yyyy-MM-dd');
+  const safeSelectedDate = selectedDate instanceof Date && !isNaN(selectedDate.getTime()) ? selectedDate : new Date(selectedDate || Date.now());
+  const isPastDate = format(safeSelectedDate, 'yyyy-MM-dd') < format(new Date(), 'yyyy-MM-dd');
 
   const handleCreateSlotsForGig = async () => {
     if (!selectedGigId || !createSlotRepId) {
