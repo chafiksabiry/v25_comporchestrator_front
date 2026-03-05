@@ -709,58 +709,6 @@ export default function SessionPlanning() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-blue-50 rounded-xl">
-                <Building className="w-7 h-7 text-blue-600" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Session Planning</h1>
-                <p className="text-sm text-gray-500 mt-0.5">Schedule and manage time slots</p>
-              </div>
-              {loadingGigs && <span className="text-xs text-blue-500 font-medium animate-pulse">Loading Gigs...</span>}
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-100">
-                <Clock className="w-5 h-5 text-blue-600" />
-                <div>
-                  <p className="text-xs text-gray-500 font-medium">Weekly Hours</p>
-                  <p className="text-lg font-bold text-gray-900">{weeklyStats.totalHours}h</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-100">
-                <Briefcase className="w-5 h-5 text-indigo-600" />
-                <div>
-                  <p className="text-xs text-gray-500 font-medium">Active Gigs</p>
-                  <p className="text-lg font-bold text-gray-900">{Object.keys(weeklyStats.projectBreakdown).length}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
-            <button
-              onClick={() => setShowAIPanel(!showAIPanel)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 ${showAIPanel
-                ? 'bg-purple-100 text-purple-800'
-                : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-100'
-                }`}
-            >
-              <Brain className="w-4 h-4" />
-              AI Assistant {showAIPanel ? 'On' : 'Off'}
-            </button>
-            <button
-              onClick={() => setShowAttendancePanel(!showAttendancePanel)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 ${showAttendancePanel
-                ? 'bg-emerald-100 text-emerald-800'
-                : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-100'
-                }`}
-            >
-              <Clock className="w-4 h-4" />
-              Attendance {showAttendancePanel ? 'On' : 'Off'}
-            </button>
-          </div>
-        </div>
 
         <main className="space-y-6">
           {userRole === 'company' ? (
