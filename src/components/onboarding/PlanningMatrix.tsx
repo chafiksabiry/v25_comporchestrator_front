@@ -45,12 +45,23 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
             HOURS.forEach(hour => {
                 const timeStr = `${hour.toString().padStart(2, '0')}:00`;
                 const slot = slots.find(s => s.date === dateStr && s.startTime === timeStr && s.gigId === gigId);
-                matrix[dateStr][hour] = slot ? (slot.capacity || 0) : 0;
+                // Important: Use + here to ensure it's a number
+                matrix[dateStr][hour] = slot ? (Number(slot.capacity) || 0) : 0;
             });
         });
 
-        setLocalMatrix(matrix);
+        // Only update if we don't have local changes or after a save is complete
+        setLocalMatrix(prev => {
+            // Merge logic: keep local values if they exist, otherwise use from slots
+            // This prevents the flickering "0" problem if fetchData takes time
+            const next = { ...prev };
+            Object.keys(matrix).forEach(d => {
+                next[d] = { ...(next[d] || {}), ...matrix[d] };
+            });
+            return next;
+        });
     }, [slots, weekDates, gigId]);
+    // Removed old sync logic
 
     const handleCellChange = (dateStr: string, hour: number, value: string) => {
         const numValue = parseInt(value) || 0;
@@ -86,7 +97,9 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
             }
 
             if (slotsToUpdate.length > 0) {
-                await schedulerApi.bulkUpsertTimeSlots(gigId, slotsToUpdate);
+                console.log(`[PlanningMatrix] Saving ${slotsToUpdate.length} slots for gig ${gigId}...`);
+                const response = await schedulerApi.bulkUpsertTimeSlots(gigId, slotsToUpdate);
+                console.log('[PlanningMatrix] Save successful:', response);
             }
 
             onRefresh();
@@ -97,13 +110,22 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
         }
     };
 
-    // Calculate totals
-    const dayTotals = weekDates.map(date => {
-        const dateStr = format(date, 'yyyy-MM-dd');
-        return Object.values(localMatrix[dateStr] || {}).reduce((sum, val) => sum + val, 0);
-    });
+    // Calculate totals with explicit casting and memoization
+    const dayTotals = useMemo(() => {
+        return weekDates.map(date => {
+            const dateStr = format(date, 'yyyy-MM-dd');
+            const dayData = localMatrix[dateStr] || {};
+            // Sum all hours for this day
+            return HOURS.reduce((sum, hour) => {
+                const val = Number(dayData[hour]) || 0;
+                return sum + val;
+            }, 0);
+        });
+    }, [localMatrix, weekDates]);
 
-    const totalReps = dayTotals.reduce((sum, val) => sum + val, 0);
+    const totalReps = useMemo(() => {
+        return dayTotals.reduce((sum, val) => sum + val, 0);
+    }, [dayTotals]);
     const hourlyRate = 17; // Based on whiteboard image "96R x 17" -> maybe 17 is rate?
     const totalValue = totalReps * hourlyRate; // Total reps * rate
 
@@ -164,7 +186,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                                 </td>
                                 {weekDates.map(date => {
                                     const dateStr = format(date, 'yyyy-MM-dd');
-                                    const value = localMatrix[dateStr]?.[hour] || 0;
+                                    const value = Number(localMatrix[dateStr]?.[hour]) || 0;
                                     return (
                                         <td key={dateStr} className="p-2 border-b border-gray-50 text-center">
                                             <input
