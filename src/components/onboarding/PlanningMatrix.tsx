@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
-import { TimeSlot, Gig, Rep } from '../../types/scheduler';
-import { Clock, Calendar, Save, Trash2, ArrowLeft, ArrowRight, Calculator } from 'lucide-react';
+import { TimeSlot, Rep } from '../../types/scheduler';
+import { Clock, Calendar, Save } from 'lucide-react';
 import { schedulerApi } from '../../services/schedulerService';
 
 interface PlanningMatrixProps {
@@ -60,7 +60,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            const promises: Promise<any>[] = [];
+            const slotsToUpdate: Partial<TimeSlot>[] = [];
 
             for (const dateStr of Object.keys(localMatrix)) {
                 for (const hour of HOURS) {
@@ -68,32 +68,21 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                     const timeStr = `${hour.toString().padStart(2, '0')}:00`;
                     const endTimeStr = `${(hour + 1).toString().padStart(2, '0')}:00`;
 
-                    const existingSlot = slots.find(s => s.date === dateStr && s.startTime === timeStr && s.gigId === gigId);
-
-                    if (capacity > 0) {
-                        // Create or update
-                        const slotData: Partial<TimeSlot> = {
-                            id: existingSlot?.id || undefined, // undefined for new slot (service will handle)
-                            date: dateStr,
-                            startTime: timeStr,
-                            endTime: endTimeStr,
-                            gigId: gigId,
-                            capacity: capacity,
-                            status: 'available',
-                            duration: 1,
-                            repId: existingSlot?.repId || '' // Maintain consistency if exists
-                        };
-                        promises.push(schedulerApi.upsertTimeSlot(slotData));
-                    } else if (existingSlot && capacity === 0) {
-                        // Delete if capacity becomes 0 and was previously existing
-                        // For now we might just keep it as capacity 0 or actually delete
-                        // Let's delete to keep things clean
-                        promises.push(schedulerApi.deleteTimeSlot(existingSlot.id));
-                    }
+                    slotsToUpdate.push({
+                        date: dateStr,
+                        startTime: timeStr,
+                        endTime: endTimeStr,
+                        capacity: capacity,
+                        duration: 1,
+                        notes: ''
+                    });
                 }
             }
 
-            await Promise.all(promises);
+            if (slotsToUpdate.length > 0) {
+                await schedulerApi.bulkUpsertTimeSlots(gigId, slotsToUpdate);
+            }
+
             onRefresh();
         } catch (error) {
             console.error('Error saving matrix:', error);
