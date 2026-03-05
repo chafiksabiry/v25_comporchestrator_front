@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { TimeSlot, Rep } from '../../types/scheduler';
 import { Clock, Calendar, Save } from 'lucide-react';
@@ -21,8 +21,14 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
 
     // Get the start of the week (Monday) based on selectedDate
     const weekStart = useMemo(() => {
-        const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
-        return start;
+        try {
+            const date = selectedDate instanceof Date ? selectedDate : new Date(selectedDate);
+            const start = startOfWeek(date, { weekStartsOn: 1 });
+            return start;
+        } catch (e) {
+            console.error('Error calculating weekStart:', e);
+            return new Date();
+        }
     }, [selectedDate]);
 
     const weekDates = useMemo(() => {
@@ -111,7 +117,9 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                     </div>
                     <div>
                         <h2 className="text-2xl font-bold">Weekly Planning Matrix</h2>
-                        <p className="text-blue-100 text-sm opacity-90">Week of {format(weekStart, 'MMMM d, yyyy')}</p>
+                        <p className="text-blue-100 text-sm opacity-90">
+                            Week of {weekStart instanceof Date && !isNaN(weekStart.getTime()) ? format(weekStart, 'MMMM d, yyyy') : 'Loading...'}
+                        </p>
                     </div>
                 </div>
 
@@ -138,8 +146,8 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                             {DAYS.map((day, idx) => (
                                 <th key={day} className="p-4 text-center border-b border-gray-100 min-w-[100px]">
                                     <div className="text-xs uppercase tracking-wider text-gray-500 font-bold mb-1">{day}</div>
-                                    <div className={`text-lg font-black ${isSameDay(weekDates[idx], new Date()) ? 'text-blue-600' : 'text-gray-900'}`}>
-                                        {format(weekDates[idx], 'dd')}
+                                    <div className={`text-lg font-black ${weekDates[idx] instanceof Date && !isNaN(weekDates[idx].getTime()) && isSameDay(weekDates[idx], new Date()) ? 'text-blue-600' : 'text-gray-900'}`}>
+                                        {weekDates[idx] instanceof Date && !isNaN(weekDates[idx].getTime()) ? format(weekDates[idx], 'dd') : '--'}
                                     </div>
                                 </th>
                             ))}
