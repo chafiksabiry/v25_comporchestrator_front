@@ -287,9 +287,9 @@ const KYCVerification = () => {
           <p className="text-sm text-gray-500">Complete identity verification for your company</p>
         </div>
         <div className="flex space-x-3">
-          <button className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+          {/* <button className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
             Save Progress
-          </button>
+          </button> */}
           {!isStepCompleted ? (
             <button
               onClick={handleCompleteVerification}
