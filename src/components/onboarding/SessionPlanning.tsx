@@ -206,20 +206,7 @@ export default function SessionPlanning() {
   const [userRole] = useState<UserRole>('company');
   const [selectedRepId, setSelectedRepId] = useState<string>(sampleReps[0].id);
   // Replaced selectedCompany with selectedProjectId
-  const [selectedGigId, setSelectedGigId] = useState<string>('');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = React.useRef<HTMLDivElement>(null);
-
-  // Handle click outside for custom dropdown
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
   const [aiInitialized, setAiInitialized] = useState<boolean>(false);
   const [showAIPanel] = useState<boolean>(false);
   const [showAttendancePanel] = useState<boolean>(false);
@@ -718,65 +705,26 @@ export default function SessionPlanning() {
         <main className="space-y-6">
           {userRole === 'company' ? (
             <div className="grid grid-cols-1 gap-6">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="relative group" ref={dropdownRef}>
-                  <div className="absolute -top-2.5 left-4 px-3 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-lg z-20 shadow-lg shadow-blue-500/20 ring-4 ring-white">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="relative group">
+                  <div className="absolute -top-2.5 left-4 px-3 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-lg z-10 shadow-lg shadow-blue-500/20 ring-4 ring-white">
                     Selected Project
                   </div>
-
-                  {/* Custom Dropdown Trigger */}
-                  <div
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className={`flex items-center justify-between bg-white border-2 text-gray-900 font-bold py-5 px-8 pr-12 rounded-[2rem] transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:shadow-[0_25px_60px_rgba(0,0,0,0.08)] hover:-translate-y-1 cursor-pointer min-w-[360px] text-xl tracking-tight select-none z-10 relative
-                      ${isDropdownOpen ? 'border-blue-500 ring-4 ring-blue-500/5' : 'border-gray-100/80 hover:border-gray-200'}`}
+                  <select
+                    value={selectedGigId || ''}
+                    onChange={(e) => setSelectedGigId(e.target.value)}
+                    className="appearance-none bg-white border-2 border-gray-100/80 text-gray-900 font-bold py-5 px-8 pr-14 rounded-[2rem] focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:shadow-[0_25px_60px_rgba(0,0,0,0.08)] hover:-translate-y-1 cursor-pointer min-w-[340px] text-xl tracking-tight"
                   >
-                    <span className={selectedGigId ? 'text-gray-900' : 'text-gray-400'}>
-                      {projects.find(p => p.id === selectedGigId)?.name || 'Select a project...'}
-                    </span>
-                    <div className={`text-gray-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180 text-blue-600' : 'group-hover:text-blue-600 group-hover:translate-y-0.5'}`}>
-                      <ChevronDown className="w-7 h-7" />
-                    </div>
+                    {!selectedGigId && <option value="">Select a project...</option>}
+                    {projects.map(project => (
+                      <option key={project.id} value={project.id} className="font-medium text-gray-900 py-4">
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-6 text-gray-400 group-hover:text-blue-600 group-hover:translate-y-0.5 transition-all duration-300">
+                    <ChevronDown className="w-7 h-7" />
                   </div>
-
-                  {/* Custom Dropdown Options */}
-                  {isDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-3 bg-white/90 backdrop-blur-xl border border-white/20 rounded-[2rem] shadow-[0_30px_70px_rgba(0,0,0,0.12)] z-50 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
-                      <div className="max-h-[320px] overflow-y-auto scrollbar-thin p-3 space-y-1">
-                        {projects.length === 0 ? (
-                          <div className="p-4 text-center text-gray-400 text-sm italic">No projects available</div>
-                        ) : (
-                          projects.map(project => (
-                            <div
-                              key={project.id}
-                              onClick={() => {
-                                setSelectedGigId(project.id);
-                                setIsDropdownOpen(false);
-                              }}
-                              className={`group/item flex items-center gap-4 p-4 rounded-2xl transition-all duration-200 cursor-pointer
-                                ${selectedGigId === project.id
-                                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                                  : 'hover:bg-blue-50 text-gray-700 hover:text-blue-700'}`}
-                            >
-                              <div className={`w-3 h-3 rounded-full transition-transform duration-300 group-hover/item:scale-125
-                                ${selectedGigId === project.id ? 'bg-white' : ''}`}
-                                style={{ backgroundColor: selectedGigId === project.id ? undefined : project.color }}
-                              />
-                              <div className="flex-1">
-                                <span className="font-bold text-lg tracking-tight block">{project.name}</span>
-                                <span className={`text-[10px] font-black uppercase tracking-widest opacity-60
-                                  ${selectedGigId === project.id ? 'text-blue-100' : 'text-gray-400'}`}>
-                                  {project.company}
-                                </span>
-                              </div>
-                              {selectedGigId === project.id && (
-                                <div className="w-2 h-2 bg-white rounded-full" />
-                              )}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 
