@@ -507,7 +507,7 @@ const CompanyOnboarding = () => {
       }
 
       const response = await axios.get<GigResponse>(
-        `${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`
+        `${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}?populate=companyId`
       );
 
       if (response.data && response.data.data) {
