@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { TimeSlot, Gig } from '../../types/scheduler';
-import { Edit2, Trash2, ChevronDown } from 'lucide-react';
+import { Edit2, Trash2 } from 'lucide-react';
+import { PremiumDropdown } from '../ui/PremiumDropdown';
 
 interface SlotActionPanelProps {
     slot: TimeSlot;
@@ -48,25 +49,15 @@ export function SlotActionPanel({ slot, availableProjects, onUpdate, onClear }: 
             <div className="mt-4 p-4 bg-white rounded-lg shadow-md border border-gray-200">
                 <h3 className="font-semibold mb-3">Edit Slot Details</h3>
 
-                <div className="mb-4 relative group">
-                    <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 px-1">Assign Project</label>
-                    <div className="relative">
-                        <select
-                            value={gigId}
-                            onChange={(e) => setGigId(e.target.value)}
-                            className="w-full appearance-none bg-gray-50 border-2 border-transparent text-gray-900 font-bold py-3 px-4 pr-10 rounded-xl focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all shadow-sm hover:border-gray-200 cursor-pointer text-sm"
-                        >
-                            <option value="">Select a project...</option>
-                            {availableProjects.map(project => (
-                                <option key={project.id} value={project.id}>
-                                    {project.name} ({project.company})
-                                </option>
-                            ))}
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 group-hover:text-blue-600 transition-colors">
-                            <ChevronDown className="w-4 h-4" />
-                        </div>
-                    </div>
+                <div className="mb-4">
+                    <PremiumDropdown
+                        label="Assign Project"
+                        options={availableProjects}
+                        value={gigId}
+                        onChange={(val) => setGigId(val)}
+                        placeholder="Select a project..."
+                        triggerClassName="!py-3 !px-4 !rounded-xl !text-sm !min-w-0 !shadow-sm hover:!translate-y-0"
+                    />
                 </div>
 
                 <div className="mb-4">
