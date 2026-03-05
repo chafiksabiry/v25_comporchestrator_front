@@ -132,13 +132,13 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
     return (
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-6 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-4 text-white">
-                    <div className="p-3 bg-white/10 backdrop-blur-md rounded-xl">
-                        <Calendar className="w-8 h-8" />
+                    <div className="p-2 bg-white/10 backdrop-blur-md rounded-xl">
+                        <Calendar className="w-5 h-5" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold">Session Planning</h2>
+                        <h2 className="text-base font-bold">Session Planning</h2>
                         <p className="text-blue-100 text-sm opacity-90">
                             Week of {weekStart instanceof Date && !isNaN(weekStart.getTime()) ? format(weekStart, 'MMMM d, yyyy') : 'Loading...'}
                         </p>
@@ -148,7 +148,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                 <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex items-center gap-2 bg-white text-blue-700 px-6 py-3 rounded-xl font-bold hover:bg-blue-50 transition-all disabled:opacity-50 shadow-lg shadow-black/10"
+                    className="flex items-center gap-2 bg-white text-blue-700 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-blue-50 transition-all disabled:opacity-50 shadow-md shadow-black/10"
                 >
                     {isSaving ? (
                         <div className="w-5 h-5 border-2 border-blue-700 border-t-transparent rounded-full animate-spin"></div>
@@ -160,15 +160,15 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
             </div>
 
             {/* Matrix Table */}
-            <div className="overflow-x-auto p-4">
+            <div className="overflow-x-auto p-1">
                 <table className="w-full border-collapse">
                     <thead>
                         <tr>
-                            <th className="p-4 text-left text-gray-400 font-semibold text-sm border-b border-gray-100 w-24">Time</th>
+                            <th className="p-2 text-left text-gray-400 font-semibold text-xs border-b border-gray-100 w-16">Time</th>
                             {DAYS.map((day, idx) => (
-                                <th key={day} className="p-4 text-center border-b border-gray-100 min-w-[100px]">
-                                    <div className="text-xs uppercase tracking-wider text-gray-500 font-bold mb-1">{day}</div>
-                                    <div className={`text-lg font-black ${weekDates[idx] instanceof Date && !isNaN(weekDates[idx].getTime()) && isSameDay(weekDates[idx], new Date()) ? 'text-blue-600' : 'text-gray-900'}`}>
+                                <th key={day} className="p-1 text-center border-b border-gray-100 min-w-[70px]">
+                                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{day.slice(0, 3)}</div>
+                                    <div className={`text-sm font-black ${weekDates[idx] instanceof Date && !isNaN(weekDates[idx].getTime()) && isSameDay(weekDates[idx], new Date()) ? 'text-blue-600' : 'text-gray-900'}`}>
                                         {weekDates[idx] instanceof Date && !isNaN(weekDates[idx].getTime()) ? format(weekDates[idx], 'dd') : '--'}
                                     </div>
                                 </th>
@@ -178,9 +178,9 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                     <tbody>
                         {HOURS.map(hour => (
                             <tr key={hour} className="group hover:bg-gray-50/50 transition-colors">
-                                <td className="p-4 border-b border-gray-50 text-gray-500 font-bold text-sm">
-                                    <div className="flex items-center gap-2">
-                                        <Clock className="w-4 h-4 opacity-40" />
+                                <td className="p-1 border-b border-gray-50 text-gray-500 font-bold text-xs">
+                                    <div className="flex items-center gap-1">
+                                        <Clock className="w-3 h-3 opacity-40" />
                                         {hour}:00
                                     </div>
                                 </td>
@@ -188,16 +188,16 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                                     const dateStr = format(date, 'yyyy-MM-dd');
                                     const value = Number(localMatrix[dateStr]?.[hour]) || 0;
                                     return (
-                                        <td key={dateStr} className="p-2 border-b border-gray-50 text-center">
+                                        <td key={dateStr} className="p-1 border-b border-gray-50 text-center">
                                             <input
                                                 type="number"
                                                 min="0"
                                                 value={value === 0 ? '' : value}
                                                 placeholder="0"
                                                 onChange={(e) => handleCellChange(dateStr, hour, e.target.value)}
-                                                className={`w-16 h-12 text-center rounded-xl font-black text-lg transition-all border-2 
+                                                className={`w-11 h-8 text-center rounded-lg font-black text-sm transition-all border-2 
                                                     ${value > 0
-                                                        ? 'bg-blue-50 border-blue-200 text-blue-700 focus:ring-4 focus:ring-blue-100'
+                                                        ? 'bg-blue-50 border-blue-200 text-blue-700 focus:ring-2 focus:ring-blue-100'
                                                         : 'bg-gray-50/50 border-transparent text-gray-400 hover:border-gray-200 focus:bg-white focus:border-blue-400'
                                                     }
                                                     outline-none appearance-none`}
@@ -210,18 +210,18 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                     </tbody>
                     <tfoot>
                         <tr className="bg-gray-50/80">
-                            <td className="p-6 font-black text-gray-900 text-lg">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-2xl">Σ</span>
-                                    <span>Totals</span>
+                            <td className="p-2 font-black text-gray-900 text-xs">
+                                <div className="flex items-center gap-1">
+                                    <span className="text-sm">Σ</span>
+                                    <span>Total</span>
                                 </div>
                             </td>
                             {dayTotals.map((total, idx) => (
-                                <td key={idx} className="p-6 text-center">
-                                    <div className={`text-2xl font-black ${total > 0 ? 'text-blue-700' : 'text-gray-300'}`}>
+                                <td key={idx} className="p-2 text-center">
+                                    <div className={`text-base font-black ${total > 0 ? 'text-blue-700' : 'text-gray-300'}`}>
                                         {total}
                                     </div>
-                                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-1">REPS</div>
+                                    <div className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">REPS</div>
                                 </td>
                             ))}
                         </tr>
@@ -230,42 +230,42 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
             </div>
 
             {/* Calculations Footer - Inspired by whiteboard */}
-            <div className="p-10 border-t-4 border-double border-gray-100 bg-gray-50/30">
-                <div className="flex flex-wrap items-center gap-12 justify-center lg:justify-start">
+            <div className="p-4 border-t-2 border-gray-100 bg-gray-50/30">
+                <div className="flex flex-wrap items-center gap-6 justify-center lg:justify-start">
                     {/* Big Summary Box */}
                     <div className="relative">
                         <div className="absolute -top-3 -left-3 px-3 py-1 bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest rounded-md shadow-lg">
                             Total Units
                         </div>
-                        <div className="w-40 h-28 bg-white border-4 border-gray-900 rounded-2xl flex items-center justify-center shadow-xl">
-                            <span className="text-5xl font-black text-gray-900 tracking-tighter">
+                        <div className="w-24 h-16 bg-white border-4 border-gray-900 rounded-xl flex items-center justify-center shadow-xl">
+                            <span className="text-3xl font-black text-gray-900 tracking-tighter">
                                 {totalReps}
                             </span>
                         </div>
                     </div>
 
                     <div className="flex flex-col gap-4">
-                        <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-4">
                             <div className="flex flex-col">
                                 <span className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Weekly Volume</span>
-                                <div className="flex items-end gap-2">
-                                    <span className="text-3xl font-black text-gray-900 underline decoration-blue-500 decoration-4 underline-offset-8">
+                                <div className="flex items-end gap-1.5">
+                                    <span className="text-xl font-black text-gray-900 underline decoration-blue-500 decoration-4 underline-offset-4">
                                         {totalReps}R
                                     </span>
-                                    <span className="text-2xl font-black text-gray-400 mb-1">×</span>
-                                    <span className="text-3xl font-black text-gray-900 underline decoration-indigo-500 decoration-4 underline-offset-8">
+                                    <span className="text-lg font-black text-gray-400 mb-0.5">×</span>
+                                    <span className="text-xl font-black text-gray-900 underline decoration-indigo-500 decoration-4 underline-offset-4">
                                         {hourlyRate}
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="text-4xl text-gray-400 font-light mt-4">→</div>
+                            <div className="text-2xl text-gray-400 font-light">→</div>
 
                             <div className="flex flex-col">
                                 <span className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Projected Total</span>
-                                <div className="text-5xl font-black text-blue-700 tracking-tighter">
+                                <div className="text-2xl font-black text-blue-700 tracking-tighter">
                                     {totalValue.toLocaleString()} €
-                                    <span className="w-12 h-1.5 bg-blue-700 block mt-1"></span>
+                                    <span className="w-8 h-1 bg-blue-700 block mt-0.5"></span>
                                 </div>
                             </div>
                         </div>
