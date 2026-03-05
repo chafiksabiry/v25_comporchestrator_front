@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Calendar } from '../../components/scheduler/Calendar';
 import { TimeSlotGrid } from '../../components/scheduler/TimeSlotGrid';
 import { TimeSlot, Gig, WeeklyStats, Rep, UserRole, Company, AttendanceRecord } from '../../types/scheduler';
-import { Building, Clock, Briefcase, AlertCircle, Users, Brain } from 'lucide-react';
+import { Building, AlertCircle, Users, Brain, ChevronDown } from 'lucide-react';
 import { SlotActionPanel } from '../../components/scheduler/SlotActionPanel';
 import { RepSelector } from '../../components/scheduler/RepSelector';
 import { CompanyView } from '../../components/scheduler/CompanyView';
@@ -208,13 +208,12 @@ export default function SessionPlanning() {
   // Replaced selectedCompany with selectedProjectId
   const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
   const [aiInitialized, setAiInitialized] = useState<boolean>(false);
-  const [showAIPanel, setShowAIPanel] = useState<boolean>(false);
-  const [showAttendancePanel, setShowAttendancePanel] = useState<boolean>(false);
+  const [showAIPanel] = useState<boolean>(false);
+  const [showAttendancePanel] = useState<boolean>(false);
   const [reps, setReps] = useState<Rep[]>(sampleReps);
 
   // Real Gigs Data
   const [projects, setProjects] = useState<Gig[]>([]);
-  const [loadingGigs, setLoadingGigs] = useState<boolean>(true);
 
   // Create slots by gig (company view)
   const [createSlotRepId, setCreateSlotRepId] = useState<string>('');
@@ -226,12 +225,10 @@ export default function SessionPlanning() {
       const companyId = Cookies.get('companyId');
       if (!companyId) {
         setNotification({ message: 'Company ID not found. Gigs cannot be loaded.', type: 'error' });
-        setLoadingGigs(false);
         return;
       }
 
       try {
-        setLoadingGigs(true);
         // Using the API URL from environment matching the user's request
         const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
         const response = await axios.get(`${apiUrl}/gigs/company/${companyId}`);
@@ -249,8 +246,6 @@ export default function SessionPlanning() {
       } catch (error) {
         console.error('Error fetching gigs:', error);
         setNotification({ message: 'Failed to load Gigs', type: 'error' });
-      } finally {
-        setLoadingGigs(false);
       }
     };
 
@@ -269,7 +264,6 @@ export default function SessionPlanning() {
     if (!selectedGigId) return;
 
     try {
-      setLoadingGigs(true);
       // Fetch Agents for this Gig
       const agents = await schedulerApi.getGigAgents(selectedGigId);
       if (agents && agents.length > 0) {
@@ -394,8 +388,6 @@ export default function SessionPlanning() {
 
     } catch (error) {
       console.error('Error fetching gig data:', error);
-    } finally {
-      setLoadingGigs(false);
     }
   };
 
@@ -713,23 +705,27 @@ export default function SessionPlanning() {
         <main className="space-y-6">
           {userRole === 'company' ? (
             <div className="grid grid-cols-1 gap-6">
-              <div className="flex space-x-2 overflow-x-auto pb-2 no-scrollbar">
-                {projects.length === 0 ? (
-                  <div className="text-gray-500 italic px-4 py-3 bg-white rounded-xl border border-dashed border-gray-200 w-full text-center text-sm">No active gigs found.</div>
-                ) : (
-                  projects.map(project => (
-                    <button
-                      key={project.id}
-                      onClick={() => setSelectedGigId(project.id)}
-                      className={`px-4 py-2.5 rounded-xl whitespace-nowrap text-sm font-medium transition-all ${selectedGigId === project.id
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-                        }`}
-                    >
-                      {project.name}
-                    </button>
-                  ))
-                )}
+              <div className="flex items-center gap-4 mb-4">
+                <div className="relative group">
+                  <div className="absolute -top-2 left-3 px-2 py-0.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-md z-10 shadow-sm">
+                    Selected Project
+                  </div>
+                  <select
+                    value={selectedGigId || ''}
+                    onChange={(e) => setSelectedGigId(e.target.value)}
+                    className="appearance-none bg-white border-2 border-gray-100 text-gray-900 font-black py-4 px-6 pr-12 rounded-2xl focus:outline-none focus:border-blue-500 transition-all shadow-lg shadow-black/5 hover:border-gray-200 cursor-pointer min-w-[320px] text-lg"
+                  >
+                    {!selectedGigId && <option value="">Select a project...</option>}
+                    {projects.map(project => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400 group-hover:text-blue-600 transition-colors">
+                    <ChevronDown className="w-6 h-6" />
+                  </div>
+                </div>
               </div>
 
               {selectedGigId && (
