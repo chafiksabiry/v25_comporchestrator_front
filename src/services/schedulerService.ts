@@ -73,5 +73,20 @@ export const schedulerApi = {
             console.error('Error fetching gig agents:', error);
             throw error;
         }
-    }
+    },
+    /**
+     * Bulk create or update time slots
+     */
+    bulkUpsertTimeSlots: async (gigId: string, slots: Partial<TimeSlot>[]): Promise<{ message: string; results: any[] }> => {
+        try {
+            const response = await axios.post(`${MATCHING_API_URL}/slots/bulk-upsert`, {
+                gigId,
+                slots
+            });
+            return response.data as any;
+        } catch (error) {
+            console.error('Error in bulk upsert:', error);
+            throw error;
+        }
+    },
 };
