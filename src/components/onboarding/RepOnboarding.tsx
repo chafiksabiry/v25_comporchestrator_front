@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 
 import { AppContent } from '../../training_module/App';
+import '../../training_module/index.css';
 
 const RepOnboarding = () => {
   const [activeStep, setActiveStep] = useState(1);
