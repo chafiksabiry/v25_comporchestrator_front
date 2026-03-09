@@ -198,6 +198,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
   const [isSavingLeads, setIsSavingLeads] = useState(false);
   const [savedLeadsCount, setSavedLeadsCount] = useState(0);
   const [recentlySavedLeads, setRecentlySavedLeads] = useState<Lead[]>([]);
+  const [gigDropdownOpen, setGigDropdownOpen] = useState(false);
+  const gigDropdownRef = useRef<HTMLDivElement>(null);
   const [hasZohoConfig, setHasZohoConfig] = useState(false);
   const [zohoConfig, setZohoConfig] = useState({
     clientId: '',
@@ -1698,19 +1700,107 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
             <p className="text-base text-slate-500 font-medium">No gigs available.</p>
           </div>
         ) : (
-          <div className="max-w-lg">
-            <select
-              value={selectedGigId}
-              onChange={(e) => setSelectedGigId(e.target.value)}
-              className="w-full rounded-xl border-2 border-slate-300 py-4 px-5 text-base font-medium focus:border-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:ring-offset-2 bg-white shadow-sm hover:border-slate-400 transition-all duration-200"
+          <div className="max-w-lg relative" ref={gigDropdownRef}>
+            {/* Trigger button */}
+            <button
+              type="button"
+              onClick={() => setGigDropdownOpen(prev => !prev)}
+              className={`w-full flex items-center justify-between gap-3 rounded-2xl border-2 py-4 px-5 text-base font-semibold shadow-md transition-all duration-200 focus:outline-none ${gigDropdownOpen
+                  ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200 ring-offset-1'
+                  : 'border-slate-200 bg-white hover:border-blue-400 hover:shadow-lg'
+                }`}
             >
-              <option value="" className="text-slate-500">Select a gig...</option>
-              {gigs.map((gig) => (
-                <option key={gig._id} value={gig._id} className="text-slate-900">
-                  {gig.title}
-                </option>
-              ))}
-            </select>
+              <span className="flex items-center gap-3 min-w-0">
+                <span className={`flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg ${selectedGigId ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'
+                  }`}>
+                  <Settings className="w-4 h-4" />
+                </span>
+                <span className={`truncate ${selectedGigId ? 'text-slate-900' : 'text-slate-400'
+                  }`}>
+                  {selectedGigId
+                    ? gigs.find(g => g._id === selectedGigId)?.title ?? 'Select a gig…'
+                    : 'Select a gig…'}
+                </span>
+              </span>
+              <ChevronDown
+                className={`flex-shrink-0 w-5 h-5 text-slate-500 transition-transform duration-200 ${gigDropdownOpen ? 'rotate-180 text-blue-500' : ''
+                  }`}
+              />
+            </button>
+
+            {/* Dropdown panel */}
+            {gigDropdownOpen && (
+              <div
+                className="absolute left-0 right-0 mt-2 z-50 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden"
+                style={{ animation: 'fadeSlideDown 0.15s ease' }}
+              >
+                {/* Header row */}
+                <div className="px-4 pt-3 pb-2 border-b border-slate-100">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Your Gigs</p>
+                </div>
+
+                {/* Options list */}
+                <ul className="py-2 max-h-64 overflow-y-auto">
+                  {gigs.map((gig, idx) => {
+                    const isSelected = gig._id === selectedGigId;
+                    return (
+                      <li key={gig._id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedGigId(gig._id);
+                            setGigDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all duration-150 ${isSelected
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'text-slate-700 hover:bg-slate-50'
+                            }`}
+                        >
+                          {/* Colored index badge */}
+                          <span className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                            {idx + 1}
+                          </span>
+
+                          {/* Gig info */}
+                          <span className="flex-1 text-left truncate">{gig.title}</span>
+
+                          {/* Category badge */}
+                          {gig.category && (
+                            <span className="flex-shrink-0 text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                              {gig.category}
+                            </span>
+                          )}
+
+                          {/* Check mark */}
+                          {isSelected && (
+                            <span className="flex-shrink-0 text-blue-500">
+                              <CheckCircle className="w-4 h-4" />
+                            </span>
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
+            {/* Click-outside handler */}
+            {gigDropdownOpen && (
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setGigDropdownOpen(false)}
+              />
+            )}
+
+            {/* Inline keyframe for the dropdown animation */}
+            <style>{`
+              @keyframes fadeSlideDown {
+                from { opacity: 0; transform: translateY(-6px); }
+                to   { opacity: 1; transform: translateY(0); }
+              }
+            `}</style>
           </div>
         )}
       </div>
