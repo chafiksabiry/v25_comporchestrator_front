@@ -840,7 +840,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       setUploadProgress(90);
 
       if (response.status === 201 || response.status === 207) {
-        const responseData = response.data;
+        const responseData = response.data as { count?: number; data?: any[] };
         const savedCount = responseData.count || (responseData.data ? responseData.data.length : 0);
 
         // Tous les leads ont été sauvegardés (ou tentative faite)
@@ -851,9 +851,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         // Les leads sont maintenant ajoutés, on peut mettre à jour l'état local si nécessaire
         // Pour l'instant, on se fie au rechargement ou à la réponse
         if (responseData.data && Array.isArray(responseData.data)) {
-          setRecentlySavedLeads(responseData.data);
-          setLeads(prev => [...prev, ...responseData.data]);
-          setFilteredLeads(prev => [...prev, ...responseData.data]);
+          const savedData: any[] = responseData.data;
+          setRecentlySavedLeads(savedData);
+          setLeads(prev => [...prev, ...savedData]);
+          setFilteredLeads(prev => [...prev, ...savedData]);
           setTotalCount(prev => prev + savedCount);
           setSavedLeadsCount(savedCount);
         }
