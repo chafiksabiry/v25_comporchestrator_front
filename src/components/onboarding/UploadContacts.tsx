@@ -803,7 +803,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         Last_Activity_Time: lead.Last_Activity_Time || null,
         Deal_Name: lead.Deal_Name || "Unnamed Lead",
         Email_1: lead.Email_1 || "no-email@placeholder.com",
-        Phone: lead.Phone || "no-phone@placeholder.com",
+        Phone: (() => {
+          const raw = lead.Phone;
+          if (!raw) return "no-phone@placeholder.com";
+          const str = String(raw).trim();
+          return str.startsWith('+') ? str : `+${str}`;
+        })(),
         Stage: lead.Stage || "New",
         Pipeline: lead.Pipeline || "Sales Pipeline",
         Activity_Tag: lead.Activity_Tag || '',
