@@ -1706,8 +1706,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
               type="button"
               onClick={() => setGigDropdownOpen(prev => !prev)}
               className={`w-full flex items-center justify-between gap-3 rounded-2xl border-2 py-4 px-5 text-base font-semibold shadow-md transition-all duration-200 focus:outline-none ${gigDropdownOpen
-                  ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200 ring-offset-1'
-                  : 'border-slate-200 bg-white hover:border-blue-400 hover:shadow-lg'
+                ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200 ring-offset-1'
+                : 'border-slate-200 bg-white hover:border-blue-400 hover:shadow-lg'
                 }`}
             >
               <span className="flex items-center gap-3 min-w-0">
@@ -1752,8 +1752,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                             setGigDropdownOpen(false);
                           }}
                           className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all duration-150 ${isSelected
-                              ? 'bg-blue-50 text-blue-700'
-                              : 'text-slate-700 hover:bg-slate-50'
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-slate-700 hover:bg-slate-50'
                             }`}
                         >
                           {/* Colored index badge */}
@@ -2500,8 +2500,14 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-600 border-r border-gray-100">
                           {lead.Address || '-'}
                         </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-600 border-r border-gray-100">
+                          {lead.City || '-'}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-600 border-r border-gray-100">
+                          {lead.Postal_Code || '-'}
+                        </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm font-semibold text-gray-900">
-                          +{lead.Phone || '-'}
+                          {lead.Phone || '-'}
                         </td>
                       </tr>
                     ))
@@ -2527,7 +2533,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                           {lead.Postal_Code || '-'}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm font-semibold text-gray-900">
-                          +{lead.Phone || '-'}
+                          {lead.Phone || '-'}
                         </td>
                       </tr>
                     ))
