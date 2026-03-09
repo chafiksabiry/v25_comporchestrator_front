@@ -645,21 +645,26 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         return;
       }
 
+      // Cancel any pending post-save cleanup timer so it doesn't wipe the new file's state
+      if ((window as any).__leadCleanupTimer) {
+        clearTimeout((window as any).__leadCleanupTimer);
+        (window as any).__leadCleanupTimer = null;
+      }
+
       // Store current leads before resetting
       const currentLeads = [...leads];
       const currentFilteredLeads = [...filteredLeads];
 
       // Reset file processing state only (keep existing leads)
-      setSelectedFile(null);
       setUploadError(null);
       setUploadSuccess(false);
-      setIsProcessing(false);
-      setUploadProgress(0);
+      setIsProcessing(true);
+      setUploadProgress(10);
       setParsedLeads([]);
       setValidationResults(null);
-      // Don't clear existing leads - they will be restored after processing
       setShowSaveButton(true);
       setShowFileName(true);
+      setSelectedFile(file);
 
       // Reset OpenAI processing progress
       resetProgress();
@@ -672,24 +677,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       sessionStorage.removeItem('uploadProcessing');
       sessionStorage.removeItem('parsedLeads');
       sessionStorage.removeItem('validationResults');
-
-      // Remove processing indicators
-      document.body.removeAttribute('data-processing');
-      processingRef.current = false;
-
-      // Reset file input to allow re-upload of same file
-      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
-      if (fileInput) {
-        fileInput.value = '';
-      }
-
-      // Now set the new file and start processing
-      setSelectedFile(file);
-      setUploadError(null);
-      setUploadSuccess(false);
-      setIsProcessing(true);
-      setUploadProgress(10);
-      setParsedLeads([]);
 
       // Add processing indicator to prevent refresh
       document.body.setAttribute('data-processing', 'true');
@@ -747,6 +734,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         processingRef.current = false;
         localStorage.removeItem('uploadProcessing');
         sessionStorage.removeItem('uploadProcessing');
+
+        // Reset file input AFTER processing so the same filename can be re-selected
+        const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+        if (fileInput) {
+          fileInput.value = '';
+        }
       } catch (error: any) {
         console.error('Error uploading file:', error);
         const errorMessage = error.message || 'Error uploading file';
@@ -906,12 +899,13 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     } finally {
       // TOUJOURS réinitialiser l'état, même en cas d'erreur
       setIsSavingLeads(false);
-      processingRef.current = false; // Réinitialiser la référence aussi
+      processingRef.current = false;
       setShowSaveButton(true);
       setShowFileName(true);
 
-      // Reset après un délai pour permettre à l'utilisateur de voir le résultat
-      setTimeout(() => {
+      // Store timer so a new upload can cancel it before it wipes the new file's state
+      (window as any).__leadCleanupTimer = setTimeout(() => {
+        (window as any).__leadCleanupTimer = null;
         setSelectedFile(null);
         setUploadProgress(0);
         setUploadSuccess(false);
@@ -937,7 +931,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         if (fileInput) {
           fileInput.value = '';
         }
-      }, 2000); // 2 secondes au lieu de 1.2
+      }, 2000);
     }
   };
 
@@ -1306,7 +1300,8 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       setFilteredLeads(responseData.data); // Initialiser les leads filtrés
 
       // Nettoyer realtimeLeads quand on charge des leads depuis l'API
-      if (responseData.data.length > 0) {
+      // Ne pas effacer parsedLeads si un fichier est en cours de traitement
+      if (responseData.data.length > 0 && !processingRef.current) {
         setRealtimeLeads([]);
         setParsedLeads([]);
       }
@@ -1936,7 +1931,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                 File uploaded successfully!
               </div>
             )}
-            {parsedLeads.length > 0 && !uploadSuccess && !uploadError && showSaveButton && (
+            {parsedLeads.length > 0 && !uploadSuccess && !isProcessing && showSaveButton && (
               <div className="mt-4 space-y-4">
                 {validationResults && (
                   <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3">
