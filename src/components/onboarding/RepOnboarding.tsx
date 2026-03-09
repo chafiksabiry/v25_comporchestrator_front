@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { BrowserRouter } from 'react-router-dom';
 import {
   Users,
   BookOpen,
@@ -372,8 +373,10 @@ const RepOnboarding = () => {
             ← Back to Onboarding
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto relative z-10">
-          <AppContent initialJourneyId={showTraining.journeyId} />
+        <div className="flex-1 overflow-y-auto relative z-10 w-full">
+          <BrowserRouter>
+            <AppContent initialJourneyId={showTraining.journeyId} />
+          </BrowserRouter>
         </div>
       </div>
     );
