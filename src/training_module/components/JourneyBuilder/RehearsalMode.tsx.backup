@@ -1,0 +1,933 @@
+import React, { useState, useEffect } from 'react';
+import { Play, Pause, RotateCcw, CheckCircle, AlertTriangle, MessageSquare, Star, Eye, Users, Rocket, ArrowLeft, ArrowRight, Clock, BarChart3, Zap, Video, BookOpen, Edit3, Save, X as XIcon, Trash2, Plus, Download, FileQuestion } from 'lucide-react';
+import { TrainingJourney, TrainingModule, RehearsalFeedback } from '../../types';
+import { TrainingMethodology } from '../../types/methodology';
+import ModuleContentViewer from '../Training/ModuleContentViewer';
+import QuizGenerator from '../Assessment/QuizGenerator';
+
+interface RehearsalModeProps {
+  journey: TrainingJourney;
+  modules: TrainingModule[];
+  methodology?: TrainingMethodology;
+  onComplete: (feedback: RehearsalFeedback[], rating: number) => void;
+  onBack: () => void;
+}
+
+export default function RehearsalMode({ journey, modules, methodology, onComplete, onBack }: RehearsalModeProps) {
+  const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
+  const [completedModules, setCompletedModules] = useState<string[]>([]);
+  const [feedback, setFeedback] = useState<RehearsalFeedback[]>([]);
+  const [overallRating, setOverallRating] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [currentFeedback, setCurrentFeedback] = useState({
+    type: 'content' as RehearsalFeedback['type'],
+    message: '',
+    severity: 'medium' as RehearsalFeedback['severity']
+  });
+  const [rehearsalTime, setRehearsalTime] = useState(0);
+  const [showContentViewer, setShowContentViewer] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [activeTab, setActiveTab] = useState<'content' | 'quiz'>('content');
+
+  const currentModule = modules[currentModuleIndex];
+  const progress = (completedModules.length / modules.length) * 100;
+
+  // Auto-display content viewer on load
+  useEffect(() => {
+    setShowContentViewer(true);
+  }, []);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setRehearsalTime(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleModuleComplete = () => {
+    if (currentModule && !completedModules.includes(currentModule.id)) {
+      setCompletedModules(prev => [...prev, currentModule.id]);
+    }
+    
+    if (currentModuleIndex < modules.length - 1) {
+      setCurrentModuleIndex(prev => prev + 1);
+    }
+  };
+
+  const handlePreviousModule = () => {
+    if (currentModuleIndex > 0) {
+      setCurrentModuleIndex(prev => prev - 1);
+    }
+  };
+
+  const handleNextModule = () => {
+    if (currentModuleIndex < modules.length - 1) {
+      setCurrentModuleIndex(prev => prev + 1);
+    }
+  };
+
+  const addFeedback = () => {
+    if (!currentFeedback.message.trim()) return;
+
+    const newFeedback: RehearsalFeedback = {
+      id: Date.now().toString(),
+      moduleId: currentModule?.id || 'general',
+      type: currentFeedback.type,
+      message: currentFeedback.message,
+      severity: currentFeedback.severity,
+      timestamp: new Date().toISOString(),
+      resolved: false
+    };
+
+    setFeedback(prev => [...prev, newFeedback]);
+    setCurrentFeedback({ type: 'content', message: '', severity: 'medium' });
+    setShowFeedbackForm(false);
+  };
+
+  const handleFinishRehearsal = () => {
+    onComplete(feedback, overallRating);
+  };
+
+  const handlePlayContent = () => {
+    setShowContentViewer(true);
+    setActiveTab('content');
+    setIsPlaying(true);
+    console.log('▶️ Displaying content viewer');
+  };
+
+  const handleContentComplete = () => {
+    alert('🎉 All content completed! Great job!');
+    handleFinishRehearsal();
+  };
+
+  // Original module navigation functions (kept for compatibility)
+  const goToPreviousSlide = () => {
+    const colors = ['#EC4899', '#F59E0B', '#10B981', '#06B6D4', '#3B82F6', '#A855F7'];
+    
+    const slides: SlideData[] = [
+      {
+        title: 'Training Curriculum',
+        content: journey.name || 'Professional Training',
+        bgColor: '#6366F1',
+        textColor: '#FFFFFF'
+      },
+      {
+        title: 'Overview',
+        content: `Complete training with ${modules.length} modules • Total: ${modules.reduce((sum, m) => sum + m.duration, 0)} min`,
+        bgColor: '#8B5CF6',
+        textColor: '#FFFFFF'
+      }
+    ];
+    
+    // Generate detailed slides for each module
+    modules.forEach((module, index) => {
+      const moduleColor = colors[index % colors.length];
+      
+      // Module title slide
+      slides.push({
+        title: `Module ${index + 1}: ${module.title}`,
+        content: `Duration: ${module.duration} min • Level: ${module.difficulty}`,
+        bgColor: moduleColor,
+        textColor: '#FFFFFF'
+      });
+      
+      // Module description slide
+      slides.push({
+        title: 'Introduction',
+        content: module.description,
+        bgColor: moduleColor,
+        textColor: '#FFFFFF'
+      });
+      
+      // Learning objectives slide
+      if (module.learningObjectives && module.learningObjectives.length > 0) {
+        slides.push({
+          title: 'Learning Objectives',
+          content: '• ' + module.learningObjectives.join('\n• '),
+          bgColor: moduleColor,
+          textColor: '#FFFFFF'
+        });
+      }
+      
+      // Content items - Create a slide for each content item with its full text
+      if (module.content && module.content.length > 0) {
+        module.content.forEach((contentItem, contentIndex) => {
+          // Extract text content from the item
+          let contentText = '';
+          
+          // Generate descriptive text based on content type
+          if (typeof contentItem.content === 'string') {
+            contentText = contentItem.content;
+          } else if (typeof contentItem.content === 'object' && contentItem.content !== null) {
+            // Handle different content types
+            if ('text' in contentItem.content) {
+              contentText = contentItem.content.text;
+            } else if ('description' in contentItem.content) {
+              contentText = contentItem.content.description;
+            } else if ('questionCount' in contentItem.content) {
+              contentText = `This assessment contains ${contentItem.content.questionCount} questions to evaluate your understanding of the module content.\n\nTopics covered:\n• Key concepts and principles\n• Practical applications\n• Best practices\n\nDuration: ${contentItem.duration} minutes`;
+            } else if ('modules' in contentItem.content && Array.isArray(contentItem.content.modules)) {
+              contentText = `Interactive learning module covering:\n\n• ${contentItem.content.modules.join('\n• ')}\n\nThis hands-on activity helps reinforce your understanding through practical exercises.`;
+            } else if ('generatedByAI' in contentItem.content) {
+              // Generate descriptive content based on type
+              const typeDescriptions: Record<string, string> = {
+                'video': `This AI-generated video provides a comprehensive visual explanation of ${contentItem.title}.\n\nKey points covered:\n• Visual demonstrations\n• Step-by-step explanations\n• Real-world examples\n• Best practices\n\nDuration: ${contentItem.duration} minutes`,
+                'infographic': `This interactive infographic presents key information about ${contentItem.title} in a visually engaging format.\n\nFeatures:\n• Data visualizations\n• Key statistics\n• Process flows\n• Important concepts\n\nExplore the infographic to discover insights.`,
+                'interactive': `This interactive exercise allows you to practice ${contentItem.title} concepts.\n\nActivities include:\n• Scenario-based learning\n• Decision-making exercises\n• Problem-solving tasks\n• Real-world simulations\n\nEstimated time: ${contentItem.duration} minutes`,
+                'audio': `Audio content covering ${contentItem.title}.\n\nListen to expert explanations and insights about:\n• Core concepts\n• Practical applications\n• Industry best practices\n• Case studies\n\nDuration: ${contentItem.duration} minutes`
+              };
+              
+              contentText = typeDescriptions[contentItem.type] || `This ${contentItem.type} content covers important aspects of ${contentItem.title}.\n\nDuration: ${contentItem.duration} minutes\nType: AI-Enhanced ${contentItem.type}\n\nEngage with this content to deepen your understanding of the subject matter.`;
+            } else {
+              // Default description
+              contentText = `This learning content focuses on ${contentItem.title}.\n\nType: ${contentItem.type.toUpperCase()}\nDuration: ${contentItem.duration} minutes\n\nThis material is designed to help you understand and apply key concepts effectively.`;
+            }
+          } else {
+            // Fallback for undefined content
+            contentText = `${contentItem.title}\n\nThis ${contentItem.type} element is part of the training module.\n\nDuration: ${contentItem.duration} minutes\n\nEngage with this content to build your knowledge and skills in this area.`;
+          }
+          
+          // ✅ Create slide with FULL TEXT CONTENT (no truncation for rich content)
+          slides.push({
+            title: contentItem.title,
+            content: contentText.substring(0, 800), // Increased limit for detailed content
+            bgColor: moduleColor,
+            textColor: '#FFFFFF'
+          });
+        });
+      }
+      
+      // Prerequisites slide if any
+      if (module.prerequisites && module.prerequisites.length > 0) {
+        slides.push({
+          title: 'Prerequisites',
+          content: '• ' + module.prerequisites.join('\n• '),
+          bgColor: moduleColor,
+          textColor: '#FFFFFF'
+        });
+      }
+    });
+    
+    // Final slide
+    slides.push({
+      title: 'Thank You!',
+      content: `Training complete • ${modules.length} modules covered`,
+      bgColor: '#6366F1',
+      textColor: '#FFFFFF'
+    });
+    
+    return slides;
+  };
+
+  const updateCurrentSlide = (field: keyof SlideData, value: string) => {
+    const newSlideData = [...slideData];
+    newSlideData[currentSlideIndex] = {
+      ...newSlideData[currentSlideIndex],
+      [field]: value
+    };
+    setSlideData(newSlideData);
+    
+    // Régénérer la prévisualisation de la slide
+    const newSlideImages = [...slideImages];
+    newSlideImages[currentSlideIndex] = PowerPointService.generateSlidePreview(
+      newSlideData[currentSlideIndex]
+    );
+    setSlideImages(newSlideImages);
+  };
+
+  const addNewSlide = () => {
+    const newSlide: SlideData = {
+      title: 'New Slide',
+      content: 'Slide content',
+      bgColor: '#6366F1',
+      textColor: '#FFFFFF'
+    };
+    
+    const newSlideData = [...slideData, newSlide];
+    setSlideData(newSlideData);
+    
+    const newSlideImage = PowerPointService.generateSlidePreview(newSlide);
+    
+    setSlideImages([...slideImages, newSlideImage]);
+    setCurrentSlideIndex(slideImages.length);
+  };
+
+  const downloadPowerPoint = async () => {
+    if (slideData.length === 0) {
+      alert('No slides to export!');
+      return;
+    }
+
+    setIsGeneratingPPT(true);
+    try {
+      console.log('📥 Generating PowerPoint file with pptxgenjs...');
+      const pptBlob = await PowerPointService.generatePowerPoint(
+        slideData,
+        journey.name || 'Professional Training'
+      );
+      
+      PowerPointService.downloadPowerPoint(
+        pptBlob,
+        `${journey.name?.replace(/\s/g, '_') || 'Training'}_${Date.now()}.pptx`
+      );
+      
+      console.log('✅ PowerPoint downloaded successfully!');
+      alert('✅ PowerPoint generated and downloaded successfully!');
+    } catch (error) {
+      console.error('❌ Error generating PowerPoint:', error);
+      alert('❌ Error generating PowerPoint.');
+    } finally {
+      setIsGeneratingPPT(false);
+    }
+  };
+
+  const deleteCurrentSlide = () => {
+    if (slideData.length <= 1) {
+      alert('Cannot delete the last slide!');
+      return;
+    }
+    
+    const newSlideData = slideData.filter((_, index) => index !== currentSlideIndex);
+    const newSlideImages = slideImages.filter((_, index) => index !== currentSlideIndex);
+    
+    setSlideData(newSlideData);
+    setSlideImages(newSlideImages);
+    setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1));
+  };
+
+
+  const goToPreviousSlide = () => {
+    setCurrentSlideIndex(prev => Math.max(0, prev - 1));
+  };
+
+  const goToNextSlide = () => {
+    setCurrentSlideIndex(prev => Math.min(slideImages.length - 1, prev + 1));
+  };
+
+  const generateRehearsalReport = () => {
+    const report = {
+      journey: journey.name,
+      totalTime: formatTime(rehearsalTime),
+      modulesCompleted: completedModules.length,
+      totalModules: modules.length,
+      feedback: feedback.length,
+      rating: overallRating,
+      readyForLaunch: overallRating >= 3 && feedback.filter(f => f.severity === 'high').length === 0,
+      generatedAt: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'rehearsal-report.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const getFeedbackIcon = (type: RehearsalFeedback['type']) => {
+    switch (type) {
+      case 'content':
+        return <BookOpen className="h-4 w-4 text-blue-500" />;
+      case 'technical':
+        return <Zap className="h-4 w-4 text-red-500" />;
+      case 'engagement':
+        return <BarChart3 className="h-4 w-4 text-green-500" />;
+      case 'suggestion':
+        return <MessageSquare className="h-4 w-4 text-purple-500" />;
+      default:
+        return <MessageSquare className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const getSeverityColor = (severity: RehearsalFeedback['severity']) => {
+    switch (severity) {
+      case 'high':
+        return 'border-red-200 bg-red-50 text-red-800';
+      case 'medium':
+        return 'border-yellow-200 bg-yellow-50 text-yellow-800';
+      case 'low':
+        return 'border-blue-200 bg-blue-50 text-blue-800';
+      default:
+        return 'border-gray-200 bg-gray-50 text-gray-800';
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={onBack}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+                <div>
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Eye className="h-5 w-5 text-purple-500" />
+                    <span className="text-sm font-medium text-purple-600 bg-purple-100 px-3 py-1 rounded-full">
+                      REHEARSAL MODE
+                    </span>
+                  </div>
+                  <h1 className="text-2xl font-bold text-gray-900">{journey.name}</h1>
+                  <p className="text-gray-600">Test and review your training journey before launch</p>
+                </div>
+              </div>
+              
+              <div className="text-right">
+                <div className="text-sm text-gray-500 mb-1">Rehearsal Time</div>
+                <div className="text-2xl font-bold text-gray-900">{formatTime(rehearsalTime)}</div>
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Overall Progress</span>
+                <span className="text-sm text-gray-600">{Math.round(progress)}% Complete</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div
+                  className="bg-gradient-to-r from-purple-500 to-indigo-500 h-3 rounded-full transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {methodology && (
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-2xl p-6 mb-8">
+              <h3 className="text-xl font-semibold text-purple-900 mb-4">🎯 360° Methodology in Action</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {methodology.components.slice(0, 8).map((component, index) => (
+                  <div key={index} className="text-center p-3 bg-white rounded-lg shadow-sm">
+                    <div className="text-sm font-medium text-purple-900">{component.title}</div>
+                    <div className="text-xs text-purple-700">{component.estimatedDuration}h • {component.competencyLevel}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 text-center">
+                <p className="text-purple-700 text-sm">
+                  Complete 360° approach covering foundational knowledge, regulatory compliance, 
+                  contact centre excellence, and regional requirements
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Main Content Area */}
+            <div className="lg:col-span-3">
+              {/* Module Navigation */}
+              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Module {currentModuleIndex + 1} of {modules.length}
+                  </h3>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={handlePreviousModule}
+                      disabled={currentModuleIndex === 0}
+                      className="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={handleNextModule}
+                      disabled={currentModuleIndex === modules.length - 1}
+                      className="px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {modules.map((module, index) => (
+                    <button
+                      key={module.id}
+                      onClick={() => setCurrentModuleIndex(index)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        index === currentModuleIndex
+                          ? 'bg-purple-600 text-white'
+                          : completedModules.includes(module.id)
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {index + 1}. {module.title}
+                      {completedModules.includes(module.id) && (
+                        <CheckCircle className="h-4 w-4 inline ml-1" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Current Module Content */}
+              {currentModule && (
+                <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">{currentModule.title}</h2>
+                      <p className="text-gray-600">{currentModule.description}</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-3 py-1 rounded-full text-sm font-bold uppercase ${
+                        currentModule.difficulty === 'beginner' ? 'bg-green-500 text-white' :
+                        currentModule.difficulty === 'intermediate' ? 'bg-yellow-500 text-gray-900' :
+                        currentModule.difficulty === 'advanced' ? 'bg-red-500 text-white' :
+                        'bg-blue-500 text-white'
+                      }`}>
+                        {currentModule.difficulty || 'intermediate'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Tab Navigation */}
+                  <div className="mb-6">
+                    <div className="flex gap-2 border-b border-gray-200">
+                      <button
+                        onClick={() => setActiveTab('ppt')}
+                        className={`px-6 py-3 font-medium transition-colors ${
+                          activeTab === 'ppt'
+                            ? 'text-indigo-600 border-b-2 border-indigo-600'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        <Download className="h-4 w-4 inline mr-2" />
+                        PowerPoint
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('quiz')}
+                        className={`px-6 py-3 font-medium transition-colors ${
+                          activeTab === 'quiz'
+                            ? 'text-indigo-600 border-b-2 border-indigo-600'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        <FileQuestion className="h-4 w-4 inline mr-2" />
+                        Quiz / QCM
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Content based on active tab */}
+                  <div className="mb-6">
+                    {activeTab === 'quiz' ? (
+                      <QuizGenerator
+                        moduleTitle={currentModule.title}
+                        moduleDescription={currentModule.description}
+                        moduleContent={currentModule.content.map(c => c.title).join('. ')}
+                      />
+                    ) : showPPTViewer && slideImages.length > 0 ? (
+                      <div className="bg-gray-100 rounded-xl overflow-hidden">
+                        {/* Éditeur PPT Visuel */}
+                        <div className="bg-white p-4">
+                          {isEditMode ? (
+                            // MODE ÉDITION - Éditeur visuel type PowerPoint
+                            <div 
+                              className="relative aspect-video rounded-lg overflow-hidden border-4 border-orange-400 shadow-2xl"
+                              style={{ 
+                                background: `linear-gradient(135deg, ${slideData[currentSlideIndex]?.bgColor || '#6366F1'} 0%, ${slideData[currentSlideIndex]?.bgColor || '#6366F1'}dd 100%)`
+                              }}
+                            >
+                              {/* Cercles décoratifs */}
+                              <div className="absolute top-10 left-10 w-20 h-20 rounded-full bg-white opacity-10"></div>
+                              <div className="absolute bottom-16 right-10 w-28 h-28 rounded-full bg-white opacity-10"></div>
+                              
+                              {/* Title Text Area - Editable */}
+                              <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4/5">
+                                <textarea
+                                  value={slideData[currentSlideIndex]?.title || ''}
+                                  onChange={(e) => updateCurrentSlide('title', e.target.value)}
+                                  className="w-full bg-transparent text-white text-center font-bold text-4xl md:text-5xl resize-none outline-none border-2 border-dashed border-white/30 hover:border-white/60 focus:border-white p-4 rounded-lg"
+                                  style={{ 
+                                    minHeight: '80px',
+                                    color: slideData[currentSlideIndex]?.textColor || '#FFFFFF'
+                                  }}
+                                  placeholder="Slide title"
+                                  maxLength={50}
+                                />
+                              </div>
+                              
+                              {/* Content Text Area - Editable */}
+                              <div className="absolute top-2/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4/5">
+                                <textarea
+                                  value={slideData[currentSlideIndex]?.content || ''}
+                                  onChange={(e) => updateCurrentSlide('content', e.target.value)}
+                                  className="w-full bg-transparent text-white text-center text-xl md:text-2xl resize-none outline-none border-2 border-dashed border-white/30 hover:border-white/60 focus:border-white p-4 rounded-lg opacity-90"
+                                  style={{ 
+                                    minHeight: '60px',
+                                    color: slideData[currentSlideIndex]?.textColor || '#FFFFFF'
+                                  }}
+                                  placeholder="Slide content"
+                                  maxLength={80}
+                                />
+                              </div>
+                              
+                              {/* Footer */}
+                              <div className="absolute bottom-4 w-full">
+                                <div className="w-4/5 mx-auto h-0.5 bg-white opacity-30"></div>
+                                <p className="text-center text-white text-xs opacity-60 mt-2">Powered by AI Training Platform</p>
+                              </div>
+                              
+                              {/* Edit Mode Indicator */}
+                              <div className="absolute top-4 right-4 bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center">
+                                <Edit3 className="h-3 w-3 mr-1" />
+                                EDIT MODE
+                              </div>
+                            </div>
+                          ) : (
+                            // MODE LECTURE - Affichage normal
+                            <div className="aspect-video bg-gray-900 flex items-center justify-center rounded-lg overflow-hidden shadow-xl">
+                              <img
+                                src={slideImages[currentSlideIndex]}
+                                alt={`Slide ${currentSlideIndex + 1}`}
+                                className="max-w-full max-h-full object-contain"
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Edit Toolbar */}
+                        {isEditMode && (
+                          <div className="bg-white border-t border-gray-200 p-4">
+                            <div className="flex flex-wrap items-center justify-center gap-4">
+                              {/* Color Palette */}
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-gray-700">Color:</span>
+                                <div className="flex gap-1">
+                                  {['#6366F1', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#06B6D4', '#3B82F6', '#A855F7', '#EF4444', '#14B8A6'].map(color => (
+                                    <button
+                                      key={color}
+                                      onClick={() => updateCurrentSlide('bgColor', color)}
+                                      className={`w-8 h-8 rounded-lg border-2 transition-transform hover:scale-110 ${
+                                        slideData[currentSlideIndex]?.bgColor === color 
+                                          ? 'border-gray-900 scale-110' 
+                                          : 'border-gray-300'
+                                      }`}
+                                      style={{ backgroundColor: color }}
+                                      title={color}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                              
+                              <div className="h-8 w-px bg-gray-300"></div>
+                              
+                              {/* Actions */}
+                              <button
+                                onClick={deleteCurrentSlide}
+                                className="flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
+                                title="Delete this slide"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </button>
+                              
+                              <button
+                                onClick={addNewSlide}
+                                className="flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
+                                title="Add new slide"
+                              >
+                                <Plus className="h-4 w-4 mr-2" />
+                                New Slide
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Navigation Controls */}
+                        <div className="bg-white p-4 border-t border-gray-200">
+                          <div className="flex flex-wrap justify-between items-center gap-4">
+                            <button
+                              onClick={goToPreviousSlide}
+                              disabled={currentSlideIndex === 0}
+                              className="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors"
+                            >
+                              <ArrowLeft className="h-4 w-4 mr-1" />
+                              Previous
+                            </button>
+                            
+                            <div className="flex flex-wrap items-center gap-4">
+                              <span className="text-lg font-medium text-gray-700">
+                                Slide {currentSlideIndex + 1} / {slideImages.length}
+                              </span>
+                              
+                              <button
+                                onClick={() => setIsEditMode(!isEditMode)}
+                                className={`flex items-center px-4 py-2 rounded-lg text-sm font-bold transition-all transform hover:scale-105 ${
+                                  isEditMode 
+                                    ? 'bg-green-500 text-white hover:bg-green-600 shadow-lg' 
+                                    : 'bg-orange-500 text-white hover:bg-orange-600 shadow-lg'
+                                }`}
+                              >
+                                {isEditMode ? (
+                                  <>
+                                    <Save className="h-5 w-5 mr-2" />
+                                    Finish Editing
+                                  </>
+                                ) : (
+                                  <>
+                                    <Edit3 className="h-5 w-5 mr-2" />
+                                    Edit PPT
+                                  </>
+                                )}
+                              </button>
+
+                              <button
+                                onClick={downloadPowerPoint}
+                                disabled={isGeneratingPPT}
+                                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all transform hover:scale-105 font-bold"
+                                title="Download editable PowerPoint"
+                              >
+                                {isGeneratingPPT ? (
+                                  <>
+                                    <div className="h-5 w-5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    Generating...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Download className="h-5 w-5 mr-2" />
+                                    Download PPT
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                            
+                            <button
+                              onClick={goToNextSlide}
+                              disabled={currentSlideIndex === slideImages.length - 1}
+                              className="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors"
+                            >
+                              Next
+                              <ArrowRight className="h-4 w-4 ml-1" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <VideoScriptViewer
+                        moduleTitle={currentModule.title}
+                        moduleDescription={currentModule.description}
+                        learningObjectives={currentModule.learningObjectives}
+                      />
+                    )}
+                  </div>
+
+                  {/* Module Controls */}
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center space-x-4">
+                      <button
+                        onClick={handlePlayPPT}
+                        className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                      >
+                        {isPlaying ? (
+                          <>
+                            <Pause className="h-4 w-4" />
+                            <span>Pause</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-4 w-4" />
+                            <span>Play PPT</span>
+                          </>
+                        )}
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setIsPlaying(false);
+                          setShowPPTViewer(false);
+                          setSlideImages([]);
+                          setCurrentSlideIndex(0);
+                        }}
+                        className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        <span>Restart</span>
+                      </button>
+                    </div>
+                    <button
+                      onClick={handleModuleComplete}
+                      className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      <span>Mark Complete</span>
+                    </button>
+                  </div>
+
+                  {/* Module Details */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="text-center p-4 bg-blue-50 rounded-xl">
+                      <Clock className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                      <div className="text-lg font-bold text-blue-600">{currentModule.duration}</div>
+                      <div className="text-sm text-gray-600">Duration (min)</div>
+                    </div>
+                    <div className="text-center p-4 bg-green-50 rounded-xl">
+                      <BookOpen className="h-6 w-6 text-green-600 mx-auto mb-2" />
+                      <div className="text-lg font-bold text-green-600">{currentModule.content.length}</div>
+                      <div className="text-sm text-gray-600">Content Items</div>
+                    </div>
+                    <div className="text-center p-4 bg-purple-50 rounded-xl">
+                      <BarChart3 className="h-6 w-6 text-purple-600 mx-auto mb-2" />
+                      <div className="text-lg font-bold text-purple-600">{currentModule.assessments.length}</div>
+                      <div className="text-sm text-gray-600">Assessments</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Feedback Sidebar */}
+            <div className="lg:col-span-1 space-y-6">
+              {/* Add Feedback */}
+              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Feedback</h3>
+                
+                {!showFeedbackForm ? (
+                  <button
+                    onClick={() => setShowFeedbackForm(true)}
+                    className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    <span>Add Feedback</span>
+                  </button>
+                ) : (
+                  <div className="space-y-4">
+                    <select
+                      value={currentFeedback.type}
+                      onChange={(e) => setCurrentFeedback(prev => ({ ...prev, type: e.target.value as RehearsalFeedback['type'] }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="content">Content Issue</option>
+                      <option value="technical">Technical Issue</option>
+                      <option value="engagement">Engagement</option>
+                      <option value="suggestion">Suggestion</option>
+                    </select>
+
+                    <select
+                      value={currentFeedback.severity}
+                      onChange={(e) => setCurrentFeedback(prev => ({ ...prev, severity: e.target.value as RehearsalFeedback['severity'] }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="low">Low Priority</option>
+                      <option value="medium">Medium Priority</option>
+                      <option value="high">High Priority</option>
+                    </select>
+
+                    <textarea
+                      value={currentFeedback.message}
+                      onChange={(e) => setCurrentFeedback(prev => ({ ...prev, message: e.target.value }))}
+                      placeholder="Describe the issue or suggestion..."
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={addFeedback}
+                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        Add
+                      </button>
+                      <button
+                        onClick={() => setShowFeedbackForm(false)}
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Feedback List */}
+              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Feedback ({feedback.length})
+                </h3>
+                
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {feedback.map((item) => (
+                    <div key={item.id} className={`p-3 border rounded-lg ${getSeverityColor(item.severity)}`}>
+                      <div className="flex items-start space-x-2">
+                        {getFeedbackIcon(item.type)}
+                        <div className="flex-1">
+                          <div className="text-sm font-medium capitalize">{item.type}</div>
+                          <div className="text-sm mt-1">{item.message}</div>
+                          <div className="text-xs mt-2 opacity-75">
+                            {new Date(item.timestamp).toLocaleTimeString()}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {feedback.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <MessageSquare className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm">No feedback yet</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Overall Rating */}
+              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Overall Rating</h3>
+                
+                <div className="flex justify-center space-x-2 mb-4">
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button
+                      key={rating}
+                      onClick={() => setOverallRating(rating)}
+                      className={`p-2 transition-colors ${
+                        rating <= overallRating ? 'text-yellow-500' : 'text-gray-300'
+                      }`}
+                    >
+                      <Star className="h-6 w-6 fill-current" />
+                    </button>
+                  ))}
+                </div>
+                
+                <div className="text-center text-sm text-gray-600 mb-4">
+                  {overallRating === 0 && 'Rate the training journey'}
+                  {overallRating === 1 && 'Needs significant improvement'}
+                  {overallRating === 2 && 'Below expectations'}
+                  {overallRating === 3 && 'Meets expectations'}
+                  {overallRating === 4 && 'Exceeds expectations'}
+                  {overallRating === 5 && 'Outstanding quality'}
+                </div>
+
+                <button
+                  onClick={handleFinishRehearsal}
+                  disabled={overallRating === 0}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  <Rocket className="h-4 w-4" />
+                  <span>Finish Rehearsal</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -31,6 +31,8 @@ import {
   Save
 } from 'lucide-react';
 
+import { AppContent } from '../../training_module/App';
+
 const RepOnboarding = () => {
   const [activeStep, setActiveStep] = useState(1);
   const [expandedSection, setExpandedSection] = useState<number | null>(1);
@@ -38,6 +40,7 @@ const RepOnboarding = () => {
   const [trainings, setTrainings] = useState<any[]>([]);
   const [loadingTrainings, setLoadingTrainings] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string }>({ isOpen: false });
 
   const onboardingSteps = [
     {
@@ -314,9 +317,16 @@ const RepOnboarding = () => {
     }
   }, [companyId]);
 
-  // Navigate to training URL
+  // Navigate to training URL or inline component
   const navigateToUrl = (url: string) => {
-    window.location.href = url;
+    if (url.startsWith('/training/')) {
+      const id = url.split('/training/')[1];
+      setShowTraining({ isOpen: true, journeyId: id });
+    } else if (url === '/training') {
+      setShowTraining({ isOpen: true });
+    } else {
+      window.location.href = url;
+    }
   };
 
   // Get company ID from cookie or fetch it
@@ -349,6 +359,24 @@ const RepOnboarding = () => {
       fetchCompanyTrainings();
     }
   }, [companyId, fetchCompanyTrainings]);
+
+  if (showTraining.isOpen) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg mt-4 w-full h-[calc(100vh-100px)] flex flex-col overflow-hidden">
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 flex-shrink-0 z-20">
+          <button
+            onClick={() => setShowTraining({ isOpen: false })}
+            className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800"
+          >
+            ← Back to Onboarding
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto relative z-10">
+          <AppContent initialJourneyId={showTraining.journeyId} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

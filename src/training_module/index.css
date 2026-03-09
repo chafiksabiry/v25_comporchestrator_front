@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Cisco NetAcad Style Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.4s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.4s ease-out;
+}
+
+/* Smooth scrolling */
+* {
+  scroll-behavior: smooth;
+}
+
+/* Cisco NetAcad Custom Scrollbar */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 10px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-left: 1px solid #e0e0e0;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #049fd9;
+  border-radius: 5px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #005073;
+}
+
+/* Cisco NetAcad Typography */
+.cisco-netacad-content {
+  font-family: 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.75;
+  color: #333;
+  font-size: 16px;
+}
+
+.cisco-netacad-content h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 1.5rem;
+}
+
+.cisco-netacad-content h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #000;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.cisco-netacad-content h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #000;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.cisco-netacad-content p {
+  margin-bottom: 1rem;
+  line-height: 1.75;
+}
+
+.cisco-netacad-content strong {
+  font-weight: 600;
+  color: #000;
+}
+
+.cisco-netacad-content em {
+  font-style: italic;
+}
