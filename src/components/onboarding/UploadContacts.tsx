@@ -1919,7 +1919,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
             {/* File Info */}
             <div className="mb-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <span className="text-sm font-medium text-blue-800">📁 Supported: CSV, Excel, JSON, TXT</span>
+                <span className="text-sm font-medium text-blue-800">📁 Supported: CSV, Excel</span>
               </div>
             </div>
 
