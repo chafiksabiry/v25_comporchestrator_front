@@ -1337,6 +1337,12 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       return;
     }
 
+    // Skip fetchLeads if we have parsed leads waiting to be saved — fetchLeads would wipe them
+    if (parsedLeads.length > 0) {
+      console.log('⏸️ Skipping fetchLeads - parsedLeads waiting to be saved:', parsedLeads.length);
+      return;
+    }
+
     if (selectedGigId) {
       console.log('📡 Chargement des leads pour gigId:', selectedGigId);
       fetchLeads(1, '').catch(error => {
