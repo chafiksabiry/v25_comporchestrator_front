@@ -35,7 +35,11 @@ import {
 import { AppContent } from '../../training_module/App';
 import '../../training_module/index.css';
 
-const RepOnboarding = () => {
+interface RepOnboardingProps {
+  onActiveStateChange?: (isActive: boolean) => void;
+}
+
+const RepOnboarding: React.FC<RepOnboardingProps> = ({ onActiveStateChange }) => {
   const [activeStep, setActiveStep] = useState(1);
   const [expandedSection, setExpandedSection] = useState<number | null>(1);
   const [selectedTraining, setSelectedTraining] = useState<string[]>([]);
@@ -363,11 +367,15 @@ const RepOnboarding = () => {
   }, [companyId, fetchCompanyTrainings]);
 
   if (showTraining.isOpen) {
+    if (onActiveStateChange) onActiveStateChange(true);
     return (
       <div className="bg-white rounded-xl shadow-lg mt-4 w-full h-[calc(100vh-100px)] flex flex-col overflow-hidden">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 flex-shrink-0 z-20">
           <button
-            onClick={() => setShowTraining({ isOpen: false })}
+            onClick={() => {
+              setShowTraining({ isOpen: false });
+              if (onActiveStateChange) onActiveStateChange(false);
+            }}
             className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800"
           >
             ← Back to Onboarding
@@ -381,6 +389,8 @@ const RepOnboarding = () => {
       </div>
     );
   }
+
+  if (onActiveStateChange) onActiveStateChange(false);
 
   return (
     <div className="space-y-6">
