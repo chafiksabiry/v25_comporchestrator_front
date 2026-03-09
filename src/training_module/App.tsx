@@ -1249,6 +1249,7 @@ export function AppContent({ initialJourneyId }: { initialJourneyId?: string } =
         modules={journeyModules}
         methodology={undefined}
         availableJourneys={availableJourneysForSelector.length > 1 ? availableJourneysForSelector : undefined}
+        autoStart={!!initialJourneyId}
         onJourneyChange={async (newJourneyId) => {
           const newJourney = traineeJourneys.find(j => (j.id || j._id) === newJourneyId);
           if (newJourney && agentId) {
@@ -1326,6 +1327,7 @@ export function AppContent({ initialJourneyId }: { initialJourneyId?: string } =
         journey={launchedJourney.journey}
         modules={launchedJourney.modules}
         methodology={undefined} // Would be passed from journey data
+        autoStart={!!initialJourneyId}
         onProgressUpdate={(moduleId, progress) => updateModuleProgress(moduleId, progress)}
         onModuleComplete={(moduleId) => updateModuleProgress(moduleId, 100)}
         onAssessmentComplete={(assessmentId, score) => updateAssessmentResult(assessmentId, score, score >= 80 ? 'passed' : 'failed')}
