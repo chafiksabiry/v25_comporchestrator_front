@@ -1942,7 +1942,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                     id="file-upload"
                     type="file"
                     className="hidden"
-                    accept="*"
+                    accept=".csv,.xlsx,.xls"
                     onChange={handleFileSelect}
                     disabled={isProcessing}
                   />
