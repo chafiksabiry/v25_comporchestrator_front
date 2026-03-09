@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import apiClient from '../api/client';
 import Cookies from 'js-cookie';
 import {
@@ -1345,104 +1346,7 @@ const ScriptGenerator: React.FC = () => {
                                   </button>
                                 </div>
 
-                                {/* Edit modal */}
-                                {editingStep?.index === globalStepIdx && (
-                                  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
-                                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden animate-scale-in">
-                                      <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                                        <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                          <Edit2 className="w-5 h-5 text-blue-600" />
-                                          Edit Response
-                                        </h3>
-                                        <button
-                                          onClick={() => setEditingStep(null)}
-                                          className="text-gray-400 hover:text-gray-600 transition-colors"
-                                        >
-                                          <X size={24} />
-                                        </button>
-                                      </div>
-                                      <div className="p-6 flex-1 overflow-y-auto">
-                                        <textarea
-                                          value={editingStep.text}
-                                          onChange={e => setEditingStep({ ...editingStep, text: e.target.value })}
-                                          className="w-full h-64 p-4 border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 resize-none font-medium text-gray-800"
-                                          placeholder="Type the response here..."
-                                          autoFocus
-                                        />
-                                      </div>
-                                      <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
-                                        <button
-                                          onClick={() => setEditingStep(null)}
-                                          className="px-6 py-2.5 text-gray-600 hover:bg-gray-200 rounded-xl font-semibold transition-all duration-200"
-                                        >
-                                          Cancel
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            handleUpdateScriptContent(selectedScript._id, globalStepIdx, { replica: editingStep.text });
-                                            setEditingStep(null);
-                                          }}
-                                          className="px-8 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-bold hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-200"
-                                        >
-                                          Save Changes
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Refine modal */}
-                                {refiningStep?.index === globalStepIdx && (
-                                  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
-                                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden animate-scale-in">
-                                      <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                                        <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                          <MessageSquare className="w-5 h-5 text-purple-600" />
-                                          Refine Response
-                                        </h3>
-                                        <button
-                                          onClick={() => setRefiningStep(null)}
-                                          className="text-gray-400 hover:text-gray-600 transition-colors"
-                                        >
-                                          <X size={24} />
-                                        </button>
-                                      </div>
-                                      <div className="p-6 flex-1 overflow-y-auto space-y-4">
-                                        <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl">
-                                          <p className="text-xs font-bold text-purple-600 uppercase tracking-widest mb-1">Current response</p>
-                                          <p className="text-gray-800 leading-relaxed italic">"{step.replica}"</p>
-                                        </div>
-                                        <div>
-                                          <p className="text-sm font-semibold text-gray-700 mb-2">How should we refine it?</p>
-                                          <textarea
-                                            value={refiningStep.prompt}
-                                            onChange={e => setRefiningStep({ ...refiningStep, prompt: e.target.value })}
-                                            placeholder="e.g., Make it more formal, emphasize the warranty, handle price objections more gently..."
-                                            className="w-full h-48 p-4 border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-gray-50 resize-none font-medium text-gray-800"
-                                            autoFocus
-                                          />
-                                        </div>
-                                      </div>
-                                      <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
-                                        <button
-                                          onClick={() => setRefiningStep(null)}
-                                          className="px-6 py-2.5 text-gray-600 hover:bg-gray-200 rounded-xl font-semibold transition-all duration-200"
-                                        >
-                                          Cancel
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            handleRefineScriptPart(selectedScript._id, globalStepIdx, refiningStep.prompt);
-                                            setRefiningStep(null);
-                                          }}
-                                          className="px-8 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-bold hover:from-purple-700 hover:to-purple-800 shadow-lg hover:shadow-xl transition-all duration-200"
-                                        >
-                                          Refine Response
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
+                                {/* Edit & Refine modals sont rendues via Portal (voir plus bas) */}
                               </div>
                             );
                           })}
@@ -1461,6 +1365,112 @@ const ScriptGenerator: React.FC = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Edit Response Modal - Portal pour centrage parfait */}
+        {editingStep !== null && selectedScript && ReactDOM.createPortal(
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col overflow-hidden animate-scale-in">
+              <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <Edit2 className="w-5 h-5 text-blue-600" />
+                  Edit Response
+                </h3>
+                <button
+                  onClick={() => setEditingStep(null)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="p-6">
+                <textarea
+                  value={editingStep.text}
+                  onChange={e => setEditingStep({ ...editingStep, text: e.target.value })}
+                  className="w-full h-64 p-4 border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 resize-none font-medium text-gray-800"
+                  placeholder="Type the response here..."
+                  autoFocus
+                />
+              </div>
+              <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
+                <button
+                  onClick={() => setEditingStep(null)}
+                  className="px-6 py-2.5 text-gray-600 hover:bg-gray-200 rounded-xl font-semibold transition-all duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    handleUpdateScriptContent(selectedScript._id, editingStep.index, { replica: editingStep.text });
+                    setEditingStep(null);
+                  }}
+                  className="px-8 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-bold hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+        {/* Refine Response Modal - Portal pour centrage parfait */}
+        {refiningStep !== null && selectedScript && ReactDOM.createPortal(
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col overflow-hidden animate-scale-in">
+              <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-purple-600" />
+                  Refine Response
+                </h3>
+                <button
+                  onClick={() => setRefiningStep(null)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                {selectedScript && refiningStep !== null && (() => {
+                  const currentStep = selectedScript.script[refiningStep.index];
+                  return currentStep ? (
+                    <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl">
+                      <p className="text-xs font-bold text-purple-600 uppercase tracking-widest mb-1">Current response</p>
+                      <p className="text-gray-800 leading-relaxed italic">"{currentStep.replica}"</p>
+                    </div>
+                  ) : null;
+                })()}
+                <div>
+                  <p className="text-sm font-semibold text-gray-700 mb-2">How should we refine it?</p>
+                  <textarea
+                    value={refiningStep.prompt}
+                    onChange={e => setRefiningStep({ ...refiningStep, prompt: e.target.value })}
+                    placeholder="e.g., Make it more formal, emphasize the warranty, handle price objections more gently..."
+                    className="w-full h-48 p-4 border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-gray-50 resize-none font-medium text-gray-800"
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
+                <button
+                  onClick={() => setRefiningStep(null)}
+                  className="px-6 py-2.5 text-gray-600 hover:bg-gray-200 rounded-xl font-semibold transition-all duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    handleRefineScriptPart(selectedScript._id, refiningStep.index, refiningStep.prompt);
+                    setRefiningStep(null);
+                  }}
+                  className="px-8 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-bold hover:from-purple-700 hover:to-purple-800 shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  Refine Response
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
         )}
 
         {/* Script Generation Form */}
