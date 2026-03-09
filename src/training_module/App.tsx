@@ -113,15 +113,15 @@ export function AppContent({ initialJourneyId }: { initialJourneyId?: string } =
   const [realJourneys, setRealJourneys] = useState<any[]>([]);
   const [selectedJourney, setSelectedJourney] = useState<any | null>(null);
   const [selectedJourneyModules, setSelectedJourneyModules] = useState<TrainingModule[]>([]);
-  const [loadingModules, setLoadingModules] = useState(true);
+  const [loadingModules, setLoadingModules] = useState(false);
 
   // Trainee-specific state
-  const [agentId, setAgentId] = useState<string | null>(null);
+  const [agentId, setAgentId] = useState<string | null>(initialJourneyId ? 'default' : null);
   const [traineeJourneys, setTraineeJourneys] = useState<any[]>([]);
   const [selectedTraineeJourney, setSelectedTraineeJourney] = useState<any | null>(null);
   const [loadingTraineeJourneys, setLoadingTraineeJourneys] = useState(false);
-  const [userType, setUserType] = useState<'company' | 'rep' | null>(null);
-  const [checkingUserType, setCheckingUserType] = useState(true);
+  const [userType, setUserType] = useState<'company' | 'rep' | null>(initialJourneyId ? 'rep' : null);
+  const [checkingUserType, setCheckingUserType] = useState(initialJourneyId ? false : true);
   const [traineeProgressData, setTraineeProgressData] = useState<Record<string, any>>({});
 
   // Load specific journey by ID if provided in URL
@@ -344,6 +344,16 @@ export function AppContent({ initialJourneyId }: { initialJourneyId?: string } =
 
   // Check user type and set appropriate role
   useEffect(() => {
+    if (initialJourneyId) {
+      setUserType('rep');
+      setUserRole('trainee');
+      setCheckingUserType(false);
+
+      const detectedAgentId = getAgentId() || Cookies.get('userId') || 'default-trainee';
+      setAgentId(detectedAgentId);
+      return;
+    }
+
     const checkUserTypeAndSetRole = async () => {
       setCheckingUserType(true);
       try {
@@ -736,7 +746,7 @@ export function AppContent({ initialJourneyId }: { initialJourneyId?: string } =
   }, [hasCompletedSetup, showWelcome, showJourneyBuilder, showManualTraining, showJourneySuccess]);
 
   // Show welcome screen for first-time users (but not if showing success page or if user is rep)
-  if (!hasCompletedSetup && showWelcome && !showJourneyBuilder && !showManualTraining && !showJourneySuccess && userType !== 'rep' && !checkingUserType) {
+  if (!initialJourneyId && !hasCompletedSetup && showWelcome && !showJourneyBuilder && !showManualTraining && !showJourneySuccess && userType !== 'rep' && !checkingUserType) {
     console.log('[App] Rendering welcome screen');
     return (
       <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 overflow-y-auto">
@@ -2058,7 +2068,8 @@ export function AppContent({ initialJourneyId }: { initialJourneyId?: string } =
 
   console.log('[App] Rendering main app layout, activeTab:', activeTab, 'userType:', userType);
   return (
-    <div className="h-screen bg-gray-50 relative">
+    <div className="h-full bg-gray-50 relative border-4 border-red-500 min-h-[500px]">
+      <h1>TRAINING COMPONENT MOUNTED</h1>
       {/* Sidebar - Always rendered first */}
       <Sidebar
         activeTab={activeTab}
