@@ -2068,8 +2068,7 @@ export function AppContent({ initialJourneyId }: { initialJourneyId?: string } =
 
   console.log('[App] Rendering main app layout, activeTab:', activeTab, 'userType:', userType);
   return (
-    <div className="h-full bg-gray-50 relative border-4 border-red-500 min-h-[500px]">
-      <h1>TRAINING COMPONENT MOUNTED</h1>
+    <div className="h-full bg-gray-50 relative min-h-[500px]">
       {/* Sidebar - Always rendered first */}
       <Sidebar
         activeTab={activeTab}

@@ -117,6 +117,7 @@ const CompanyOnboarding = () => {
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
   const [showUploadContacts, setShowUploadContacts] = useState(false);
+  const [isTrainingViewActive, setIsTrainingViewActive] = useState(false);
 
   // Single useEffect to handle UploadContacts state and parsed leads cleanup
   useEffect(() => {
@@ -1484,24 +1485,32 @@ const CompanyOnboarding = () => {
     activeComponent = <UploadContacts />;
     onBack = handleBackToOnboarding;
   } else if (ActiveStepComponent) {
-    activeComponent = <ActiveStepComponent />;
+    // If it's RepOnboarding, pass the prop
+    if (activeStep === 9) {
+      const RepOnboardingComponent = ActiveStepComponent as React.FC<any>;
+      activeComponent = <RepOnboardingComponent onActiveStateChange={setIsTrainingViewActive} />;
+    } else {
+      activeComponent = <ActiveStepComponent />;
+    }
     onBack = handleBackToOnboarding;
   }
 
   if (activeComponent) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => {
-              onBack();
-            }}
-            className="flex items-center transition-colors text-gray-600 hover:text-gray-900"
-          >
-            <ChevronRight className="h-5 w-5 rotate-180" />
-            <span>Back to Onboarding</span>
-          </button>
-        </div>
+        {!isTrainingViewActive && (
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => {
+                onBack();
+              }}
+              className="flex items-center transition-colors text-gray-600 hover:text-gray-900"
+            >
+              <ChevronRight className="h-5 w-5 rotate-180" />
+              <span>Back to Onboarding</span>
+            </button>
+          </div>
+        )}
         {activeComponent}
       </div>
     );
