@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { 
-  BookOpen, 
-  Play, 
-  CheckCircle, 
-  Clock, 
-  Award, 
-  Target, 
-  BarChart3, 
-  Brain, 
-  Users, 
+import {
+  BookOpen,
+  Play,
+  CheckCircle,
+  Clock,
+  Award,
+  Target,
+  BarChart3,
+  Brain,
+  Users,
   Calendar,
   Video,
   Headphones,
@@ -45,26 +45,28 @@ interface TraineePortalProps {
   onBack: () => void;
   availableJourneys?: TrainingJourney[];
   onJourneyChange?: (journeyId: string) => void;
+  autoStart?: boolean;
 }
 
-export default function TraineePortal({ 
-  trainee, 
-  journey, 
-  modules, 
+export default function TraineePortal({
+  trainee,
+  journey,
+  modules,
   methodology,
-  onProgressUpdate, 
-  onModuleComplete, 
+  onProgressUpdate,
+  onModuleComplete,
   onAssessmentComplete,
   onBack,
   availableJourneys,
-  onJourneyChange
+  onJourneyChange,
+  autoStart = false
 }: TraineePortalProps) {
   const [activeView, setActiveView] = useState('dashboard');
   const [selectedModule, setSelectedModule] = useState<TrainingModule | null>(null);
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
   const [repProgressData, setRepProgressData] = useState<RepProgress | null>(null);
   const [loadingProgress, setLoadingProgress] = useState(true);
-  
+
   // Get agentId (repId)
   const agentId = getAgentId();
   const journeyId = journey.id || journey._id;
@@ -80,13 +82,13 @@ export default function TraineePortal({
       try {
         setLoadingProgress(true);
         let progress = await ProgressService.getRepProgress(agentId, journeyId);
-        
+
         // If no progress exists, initialize it
         if (!progress) {
           console.log('[TraineePortal] No progress found, initializing...');
           progress = await ProgressService.initializeRepProgress(agentId, journeyId);
         }
-        
+
         setRepProgressData(progress);
       } catch (error) {
         console.error('Error loading progress:', error);
@@ -121,27 +123,27 @@ export default function TraineePortal({
   }, [activeView, agentId, journeyId]);
 
   // Calculate progress from backend data or fallback to modules
-  const completedModules = repProgressData 
-    ? repProgressData.moduleFinished 
+  const completedModules = repProgressData
+    ? repProgressData.moduleFinished
     : modules.filter(m => m.completed).length;
-  
+
   const overallProgress = repProgressData && repProgressData.modules
     ? Math.round(
-        Object.values(repProgressData.modules).reduce((sum, mp) => sum + mp.progress, 0) / 
-        Object.keys(repProgressData.modules).length
-      )
-    : modules.length > 0 
+      Object.values(repProgressData.modules).reduce((sum, mp) => sum + mp.progress, 0) /
+      Object.keys(repProgressData.modules).length
+    )
+    : modules.length > 0
       ? Math.round((modules.reduce((sum, m) => sum + m.progress, 0) / modules.length))
       : 0;
 
   // Calculate average score from modules
   const averageScore = repProgressData && repProgressData.modules
     ? Math.round(
-        Object.values(repProgressData.modules)
-          .filter(mp => mp.score !== undefined && mp.score !== null)
-          .reduce((sum, mp) => sum + (mp.score || 0), 0) /
-        Object.values(repProgressData.modules).filter(mp => mp.score !== undefined && mp.score !== null).length
-      ) || 0
+      Object.values(repProgressData.modules)
+        .filter(mp => mp.score !== undefined && mp.score !== null)
+        .reduce((sum, mp) => sum + (mp.score || 0), 0) /
+      Object.values(repProgressData.modules).filter(mp => mp.score !== undefined && mp.score !== null).length
+    ) || 0
     : 87; // Default fallback
 
   const [traineeProgress, setTraineeProgress] = useState({
@@ -162,18 +164,18 @@ export default function TraineePortal({
       const completed = repProgressData.moduleFinished;
       const overall = repProgressData.modules && Object.keys(repProgressData.modules).length > 0
         ? Math.round(
-            Object.values(repProgressData.modules).reduce((sum, mp) => sum + mp.progress, 0) / 
-            Object.keys(repProgressData.modules).length
-          )
+          Object.values(repProgressData.modules).reduce((sum, mp) => sum + mp.progress, 0) /
+          Object.keys(repProgressData.modules).length
+        )
         : 0;
-      
+
       const avgScore = repProgressData.modules && Object.keys(repProgressData.modules).length > 0
         ? Math.round(
-            Object.values(repProgressData.modules)
-              .filter(mp => mp.score !== undefined && mp.score !== null)
-              .reduce((sum, mp) => sum + (mp.score || 0), 0) /
-            Object.values(repProgressData.modules).filter(mp => mp.score !== undefined && mp.score !== null).length
-          ) || 0
+          Object.values(repProgressData.modules)
+            .filter(mp => mp.score !== undefined && mp.score !== null)
+            .reduce((sum, mp) => sum + (mp.score || 0), 0) /
+          Object.values(repProgressData.modules).filter(mp => mp.score !== undefined && mp.score !== null).length
+        ) || 0
         : 0;
 
       setTraineeProgress(prev => ({
@@ -200,7 +202,7 @@ export default function TraineePortal({
       const moduleId = extractObjectId((module as any)._id) || extractObjectId(module.id);
       if (!moduleId || !/^[0-9a-fA-F]{24}$/.test(moduleId)) continue;
       const moduleProgress = repProgressData.modules[moduleId];
-      
+
       if (moduleProgress && moduleProgress.status === 'in-progress') {
         return { ...module, progress: moduleProgress.progress, completed: false };
       }
@@ -212,7 +214,7 @@ export default function TraineePortal({
       const moduleId = extractObjectId((module as any)._id) || extractObjectId(module.id);
       if (!moduleId || !/^[0-9a-fA-F]{24}$/.test(moduleId)) continue;
       const moduleProgress = repProgressData.modules[moduleId];
-      
+
       if (!moduleProgress || moduleProgress.status === 'not-started') {
         return { ...module, progress: 0, completed: false };
       }
@@ -245,23 +247,23 @@ export default function TraineePortal({
   const canAccessModule = useCallback((moduleIndex: number): boolean => {
     // First module is always accessible
     if (moduleIndex === 0) return true;
-    
+
     // If progress data is not loaded yet, don't block access (will be checked again when data loads)
     if (!repProgressData || !repProgressData.modules) {
       console.log(`[TraineePortal] Progress data not loaded yet for module ${moduleIndex}, allowing access temporarily`);
       return true;
     }
-    
+
     // Check all previous modules
     for (let i = 0; i < moduleIndex; i++) {
       const prevModule = modules[i];
       if (!prevModule) continue;
-      
+
       const prevModuleId = extractObjectId((prevModule as any)._id) || extractObjectId(prevModule.id);
       if (!prevModuleId || !/^[0-9a-fA-F]{24}$/.test(prevModuleId)) continue;
-      
+
       const prevModuleProgress = repProgressData.modules[prevModuleId];
-      
+
       // Debug log
       console.log(`[TraineePortal] Checking module ${i} (${prevModuleId}) for access to module ${moduleIndex}:`, {
         hasProgress: !!prevModuleProgress,
@@ -270,37 +272,37 @@ export default function TraineePortal({
         quizz: prevModuleProgress?.quizz,
         quizzKeys: prevModuleProgress?.quizz ? Object.keys(prevModuleProgress.quizz) : []
       });
-      
+
       // Check if previous module is completed
-      const isCompleted = prevModuleProgress 
+      const isCompleted = prevModuleProgress
         ? (prevModuleProgress.status === 'completed' || prevModuleProgress.status === 'finished')
         : prevModule.completed;
-      
+
       // Check if previous module has quizzes
       const quizQuestions = getModuleQuizQuestions(prevModule);
       const hasQuizzes = quizQuestions.length > 0;
-      
+
       // If module has quizzes, verify that all quizzes are passed in the quizz field
       if (hasQuizzes) {
         if (!isCompleted) {
           console.log(`[TraineePortal] Module ${i} (${prevModuleId}) has quizzes but is not completed (status: ${prevModuleProgress?.status}). Cannot access module ${moduleIndex}.`);
           return false;
         }
-        
+
         // Verify that quizzes are passed in the quizz field
         const moduleQuizz = prevModuleProgress?.quizz || {};
         const moduleQuizzes = (prevModule as any).quizzes || [];
         const moduleAssessments = (prevModule as any).assessments || [];
-        
+
         // Check if all quizzes have passed results
         let allQuizzesPassed = true;
-        
+
         // If module has quizzes array, check each quiz
         if (moduleQuizzes.length > 0) {
           for (const quiz of moduleQuizzes) {
             const quizId = extractObjectId(quiz._id) || extractObjectId(quiz.id);
             if (!quizId) continue;
-            
+
             const quizResult = moduleQuizz[quizId];
             if (!quizResult || !quizResult.passed) {
               console.log(`[TraineePortal] Module ${i} (${prevModuleId}) quiz ${quizId} not passed (result: ${JSON.stringify(quizResult)}). Cannot access module ${moduleIndex}.`);
@@ -308,7 +310,7 @@ export default function TraineePortal({
               break;
             }
           }
-        } 
+        }
         // If module has assessments instead, check if any quiz result exists and is passed
         else if (moduleAssessments.length > 0 || quizQuestions.length > 0) {
           // Quizzes are in assessments or questions, check if quizz field has any passed results
@@ -327,7 +329,7 @@ export default function TraineePortal({
             return false;
           }
         }
-        
+
         if (!allQuizzesPassed) {
           return false;
         }
@@ -339,9 +341,27 @@ export default function TraineePortal({
         }
       }
     }
-    
+
     return true;
   }, [modules, repProgressData, getModuleQuizQuestions]);
+
+  const [hasAutoStarted, setHasAutoStarted] = useState(false);
+
+  useEffect(() => {
+    // Only autoStart if requested, we haven't auto-started yet, and we finally have our data
+    if (autoStart && !hasAutoStarted && currentModule && !loadingProgress && repProgressData) {
+      console.log('[TraineePortal] Auto-starting current module:', currentModule);
+      setHasAutoStarted(true);
+      // Inline the selection so it doesn't wait for user click
+      const moduleIndex = modules.findIndex(m => {
+        const mId = extractObjectId((m as any)._id) || extractObjectId(m.id);
+        const moduleId = extractObjectId((currentModule as any)._id) || extractObjectId(currentModule.id);
+        return mId === moduleId || m === currentModule;
+      });
+      setSelectedModule({ ...currentModule, moduleIndex: moduleIndex !== -1 ? moduleIndex : undefined } as any);
+      setActiveView('module');
+    }
+  }, [autoStart, hasAutoStarted, currentModule, loadingProgress, repProgressData, modules]);
 
   const handleModuleSelect = (module: TrainingModule) => {
     // Find module index for ID normalization
@@ -350,26 +370,26 @@ export default function TraineePortal({
       const moduleId = extractObjectId((module as any)._id) || extractObjectId(module.id);
       return mId === moduleId || m === module;
     });
-    
+
     // Check if module can be accessed
     if (moduleIndex !== -1 && !canAccessModule(moduleIndex)) {
       alert('⚠️ Vous devez compléter le module précédent et passer son quiz avant d\'accéder à ce module.');
       return;
     }
-    
+
     setSelectedModule({ ...module, moduleIndex: moduleIndex !== -1 ? moduleIndex : undefined } as any);
     setActiveView('module');
   };
 
   const handleNextModule = () => {
     if (!selectedModule) return;
-    
+
     const currentIndex = modules.findIndex(m => {
       const mId = extractObjectId((m as any)._id) || extractObjectId(m.id);
       const moduleId = extractObjectId((selectedModule as any)._id) || extractObjectId(selectedModule.id);
       return mId === moduleId && mId && /^[0-9a-fA-F]{24}$/.test(mId);
     });
-    
+
     if (currentIndex !== -1 && currentIndex < modules.length - 1) {
       const nextModule = modules[currentIndex + 1];
       if (nextModule && canAccessModule(currentIndex + 1)) {
@@ -495,7 +515,7 @@ export default function TraineePortal({
                   <span className="text-sm text-gray-600">{currentModule.progress}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div 
+                  <div
                     className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-500"
                     style={{ width: `${currentModule.progress}%` }}
                   />
@@ -545,7 +565,7 @@ export default function TraineePortal({
         <div className="lg:col-span-2">
           <div className="bg-white rounded-2xl border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Your Training Journey</h2>
-            
+
             <div className="space-y-4">
               {modules.map((module, index) => {
                 // Modules MUST have a MongoDB ObjectId _id
@@ -556,20 +576,19 @@ export default function TraineePortal({
                 }
                 const moduleProgress = repProgressData?.modules?.[moduleId];
                 const moduleProgressValue = moduleProgress?.progress ?? module.progress ?? 0;
-                const moduleCompleted = moduleProgress 
+                const moduleCompleted = moduleProgress
                   ? (moduleProgress.status === 'completed' || moduleProgress.status === 'finished' || moduleProgress.progress >= 100)
                   : module.completed;
                 const moduleInProgress = moduleProgress?.status === 'in-progress';
                 const canAccess = canAccessModule(index);
-                
+
                 return (
                   <div
                     key={module.id}
-                    className={`border-2 rounded-xl p-6 transition-all ${
-                      canAccess 
-                        ? 'hover:shadow-md cursor-pointer' 
+                    className={`border-2 rounded-xl p-6 transition-all ${canAccess
+                        ? 'hover:shadow-md cursor-pointer'
                         : 'opacity-50 cursor-not-allowed bg-gray-100'
-                    } ${getModuleStatusColor({ ...module, completed: moduleCompleted, progress: moduleProgressValue })}`}
+                      } ${getModuleStatusColor({ ...module, completed: moduleCompleted, progress: moduleProgressValue })}`}
                     onClick={() => {
                       if (canAccess) {
                         handleModuleSelect({ ...module, progress: moduleProgressValue, completed: moduleCompleted });
@@ -579,11 +598,10 @@ export default function TraineePortal({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div className="flex items-center space-x-3">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                            moduleCompleted ? 'bg-green-500 text-white' :
-                            moduleProgressValue > 0 ? 'bg-blue-500 text-white' :
-                            'bg-gray-200 text-gray-600'
-                          }`}>
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${moduleCompleted ? 'bg-green-500 text-white' :
+                              moduleProgressValue > 0 ? 'bg-blue-500 text-white' :
+                                'bg-gray-200 text-gray-600'
+                            }`}>
                             {moduleCompleted ? (
                               <CheckCircle className="h-5 w-5" />
                             ) : (
@@ -592,7 +610,7 @@ export default function TraineePortal({
                           </div>
                           {getModuleStatusIcon({ ...module, completed: moduleCompleted, progress: moduleProgressValue })}
                         </div>
-                        
+
                         <div className="flex-1">
                           <h3 className={`text-lg font-semibold ${canAccess ? 'text-gray-900' : 'text-gray-400'}`}>{module.title}</h3>
                           <p className={`text-sm ${canAccess ? 'text-gray-600' : 'text-gray-400'}`}>{module.description}</p>
@@ -619,27 +637,25 @@ export default function TraineePortal({
                             </span>
                             {moduleProgress && (
                               <span className="flex items-center space-x-1">
-                                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                  moduleCompleted ? 'bg-green-100 text-green-700' :
-                                  moduleInProgress ? 'bg-blue-100 text-blue-700' :
-                                  'bg-gray-100 text-gray-700'
-                                }`}>
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${moduleCompleted ? 'bg-green-100 text-green-700' :
+                                    moduleInProgress ? 'bg-blue-100 text-blue-700' :
+                                      'bg-gray-100 text-gray-700'
+                                  }`}>
                                   {moduleProgress.status === 'completed' || moduleProgress.status === 'finished' ? 'Completed' :
-                                   moduleProgress.status === 'in-progress' ? 'In Progress' : 'Not Started'}
+                                    moduleProgress.status === 'in-progress' ? 'In Progress' : 'Not Started'}
                                 </span>
                               </span>
                             )}
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="text-right">
                         <div className="text-2xl font-bold text-gray-900 mb-1">{moduleProgressValue}%</div>
                         <div className="w-20 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full transition-all duration-300 ${
-                              moduleCompleted ? 'bg-green-500' : 'bg-blue-500'
-                            }`}
+                          <div
+                            className={`h-2 rounded-full transition-all duration-300 ${moduleCompleted ? 'bg-green-500' : 'bg-blue-500'
+                              }`}
                             style={{ width: `${moduleProgressValue}%` }}
                           />
                         </div>
@@ -651,7 +667,7 @@ export default function TraineePortal({
                       const quizQuestions = getModuleQuizQuestions(module);
                       const hasQuizzes = quizQuestions.length > 0;
                       const moduleQuizz = moduleProgress.quizz || {};
-                      
+
                       // Check if module has quizzes that are not passed
                       let hasUnpassedQuizzes = false;
                       if (hasQuizzes) {
@@ -666,13 +682,13 @@ export default function TraineePortal({
                           }
                         }
                       }
-                      
+
                       // Show alert if module has quizzes and they're not all passed
                       if (hasQuizzes && hasUnpassedQuizzes) {
                         const moduleQuizzes = (module as any).quizzes || [];
                         const firstQuiz = moduleQuizzes.length > 0 ? moduleQuizzes[0] : null;
                         const passingScore = firstQuiz?.passingScore || 70;
-                        
+
                         return (
                           <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                             <div className="flex items-start space-x-2">
@@ -793,26 +809,25 @@ export default function TraineePortal({
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">🎯 Your 360° Training Methodology</h2>
             <p className="text-gray-600">{methodology.description}</p>
           </div>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {methodology && Array.isArray(methodology.components) && methodology.components.length > 0 ? (
               methodology.components.slice(0, 8).map((component, index) => (
                 <div key={component.id} className="bg-white rounded-xl p-4 text-center shadow-sm">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2 ${
-                  index < traineeProgress.completedModules ? 'bg-green-500 text-white' :
-                  index === traineeProgress.completedModules ? 'bg-blue-500 text-white' :
-                  'bg-gray-200 text-gray-600'
-                }`}>
-                  {index < traineeProgress.completedModules ? (
-                    <CheckCircle className="h-4 w-4" />
-                  ) : (
-                    <span className="text-xs font-bold">{index + 1}</span>
-                  )}
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-2 ${index < traineeProgress.completedModules ? 'bg-green-500 text-white' :
+                      index === traineeProgress.completedModules ? 'bg-blue-500 text-white' :
+                        'bg-gray-200 text-gray-600'
+                    }`}>
+                    {index < traineeProgress.completedModules ? (
+                      <CheckCircle className="h-4 w-4" />
+                    ) : (
+                      <span className="text-xs font-bold">{index + 1}</span>
+                    )}
+                  </div>
+                  <div className="font-medium text-gray-900 text-sm">{component.title}</div>
+                  <div className="text-xs text-gray-600">{component.estimatedDuration}h</div>
+                  <div className="text-xs text-gray-500 capitalize">{component.competencyLevel}</div>
                 </div>
-                <div className="font-medium text-gray-900 text-sm">{component.title}</div>
-                <div className="text-xs text-gray-600">{component.estimatedDuration}h</div>
-                <div className="text-xs text-gray-500 capitalize">{component.competencyLevel}</div>
-              </div>
               ))
             ) : (
               <p className="text-sm text-gray-500 col-span-full text-center">No methodology components available</p>
@@ -825,7 +840,7 @@ export default function TraineePortal({
 
   const renderModuleView = () => {
     if (!selectedModule) return null;
-    
+
     return (
       <TraineeModulePlayer
         module={selectedModule}
@@ -879,15 +894,15 @@ export default function TraineePortal({
 
   const renderAssessmentView = () => {
     if (!selectedAssessment) return null;
-    
+
     return (
       <TraineeAssessmentView
         assessment={selectedAssessment}
         trainee={trainee}
         onComplete={(score) => {
           onAssessmentComplete(selectedAssessment.id, score);
-          setTraineeProgress(prev => ({ 
-            ...prev, 
+          setTraineeProgress(prev => ({
+            ...prev,
             averageScore: Math.round((prev.averageScore + score) / 2)
           }));
           handleBackToDashboard();
@@ -926,10 +941,10 @@ export default function TraineePortal({
     case 'live-session':
       return renderLiveSessionView();
     default:
-  return (
-    <div className="h-screen bg-gradient-to-br from-gray-50 to-blue-50 overflow-hidden flex flex-col">
-      <div className="container mx-auto px-4 py-8 flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto">
+      return (
+        <div className="h-screen bg-gradient-to-br from-gray-50 to-blue-50 overflow-hidden flex flex-col">
+          <div className="container mx-auto px-4 py-8 flex-1 overflow-y-auto">
+            <div className="max-w-7xl mx-auto">
               {/* Navigation */}
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center space-x-6">
@@ -947,12 +962,11 @@ export default function TraineePortal({
                       ))}
                     </select>
                   )}
-                  
+
                   <button
                     onClick={() => setActiveView('dashboard')}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                      activeView === 'dashboard' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:text-gray-900'
-                    }`}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${activeView === 'dashboard' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:text-gray-900'
+                      }`}
                   >
                     <BarChart3 className="h-4 w-4" />
                     <span>Dashboard</span>
@@ -966,24 +980,22 @@ export default function TraineePortal({
                   </button>
                   <button
                     onClick={() => setActiveView('progress')}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                      activeView === 'progress' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:text-gray-900'
-                    }`}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${activeView === 'progress' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:text-gray-900'
+                      }`}
                   >
                     <TrendingUp className="h-4 w-4" />
                     <span>Progress</span>
                   </button>
                   <button
                     onClick={() => setActiveView('live-session')}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                      activeView === 'live-session' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:text-gray-900'
-                    }`}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${activeView === 'live-session' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:text-gray-900'
+                      }`}
                   >
                     <Video className="h-4 w-4" />
                     <span>Live Sessions</span>
                   </button>
                 </div>
-                
+
                 <div className="flex items-center space-x-2 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200">
                   <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
                     {trainee.name.charAt(0)}
