@@ -2439,45 +2439,45 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           </div>
         </div>
         {/* Tableau d'affichage des leads */}
-        <div className="overflow-x-auto">
+        <div>
           <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
             <div className="relative">
-              <table className="min-w-full divide-y divide-gray-200">
+              <table className="w-full table-fixed divide-y divide-gray-200">
                 <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm text-center">
                   <tr>
-                    <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
+                    <th scope="col" className="w-[10%] px-2 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 truncate">
                       Nom
                     </th>
-                    <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
+                    <th scope="col" className="w-[10%] px-2 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 truncate">
                       Prénom
                     </th>
-                    <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
+                    <th scope="col" className="w-[22%] px-2 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 truncate">
                       Email
                     </th>
-                    <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
+                    <th scope="col" className="w-[22%] px-2 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 truncate">
                       Adresse
                     </th>
-                    <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
+                    <th scope="col" className="w-[14%] px-2 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 truncate">
                       Ville
                     </th>
-                    <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
+                    <th scope="col" className="w-[10%] px-2 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 truncate">
                       Code Postal
                     </th>
-                    <th scope="col" className="px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50">
-                      MOBILE
+                    <th scope="col" className="w-[12%] px-2 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 truncate">
+                      Mobile
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {error ? (
                     <tr>
-                      <td colSpan={3} className="px-6 py-4 text-center text-sm text-red-500">
+                      <td colSpan={7} className="px-6 py-4 text-center text-sm text-red-500">
                         {error}
                       </td>
                     </tr>
                   ) : isLoadingLeads ? (
                     <tr>
-                      <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex items-center justify-center py-8">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
                           Loading leads...
@@ -2485,28 +2485,27 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                       </td>
                     </tr>
                   ) : filteredLeads.length > 0 ? (
-                    // Always show existing leads from DB
                     filteredLeads.map((lead, index) => (
                       <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 text-center ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-orange-400' : ''}`}>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100">
+                        <td className="px-2 py-4 text-sm text-gray-900 border-r border-gray-100 truncate max-w-0">
                           {lead.Last_Name || '-'}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100">
+                        <td className="px-2 py-4 text-sm text-gray-900 border-r border-gray-100 truncate max-w-0">
                           {lead.First_Name || '-'}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100 italic text-blue-600">
+                        <td className="px-2 py-4 text-sm italic text-blue-600 border-r border-gray-100 truncate max-w-0">
                           {lead.Email_1 || '-'}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-600 border-r border-gray-100">
+                        <td className="px-2 py-4 text-sm text-gray-600 border-r border-gray-100 truncate max-w-0">
                           {lead.Address || '-'}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-600 border-r border-gray-100">
+                        <td className="px-2 py-4 text-sm text-gray-600 border-r border-gray-100 truncate max-w-0">
                           {lead.City || '-'}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-600 border-r border-gray-100">
+                        <td className="px-2 py-4 text-sm text-gray-600 border-r border-gray-100 truncate max-w-0">
                           {lead.Postal_Code || '-'}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm font-semibold text-gray-900">
+                        <td className="px-2 py-4 text-sm font-semibold text-gray-900 truncate max-w-0">
                           {lead.Phone || '-'}
                         </td>
                       </tr>
@@ -2514,32 +2513,32 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                   ) : realtimeLeads.length > 0 ? (
                     realtimeLeads.map((lead, index) => (
                       <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 text-center ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100">
+                        <td className="px-2 py-4 text-sm text-gray-900 border-r border-gray-100 truncate max-w-0">
                           {lead.Last_Name || '-'}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100">
+                        <td className="px-2 py-4 text-sm text-gray-900 border-r border-gray-100 truncate max-w-0">
                           {lead.First_Name || '-'}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100 italic text-blue-600">
+                        <td className="px-2 py-4 text-sm italic text-blue-600 border-r border-gray-100 truncate max-w-0">
                           {lead.Email_1 || '-'}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-600 border-r border-gray-100">
+                        <td className="px-2 py-4 text-sm text-gray-600 border-r border-gray-100 truncate max-w-0">
                           {lead.Address || '-'}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-600 border-r border-gray-100">
+                        <td className="px-2 py-4 text-sm text-gray-600 border-r border-gray-100 truncate max-w-0">
                           {lead.City || '-'}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-600 border-r border-gray-100">
+                        <td className="px-2 py-4 text-sm text-gray-600 border-r border-gray-100 truncate max-w-0">
                           {lead.Postal_Code || '-'}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm font-semibold text-gray-900">
+                        <td className="px-2 py-4 text-sm font-semibold text-gray-900 truncate max-w-0">
                           {lead.Phone || '-'}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-8">
                           <FileText className="h-12 w-12 text-gray-300 mb-2" />
                           <p>No leads found</p>
