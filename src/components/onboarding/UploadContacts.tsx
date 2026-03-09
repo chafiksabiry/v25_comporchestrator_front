@@ -2276,17 +2276,15 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
               <div className="mt-2">
                 {selectedGigId ? (
                   <div className="text-sm text-gray-600">
-                    {parsedLeads.length > 0 && leads.length === 0 ? (
+                    {parsedLeads.length > 0 ? (
                       <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
-                        {parsedLeads.length} leads ready to save
-                      </span>
-                    ) : isSavingLeads && recentlySavedLeads.length > 0 ? (
-                      <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium">
-                        Showing {recentlySavedLeads.length} recently saved leads (saving in progress...)
+                        {isSavingLeads
+                          ? `Saving ${savedLeadsCount}/${parsedLeads.length + savedLeadsCount} contacts...`
+                          : `${parsedLeads.length} leads ready to save`}
                       </span>
                     ) : leads.length > 0 ? (
                       <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium">
-                        Showing {filteredLeads.length} of {leads.length} leads {searchQuery && `(filtered by "${searchQuery}")`}
+                        Showing {filteredLeads.length} of {totalCount} leads {searchQuery && `(filtered by "${searchQuery}")`}
                       </span>
                     ) : (
                       <span className="bg-gray-50 text-gray-600 px-3 py-1 rounded-full text-xs font-medium">
@@ -2384,7 +2382,48 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                         </div>
                       </td>
                     </tr>
-                  ) : (leads.length === 0 && realtimeLeads.length === 0 && !isSavingLeads) ? (
+                  ) : filteredLeads.length > 0 ? (
+                    // Always show existing leads from DB
+                    filteredLeads.map((lead, index) => (
+                      <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 text-center ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-orange-400' : ''}`}>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100">
+                          {lead.Last_Name || '-'}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100">
+                          {lead.First_Name || '-'}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100 italic text-blue-600">
+                          {lead.Email_1 || '-'}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-600 border-r border-gray-100">
+                          {lead.Address || '-'}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm font-semibold text-gray-900">
+                          +{lead.Phone || '-'}
+                        </td>
+                      </tr>
+                    ))
+                  ) : realtimeLeads.length > 0 ? (
+                    realtimeLeads.map((lead, index) => (
+                      <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 text-center ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100">
+                          {lead.Last_Name || '-'}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100">
+                          {lead.First_Name || '-'}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100 italic text-blue-600">
+                          {lead.Email_1 || '-'}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-600 border-r border-gray-100">
+                          {lead.Address || '-'}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm font-semibold text-gray-900">
+                          +{lead.Phone || '-'}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
                     <tr>
                       <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
                         <div className="flex flex-col items-center justify-center py-8">
@@ -2394,39 +2433,6 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                         </div>
                       </td>
                     </tr>
-                  ) : (filteredLeads.length === 0 && realtimeLeads.length === 0 && !isSavingLeads) ? (
-                    <tr>
-                      <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
-                        <div className="flex flex-col items-center justify-center py-8">
-                          <Search className="h-12 w-12 text-gray-300 mb-2" />
-                          <p>No leads match your search</p>
-                          <p className="text-xs text-gray-400 mt-1">Try adjusting your search terms or filters</p>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    // Afficher les leads récemment sauvegardés pendant la sauvegarde, sinon les leads filtrés, sinon les leads importés de Zoho
-                    (isSavingLeads && recentlySavedLeads.length > 0 ? recentlySavedLeads :
-                      filteredLeads.length > 0 ? filteredLeads :
-                        realtimeLeads.length > 0 ? realtimeLeads : []).map((lead, index) => (
-                          <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 text-center ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-orange-400' : ''}`}>
-                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100">
-                              {lead.Last_Name || '-'}
-                            </td>
-                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100">
-                              {lead.First_Name || '-'}
-                            </td>
-                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 border-r border-gray-100 italic text-blue-600">
-                              {lead.Email_1 || '-'}
-                            </td>
-                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-600 border-r border-gray-100">
-                              {lead.Address || '-'}
-                            </td>
-                            <td className="whitespace-nowrap px-3 py-4 text-sm font-semibold text-gray-900">
-                              +{lead.Phone || '-'}
-                            </td>
-                          </tr>
-                        ))
                   )}
                 </tbody>
               </table>
