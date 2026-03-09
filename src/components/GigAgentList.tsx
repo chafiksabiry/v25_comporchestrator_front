@@ -116,8 +116,8 @@ const GigAgentList: React.FC<GigAgentListProps> = ({ gigId, agentId }) => {
         <div className="space-y-6">
             {/* Modal pour les détails */}
             {selectedGigAgent && (
-                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-                    <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="w-11/12 max-w-6xl p-5 border shadow-lg rounded-md bg-white">
                         <GigAgentDetails
                             gigAgent={selectedGigAgent}
                             onClose={() => setSelectedGigAgent(null)}

@@ -533,30 +533,28 @@ const KYCVerification = () => {
 
           {/* Document Preview Modal */}
           {showPreview && selectedDocument && (
-            <div className="fixed inset-0 z-50 overflow-y-auto">
-              <div className="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
-                <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-                  <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+              </div>
+              <div className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all w-full max-w-lg p-6">
+                <div className="absolute right-0 top-0 pr-4 pt-4">
+                  <button
+                    onClick={() => setShowPreview(false)}
+                    className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
                 </div>
-                <div className="inline-block transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6 sm:align-middle">
-                  <div className="absolute right-0 top-0 pr-4 pt-4">
-                    <button
-                      onClick={() => setShowPreview(false)}
-                      className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none"
-                    >
-                      <X className="h-6 w-6" />
-                    </button>
-                  </div>
-                  <div className="sm:flex sm:items-start">
-                    <div className="mt-3 w-full text-center sm:ml-4 sm:mt-0 sm:text-left">
-                      <h3 className="text-lg font-medium leading-6 text-gray-900">
-                        {selectedDocument}
-                      </h3>
-                      <div className="mt-4">
-                        <div className="aspect-w-16 aspect-h-9 overflow-hidden rounded-lg bg-gray-100">
-                          <div className="flex h-64 items-center justify-center">
-                            <FileText className="h-16 w-16 text-gray-400" />
-                          </div>
+                <div className="sm:flex sm:items-start">
+                  <div className="mt-3 w-full text-center sm:ml-4 sm:mt-0 sm:text-left">
+                    <h3 className="text-lg font-medium leading-6 text-gray-900">
+                      {selectedDocument}
+                    </h3>
+                    <div className="mt-4">
+                      <div className="aspect-w-16 aspect-h-9 overflow-hidden rounded-lg bg-gray-100">
+                        <div className="flex h-64 items-center justify-center">
+                          <FileText className="h-16 w-16 text-gray-400" />
                         </div>
                       </div>
                     </div>
@@ -586,7 +584,8 @@ const KYCVerification = () => {
             </div>
           </div>
         </div>
-      )}
+      )
+      }
 
       {/* Verification Status */}
       <div className="rounded-lg bg-white p-6 shadow">
@@ -656,7 +655,7 @@ const KYCVerification = () => {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 
