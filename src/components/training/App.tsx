@@ -53,7 +53,19 @@ import { TrainingService } from './infrastructure/services/TrainingService';
 import Cookies from 'js-cookie';
 import { extractObjectId } from './lib/mongoUtils';
 
-export function AppContent({ initialJourneyId, isEmbedded = false, startWithJourneyBuilder = false, startWithManualTraining = false }: { initialJourneyId?: string, isEmbedded?: boolean, startWithJourneyBuilder?: boolean, startWithManualTraining?: boolean } = {}) {
+export function AppContent({
+  initialJourneyId,
+  isEmbedded = false,
+  startWithJourneyBuilder = false,
+  startWithManualTraining = false,
+  onJourneyLaunch
+}: {
+  initialJourneyId?: string,
+  isEmbedded?: boolean,
+  startWithJourneyBuilder?: boolean,
+  startWithManualTraining?: boolean,
+  onJourneyLaunch?: () => void
+} = {}) {
   // Get journey ID from route params (inside Router context)
   const { idjourneytraining } = useParams<{ idjourneytraining?: string }>();
   const navigate = useNavigate();
@@ -569,10 +581,16 @@ export function AppContent({ initialJourneyId, isEmbedded = false, startWithJour
   };
 
   const handleJourneyComplete = (journey: TrainingJourney, modules: TrainingModule[], enrolledReps: Rep[]) => {
-    // Removed verbose logging
     // Hide welcome screen and journey builder
     setShowWelcome(false);
     setShowJourneyBuilder(false);
+
+    // If embedded and provided with a launch callback, use it instead of showing the success page
+    if (onJourneyLaunch) {
+      onJourneyLaunch();
+      return;
+    }
+
     // Set journey data and show success page - ensure arrays are never undefined
     setLaunchedJourney({
       journey: {
