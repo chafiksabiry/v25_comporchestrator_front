@@ -20,16 +20,16 @@ export default function GigSelector({ companyId, industryFilter, onGigSelect, se
       try {
         setLoading(true);
         setError(null);
-        
+
         let response;
-        
+
         // If industry filter is provided, use it
         if (industryFilter) {
           response = await OnboardingService.fetchGigsByIndustry(industryFilter, companyId);
         } else {
           response = await OnboardingService.fetchGigsByCompany(companyId);
         }
-        
+
         if (!response.data || response.data.length === 0) {
           setGigs([]);
           if (industryFilter) {
@@ -100,103 +100,68 @@ export default function GigSelector({ companyId, industryFilter, onGigSelect, se
         <p className="text-gray-600">Choose the gig position you want to train for</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {gigs.map((gig) => (
-          <div
-            key={gig._id}
-            onClick={() => onGigSelect(gig)}
-            className={`border-2 rounded-xl p-5 cursor-pointer transition-all hover:shadow-lg ${
-              selectedGigId === gig._id
-                ? 'border-blue-500 bg-blue-50 shadow-md'
-                : 'border-gray-200 hover:border-blue-300'
-            }`}
-          >
-            {/* Header */}
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <h4 className="text-lg font-semibold text-gray-900 mb-1">{gig.title}</h4>
+      <div className="max-w-xl w-full">
+        <select
+          value={selectedGigId || ''}
+          onChange={(e) => {
+            const selectedGig = gigs.find(g => g._id === e.target.value);
+            if (selectedGig) onGigSelect(selectedGig);
+          }}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg bg-white"
+        >
+          <option value="" disabled>Select a position...</option>
+          {gigs.map((gig) => (
+            <option key={gig._id} value={gig._id}>
+              {gig.title} {gig.destination_zone?.name?.common ? ` - ${gig.destination_zone.name.common}` : ''}
+            </option>
+          ))}
+        </select>
+
+        {/* Show selected details if any */}
+        {selectedGigId && gigs.find(g => g._id === selectedGigId) && (() => {
+          const gig = gigs.find(g => g._id === selectedGigId)!;
+          return (
+            <div className="mt-6 border border-blue-200 bg-blue-50 rounded-lg p-4">
+              <div className="flex justify-between items-start mb-2">
+                <h4 className="font-medium text-blue-900">{gig.title}</h4>
                 <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full border ${getStatusBadgeColor(gig.status)}`}>
                   {gig.status.replace('_', ' ').toUpperCase()}
                 </span>
               </div>
-              {selectedGigId === gig._id && (
-                <CheckCircle className="h-6 w-6 text-blue-600 flex-shrink-0 ml-2" />
+
+              {gig.description && (
+                <p className="text-sm text-blue-800 line-clamp-2 mt-1 mb-3">{gig.description}</p>
               )}
+
+              <div className="grid grid-cols-2 gap-2 text-xs text-blue-800">
+                {gig.category && (
+                  <div className="flex items-center">
+                    <Briefcase className="h-3 w-3 mr-1 opacity-70" />
+                    <span>{gig.category}</span>
+                  </div>
+                )}
+                {gig.seniority?.level && (
+                  <div className="flex items-center">
+                    <Users className="h-3 w-3 mr-1 opacity-70" />
+                    <span>{gig.seniority.level}</span>
+                  </div>
+                )}
+                {gig.availability?.minimumHours?.weekly && (
+                  <div className="flex items-center">
+                    <Clock className="h-3 w-3 mr-1 opacity-70" />
+                    <span>{gig.availability.minimumHours.weekly}h/week</span>
+                  </div>
+                )}
+                {gig.destination_zone?.name?.common && (
+                  <div className="flex items-center">
+                    <MapPin className="h-3 w-3 mr-1 opacity-70" />
+                    <span>{gig.destination_zone.name.common}</span>
+                  </div>
+                )}
+              </div>
             </div>
-
-            {/* Description */}
-            <p className="text-sm text-gray-600 mb-4 line-clamp-2">{gig.description}</p>
-
-            {/* Details Grid */}
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center text-gray-700">
-                <Briefcase className="h-4 w-4 mr-2 text-gray-400" />
-                <span className="font-medium mr-2">Category:</span>
-                <span>{gig.category}</span>
-              </div>
-
-              <div className="flex items-center text-gray-700">
-                <Users className="h-4 w-4 mr-2 text-gray-400" />
-                <span className="font-medium mr-2">Level:</span>
-                <span>{gig.seniority.level} ({gig.seniority.yearsExperience} years)</span>
-              </div>
-
-              <div className="flex items-center text-gray-700">
-                <Clock className="h-4 w-4 mr-2 text-gray-400" />
-                <span className="font-medium mr-2">Hours:</span>
-                <span>{gig.availability.minimumHours.weekly}h/week</span>
-              </div>
-
-              {gig.commission && (
-                <div className="flex items-center text-gray-700">
-                  <DollarSign className="h-4 w-4 mr-2 text-gray-400" />
-                  <span className="font-medium mr-2">Compensation:</span>
-                  <span>
-                    {gig.commission.baseAmount} {gig.commission.currency.code} {gig.commission.base}
-                  </span>
-                </div>
-              )}
-
-              {gig.destination_zone && (
-                <div className="flex items-center text-gray-700">
-                  <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-                  <span className="font-medium mr-2">Location:</span>
-                  <span>{gig.destination_zone.name?.common}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Industries */}
-            {gig.industries && gig.industries.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-gray-200">
-                <div className="flex flex-wrap gap-2">
-                  {gig.industries.slice(0, 2).map((industry) => (
-                    <span
-                      key={industry._id}
-                      className="inline-block px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded-full"
-                    >
-                      {industry.name}
-                    </span>
-                  ))}
-                  {gig.industries.length > 2 && (
-                    <span className="inline-block px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
-                      +{gig.industries.length - 2} more
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Languages */}
-            {gig.skills.languages && gig.skills.languages.length > 0 && (
-              <div className="mt-3">
-                <span className="text-xs text-gray-600">
-                  Languages: {gig.skills.languages.map((lang: any) => lang.language.name).join(', ')}
-                </span>
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })()}
       </div>
     </div>
   );
