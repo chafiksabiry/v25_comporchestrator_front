@@ -11,9 +11,10 @@ import { DraftService } from '../../infrastructure/services/DraftService';
 
 interface JourneyBuilderProps {
   onComplete: (journey: TrainingJourney, modules: TrainingModule[], enrolledReps: Rep[]) => void;
+  forceNew?: boolean;
 }
 
-export default function JourneyBuilder({ onComplete }: JourneyBuilderProps) {
+export default function JourneyBuilder({ onComplete, forceNew = false }: JourneyBuilderProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [company, setCompany] = useState<Company | null>(null);
   const [journey, setJourney] = useState<TrainingJourney | null>(null);
@@ -29,12 +30,17 @@ export default function JourneyBuilder({ onComplete }: JourneyBuilderProps) {
   // Restaurer le brouillon au chargement
   useEffect(() => {
     const restoreDraft = () => {
+      if (forceNew) {
+        DraftService.clearDraft();
+        return;
+      }
+
       if (DraftService.hasDraft()) {
         const draft = DraftService.getDraft();
         // Restoring draft silently
-        
+
         setIsRestoringDraft(true);
-        
+
         if (draft.company) setCompany(draft.company);
         if (draft.journey) setJourney(draft.journey);
         if (draft.methodology) setMethodology(draft.methodology);
@@ -44,7 +50,7 @@ export default function JourneyBuilder({ onComplete }: JourneyBuilderProps) {
         if (draft.currentStep !== undefined && draft.currentStep > 0) {
           setCurrentStep(draft.currentStep);
         }
-        
+
         setIsRestoringDraft(false);
       }
     };
@@ -61,11 +67,11 @@ export default function JourneyBuilder({ onComplete }: JourneyBuilderProps) {
       console.log('[JourneyBuilder] Skipping auto-save - in RehearsalMode. Quizzes will be saved when journey is launched.');
       return;
     }
-    
+
     if (!isRestoringDraft && (company || journey || uploads.length > 0 || modules.length > 0)) {
       // IMPORTANT: Check if draftId exists before saving to avoid creating duplicate journeys
       const currentDraft = DraftService.getDraft();
-      
+
       // Only auto-save if we have a draftId (journey already created)
       // Initial creation is handled by saveDraftImmediately in handleSetupComplete, handleUploadComplete, handleCurriculumComplete
       if (currentDraft.draftId) {
@@ -88,29 +94,29 @@ export default function JourneyBuilder({ onComplete }: JourneyBuilderProps) {
   }, [company, journey, methodology, uploads, modules, currentStep, selectedGigId, isRestoringDraft]);
 
   const steps = [
-    { 
-      title: 'Setup & Vision', 
+    {
+      title: 'Setup & Vision',
       component: 'setup',
       icon: Sparkles,
       description: 'Define your company and training goals',
       color: 'from-blue-500 to-indigo-500'
     },
-    { 
-      title: 'Upload & Transform', 
+    {
+      title: 'Upload & Transform',
       component: 'upload',
       icon: Upload,
       description: 'Upload content and let AI analyze it',
       color: 'from-indigo-500 to-purple-500'
     },
-    { 
-      title: 'Curriculum Design', 
+    {
+      title: 'Curriculum Design',
       component: 'design',
       icon: Wand2,
       description: 'AI creates multimedia training modules',
       color: 'from-purple-500 to-pink-500'
     },
-    { 
-      title: 'Test & Launch', 
+    {
+      title: 'Test & Launch',
       component: 'rehearsal',
       icon: Rocket,
       description: 'Rehearse, approve, and deploy to your team',
@@ -128,7 +134,7 @@ export default function JourneyBuilder({ onComplete }: JourneyBuilderProps) {
       setSelectedGigId(gigId);
     }
     setCurrentStep(1);
-    
+
     // Sauvegarder immédiatement après le setup
     // IMPORTANT: Don't pass modules yet (empty array) to avoid creating journey without modules
     await DraftService.saveDraftImmediately({
@@ -144,7 +150,7 @@ export default function JourneyBuilder({ onComplete }: JourneyBuilderProps) {
   const handleUploadComplete = async (newUploads: ContentUpload[]) => {
     setUploads(newUploads);
     setCurrentStep(2); // Go directly to Curriculum Design
-    
+
     // Sauvegarder immédiatement après l'upload
     await DraftService.saveDraftImmediately({
       uploads: newUploads,
@@ -160,7 +166,7 @@ export default function JourneyBuilder({ onComplete }: JourneyBuilderProps) {
     }
     setModules(finalModules);
     setCurrentStep(3); // Go to Test & Launch
-    
+
     // Sauvegarder immédiatement après la création du curriculum
     await DraftService.saveDraftImmediately({
       modules: finalModules,
@@ -171,15 +177,15 @@ export default function JourneyBuilder({ onComplete }: JourneyBuilderProps) {
   const enhanceModulesWithMethodology = (modules: TrainingModule[], methodology: TrainingMethodology): TrainingModule[] => {
     return modules.map((module, index) => {
       const methodologyComponent = methodology.components[index % methodology.components.length];
-      
+
       return {
         ...module,
         // Utiliser uniquement le titre du module basé sur l'analyse des documents, sans préfixe de méthodologie
         title: module.title,
         description: `${module.description} Enhanced with ${methodology.name} methodology.`,
         duration: module.duration + methodologyComponent.estimatedDuration,
-        difficulty: methodologyComponent.competencyLevel === 'expert' ? 'advanced' : 
-                   methodologyComponent.competencyLevel === 'proficient' ? 'intermediate' : 'beginner',
+        difficulty: methodologyComponent.competencyLevel === 'expert' ? 'advanced' :
+          methodologyComponent.competencyLevel === 'proficient' ? 'intermediate' : 'beginner',
         prerequisites: [...module.prerequisites, ...methodologyComponent.prerequisites],
         learningObjectives: [
           ...module.learningObjectives,
@@ -283,7 +289,7 @@ export default function JourneyBuilder({ onComplete }: JourneyBuilderProps) {
                   </p>
                 </div>
               </div>
-              
+
               <div className="text-right">
                 <div className="text-sm text-gray-500 mb-1">Overall Progress</div>
                 <div className="text-2xl font-bold text-gray-900">
@@ -303,13 +309,12 @@ export default function JourneyBuilder({ onComplete }: JourneyBuilderProps) {
 
                   return (
                     <div key={index} className="flex flex-col items-center relative z-10">
-                      <div className={`flex items-center justify-center w-16 h-16 rounded-2xl border-4 transition-all duration-500 ${
-                        isCompleted 
+                      <div className={`flex items-center justify-center w-16 h-16 rounded-2xl border-4 transition-all duration-500 ${isCompleted
                           ? 'bg-gradient-to-r from-green-500 to-emerald-500 border-green-500 text-white shadow-lg scale-110'
                           : isActive
-                          ? `bg-gradient-to-r ${step.color} border-transparent text-white shadow-xl scale-125`
-                          : 'bg-white border-gray-300 text-gray-400'
-                      }`}>
+                            ? `bg-gradient-to-r ${step.color} border-transparent text-white shadow-xl scale-125`
+                            : 'bg-white border-gray-300 text-gray-400'
+                        }`}>
                         {isCompleted ? (
                           <CheckCircle className="h-8 w-8" />
                         ) : isActive ? (
@@ -318,13 +323,12 @@ export default function JourneyBuilder({ onComplete }: JourneyBuilderProps) {
                           <Icon className="h-8 w-8" />
                         )}
                       </div>
-                      
+
                       <div className="mt-4 text-center max-w-32">
-                        <div className={`text-sm font-bold transition-colors ${
-                          isActive ? 'text-purple-600' : 
-                          isCompleted ? 'text-green-600' : 
-                          'text-gray-400'
-                        }`}>
+                        <div className={`text-sm font-bold transition-colors ${isActive ? 'text-purple-600' :
+                            isCompleted ? 'text-green-600' :
+                              'text-gray-400'
+                          }`}>
                           {step.title}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
@@ -335,10 +339,10 @@ export default function JourneyBuilder({ onComplete }: JourneyBuilderProps) {
                   );
                 })}
               </div>
-              
+
               {/* Progress Line */}
               <div className="absolute top-8 left-8 right-8 h-1 bg-gray-200 rounded-full -z-0">
-                <div 
+                <div
                   className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-1000 ease-out"
                   style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
                 />
