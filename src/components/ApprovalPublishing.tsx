@@ -14,6 +14,7 @@ import {
   CheckSquare,
   Square,
   ArrowLeft,
+  ArrowLeft as ArrowLeftIcon,
   DollarSign,
   Plus,
   Building,
@@ -116,8 +117,11 @@ interface LanguagesResponse {
   pagination: any;
   message: string;
 }
+interface ApprovalPublishingProps {
+  onBackToOnboarding?: () => void;
+}
 
-const ApprovalPublishing = () => {
+const ApprovalPublishing = ({ onBackToOnboarding }: ApprovalPublishingProps) => {
   const [expandedGig, setExpandedGig] = useState<string | null>(null);
   const [selectedGigs, setSelectedGigs] = useState<string[]>([]);
   const [filter, setFilter] = useState('all');
@@ -2382,6 +2386,15 @@ const ApprovalPublishing = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
+          {onBackToOnboarding && (
+            <button
+              onClick={onBackToOnboarding}
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
+            >
+              <ArrowLeftIcon size={16} />
+              Back to Onboarding
+            </button>
+          )}
           <h1 className="text-2xl font-bold text-gray-900">Approval & Publishing</h1>
         </div>
         <div className="flex space-x-2">

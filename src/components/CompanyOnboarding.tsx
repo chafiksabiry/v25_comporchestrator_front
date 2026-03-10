@@ -1489,6 +1489,9 @@ const CompanyOnboarding = () => {
     if (activeStep === 9) {
       const RepOnboardingComponent = ActiveStepComponent as React.FC<any>;
       activeComponent = <RepOnboardingComponent />;
+    } else if (activeStep === 12) {
+      const ApprovalPublishingComponent = ActiveStepComponent as React.FC<any>;
+      activeComponent = <ApprovalPublishingComponent onBackToOnboarding={handleBackToOnboarding} />;
     } else {
       activeComponent = <ActiveStepComponent />;
     }
