@@ -369,7 +369,20 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       <div className="bg-white rounded-xl shadow-lg mt-4 w-full">
         <div className="w-full">
           <BrowserRouter>
-            <AppContent initialJourneyId={showTraining.journeyId} isEmbedded={true} startWithJourneyBuilder={showTraining.newJourney} />
+            <AppContent
+              initialJourneyId={showTraining.journeyId}
+              isEmbedded={true}
+              startWithJourneyBuilder={showTraining.newJourney}
+              onJourneyLaunch={() => {
+                setShowTraining({ isOpen: false });
+                setTimeout(() => {
+                  fetchCompanyTrainings();
+                  if (typeof updateOnboardingProgress === 'function') {
+                    updateOnboardingProgress();
+                  }
+                }, 100);
+              }}
+            />
           </BrowserRouter>
         </div>
       </div>
