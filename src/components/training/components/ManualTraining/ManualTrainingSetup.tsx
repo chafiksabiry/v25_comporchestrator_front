@@ -257,14 +257,14 @@ export const ManualTrainingSetup: React.FC<ManualTrainingSetupProps> = ({ onComp
                 <p className="text-gray-600">No gigs available for this company.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto pr-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {gigs.map((gig) => (
                   <div
                     key={gig._id}
                     onClick={() => handleGigSelect(gig)}
                     className={`border-2 rounded-xl p-5 cursor-pointer transition-all hover:shadow-lg ${setupData.gig?._id === gig._id
-                        ? 'border-green-500 bg-green-50 shadow-md'
-                        : 'border-gray-200 hover:border-green-300'
+                      ? 'border-green-500 bg-green-50 shadow-md'
+                      : 'border-gray-200 hover:border-green-300'
                       }`}
                   >
                     {/* Header */}
@@ -386,8 +386,8 @@ export const ManualTrainingSetup: React.FC<ManualTrainingSetupProps> = ({ onComp
                         type="button"
                         onClick={() => setSetupData({ ...setupData, estimatedDuration: suggestion.value })}
                         className={`px-3 py-2 text-sm rounded-lg border-2 transition-all ${setupData.estimatedDuration === suggestion.value
-                            ? 'border-green-500 bg-green-50 text-green-700 font-medium'
-                            : 'border-gray-200 bg-white text-gray-600 hover:border-green-300 hover:bg-green-50'
+                          ? 'border-green-500 bg-green-50 text-green-700 font-medium'
+                          : 'border-gray-200 bg-white text-gray-600 hover:border-green-300 hover:bg-green-50'
                           }`}
                       >
                         {suggestion.label}
@@ -406,8 +406,8 @@ export const ManualTrainingSetup: React.FC<ManualTrainingSetupProps> = ({ onComp
   };
 
   return (
-    <div className="h-full w-full flex items-start justify-center p-4">
-      <div className="max-w-3xl w-full">
+    <div className="w-full">
+      <div className="max-w-3xl w-full mx-auto">
         {/* Progress Steps */}
         <div className="flex items-center justify-between mb-8">
           {steps.map((step, index) => (
@@ -415,8 +415,8 @@ export const ManualTrainingSetup: React.FC<ManualTrainingSetupProps> = ({ onComp
               <div className="flex flex-col items-center">
                 <div
                   className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${currentStep >= step.id
-                      ? 'bg-green-500 text-white'
-                      : 'bg-gray-200 text-gray-500'
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-200 text-gray-500'
                     }`}
                 >
                   {currentStep > step.id ? (
@@ -454,8 +454,8 @@ export const ManualTrainingSetup: React.FC<ManualTrainingSetupProps> = ({ onComp
             onClick={handleNext}
             disabled={!canProceed()}
             className={`flex items-center space-x-2 px-8 py-3 rounded-xl font-semibold transition-all ${canProceed()
-                ? 'bg-gradient-to-r from-green-500 to-teal-600 text-white hover:from-green-600 hover:to-teal-700 shadow-lg hover:shadow-xl'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              ? 'bg-gradient-to-r from-green-500 to-teal-600 text-white hover:from-green-600 hover:to-teal-700 shadow-lg hover:shadow-xl'
+              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
           >
             <span>{currentStep === 3 ? 'Start Building' : 'Next'}</span>
