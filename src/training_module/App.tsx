@@ -53,7 +53,7 @@ import { TrainingService } from './infrastructure/services/TrainingService';
 import Cookies from 'js-cookie';
 import { extractObjectId } from './lib/mongoUtils';
 
-export function AppContent({ initialJourneyId }: { initialJourneyId?: string } = {}) {
+export function AppContent({ initialJourneyId, isEmbedded = false }: { initialJourneyId?: string, isEmbedded?: boolean } = {}) {
   // Get journey ID from route params (inside Router context)
   const { idjourneytraining } = useParams<{ idjourneytraining?: string }>();
   const navigate = useNavigate();
@@ -84,7 +84,7 @@ export function AppContent({ initialJourneyId }: { initialJourneyId?: string } =
   });
   // const { user, signOut } = useAuth();
   const user = { name: 'User', email: 'user@example.com' }; // Mock user - no auth required
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(isEmbedded ? 'training' : 'dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userRole, setUserRole] = useState<'trainee' | 'trainer' | 'admin'>('trainee');
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
@@ -95,8 +95,8 @@ export function AppContent({ initialJourneyId }: { initialJourneyId?: string } =
   const [selectedCourseStream, setSelectedCourseStream] = useState<string | null>(null);
   const [showParticipantView, setShowParticipantView] = useState(false);
   const [showJourneyBuilder, setShowJourneyBuilder] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(true);
-  const [hasCompletedSetup, setHasCompletedSetup] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(!isEmbedded);
+  const [hasCompletedSetup, setHasCompletedSetup] = useState(isEmbedded);
   const [launchedJourney, setLaunchedJourney] = useState<{
     journey: TrainingJourney;
     modules: TrainingModule[];
@@ -746,7 +746,7 @@ export function AppContent({ initialJourneyId }: { initialJourneyId?: string } =
   }, [hasCompletedSetup, showWelcome, showJourneyBuilder, showManualTraining, showJourneySuccess]);
 
   // Show welcome screen for first-time users (but not if showing success page or if user is rep)
-  if (!initialJourneyId && !hasCompletedSetup && showWelcome && !showJourneyBuilder && !showManualTraining && !showJourneySuccess && userType !== 'rep' && !checkingUserType) {
+  if (!isEmbedded && !initialJourneyId && !hasCompletedSetup && showWelcome && !showJourneyBuilder && !showManualTraining && !showJourneySuccess && userType !== 'rep' && !checkingUserType) {
     console.log('[App] Rendering welcome screen');
     return (
       <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 overflow-y-auto">
@@ -2070,17 +2070,19 @@ export function AppContent({ initialJourneyId }: { initialJourneyId?: string } =
 
   console.log('[App] Rendering main app layout, activeTab:', activeTab, 'userType:', userType);
   return (
-    <div className="h-full bg-gray-50 relative min-h-[500px]">
+    <div className={`h-full bg-gray-50 relative min-h-[500px] ${isEmbedded ? '' : ''}`}>
       {/* Sidebar - Always rendered first */}
-      <Sidebar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        isOpen={sidebarOpen}
-        userType={userType}
-      />
+      {!isEmbedded && (
+        <Sidebar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          isOpen={sidebarOpen}
+          userType={userType}
+        />
+      )}
 
       {/* Overlay for mobile */}
-      {sidebarOpen && (
+      {!isEmbedded && sidebarOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
           onClick={() => setSidebarOpen(false)}
@@ -2088,65 +2090,75 @@ export function AppContent({ initialJourneyId }: { initialJourneyId?: string } =
       )}
 
       {/* Main content - Always has margin on md+ screens */}
-      <div className="flex flex-col ml-0 md:ml-64 transition-all duration-300 min-h-screen">
+      <div className={`flex flex-col ml-0 ${!isEmbedded ? 'md:ml-64' : ''} transition-all duration-300 min-h-screen`}>
         {/* Fixed Top Bar */}
         <div className="bg-white border-b border-gray-200 flex-shrink-0 z-10">
           <div className="flex items-center justify-between px-6 py-2">
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">View as:</span>
-              <div className="flex items-center space-x-2">
-                {(['trainee', 'trainer', 'admin'] as const).map((role) => (
-                  <button
-                    key={role}
-                    onClick={() => handleRoleSwitch(role)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${userRole === role
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                  >
-                    {role ? role.charAt(0).toUpperCase() + role.slice(1) : ''}
-                  </button>
-                ))}
-              </div>
+              {!isEmbedded && (
+                <>
+                  <span className="text-sm text-gray-600">View as:</span>
+                  <div className="flex items-center space-x-2">
+                    {(['trainee', 'trainer', 'admin'] as const).map((role) => (
+                      <button
+                        key={role}
+                        onClick={() => handleRoleSwitch(role)}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${userRole === role
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                      >
+                        {role ? role.charAt(0).toUpperCase() + role.slice(1) : ''}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
-            <button
-              onClick={() => setShowAITutor(!showAITutor)}
-              className="flex items-center space-x-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-            >
-              <User className="h-4 w-4" />
-              <span>AI Tutor</span>
-            </button>
-            <button
-              onClick={() => {
-                if (userType === 'rep') {
-                  alert('You do not have permission to create training journeys. Please contact your administrator.');
-                  return;
-                }
-                setShowJourneyBuilder(true);
-              }}
-              disabled={userType === 'rep'}
-              className={`flex items-center space-x-2 px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm ${userType === 'rep' ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <Sparkles className="h-4 w-4" />
-              <span>New Journey (IA)</span>
-            </button>
-            <button
-              onClick={() => setShowManualTraining(true)}
-              className="flex items-center space-x-2 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-            >
-              <Upload className="h-4 w-4" />
-              <span>Manual Training</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              {!isEmbedded && (
+                <button
+                  onClick={() => setShowAITutor(!showAITutor)}
+                  className="flex items-center space-x-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                >
+                  <User className="h-4 w-4" />
+                  <span>AI Tutor</span>
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  if (userType === 'rep') {
+                    alert('You do not have permission to create training journeys. Please contact your administrator.');
+                    return;
+                  }
+                  setShowJourneyBuilder(true);
+                }}
+                disabled={userType === 'rep'}
+                className={`flex items-center space-x-2 px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm ${userType === 'rep' ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>New Journey (IA)</span>
+              </button>
+              <button
+                onClick={() => setShowManualTraining(true)}
+                className="flex items-center space-x-2 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+              >
+                <Upload className="h-4 w-4" />
+                <span>Manual Training</span>
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Fixed Header */}
-        <div className="flex-shrink-0 z-10">
-          <Header
-            repName={getCurrentUserName()}
-            onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
-          />
-        </div>
+        {!isEmbedded && (
+          <div className="flex-shrink-0 z-10">
+            <Header
+              repName={getCurrentUserName()}
+              onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+            />
+          </div>
+        )}
 
         <main className={`flex-1 flex gap-6 ${selectedModule ? 'p-6 pb-0' : 'p-6'}`} style={{ display: 'flex', flexDirection: 'row', minHeight: 0, overflow: 'visible' }}>
           <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
