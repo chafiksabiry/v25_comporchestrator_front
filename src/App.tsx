@@ -141,7 +141,7 @@ function App() {
       case 'matching':
         return <Matching />;
       case 'approval-publishing':
-        return <ApprovalPublishing />;
+        return <ApprovalPublishing onBackToOnboarding={() => setActiveTab('company-onboarding')} />;
       case 'optimization':
         return <Optimization />;
       case 'knowledge-base':
