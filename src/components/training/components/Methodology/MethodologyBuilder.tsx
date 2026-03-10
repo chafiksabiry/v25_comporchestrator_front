@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { 
-  BookOpen, 
-  Shield, 
-  Building2, 
-  Users, 
-  Zap, 
-  Award, 
-  CheckCircle, 
-  Clock, 
+import {
+  BookOpen,
+  Shield,
+  Building2,
+  Users,
+  Zap,
+  Award,
+  CheckCircle,
+  Clock,
   Target,
   Brain,
   BarChart3,
@@ -33,8 +33,8 @@ export default function MethodologyBuilder({ onApplyMethodology, selectedIndustr
   const [activeTab, setActiveTab] = useState('overview');
 
   const toggleComponent = (componentId: string) => {
-    setExpandedComponents(prev => 
-      prev.includes(componentId) 
+    setExpandedComponents(prev =>
+      prev.includes(componentId)
         ? prev.filter(id => id !== componentId)
         : [...prev, componentId]
     );
@@ -115,7 +115,7 @@ export default function MethodologyBuilder({ onApplyMethodology, selectedIndustr
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl p-8">
         <h2 className="text-3xl font-bold mb-4">{selectedMethodology.name}</h2>
         <p className="text-blue-100 text-lg mb-6">{selectedMethodology.description}</p>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="text-center">
             <div className="text-3xl font-bold mb-1">{selectedMethodology.components.length}</div>
@@ -154,7 +154,7 @@ export default function MethodologyBuilder({ onApplyMethodology, selectedIndustr
               )}
             </div>
             <p className="text-gray-700 text-sm mb-4">{component.description}</p>
-            
+
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-600">Duration:</span>
@@ -175,7 +175,7 @@ export default function MethodologyBuilder({ onApplyMethodology, selectedIndustr
                 </span>
               </div>
             </div>
-            
+
             {component.regionalVariations && component.regionalVariations.length > 0 && (
               <div className="mt-3 pt-3 border-t border-gray-200">
                 <div className="text-xs text-gray-600 mb-1">Regional Variations:</div>
@@ -195,7 +195,7 @@ export default function MethodologyBuilder({ onApplyMethodology, selectedIndustr
       {/* Learning Framework Preview */}
       <div className="bg-white rounded-2xl border border-gray-200 p-8">
         <h3 className="text-2xl font-semibold text-gray-900 mb-6">Learning Framework</h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
             <h4 className="font-semibold text-gray-900 mb-4">Delivery Methods</h4>
@@ -216,20 +216,19 @@ export default function MethodologyBuilder({ onApplyMethodology, selectedIndustr
               ))}
             </div>
           </div>
-          
+
           <div>
             <h4 className="font-semibold text-gray-900 mb-4">Learning Objectives (Bloom's Taxonomy)</h4>
             <div className="space-y-2">
               {selectedMethodology.learningFramework.learningObjectives.map((objective, index) => (
                 <div key={index} className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
-                  <div className={`w-3 h-3 rounded-full ${
-                    objective.level === 'create' ? 'bg-purple-500' :
-                    objective.level === 'evaluate' ? 'bg-red-500' :
-                    objective.level === 'analyze' ? 'bg-orange-500' :
-                    objective.level === 'apply' ? 'bg-yellow-500' :
-                    objective.level === 'understand' ? 'bg-green-500' :
-                    'bg-blue-500'
-                  }`} />
+                  <div className={`w-3 h-3 rounded-full ${objective.level === 'create' ? 'bg-purple-500' :
+                      objective.level === 'evaluate' ? 'bg-red-500' :
+                        objective.level === 'analyze' ? 'bg-orange-500' :
+                          objective.level === 'apply' ? 'bg-yellow-500' :
+                            objective.level === 'understand' ? 'bg-green-500' :
+                              'bg-blue-500'
+                    }`} />
                   <span className="text-sm text-gray-700 capitalize">{objective.level}</span>
                 </div>
               ))}
@@ -252,7 +251,7 @@ export default function MethodologyBuilder({ onApplyMethodology, selectedIndustr
       <div className="space-y-4">
         {selectedMethodology.components.map((component) => (
           <div key={component.id} className={`bg-gradient-to-r ${getCategoryColor(component.category)} border-2 rounded-xl overflow-hidden`}>
-            <div 
+            <div
               className="p-6 cursor-pointer"
               onClick={() => toggleComponent(component.id)}
             >
@@ -264,7 +263,7 @@ export default function MethodologyBuilder({ onApplyMethodology, selectedIndustr
                     <p className="text-gray-700">{component.description}</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-4">
                   <div className="text-right">
                     <div className="text-2xl font-bold text-gray-900">{component.weight}%</div>
@@ -352,7 +351,7 @@ export default function MethodologyBuilder({ onApplyMethodology, selectedIndustr
     <div className="space-y-8">
       <div className="bg-white rounded-2xl border border-gray-200 p-8">
         <h3 className="text-2xl font-semibold text-gray-900 mb-6">Learning Framework: {selectedMethodology.learningFramework.approach}</h3>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div>
             <h4 className="text-lg font-semibold text-gray-900 mb-4">Delivery Method Distribution</h4>
@@ -416,14 +415,13 @@ export default function MethodologyBuilder({ onApplyMethodology, selectedIndustr
             <div key={index} className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-start justify-between mb-2">
                 <h5 className="font-medium text-gray-900 capitalize">{objective.level}</h5>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  objective.level === 'create' ? 'bg-purple-100 text-purple-700' :
-                  objective.level === 'evaluate' ? 'bg-red-100 text-red-700' :
-                  objective.level === 'analyze' ? 'bg-orange-100 text-orange-700' :
-                  objective.level === 'apply' ? 'bg-yellow-100 text-yellow-700' :
-                  objective.level === 'understand' ? 'bg-green-100 text-green-700' :
-                  'bg-blue-100 text-blue-700'
-                }`}>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${objective.level === 'create' ? 'bg-purple-100 text-purple-700' :
+                    objective.level === 'evaluate' ? 'bg-red-100 text-red-700' :
+                      objective.level === 'analyze' ? 'bg-orange-100 text-orange-700' :
+                        objective.level === 'apply' ? 'bg-yellow-100 text-yellow-700' :
+                          objective.level === 'understand' ? 'bg-green-100 text-green-700' :
+                            'bg-blue-100 text-blue-700'
+                  }`}>
                   Level {index + 1}
                 </span>
               </div>
@@ -486,7 +484,7 @@ export default function MethodologyBuilder({ onApplyMethodology, selectedIndustr
         {selectedMethodology.assessmentStrategy.competencyMapping.map((competency, index) => (
           <div key={index} className="border border-gray-200 rounded-lg p-6 mb-4">
             <h5 className="text-lg font-semibold text-gray-900 mb-4">{competency.competency}</h5>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h6 className="font-medium text-gray-900 mb-2">Behavioral Indicators:</h6>
@@ -499,7 +497,7 @@ export default function MethodologyBuilder({ onApplyMethodology, selectedIndustr
                   ))}
                 </ul>
               </div>
-              
+
               <div>
                 <h6 className="font-medium text-gray-900 mb-2">Proficiency Levels:</h6>
                 <div className="space-y-2">
@@ -525,19 +523,19 @@ export default function MethodologyBuilder({ onApplyMethodology, selectedIndustr
     <div className="space-y-8">
       <div className="bg-white rounded-2xl border border-gray-200 p-8">
         <h3 className="text-2xl font-semibold text-gray-900 mb-6">Certification Pathway</h3>
-        
+
         <div className="space-y-6">
           {selectedMethodology.certificationPath.levels.map((level, index) => (
             <div key={level.id} className="relative">
               {index < selectedMethodology.certificationPath.levels.length - 1 && (
                 <div className="absolute left-8 top-16 w-0.5 h-16 bg-gradient-to-b from-blue-500 to-purple-500"></div>
               )}
-              
+
               <div className="flex items-start space-x-6">
                 <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
                   {index + 1}
                 </div>
-                
+
                 <div className="flex-1 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200">
                   <div className="flex items-start justify-between mb-4">
                     <div>
@@ -562,7 +560,7 @@ export default function MethodologyBuilder({ onApplyMethodology, selectedIndustr
                         ))}
                       </ul>
                     </div>
-                    
+
                     <div>
                       <h5 className="font-medium text-gray-900 mb-2">Practical Requirements:</h5>
                       <ul className="space-y-1">
@@ -609,55 +607,54 @@ export default function MethodologyBuilder({ onApplyMethodology, selectedIndustr
   );
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-blue-50 to-indigo-50">
-      <div className="container mx-auto px-4 py-8">
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-50">
+      <div className="container mx-auto px-2 py-4">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center space-x-2 bg-white px-6 py-3 rounded-full shadow-sm border border-gray-200 mb-6">
-              <Sparkles className="h-5 w-5 text-blue-500" />
+          <div className="text-center mb-4">
+            <div className="inline-flex items-center space-x-2 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200 mb-3">
+              <Sparkles className="h-4 w-4 text-blue-500" />
               <span className="text-sm font-medium text-gray-700">360° Training Methodology</span>
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
               Comprehensive Training Methodology
             </h1>
-            <p className="text-xl text-gray-600 max-w-4xl mx-auto">
-              Industry-leading 360-degree approach covering foundational knowledge, regulatory compliance, 
+            <p className="text-base text-gray-600 max-w-4xl mx-auto">
+              Industry-leading 360-degree approach covering foundational knowledge, regulatory compliance,
               industry expertise, operational excellence, and company-specific requirements.
             </p>
           </div>
 
           {/* Industry Showcase */}
-          <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl p-8 mb-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold mb-2">Featured: Health Insurance Brokerage</h2>
-                <p className="text-purple-100 text-lg">
+          <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl p-4 mb-4">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="text-center md:text-left">
+                <h2 className="text-xl font-bold mb-1">Featured: Health Insurance Brokerage</h2>
+                <p className="text-purple-100 text-sm">
                   Complete methodology covering regulatory compliance, product mastery, sales excellence, and customer service
                 </p>
               </div>
-              <div className="text-right">
-                <div className="text-3xl font-bold mb-1">100+</div>
-                <div className="text-purple-200 text-sm">Training Hours</div>
+              <div className="text-center md:text-right shrink-0">
+                <div className="text-2xl font-bold mb-1">100+</div>
+                <div className="text-purple-200 text-xs">Training Hours</div>
               </div>
             </div>
           </div>
 
           {/* Tab Navigation */}
-          <div className="bg-white rounded-2xl border border-gray-200 mb-8">
-            <div className="border-b border-gray-200">
-              <nav className="flex space-x-8 px-6">
+          <div className="bg-white rounded-xl border border-gray-200 mb-4">
+            <div className="border-b border-gray-200 overflow-x-auto">
+              <nav className="flex space-x-4 px-4 min-w-max">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
                   return (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center space-x-2 py-4 border-b-2 font-medium text-sm transition-colors ${
-                        activeTab === tab.id
+                      className={`flex items-center space-x-2 py-3 border-b-2 font-medium text-xs md:text-sm transition-colors ${activeTab === tab.id
                           ? 'border-blue-500 text-blue-600'
                           : 'border-transparent text-gray-500 hover:text-gray-700'
-                      }`}
+                        }`}
                     >
                       <Icon className="h-4 w-4" />
                       <span>{tab.label}</span>
@@ -667,7 +664,7 @@ export default function MethodologyBuilder({ onApplyMethodology, selectedIndustr
               </nav>
             </div>
 
-            <div className="p-8">
+            <div className="p-4">
               {activeTab === 'overview' && renderOverviewTab()}
               {activeTab === 'components' && renderComponentsTab()}
               {activeTab === 'framework' && renderFrameworkTab()}
@@ -677,18 +674,18 @@ export default function MethodologyBuilder({ onApplyMethodology, selectedIndustr
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-center space-x-6">
+          <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
             <button
               onClick={() => onApplyMethodology(selectedMethodology)}
-              className="flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all font-semibold text-lg shadow-lg hover:shadow-xl"
+              className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all font-semibold text-base shadow-lg hover:shadow-xl"
             >
-              <Sparkles className="h-6 w-6" />
+              <Sparkles className="h-5 w-5" />
               <span>Apply This Methodology</span>
-              <ArrowRight className="h-5 w-5" />
+              <ArrowRight className="h-4 w-4" />
             </button>
-            
-            <button className="flex items-center space-x-3 px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-semibold text-lg">
-              <Eye className="h-6 w-6" />
+
+            <button className="flex items-center justify-center space-x-2 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-semibold text-base">
+              <Eye className="h-5 w-5" />
               <span>Preview Training Journey</span>
             </button>
           </div>
