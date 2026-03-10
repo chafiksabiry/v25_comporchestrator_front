@@ -2389,10 +2389,10 @@ const ApprovalPublishing = ({ onBackToOnboarding }: ApprovalPublishingProps) => 
           {onBackToOnboarding && (
             <button
               onClick={onBackToOnboarding}
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
+              className="flex items-center transition-colors text-gray-600 hover:text-gray-900"
             >
-              <ArrowLeftIcon size={16} />
-              Back to Onboarding
+              <ChevronRight className="h-5 w-5 rotate-180" />
+              <span>Back to Onboarding</span>
             </button>
           )}
           <h1 className="text-2xl font-bold text-gray-900">Approval & Publishing</h1>
