@@ -269,21 +269,21 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
     <div className="min-h-full bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Progress Header */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-4 py-6">
+        <div className="container mx-auto px-2 py-4">
           <div className="max-w-6xl mx-auto">
             {/* Company Info */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                  <span className="text-white font-bold text-base">
                     {company?.name?.charAt(0) || 'T'}
                   </span>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
+                  <h1 className="text-xl font-bold text-gray-900">
                     {journey?.name || 'Training Journey Builder'}
                   </h1>
-                  <p className="text-gray-600">
+                  <p className="text-sm text-gray-600">
                     {company?.name} • {company?.industry} • Step {currentStep + 1} of {steps.length}
                     {methodology && ` • ${methodology.name}`}
                   </p>
@@ -291,8 +291,8 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
               </div>
 
               <div className="text-right">
-                <div className="text-sm text-gray-500 mb-1">Overall Progress</div>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-xs text-gray-500 mb-1">Overall Progress</div>
+                <div className="text-xl font-bold text-gray-900">
                   {Math.round(((currentStep + 1) / steps.length) * 100)}%
                 </div>
               </div>
@@ -309,29 +309,29 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
 
                   return (
                     <div key={index} className="flex flex-col items-center relative z-10">
-                      <div className={`flex items-center justify-center w-16 h-16 rounded-2xl border-4 transition-all duration-500 ${isCompleted
-                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 border-green-500 text-white shadow-lg scale-110'
-                          : isActive
-                            ? `bg-gradient-to-r ${step.color} border-transparent text-white shadow-xl scale-125`
-                            : 'bg-white border-gray-300 text-gray-400'
+                      <div className={`flex items-center justify-center w-12 h-12 rounded-xl border-[3px] transition-all duration-500 ${isCompleted
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-500 border-green-500 text-white shadow-md scale-105'
+                        : isActive
+                          ? `bg-gradient-to-r ${step.color} border-transparent text-white shadow-lg scale-110`
+                          : 'bg-white border-gray-300 text-gray-400'
                         }`}>
                         {isCompleted ? (
-                          <CheckCircle className="h-8 w-8" />
+                          <CheckCircle className="h-6 w-6" />
                         ) : isActive ? (
-                          <Icon className="h-8 w-8 animate-pulse" />
+                          <Icon className="h-6 w-6 animate-pulse" />
                         ) : (
-                          <Icon className="h-8 w-8" />
+                          <Icon className="h-6 w-6" />
                         )}
                       </div>
 
-                      <div className="mt-4 text-center max-w-32">
-                        <div className={`text-sm font-bold transition-colors ${isActive ? 'text-purple-600' :
-                            isCompleted ? 'text-green-600' :
-                              'text-gray-400'
+                      <div className="mt-3 text-center max-w-28">
+                        <div className={`text-xs font-bold transition-colors ${isActive ? 'text-purple-600' :
+                          isCompleted ? 'text-green-600' :
+                            'text-gray-400'
                           }`}>
                           {step.title}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-[10px] text-gray-500 mt-0.5">
                           {step.description}
                         </div>
                       </div>

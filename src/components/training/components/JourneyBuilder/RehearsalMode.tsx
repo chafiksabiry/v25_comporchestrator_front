@@ -1051,42 +1051,42 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 mb-8">
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 mb-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
                 <button
                   onClick={onBack}
-                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  <ArrowLeft className="h-5 w-5" />
+                  <ArrowLeft className="h-4 w-4" />
                 </button>
                 <div>
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Eye className="h-5 w-5 text-purple-500" />
-                    <span className="text-sm font-medium text-purple-600 bg-purple-100 px-3 py-1 rounded-full">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Eye className="h-4 w-4 text-purple-500" />
+                    <span className="text-xs font-medium text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">
                       REHEARSAL MODE
                     </span>
                   </div>
-                  <h1 className="text-2xl font-bold text-gray-900">{journey.name}</h1>
-                  <p className="text-gray-600">Test and review your training journey before launch</p>
+                  <h1 className="text-xl font-bold text-gray-900">{journey.name}</h1>
+                  <p className="text-xs text-gray-600">Test and review your training journey before launch</p>
                 </div>
               </div>
 
               <div className="text-right">
-                <div className="text-sm text-gray-500 mb-1">Rehearsal Time</div>
-                <div className="text-2xl font-bold text-gray-900">{formatTime(rehearsalTime)}</div>
+                <div className="text-xs text-gray-500 mb-0.5">Rehearsal Time</div>
+                <div className="text-xl font-bold text-gray-900">{formatTime(rehearsalTime)}</div>
               </div>
             </div>
 
             {/* Progress Bar */}
-            <div className="mt-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">Overall Progress</span>
-                <span className="text-sm text-gray-600">{Math.round(progress)}% Complete</span>
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-medium text-gray-700">Overall Progress</span>
+                <span className="text-xs text-gray-600">{Math.round(progress)}% Complete</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
+              <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
-                  className="bg-gradient-to-r from-purple-500 to-indigo-500 h-3 rounded-full transition-all duration-500"
+                  className="bg-gradient-to-r from-purple-500 to-indigo-500 h-2 rounded-full transition-all duration-500"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -1094,18 +1094,18 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
           </div>
 
           {methodology && (
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-2xl p-6 mb-8">
-              <h3 className="text-xl font-semibold text-purple-900 mb-4">🎯 360° Methodology in Action</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-4 mb-4">
+              <h3 className="text-lg font-semibold text-purple-900 mb-3">🎯 360° Methodology in Action</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {methodology.components.slice(0, 8).map((component, index) => (
-                  <div key={index} className="text-center p-3 bg-white rounded-lg shadow-sm">
-                    <div className="text-sm font-medium text-purple-900">{component.title}</div>
-                    <div className="text-xs text-purple-700">{component.estimatedDuration}h • {component.competencyLevel}</div>
+                  <div key={index} className="text-center p-2 bg-white rounded-lg shadow-sm">
+                    <div className="text-xs font-medium text-purple-900">{component.title}</div>
+                    <div className="text-[10px] text-purple-700">{component.estimatedDuration}h • {component.competencyLevel}</div>
                   </div>
                 ))}
               </div>
-              <div className="mt-4 text-center">
-                <p className="text-purple-700 text-sm">
+              <div className="mt-3 text-center">
+                <p className="text-purple-700 text-xs">
                   Complete 360° approach covering foundational knowledge, regulatory compliance,
                   contact centre excellence, and regional requirements
                 </p>
@@ -1113,18 +1113,18 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Left Sidebar - Section Navigation */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 sticky top-6 max-h-[calc(100vh-2rem)] overflow-y-auto">
+            <div className="lg:col-span-3">
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
                 {/* Module Navigation */}
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold text-gray-900">
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-xs font-semibold text-gray-900">
                       Module {currentModuleIndex + 1} of {updatedModules.length}
                     </h3>
                   </div>
-                  <div className="flex flex-col gap-2 mb-4">
+                  <div className="flex flex-col gap-1.5 mb-3">
                     {updatedModules.map((module, index) => (
                       <button
                         key={module.id}
@@ -1132,11 +1132,11 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
                           setCurrentModuleIndex(index);
                           setCurrentSectionIndex(0);
                         }}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${index === currentModuleIndex
-                            ? 'bg-purple-600 text-white'
-                            : completedModules.includes(module.id)
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-colors text-left ${index === currentModuleIndex
+                          ? 'bg-purple-600 text-white'
+                          : completedModules.includes(module.id)
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                           }`}
                       >
                         <div className="flex items-center justify-between">
@@ -1168,20 +1168,20 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
 
                 {/* Sections Navigation */}
                 {hasSections && (
-                  <div className="border-t border-gray-200 pt-6">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                  <div className="border-t border-gray-200 pt-4">
+                    <h3 className="text-xs font-semibold text-gray-900 mb-2">
                       Section {currentSectionIndex + 1} of {currentModule.sections!.length}
                     </h3>
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-1.5">
                       {currentModule.sections!.map((section, index) => (
                         <button
                           key={section.id || index}
                           onClick={() => setCurrentSectionIndex(index)}
-                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${index === currentSectionIndex
-                              ? 'bg-purple-600 text-white'
-                              : completedSections.has(section.id || '')
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-colors text-left ${index === currentSectionIndex
+                            ? 'bg-purple-600 text-white'
+                            : completedSections.has(section.id || '')
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                         >
                           <div className="flex items-center justify-between">
@@ -1199,72 +1199,72 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
             </div>
 
             {/* Main Content Area - Document Viewer */}
-            <div className="lg:col-span-10">
+            <div className="lg:col-span-9">
               {currentModule && (
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 flex flex-col">
+                <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 flex flex-col">
                   {/* Module Header - Compact */}
-                  <div className="mb-4 pb-4 border-b border-gray-200">
-                    <div className="flex items-center justify-between mb-2">
+                  <div className="mb-3 pb-3 border-b border-gray-200">
+                    <div className="flex items-center justify-between mb-1">
                       <div className="flex-1">
-                        <h2 className="text-2xl font-bold text-gray-900">{currentModule.title}</h2>
-                        <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                        <h2 className="text-xl font-bold text-gray-900">{currentModule.title}</h2>
+                        <div className="flex items-center space-x-3 text-xs text-gray-600 mt-1">
                           <span className="flex items-center">
-                            <Clock className="h-4 w-4 mr-1" />
+                            <Clock className="h-3 w-3 mr-1" />
                             {currentModule.duration || 0} min
                           </span>
                           <span className="flex items-center">
-                            <BookOpen className="h-4 w-4 mr-1" />
+                            <BookOpen className="h-3 w-3 mr-1" />
                             {currentModule.sections?.length || 0} sections
                           </span>
                           <span className="flex items-center">
-                            <BarChart3 className="h-4 w-4 mr-1" />
+                            <BarChart3 className="h-3 w-3 mr-1" />
                             {currentModule.competencyLevel || 'Beginner'}
                           </span>
                         </div>
                       </div>
                       {completedModules.includes(currentModule.id) && (
-                        <div className="flex items-center space-x-2 text-green-600 ml-4">
-                          <CheckCircle className="h-5 w-5" />
-                          <span className="font-medium text-sm">Completed</span>
+                        <div className="flex items-center space-x-1.5 text-green-600 ml-3">
+                          <CheckCircle className="h-4 w-4" />
+                          <span className="font-medium text-xs">Completed</span>
                         </div>
                       )}
                     </div>
                   </div>
 
                   {/* Content - Takes full available space */}
-                  <div className="flex-1 mb-6">
+                  <div className="flex-1 mb-4">
                     {hasSections && currentSection ? (
                       <div className="w-full">
                         {renderSectionContent(currentSection)}
                       </div>
                     ) : (
-                      <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
-                        <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold text-gray-700 mb-2">No Sections Available</h3>
-                        <p className="text-gray-600">This module doesn't have any sections with documents yet.</p>
+                      <div className="text-center py-6 bg-gray-50 rounded-lg border border-gray-200">
+                        <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                        <h3 className="text-base font-semibold text-gray-700 mb-1">No Sections Available</h3>
+                        <p className="text-sm text-gray-600">This module doesn't have any sections with documents yet.</p>
                         {uploads.length === 0 && (
-                          <p className="text-sm text-gray-500 mt-2">Please upload documents in the previous step.</p>
+                          <p className="text-xs text-gray-500 mt-1.5">Please upload documents in the previous step.</p>
                         )}
                       </div>
                     )}
                   </div>
 
                   {/* Navigation Controls - Bottom */}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                     <div className="flex items-center space-x-2">
                       {hasSections && (
                         <>
                           <button
                             onClick={handlePreviousSection}
                             disabled={currentSectionIndex === 0 && currentModuleIndex === 0}
-                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                            className="px-3 py-1.5 border border-gray-300 text-sm text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                           >
                             Previous
                           </button>
                           <button
                             onClick={handleNextSection}
                             disabled={currentSectionIndex === currentModule.sections!.length - 1 && currentModuleIndex === updatedModules.length - 1}
-                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                            className="px-3 py-1.5 bg-purple-600 text-sm text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                           >
                             Next
                           </button>
@@ -1273,9 +1273,9 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
                     </div>
                     <button
                       onClick={handleModuleComplete}
-                      className="flex items-center space-x-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                      className="flex items-center space-x-2 px-4 py-1.5 bg-green-600 text-sm text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
                     >
-                      <CheckCircle className="h-5 w-5" />
+                      <CheckCircle className="h-4 w-4" />
                       <span>Mark Complete</span>
                     </button>
                   </div>
@@ -1546,8 +1546,8 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
                                                         <div
                                                           key={optIdx}
                                                           className={`p-3 rounded-lg transition-all ${isCorrect
-                                                              ? 'bg-green-50 border-2 border-green-500 shadow-sm'
-                                                              : 'bg-gray-50 border border-gray-200'
+                                                            ? 'bg-green-50 border-2 border-green-500 shadow-sm'
+                                                            : 'bg-gray-50 border border-gray-200'
                                                             }`}
                                                         >
                                                           <div className="flex items-center space-x-3">

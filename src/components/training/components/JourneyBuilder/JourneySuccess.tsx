@@ -16,11 +16,11 @@ interface JourneySuccessProps {
   onSendReminder?: () => void;
 }
 
-export default function JourneySuccess({ 
-  journey, 
-  modules, 
-  enrolledReps, 
-  onViewDashboard, 
+export default function JourneySuccess({
+  journey,
+  modules,
+  enrolledReps,
+  onViewDashboard,
   onCreateAnother,
   onPreviewAsLearner,
   onExportReport,
@@ -41,7 +41,7 @@ export default function JourneySuccess({
 
   const totalDuration = (modules || []).reduce((sum, module) => sum + (module.duration || 0), 0);
   const totalAssessments = (modules || []).reduce((sum, module) => sum + (module.assessments?.length || 0), 0);
-  
+
   // Safe defaults for optional arrays - ensure they are always arrays
   const safeEnrolledReps = Array.isArray(enrolledReps) ? enrolledReps.filter(rep => rep != null && rep !== undefined) : [];
   const safeTargetRoles = Array.isArray(journey?.targetRoles) ? journey.targetRoles.filter(role => role != null && role !== undefined && typeof role === 'string') : [];
@@ -50,49 +50,49 @@ export default function JourneySuccess({
     <div className="min-h-full bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center p-4">
       <div className="max-w-4xl w-full">
         {/* Success Animation */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-4">
           <div className="relative inline-block">
-            <div className="w-32 h-32 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl animate-pulse">
-              <CheckCircle className="h-16 w-16 text-white" />
+            <div className="w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl animate-pulse">
+              <CheckCircle className="h-12 w-12 text-white" />
             </div>
-            <div className="absolute -top-4 -right-4 w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center animate-bounce">
-              <Rocket className="h-6 w-6 text-yellow-900" />
+            <div className="absolute -top-2 -right-2 w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center animate-bounce">
+              <Rocket className="h-5 w-5 text-yellow-900" />
             </div>
           </div>
-          
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
             🎉 Training Journey Launched Successfully!
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Your AI-enhanced training program is now live and your team members have been enrolled. 
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Your AI-enhanced training program is now live and your team members have been enrolled.
             They'll receive notifications and can start their learning journey immediately.
           </p>
         </div>
 
         {/* Launch Summary */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 mb-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">Launch Summary</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-200">
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Launch Summary</h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
               <Users className="h-10 w-10 text-blue-600 mx-auto mb-3" />
               <div className="text-2xl font-bold text-blue-600 mb-1">{safeEnrolledReps.length}</div>
               <div className="text-sm text-gray-600">Team Members Enrolled</div>
             </div>
-            
-            <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-200">
+
+            <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg border border-purple-200">
               <Rocket className="h-10 w-10 text-purple-600 mx-auto mb-3" />
               <div className="text-2xl font-bold text-purple-600 mb-1">{(modules || []).length}</div>
               <div className="text-sm text-gray-600">Enhanced Modules</div>
             </div>
-            
-            <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
+
+            <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
               <Calendar className="h-10 w-10 text-green-600 mx-auto mb-3" />
               <div className="text-2xl font-bold text-green-600 mb-1">{Math.round(totalDuration / 60)}h</div>
               <div className="text-sm text-gray-600">Total Training Hours</div>
             </div>
-            
-            <div className="text-center p-6 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-200">
+
+            <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg border border-amber-200">
               <BarChart3 className="h-10 w-10 text-amber-600 mx-auto mb-3" />
               <div className="text-2xl font-bold text-amber-600 mb-1">{totalAssessments}</div>
               <div className="text-sm text-gray-600">Assessments Created</div>
@@ -100,10 +100,10 @@ export default function JourneySuccess({
           </div>
 
           {/* Journey Details */}
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 mb-6">
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 mb-5">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">{journey.name || journey.title || 'Untitled Journey'}</h3>
             <p className="text-gray-700 mb-4">{journey.description || 'No description available'}</p>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h4 className="font-medium text-gray-900 mb-2">Target Roles:</h4>
@@ -119,7 +119,7 @@ export default function JourneySuccess({
                   )}
                 </div>
               </div>
-              
+
               <div>
                 <h4 className="font-medium text-gray-900 mb-2">Enrolled Team Members:</h4>
                 <div className="flex flex-wrap gap-2">
@@ -145,13 +145,13 @@ export default function JourneySuccess({
           </div>
 
           {/* Notifications Sent */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-center space-x-3 mb-3">
               <Bell className="h-6 w-6 text-blue-600" />
               <h4 className="font-semibold text-blue-900">🔔 Deployment Notifications Sent</h4>
             </div>
             <p className="text-blue-700 mb-3">
-              All enrolled team members have been notified via email and will see the comprehensive 360° training journey 
+              All enrolled team members have been notified via email and will see the comprehensive 360° training journey
               in their dashboard with full methodology components activated.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -172,18 +172,18 @@ export default function JourneySuccess({
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button
             onClick={onViewDashboard}
-            className="flex items-center justify-center space-x-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all font-semibold text-lg shadow-lg hover:shadow-xl"
+            className="flex items-center justify-center space-x-3 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-semibold text-base shadow-md hover:shadow-lg"
           >
             <BarChart3 className="h-6 w-6" />
             <span>View Training Dashboard</span>
           </button>
-          
+
           <button
             onClick={onCreateAnother}
-            className="flex items-center justify-center space-x-3 px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-semibold text-lg"
+            className="flex items-center justify-center space-x-3 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold text-base mb-6"
           >
             <Rocket className="h-6 w-6" />
             <span>Create Another Journey</span>
@@ -191,51 +191,51 @@ export default function JourneySuccess({
         </div>
 
         {/* Additional Actions */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 mb-4">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Manage Your Training Journey</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button 
+            <button
               onClick={onPreviewAsLearner}
               className="flex items-center space-x-3 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Eye className="h-5 w-5" />
               <span>Preview as Learner</span>
             </button>
-            
-            <button 
+
+            <button
               onClick={onExportReport}
               className="flex items-center space-x-3 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Download className="h-5 w-5" />
               <span>Export Report</span>
             </button>
-            
-            <button 
+
+            <button
               onClick={onShareJourney}
               className="flex items-center space-x-3 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Share2 className="h-5 w-5" />
               <span>Share Journey</span>
             </button>
-            
-            <button 
+
+            <button
               onClick={onJourneySettings}
               className="flex items-center space-x-3 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Settings className="h-5 w-5" />
               <span>Journey Settings</span>
             </button>
-            
-            <button 
+
+            <button
               onClick={onManageParticipants}
               className="flex items-center space-x-3 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Users className="h-5 w-5" />
               <span>Manage Participants</span>
             </button>
-            
-            <button 
+
+            <button
               onClick={onSendReminder}
               className="flex items-center space-x-3 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
@@ -246,10 +246,10 @@ export default function JourneySuccess({
         </div>
 
         {/* Next Steps */}
-        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6 text-center">
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4 text-center">
           <h3 className="text-lg font-semibold text-purple-900 mb-2">What's Next?</h3>
           <p className="text-purple-700 mb-4">
-            Your team can now access their personalized training dashboard and begin their learning journey. 
+            Your team can now access their personalized training dashboard and begin their learning journey.
             You can monitor progress, provide support, and track completion in real-time.
           </p>
           <div className="flex justify-center space-x-4">

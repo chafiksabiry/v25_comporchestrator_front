@@ -82,8 +82,8 @@ export default function JourneyLauncher({ journey, modules, onLaunch, onBack }: 
   ];
 
   const handleRepToggle = (repId: string) => {
-    setSelectedReps(prev => 
-      prev.includes(repId) 
+    setSelectedReps(prev =>
+      prev.includes(repId)
         ? prev.filter(id => id !== repId)
         : [...prev, repId]
     );
@@ -104,59 +104,59 @@ export default function JourneyLauncher({ journey, modules, onLaunch, onBack }: 
       status: 'active',
       steps: journey.steps.map(step => ({ ...step, status: 'completed' }))
     };
-    
+
     onLaunch(updatedJourney, enrolledReps);
   };
 
   const totalDuration = modules.reduce((sum, module) => sum + module.duration, 0);
   const totalAssessments = modules.reduce((sum, module) => sum + module.assessments.length, 0);
-  const totalInteractiveElements = modules.reduce((sum, module) => 
+  const totalInteractiveElements = modules.reduce((sum, module) =>
     sum + module.content.filter(c => c.type === 'interactive').length, 0
   );
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-green-50 to-emerald-50">
-      <div className="container mx-auto px-4 py-8">
+    <div className="bg-gradient-to-br from-green-50 to-emerald-50 h-full w-full">
+      <div className="container mx-auto px-2 py-4">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center space-x-2 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200 mb-4">
+          <div className="text-center mb-4">
+            <div className="inline-flex items-center space-x-2 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-200 mb-2">
               <Rocket className="h-4 w-4 text-green-500" />
-              <span className="text-sm font-medium text-gray-700">Step 3: Launch Your Training Journey</span>
+              <span className="text-xs font-medium text-gray-700">Step 3: Launch Your Training Journey</span>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Ready for Launch! 🚀</h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-1">Ready for Launch! 🚀</h2>
+            <p className="text-base text-gray-600 max-w-3xl mx-auto">
               Your AI-enhanced training program is ready to deploy. Review the details and enroll your team members.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-8">
+            <div className="lg:col-span-2 space-y-4">
               {/* Training Overview */}
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-                <h3 className="text-2xl font-semibold text-gray-900 mb-6">Training Program Overview</h3>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-                  <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl">
-                    <Video className="h-8 w-8 text-blue-600 mx-auto mb-3" />
-                    <div className="text-2xl font-bold text-blue-600 mb-1">{modules.length}</div>
-                    <div className="text-sm text-gray-600">Enhanced Modules</div>
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Training Program Overview</h3>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl">
+                    <Video className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                    <div className="text-xl font-bold text-blue-600 mb-1">{modules.length}</div>
+                    <div className="text-xs text-gray-600">Enhanced Modules</div>
                   </div>
-                  <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl">
-                    <Zap className="h-8 w-8 text-purple-600 mx-auto mb-3" />
-                    <div className="text-2xl font-bold text-purple-600 mb-1">{totalInteractiveElements}</div>
-                    <div className="text-sm text-gray-600">Interactive Elements</div>
+                  <div className="text-center p-3 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl">
+                    <Zap className="h-6 w-6 text-purple-600 mx-auto mb-2" />
+                    <div className="text-xl font-bold text-purple-600 mb-1">{totalInteractiveElements}</div>
+                    <div className="text-xs text-gray-600">Interactive Elements</div>
                   </div>
-                  <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
-                    <BarChart3 className="h-8 w-8 text-green-600 mx-auto mb-3" />
-                    <div className="text-2xl font-bold text-green-600 mb-1">{totalAssessments}</div>
-                    <div className="text-sm text-gray-600">Assessments</div>
+                  <div className="text-center p-3 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
+                    <BarChart3 className="h-6 w-6 text-green-600 mx-auto mb-2" />
+                    <div className="text-xl font-bold text-green-600 mb-1">{totalAssessments}</div>
+                    <div className="text-xs text-gray-600">Assessments</div>
                   </div>
-                  <div className="text-center p-6 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl">
-                    <Calendar className="h-8 w-8 text-amber-600 mx-auto mb-3" />
-                    <div className="text-2xl font-bold text-amber-600 mb-1">{Math.round(totalDuration / 60)}h</div>
-                    <div className="text-sm text-gray-600">Total Duration</div>
+                  <div className="text-center p-3 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl">
+                    <Calendar className="h-6 w-6 text-amber-600 mx-auto mb-2" />
+                    <div className="text-xl font-bold text-amber-600 mb-1">{Math.round(totalDuration / 60)}h</div>
+                    <div className="text-xs text-gray-600">Total Duration</div>
                   </div>
                 </div>
 
@@ -185,36 +185,36 @@ export default function JourneyLauncher({ journey, modules, onLaunch, onBack }: 
               </div>
 
               {/* Team Member Selection */}
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-2xl font-semibold text-gray-900">Select Team Members</h3>
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-gray-900">Select Team Members</h3>
                   <button
                     onClick={handleSelectAll}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium px-4 py-2 border border-blue-200 rounded-lg hover:bg-blue-50 transition-all"
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50 transition-all"
                   >
                     {selectedReps.length === availableReps.length ? 'Deselect All' : 'Select All'}
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {availableReps.map((rep) => (
-                    <label key={rep.id} className="flex items-center p-4 border-2 border-gray-200 rounded-xl hover:border-green-300 hover:bg-green-50 cursor-pointer transition-all">
+                    <label key={rep.id} className="flex items-center p-3 border border-gray-200 rounded-xl hover:border-green-300 hover:bg-green-50 cursor-pointer transition-all">
                       <input
                         type="checkbox"
                         checked={selectedReps.includes(rep.id)}
                         onChange={() => handleRepToggle(rep.id)}
-                        className="mr-4 h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                        className="mr-3 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                       />
-                      <div className="flex items-center space-x-3 flex-1">
-                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+                      <div className="flex items-center space-x-2 flex-1">
+                        <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
                           {rep.name.charAt(0)}
                         </div>
                         <div>
-                          <div className="font-semibold text-gray-900">{rep.name}</div>
-                          <div className="text-sm text-gray-600">{rep.role} • {rep.department}</div>
+                          <div className="font-semibold text-sm text-gray-900">{rep.name}</div>
+                          <div className="text-xs text-gray-600">{rep.role} • {rep.department}</div>
                         </div>
                       </div>
-                      <div className="text-xs text-gray-500">{rep.email}</div>
+                      <div className="text-[10px] text-gray-500">{rep.email}</div>
                     </label>
                   ))}
                 </div>
@@ -233,12 +233,12 @@ export default function JourneyLauncher({ journey, modules, onLaunch, onBack }: 
             </div>
 
             {/* Settings Sidebar */}
-            <div className="lg:col-span-1 space-y-6">
+            <div className="lg:col-span-1 space-y-4">
               {/* Launch Settings */}
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Launch Settings</h3>
-                
-                <div className="space-y-4">
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Launch Settings</h3>
+
+                <div className="space-y-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Start Date
@@ -266,10 +266,10 @@ export default function JourneyLauncher({ journey, modules, onLaunch, onBack }: 
               </div>
 
               {/* Feature Settings */}
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Feature Settings</h3>
-                
-                <div className="space-y-4">
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Feature Settings</h3>
+
+                <div className="space-y-3">
                   <label className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <Bell className="h-5 w-5 text-blue-500" />
@@ -358,7 +358,7 @@ export default function JourneyLauncher({ journey, modules, onLaunch, onBack }: 
                   <p className="text-sm text-green-700 mb-4">
                     Your AI-enhanced training program is configured and ready to deploy.
                   </p>
-                  
+
                   <div className="space-y-2 text-xs text-green-600">
                     <div className="flex items-center justify-center space-x-2">
                       <CheckCircle className="h-3 w-3" />
@@ -390,7 +390,7 @@ export default function JourneyLauncher({ journey, modules, onLaunch, onBack }: 
             >
               Back to Curriculum
             </button>
-            
+
             <div className="text-center">
               <div className="text-sm text-gray-500 mb-2">
                 {selectedReps.length} team member{selectedReps.length !== 1 ? 's' : ''} selected

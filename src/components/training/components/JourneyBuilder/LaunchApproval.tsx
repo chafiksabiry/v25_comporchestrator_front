@@ -494,58 +494,58 @@ export default function LaunchApproval({
 
   return (
     <div className="min-h-full bg-gradient-to-br from-green-50 to-emerald-50">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center space-x-2 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200 mb-4">
+          <div className="text-center mb-4">
+            <div className="inline-flex items-center space-x-2 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-200 mb-3">
               <Eye className="h-4 w-4 text-green-500" />
-              <span className="text-sm font-medium text-gray-700">Rehearsal Complete - Ready for Launch</span>
+              <span className="text-xs font-medium text-gray-700">Rehearsal Complete - Ready for Launch</span>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Launch Approval</h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-1.5">Launch Approval</h2>
+            <p className="text-base text-gray-600 max-w-3xl mx-auto">
               Review your rehearsal results and approve the training journey for deployment to your team.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-8">
+            <div className="lg:col-span-2 space-y-6">
               {/* Rehearsal Summary */}
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-                <h3 className="text-2xl font-semibold text-gray-900 mb-6">Rehearsal Summary</h3>
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Rehearsal Summary</h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                  <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl">
-                    <Play className="h-10 w-10 text-blue-600 mx-auto mb-3" />
-                    <div className="text-2xl font-bold text-blue-600 mb-1">{modules.length}</div>
-                    <div className="text-sm text-gray-600">Modules Tested</div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                  <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg">
+                    <Play className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                    <div className="text-xl font-bold text-blue-600 mb-1">{modules.length}</div>
+                    <div className="text-xs text-gray-600">Modules Tested</div>
                   </div>
-                  <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl">
-                    <MessageSquare className="h-10 w-10 text-purple-600 mx-auto mb-3" />
-                    <div className="text-2xl font-bold text-purple-600 mb-1">{rehearsalFeedback.length}</div>
-                    <div className="text-sm text-gray-600">Feedback Items</div>
+                  <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg">
+                    <MessageSquare className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+                    <div className="text-xl font-bold text-purple-600 mb-1">{rehearsalFeedback.length}</div>
+                    <div className="text-xs text-gray-600">Feedback Items</div>
                   </div>
-                  <div className="text-center p-6 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl">
-                    <Star className="h-10 w-10 text-yellow-600 mx-auto mb-3" />
-                    <div className="text-2xl font-bold text-yellow-600 mb-1">{rehearsalRating}/5</div>
-                    <div className="text-sm text-gray-600">Overall Rating</div>
+                  <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg">
+                    <Star className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
+                    <div className="text-xl font-bold text-yellow-600 mb-1">{rehearsalRating}/5</div>
+                    <div className="text-xs text-gray-600">Overall Rating</div>
                   </div>
-                  <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
-                    <CheckCircle className="h-10 w-10 text-green-600 mx-auto mb-3" />
-                    <div className="text-2xl font-bold text-green-600 mb-1">
+                  <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg">
+                    <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                    <div className="text-xl font-bold text-green-600 mb-1">
                       {isReadyForLaunch ? 'Ready' : 'Review'}
                     </div>
-                    <div className="text-sm text-gray-600">Launch Status</div>
+                    <div className="text-xs text-gray-600">Launch Status</div>
                   </div>
                 </div>
 
                 {/* Launch Readiness */}
-                <div className={`p-6 rounded-xl border-2 ${isReadyForLaunch
+                <div className={`p-4 rounded-lg border-2 ${isReadyForLaunch
                   ? 'bg-green-50 border-green-200'
                   : 'bg-yellow-50 border-yellow-200'
                   }`}>
-                  <div className="flex items-center space-x-3 mb-4">
+                  <div className="flex items-center space-x-3 mb-3">
                     {isReadyForLaunch ? (
                       <CheckCircle className="h-6 w-6 text-green-600" />
                     ) : (
@@ -567,8 +567,8 @@ export default function LaunchApproval({
               </div>
 
               {/* Feedback Analysis */}
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-                <h3 className="text-2xl font-semibold text-gray-900 mb-6">Feedback Analysis</h3>
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Feedback Analysis</h3>
 
                 {highPriorityIssues.length > 0 && (
                   <div className="mb-6">
@@ -643,11 +643,11 @@ export default function LaunchApproval({
               </div>
 
               {/* Module Previews with Video Scripts */}
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-                <div className="flex items-center justify-between mb-6">
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
-                    <Video className="h-6 w-6 text-purple-600" />
-                    <h3 className="text-2xl font-semibold text-gray-900">Training Modules</h3>
+                    <Video className="h-5 w-5 text-purple-600" />
+                    <h3 className="text-xl font-semibold text-gray-900">Training Modules</h3>
                   </div>
                   <button
                     onClick={() => setShowModulePreviews(!showModulePreviews)}
@@ -1063,9 +1063,9 @@ export default function LaunchApproval({
 
               {/* Team Selection */}
               {isReadyForLaunch && (
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-2xl font-semibold text-gray-900">Select Team Members</h3>
+                <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold text-gray-900">Select Team Members</h3>
                     <button
                       onClick={handleSelectAll}
                       className="text-sm text-blue-600 hover:text-blue-700 font-medium px-4 py-2 border border-blue-200 rounded-lg hover:bg-blue-50 transition-all"
@@ -1113,8 +1113,8 @@ export default function LaunchApproval({
             {/* Actions Sidebar */}
             <div className="lg:col-span-1 space-y-6">
               {/* Launch Settings */}
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Launch Settings</h3>
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Launch Settings</h3>
 
                 <div className="space-y-4">
                   <div>
@@ -1183,8 +1183,8 @@ export default function LaunchApproval({
               </div>
 
               {/* Actions */}
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Actions</h3>
 
                 <div className="space-y-3">
                   <button

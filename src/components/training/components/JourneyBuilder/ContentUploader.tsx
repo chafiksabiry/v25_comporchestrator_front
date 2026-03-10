@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Upload, FileText, Video, Music, Image, File, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Eye, Wand2 } from 'lucide-react';
-import { ContentUpload, ContentAnalysis } from '../../types/core';
+import { Upload, FileText, Video, Music, Image, File, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2 } from 'lucide-react';
+import { ContentUpload } from '../../types/core';
 import { AIService } from '../../infrastructure/services/AIService';
 import { cloudinaryService } from '../../lib/cloudinaryService';
 
@@ -13,7 +13,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
   const [uploads, setUploads] = useState<ContentUpload[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentProcessing, setCurrentProcessing] = useState<string | null>(null);
+
   const [urlInput, setUrlInput] = useState('');
 
   // Scroll to top when component mounts
@@ -40,18 +40,18 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
 
   const getFileType = (file: File): ContentUpload['type'] => {
     const extension = file.name.split('.').pop()?.toLowerCase();
-    
+
     if (['pdf', 'doc', 'docx', 'txt'].includes(extension || '')) return 'document';
     if (['mp4', 'avi', 'mov', 'wmv', 'webm'].includes(extension || '')) return 'video';
     if (['mp3', 'wav', 'aac', 'm4a'].includes(extension || '')) return 'audio';
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) return 'image';
     if (['ppt', 'pptx'].includes(extension || '')) return 'presentation';
-    
+
     return 'document';
   };
 
   // ❌ SUPPRIMÉ : simulateAIAnalysis - Remplacé par AIService.analyzeDocument()
-  
+
   const handleFileUpload = useCallback(async (files: File[]) => {
     const newUploads: ContentUpload[] = files.map(file => ({
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
@@ -69,27 +69,27 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
     // Process each file sequentially for better UX
     for (const upload of newUploads) {
       setCurrentProcessing(upload.id);
-      
+
       // Simulate upload phase
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setUploads(prev => prev.map(u => 
+
+      setUploads(prev => prev.map(u =>
         u.id === upload.id ? { ...u, status: 'processing' } : u
       ));
 
       try {
         // ✅ Upload file to Cloudinary first
-        setUploads(prev => prev.map(u => 
+        setUploads(prev => prev.map(u =>
           u.id === upload.id ? { ...u, status: 'uploading' } : u
         ));
 
         let cloudinaryUrl = '';
         let publicId = '';
-        
+
         try {
           const uploadFolder = `trainings/documents`;
           const uploadResult = await cloudinaryService.uploadDocument(
-            upload.file, 
+            upload.file,
             uploadFolder,
             (progress) => {
               // Update progress if needed
@@ -106,31 +106,31 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
 
         // ✅ Vraie analyse avec OpenAI au lieu de simulation
         const analysis = await AIService.analyzeDocument(upload.file);
-        
-        setUploads(prev => prev.map(u => 
-          u.id === upload.id 
-            ? { 
-                ...u, 
-                status: 'analyzed', 
-                aiAnalysis: analysis,
-                cloudinaryUrl: cloudinaryUrl, // Store Cloudinary URL
-                publicId: publicId // Store public ID
-              }
+
+        setUploads(prev => prev.map(u =>
+          u.id === upload.id
+            ? {
+              ...u,
+              status: 'analyzed',
+              aiAnalysis: analysis,
+              cloudinaryUrl: cloudinaryUrl, // Store Cloudinary URL
+              publicId: publicId // Store public ID
+            }
             : u
         ));
       } catch (error: any) {
         console.error('AI Analysis failed:', error);
         const errorMessage = error?.message || 'Analysis failed';
-        setUploads(prev => prev.map(u => 
-          u.id === upload.id ? { 
-            ...u, 
+        setUploads(prev => prev.map(u =>
+          u.id === upload.id ? {
+            ...u,
             status: 'error',
             error: errorMessage
           } : u
         ));
       }
     }
-    
+
     setCurrentProcessing(null);
     setIsProcessing(false);
   }, []);
@@ -153,14 +153,14 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
     setCurrentProcessing(urlUpload.id);
 
     try {
-      setUploads(prev => prev.map(u => 
+      setUploads(prev => prev.map(u =>
         u.id === urlUpload.id ? { ...u, status: 'processing' } : u
       ));
 
       const analysis = await AIService.analyzeUrl(urlInput);
-      
-      setUploads(prev => prev.map(u => 
-        u.id === urlUpload.id 
+
+      setUploads(prev => prev.map(u =>
+        u.id === urlUpload.id
           ? { ...u, status: 'analyzed', aiAnalysis: analysis, name: urlInput }
           : u
       ));
@@ -168,7 +168,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
       setUrlInput(''); // Clear input after successful analysis
     } catch (error) {
       console.error('URL Analysis failed:', error);
-      setUploads(prev => prev.map(u => 
+      setUploads(prev => prev.map(u =>
         u.id === urlUpload.id ? { ...u, status: 'error' } : u
       ));
     }
@@ -204,7 +204,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
       return;
     }
 
-    setUploads(prev => prev.map(u => 
+    setUploads(prev => prev.map(u =>
       u.id === upload.id ? { ...u, status: 'processing', error: undefined } : u
     ));
     setCurrentProcessing(upload.id);
@@ -212,23 +212,23 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
 
     try {
       const analysis = await AIService.analyzeDocument(upload.file);
-      
-      setUploads(prev => prev.map(u => 
-        u.id === upload.id 
-          ? { 
-              ...u, 
-              status: 'analyzed', 
-              aiAnalysis: analysis,
-              error: undefined
-            }
+
+      setUploads(prev => prev.map(u =>
+        u.id === upload.id
+          ? {
+            ...u,
+            status: 'analyzed',
+            aiAnalysis: analysis,
+            error: undefined
+          }
           : u
       ));
     } catch (error: any) {
       console.error('AI Analysis failed:', error);
       const errorMessage = error?.message || 'Analysis failed';
-      setUploads(prev => prev.map(u => 
-        u.id === upload.id ? { 
-          ...u, 
+      setUploads(prev => prev.map(u =>
+        u.id === upload.id ? {
+          ...u,
           status: 'error',
           error: errorMessage
         } : u
@@ -262,43 +262,42 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center space-x-2 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200 mb-4">
+          <div className="text-center mb-4">
+            <div className="inline-flex items-center space-x-2 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-200 mb-3">
               <Upload className="h-4 w-4 text-blue-500" />
-              <span className="text-sm font-medium text-gray-700">Step 1: Content Upload & AI Analysis</span>
+              <span className="text-xs font-medium text-gray-700">Step 1: Content Upload & AI Analysis</span>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Upload Your Training Materials</h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-1.5">Upload Your Training Materials</h2>
+            <p className="text-base text-gray-600 max-w-3xl mx-auto">
               Upload your existing documents, videos, presentations, and media. Our AI will analyze and transform them into engaging training content.
             </p>
           </div>
 
           {/* Upload Area */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 mb-8">
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-4">
             <div
-              className={`border-3 border-dashed rounded-2xl p-12 text-center transition-all duration-300 ${
-                dragOver 
-                  ? 'border-blue-500 bg-blue-50 scale-105' 
-                  : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
-              }`}
+              className={`border-[3px] border-dashed rounded-xl p-8 text-center transition-all duration-300 ${dragOver
+                ? 'border-blue-500 bg-blue-50 scale-105'
+                : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+                }`}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
             >
-              <div className="flex justify-center mb-6">
+              <div className="flex justify-center mb-4">
                 <div className="relative">
-                  <Upload className="h-16 w-16 text-gray-400" />
-                  <Sparkles className="h-6 w-6 text-blue-500 absolute -top-2 -right-2 animate-pulse" />
+                  <Upload className="h-12 w-12 text-gray-400" />
+                  <Sparkles className="h-5 w-5 text-blue-500 absolute -top-2 -right-2 animate-pulse" />
                 </div>
               </div>
-              
-              <h3 className="text-2xl font-semibold text-gray-900 mb-3">
+
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 Drop Your Files Here
               </h3>
-              <p className="text-gray-600 mb-6 text-lg">
+              <p className="text-gray-600 mb-4 text-base">
                 or click to browse and select files from your computer
               </p>
-              
+
               <input
                 type="file"
                 multiple
@@ -314,7 +313,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
                 <Upload className="h-5 w-5 mr-3" />
                 Choose Files
               </label>
-              
+
               <div className="mt-6 flex flex-wrap justify-center gap-2">
                 <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">PDF</span>
                 <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">Word</span>
@@ -327,22 +326,22 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
           </div>
 
           {/* URL Input Section */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 mb-8">
-            <div className="flex items-center mb-4">
-              <Sparkles className="h-6 w-6 text-blue-500 mr-2" />
-              <h3 className="text-xl font-semibold text-gray-900">Or Add Content from URL</h3>
+          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-4">
+            <div className="flex items-center mb-3">
+              <Sparkles className="h-5 w-5 text-blue-500 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-900">Or Add Content from URL</h3>
             </div>
-            <p className="text-gray-600 mb-4">
+            <p className="text-sm text-gray-600 mb-3">
               Enter a YouTube video URL or a web page URL to analyze and extract content
             </p>
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <input
                 type="url"
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleUrlSubmit()}
                 placeholder="https://www.youtube.com/watch?v=... or https://example.com/article"
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 text-sm"
                 disabled={isProcessing}
               />
               <button
@@ -365,12 +364,12 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
 
           {/* Processing Status */}
           {isProcessing && (
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
-              <div className="flex items-center justify-center space-x-4">
-                <Wand2 className="h-8 w-8 text-blue-500 animate-spin" />
+            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 mb-4">
+              <div className="flex items-center justify-center space-x-3">
+                <Wand2 className="h-6 w-6 text-blue-500 animate-spin" />
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">AI is Analyzing Your Content</h3>
-                  <p className="text-gray-600">Extracting key concepts, learning objectives, and structure...</p>
+                  <h3 className="text-base font-semibold text-gray-900">AI is Analyzing Your Content</h3>
+                  <p className="text-sm text-gray-600">Extracting key concepts, learning objectives, and structure...</p>
                 </div>
               </div>
             </div>
@@ -378,9 +377,9 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
 
           {/* Uploaded Files */}
           {uploads.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 mb-8">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-semibold text-gray-900">
+            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-gray-900">
                   Uploaded Files ({uploads.length})
                 </h3>
                 {totalAnalyzed > 0 && (
@@ -390,15 +389,14 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
                   </div>
                 )}
               </div>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {uploads.map((upload) => (
-                  <div key={upload.id} className={`border-2 rounded-xl p-6 transition-all duration-300 ${
-                    upload.status === 'analyzed' ? 'border-green-200 bg-green-50' :
+                  <div key={upload.id} className={`border-2 rounded-xl p-6 transition-all duration-300 ${upload.status === 'analyzed' ? 'border-green-200 bg-green-50' :
                     upload.status === 'processing' ? 'border-blue-200 bg-blue-50' :
-                    upload.status === 'error' ? 'border-red-200 bg-red-50' :
-                    'border-gray-200 bg-white'
-                  }`}>
+                      upload.status === 'error' ? 'border-red-200 bg-red-50' :
+                        'border-gray-200 bg-white'
+                    }`}>
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-start space-x-4">
                         {getFileIcon(upload.type)}
@@ -409,7 +407,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
                           </p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center space-x-2">
                         {getStatusIcon(upload.status)}
                         <button
@@ -420,7 +418,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
                         </button>
                       </div>
                     </div>
-                    
+
                     {upload.status === 'error' && upload.error && (
                       <div className="mt-4 p-4 bg-red-100 border border-red-300 rounded-lg">
                         <div className="flex items-start space-x-2">
@@ -438,7 +436,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
                         </div>
                       </div>
                     )}
-                    
+
                     {upload.status === 'analyzed' && upload.aiAnalysis && (
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
@@ -453,7 +451,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
                             <div className="text-xs text-gray-600">Duration</div>
                           </div>
                         </div>
-                        
+
                         <div>
                           <h5 className="font-medium text-gray-900 mb-2">Key Topics Identified:</h5>
                           <div className="flex flex-wrap gap-2">
@@ -464,7 +462,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
                             ))}
                           </div>
                         </div>
-                        
+
                         <div>
                           <h5 className="font-medium text-gray-900 mb-2">AI will create {upload.aiAnalysis.suggestedModules.length} modules:</h5>
                           <div className="text-sm text-gray-600">
@@ -473,7 +471,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
                         </div>
                       </div>
                     )}
-                    
+
                     {(upload.status === 'uploading' || upload.status === 'processing') && (
                       <div className="flex items-center justify-center space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200 mt-4">
                         <Wand2 className="h-6 w-6 text-blue-500 animate-spin" />
@@ -495,14 +493,14 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
 
           {/* AI Enhancement Preview */}
           {totalAnalyzed > 0 && (
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl border border-purple-200 p-8 mb-8">
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 p-6 mb-6">
               <div className="text-center">
-                <Zap className="h-12 w-12 text-purple-500 mx-auto mb-4" />
-                <h3 className="text-2xl font-semibold text-gray-900 mb-2">Ready for AI Enhancement!</h3>
-                <p className="text-gray-600 mb-6">
+                <Zap className="h-10 w-10 text-purple-500 mx-auto mb-3" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-1.5">Ready for AI Enhancement!</h3>
+                <p className="text-sm text-gray-600 mb-4">
                   Your content has been analyzed. Next, we'll transform it into engaging multimedia training materials.
                 </p>
-                
+
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-4 bg-white rounded-xl shadow-sm">
                     <Video className="h-8 w-8 text-red-500 mx-auto mb-2" />
@@ -537,21 +535,21 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
             >
               Back to Setup
             </button>
-            
+
             <div className="text-center">
               <div className="text-sm text-gray-500 mb-2">
                 {totalAnalyzed} of {uploads.length} files analyzed
               </div>
               {uploads.length > 0 && (
                 <div className="w-48 bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${uploads.length > 0 ? (totalAnalyzed / uploads.length) * 100 : 0}%` }}
                   />
                 </div>
               )}
             </div>
-            
+
             <button
               onClick={() => onComplete(uploads)}
               disabled={!canProceed}
