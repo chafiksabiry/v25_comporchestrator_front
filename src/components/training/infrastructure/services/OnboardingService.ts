@@ -123,10 +123,6 @@ export const OnboardingService = {
               }))
             });
           });
-
-          // Fallback: Return all gigs if no matches were found but gigs exist
-          console.warn('[OnboardingService] No matches found for industry, returning all available gigs as fallback');
-          return response;
         }
       }
 
