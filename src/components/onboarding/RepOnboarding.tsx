@@ -46,7 +46,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = ({ onActiveStateChange }) =>
   const [trainings, setTrainings] = useState<any[]>([]);
   const [loadingTrainings, setLoadingTrainings] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
-  const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string }>({ isOpen: false });
+  const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string, newJourney?: boolean }>({ isOpen: false });
 
   const onboardingSteps = [
     {
@@ -383,7 +383,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = ({ onActiveStateChange }) =>
         </div>
         <div className="flex-1 overflow-y-auto relative z-10 w-full">
           <BrowserRouter>
-            <AppContent initialJourneyId={showTraining.journeyId} isEmbedded={true} />
+            <AppContent initialJourneyId={showTraining.journeyId} isEmbedded={true} startWithJourneyBuilder={showTraining.newJourney} />
           </BrowserRouter>
         </div>
       </div>
@@ -460,10 +460,21 @@ const RepOnboarding: React.FC<RepOnboardingProps> = ({ onActiveStateChange }) =>
       </div>
       */}
 
-      {/* Training Modules */}
+      {/* Company Trainings */}
       <div className="rounded-lg bg-white p-6 shadow">
-        <h3 className="text-lg font-medium text-gray-900">Training & Certification</h3>
-        <div className="mt-4 space-y-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-medium text-gray-900">Company Trainings & Certification</h3>
+          <div className="flex space-x-3">
+            <button
+              onClick={() => setShowTraining({ isOpen: true, newJourney: true })}
+              className="flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              New Journey Training
+            </button>
+          </div>
+        </div>
+        <div className="space-y-4">
           {loadingTrainings ? (
             <div className="text-center py-8">
               <p className="text-sm text-gray-500">Loading trainings...</p>
@@ -520,7 +531,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = ({ onActiveStateChange }) =>
                               style={{ width: `${module.progress}%` }}
                             />
                           </div>
-                          <span className="text-sm text-gray-500">{module.progress}%</span>
                         </div>
                       ) : (
                         <button
@@ -528,7 +538,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = ({ onActiveStateChange }) =>
                           className="flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
                         >
                           <Play className="mr-1 h-4 w-4" />
-                          Start
+                          View/Edit
                         </button>
                       )}
                     </div>
@@ -545,74 +555,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = ({ onActiveStateChange }) =>
             </div>
           )}
         </div>
-      </div>
-
-      {/* Company Trainings Section */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-medium text-gray-900">Company Trainings</h3>
-          <button
-            onClick={() => navigateToUrl('/training')}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 flex items-center space-x-2"
-          >
-            <BookOpen className="h-4 w-4" />
-            <span>Go to Training</span>
-          </button>
-        </div>
-
-        {loadingTrainings ? (
-          <div className="text-center py-8">
-            <p className="text-sm text-gray-500">Loading trainings...</p>
-          </div>
-        ) : trainings.length > 0 ? (
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600 mb-4">
-              Your company has {trainings.length} training{trainings.length > 1 ? 's' : ''} available:
-            </p>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {trainings.map((training: any) => (
-                <div
-                  key={training._id || training.id}
-                  className="rounded-lg border border-gray-200 p-4 hover:border-indigo-300 hover:shadow-md transition-all"
-                >
-                  <div className="flex items-start space-x-3">
-                    <div className="rounded-full bg-indigo-100 p-2">
-                      <BookOpen className="h-5 w-5 text-indigo-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-gray-900 truncate">
-                        {training.title || training.name || 'Untitled Training'}
-                      </h4>
-                      {training.description && (
-                        <p className="mt-1 text-xs text-gray-500 line-clamp-2">
-                          {training.description}
-                        </p>
-                      )}
-                      {training.duration && (
-                        <p className="mt-2 text-xs text-gray-400">
-                          Duration: {training.duration}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-            <p className="mt-4 text-sm text-gray-500">
-              No trainings available for your company yet.
-            </p>
-            <button
-              onClick={() => navigateToUrl('/training')}
-              className="mt-4 rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700"
-            >
-              Create Training
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Skills Assessment 

@@ -16,8 +16,8 @@ class ApiClientClass {
 
   constructor() {
     // Use same logic as manualTrainingApi.ts for consistency
-    if (import.meta.env.VITE_API_BASE_URL) {
-      this.baseURL = import.meta.env.VITE_API_BASE_URL;
+    if (import.meta.env.VITE_API_TRAINING_URL) {
+      this.baseURL = import.meta.env.VITE_API_TRAINING_URL;
     } else {
       const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
       const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
