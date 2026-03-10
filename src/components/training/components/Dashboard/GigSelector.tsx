@@ -114,51 +114,6 @@ export default function GigSelector({ companyId, industryFilter, industryName, o
           ))}
         </select>
 
-        {/* Show selected details if any */}
-        {selectedGigId && gigs.find(g => g._id === selectedGigId) && (() => {
-          const gig = gigs.find(g => g._id === selectedGigId)!;
-          return (
-            <div className="mt-4 border border-indigo-200 bg-indigo-50 rounded-lg p-3">
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="font-medium text-indigo-900">{gig.title}</h4>
-                <span className={`inline-block px-2 py-1 text-[10px] font-medium rounded-full border ${getStatusBadgeColor(gig.status)}`}>
-                  {gig.status.replace('_', ' ').toUpperCase()}
-                </span>
-              </div>
-
-              {gig.description && (
-                <p className="text-[11px] text-indigo-800 line-clamp-2 mt-1 mb-2">{gig.description}</p>
-              )}
-
-              <div className="grid grid-cols-2 gap-2 text-[10px] text-indigo-800">
-                {gig.category && (
-                  <div className="flex items-center">
-                    <Briefcase className="h-3 w-3 mr-1 opacity-70" />
-                    <span>{gig.category}</span>
-                  </div>
-                )}
-                {gig.seniority?.level && (
-                  <div className="flex items-center">
-                    <Users className="h-3 w-3 mr-1 opacity-70" />
-                    <span>{gig.seniority.level}</span>
-                  </div>
-                )}
-                {gig.availability?.minimumHours?.weekly && (
-                  <div className="flex items-center">
-                    <Clock className="h-3 w-3 mr-1 opacity-70" />
-                    <span>{gig.availability.minimumHours.weekly}h/week</span>
-                  </div>
-                )}
-                {gig.destination_zone?.name?.common && (
-                  <div className="flex items-center">
-                    <MapPin className="h-3 w-3 mr-1 opacity-70" />
-                    <span>{gig.destination_zone.name.common}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })()}
       </div>
     </div>
   );
