@@ -368,6 +368,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 </h3>
                 <GigSelector
                   industryFilter={company.industry}
+                  industryName={industries.find(ind => ind._id === company.industry)?.name || company.industry}
                   onGigSelect={handleGigSelect}
                   selectedGigId={selectedGig?._id}
                 />
