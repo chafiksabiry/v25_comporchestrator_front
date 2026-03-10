@@ -117,11 +117,7 @@ interface LanguagesResponse {
   pagination: any;
   message: string;
 }
-interface ApprovalPublishingProps {
-  onBackToOnboarding?: () => void;
-}
-
-const ApprovalPublishing = ({ onBackToOnboarding }: ApprovalPublishingProps) => {
+const ApprovalPublishing = () => {
   const [expandedGig, setExpandedGig] = useState<string | null>(null);
   const [selectedGigs, setSelectedGigs] = useState<string[]>([]);
   const [filter, setFilter] = useState('all');
@@ -1411,11 +1407,14 @@ const ApprovalPublishing = ({ onBackToOnboarding }: ApprovalPublishingProps) => 
                   <span className="text-sm font-semibold text-gray-700">Industries</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {currentGigData.industries?.map((industry: any, index: number) => (
+                  {(currentGigData.industries || []).map((industry: any, index: number) => (
                     <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 border border-emerald-200">
                       {industry?.name || getIndustryName(industry)}
                     </span>
-                  )) || <span className="text-sm text-gray-500 italic">No industries specified</span>}
+                  ))}
+                  {(!currentGigData.industries || currentGigData.industries.length === 0) && (
+                    <span className="text-sm text-gray-500 italic">No industries specified</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -1545,23 +1544,29 @@ const ApprovalPublishing = ({ onBackToOnboarding }: ApprovalPublishingProps) => 
                 <div>
                   <span className="text-sm font-medium text-gray-500">Flexibility:</span>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {currentGigData.availability?.flexibility?.map((flex: string, index: number) => (
+                    {(currentGigData.availability?.flexibility || []).map((flex: string, index: number) => (
                       <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                         {flex}
                       </span>
-                    )) || <span className="text-sm text-gray-500">No flexibility options specified</span>}
+                    ))}
+                    {(!currentGigData.availability?.flexibility || currentGigData.availability.flexibility.length === 0) && (
+                      <span className="text-sm text-gray-500">No flexibility options specified</span>
+                    )}
                   </div>
                 </div>
               </div>
               <div>
                 <span className="text-sm font-medium text-gray-500">Weekly Schedule:</span>
                 <div className="mt-2 space-y-2">
-                  {currentGigData.availability?.schedule?.map((day: any, index: number) => (
+                  {(currentGigData.availability?.schedule || []).map((day: any, index: number) => (
                     <div key={index} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
                       <span className="text-sm font-medium text-gray-900">{day?.day || 'Unknown'}</span>
                       <span className="text-sm text-gray-600">{day?.hours?.start || 'N/A'} - {day?.hours?.end || 'N/A'}</span>
                     </div>
-                  )) || <span className="text-sm text-gray-500">No schedule specified</span>}
+                  ))}
+                  {(!currentGigData.availability?.schedule || currentGigData.availability.schedule.length === 0) && (
+                    <span className="text-sm text-gray-500">No schedule specified</span>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1638,30 +1643,36 @@ const ApprovalPublishing = ({ onBackToOnboarding }: ApprovalPublishingProps) => 
                 <div>
                   <span className="text-sm font-medium text-gray-500">Territories:</span>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {currentGigData.team?.territories?.map((territory: any, index: number) => (
+                    {(currentGigData.team?.territories || []).map((territory: any, index: number) => (
                       <span key={index} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        {territory.flags && (
+                        {territory?.flags && (
                           <img
                             src={territory.flags.png}
                             alt={territory.flags.alt}
                             className="w-3 h-2 rounded-sm"
                           />
                         )}
-                        {territory.name?.common || territory}
+                        {territory?.name?.common || territory}
                       </span>
-                    )) || <span className="text-sm text-gray-500">No territories specified</span>}
+                    ))}
+                    {(!currentGigData.team?.territories || currentGigData.team.territories.length === 0) && (
+                      <span className="text-sm text-gray-500">No territories specified</span>
+                    )}
                   </div>
                 </div>
               </div>
               <div>
                 <span className="text-sm font-medium text-gray-500">Team Structure:</span>
                 <div className="mt-2 space-y-2">
-                  {currentGigData.team?.structure?.map((role: any, index: number) => (
+                  {(currentGigData.team?.structure || []).map((role: any, index: number) => (
                     <div key={index} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-md">
                       <span className="text-sm font-medium text-gray-900">{role?.roleId || 'Unknown'} ({role?.count || 0})</span>
                       <span className="text-sm text-gray-600">{role?.seniority?.level || 'N/A'} - {role?.seniority?.yearsExperience || 'N/A'} years</span>
                     </div>
-                  )) || <span className="text-sm text-gray-500">No team structure specified</span>}
+                  ))}
+                  {(!currentGigData.team?.structure || currentGigData.team.structure.length === 0) && (
+                    <span className="text-sm text-gray-500">No team structure specified</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -2105,7 +2116,7 @@ const ApprovalPublishing = ({ onBackToOnboarding }: ApprovalPublishingProps) => 
                 <input
                   type="text"
                   id="territories"
-                  defaultValue={currentGigData.team?.territories?.map((territory: any) => territory.name?.common || territory).join(', ')}
+                  defaultValue={(currentGigData.team?.territories || []).map((territory: any) => territory?.name?.common || territory).join(', ')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
                   placeholder="Enter territories (comma separated)"
                 />
@@ -2386,15 +2397,6 @@ const ApprovalPublishing = ({ onBackToOnboarding }: ApprovalPublishingProps) => 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          {onBackToOnboarding && (
-            <button
-              onClick={onBackToOnboarding}
-              className="flex items-center transition-colors text-gray-600 hover:text-gray-900"
-            >
-              <ChevronRight className="h-5 w-5 rotate-180" />
-              <span>Back to Onboarding</span>
-            </button>
-          )}
           <h1 className="text-2xl font-bold text-gray-900">Approval & Publishing</h1>
         </div>
         <div className="flex space-x-2">

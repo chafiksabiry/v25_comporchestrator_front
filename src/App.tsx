@@ -6,7 +6,8 @@ import {
   Settings,
   HelpCircle,
   LogOut,
-  Building2
+  Building2,
+  ChevronRight
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import Cookies from 'js-cookie';
@@ -141,7 +142,20 @@ function App() {
       case 'matching':
         return <Matching />;
       case 'approval-publishing':
-        return <ApprovalPublishing onBackToOnboarding={() => setActiveTab('company-onboarding')} />;
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setActiveTab('company-onboarding')}
+                className="flex items-center transition-colors text-gray-600 hover:text-gray-900"
+              >
+                <ChevronRight className="h-5 w-5 rotate-180" />
+                <span>Back to Onboarding</span>
+              </button>
+            </div>
+            <ApprovalPublishing />
+          </div>
+        );
       case 'optimization':
         return <Optimization />;
       case 'knowledge-base':
