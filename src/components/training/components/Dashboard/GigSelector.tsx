@@ -69,7 +69,7 @@ export default function GigSelector({ companyId, industryFilter, industryName, o
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
-        <Loader2 className="h-12 w-12 text-blue-500 animate-spin mb-4" />
+        <Loader2 className="h-12 w-12 text-indigo-500 animate-spin mb-4" />
         <p className="text-gray-600">Loading available gigs...</p>
       </div>
     );
@@ -96,10 +96,6 @@ export default function GigSelector({ companyId, industryFilter, industryName, o
 
   return (
     <div className="space-y-4">
-      <div className="mb-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">Select Your Gig</h3>
-        <p className="text-gray-600">Choose the gig position you want to train for</p>
-      </div>
 
       <div className="max-w-xl w-full">
         <select
@@ -108,7 +104,7 @@ export default function GigSelector({ companyId, industryFilter, industryName, o
             const selectedGig = gigs.find(g => g._id === e.target.value);
             if (selectedGig) onGigSelect(selectedGig);
           }}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg bg-white"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm bg-white"
         >
           <option value="" disabled>Select a position...</option>
           {gigs.map((gig) => (
@@ -122,19 +118,19 @@ export default function GigSelector({ companyId, industryFilter, industryName, o
         {selectedGigId && gigs.find(g => g._id === selectedGigId) && (() => {
           const gig = gigs.find(g => g._id === selectedGigId)!;
           return (
-            <div className="mt-6 border border-blue-200 bg-blue-50 rounded-lg p-4">
+            <div className="mt-4 border border-indigo-200 bg-indigo-50 rounded-lg p-3">
               <div className="flex justify-between items-start mb-2">
-                <h4 className="font-medium text-blue-900">{gig.title}</h4>
-                <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full border ${getStatusBadgeColor(gig.status)}`}>
+                <h4 className="font-medium text-indigo-900">{gig.title}</h4>
+                <span className={`inline-block px-2 py-1 text-[10px] font-medium rounded-full border ${getStatusBadgeColor(gig.status)}`}>
                   {gig.status.replace('_', ' ').toUpperCase()}
                 </span>
               </div>
 
               {gig.description && (
-                <p className="text-sm text-blue-800 line-clamp-2 mt-1 mb-3">{gig.description}</p>
+                <p className="text-[11px] text-indigo-800 line-clamp-2 mt-1 mb-2">{gig.description}</p>
               )}
 
-              <div className="grid grid-cols-2 gap-2 text-xs text-blue-800">
+              <div className="grid grid-cols-2 gap-2 text-[10px] text-indigo-800">
                 {gig.category && (
                   <div className="flex items-center">
                     <Briefcase className="h-3 w-3 mr-1 opacity-70" />

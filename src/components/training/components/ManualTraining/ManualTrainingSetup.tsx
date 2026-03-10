@@ -110,7 +110,7 @@ export const ManualTrainingSetup: React.FC<ManualTrainingSetupProps> = ({ onComp
   }, [currentStep, setupData.industry]);
 
   const steps = [
-    { id: 1, title: 'Company Information', icon: Building2 },
+    { id: 1, title: 'Industry & gigs infos', icon: Building2 },
     { id: 2, title: 'Select Gig/Role', icon: Briefcase },
     { id: 3, title: 'Training Details', icon: Target },
   ];
@@ -167,7 +167,7 @@ export const ManualTrainingSetup: React.FC<ManualTrainingSetupProps> = ({ onComp
           <div className="space-y-4">
             <div className="text-center mb-4">
               <Building2 className="h-10 w-10 text-green-500 mx-auto mb-2" />
-              <h3 className="text-xl font-bold text-gray-900 mb-1">Company Information</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-1">Industry & gigs infos</h3>
               <p className="text-sm text-gray-600">Select your industry</p>
             </div>
 
@@ -178,23 +178,7 @@ export const ManualTrainingSetup: React.FC<ManualTrainingSetupProps> = ({ onComp
               </div>
             ) : setupData.companyData ? (
               <div className="space-y-4">
-                {/* Display Company Info */}
-                <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl p-4">
-                  <div className="flex items-start gap-3">
-                    {setupData.companyData.logo && (
-                      <img
-                        src={setupData.companyData.logo}
-                        alt={setupData.companyData.name}
-                        className="w-16 h-16 rounded-lg object-cover"
-                      />
-                    )}
-                    <div className="flex-1">
-                      <h4 className="text-lg font-bold text-gray-900 mb-1">{setupData.companyData.name}</h4>
-                      <p className="text-xs text-gray-600 mb-1">{setupData.companyData.industry}</p>
-                      <p className="text-sm text-gray-700 leading-relaxed">{setupData.companyData.overview}</p>
-                    </div>
-                  </div>
-                </div>
+                {/* removed company info display */}
 
                 {/* Industry Selector */}
                 <div>

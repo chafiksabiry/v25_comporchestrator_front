@@ -77,7 +77,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const steps = [
     {
       id: 1,
-      title: 'Company Setup',
+      title: 'Industry & gigs infos',
       icon: Building2,
       description: 'Tell us about your organization',
       features: ['Industry-specific templates', 'Smart defaults', 'Compliance settings']
@@ -280,22 +280,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               </div>
             ) : companyData ? (
               <div className="space-y-3">
-                {/* Display Company Info */}
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                  <div className="flex items-center gap-3">
-                    {companyData.logo && (
-                      <img
-                        src={companyData.logo}
-                        alt={companyData.name}
-                        className="w-10 h-10 rounded-md object-cover"
-                      />
-                    )}
-                    <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-gray-900">{companyData.name}</h4>
-                      <p className="text-[10px] text-gray-500 line-clamp-1">{companyData.overview}</p>
-                    </div>
-                  </div>
-                </div>
+                {/* removed company info display */}
 
                 {/* Industry Selector */}
                 <div>
@@ -331,35 +316,6 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             )}
 
             <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Company Size *
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { value: 'startup', label: 'Startup', desc: '1-10' },
-                    { value: 'small', label: 'Small', desc: '11-50' },
-                    { value: 'medium', label: 'Medium', desc: '51-200' },
-                    { value: 'large', label: 'Large', desc: '201-1000' },
-                    { value: 'enterprise', label: 'Enterprise', desc: '1000+' },
-                  ].map((size) => (
-                    <button
-                      key={size.value}
-                      onClick={() => setCompany({ ...company, size: size.value as Company['size'] })}
-                      className={`px-3 py-1.5 border rounded-lg text-left transition-all hover:shadow-sm ${company.size === size.value
-                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
-                        : 'border-gray-200 hover:border-indigo-300'
-                        }`}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span className="font-medium text-xs">{size.label}</span>
-                        <span className="text-[10px] text-gray-500">({size.desc})</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Gig Selection */}
               <div className="pt-3 border-t border-gray-100">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
@@ -467,14 +423,13 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-              {/* Company Setup Summary */}
+              {/* Industry & Gigs Summary */}
               <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
                 <h5 className="font-semibold text-xs text-gray-900 mb-2 flex items-center">
                   <Building2 className="h-4 w-4 mr-1.5 text-indigo-500" />
-                  Company Setup
+                  Industry & gigs infos
                 </h5>
                 <ul className="space-y-1 text-[11px] text-gray-600">
-                  <li className="line-clamp-1">• {companyData?.name || company.name || 'N/A'}</li>
                   <li className="line-clamp-1">• {(() => {
                     if (company.industry) {
                       const industry = industries.find(ind => ind._id === company.industry);
@@ -482,7 +437,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                     }
                     return 'N/A';
                   })()}</li>
-                  <li>• {company.size || 'N/A'} company</li>
+                  <li className="line-clamp-1">• {selectedGig?.title || 'No gig selected'}</li>
                 </ul>
               </div>
 
@@ -550,7 +505,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        return companyData && company.industry && selectedGig !== null && company.size;
+        return companyData && company.industry && selectedGig !== null;
       case 2:
         return trainingDetails !== null; // Training details must be completed
       case 3:
