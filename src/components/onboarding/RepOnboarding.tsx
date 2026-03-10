@@ -32,8 +32,8 @@ import {
   Save
 } from 'lucide-react';
 
-import { AppContent } from '../../training_module/App';
-import '../../training_module/index.css';
+import { AppContent } from '../training/App';
+import '../training/index.css';
 
 interface RepOnboardingProps {
   onActiveStateChange?: (isActive: boolean) => void;
@@ -46,7 +46,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = ({ onActiveStateChange }) =>
   const [trainings, setTrainings] = useState<any[]>([]);
   const [loadingTrainings, setLoadingTrainings] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
-  const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string, newJourney?: boolean }>({ isOpen: false });
+  const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string, newManualTraining?: boolean }>({ isOpen: false });
 
   const onboardingSteps = [
     {
@@ -383,7 +383,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = ({ onActiveStateChange }) =>
         </div>
         <div className="flex-1 overflow-y-auto relative z-10 w-full">
           <BrowserRouter>
-            <AppContent initialJourneyId={showTraining.journeyId} isEmbedded={true} startWithJourneyBuilder={showTraining.newJourney} />
+            <AppContent initialJourneyId={showTraining.journeyId} isEmbedded={true} startWithManualTraining={showTraining.newManualTraining} />
           </BrowserRouter>
         </div>
       </div>
@@ -466,7 +466,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = ({ onActiveStateChange }) =>
           <h3 className="text-lg font-medium text-gray-900">Company Trainings & Certification</h3>
           <div className="flex space-x-3">
             <button
-              onClick={() => setShowTraining({ isOpen: true, newJourney: true })}
+              onClick={() => setShowTraining({ isOpen: true, newManualTraining: true })}
               className="flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
             >
               <Plus className="mr-2 h-4 w-4" />
