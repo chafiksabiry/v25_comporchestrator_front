@@ -6,11 +6,12 @@ import { OnboardingService } from '../../infrastructure/services/OnboardingServi
 interface GigSelectorProps {
   companyId?: string;  // Optional - will use cookie if not provided
   industryFilter?: string;  // Optional industry filter
+  industryName?: string; // Add industryName for display mapping
   onGigSelect: (gig: GigFromApi) => void;
   selectedGigId?: string;
 }
 
-export default function GigSelector({ companyId, industryFilter, onGigSelect, selectedGigId }: GigSelectorProps) {
+export default function GigSelector({ companyId, industryFilter, industryName, onGigSelect, selectedGigId }: GigSelectorProps) {
   const [gigs, setGigs] = useState<GigFromApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +34,7 @@ export default function GigSelector({ companyId, industryFilter, onGigSelect, se
         if (!response.data || response.data.length === 0) {
           setGigs([]);
           if (industryFilter) {
-            setError(`No gigs available for "${industryFilter}" industry. Please try selecting a different industry or contact support.`);
+            setError(`No gigs available for "${industryName || industryFilter}" industry. Please try selecting a different industry or contact support.`);
           } else {
             setError('No gigs available for this company. Please contact support.');
           }
@@ -52,7 +53,7 @@ export default function GigSelector({ companyId, industryFilter, onGigSelect, se
     };
 
     fetchGigs();
-  }, [companyId, industryFilter]);
+  }, [companyId, industryFilter, industryName]);
 
   const getStatusBadgeColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -77,8 +78,8 @@ export default function GigSelector({ companyId, industryFilter, onGigSelect, se
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-        <p className="text-red-600 font-medium mb-2">Error Loading Gigs</p>
+        <AlertCircle className="h-12 w-12 text-amber-500 mb-4" />
+        <p className="text-amber-600 font-medium mb-2">No Gigs Found</p>
         <p className="text-gray-600 text-sm">{error}</p>
       </div>
     );
