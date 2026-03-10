@@ -5,8 +5,8 @@ import { ManualTraining, ManualTrainingModule, ManualQuiz, TrainingProgress, Qui
 // Détection automatique de l'environnement
 const getApiBaseUrl = () => {
   // Si une variable d'environnement est définie, l'utiliser
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL;
+  if (import.meta.env.VITE_API_TRAINING_URL) {
+    return import.meta.env.VITE_API_TRAINING_URL;
   }
 
   // Détecter selon l'hostname

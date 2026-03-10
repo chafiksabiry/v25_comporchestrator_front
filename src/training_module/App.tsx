@@ -53,7 +53,7 @@ import { TrainingService } from './infrastructure/services/TrainingService';
 import Cookies from 'js-cookie';
 import { extractObjectId } from './lib/mongoUtils';
 
-export function AppContent({ initialJourneyId, isEmbedded = false }: { initialJourneyId?: string, isEmbedded?: boolean } = {}) {
+export function AppContent({ initialJourneyId, isEmbedded = false, startWithJourneyBuilder = false }: { initialJourneyId?: string, isEmbedded?: boolean, startWithJourneyBuilder?: boolean } = {}) {
   // Get journey ID from route params (inside Router context)
   const { idjourneytraining } = useParams<{ idjourneytraining?: string }>();
   const navigate = useNavigate();
@@ -94,9 +94,9 @@ export function AppContent({ initialJourneyId, isEmbedded = false }: { initialJo
   const [showCourseStreaming, setShowCourseStreaming] = useState(false);
   const [selectedCourseStream, setSelectedCourseStream] = useState<string | null>(null);
   const [showParticipantView, setShowParticipantView] = useState(false);
-  const [showJourneyBuilder, setShowJourneyBuilder] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(!isEmbedded);
-  const [hasCompletedSetup, setHasCompletedSetup] = useState(isEmbedded);
+  const [showJourneyBuilder, setShowJourneyBuilder] = useState(startWithJourneyBuilder);
+  const [showWelcome, setShowWelcome] = useState(!isEmbedded && !startWithJourneyBuilder);
+  const [hasCompletedSetup, setHasCompletedSetup] = useState(isEmbedded || startWithJourneyBuilder);
   const [launchedJourney, setLaunchedJourney] = useState<{
     journey: TrainingJourney;
     modules: TrainingModule[];

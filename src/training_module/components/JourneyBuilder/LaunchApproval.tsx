@@ -89,8 +89,8 @@ export default function LaunchApproval({
 
   // Get API base URL
   const getApiBaseUrl = () => {
-    if (import.meta.env.VITE_API_BASE_URL) {
-      return import.meta.env.VITE_API_BASE_URL;
+    if (import.meta.env.VITE_API_TRAINING_URL) {
+      return import.meta.env.VITE_API_TRAINING_URL;
     }
     return 'https://v25platformtrainingbackend-production.up.railway.app';
   };
