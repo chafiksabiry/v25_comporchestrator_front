@@ -912,7 +912,7 @@ export function AppContent({ initialJourneyId, isEmbedded = false, startWithJour
       setShowJourneyBuilder(false);
       return null;
     }
-    return <JourneyBuilder onComplete={handleJourneyComplete} />;
+    return <JourneyBuilder onComplete={handleJourneyComplete} forceNew={startWithJourneyBuilder} />;
   }
 
   // Show journey list first for trainees ONLY if they have journeys, otherwise show normal dashboard
