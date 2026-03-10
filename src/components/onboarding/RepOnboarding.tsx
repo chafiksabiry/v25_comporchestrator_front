@@ -369,7 +369,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = ({ onActiveStateChange }) =>
   if (showTraining.isOpen) {
     if (onActiveStateChange) onActiveStateChange(true);
     return (
-      <div className="bg-white rounded-xl shadow-lg mt-4 w-full h-[calc(100vh-100px)] flex flex-col overflow-hidden">
+      <div className="bg-white rounded-xl shadow-lg mt-4 w-full">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 flex-shrink-0 z-20">
           <button
             onClick={() => {
@@ -381,7 +381,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = ({ onActiveStateChange }) =>
             ← Back to Onboarding
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto relative z-10 w-full">
+        <div className="w-full">
           <BrowserRouter>
             <AppContent initialJourneyId={showTraining.journeyId} isEmbedded={true} startWithManualTraining={showTraining.newManualTraining} />
           </BrowserRouter>
