@@ -1719,7 +1719,7 @@ export default function ManualTrainingSimulator({
   }
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-50 to-gray-100 overflow-hidden">
+    <div className="flex min-h-[500px] h-full bg-slate-50">
       {/* Sidebar - Curriculum */}
       <div className={`${sidebarOpen ? 'w-80' : 'w-0'} bg-white border-r border-gray-200 flex flex-col transition-all duration-300 overflow-hidden shadow-xl`}>
         {/* Sidebar Header */}
