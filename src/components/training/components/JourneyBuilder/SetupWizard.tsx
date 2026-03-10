@@ -258,62 +258,60 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-4">
-            <div className="text-center mb-4">
-              <Building2 className="h-10 w-10 text-blue-500 mx-auto mb-2" />
-              <h3 className="text-xl font-bold text-gray-900 mb-1">Welcome to Your Training Journey</h3>
-              <p className="text-sm text-gray-600">Let's start by learning about your organization</p>
+          <div className="space-y-3">
+            <div className="flex items-center justify-center mb-2">
+              <Building2 className="h-5 w-5 text-indigo-500 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-900">Welcome to Your Training Journey</h3>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <div className="flex flex-wrap justify-center gap-2 mb-3">
               {steps[0].features.map((feature, index) => (
-                <div key={index} className="text-center p-4 bg-blue-50 rounded-lg">
-                  <Sparkles className="h-6 w-6 text-blue-500 mx-auto mb-2" />
-                  <p className="text-sm text-blue-700 font-medium">{feature}</p>
+                <div key={index} className="flex items-center space-x-1 px-2 py-1 bg-indigo-50 rounded text-xs text-indigo-700 font-medium">
+                  <Sparkles className="h-3 w-3" />
+                  <span>{feature}</span>
                 </div>
               ))}
             </div>
 
             {loadingCompany ? (
-              <div className="flex flex-col items-center justify-center py-6">
-                <Loader2 className="h-8 w-8 text-blue-500 animate-spin mb-3" />
-                <p className="text-sm text-gray-600">Loading company information...</p>
+              <div className="flex flex-col items-center justify-center py-4">
+                <Loader2 className="h-6 w-6 text-indigo-500 animate-spin mb-2" />
+                <p className="text-xs text-gray-600">Loading company information...</p>
               </div>
             ) : companyData ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Display Company Info */}
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-4">
-                  <div className="flex items-start gap-4">
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                  <div className="flex items-center gap-3">
                     {companyData.logo && (
                       <img
                         src={companyData.logo}
                         alt={companyData.name}
-                        className="w-16 h-16 rounded-lg object-cover"
+                        className="w-10 h-10 rounded-md object-cover"
                       />
                     )}
                     <div className="flex-1">
-                      <h4 className="text-lg font-bold text-gray-900 mb-1">{companyData.name}</h4>
-                      <p className="text-xs text-gray-600 mb-1">{companyData.industry}</p>
-                      <p className="text-sm text-gray-700 leading-relaxed">{companyData.overview}</p>
+                      <h4 className="text-sm font-semibold text-gray-900">{companyData.name}</h4>
+                      <p className="text-[10px] text-gray-500 line-clamp-1">{companyData.overview}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Industry Selector */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
                     Select Training Industry *
                   </label>
                   {loadingIndustries ? (
-                    <div className="w-full px-4 py-3 border border-gray-300 rounded-lg flex items-center justify-center">
-                      <Loader2 className="h-5 w-5 text-blue-500 animate-spin mr-2" />
-                      <span className="text-gray-600">Loading industries...</span>
+                    <div className="w-full px-3 py-2 border border-gray-300 rounded-lg flex items-center justify-center">
+                      <Loader2 className="h-4 w-4 text-indigo-500 animate-spin mr-2" />
+                      <span className="text-xs text-gray-600">Loading industries...</span>
                     </div>
                   ) : (
                     <select
                       value={company.industry || ''}
                       onChange={(e) => setCompany({ ...company, industry: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                     >
                       <option value="">Select the industry for training</option>
                       {industries.map((industry) => (
@@ -332,39 +330,40 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               </div>
             )}
 
-            <div className="space-y-4">
-
+            <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Company Size *
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="flex flex-wrap gap-2">
                   {[
-                    { value: 'startup', label: 'Startup', desc: '1-10 employees' },
-                    { value: 'small', label: 'Small Business', desc: '11-50 employees' },
-                    { value: 'medium', label: 'Medium Company', desc: '51-200 employees' },
-                    { value: 'large', label: 'Large Enterprise', desc: '201-1000 employees' },
-                    { value: 'enterprise', label: 'Enterprise', desc: '1000+ employees' },
+                    { value: 'startup', label: 'Startup', desc: '1-10' },
+                    { value: 'small', label: 'Small', desc: '11-50' },
+                    { value: 'medium', label: 'Medium', desc: '51-200' },
+                    { value: 'large', label: 'Large', desc: '201-1000' },
+                    { value: 'enterprise', label: 'Enterprise', desc: '1000+' },
                   ].map((size) => (
                     <button
                       key={size.value}
                       onClick={() => setCompany({ ...company, size: size.value as Company['size'] })}
-                      className={`p-3 border rounded-lg text-left transition-all hover:shadow-sm ${company.size === size.value
-                        ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm'
-                        : 'border-gray-300 hover:border-gray-400'
+                      className={`px-3 py-1.5 border rounded-lg text-left transition-all hover:shadow-sm ${company.size === size.value
+                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
+                        : 'border-gray-200 hover:border-indigo-300'
                         }`}
                     >
-                      <div className="font-semibold text-sm">{size.label}</div>
-                      <div className="text-xs text-gray-600">{size.desc}</div>
+                      <div className="flex items-center space-x-1">
+                        <span className="font-medium text-xs">{size.label}</span>
+                        <span className="text-[10px] text-gray-500">({size.desc})</span>
+                      </div>
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Gig Selection */}
-              <div className="pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <Briefcase className="h-5 w-5 mr-2 text-blue-600" />
+              <div className="pt-3 border-t border-gray-100">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                  <Briefcase className="h-4 w-4 mr-1.5 text-indigo-500" />
                   Select Your Gig *
                 </h3>
                 <GigSelector
@@ -388,28 +387,27 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
       case 3:
         return (
-          <div className="space-y-4">
-            <div className="text-center mb-4">
-              <Users className="h-10 w-10 text-purple-500 mx-auto mb-2" />
-              <h3 className="text-xl font-bold text-gray-900 mb-1">Identify Your Learners</h3>
-              <p className="text-sm text-gray-600">Who will be participating in this training program?</p>
+          <div className="space-y-3">
+            <div className="flex items-center justify-center mb-2">
+              <Users className="h-5 w-5 text-indigo-500 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-900">Identify Your Learners</h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            <div className="flex flex-wrap justify-center gap-2 mb-3">
               {steps[2].features.map((feature, index) => (
-                <div key={index} className="text-center p-4 bg-purple-50 rounded-lg">
-                  <Users className="h-6 w-6 text-purple-500 mx-auto mb-2" />
-                  <p className="text-sm text-purple-700 font-medium">{feature}</p>
+                <div key={index} className="flex items-center space-x-1 px-2 py-1 bg-indigo-50 rounded text-xs text-indigo-700 font-medium">
+                  <Users className="h-3 w-3" />
+                  <span>{feature}</span>
                 </div>
               ))}
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-4">
+                <label className="block text-xs font-medium text-gray-700 mb-2">
                   Target Roles & Departments *
                 </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {[
                     { role: 'Customer Success Representatives', dept: 'Customer Success', icon: '🎯' },
                     { role: 'Sales Representatives', dept: 'Sales', icon: '💼' },
@@ -420,7 +418,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                     { role: 'Team Leaders', dept: 'Management', icon: '👥' },
                     { role: 'All Employees', dept: 'Company-wide', icon: '🏢' },
                   ].map((item) => (
-                    <label key={item.role} className="flex items-center p-3 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 cursor-pointer transition-all">
+                    <label key={item.role} className="flex items-center p-2 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 cursor-pointer transition-all">
                       <input
                         type="checkbox"
                         checked={journey.targetRoles?.includes(item.role) || false}
@@ -432,13 +430,13 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                             setJourney({ ...journey, targetRoles: currentRoles.filter(r => r !== item.role) });
                           }
                         }}
-                        className="mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                        className="mr-2 h-3.5 w-3.5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                       />
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xl">{item.icon}</span>
+                      <div className="flex items-center space-x-1.5">
+                        <span className="text-sm">{item.icon}</span>
                         <div>
-                          <div className="font-medium text-sm text-gray-900">{item.role}</div>
-                          <div className="text-xs text-gray-600">{item.dept}</div>
+                          <div className="font-medium text-[11px] text-gray-900 line-clamp-1">{item.role}</div>
+                          <div className="text-[9px] text-gray-500">{item.dept}</div>
                         </div>
                       </div>
                     </label>
@@ -456,31 +454,27 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       case 5:
         // Setup Complete - Summary page
         return (
-          <div className="space-y-4">
-            <div className="text-center mb-4">
-              <CheckCircle className="h-10 w-10 text-green-500 mx-auto mb-2" />
-              <h3 className="text-xl font-bold text-gray-900 mb-1">Setup Complete!</h3>
-              <p className="text-sm text-gray-600">Your 360° training methodology is configured. Ready to transform your content!</p>
+          <div className="space-y-3">
+            <div className="flex items-center justify-center mb-2">
+              <CheckCircle className="h-6 w-6 text-green-500 mr-2" />
+              <h3 className="text-lg font-bold text-gray-900">Setup Complete!</h3>
             </div>
 
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl p-4 mb-4">
-              <div className="flex items-center mb-2">
-                <Sparkles className="h-5 w-5 text-green-600 mr-2" />
-                <h4 className="text-base font-bold text-gray-900">360° Methodology Applied Successfully</h4>
-              </div>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-2.5 mb-3 flex items-center">
+              <Sparkles className="h-4 w-4 text-green-600 mr-2 flex-shrink-0" />
+              <p className="text-xs font-semibold text-green-800">360° Methodology Applied Successfully. Ready to transform content!</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
               {/* Company Setup Summary */}
-              <div className="bg-white border border-gray-200 rounded-xl p-4">
-                <h5 className="font-bold text-gray-900 mb-4 flex items-center">
-                  <Building2 className="h-5 w-5 mr-2 text-blue-600" />
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                <h5 className="font-semibold text-xs text-gray-900 mb-2 flex items-center">
+                  <Building2 className="h-4 w-4 mr-1.5 text-indigo-500" />
                   Company Setup
                 </h5>
-                <ul className="space-y-2 text-sm text-gray-700">
-                  <li>• {companyData?.name || company.name || 'N/A'}</li>
-                  <li>• {(() => {
-                    // Find industry name by ID
+                <ul className="space-y-1 text-[11px] text-gray-600">
+                  <li className="line-clamp-1">• {companyData?.name || company.name || 'N/A'}</li>
+                  <li className="line-clamp-1">• {(() => {
                     if (company.industry) {
                       const industry = industries.find(ind => ind._id === company.industry);
                       return industry ? industry.name : company.industry;
@@ -492,12 +486,12 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               </div>
 
               {/* Training Program Summary */}
-              <div className="bg-white border border-gray-200 rounded-xl p-4">
-                <h5 className="font-bold text-sm text-gray-900 mb-2 flex items-center">
-                  <Target className="h-5 w-5 mr-2 text-purple-600" />
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                <h5 className="font-semibold text-xs text-gray-900 mb-2 flex items-center">
+                  <Target className="h-4 w-4 mr-1.5 text-indigo-500" />
                   Training Program
                 </h5>
-                <ul className="space-y-2 text-sm text-gray-700">
+                <ul className="space-y-1 text-[11px] text-gray-600">
                   <li>• {trainingDetails?.trainingName || selectedGig?.title || 'N/A'}</li>
                   <li>• {trainingDetails?.estimatedDuration
                     ? (() => {
@@ -514,37 +508,34 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
             {/* Methodology Components */}
             {selectedMethodology && (
-              <div className="bg-white border-2 border-gray-200 rounded-xl p-6">
-                <h5 className="font-bold text-gray-900 mb-4 flex items-center">
-                  <Sparkles className="h-5 w-5 mr-2 text-orange-600" />
-                  360° Methodology Components:
+              <div className="bg-white border border-indigo-100 rounded-lg p-3 shadow-sm">
+                <h5 className="font-semibold text-xs text-gray-900 mb-2 flex items-center">
+                  <Sparkles className="h-4 w-4 mr-1.5 text-orange-500" />
+                  360° Methodology Components
                 </h5>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-2 gap-y-1">
                   {selectedMethodology.components?.slice(0, showAllComponents ? undefined : 6).map((component: any, idx: number) => (
-                    <div key={idx} className="text-sm text-gray-700 flex items-center">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                      <span>{component.title} ({component.estimatedDuration || 0}h)</span>
+                    <div key={idx} className="text-[10px] text-gray-600 flex items-center line-clamp-1 border-b border-gray-50 pb-1">
+                      <CheckCircle className="h-3 w-3 text-green-500 mr-1.5 flex-shrink-0" />
+                      <span className="truncate">{component.title}</span>
                     </div>
                   ))}
                 </div>
                 {selectedMethodology.components && selectedMethodology.components.length > 6 && (
                   <button
                     onClick={() => setShowAllComponents(!showAllComponents)}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium mt-3 flex items-center transition-colors"
+                    className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium mt-1 flex items-center"
                   >
-                    {showAllComponents ? (
-                      <>Show less</>
-                    ) : (
-                      <>+{selectedMethodology.components.length - 6} more components</>
-                    )}
+                    {showAllComponents ? 'Show less' : `+${selectedMethodology.components.length - 6} more components`}
                   </button>
                 )}
               </div>
             )}
 
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-              <p className="text-blue-900 font-medium text-center">
-                Next: Upload your content and AI will enhance it with 360° methodology components
+            <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-2 mt-2">
+              <p className="text-indigo-900 font-medium text-xs text-center flex items-center justify-center gap-1.5">
+                <ArrowRight className="h-3 w-3" />
+                Upload your content next!
               </p>
             </div>
           </div>
@@ -577,22 +568,19 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       <div className="container mx-auto px-2 py-4">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center space-x-2 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200 mb-3">
-              <Sparkles className="h-4 w-4 text-blue-500" />
-              <span className="text-xs font-medium text-gray-700">AI-Powered Training Journey Builder</span>
-            </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+          <div className="text-center mb-4">
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1 flex justify-center items-center gap-2">
+              <Sparkles className="h-5 w-5 text-indigo-500" />
               Create Amazing Training in Minutes
             </h1>
-            <p className="text-sm md:text-base text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xs text-gray-600 max-w-2xl mx-auto">
               Transform your existing content into engaging, interactive training programs with the power of AI
             </p>
           </div>
 
           {/* Progress Steps */}
-          <div className="flex items-center justify-center mb-6">
-            <div className="flex items-center space-x-4">
+          <div className="flex items-center justify-center mb-4">
+            <div className="flex items-center space-x-2">
               {steps.map((step, index) => {
                 const Icon = step.icon;
                 const isActive = currentStep === step.id;
@@ -601,30 +589,27 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 return (
                   <div key={step.id} className="flex items-center">
                     <div className="flex flex-col items-center">
-                      <div className={`flex items-center justify-center w-16 h-16 rounded-full border-4 transition-all duration-300 ${isCompleted
-                        ? 'bg-green-500 border-green-500 text-white shadow-lg'
+                      <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-300 ${isCompleted
+                        ? 'bg-green-500 border-green-500 text-white shadow-sm'
                         : isActive
-                          ? 'bg-blue-500 border-blue-500 text-white shadow-lg scale-110'
+                          ? 'bg-indigo-500 border-indigo-500 text-white shadow-md'
                           : 'bg-white border-gray-300 text-gray-400'
                         }`}>
                         {isCompleted ? (
-                          <CheckCircle className="h-8 w-8" />
+                          <CheckCircle className="h-4 w-4" />
                         ) : (
-                          <Icon className="h-8 w-8" />
+                          <Icon className="h-4 w-4" />
                         )}
                       </div>
-                      <div className="mt-3 text-center">
-                        <div className={`text-sm font-semibold ${isActive ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-400'
+                      <div className="mt-1 text-center">
+                        <div className={`text-[10px] font-semibold ${isActive ? 'text-indigo-600' : isCompleted ? 'text-green-600' : 'text-gray-400'
                           }`}>
                           {step.title}
-                        </div>
-                        <div className="text-xs text-gray-500 max-w-24">
-                          {step.description}
                         </div>
                       </div>
                     </div>
                     {index < steps.length - 1 && (
-                      <div className={`w-16 h-1 mx-4 rounded-full transition-all duration-300 ${isCompleted ? 'bg-green-500' : 'bg-gray-200'
+                      <div className={`w-8 h-0.5 mx-2 rounded-full transition-all duration-300 ${isCompleted ? 'bg-green-500' : 'bg-gray-200'
                         }`} />
                     )}
                   </div>
@@ -633,14 +618,14 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               {/* Setup Complete Step */}
               {currentStep === 5 && (
                 <>
-                  <div className={`w-16 h-1 mx-4 rounded-full bg-green-500 transition-all duration-300`} />
+                  <div className={`w-8 h-0.5 mx-2 rounded-full bg-green-500 transition-all duration-300`} />
                   <div className="flex flex-col items-center">
-                    <div className="flex items-center justify-center w-16 h-16 rounded-full border-4 bg-green-500 border-green-500 text-white shadow-lg">
-                      <CheckCircle className="h-8 w-8" />
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full border-2 bg-green-500 border-green-500 text-white shadow-sm">
+                      <CheckCircle className="h-4 w-4" />
                     </div>
-                    <div className="mt-3 text-center">
-                      <div className="text-sm font-semibold text-green-600">
-                        Setup Complete!
+                    <div className="mt-1 text-center">
+                      <div className="text-[10px] font-semibold text-green-600">
+                        Complete
                       </div>
                     </div>
                   </div>
@@ -651,14 +636,14 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
           {/* Step Content */}
           {currentStep !== 4 && (
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 mb-8">
+            <div className="bg-white rounded-lg shadow border border-gray-200 p-4 mb-4">
               {renderStepContent()}
             </div>
           )}
 
           {/* Navigation Buttons - Hide for step 2 and 4 (TrainingDetailsForm and MethodologySelector handle their own navigation) */}
           {currentStep !== 2 && currentStep !== 4 && (
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
               <button
                 onClick={() => {
                   if (currentStep === 5) {
@@ -667,23 +652,22 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                     setCurrentStep(currentStep - 1);
                   }
                 }}
-                className={`px-6 py-3 rounded-xl transition-all font-medium flex items-center space-x-2 ${currentStep === 1
+                className={`px-4 py-2 rounded-lg transition-all text-sm font-medium flex items-center space-x-1 ${currentStep === 1
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
                   }`}
                 disabled={currentStep === 1}
               >
                 <span>Back</span>
               </button>
 
-              <div className="flex items-center space-x-4">
-                <div className="text-sm text-gray-600">
+              <div className="flex flex-col items-center w-1/3">
+                <div className="text-xs text-gray-500 mb-1">
                   Step {currentStep === 5 ? steps.length : currentStep} of {steps.length}
                 </div>
-
-                <div className="w-64 bg-gray-200 rounded-full h-2 overflow-hidden">
+                <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
                   <div
-                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                    className="bg-indigo-500 h-1.5 rounded-full transition-all duration-500"
                     style={{ width: `${(currentStep === 5 ? steps.length : currentStep) / steps.length * 100}%` }}
                   />
                 </div>
@@ -692,10 +676,10 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               <button
                 onClick={handleNext}
                 disabled={!isStepValid()}
-                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg flex items-center space-x-2"
+                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium shadow-sm flex items-center space-x-1"
               >
                 <span>{currentStep === 5 ? 'Start Building' : 'Continue'}</span>
-                <ArrowRight className="h-5 w-5" />
+                <ArrowRight className="h-4 w-4" />
               </button>
             </div>
           )}
