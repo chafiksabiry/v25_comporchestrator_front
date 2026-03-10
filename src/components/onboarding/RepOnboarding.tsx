@@ -367,16 +367,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   if (showTraining.isOpen) {
     return (
       <div className="bg-white rounded-xl shadow-lg mt-4 w-full">
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 flex-shrink-0 z-20">
-          <button
-            onClick={() => {
-              setShowTraining({ isOpen: false });
-            }}
-            className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800"
-          >
-            ← Back to Onboarding
-          </button>
-        </div>
         <div className="w-full">
           <BrowserRouter>
             <AppContent initialJourneyId={showTraining.journeyId} isEmbedded={true} startWithJourneyBuilder={showTraining.newJourney} />
