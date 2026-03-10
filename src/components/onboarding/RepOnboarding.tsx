@@ -383,7 +383,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = ({ onActiveStateChange }) =>
         </div>
         <div className="flex-1 overflow-y-auto relative z-10 w-full">
           <BrowserRouter>
-            <AppContent initialJourneyId={showTraining.journeyId} />
+            <AppContent initialJourneyId={showTraining.journeyId} isEmbedded={true} />
           </BrowserRouter>
         </div>
       </div>
