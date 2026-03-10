@@ -257,55 +257,37 @@ export const ManualTrainingSetup: React.FC<ManualTrainingSetupProps> = ({ onComp
                 <p className="text-gray-600">No gigs available for this company.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {gigs.map((gig) => (
-                  <div
-                    key={gig._id}
-                    onClick={() => handleGigSelect(gig)}
-                    className={`border-2 rounded-xl p-5 cursor-pointer transition-all hover:shadow-lg ${setupData.gig?._id === gig._id
-                      ? 'border-green-500 bg-green-50 shadow-md'
-                      : 'border-gray-200 hover:border-green-300'
-                      }`}
-                  >
-                    {/* Header */}
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h4 className="text-lg font-semibold text-gray-900 mb-1">{gig.title}</h4>
-                        <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full border ${getStatusBadgeColor(gig.status)}`}>
-                          {gig.status.replace('_', ' ').toUpperCase()}
-                        </span>
-                      </div>
-                      {setupData.gig?._id === gig._id && (
-                        <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0 ml-2" />
-                      )}
-                    </div>
+              <div className="max-w-xl mx-auto w-full">
+                <select
+                  value={setupData.gig?._id || ''}
+                  onChange={(e) => {
+                    const selectedGig = gigs.find(g => g._id === e.target.value);
+                    if (selectedGig) handleGigSelect(selectedGig);
+                  }}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-lg bg-white"
+                >
+                  <option value="" disabled>Select a position...</option>
+                  {gigs.map((gig) => (
+                    <option key={gig._id} value={gig._id}>
+                      {gig.title} {gig.location ? ` - ${gig.location}` : ''}
+                    </option>
+                  ))}
+                </select>
 
-                    {/* Description */}
-                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">{gig.description}</p>
-
-                    {/* Details */}
-                    <div className="space-y-2 text-sm">
-                      {gig.averageSalary && (
-                        <div className="flex items-center text-green-700">
-                          <DollarSign className="h-4 w-4 mr-2" />
-                          <span className="font-medium">${gig.averageSalary.toLocaleString()}/year</span>
-                        </div>
-                      )}
-                      {gig.location && (
-                        <div className="flex items-center text-gray-600">
-                          <MapPin className="h-4 w-4 mr-2" />
-                          <span>{gig.location}</span>
-                        </div>
-                      )}
-                      {gig.duration && (
-                        <div className="flex items-center text-gray-600">
-                          <Clock className="h-4 w-4 mr-2" />
-                          <span>{gig.duration}</span>
-                        </div>
-                      )}
+                {/* Show selected details if any */}
+                {setupData.gig && (
+                  <div className="mt-6 border border-green-200 bg-green-50 rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-medium text-green-900">{setupData.gig.title}</h4>
+                      <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full border ${getStatusBadgeColor(setupData.gig.status)}`}>
+                        {setupData.gig.status.replace('_', ' ').toUpperCase()}
+                      </span>
                     </div>
+                    {setupData.gig.description && (
+                      <p className="text-sm text-green-800 line-clamp-2 mt-1">{setupData.gig.description}</p>
+                    )}
                   </div>
-                ))}
+                )}
               </div>
             )}
           </div>
