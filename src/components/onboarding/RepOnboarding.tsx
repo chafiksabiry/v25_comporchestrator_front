@@ -366,8 +366,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   if (showTraining.isOpen) {
     return (
-      <div className="bg-white rounded-xl shadow-lg mt-0 w-full mb-0">
-        <div className="w-full">
+      <div className="w-full h-full flex flex-col">
+        <div className="w-full flex-1">
           <BrowserRouter>
             <AppContent
               initialJourneyId={showTraining.journeyId}
