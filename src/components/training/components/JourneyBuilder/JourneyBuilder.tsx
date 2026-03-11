@@ -268,9 +268,9 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
   return (
     <div className="min-h-full bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Progress Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="container mx-auto px-2 py-4">
-          <div className="max-w-6xl mx-auto">
+      <div className="bg-white border-b border-gray-200 shadow-sm z-10 relative">
+        <div className="w-full px-4 py-4">
+          <div className="w-full">
             {/* Company Info */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
@@ -353,7 +353,7 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
       </div>
 
       {/* Step Content */}
-      <div className="flex-1">
+      <div className="flex-1 w-full h-full relative z-0">
         {renderCurrentStep()}
       </div>
     </div>

@@ -2178,8 +2178,8 @@ export function AppContent({
           </div>
         )}
 
-        <main className={`flex-1 flex gap-6 ${selectedModule ? 'p-6 pb-0' : 'p-6'}`} style={{ display: 'flex', flexDirection: 'row', minHeight: 0, overflow: 'visible' }}>
-          <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
+        <main className={`flex-1 flex gap-6 w-full ${selectedModule ? 'p-6 pb-0' : 'p-0'}`} style={{ display: 'flex', flexDirection: 'row', minHeight: 0, overflow: 'visible' }}>
+          <div className="flex-1 w-full h-full overflow-y-auto" style={{ minHeight: 0 }}>
             {renderContent()}
           </div>
 
