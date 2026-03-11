@@ -267,7 +267,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             <div className="flex flex-wrap justify-center gap-2 mb-3">
               {steps[0].features.map((feature, index) => (
                 <div key={index} className="flex items-center space-x-1 px-2 py-1 bg-indigo-50 rounded text-xs text-indigo-700 font-medium">
-                  <Sparkles className="h-3 w-3" />
+                  <Sparkles className="h-3 w-3 text-yellow-500" />
                   <span>{feature}</span>
                 </div>
               ))}
@@ -319,7 +319,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               {/* Gig Selection */}
               <div className="pt-3 border-t border-gray-100">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-                  <Briefcase className="h-4 w-4 mr-1.5 text-indigo-500" />
+                  <Briefcase className="h-4 w-4 mr-1.5 text-blue-500" />
                   Select Your Gig *
                 </h3>
                 <GigSelector
@@ -520,8 +520,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   };
 
   return (
-    <div className="h-full w-full">
-      <div className="container mx-auto px-2 py-4">
+    <div className="h-auto w-full">
+      <div className="container mx-auto px-2 py-2">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-4">
