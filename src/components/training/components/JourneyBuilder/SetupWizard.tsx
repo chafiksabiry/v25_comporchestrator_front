@@ -520,8 +520,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] w-full">
-      <div className="w-full max-w-4xl px-4 py-6">
+    <div className="w-full h-full flex flex-col">
+      <div className="w-full flex-1 flex flex-col p-4 md:p-6 opacity-100 transition-opacity duration-500 relative">
         {/* Header */}
         <div className="text-center mb-2">
           <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1 flex justify-center items-center gap-2">
@@ -591,14 +591,19 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
         {/* Step Content */}
         {currentStep !== 4 && (
-          <div className="bg-white rounded-lg shadow border border-gray-200 p-3 mb-2">
-            {renderStepContent()}
+          <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-4 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/30 to-purple-50/30 pointer-events-none" />
+            <div className="h-full overflow-y-auto relative z-10 custom-scrollbar pr-2">
+              <div className="max-w-4xl mx-auto pb-4">
+                {renderStepContent()}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Navigation Buttons - Hide for step 2 and 4 (TrainingDetailsForm and MethodologySelector handle their own navigation) */}
+        {/* Navigation Buttons */}
         {currentStep !== 2 && currentStep !== 4 && (
-          <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+          <div className="sticky bottom-0 bg-white/80 backdrop-blur-md p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between z-20">
             <button
               onClick={() => {
                 if (currentStep === 5) {
