@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { GigFromApi } from '../../types';
 import { OnboardingService } from '../../infrastructure/services/OnboardingService';
 
@@ -73,6 +73,12 @@ export default function GigSelector({ companyId, industryFilter, industryName, o
             </option>
           ))}
         </select>
+        {gigs.length === 0 && (
+          <div className="mt-2 flex items-center text-amber-600 text-xs bg-amber-50 p-2 rounded-md border border-amber-100">
+            <AlertCircle className="h-4 w-4 mr-1.5 flex-shrink-0" />
+            <span>No gigs available for "{industryName || industryFilter}". Please select a different industry.</span>
+          </div>
+        )}
       </div>
     </div>
   );
