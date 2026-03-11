@@ -1500,7 +1500,7 @@ const CompanyOnboarding = () => {
 
   if (activeComponent) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-2">
         <div className="flex items-center space-x-4">
           <button
             onClick={() => {

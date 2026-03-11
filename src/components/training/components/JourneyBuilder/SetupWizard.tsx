@@ -524,7 +524,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       <div className="container mx-auto px-2 py-2">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-4">
+          <div className="text-center mb-2">
             <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1 flex justify-center items-center gap-2">
               <Sparkles className="h-5 w-5 text-indigo-500" />
               Create Amazing Training in Minutes
@@ -535,7 +535,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           </div>
 
           {/* Progress Steps */}
-          <div className="flex items-center justify-center mb-4">
+          <div className="flex items-center justify-center mb-2">
             <div className="flex items-center space-x-2">
               {steps.map((step, index) => {
                 const Icon = step.icon;
@@ -592,7 +592,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
           {/* Step Content */}
           {currentStep !== 4 && (
-            <div className="bg-white rounded-lg shadow border border-gray-200 p-4 mb-4">
+            <div className="bg-white rounded-lg shadow border border-gray-200 p-3 mb-2">
               {renderStepContent()}
             </div>
           )}
