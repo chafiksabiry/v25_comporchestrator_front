@@ -520,126 +520,124 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   };
 
   return (
-    <div className="h-auto w-full">
-      <div className="container mx-auto px-2 py-2">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-2">
-            <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1 flex justify-center items-center gap-2">
-              <Sparkles className="h-5 w-5 text-indigo-500" />
-              Create Amazing Training in Minutes
-            </h1>
-            <p className="text-xs text-gray-600 max-w-2xl mx-auto">
-              Transform your existing content into engaging, interactive training programs with the power of AI
-            </p>
-          </div>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] w-full">
+      <div className="w-full max-w-4xl px-4 py-6">
+        {/* Header */}
+        <div className="text-center mb-2">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1 flex justify-center items-center gap-2">
+            <Sparkles className="h-5 w-5 text-indigo-500" />
+            Create Amazing Training in Minutes
+          </h1>
+          <p className="text-xs text-gray-600 max-w-2xl mx-auto">
+            Transform your existing content into engaging, interactive training programs with the power of AI
+          </p>
+        </div>
 
-          {/* Progress Steps */}
-          <div className="flex items-center justify-center mb-2">
-            <div className="flex items-center space-x-2">
-              {steps.map((step, index) => {
-                const Icon = step.icon;
-                const isActive = currentStep === step.id;
-                const isCompleted = currentStep > step.id;
+        {/* Progress Steps */}
+        <div className="flex items-center justify-center mb-2">
+          <div className="flex items-center space-x-2">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              const isActive = currentStep === step.id;
+              const isCompleted = currentStep > step.id;
 
-                return (
-                  <div key={step.id} className="flex items-center">
-                    <div className="flex flex-col items-center">
-                      <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-300 ${isCompleted
-                        ? 'bg-green-500 border-green-500 text-white shadow-sm'
-                        : isActive
-                          ? 'bg-indigo-500 border-indigo-500 text-white shadow-md'
-                          : 'bg-white border-gray-300 text-gray-400'
-                        }`}>
-                        {isCompleted ? (
-                          <CheckCircle className="h-4 w-4" />
-                        ) : (
-                          <Icon className="h-4 w-4" />
-                        )}
-                      </div>
-                      <div className="mt-1 text-center">
-                        <div className={`text-[10px] font-semibold ${isActive ? 'text-indigo-600' : isCompleted ? 'text-green-600' : 'text-gray-400'
-                          }`}>
-                          {step.title}
-                        </div>
-                      </div>
-                    </div>
-                    {index < steps.length - 1 && (
-                      <div className={`w-8 h-0.5 mx-2 rounded-full transition-all duration-300 ${isCompleted ? 'bg-green-500' : 'bg-gray-200'
-                        }`} />
-                    )}
-                  </div>
-                );
-              })}
-              {/* Setup Complete Step */}
-              {currentStep === 5 && (
-                <>
-                  <div className={`w-8 h-0.5 mx-2 rounded-full bg-green-500 transition-all duration-300`} />
+              return (
+                <div key={step.id} className="flex items-center">
                   <div className="flex flex-col items-center">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full border-2 bg-green-500 border-green-500 text-white shadow-sm">
-                      <CheckCircle className="h-4 w-4" />
+                    <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-300 ${isCompleted
+                      ? 'bg-green-500 border-green-500 text-white shadow-sm'
+                      : isActive
+                        ? 'bg-indigo-500 border-indigo-500 text-white shadow-md'
+                        : 'bg-white border-gray-300 text-gray-400'
+                      }`}>
+                      {isCompleted ? (
+                        <CheckCircle className="h-4 w-4" />
+                      ) : (
+                        <Icon className="h-4 w-4" />
+                      )}
                     </div>
                     <div className="mt-1 text-center">
-                      <div className="text-[10px] font-semibold text-green-600">
-                        Complete
+                      <div className={`text-[10px] font-semibold ${isActive ? 'text-indigo-600' : isCompleted ? 'text-green-600' : 'text-gray-400'
+                        }`}>
+                        {step.title}
                       </div>
                     </div>
                   </div>
-                </>
-              )}
-            </div>
+                  {index < steps.length - 1 && (
+                    <div className={`w-8 h-0.5 mx-2 rounded-full transition-all duration-300 ${isCompleted ? 'bg-green-500' : 'bg-gray-200'
+                      }`} />
+                  )}
+                </div>
+              );
+            })}
+            {/* Setup Complete Step */}
+            {currentStep === 5 && (
+              <>
+                <div className={`w-8 h-0.5 mx-2 rounded-full bg-green-500 transition-all duration-300`} />
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full border-2 bg-green-500 border-green-500 text-white shadow-sm">
+                    <CheckCircle className="h-4 w-4" />
+                  </div>
+                  <div className="mt-1 text-center">
+                    <div className="text-[10px] font-semibold text-green-600">
+                      Complete
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
-
-          {/* Step Content */}
-          {currentStep !== 4 && (
-            <div className="bg-white rounded-lg shadow border border-gray-200 p-3 mb-2">
-              {renderStepContent()}
-            </div>
-          )}
-
-          {/* Navigation Buttons - Hide for step 2 and 4 (TrainingDetailsForm and MethodologySelector handle their own navigation) */}
-          {currentStep !== 2 && currentStep !== 4 && (
-            <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-              <button
-                onClick={() => {
-                  if (currentStep === 5) {
-                    setCurrentStep(4);
-                  } else if (currentStep > 1) {
-                    setCurrentStep(currentStep - 1);
-                  }
-                }}
-                className={`px-4 py-2 rounded-lg transition-all text-sm font-medium flex items-center space-x-1 ${currentStep === 1
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
-                  }`}
-                disabled={currentStep === 1}
-              >
-                <span>Back</span>
-              </button>
-
-              <div className="flex flex-col items-center w-1/3">
-                <div className="text-xs text-gray-500 mb-1">
-                  Step {currentStep === 5 ? steps.length : currentStep} of {steps.length}
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className="bg-indigo-500 h-1.5 rounded-full transition-all duration-500"
-                    style={{ width: `${(currentStep === 5 ? steps.length : currentStep) / steps.length * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              <button
-                onClick={handleNext}
-                disabled={!isStepValid()}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium shadow-sm flex items-center space-x-1"
-              >
-                <span>{currentStep === 5 ? 'Start Building' : 'Continue'}</span>
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          )}
         </div>
+
+        {/* Step Content */}
+        {currentStep !== 4 && (
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-3 mb-2">
+            {renderStepContent()}
+          </div>
+        )}
+
+        {/* Navigation Buttons - Hide for step 2 and 4 (TrainingDetailsForm and MethodologySelector handle their own navigation) */}
+        {currentStep !== 2 && currentStep !== 4 && (
+          <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+            <button
+              onClick={() => {
+                if (currentStep === 5) {
+                  setCurrentStep(4);
+                } else if (currentStep > 1) {
+                  setCurrentStep(currentStep - 1);
+                }
+              }}
+              className={`px-4 py-2 rounded-lg transition-all text-sm font-medium flex items-center space-x-1 ${currentStep === 1
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                }`}
+              disabled={currentStep === 1}
+            >
+              <span>Back</span>
+            </button>
+
+            <div className="flex flex-col items-center w-1/3">
+              <div className="text-xs text-gray-500 mb-1">
+                Step {currentStep === 5 ? steps.length : currentStep} of {steps.length}
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                <div
+                  className="bg-indigo-500 h-1.5 rounded-full transition-all duration-500"
+                  style={{ width: `${(currentStep === 5 ? steps.length : currentStep) / steps.length * 100}%` }}
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={handleNext}
+              disabled={!isStepValid()}
+              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium shadow-sm flex items-center space-x-1"
+            >
+              <span>{currentStep === 5 ? 'Start Building' : 'Continue'}</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
