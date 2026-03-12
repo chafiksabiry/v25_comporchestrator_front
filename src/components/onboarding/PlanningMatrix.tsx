@@ -3,6 +3,7 @@ import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { TimeSlot, Rep } from '../../types/scheduler';
 import { Clock, Calendar, Save } from 'lucide-react';
 import { schedulerApi } from '../../services/schedulerService';
+import React from 'react';
 
 interface PlanningMatrixProps {
     selectedDate: Date;
