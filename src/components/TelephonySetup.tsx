@@ -1142,20 +1142,27 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       {/* Provider Selection */}
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="text-lg font-medium text-gray-900">Select Provider</h3>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {providers.map((p) => {
             const Logo = p.logo;
+            const isDisabled = p.id === 'telnyx';
             return (
               <button
                 key={p.id}
-                className={`flex items-center justify-center rounded-lg border p-4 ${provider === p.id
-                  ? 'border-indigo-500 bg-indigo-50'
-                  : 'border-gray-200 hover:bg-gray-50'
+                disabled={isDisabled}
+                className={`flex items-center justify-center rounded-lg border p-4 transition-all duration-200 ${isDisabled
+                    ? 'opacity-40 grayscale cursor-not-allowed bg-gray-50 border-gray-200'
+                    : provider === p.id
+                      ? 'border-indigo-500 bg-indigo-50 shadow-sm'
+                      : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
                   }`}
                 onClick={() => setProvider(p.id)}
               >
-                <Logo className="mr-2 h-5 w-5 text-indigo-600" />
-                <span className="font-medium text-gray-900">{p.name}</span>
+                <Logo className={`mr-2 h-5 w-5 ${isDisabled ? 'text-gray-400' : 'text-indigo-600'}`} />
+                <span className={`font-medium ${isDisabled ? 'text-gray-400' : 'text-gray-900'}`}>
+                  {p.name}
+                  {isDisabled && <span className="ml-2 text-[10px] uppercase tracking-tighter">(Soon)</span>}
+                </span>
               </button>
             );
           })}
