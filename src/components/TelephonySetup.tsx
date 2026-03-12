@@ -75,11 +75,7 @@ interface Gig {
   updatedAt: string;
 }
 
-interface TelephonySetupProps {
-  onBackToOnboarding?: () => void;
-}
-
-const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Element => {
+const TelephonySetup = (): JSX.Element => {
   const [provider, setProvider] = useState<'telnyx' | 'twilio'>('twilio');
   const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(null);
@@ -855,23 +851,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     }
   };
 
-  const handleSaveConfiguration = async () => {
-    // We strictly go back to the orchestrator here. Saving is handled by the purchase process automatically now.
-    if (onBackToOnboarding) {
-      setTimeout(() => {
-        onBackToOnboarding();
-      }, 100);
-    } else {
-      if (window.history && window.history.pushState) {
-        window.history.pushState({}, '', '/app11');
-        window.dispatchEvent(new PopStateEvent('popstate'));
-      } else {
-        window.dispatchEvent(new CustomEvent('telephonySetupCompleted', {
-          detail: { stepId: 5, status: 'completed' }
-        }));
-      }
-    }
-  };
+
 
   const handleSubmitRequirements = async (values: Record<string, any>) => {
     try {
@@ -1022,33 +1002,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           </div>
           <p className="text-sm text-gray-500">Configure your call center infrastructure</p>
         </div>
-        <div className="flex space-x-3">
-          <button
-            className={`flex items-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${!selectedGigId
-              ? 'bg-gray-400 text-white cursor-not-allowed'
-              : completedSteps.includes(4)
-                ? 'bg-green-600 text-white hover:bg-green-700 hover:shadow-md'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md'
-              }`}
-            onClick={!selectedGigId ? undefined : handleSaveConfiguration}
-            disabled={!selectedGigId}
-            title={!selectedGigId ? 'Please select a gig first' : ''}
-          >
-            {completedSteps.includes(4) ? (
-              <>
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Back to Onboarding
-              </>
-            ) : !selectedGigId ? (
-              <>
-                <AlertCircle className="mr-2 h-4 w-4" />
-                Select Gig First
-              </>
-            ) : (
-              'Back to Onboarding'
-            )}
-          </button>
-        </div>
+
       </div>
 
       {/* Gig Selection */}
