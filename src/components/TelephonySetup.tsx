@@ -246,17 +246,17 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       console.log('🔍 Checking if gig has a phone number:', selectedGigId);
       const result = await phoneNumberService.listPhoneNumbers(selectedGigId);
 
-      if (result?.hasNumber && result.number) {
-        // Case 1.1: Gig already has a number
-        console.log('✅ Found existing number for gig');
-        setPhoneNumbers([result.number]);
+      if (result?.hasNumber && result.numbers && result.numbers.length > 0) {
+        // Case 1.1: Gig already has number(s)
+        console.log('✅ Found existing numbers for gig');
+        setPhoneNumbers(result.numbers);
         setRequirementStatus({
           isChecking: false,
           hasRequirements: false,
           isComplete: true,
           error: null
         });
-        // Even if gig has a number, we still want to search available numbers for Telnyx/Twilio
+        // We still want to search available numbers to buy more as long as quota isn't reached
         if (provider === 'telnyx' || provider === 'twilio') {
           searchAvailableNumbers(zone);
         }
@@ -672,12 +672,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       console.log('📞 Check result:', result);
 
       // Met à jour la liste des numéros (supporte maintenant plusieurs numéros s'ils existent)
-      if (result?.hasNumber && result.number) {
-        // Si le backend renvoie un seul numéro mais qu'on en veut plusieurs, 
-        // on verra au fur et à mesure des achats. 
-        // Note: phoneNumberService.listPhoneNumbers devrait idéalement renvoyer un tableau.
-        setPhoneNumbers(Array.isArray(result.number) ? result.number : [result.number]);
-      } else if (result?.numbers && Array.isArray(result.numbers)) {
+      if (result?.hasNumber && result.numbers && Array.isArray(result.numbers)) {
         setPhoneNumbers(result.numbers);
       } else {
         setPhoneNumbers([]);

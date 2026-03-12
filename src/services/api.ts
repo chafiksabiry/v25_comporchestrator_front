@@ -13,7 +13,7 @@ interface PhoneNumber {
 
 interface CheckNumberResponse {
   hasNumber: boolean;
-  number?: PhoneNumber;
+  numbers?: PhoneNumber[];
   message?: string;
 }
 
