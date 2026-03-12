@@ -229,7 +229,9 @@ const TelephonySetup = (): JSX.Element => {
   }, [phoneNumbers]);
 
   /* New state for Twilio SIDs */
-  const [twilioRegulatorySids, setTwilioRegulatorySids] = useState<{ bundleSid?: string; addressSid?: string } | null>(null);
+  const [twilioRegulatorySids, setTwilioRegulatorySids] = useState<{ bundleSid?: string; addressSid?: string }>({
+    addressSid: 'AD455d66025589029af3156837713cd5c7' // Provided by user
+  });
 
   const checkGigPhoneNumber = async (zoneOverride?: string) => {
     if (!selectedGigId) return false;
@@ -916,8 +918,23 @@ const TelephonySetup = (): JSX.Element => {
         await phoneNumberService.submitTwilioBundle(bundleSid);
         console.log('✅ Submitted Twilio Bundle');
 
+        // 6. Handle Address creation if needed (simplified check)
+        let addressSid = twilioRegulatorySids.addressSid;
+        if (values['street'] || values['city'] || values['postal_code']) {
+          const address = await phoneNumberService.createTwilioAddress({
+            customerName: values['customer_name'] || 'Business',
+            street: values['street'] || '',
+            city: values['city'] || '',
+            region: values['region'] || '',
+            postalCode: values['postal_code'] || '',
+            isoCountry: destinationZone
+          });
+          addressSid = address.sid;
+          console.log('✅ Created Twilio Address:', addressSid);
+        }
+
         // Store SIDs for Purchase
-        setTwilioRegulatorySids({ bundleSid });
+        setTwilioRegulatorySids(prev => ({ ...prev, bundleSid, addressSid }));
         setRequirementStatus(prev => ({ ...prev, isComplete: true }));
         setPurchaseStatus('confirming');
 
