@@ -122,9 +122,10 @@ const TelephonySetup = (): JSX.Element => {
   const [destinationZone, setDestinationZone] = useState('');
   const [availableNumbers, setAvailableNumbers] = useState<AvailablePhoneNumber[]>([]);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
+  const [purchaseType, setPurchaseType] = useState<string | undefined>(undefined);
   const [purchaseStatus, setPurchaseStatus] = useState<'idle' | 'confirming' | 'requirements' | 'purchasing' | 'success' | 'error'>('idle');
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
-  const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [showRequirementModal, setShowRequirementModal] = useState(false);
   const [purchaseResponse, setPurchaseResponse] = useState<{
@@ -707,7 +708,7 @@ const TelephonySetup = (): JSX.Element => {
     }
   };
 
-  const purchaseNumber = async (phoneNumber: string, options?: { bundleSid?: string; addressSid?: string }) => {
+  const purchaseNumber = async (phoneNumber: string, options?: { bundleSid?: string; addressSid?: string; type?: string }) => {
     if (!selectedGigId || !companyId) {
       console.error('❌ Required IDs missing:', { selectedGigId, companyId });
       setPurchaseError('Configuration error: Required IDs not found');
@@ -771,7 +772,8 @@ const TelephonySetup = (): JSX.Element => {
 
         requirementGroupId: provider === 'telnyx' ? requirementStatus.telnyxId : undefined,
         bundleSid: options?.bundleSid,
-        addressSid: options?.addressSid
+        addressSid: options?.addressSid,
+        type: options?.type
       };
 
       console.log('📝 Purchase request data:', purchaseData);
@@ -982,18 +984,19 @@ const TelephonySetup = (): JSX.Element => {
     }
   };
 
-  const handleConfirmPurchase = async (sids?: { bundleSid?: string; addressSid?: string }, phoneNumberOverride?: string) => {
+  const handleConfirmPurchase = async (sids?: { bundleSid?: string; addressSid?: string }, phoneNumberOverride?: string, type?: string) => {
     const numberToPurchase = phoneNumberOverride || selectedNumber;
     if (!numberToPurchase) return;
     
-    console.log('🖱️ handleConfirmPurchase called with:', { sids, numberToPurchase });
+    console.log('🖱️ handleConfirmPurchase called with:', { sids, numberToPurchase, type });
     setPurchaseStatus('purchasing');
     try {
       // Filter out empty strings and merge with default twilioRegulatorySids
       const purchaseSids = {
         ...twilioRegulatorySids,
         ...(sids?.bundleSid ? { bundleSid: sids.bundleSid } : {}),
-        ...(sids?.addressSid ? { addressSid: sids.addressSid } : {})
+        ...(sids?.addressSid ? { addressSid: sids.addressSid } : {}),
+        type: type // Include the type
       };
       console.log('🧩 Merged purchaseSids to be sent:', purchaseSids);
       await purchaseNumber(numberToPurchase, purchaseSids);
@@ -1262,13 +1265,23 @@ const TelephonySetup = (): JSX.Element => {
                 // Case 1.1: Show existing number for the gig
                 phoneNumbers
                   .filter(number => number.provider === 'telnyx')
-                  .map((number) => (
+                  .map((number: any) => (
                     <div
                       key={number.phoneNumber}
                       className="flex items-center justify-between rounded-lg border p-3"
                     >
                       <div className="flex flex-col">
-                        <span className="font-medium">{number.phoneNumber}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{number.phoneNumber}</span>
+                          {number.metadata?.type && (
+                            <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full ${number.metadata.type === 'local' ? 'bg-blue-100 text-blue-700' :
+                              number.metadata.type === 'national' ? 'bg-purple-100 text-purple-700' :
+                                'bg-orange-100 text-orange-700'
+                              }`}>
+                              {number.metadata.type}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-sm text-gray-500">
                           Status: {number.status}
                         </span>
@@ -1299,13 +1312,23 @@ const TelephonySetup = (): JSX.Element => {
               {Array.isArray(phoneNumbers) && phoneNumbers.filter(number => number.provider === 'twilio').length > 0 ? (
                 phoneNumbers
                   .filter(number => number.provider === 'twilio')
-                  .map((number) => (
+                  .map((number: any) => (
                     <div
                       key={number.phoneNumber}
                       className="flex items-center justify-between rounded-lg border p-3"
                     >
                       <div className="flex flex-col">
-                        <span className="font-medium">{number.phoneNumber}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{number.phoneNumber}</span>
+                          {number.metadata?.type && (
+                            <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full ${number.metadata.type === 'local' ? 'bg-blue-100 text-blue-700' :
+                              number.metadata.type === 'national' ? 'bg-purple-100 text-purple-700' :
+                                'bg-orange-100 text-orange-700'
+                              }`}>
+                              {number.metadata.type}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-sm text-gray-500">
                           Status: {number.status}
                         </span>
@@ -1360,11 +1383,12 @@ const TelephonySetup = (): JSX.Element => {
                             setSelectedNumber(phoneNumber);
                             // Bypass modal for FR National numbers because the user provided default SIDs
                             if (destinationZone === 'FR' && number.type === 'national' && twilioRegulatorySids.bundleSid) {
-                              handleConfirmPurchase(undefined, phoneNumber);
+                              handleConfirmPurchase(undefined, phoneNumber, number.type);
                               setShowPurchaseModal(true);
                             } else {
                               setPurchaseStatus('confirming');
                               setShowPurchaseModal(true);
+                              setPurchaseType(number.type); // Store type in state for modal
                             }
                           }}
                           disabled={isQuotaReached}
@@ -1484,7 +1508,7 @@ const TelephonySetup = (): JSX.Element => {
         provider={provider}
         purchaseError={purchaseError}
         onSubmitRequirements={handleSubmitRequirements}
-        onConfirmPurchase={handleConfirmPurchase}
+        onConfirmPurchase={(sids) => handleConfirmPurchase(sids, selectedNumber || undefined, purchaseType)}
         onSetPurchaseStatus={setPurchaseStatus}
         onSetSelectedNumber={setSelectedNumber}
         onSetShowPurchaseModal={setShowPurchaseModal}
