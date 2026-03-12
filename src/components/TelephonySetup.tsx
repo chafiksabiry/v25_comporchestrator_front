@@ -715,6 +715,7 @@ const TelephonySetup = (): JSX.Element => {
     }
 
     try {
+      console.log('🚀 PURE DEBUG - twilioRegulatorySids current state:', twilioRegulatorySids);
       console.log('🛒 Starting purchase process:', {
         phoneNumber,
         provider,
@@ -982,6 +983,7 @@ const TelephonySetup = (): JSX.Element => {
 
   const handleConfirmPurchase = async (sids?: { bundleSid?: string; addressSid?: string }) => {
     if (!selectedNumber) return;
+    console.log('🖱️ handleConfirmPurchase called with sids from modal:', sids);
     setPurchaseStatus('purchasing');
     try {
       // Filter out empty strings and merge with default twilioRegulatorySids
@@ -990,6 +992,7 @@ const TelephonySetup = (): JSX.Element => {
         ...(sids?.bundleSid ? { bundleSid: sids.bundleSid } : {}),
         ...(sids?.addressSid ? { addressSid: sids.addressSid } : {})
       };
+      console.log('🧩 Merged purchaseSids to be sent:', purchaseSids);
       await purchaseNumber(selectedNumber, purchaseSids);
       // Success state is already set in purchaseNumber function
     } catch (error) {
@@ -1334,7 +1337,15 @@ const TelephonySetup = (): JSX.Element => {
                         className="flex items-center justify-between rounded-lg border p-3"
                       >
                         <div className="flex flex-col">
-                          <span className="font-medium">{phoneNumber}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{phoneNumber}</span>
+                            {number.type && (
+                              <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full ${number.type === 'local' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                                }`}>
+                                {number.type}
+                              </span>
+                            )}
+                          </div>
                           {number.locality && (
                             <span className="text-sm text-gray-500">
                               {number.locality}, {number.region}

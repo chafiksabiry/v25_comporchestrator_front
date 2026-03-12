@@ -34,6 +34,7 @@ export interface AvailablePhoneNumber {
   setupFee?: number;
   currency?: string;
   provider?: 'telnyx' | 'twilio';
+  type?: string;
 }
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3003/api';
