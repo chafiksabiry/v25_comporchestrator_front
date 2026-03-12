@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   Phone,
@@ -1151,10 +1151,10 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                 key={p.id}
                 disabled={isDisabled}
                 className={`flex items-center justify-center rounded-lg border p-4 transition-all duration-200 ${isDisabled
-                    ? 'opacity-40 grayscale cursor-not-allowed bg-gray-50 border-gray-200'
-                    : provider === p.id
-                      ? 'border-indigo-500 bg-indigo-50 shadow-sm'
-                      : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                  ? 'opacity-40 grayscale cursor-not-allowed bg-gray-50 border-gray-200'
+                  : provider === p.id
+                    ? 'border-indigo-500 bg-indigo-50 shadow-sm'
+                    : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
                   }`}
                 onClick={() => setProvider(p.id)}
               >
@@ -1357,30 +1357,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                   })}
                 </div>
               </div>
-            ) : destinationZone && (
-              <div className="mt-4 rounded-lg bg-yellow-50 p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <AlertCircle className="h-5 w-5 text-yellow-400" />
-                  </div>
-                  <div className="ml-3 flex-1">
-                    <h3 className="text-sm font-medium text-yellow-800">No Numbers Available</h3>
-                    <div className="mt-2 text-sm text-yellow-700">
-                      <p>No phone numbers available for this destination with Twilio.</p>
-                      <p className="mt-1">Try Telnyx instead or contact support if the issue persists.</p>
-                    </div>
-                    <div className="mt-3">
-                      <button
-                        onClick={() => setProvider('telnyx')}
-                        className="rounded-md px-3 py-1 text-xs text-white bg-indigo-600 hover:bg-indigo-700"
-                      >
-                        Try Telnyx Instead
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            ) : null}
           </div>
         )}
 
