@@ -1208,7 +1208,7 @@ export default function LaunchApproval({
                   ) : (
                     <button
                       onClick={handleLaunch}
-                      disabled={selectedReps.length === 0 || isLaunching}
+                      disabled={isLaunching}
                       className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
                     >
                       {isLaunching ? (
