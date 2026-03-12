@@ -230,7 +230,8 @@ const TelephonySetup = (): JSX.Element => {
 
   /* New state for Twilio SIDs */
   const [twilioRegulatorySids, setTwilioRegulatorySids] = useState<{ bundleSid?: string; addressSid?: string }>({
-    addressSid: 'AD455d66025589029af3156837713cd5c7' // Provided by user
+    addressSid: 'AD455d66025589029af3156837713cd5c7', // Provided by user
+    bundleSid: 'BUeb290bfddd51ae19482171f31ce19084'  // Provided by user for FR national
   });
 
   const checkGigPhoneNumber = async (zoneOverride?: string) => {
@@ -981,9 +982,11 @@ const TelephonySetup = (): JSX.Element => {
     }
   };
 
-  const handleConfirmPurchase = async (sids?: { bundleSid?: string; addressSid?: string }) => {
-    if (!selectedNumber) return;
-    console.log('🖱️ handleConfirmPurchase called with sids from modal:', sids);
+  const handleConfirmPurchase = async (sids?: { bundleSid?: string; addressSid?: string }, phoneNumberOverride?: string) => {
+    const numberToPurchase = phoneNumberOverride || selectedNumber;
+    if (!numberToPurchase) return;
+    
+    console.log('🖱️ handleConfirmPurchase called with:', { sids, numberToPurchase });
     setPurchaseStatus('purchasing');
     try {
       // Filter out empty strings and merge with default twilioRegulatorySids
@@ -993,7 +996,7 @@ const TelephonySetup = (): JSX.Element => {
         ...(sids?.addressSid ? { addressSid: sids.addressSid } : {})
       };
       console.log('🧩 Merged purchaseSids to be sent:', purchaseSids);
-      await purchaseNumber(selectedNumber, purchaseSids);
+      await purchaseNumber(numberToPurchase, purchaseSids);
       // Success state is already set in purchaseNumber function
     } catch (error) {
       setPurchaseStatus('error');
@@ -1355,8 +1358,14 @@ const TelephonySetup = (): JSX.Element => {
                         <button
                           onClick={() => {
                             setSelectedNumber(phoneNumber);
-                            setPurchaseStatus('confirming');
-                            setShowPurchaseModal(true);
+                            // Bypass modal for FR National numbers because the user provided default SIDs
+                            if (destinationZone === 'FR' && number.type === 'national' && twilioRegulatorySids.bundleSid) {
+                              handleConfirmPurchase(undefined, phoneNumber);
+                              setShowPurchaseModal(true);
+                            } else {
+                              setPurchaseStatus('confirming');
+                              setShowPurchaseModal(true);
+                            }
                           }}
                           disabled={isQuotaReached}
                           className={`rounded-md px-3 py-1 text-sm text-white ${isQuotaReached
