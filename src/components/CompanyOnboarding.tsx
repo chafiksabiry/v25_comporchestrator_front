@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Building2,
   Shield,
@@ -12,7 +12,6 @@ import {
   ChevronRight,
   AlertCircle,
   Upload,
-  Globe,
   Calendar,
   Settings,
   Rocket,
@@ -33,7 +32,6 @@ import GigDetails from "./onboarding/GigDetails";
 import KnowledgeBase from "./onboarding/KnowledgeBase";
 import ApprovalPublishing from "./ApprovalPublishing";
 import ZohoService from "../services/zohoService";
-import { checkMatchRepsStepCompletion } from "../api/matching";
 
 interface BaseStep {
   id: number;
@@ -216,7 +214,7 @@ const CompanyOnboarding = () => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data.type === "STEP_COMPLETED") {
         console.log("Received step completion message:", event.data);
-        const { stepId, phaseId, data } = event.data;
+        const { stepId } = event.data;
 
         // Update local state
         setCompletedSteps((prev: number[]) => {
@@ -387,115 +385,6 @@ const CompanyOnboarding = () => {
     }
   };
 
-  // Fonction utilitaire pour mettre à jour l'état d'onboarding sans recharger tout le projet
-  const updateOnboardingState = async () => {
-    if (!companyId) {
-      console.error(
-        "❌ Company ID not available for updating onboarding state"
-      );
-      return;
-    }
-
-    try {
-      // Vérifier les leads
-      // await checkCompanyLeads();
-
-      // Vérifier les gigs actifs
-      await checkActiveGigs();
-
-      // Fonction pour vérifier si toutes les étapes non-désactivées d'une phase sont complétées
-      const isPhaseFullyCompleted = (phaseId: number) => {
-        const phase = phases[phaseId - 1];
-        if (!phase) return false;
-
-        const nonDisabledSteps = phase.steps.filter((step) => !step.disabled);
-        return nonDisabledSteps.every((step) =>
-          completedSteps.includes(step.id)
-        );
-      };
-
-      // Déterminer la phase valide en vérifiant que toutes les phases précédentes sont complétées
-      let validPhase = 1;
-
-      // Vérifier chaque phase séquentiellement
-      for (let phaseId = 1; phaseId <= 4; phaseId++) {
-        if (phaseId === 1) {
-          // Phase 1 est toujours accessible
-          validPhase = 1;
-        } else {
-          // Pour les phases 2, 3, 4, vérifier que la phase précédente est complétée
-          const previousPhaseCompleted = isPhaseFullyCompleted(phaseId - 1);
-
-          if (previousPhaseCompleted) {
-            validPhase = phaseId;
-            console.log(
-              `✅ Phase ${phaseId - 1
-              } is fully completed, allowing access to phase ${phaseId}`
-            );
-          } else {
-            console.log(
-              `⚠️ Phase ${phaseId - 1
-              } is not fully completed, stopping at phase ${validPhase}`
-            );
-            break; // Arrêter ici, ne pas avancer plus loin
-          }
-        }
-      }
-
-      // Vérifications spéciales pour les cas particuliers (overrides)
-      if (completedSteps.includes(6) && validPhase < 3) {
-        // Si step 6 (Call Script) est complété et que la phase 2 est complétée, on peut aller en phase 3
-        if (isPhaseFullyCompleted(2)) {
-          validPhase = 3;
-          console.log(
-            "🔄 Step 6 (Call Script) completed and phase 2 is fully completed - unlocking phase 3"
-          );
-        }
-      }
-
-      // Si step 10 (Session Planning) est complété et que la phase 3 est complétée, on peut aller en phase 4
-      if (completedSteps.includes(10) && validPhase < 4) {
-        if (isPhaseFullyCompleted(3)) {
-          validPhase = 4;
-          console.log(
-            "🔄 Step 10 (Session Planning) completed and phase 3 is fully completed - unlocking phase 4"
-          );
-        }
-      }
-
-      // Si step 12 (Gig Activation) est complété, on reste en phase 4 (déjà débloquée normalement)
-      if (completedSteps.includes(12) && validPhase < 4) {
-        if (isPhaseFullyCompleted(3)) {
-          validPhase = 4;
-          console.log(
-            "🔄 Step 12 (Gig Activation) completed - ensuring phase 4 is active"
-          );
-        }
-      }
-
-      // Si step 13 (Match HARX REPS) est complété, on reste en phase 4
-      if (completedSteps.includes(13) && validPhase < 4) {
-        if (isPhaseFullyCompleted(3)) {
-          validPhase = 4;
-          console.log(
-            "🔄 Step 13 (Match HARX REPS) completed - ensuring phase 4 is active"
-          );
-        }
-      }
-
-      // Mettre à jour la phase seulement si elle a changé
-      if (validPhase !== currentPhase) {
-        console.log("🔄 Updating phase from", currentPhase, "to", validPhase);
-        setCurrentPhase(validPhase);
-        setDisplayedPhase(validPhase);
-      }
-
-      console.log("✅ Onboarding state updated successfully");
-    } catch (error) {
-      console.error("Error updating onboarding state:", error);
-      // Ne pas faire échouer toute la fonction si cette mise à jour échoue
-    }
-  };
 
   const checkActiveGigs = async () => {
     try {
@@ -904,20 +793,6 @@ const CompanyOnboarding = () => {
     }
   };
 
-  const handleResetOnboarding = async () => {
-    if (!companyId) return;
-
-    if (confirm("⚠️ WARNING: This will reset your onboarding progress tracking. \n\nYour actual company data (created gigs, profile info) will NOT be deleted, but the 'checklist' progress will be reset to the beginning. \n\nThis is useful to fix 'stuck' phases. Do you want to proceed?")) {
-      try {
-        await axios.put(`${API_BASE_URL}/onboarding/companies/${companyId}/onboarding/reset`);
-        alert("Onboarding progress has been reset. The page will now reload.");
-        window.location.reload();
-      } catch (error) {
-        console.error("Error resetting onboarding:", error);
-        alert("Failed to reset onboarding. Please check console for details.");
-      }
-    }
-  };
 
   // Nouvelle fonction pour gérer la révision des steps complétés
   const handleReviewStep = async (stepId: number) => {
@@ -1759,22 +1634,6 @@ const CompanyOnboarding = () => {
         </div>
       </div>
 
-      {/* Debug / Troubleshooting Section */}
-      <div className="mt-8 pt-8 border-t border-gray-200">
-        <details className="text-xs text-gray-500">
-          <summary className="cursor-pointer hover:text-gray-700">Troubleshooting Tools</summary>
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h4 className="font-medium mb-2 text-gray-700">Fix Stuck Onboarding</h4>
-            <p className="mb-4">If you are unable to proceed to the next phase or get "Bad Request" errors, try resetting the progress tracker.</p>
-            <button
-              onClick={handleResetOnboarding}
-              className="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors text-sm font-medium"
-            >
-              Reset Onboarding Progress
-            </button>
-          </div>
-        </details>
-      </div>
     </div>
   );
 };
