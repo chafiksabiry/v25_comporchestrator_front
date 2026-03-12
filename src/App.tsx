@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ArrowRightLeft,
   Menu,
   X,
-  Settings,
-  HelpCircle,
   LogOut,
   Building2,
   ChevronRight
@@ -251,7 +249,7 @@ function App() {
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top Navigation */}
         <header className="bg-white shadow-sm">
-          <div className="flex h-16 items-center justify-between px-4">
+          <div className="flex h-14 items-center justify-between px-4">
             <button
               className="md:hidden"
               onClick={() => setIsSidebarOpen(true)}
@@ -272,7 +270,7 @@ function App() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-4">
+        <main className="flex-1 overflow-y-auto px-4 py-3">
           {renderContent()}
         </main>
       </div>
