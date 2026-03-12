@@ -984,8 +984,12 @@ const TelephonySetup = (): JSX.Element => {
     if (!selectedNumber) return;
     setPurchaseStatus('purchasing');
     try {
-      // Use provided sids (manual entry) or state sids (automated flow)
-      const purchaseSids = sids || twilioRegulatorySids || {};
+      // Filter out empty strings and merge with default twilioRegulatorySids
+      const purchaseSids = {
+        ...twilioRegulatorySids,
+        ...(sids?.bundleSid ? { bundleSid: sids.bundleSid } : {}),
+        ...(sids?.addressSid ? { addressSid: sids.addressSid } : {})
+      };
       await purchaseNumber(selectedNumber, purchaseSids);
       // Success state is already set in purchaseNumber function
     } catch (error) {
