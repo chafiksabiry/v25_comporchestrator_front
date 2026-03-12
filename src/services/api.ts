@@ -332,6 +332,22 @@ export const phoneNumberService = {
     } catch (error) {
       return handleApiError(error, 'submitTwilioBundle');
     }
+  },
+
+  createTwilioAddress: async (data: {
+    customerName: string;
+    street: string;
+    city: string;
+    region: string;
+    postalCode: string;
+    isoCountry: string;
+  }): Promise<any> => {
+    try {
+      const response = await api.post('/phone-numbers/twilio/addresses', data);
+      return response.data;
+    } catch (error) {
+      return handleApiError(error, 'createTwilioAddress');
+    }
   }
 };
 
