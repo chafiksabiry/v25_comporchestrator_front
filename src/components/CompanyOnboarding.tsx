@@ -157,7 +157,6 @@ const CompanyOnboarding = () => {
   }, [showUploadContacts]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasGigs, setHasGigs] = useState(false);
-  const [hasLeads, setHasLeads] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [showGigDetails, setShowGigDetails] = useState(false);
   const userId = Cookies.get("userId");
@@ -353,11 +352,10 @@ const CompanyOnboarding = () => {
         `${import.meta.env.VITE_DASHBOARD_API
         }/leads/company/${companyId}/has-leads`
       );
-      const hasLeads = response.data.hasLeads;
-      setHasLeads(hasLeads);
+      const leadsCheck = response.data.hasLeads;
 
       // Auto-complete step 5 if company has leads
-      if (hasLeads) {
+      if (leadsCheck) {
         console.log("✅ Company has leads - auto-completing step 5");
         try {
           await axios.put(
@@ -1345,12 +1343,7 @@ const CompanyOnboarding = () => {
     };
   } else if (showTelephonySetup) {
     activeComponent = (
-      <TelephonySetup
-        onBackToOnboarding={async () => {
-          setShowTelephonySetup(false);
-          await handleBackToOnboarding();
-        }}
-      />
+      <TelephonySetup />
     );
     onBack = async () => {
       setShowTelephonySetup(false);
@@ -1405,7 +1398,7 @@ const CompanyOnboarding = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Company Onboarding</h1>
         <button className="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
@@ -1414,7 +1407,7 @@ const CompanyOnboarding = () => {
       </div> */}
 
       {/* Progress Overview */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-5 gap-3">
         {phases.map((phase) => {
           const PhaseIcon = phase.icon;
           const isActive = displayedPhase === phase.id;
@@ -1426,7 +1419,7 @@ const CompanyOnboarding = () => {
           return (
             <div
               key={phase.id}
-              className={`relative rounded-lg p-4 ${isActive
+              className={`relative rounded-lg p-2 ${isActive
                 ? "bg-indigo-50 border-2 border-indigo-500"
                 : isCompleted
                   ? "bg-green-50 border border-green-500"
@@ -1438,7 +1431,7 @@ const CompanyOnboarding = () => {
             >
               <div className="flex items-center space-x-3">
                 <div
-                  className={`rounded-full p-2 ${isActive
+                  className={`rounded-full p-1.5 ${isActive
                     ? "bg-indigo-100 text-indigo-600"
                     : isCompleted
                       ? "bg-green-100 text-green-600"
@@ -1472,10 +1465,10 @@ const CompanyOnboarding = () => {
       </div>
 
       {/* Current Phase Details */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Phase {displayedPhaseData.id}: {displayedPhaseData.title}
+      <div className="rounded-lg bg-white p-4 shadow-sm">
+        <div className="mb-2">
+          <h2 className="text-xl font-bold text-gray-900">
+            Phase {displayedPhase}: {phases[displayedPhase - 1]?.title}
           </h2>
           <p className="text-sm text-gray-500">
             {isPhaseAccessible(displayedPhaseData.id)
@@ -1484,7 +1477,7 @@ const CompanyOnboarding = () => {
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {displayedPhaseData.steps.map((step) => {
             const StepIcon = getStepIcon(step);
             const isClickable = !!step.component || step.id === 3;
@@ -1506,7 +1499,7 @@ const CompanyOnboarding = () => {
             return (
               <div
                 key={step.id}
-                className={`rounded-lg border p-4 ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
+                className={`rounded-lg border p-3 ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
                   ? "opacity-50 cursor-not-allowed border-gray-200 bg-gray-50"
                   : step.disabled
                     ? "opacity-50 cursor-not-allowed border-gray-200"
@@ -1526,9 +1519,9 @@ const CompanyOnboarding = () => {
                   handleStepClick(step.id)
                 }
               >
-                <div className="flex items-start space-x-4">
+                <div className="flex items-start space-x-3">
                   <div
-                    className={`rounded-full p-2 ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
+                    className={`rounded-full p-1.5 ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
                       ? "bg-gray-200 text-gray-400"
                       : step.disabled
                         ? "bg-gray-200 text-gray-400"
@@ -1591,7 +1584,7 @@ const CompanyOnboarding = () => {
           })}
         </div>
 
-        <div className="mt-6 flex justify-between">
+        <div className="mt-4 flex justify-between">
           <button
             className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
             disabled={displayedPhase === 1}
