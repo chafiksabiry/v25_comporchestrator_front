@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Calendar } from '../../components/scheduler/Calendar';
 import { TimeSlotGrid } from '../../components/scheduler/TimeSlotGrid';
 import { TimeSlot, Gig, WeeklyStats, Rep, UserRole, Company, AttendanceRecord } from '../../types/scheduler';
@@ -7,7 +7,6 @@ import { PremiumDropdown } from '../ui/PremiumDropdown';
 import { SlotActionPanel } from '../../components/scheduler/SlotActionPanel';
 import { RepSelector } from '../../components/scheduler/RepSelector';
 import { CompanyView } from '../../components/scheduler/CompanyView';
-import { AvailableSlotsView } from '../../components/scheduler/AvailableSlotsView';
 import { AIRecommendations } from '../../components/scheduler/AIRecommendations';
 import { OptimalTimeHeatmap } from '../../components/scheduler/OptimalTimeHeatmap';
 import { PerformanceMetrics } from '../../components/scheduler/PerformanceMetrics';
@@ -18,12 +17,10 @@ import { AttendanceReport } from '../../components/scheduler/AttendanceReport';
 import { initializeAI } from '../../services/schedulerAiService';
 import { schedulerApi } from '../../services/schedulerService';
 import { slotApi } from '../../services/slotService';
-import { SlotGenerator } from '../../components/scheduler/SlotGenerator';
 import { format } from 'date-fns';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { PlanningMatrix } from './PlanningMatrix';
-import { LayoutGrid, Calendar as CalendarIcon } from 'lucide-react';
 
 // Helper to generate a consistent color from a string
 const stringToColor = (str: string) => {
@@ -203,7 +200,7 @@ const updateOnboardingProgress = async () => {
 };
 
 export default function SessionPlanning() {
-  const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
@@ -221,8 +218,6 @@ export default function SessionPlanning() {
 
   // Create slots by gig (company view)
   const [createSlotRepId, setCreateSlotRepId] = useState<string>('');
-  const [createStartTime, setCreateStartTime] = useState<string>('09:00');
-  const [createEndTime, setCreateEndTime] = useState<string>('10:00');
 
   useEffect(() => {
     const fetchGigs = async () => {
@@ -515,55 +510,6 @@ export default function SessionPlanning() {
   const safeSelectedDate = selectedDate instanceof Date && !isNaN(selectedDate.getTime()) ? selectedDate : new Date(selectedDate || Date.now());
   const isPastDate = format(safeSelectedDate, 'yyyy-MM-dd') < format(new Date(), 'yyyy-MM-dd');
 
-  const handleCreateSlotsForGig = async () => {
-    if (!selectedGigId || !createSlotRepId) {
-      setNotification({ message: 'Select a gig and a rep', type: 'error' });
-      setTimeout(() => setNotification(null), 3000);
-      return;
-    }
-    if (isPastDate) {
-      setNotification({ message: 'Cannot create slots for past dates', type: 'error' });
-      setTimeout(() => setNotification(null), 3000);
-      return;
-    }
-    const startH = parseInt(createStartTime.split(':')[0], 10);
-    const endH = parseInt(createEndTime.split(':')[0], 10);
-    if (endH <= startH) {
-      setNotification({ message: 'End time must be after start time', type: 'error' });
-      setTimeout(() => setNotification(null), 3000);
-      return;
-    }
-    const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    const toCreate: Partial<TimeSlot>[] = [];
-    for (let h = startH; h < endH; h++) {
-      toCreate.push({
-        repId: createSlotRepId,
-        gigId: selectedGigId,
-        date: dateStr,
-        startTime: `${h.toString().padStart(2, '0')}:00`,
-        endTime: `${(h + 1).toString().padStart(2, '0')}:00`,
-        duration: 1,
-        status: 'reserved',
-        notes: ''
-      });
-    }
-    // Simplified creation without explicit loading state indicator here for now
-    try {
-      await Promise.all(toCreate.map(slot => schedulerApi.upsertTimeSlot(slot)));
-      const updatedSlots = await schedulerApi.getTimeSlots(undefined, selectedGigId);
-      const mappedSlots = Array.isArray(updatedSlots) ? updatedSlots.map(mapBackendSlotToSlot) : [];
-      setSlots(mappedSlots);
-
-      // Auto-complete step 12 after creating multiples slots
-      updateOnboardingProgress();
-
-      setNotification({ message: `${toCreate.length} slot(s) created for this gig`, type: 'success' });
-    } catch (error) {
-      console.error('Error creating slots:', error);
-      setNotification({ message: 'Failed to create slots', type: 'error' });
-    }
-    setTimeout(() => setNotification(null), 3000);
-  };
 
 
   const handleProjectSelect = (gigId: string) => {
