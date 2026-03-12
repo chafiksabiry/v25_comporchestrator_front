@@ -836,22 +836,20 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         }
       }
 
-      setCompletedSteps((prev: number[]) => {
-        const newCompletedSteps = prev.includes(4) ? prev : [...prev, 4];
-        const currentProgress = {
-          currentPhase: 2,
-          completedSteps: newCompletedSteps,
-          lastUpdated: new Date().toISOString()
-        };
-        localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+      const newCompletedSteps = completedSteps.includes(4) ? completedSteps : [...completedSteps, 4];
+      setCompletedSteps(newCompletedSteps);
 
-        // Dispatch event to explicitly notify CompanyOnboarding
-        window.dispatchEvent(new CustomEvent('stepCompleted', {
-          detail: { stepId: 4, phaseId: 2, status: 'completed', completedSteps: newCompletedSteps }
-        }));
+      const currentProgress = {
+        currentPhase: 2,
+        completedSteps: newCompletedSteps,
+        lastUpdated: new Date().toISOString()
+      };
+      localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
 
-        return newCompletedSteps;
-      });
+      // Dispatch event to explicitly notify CompanyOnboarding
+      window.dispatchEvent(new CustomEvent('stepCompleted', {
+        detail: { stepId: 4, phaseId: 2, status: 'completed', completedSteps: newCompletedSteps }
+      }));
 
       Cookies.set('telephonyStepCompleted', 'true', { expires: 7 });
 
