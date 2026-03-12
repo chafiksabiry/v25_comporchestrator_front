@@ -1379,12 +1379,12 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                             setPurchaseStatus('confirming');
                             setShowPurchaseModal(true);
                           }}
-                          disabled={phoneNumbers.length > 0}
-                          className={`rounded-md px-3 py-1 text-sm text-white ${phoneNumbers.length > 0
+                          disabled={isQuotaReached}
+                          className={`rounded-md px-3 py-1 text-sm text-white ${isQuotaReached
                             ? 'bg-gray-400 cursor-not-allowed'
                             : 'bg-green-600 hover:bg-green-700'
                             }`}
-                          title={phoneNumbers.length > 0 ? 'A number is already purchased for this gig' : undefined}
+                          title={isQuotaReached ? 'Quota reached for this gig team size' : undefined}
                         >
                           Purchase
                         </button>
@@ -1408,9 +1408,9 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
               {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
                 availableNumbers.map((number) => {
                   const phoneNumber = getPhoneNumber(number);
-                  const isDisabled = phoneNumbers.length > 0 || (requirementStatus.hasRequirements && !requirementStatus.isComplete);
-                  const tooltipMessage = phoneNumbers.length > 0
-                    ? 'A number is already purchased for this gig'
+                  const isDisabled = isQuotaReached || (requirementStatus.hasRequirements && !requirementStatus.isComplete);
+                  const tooltipMessage = isQuotaReached
+                    ? 'Quota reached for this gig team size'
                     : requirementStatus.hasRequirements && !requirementStatus.isComplete
                       ? 'Please complete the requirements before purchasing'
                       : undefined;
