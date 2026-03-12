@@ -235,8 +235,12 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
   /* New state for Twilio SIDs */
   const [twilioRegulatorySids, setTwilioRegulatorySids] = useState<{ bundleSid?: string; addressSid?: string } | null>(null);
 
-  const checkGigPhoneNumber = async () => {
+  const checkGigPhoneNumber = async (zoneOverride?: string) => {
     if (!selectedGigId) return false;
+
+    // Resolve zone avoiding react state race conditions
+    const selectedGig = gigs.find(g => g._id === selectedGigId);
+    const zone = zoneOverride || selectedGig?.destination_zone?.cca2;
 
     try {
       console.log('🔍 Checking if gig has a phone number:', selectedGigId);
@@ -254,7 +258,7 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
         });
         // Even if gig has a number, we still want to search available numbers for Telnyx/Twilio
         if (provider === 'telnyx' || provider === 'twilio') {
-          searchAvailableNumbers();
+          searchAvailableNumbers(zone);
         }
         return true;
       }
