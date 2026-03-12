@@ -13,8 +13,11 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
   const [uploads, setUploads] = useState<ContentUpload[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [currentProcessing, setCurrentProcessing] = useState<string | null>(null);
 
   const [urlInput, setUrlInput] = useState('');
+
+  const isProcessingItem = (id: string) => currentProcessing === id;
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -88,6 +91,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
 
         try {
           const uploadFolder = `trainings/documents`;
+          if (!upload.file) throw new Error('File content is missing');
           const uploadResult = await cloudinaryService.uploadDocument(
             upload.file,
             uploadFolder,
@@ -105,6 +109,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
         }
 
         // ✅ Vraie analyse avec OpenAI au lieu de simulation
+        if (!upload.file) throw new Error('File content is missing for analysis');
         const analysis = await AIService.analyzeDocument(upload.file);
 
         setUploads(prev => prev.map(u =>
@@ -143,10 +148,10 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       name: isYouTube ? 'YouTube Video' : 'Web Page',
       type: isYouTube ? 'video' : 'document',
+      status: 'uploading',
       size: 0,
       uploadedAt: new Date().toISOString(),
-      status: 'uploading',
-    };
+    } as any;
 
     setUploads(prev => [...prev, urlUpload]);
     setIsProcessing(true);

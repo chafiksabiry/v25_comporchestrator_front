@@ -38,7 +38,7 @@ export interface ContentUpload {
   size: number;
   uploadedAt: string;
   status: 'uploading' | 'processing' | 'analyzed' | 'error';
-  file: File;  // ✅ Ajout du fichier original pour l'analyse AI
+  file?: File;  // ✅ Ajout du fichier original pour l'analyse AI
   aiAnalysis?: ContentAnalysis;
   error?: string;  // Error message if analysis fails
   cloudinaryUrl?: string;  // Cloudinary URL after upload
