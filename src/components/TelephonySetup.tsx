@@ -55,6 +55,22 @@ interface Gig {
     };
     cca2: string;
   };
+  documentation: {
+    product: any[];
+    process: any[];
+    training: any[];
+  };
+  team: {
+    size: string | number;
+    structure: Array<{
+      roleId: string;
+      count: number;
+      seniority: {
+        level: string;
+        yearsExperience: string;
+      };
+    }>;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -165,6 +181,12 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
     { id: 'twilio' as const, name: 'Twilio', logo: Phone },
     { id: 'telnyx' as const, name: 'Telnyx', logo: Globe }
   ];
+
+  // Logic for multi-number support
+  const selectedGig = gigs.find(g => g._id === selectedGigId);
+  const teamSize = selectedGig ? parseInt(selectedGig.team?.size?.toString() || '1') : 1;
+  const purchasedNumbersCount = phoneNumbers.length;
+  const isQuotaReached = purchasedNumbersCount >= teamSize;
 
 
   useEffect(() => {
@@ -645,9 +667,14 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
       const result = await phoneNumberService.listPhoneNumbers(selectedGigId);
       console.log('📞 Check result:', result);
 
-      // Si un numéro est trouvé, le mettre dans le tableau
+      // Met à jour la liste des numéros (supporte maintenant plusieurs numéros s'ils existent)
       if (result?.hasNumber && result.number) {
-        setPhoneNumbers([result.number]);
+        // Si le backend renvoie un seul numéro mais qu'on en veut plusieurs, 
+        // on verra au fur et à mesure des achats. 
+        // Note: phoneNumberService.listPhoneNumbers devrait idéalement renvoyer un tableau.
+        setPhoneNumbers(Array.isArray(result.number) ? result.number : [result.number]);
+      } else if (result?.numbers && Array.isArray(result.numbers)) {
+        setPhoneNumbers(result.numbers);
       } else {
         setPhoneNumbers([]);
       }
@@ -1177,9 +1204,14 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
           {destinationZone && selectedGigId && (() => {
             const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
             return selectedGig ? (
-              <span className="text-sm text-gray-600">
-                Destination Zone: <span className="font-medium">{selectedGig.destination_zone.name.common}</span>
-              </span>
+              <div className="flex flex-col items-end">
+                <span className="text-sm text-gray-600">
+                  Destination Zone: <span className="font-medium">{selectedGig.destination_zone.name.common}</span>
+                </span>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full mt-1 ${isQuotaReached ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                  {purchasedNumbersCount} / {teamSize} Numbers Purchased
+                </span>
+              </div>
             ) : null;
           })()}
         </div>
@@ -1404,12 +1436,12 @@ const TelephonySetup = ({ onBackToOnboarding }: TelephonySetupProps): JSX.Elemen
                             setPurchaseStatus('confirming');
                             setShowPurchaseModal(true);
                           }}
-                          disabled={isDisabled}
-                          className={`rounded-md px-3 py-1 text-sm text-white ${isDisabled
+                          disabled={isQuotaReached}
+                          className={`rounded-md px-3 py-1 text-sm text-white ${isQuotaReached
                             ? 'bg-gray-400 cursor-not-allowed'
                             : 'bg-green-600 hover:bg-green-700'
                             }`}
-                          title={tooltipMessage}
+                          title={isQuotaReached ? 'Quota reached for this gig team size' : undefined}
                         >
                           Purchase
                         </button>
