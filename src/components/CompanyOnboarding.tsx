@@ -1609,31 +1609,6 @@ const CompanyOnboarding = () => {
         </div>
       </div>
 
-      {/* Help Section */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">Need Help?</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <button className="flex items-center justify-center rounded-lg border border-gray-200 p-4 hover:bg-gray-50">
-            <MessageSquare className="mr-2 h-5 w-5 text-indigo-600" />
-            <span className="text-sm font-medium text-gray-700">
-              Chat with Support
-            </span>
-          </button>
-          <button className="flex items-center justify-center rounded-lg border border-gray-200 p-4 hover:bg-gray-50">
-            <BookOpen className="mr-2 h-5 w-5 text-indigo-600" />
-            <span className="text-sm font-medium text-gray-700">
-              View Documentation
-            </span>
-          </button>
-          <button className="flex items-center justify-center rounded-lg border border-gray-200 p-4 hover:bg-gray-50">
-            <Calendar className="mr-2 h-5 w-5 text-indigo-600" />
-            <span className="text-sm font-medium text-gray-700">
-              Schedule a Call
-            </span>
-          </button>
-        </div>
-      </div>
-
     </div>
   );
 };
