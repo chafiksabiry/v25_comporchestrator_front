@@ -1421,8 +1421,8 @@ export default function CurriculumDesigner({ uploads, methodology, onComplete, o
                             <button
                               onClick={() => toggleEditMode(module.id)}
                               className={`px-4 py-2 rounded-lg transition-colors font-medium ${isEditing
-                                  ? 'bg-green-500 text-white hover:bg-green-600'
-                                  : 'bg-blue-500 text-white hover:bg-blue-600'
+                                ? 'bg-green-500 text-white hover:bg-green-600'
+                                : 'bg-blue-500 text-white hover:bg-blue-600'
                                 }`}
                               title={isEditing ? "Save Changes" : "Edit Module"}
                             >
