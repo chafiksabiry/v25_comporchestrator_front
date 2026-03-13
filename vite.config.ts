@@ -21,7 +21,7 @@ export default defineConfig(() => {
     base: 'https://harxv25comporchestratorfront.netlify.app/',
     plugins: [
       react({
-        jsxRuntime: 'automatic',
+        jsxRuntime: 'classic',
       }),
       qiankun('app11', {
         useDevMode: true,
