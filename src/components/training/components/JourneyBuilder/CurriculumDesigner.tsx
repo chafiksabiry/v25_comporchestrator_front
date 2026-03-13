@@ -104,33 +104,33 @@ export default function CurriculumDesigner({ uploads, methodology, onComplete, o
         }
 
         console.log('📚 Curriculum API Response:', {
-          modulesCount: curriculum.modules.length,
-          suggestedCount: combinedAnalysis.suggestedModules.length,
-          modules: curriculum.modules
+          modulesCount: curriculum?.modules?.length || 0,
+          suggestedCount: combinedAnalysis?.suggestedModules?.length || 0,
+          modules: curriculum?.modules
         });
 
         setEnhancementProgress({ 'transforming': 60 });
 
         // ✅ CORRECTION : MAXIMUM 6 modules (pas plus !)
         // Si l'API retourne plus de 6 modules, on garde seulement les 6 premiers
-        let modulesToUse = curriculum.modules.slice(0, 6);
+        let modulesToUse = (curriculum?.modules || []).slice(0, 6);
         const targetModuleCount = 6; // TOUJOURS 6 modules
 
         if (modulesToUse.length > 6) {
-          console.warn(`⚠️ API returned ${curriculum.modules.length} modules. Limiting to 6.`);
+          console.warn(`⚠️ API returned ${curriculum?.modules?.length || 0} modules. Limiting to 6.`);
           modulesToUse = modulesToUse.slice(0, 6);
         }
 
-        if (curriculum.modules.length < targetModuleCount) {
-          console.warn(`⚠️ API returned ${curriculum.modules.length} modules, but ${targetModuleCount} were expected. Generating missing modules...`);
+        if ((curriculum?.modules?.length || 0) < targetModuleCount) {
+          console.warn(`⚠️ API returned ${curriculum?.modules?.length || 0} modules, but ${targetModuleCount} were expected. Generating missing modules...`);
 
           // Si on a des suggestions, les utiliser
-          const availableSuggestions = combinedAnalysis.suggestedModules;
-          const missingCount = targetModuleCount - curriculum.modules.length;
+          const availableSuggestions = combinedAnalysis?.suggestedModules || [];
+          const missingCount = targetModuleCount - (curriculum?.modules?.length || 0);
 
           const missingModules = [];
           for (let i = 0; i < missingCount; i++) {
-            const moduleIndex = curriculum.modules.length + i;
+            const moduleIndex = (curriculum?.modules?.length || 0) + i;
             const suggestedTitle = availableSuggestions[moduleIndex] || `Advanced Module ${moduleIndex + 1}`;
 
             missingModules.push({
@@ -141,13 +141,13 @@ export default function CurriculumDesigner({ uploads, methodology, onComplete, o
               contentItems: 7,
               assessments: 3,
               enhancedElements: ['AI-Generated Video', 'Visual Infographic', 'Interactive Scenario', 'Knowledge Check'],
-              learningObjectives: combinedAnalysis.learningObjectives.length > 0
+              learningObjectives: (combinedAnalysis?.learningObjectives?.length || 0) > 0
                 ? combinedAnalysis.learningObjectives.slice(0, 4)
                 : [`Master ${suggestedTitle} fundamentals`, `Apply ${suggestedTitle} in practice`, 'Complete hands-on exercises']
             });
           }
 
-          modulesToUse = [...curriculum.modules, ...missingModules];
+          modulesToUse = [...(curriculum?.modules || []), ...missingModules];
           console.log('✅ Generated missing modules:', missingModules.length, 'Total modules:', modulesToUse.length);
         }
 
