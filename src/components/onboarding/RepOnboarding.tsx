@@ -516,26 +516,45 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                     </div>
                     <div className="flex items-center space-x-4">
                       {module.status === 'completed' ? (
-                        <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-sm font-medium text-green-800">
-                          <CheckCircle className="mr-1 h-4 w-4" />
-                          Completed
-                        </span>
+                        <div className="flex flex-col items-end space-y-1">
+                          <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                            <CheckCircle className="mr-1 h-3.5 w-3.5" />
+                            Completed
+                          </span>
+                          <button
+                            onClick={() => navigateToUrl(`/training/${module.id}`)}
+                            className="flex items-center text-xs font-medium text-indigo-600 hover:text-indigo-500"
+                          >
+                            <RefreshCw className="mr-1 h-3 w-3" />
+                            Revoir
+                          </button>
+                        </div>
                       ) : module.status === 'in_progress' ? (
-                        <div className="flex items-center space-x-2">
-                          <div className="h-2 w-24 rounded-full bg-gray-200">
-                            <div
-                              className="h-2 rounded-full bg-indigo-600"
-                              style={{ width: `${module.progress}%` }}
-                            />
+                        <div className="flex flex-col items-end space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <div className="h-2 w-24 rounded-full bg-gray-200">
+                              <div
+                                className="h-2 rounded-full bg-indigo-600"
+                                style={{ width: `${module.progress}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-gray-500 font-medium">{module.progress}%</span>
                           </div>
+                          <button
+                            onClick={() => navigateToUrl(`/training/${module.id}`)}
+                            className="flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+                          >
+                            <Play className="mr-1 h-4 w-4" />
+                            Lire
+                          </button>
                         </div>
                       ) : (
                         <button
                           onClick={() => navigateToUrl(`/training/${module.id}`)}
-                          className="flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+                          className="flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
                         >
-                          <Play className="mr-1 h-4 w-4" />
-                          View/Edit
+                          <Play className="mr-2 h-4 w-4" />
+                          Lire
                         </button>
                       )}
                     </div>
