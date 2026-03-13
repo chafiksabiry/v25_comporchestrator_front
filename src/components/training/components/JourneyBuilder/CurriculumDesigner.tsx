@@ -244,7 +244,7 @@ export default function CurriculumDesigner({ uploads, methodology, onComplete, o
           });
 
           // Créer les modules avec leurs documents assignés
-          fullModules = modulesToUse.map((aiModule, moduleIndex) => {
+          fullModules = await Promise.all(modulesToUse.map(async (aiModule, moduleIndex) => {
             console.log(`📚 Module ${moduleIndex + 1}/${modulesToUse.length}: "${aiModule.title}"`);
 
             // Récupérer les documents assignés à ce module
@@ -292,7 +292,7 @@ export default function CurriculumDesigner({ uploads, methodology, onComplete, o
                 timeRequirement: totalDuration || (aiModule.duration as number)
               }
             };
-          });
+          }));
         }
 
         // Fonction helper pour créer une section à partir d'un upload
