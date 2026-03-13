@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Brain, BookOpen, CheckSquare, Play, Edit, Trash2, Plus, ArrowRight, Sparkles, Video, Music, BarChart3, Zap, Eye, Wand2, FileDown, ChevronRight, FileText, Rocket, RotateCcw } from 'lucide-react';
+import React from 'react';
+import { Brain, BookOpen, CheckSquare, trash2 as Trash2, Plus, ArrowRight, Sparkles, Video, Music, BarChart3, Zap, Eye, Wand2, FileDown, ChevronRight, FileText, Rocket, RotateCcw } from 'lucide-react';
 import { ContentUpload, TrainingModule, ModuleContent, Assessment, Question } from '../../types/core';
 import { TrainingMethodology } from '../../types/methodology';
 import { TrainingSection } from '../../types/manualTraining';
@@ -14,20 +14,20 @@ interface CurriculumDesignerProps {
 }
 
 export default function CurriculumDesigner({ uploads, methodology, onComplete, onBack }: CurriculumDesignerProps) {
-  const [modules, setModules] = useState<TrainingModule[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
-  const [enhancementProgress, setEnhancementProgress] = useState<Record<string, number>>({});
-  const [activeTab, setActiveTab] = useState('modules');
-  const [isExportingPPT, setIsExportingPPT] = useState(false);
-  const [pptBlob, setPptBlob] = useState<Blob | null>(null);
-  const [showPPTViewer, setShowPPTViewer] = useState(false);
-  const [currentStep, setCurrentStep] = useState<'plan' | 'content'>('plan');
-  const [isGeneratingContent, setIsGeneratingContent] = useState(false);
-  const [finalExam, setFinalExam] = useState<any>(null);
-  const [isGeneratingExam, setIsGeneratingExam] = useState(false);
+  const [modules, setModules] = React.useState<TrainingModule[]>([]);
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [editingModuleId, setEditingModuleId] = React.useState<string | null>(null);
+  const [enhancementProgress, setEnhancementProgress] = React.useState<Record<string, any>>({});
+  const [activeTab, setActiveTab] = React.useState('modules');
+  const [isExportingPPT, setIsExportingPPT] = React.useState(false);
+  const [pptBlob, setPptBlob] = React.useState<Blob | null>(null);
+  const [showPPTViewer, setShowPPTViewer] = React.useState(false);
+  const [currentStep, setCurrentStep] = React.useState<'plan' | 'content'>('plan');
+  const [isGeneratingContent, setIsGeneratingContent] = React.useState(false);
+  const [finalExam, setFinalExam] = React.useState<any>(null);
+  const [isGeneratingExam, setIsGeneratingExam] = React.useState(false);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (currentStep === 'plan') {
       generateTrainingPlan();
     }
@@ -86,7 +86,7 @@ export default function CurriculumDesigner({ uploads, methodology, onComplete, o
 
         const industry = methodology?.name || 'General';
 
-        setEnhancementProgress({ 'generating': 30 });
+        setEnhancementProgress({ 'generating': 30 } as any);
 
         // ✅ APPEL API RÉEL pour générer le curriculum avec l'analyse combinée
         let curriculum;
@@ -109,7 +109,7 @@ export default function CurriculumDesigner({ uploads, methodology, onComplete, o
           modules: curriculum?.modules
         });
 
-        setEnhancementProgress({ 'transforming': 60 });
+        setEnhancementProgress({ 'transforming': 60 } as any);
 
         // ✅ CORRECTION : MAXIMUM 6 modules (pas plus !)
         // Si l'API retourne plus de 6 modules, on garde seulement les 6 premiers
@@ -153,12 +153,12 @@ export default function CurriculumDesigner({ uploads, methodology, onComplete, o
 
         // ✅ GÉNÉRER LE PLAN AVEC CONTENU COMPLET ET PERSONNALISÉ
         console.log('🚀 Starting AI-powered content generation for all modules...');
-        setEnhancementProgress({ 'ai-content': 40 });
+        setEnhancementProgress({ 'ai-content': 40 } as any);
 
         // Récupérer toutes les transcriptions
         const allTranscriptions = uploads
-          .filter(u => u.transcription || u.content)
-          .map(u => u.transcription || u.content || '')
+          .filter(u => (u as any).transcription || (u as any).content)
+          .map(u => (u as any).transcription || (u as any).content || '')
           .join('\n\n---\n\n');
 
         // ✅ ORGANISER LES DOCUMENTS EN MODULES ET SECTIONS
@@ -260,7 +260,7 @@ export default function CurriculumDesigner({ uploads, methodology, onComplete, o
             // Générer les QCM
             let assessments = [];
             try {
-              assessments = generateEnhancedAssessments(
+              assessments = await generateEnhancedAssessments(
                 aiModule.title,
                 aiModule.description,
                 aiModule.learningObjectives
@@ -289,7 +289,7 @@ export default function CurriculumDesigner({ uploads, methodology, onComplete, o
               completionCriteria: {
                 minimumScore: 70,
                 requiredActivities: ['video', 'quiz'],
-                timeRequirement: totalDuration || aiModule.duration
+                timeRequirement: totalDuration || (aiModule.duration as number)
               }
             };
           });
@@ -363,7 +363,7 @@ export default function CurriculumDesigner({ uploads, methodology, onComplete, o
         console.log(`📚 Total sections (one per document): ${fullModules.reduce((sum, m) => sum + (m.sections?.length || 0), 0)}`);
         console.log(`📝 Total QCM: ${fullModules.reduce((sum, m) => sum + (m.assessments[0]?.questions?.length || 0), 0)} questions`);
 
-        setEnhancementProgress({ 'content-complete': 90 });
+        setEnhancementProgress({ 'content-complete': 90 } as any);
         setModules(fullModules);
 
         // ✅ Générer automatiquement l'examen final
@@ -932,18 +932,19 @@ export default function CurriculumDesigner({ uploads, methodology, onComplete, o
       const moduleContent = `${moduleTitle}\n\n${moduleDescription}\n\nObjectifs:\n${learningObjectives.join('\n')}`;
 
       // Appeler l'API pour générer 12 questions de QCM
-      const questions = await AIService.generateQuiz(moduleContent, 12);
+      const result = await AIService.generateQuiz(moduleContent, 12);
+      const questions = Array.isArray(result) ? result : [];
 
       console.log(`✅ Generated ${questions.length} QCM questions for: ${moduleTitle}`);
 
       // Convertir en format Assessment
       const assessmentQuestions: Question[] = questions.map((q: any, index: number) => ({
         id: `q${index + 1}`,
-        text: q.text,
+        text: q.text || 'Question text missing',
         type: 'multiple-choice',
-        options: q.options,
-        correctAnswer: q.correctAnswer,
-        explanation: q.explanation,
+        options: Array.isArray(q.options) ? q.options : ['Option A', 'Option B', 'Option C', 'Option D'],
+        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
+        explanation: q.explanation || '',
         points: q.points || 10
       }));
 
@@ -1450,7 +1451,7 @@ export default function CurriculumDesigner({ uploads, methodology, onComplete, o
                         <div className="border-t border-gray-200 pt-4">
                           <h5 className="font-medium text-gray-900 mb-2">Learning Objectives:</h5>
                           <ul className="space-y-1">
-                            {module.learningObjectives.map((objective, objIndex) => (
+                            {Array.isArray(module.learningObjectives) && module.learningObjectives.map((objective, objIndex) => (
                               <li key={objIndex} className="flex items-start space-x-2 text-sm text-gray-600">
                                 <CheckSquare className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                                 <span>{objective}</span>
