@@ -1,5 +1,5 @@
 import React from 'react';
-import { Brain, BookOpen, CheckSquare, trash2 as Trash2, Plus, ArrowRight, Sparkles, Video, Music, BarChart3, Zap, Eye, Wand2, FileDown, ChevronRight, FileText, Rocket, RotateCcw } from 'lucide-react';
+import { Brain, BookOpen, CheckSquare, Trash2, Plus, ArrowRight, Sparkles, Video, Music, BarChart3, Zap, Eye, Wand2, FileDown, ChevronRight, FileText, Rocket, RotateCcw } from 'lucide-react';
 import { ContentUpload, TrainingModule, ModuleContent, Assessment, Question } from '../../types/core';
 import { TrainingMethodology } from '../../types/methodology';
 import { TrainingSection } from '../../types/manualTraining';
