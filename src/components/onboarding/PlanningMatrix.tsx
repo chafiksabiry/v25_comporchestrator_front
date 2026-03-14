@@ -124,20 +124,17 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
         });
     }, [localMatrix, weekDates]);
 
-    const totalReps = useMemo(() => {
-        return dayTotals.reduce((sum, val) => sum + val, 0);
-    }, [dayTotals]);
     return (
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-3 py-2 flex items-center justify-between">
+            <div className="bg-gradient-harx px-3 py-2 flex items-center justify-between">
                 <div className="flex items-center gap-4 text-white">
                     <div className="p-2 bg-white/10 backdrop-blur-md rounded-xl">
                         <Calendar className="w-5 h-5" />
                     </div>
                     <div>
                         <h2 className="text-base font-bold">Session Planning</h2>
-                        <p className="text-blue-100 text-sm opacity-90">
+                        <p className="text-harx-100 text-sm opacity-90">
                             Week of {weekStart instanceof Date && !isNaN(weekStart.getTime()) ? format(weekStart, 'MMMM d, yyyy') : 'Loading...'}
                         </p>
                     </div>
@@ -146,10 +143,10 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                 <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex items-center gap-2 bg-white text-blue-700 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-blue-50 transition-all disabled:opacity-50 shadow-md shadow-black/10"
+                    className="flex items-center gap-2 bg-white text-harx-600 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-harx-50 transition-all disabled:opacity-50 shadow-md shadow-black/10"
                 >
                     {isSaving ? (
-                        <div className="w-5 h-5 border-2 border-blue-700 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-5 h-5 border-2 border-harx-600 border-t-transparent rounded-full animate-spin"></div>
                     ) : (
                         <Save className="w-5 h-5" />
                     )}
@@ -166,7 +163,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                             {DAYS.map((day, idx) => (
                                 <th key={day} className="p-1 text-center border-b border-gray-100 min-w-[70px]">
                                     <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{day.slice(0, 3)}</div>
-                                    <div className={`text-sm font-black ${weekDates[idx] instanceof Date && !isNaN(weekDates[idx].getTime()) && isSameDay(weekDates[idx], new Date()) ? 'text-blue-600' : 'text-gray-900'}`}>
+                                    <div className={`text-sm font-black ${weekDates[idx] instanceof Date && !isNaN(weekDates[idx].getTime()) && isSameDay(weekDates[idx], new Date()) ? 'text-harx-600' : 'text-gray-900'}`}>
                                         {weekDates[idx] instanceof Date && !isNaN(weekDates[idx].getTime()) ? format(weekDates[idx], 'dd') : '--'}
                                     </div>
                                 </th>
@@ -195,8 +192,8 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                                                 onChange={(e) => handleCellChange(dateStr, hour, e.target.value)}
                                                 className={`w-11 h-8 text-center rounded-lg font-black text-sm transition-all border-2 
                                                     ${value > 0
-                                                        ? 'bg-blue-50 border-blue-200 text-blue-700 focus:ring-2 focus:ring-blue-100'
-                                                        : 'bg-gray-50/50 border-transparent text-gray-400 hover:border-gray-200 focus:bg-white focus:border-blue-400'
+                                                        ? 'bg-harx-50 border-harx-200 text-harx-700 focus:ring-2 focus:ring-harx-100'
+                                                        : 'bg-gray-50/50 border-transparent text-gray-400 hover:border-gray-200 focus:bg-white focus:border-harx-400'
                                                     }
                                                     outline-none appearance-none`}
                                             />
@@ -216,7 +213,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                             </td>
                             {dayTotals.map((total, idx) => (
                                 <td key={idx} className="p-1.5 text-center">
-                                    <div className={`text-base font-black ${total > 0 ? 'text-blue-700' : 'text-gray-300'}`}>
+                                    <div className={`text-base font-black ${total > 0 ? 'text-harx-700' : 'text-gray-300'}`}>
                                         {total}
                                     </div>
                                     <div className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">REPS</div>
