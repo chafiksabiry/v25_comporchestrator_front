@@ -899,10 +899,10 @@ export const MatchingDashboard = () => {
                                                     }}
                                                     disabled={loading}
                                                     className={`group relative px-6 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 shadow-lg transform hover:-translate-y-0.5 hover:shadow-xl font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed ${hasUnsavedChanges
-                                                        ? 'bg-gradient-to-r from-antigravity-accent to-red-600 hover:from-red-500 hover:to-red-700 text-white animate-pulse'
+                                                        ? 'bg-gradient-to-r from-harx-500 to-harx-700 hover:from-harx-600 hover:to-harx-800 text-white animate-pulse'
                                                         : gigHasWeights
                                                             ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white'
-                                                            : 'bg-gradient-to-r from-antigravity-primary to-antigravity-secondary hover:from-antigravity-secondary hover:to-antigravity-primary text-white'
+                                                            : 'bg-gradient-to-r from-harx-600 to-harx-500 hover:from-harx-700 hover:to-harx-600 text-white'
                                                         }`}
                                                 >
                                                     {/* Animated Background */}
@@ -927,10 +927,10 @@ export const MatchingDashboard = () => {
 
                                                     {/* Glow Effect */}
                                                     <div className={`absolute inset-0 rounded-lg blur-lg opacity-20 group-hover:opacity-40 transition-opacity duration-200 ${hasUnsavedChanges
-                                                        ? 'bg-antigravity-accent'
+                                                        ? 'bg-harx-500'
                                                         : gigHasWeights
                                                             ? 'bg-green-500'
-                                                            : 'bg-antigravity-primary'
+                                                            : 'bg-harx-500'
                                                         }`}></div>
                                                 </button>
                                             </div>
@@ -943,7 +943,7 @@ export const MatchingDashboard = () => {
                                     <div className="mb-6">
                                         <div className="relative max-w-md mx-auto">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <svg className="h-5 w-5 text-antigravity-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                                 </svg>
                                             </div>
