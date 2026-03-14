@@ -220,8 +220,8 @@ function App() {
 
 
 
-        <nav className="flex-1 px-4 flex flex-col justify-center space-y-6 overflow-y-auto min-h-0">
-          <div className="shrink-0">
+        <nav className="flex-1 px-4 flex flex-col overflow-y-auto min-h-0">
+          <div className="shrink-0 pt-2 pb-4">
             <button
               className={`flex w-full items-center space-x-3 rounded-2xl py-3 px-5 transition-all duration-300 group ${activeTab === 'company-onboarding'
                 ? 'bg-gradient-harx text-white shadow-xl shadow-harx-500/25 ring-1 ring-white/10'
@@ -234,37 +234,37 @@ function App() {
               </div>
               <span className="font-black text-sm tracking-tight">Company Onboarding</span>
             </button>
-          </div>
-
-          <div className="flex flex-col items-center shrink-0">
-            <div className="relative group">
-              <div className="absolute -inset-4 bg-gradient-harx/20 rounded-full blur-2xl group-hover:bg-harx-500/30 transition-all duration-700" />
-              <img
-                src={`${import.meta.env.BASE_URL || '/'}mascotte2.png`}
-                alt="HARX Mascotte"
-                className="w-40 h-40 object-contain drop-shadow-[0_0_20px_rgba(255,77,77,0.3)] relative z-10 transition-transform duration-500 group-hover:scale-105"
-              />
-            </div>
-          </div>
-
-          {currentStepGuide && (
-            <div className="px-2 animate-fade-in-up shrink-0">
-              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 shadow-inner">
-                <div className="flex items-center gap-2 mb-2 text-harx-400">
-                  <Sparkles className="h-4 w-4" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Active Guide</span>
-                </div>
-                <h4 className="text-xs font-bold text-white mb-1">{currentStepGuide.title}</h4>
-                <p className="text-[10px] text-gray-400 leading-relaxed italic line-clamp-3">
-                  {currentStepGuide.description}
-                </p>
-                <div className="mt-2 flex items-center gap-1.5 text-[9px] text-harx-500/80 font-bold uppercase tracking-tighter">
-                  <Info className="h-3 w-3" />
-                  <span>Interactive Step</span>
-                </div>
+          <div className="flex-1 flex flex-col justify-center space-y-8 pb-8">
+            <div className="flex flex-col items-center shrink-0">
+              <div className="relative group">
+                <div className="absolute -inset-4 bg-gradient-harx/20 rounded-full blur-2xl group-hover:bg-harx-500/30 transition-all duration-700" />
+                <img
+                  src={`${import.meta.env.BASE_URL || '/'}mascotte2.png`}
+                  alt="HARX Mascotte"
+                  className="w-40 h-40 object-contain drop-shadow-[0_0_20px_rgba(255,77,77,0.3)] relative z-10 transition-transform duration-500 group-hover:scale-105"
+                />
               </div>
             </div>
-          )}
+
+            {currentStepGuide && (
+              <div className="px-2 animate-fade-in-up shrink-0">
+                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 shadow-inner">
+                  <div className="flex items-center gap-2 mb-2 text-harx-400">
+                    <Sparkles className="h-4 w-4" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Active Guide</span>
+                  </div>
+                  <h4 className="text-xs font-bold text-white mb-1">{currentStepGuide.title}</h4>
+                  <p className="text-[10px] text-gray-400 leading-relaxed italic line-clamp-3">
+                    {currentStepGuide.description}
+                  </p>
+                  <div className="mt-2 flex items-center gap-1.5 text-[9px] text-harx-500/80 font-bold uppercase tracking-tighter">
+                    <Info className="h-3 w-3" />
+                    <span>Interactive Step</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </nav>
 
         <div className="p-4 bg-black/40 border-t border-white/5">
