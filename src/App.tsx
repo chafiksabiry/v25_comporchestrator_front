@@ -193,7 +193,7 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen bg-premium-gradient overflow-hidden">
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
 
       <Toaster position="top-right" />
       {/* Sidebar */}

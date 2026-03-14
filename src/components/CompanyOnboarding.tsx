@@ -285,7 +285,6 @@ const CompanyOnboarding = () => {
       console.log("🚫 Set manual close flag - preventing auto-restoration");
     }
   }, [showUploadContacts]);
-  const [isLoading, setIsLoading] = useState(true);
   const [hasGigs, setHasGigs] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [showGigDetails, setShowGigDetails] = useState(false);
@@ -671,12 +670,10 @@ const CompanyOnboarding = () => {
   }, [companyId]);
 
   const loadCompanyProgress = async () => {
-    setIsLoading(true);
     try {
       // Vérifier que companyId est disponible
       if (!companyId) {
         console.error("❌ Company ID not available for loading progress");
-        setIsLoading(false);
         return;
       }
 
@@ -793,7 +790,7 @@ const CompanyOnboarding = () => {
       setDisplayedPhase(1);
       setCompletedSteps([]);
     } finally {
-      setIsLoading(false);
+      // isLoading removed
     }
   };
 
@@ -1337,13 +1334,6 @@ const CompanyOnboarding = () => {
       .find((step) => step.id === activeStep)?.component
     : null;
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-harx-600"></div>
-      </div>
-    );
-  }
 
 
   // Don't skip rendering - allow component to render normally
