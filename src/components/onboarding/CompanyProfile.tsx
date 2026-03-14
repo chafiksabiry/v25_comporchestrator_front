@@ -218,7 +218,7 @@ const EditableField = ({
   );
 };
 
-function CompanyProfile() {
+function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | null }) {
   const [company, setCompany] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -231,8 +231,12 @@ function CompanyProfile() {
   const [showUniquenessPanel, setShowUniquenessPanel] = useState(false);
   const [isStepCompleted, setIsStepCompleted] = useState(false);
 
-  const companyId = Cookies.get('companyId');
-  console.log('Stored companyId from cookie:', companyId);
+  const cookieCompanyId = Cookies.get('companyId');
+  const companyId = propCompanyId || cookieCompanyId;
+  console.log('Using companyId:', companyId, { fromProp: !!propCompanyId, fromCookie: !!cookieCompanyId });
+
+  // Define API URL with fallback
+  const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
 
   // Vérifier l'état de l'étape au chargement
   useEffect(() => {
@@ -290,7 +294,7 @@ function CompanyProfile() {
 
       // Vérifier l'état de l'étape 1 via l'API d'onboarding principale
       const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+        `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding`
       );
 
       console.log('📡 API response for onboarding:', response.data);
@@ -418,9 +422,10 @@ function CompanyProfile() {
   // Original functions from the existing component
   const fetchCompanyDetails = async () => {
     try {
+      if (!companyId) return;
       setLoading(true);
       const response = await axios.get<CompanyResponse>(
-        `${import.meta.env.VITE_COMPANY_API_URL}/${companyId}/details`
+        `${API_BASE_URL}/companies/${companyId}/details`
       );
       setCompany(response.data.data);
       if ((response.data.data as any).logo) {
@@ -488,7 +493,7 @@ function CompanyProfile() {
 
       // Sauvegarder les informations de l'entreprise
       await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/${companyId}`,
+        `${API_BASE_URL}/companies/${companyId}`,
         company
       );
 
@@ -502,7 +507,7 @@ function CompanyProfile() {
 
           // Récupérer l'état actuel de l'onboarding
           const onboardingResponse = await axios.get(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+            `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding`
           );
 
           const currentCompletedSteps = (onboardingResponse.data as any)?.completedSteps || [];
@@ -510,7 +515,7 @@ function CompanyProfile() {
 
           // Mettre à jour l'onboarding avec l'étape 1 marquée comme complétée
           const updateResponse = await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`,
+            `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding`,
             {
               completedSteps: newCompletedSteps,
               currentPhase: 1
@@ -592,8 +597,10 @@ function CompanyProfile() {
   };
 
   useEffect(() => {
-    fetchCompanyDetails();
-  }, []);
+    if (companyId) {
+      fetchCompanyDetails();
+    }
+  }, [companyId]);
 
   if (loading) {
       return (
