@@ -1051,13 +1051,13 @@ export const MatchingDashboard = () => {
 
                                                         {/* Expanded Details */}
                                                         {isGigExpanded && (
-                                                            <div className="px-4 pb-4 border-t border-antigravity-border bg-white overflow-hidden">
-                                                                <div className="pt-4 space-y-4 text-sm overflow-hidden text-antigravity-text">
+                                                            <div className="px-4 pb-4 border-t border-gray-200 bg-white overflow-hidden">
+                                                                <div className="pt-4 space-y-4 text-sm overflow-hidden text-gray-800">
 
                                                                     {/* 1. Industries */}
                                                                     {gig.industries && gig.industries.length > 0 && (
                                                                         <div>
-                                                                            <p className="text-antigravity-muted font-medium mb-2">Industries:</p>
+                                                                            <p className="text-gray-500 font-medium mb-2">Industries:</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.industries.map((industry: any, i: number) => {
                                                                                     const displayName = industry.name ||
@@ -1075,7 +1075,7 @@ export const MatchingDashboard = () => {
                                                                     {/* 2. Activities */}
                                                                     {gig.activities && gig.activities.length > 0 && (
                                                                         <div>
-                                                                            <p className="text-antigravity-muted font-medium mb-2">Activities:</p>
+                                                                            <p className="text-gray-500 font-medium mb-2">Activities:</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.activities.map((activity: any, i: number) => {
                                                                                     const displayName = activity.name ||
@@ -1092,14 +1092,14 @@ export const MatchingDashboard = () => {
 
                                                                     {/* 3. Experience */}
                                                                     <div className="flex items-center justify-between">
-                                                                        <span className="text-antigravity-muted font-medium">Experience:</span>
-                                                                        <span className="font-semibold text-antigravity-text">{gig.seniority?.yearsExperience || 'N/A'} years</span>
+                                                                        <span className="text-gray-500 font-medium">Experience:</span>
+                                                                        <span className="font-semibold text-gray-900">{gig.seniority?.yearsExperience || 'N/A'} years</span>
                                                                     </div>
 
                                                                     {/* 4. Languages */}
                                                                     {gig.skills?.languages && gig.skills.languages.length > 0 && (
                                                                         <div>
-                                                                            <p className="text-antigravity-muted font-medium mb-2">Languages:</p>
+                                                                            <p className="text-gray-500 font-medium mb-2">Languages:</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.skills.languages.map((lang: any, i: number) => (
                                                                                     <span key={i} className="px-2 py-1 bg-purple-100 text-purple-700 border border-purple-200 rounded text-xs font-medium">
@@ -1114,8 +1114,8 @@ export const MatchingDashboard = () => {
                                                                     {/* 5. Availability */}
                                                                     {gig.availability && (
                                                                         <div>
-                                                                            <span className="text-antigravity-muted font-medium">Availability:</span>
-                                                                            <p className="font-semibold text-antigravity-text">
+                                                                            <span className="text-gray-500 font-medium">Availability:</span>
+                                                                            <p className="font-semibold text-gray-900">
                                                                                 {gig.availability.schedule ? `${gig.availability.schedule.length} days/week` :
                                                                                     gig.availability.hoursPerWeek ? `${gig.availability.hoursPerWeek}h/week` :
                                                                                         (gig.availability as any).workingHours && typeof (gig.availability as any).workingHours === 'string' ? (gig.availability as any).workingHours :
@@ -1127,7 +1127,7 @@ export const MatchingDashboard = () => {
                                                                     {/* 6. Skills - Professional */}
                                                                     {gig.skills?.professional && gig.skills.professional.length > 0 && (
                                                                         <div>
-                                                                            <p className="text-antigravity-muted font-medium mb-2">Professional Skills:</p>
+                                                                            <p className="text-gray-500 font-medium mb-2">Professional Skills:</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.skills.professional.map((skillItem: any, i: number) => (
                                                                                     <span key={`prof-${i}`} className="px-2 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded text-xs font-medium">
@@ -1141,7 +1141,7 @@ export const MatchingDashboard = () => {
                                                                     {/* 6. Skills - Technical */}
                                                                     {gig.skills?.technical && gig.skills.technical.length > 0 && (
                                                                         <div>
-                                                                            <p className="text-antigravity-muted font-medium mb-2">Technical Skills:</p>
+                                                                            <p className="text-gray-500 font-medium mb-2">Technical Skills:</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.skills.technical.map((skillItem: any, i: number) => (
                                                                                     <span key={`tech-${i}`} className="px-2 py-1 bg-green-100 text-green-700 border border-green-200 rounded text-xs font-medium">
@@ -1155,7 +1155,7 @@ export const MatchingDashboard = () => {
                                                                     {/* 6. Skills - Soft */}
                                                                     {gig.skills?.soft && gig.skills.soft.length > 0 && (
                                                                         <div>
-                                                                            <p className="text-antigravity-muted font-medium mb-2">Soft Skills:</p>
+                                                                            <p className="text-gray-500 font-medium mb-2">Soft Skills:</p>
                                                                             <div className="flex flex-wrap gap-1">
                                                                                 {gig.skills.soft.map((skillItem: any, i: number) => (
                                                                                     <span key={`soft-${i}`} className="px-2 py-1 bg-pink-100 text-pink-700 border border-pink-200 rounded text-xs font-medium">
@@ -1392,7 +1392,7 @@ export const MatchingDashboard = () => {
                                                                                 </div>
                                                                                 {match.languageMatch.details?.matchingLanguages && match.languageMatch.details.matchingLanguages.length > 0 && (
                                                                                     <div className="space-y-1">
-                                                                                        <p className="text-xs text-gray-500 mb-2">Matched:</p>
+                                                                                        <p className="text-xs text-gray-500 mb-2">Matched Languages:</p>
                                                                                         <div className="flex flex-wrap gap-1">
                                                                                             {match.languageMatch.details.matchingLanguages.slice(0, 3).map((lang: any, i: number) => (
                                                                                                 <span key={i} className="px-2 py-1 bg-harx-alt-50 text-harx-alt-600 rounded text-xs font-medium border border-harx-alt-100">
@@ -1425,7 +1425,7 @@ export const MatchingDashboard = () => {
                                                                                 </div>
                                                                                 {match.industryMatch.details?.matchingIndustries && match.industryMatch.details.matchingIndustries.length > 0 && (
                                                                                     <div className="space-y-1">
-                                                                                        <p className="text-xs text-gray-500 mb-2">Matched:</p>
+                                                                                        <p className="text-xs text-gray-500 mb-2">Matched Industries:</p>
                                                                                         <div className="flex flex-wrap gap-1">
                                                                                             {match.industryMatch.details.matchingIndustries.slice(0, 2).map((industry: any, i: number) => (
                                                                                                 <span key={i} className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs font-medium border border-blue-100">
@@ -1536,7 +1536,7 @@ export const MatchingDashboard = () => {
                                                                                 </div>
                                                                                 {match.activityMatch.details?.matchingActivities && match.activityMatch.details.matchingActivities.length > 0 && (
                                                                                     <div className="space-y-1">
-                                                                                        <p className="text-xs text-gray-500 mb-2">Matched:</p>
+                                                                                        <p className="text-xs text-gray-500 mb-2">Matched Activities:</p>
                                                                                         <div className="flex flex-wrap gap-1">
                                                                                             {match.activityMatch.details.matchingActivities.slice(0, 2).map((activity: any, i: number) => (
                                                                                                 <span key={i} className="px-2 py-1 bg-teal-50 text-teal-700 rounded text-xs font-medium border border-teal-100">
