@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar } from '../../components/scheduler/Calendar';
 import { TimeSlotGrid } from '../../components/scheduler/TimeSlotGrid';
 import { TimeSlot, Gig, WeeklyStats, Rep, UserRole, Company, AttendanceRecord } from '../../types/scheduler';

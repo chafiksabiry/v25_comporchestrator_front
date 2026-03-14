@@ -1,3 +1,4 @@
+import React from 'react';
 import { ArrowLeft, FileText, Target, Award, DollarSign, Users, MapPin, ClockIcon, Globe, Settings, Phone, Repeat, Star } from 'lucide-react';
 
 interface Gig {
