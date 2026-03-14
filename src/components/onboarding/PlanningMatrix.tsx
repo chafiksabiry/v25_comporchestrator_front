@@ -130,7 +130,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
     return (
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-4 py-3 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-3 py-2 flex items-center justify-between">
                 <div className="flex items-center gap-4 text-white">
                     <div className="p-2 bg-white/10 backdrop-blur-md rounded-xl">
                         <Calendar className="w-5 h-5" />
@@ -162,7 +162,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                 <table className="w-full border-collapse">
                     <thead>
                         <tr>
-                            <th className="p-2 text-left text-gray-400 font-semibold text-xs border-b border-gray-100 w-16">Time</th>
+                            <th className="p-1.5 text-left text-gray-400 font-semibold text-[10px] border-b border-gray-100 w-16">Time</th>
                             {DAYS.map((day, idx) => (
                                 <th key={day} className="p-1 text-center border-b border-gray-100 min-w-[70px]">
                                     <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{day.slice(0, 3)}</div>
@@ -186,7 +186,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                                     const dateStr = format(date, 'yyyy-MM-dd');
                                     const value = Number(localMatrix[dateStr]?.[hour]) || 0;
                                     return (
-                                        <td key={dateStr} className="p-1 border-b border-gray-50 text-center">
+                                        <td key={dateStr} className="p-0.5 border-b border-gray-50 text-center">
                                             <input
                                                 type="number"
                                                 min="0"
@@ -208,14 +208,14 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                     </tbody>
                     <tfoot>
                         <tr className="bg-gray-50/80">
-                            <td className="p-2 font-black text-gray-900 text-xs">
+                            <td className="p-1.5 font-black text-gray-900 text-xs">
                                 <div className="flex items-center gap-1">
                                     <span className="text-sm">Σ</span>
                                     <span>Total</span>
                                 </div>
                             </td>
                             {dayTotals.map((total, idx) => (
-                                <td key={idx} className="p-2 text-center">
+                                <td key={idx} className="p-1.5 text-center">
                                     <div className={`text-base font-black ${total > 0 ? 'text-blue-700' : 'text-gray-300'}`}>
                                         {total}
                                     </div>
