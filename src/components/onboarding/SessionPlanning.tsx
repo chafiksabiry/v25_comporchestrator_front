@@ -653,8 +653,8 @@ export default function SessionPlanning() {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-6 py-10 space-y-10">
-        <header className="bg-white rounded-[2.5rem] p-8 border-4 border-harx-100 shadow-2xl relative overflow-hidden group">
+      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+        <header className="bg-white rounded-2xl p-4 border border-harx-100 shadow-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-harx-50/50 rounded-full blur-[100px] group-hover:bg-harx-100/60 transition-colors duration-1000"></div>
           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="flex items-center gap-6">
@@ -683,12 +683,12 @@ export default function SessionPlanning() {
           </div>
         </header>
 
-        <main className="space-y-10">
+        <main className="space-y-6">
           {userRole === 'company' ? (
             <div className="grid grid-cols-1 gap-10">
               {selectedGigId && (
-                <div className="rounded-[3rem] bg-white shadow-2xl border border-harx-100/50 p-8 overflow-hidden relative">
-                  <div className="flex items-center justify-between mb-8">
+                <div className="rounded-2xl bg-white shadow-xl border border-harx-100/50 p-4 overflow-hidden relative">
+                  <div className="flex items-center justify-between mb-4">
                     <div>
                       <h2 className="text-xl font-black text-gray-900 uppercase tracking-widest italic">Deployment Matrix</h2>
                       <p className="text-xs text-gray-400 font-black uppercase tracking-widest mt-1">Personnel vs Timeline</p>
@@ -705,10 +705,10 @@ export default function SessionPlanning() {
               )}
 
               {selectedGigId && (
-                <div className="rounded-[3rem] bg-gray-900 p-8 shadow-2xl border-4 border-harx-500/10 overflow-hidden relative">
+                <div className="rounded-2xl bg-gray-900 p-4 shadow-xl border border-harx-500/10 overflow-hidden relative">
                   <div className="absolute top-0 right-0 w-96 h-96 bg-harx-600/5 rounded-full blur-[100px]"></div>
                   <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-8 px-4">
+                    <div className="flex items-center justify-between mb-4 px-4">
                       <h2 className="text-xl font-black text-white italic uppercase tracking-wider">Operational Overview</h2>
                       <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl text-xs font-black text-gray-400 uppercase tracking-widest">
                         <Users className="w-4 h-4 text-harx-400" />
@@ -746,7 +746,7 @@ export default function SessionPlanning() {
               )}
 
               {showAIPanel && (
-                <div className="bg-gradient-to-br from-indigo-900 to-black rounded-[3rem] p-10 shadow-2xl border-4 border-indigo-500/20 overflow-hidden relative group">
+                <div className="bg-gradient-to-br from-indigo-900 to-black rounded-2xl p-6 shadow-xl border border-indigo-500/20 overflow-hidden relative group">
                   <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_50%_120%,rgba(99,102,241,0.15),transparent)]"></div>
                   <div className="relative z-10">
                     <div className="flex items-center mb-10 border-b border-white/10 pb-6">
