@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import React from 'react';
 import {
-  ArrowRightLeft,
   Menu,
-  X,
   LogOut,
   Building2,
-  ChevronRight
+  ChevronRight,
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import Cookies from 'js-cookie';
@@ -180,35 +178,40 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-premium-gradient overflow-hidden">
+
       <Toaster position="top-right" />
       {/* Sidebar */}
       <div
         className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } fixed inset-y-0 left-0 z-30 w-64 bg-indigo-900 text-white transition-transform duration-300 ease-in-out md:relative md:translate-x-0`}
+          } fixed inset-y-0 left-0 z-30 w-72 bg-gradient-to-b from-gray-900 via-harx-900 to-gray-900 text-white transition-all duration-300 ease-in-out md:relative md:translate-x-0 shadow-2xl border-r border-harx-500/20`}
       >
-        <div className="flex h-16 items-center justify-between px-4 border-b border-indigo-800">
-          <div className="flex items-center space-x-2">
-            <ArrowRightLeft className="h-6 w-6" />
-            <span className="text-xl font-bold">Smart Orchestrator</span>
+        <div className="px-6 py-6 border-b border-white/10">
+          <div className="relative group">
+            <div className="absolute -inset-4 bg-gradient-harx/20 rounded-full blur-2xl group-hover:bg-harx-500/30 transition-all duration-700" />
+            <img
+              src={`${import.meta.env.BASE_URL || '/'}mascotte.webp`}
+              alt="HARX Mascotte"
+              className="w-24 h-24 mx-auto object-contain animate-bounce-slow relative z-10"
+            />
           </div>
-          <button
-            className="md:hidden"
-            onClick={() => setIsSidebarOpen(false)}
-          >
-            <X className="h-6 w-6" />
-          </button>
         </div>
-        <nav className="mt-6 px-4">
-          <div className="space-y-4">
+
+        <nav className="mt-8 px-4 space-y-2">
+          <div className="space-y-1">
             <button
-              className={`flex w-full items-center space-x-2 rounded-lg py-2 px-3 ${activeTab === 'company-onboarding' ? 'bg-indigo-800' : 'hover:bg-indigo-800'
+              className={`flex w-full items-center space-x-3 rounded-2xl py-3 px-4 transition-all duration-300 group ${activeTab === 'company-onboarding'
+                ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/40'
+                : 'text-gray-400 hover:bg-white/5 hover:text-white'
                 }`}
               onClick={() => setActiveTab('company-onboarding')}
             >
-              <Building2 className="h-5 w-5" />
-              <span>Company Onboarding</span>
+              <div className={`p-2 rounded-xl transition-all ${activeTab === 'company-onboarding' ? 'bg-white/20' : 'bg-gray-800 group-hover:bg-gray-700'}`}>
+                <Building2 className="h-5 w-5" />
+              </div>
+              <span className="font-bold">Company Onboarding</span>
             </button>
+
 
             {/* 
             <button
@@ -222,53 +225,48 @@ function App() {
             </button>
             */}
           </div>
-          <div className="absolute bottom-0 left-0 right-0 border-t border-indigo-800 p-4">
-            <div className="space-y-4">
-              {/* 
-              <button className="flex w-full items-center space-x-2 rounded-lg py-2 px-3 hover:bg-indigo-800">
-                <Settings className="h-5 w-5" />
-                <span>Settings</span>
-              </button>
-              <button className="flex w-full items-center space-x-2 rounded-lg py-2 px-3 hover:bg-indigo-800">
-                <HelpCircle className="h-5 w-5" />
-                <span>Help</span>
-              </button>
-              */}
+          <div className="absolute bottom-6 left-4 right-4">
+            <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10">
               <button
                 onClick={handleLogout}
-                className="flex w-full items-center space-x-2 rounded-lg py-2 px-3 hover:bg-indigo-800"
+                className="flex w-full items-center space-x-3 rounded-xl py-3 px-4 text-harx-300 hover:bg-harx-500 hover:text-white transition-all duration-300 group font-bold"
               >
-                <LogOut className="h-5 w-5" />
+                <div className="p-2 rounded-lg bg-harx-500/10 group-hover:bg-white/20">
+                  <LogOut className="h-5 w-5" />
+                </div>
                 <span>Logout</span>
               </button>
             </div>
           </div>
+
         </nav>
       </div>
 
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top Navigation */}
-        <header className="bg-white shadow-sm">
-          <div className="flex h-14 items-center justify-between px-4">
+        <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 h-20 flex items-center shrink-0 px-8 relative z-20">
+          <div className="flex w-full items-center justify-between">
             <button
-              className="md:hidden"
+              className="md:hidden p-2 rounded-xl bg-gray-100"
               onClick={() => setIsSidebarOpen(true)}
             >
-              <Menu className="h-6 w-6" />
+              <Menu className="h-6 w-6 text-gray-600" />
             </button>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="flex items-center space-x-2">
-                  <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center text-white">
-                    {userFullName.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="font-medium">{userFullName}</span>
+            <div className="flex items-center space-x-4 ml-auto">
+              <div className="flex items-center space-x-3 bg-gray-50 p-1.5 pr-4 rounded-2xl border border-gray-100 shadow-sm">
+                <div className="h-10 w-10 rounded-xl bg-gradient-harx flex items-center justify-center text-white font-black shadow-md">
+                  {userFullName.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-black text-gray-900 leading-tight">{userFullName}</span>
+                  <span className="text-[10px] text-harx-500 font-bold uppercase tracking-wider">Administrator</span>
                 </div>
               </div>
             </div>
           </div>
         </header>
+
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto px-4 py-3">

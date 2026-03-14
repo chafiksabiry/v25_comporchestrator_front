@@ -33,6 +33,7 @@ import {
   Instagram,
   ArrowRight,
 } from "lucide-react";
+
 import Cookies from 'js-cookie';
 
 // Error Boundary Component
@@ -174,10 +175,11 @@ const EditableField = ({
                 [field]: e.target.value,
               }))
             }
-            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none ${isHeroField
-              ? 'border-white/30 bg-white/20 backdrop-blur-sm text-white placeholder-white/70'
-              : 'border-indigo-300 bg-white !text-black'
+            className={`w-full px-4 py-3 border-2 rounded-2xl focus:ring-4 focus:ring-harx-500/20 focus:border-harx-500 outline-none transition-all ${isHeroField
+              ? 'border-white/30 bg-white/10 backdrop-blur-md text-white placeholder-white/70'
+              : 'border-harx-100 bg-white !text-black shadow-sm'
               }`}
+
             placeholder={isHeroField ? value || "Enter text..." : ""}
           />
           <div className="absolute right-0 top-full mt-2 flex gap-2 z-50">
@@ -200,10 +202,11 @@ const EditableField = ({
           <span className={isHeroField ? "" : "text-gray-800"}>{value || "Not set"}</span>
           {editMode && (
             <button
-              className={`absolute -right-3 -top-3 opacity-0 group-hover:opacity-100 p-1 rounded-full shadow-md transition-all ${isHeroField
-                ? 'bg-white/20 backdrop-blur-sm text-white hover:text-yellow-300'
-                : 'bg-white text-gray-600 hover:text-indigo-600'
+              className={`absolute -right-3 -top-3 opacity-0 group-hover:opacity-100 p-1.5 rounded-full shadow-lg transition-all ${isHeroField
+                ? 'bg-gradient-harx text-white hover:scale-110'
+                : 'bg-white text-harx-600 hover:bg-harx-50 hover:scale-110'
                 }`}
+
               onClick={() => handleFieldEdit()}
             >
               <Pencil size={12} />
@@ -593,28 +596,30 @@ function CompanyProfile() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <div className="bg-white rounded-2xl shadow-xl w-full p-8">
-          <div className="animate-pulse space-y-6">
-            <div className="h-20 bg-gray-200 rounded-xl w-full"></div>
-            <div className="flex gap-6">
-              <div className="h-24 w-24 bg-gray-200 rounded-xl"></div>
-              <div className="space-y-4 flex-1">
-                <div className="h-10 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+      return (
+        <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl p-12 border border-harx-100">
+            <div className="animate-pulse space-y-8">
+              <div className="h-24 bg-harx-50 rounded-2xl w-full"></div>
+              <div className="flex gap-8">
+                <div className="h-32 w-32 bg-harx-50 rounded-2xl flex-shrink-0"></div>
+                <div className="space-y-4 flex-1 py-2">
+                  <div className="h-10 bg-harx-50 rounded-lg w-3/4"></div>
+                  <div className="h-6 bg-harx-50 rounded-lg w-1/2"></div>
+                </div>
               </div>
-            </div>
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-16 bg-gray-200 rounded-xl"></div>
-              ))}
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-20 bg-harx-50 rounded-2xl border border-harx-50"></div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    );
+      );
   }
+
+
 
   // Create default values for new fields if they don't exist
   const profile = {
@@ -711,7 +716,8 @@ function CompanyProfile() {
                     "url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80')",
                 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/90 via-indigo-800/85 to-blue-900/80" />
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-harx-900 to-harx-700/80" />
+
                 <style>
                   {`
                   @keyframes shine {
@@ -740,7 +746,8 @@ function CompanyProfile() {
                           }}
                         />
                       ) : (
-                        <Globe className="w-full h-full text-indigo-600" />
+                        <Globe className="w-full h-full text-harx-500" />
+
                       )}
                       {editMode && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -762,7 +769,8 @@ function CompanyProfile() {
                             value={logoUrl}
                             onChange={handleLogoChange}
                             placeholder="Enter logo URL..."
-                            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none !text-black !bg-white"
+                             className="w-full px-3 py-2 text-sm border-2 border-harx-100 rounded-xl focus:ring-4 focus:ring-harx-500/20 focus:border-harx-500 outline-none transition-all !text-black !bg-white"
+
                           />
                           <div className="flex justify-end gap-2 mt-2">
                             <button
@@ -780,7 +788,8 @@ function CompanyProfile() {
                                 setEditingField(null);
                                 setHasChanges(true);
                               }}
-                              className="px-3 py-1 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                               className="px-4 py-2 text-sm bg-gradient-harx text-white rounded-xl font-bold shadow-lg shadow-harx-500/30 hover:scale-105 transition-all"
+
                             >
                               Save
                             </button>
@@ -793,7 +802,8 @@ function CompanyProfile() {
                         onClick={() =>
                           setEditingField(editingField === "logo" ? null : "logo")
                         }
-                        className="absolute -right-2 -top-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center text-gray-600 hover:text-indigo-600 transition-colors"
+                         className="absolute -right-2 -top-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-harx-500 hover:text-harx-600 transition-all hover:scale-110"
+
                       >
                         <Edit2 size={12} />
                       </button>
@@ -1184,8 +1194,6 @@ function CompanyProfile() {
                 </section>
               </div>
             </div>
-            {/* Edit Mode Toggle */}
-
           </div>
         </div>
       </ErrorBoundary>
@@ -1193,4 +1201,4 @@ function CompanyProfile() {
   );
 }
 
-export default CompanyProfile;
+export default CompanyProfile;

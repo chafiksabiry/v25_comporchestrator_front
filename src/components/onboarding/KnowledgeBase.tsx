@@ -259,146 +259,156 @@ const KnowledgeBase = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-gray-900">Knowledge Base</h2>
-            {isStepCompleted && (
-              <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                <CheckCircle2 className="w-4 h-4" />
-                Completed
+    <div className="space-y-8 max-w-6xl mx-auto">
+      <div className="bg-white rounded-[2rem] p-8 border border-harx-100 shadow-xl overflow-hidden relative group">
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-harx-50/50 rounded-full blur-3xl group-hover:bg-harx-100 transition-colors duration-700"></div>
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex-1">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-harx flex items-center justify-center shadow-lg shadow-harx-500/20">
+                <BookOpen className="h-6 w-6 text-white" />
               </div>
-            )}
+              <div>
+                <h2 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                  Knowledge Base
+                  {isStepCompleted && (
+                    <span className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-4 py-1.5 rounded-2xl text-xs font-black uppercase tracking-widest border border-emerald-100 italic">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Ready to Scale
+                    </span>
+                  )}
+                </h2>
+                <p className="text-lg text-gray-500 font-medium">Equip your REPS with essential product wisdom and objection handlers.</p>
+              </div>
+            </div>
           </div>
-          <p className="text-sm text-gray-500">Create and manage training materials for REPS</p>
-        </div>
-        <div className="flex space-x-3">
-          <button className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-            <FolderPlus className="mr-2 h-4 w-4" />
-            New Section
-          </button>
-          {!isStepCompleted ? (
-            <button
-              onClick={handleCompleteKnowledgeBase}
-              className="flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
-              disabled={!hasBasicInfo()}
-            >
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Complete Setup
+          <div className="flex flex-wrap gap-4">
+            <button className="flex items-center rounded-2xl bg-white px-6 py-3 text-sm font-black text-gray-700 shadow-sm border border-gray-200 hover:border-harx-300 hover:text-harx-600 transition-all">
+              <FolderPlus className="mr-2 h-4 w-4" />
+              New Section
             </button>
-          ) : (
-            <button className="flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm cursor-not-allowed">
-              <CheckCircle2 className="mr-2 h-4 w-4" />
-              Setup Completed
+            {!isStepCompleted ? (
+              <button
+                onClick={handleCompleteKnowledgeBase}
+                className={`flex items-center rounded-2xl px-6 py-3 text-sm font-black text-white shadow-lg transition-all transform active:scale-95 ${hasBasicInfo() ? 'bg-gradient-harx hover:brightness-110 shadow-harx-500/30' : 'bg-gray-200 cursor-not-allowed shadow-none'}`}
+                disabled={!hasBasicInfo()}
+              >
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Finalize Setup
+              </button>
+            ) : (
+              <button className="flex items-center rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-emerald-500/20 cursor-default opacity-80 italic">
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                Validated
+              </button>
+            )}
+            <button className="flex items-center rounded-2xl bg-gray-900 px-6 py-3 text-sm font-black text-white shadow-xl hover:bg-black transition-all transform hover:-translate-y-0.5 active:translate-y-0">
+              <Plus className="mr-2 h-4 w-4" />
+              New Article
             </button>
-          )}
-          <button className="flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
-            <Plus className="mr-2 h-4 w-4" />
-            New Article
-          </button>
+          </div>
         </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="flex items-center space-x-4">
-        <div className="flex-1">
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              className="block w-full rounded-lg border-gray-300 pl-10 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Search knowledge base..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+      <div className="flex flex-col md:flex-row gap-4 items-stretch">
+        <div className="flex-1 relative group">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400 group-focus-within:text-harx-500 transition-colors" />
           </div>
+          <input
+            type="text"
+            className="block w-full h-14 rounded-2xl bg-white border-2 border-gray-100 pl-12 pr-4 focus:border-harx-500 focus:ring-0 text-gray-900 font-medium transition-all shadow-sm"
+            placeholder="Search training modules, objections, scripts..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
-        <select className="rounded-lg border-gray-300 py-2 pl-3 pr-10 text-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500">
-          <option>All Categories</option>
-          <option>Product Information</option>
-          <option>Common Objections</option>
-          <option>FAQs</option>
+        <select className="h-14 rounded-2xl bg-white border-2 border-gray-100 px-6 text-sm font-black text-gray-700 focus:border-harx-500 focus:outline-none focus:ring-0 shadow-sm transition-all cursor-pointer">
+          <option>All Knowledge Pillars</option>
+          <option>Product Deep-Dives</option>
+          <option>Objection Handling</option>
+          <option>FAQ Library</option>
         </select>
       </div>
 
       {/* Knowledge Base Content */}
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {sections.map((section) => (
-          <div key={section.id} className="rounded-lg bg-white shadow">
+          <div key={section.id} className={`rounded-[2rem] bg-white border-2 transition-all overflow-hidden ${expandedSection === section.id ? 'border-harx-200 shadow-xl' : 'border-gray-50 shadow-sm hover:border-harx-100 hover:shadow-md'}`}>
             <div
-              className="flex cursor-pointer items-center justify-between p-4"
+              className={`flex cursor-pointer items-center justify-between p-6 transition-colors ${expandedSection === section.id ? 'bg-harx-50/30' : 'hover:bg-gray-50/50'}`}
               onClick={() => toggleSection(section.id)}
             >
-              <div className="flex items-center space-x-3">
-                <div className="rounded-full bg-indigo-100 p-2 text-indigo-600">
-                  <BookOpen className="h-5 w-5" />
+              <div className="flex items-center space-x-4">
+                <div className={`rounded-2xl p-3 transition-all ${expandedSection === section.id ? 'bg-gradient-harx text-white scale-110 shadow-lg shadow-harx-500/20' : 'bg-harx-50 text-harx-600'}`}>
+                  <BookOpen className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-900">{section.title}</h3>
-                  <p className="text-sm text-gray-500">{section.articles.length} articles</p>
+                  <h3 className="text-xl font-black text-gray-900 tracking-tight">{section.title}</h3>
+                  <p className="text-xs font-black text-gray-400 uppercase tracking-widest">{section.articles.length} Knowledge Assets</p>
                 </div>
               </div>
-              {expandedSection === section.id ? (
-                <ChevronUp className="h-5 w-5 text-gray-400" />
-              ) : (
-                <ChevronDown className="h-5 w-5 text-gray-400" />
-              )}
+              <div className={`p-2 rounded-xl transition-all ${expandedSection === section.id ? 'bg-white text-harx-500 rotate-180 shadow-sm' : 'text-gray-400 group-hover:text-gray-600'}`}>
+                <ChevronDown className="h-5 w-5" />
+              </div>
             </div>
 
             {expandedSection === section.id && (
-              <div className="border-t border-gray-200">
-                {section.articles.map((article) => (
-                  <div
-                    key={article.id}
-                    className="border-b border-gray-200 p-4 last:border-b-0"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-3">
-                        <FileText className="mt-1 h-5 w-5 text-gray-400" />
-                        <div>
-                          <h4 className="font-medium text-gray-900">{article.title}</h4>
-                          <p className="mt-1 text-sm text-gray-500">
-                            {article.content.substring(0, 100)}...
-                          </p>
-                          <div className="mt-2 flex items-center space-x-4 text-xs text-gray-500">
-                            <span>Last updated {article.lastUpdated}</span>
-                            <span
-                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${article.status === 'published'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-yellow-100 text-yellow-800'
-                                }`}
-                            >
-                              {article.status === 'published' ? (
-                                <CheckCircle className="mr-1 h-3 w-3" />
-                              ) : (
-                                <AlertCircle className="mr-1 h-3 w-3" />
-                              )}
-                              {article.status}
-                            </span>
+              <div className="border-t border-gray-100 bg-white">
+                <div className="divide-y divide-gray-50">
+                  {section.articles.map((article) => (
+                    <div
+                      key={article.id}
+                      className="group p-6 hover:bg-gray-50/80 transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start space-x-4 flex-1">
+                          <div className="mt-1 w-10 h-10 rounded-xl bg-gray-100 text-gray-400 flex items-center justify-center group-hover:bg-white group-hover:text-harx-500 group-hover:shadow-sm transition-all border border-transparent group-hover:border-harx-100">
+                            <FileText className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-lg font-bold text-gray-900 group-hover:text-harx-600 transition-colors">{article.title}</h4>
+                            <p className="mt-1 text-sm text-gray-500 font-medium leading-relaxed">
+                              {article.content.substring(0, 120)}...
+                            </p>
+                            <div className="mt-4 flex items-center gap-6">
+                              <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">Updated {article.lastUpdated}</span>
+                              <span
+                                className={`inline-flex items-center rounded-xl px-3 py-1 text-[10px] font-black uppercase tracking-widest border ${article.status === 'published'
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                                  : 'bg-amber-50 text-amber-700 border-amber-100 shadow-sm'
+                                  }`}
+                              >
+                                {article.status === 'published' ? (
+                                  <CheckCircle className="mr-1.5 h-3 w-3" />
+                                ) : (
+                                  <AlertCircle className="mr-1.5 h-3 w-3" />
+                                )}
+                                {article.status}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500">
-                          <Share2 className="h-4 w-4" />
-                        </button>
-                        <button className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500">
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-red-500">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transform translate-x-4 group-hover:translate-x-0 transition-all duration-300">
+                          <button className="p-2 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-harx-500 hover:border-harx-500 shadow-sm hover:shadow-md transition-all">
+                            <Share2 className="h-4 w-4" />
+                          </button>
+                          <button className="p-2 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-harx-500 hover:border-harx-500 shadow-sm hover:shadow-md transition-all">
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button className="p-2 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-rose-500 hover:border-rose-500 shadow-sm hover:shadow-md transition-all">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-                <div className="bg-gray-50 p-4">
-                  <button className="flex w-full items-center justify-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-100">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Article to {section.title}
+                  ))}
+                </div>
+                <div className="p-6 bg-gray-50/50">
+                  <button className="flex w-full items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-white px-4 py-4 text-sm font-black text-gray-500 hover:border-harx-300 hover:text-harx-600 transition-all shadow-sm hover:shadow-md uppercase tracking-widest italic group">
+                    <Plus className="mr-2 h-4 w-4 group-hover:rotate-90 transition-transform duration-300" />
+                    Expand {section.title}
                   </button>
                 </div>
               </div>
@@ -407,52 +417,48 @@ const KnowledgeBase = () => {
         ))}
       </div>
 
-      {/* Quick Tips */}
-      <div className="rounded-lg bg-indigo-50 p-6">
-        <h3 className="text-lg font-medium text-indigo-900">Knowledge Base Best Practices</h3>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="rounded-lg bg-white p-4 shadow-sm">
-            <div className="flex items-center space-x-3">
-              <div className="rounded-full bg-green-100 p-2 text-green-600">
-                <CheckCircle className="h-5 w-5" />
+      {/* Pro Tips Section */}
+      <div className="rounded-[2.5rem] bg-gray-900 p-10 overflow-hidden relative border-4 border-harx-500/10 shadow-2xl">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-harx-600/10 rounded-full blur-[100px]"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-600/5 rounded-full blur-[80px]"></div>
+        
+        <div className="relative z-10">
+          <h3 className="text-2xl font-black text-white tracking-tight mb-8">HARX Strategic Insights</h3>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 italic">
+            <div className="rounded-3xl bg-white/5 backdrop-blur-md p-6 border border-white/10 hover:border-harx-500/30 transition-all group">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <CheckCircle className="h-6 w-6" />
               </div>
-              <div>
-                <h4 className="font-medium text-gray-900">Keep It Updated</h4>
-                <p className="text-sm text-gray-500">
-                  Regularly review and update content to ensure accuracy
-                </p>
-              </div>
+              <h4 className="text-lg font-bold text-white mb-2">Dynamic Updates</h4>
+              <p className="text-sm text-gray-400 font-medium leading-relaxed">
+                Live markets shift. Keep your content rolling with weekly refinement of objection handling.
+              </p>
             </div>
-          </div>
-          <div className="rounded-lg bg-white p-4 shadow-sm">
-            <div className="flex items-center space-x-3">
-              <div className="rounded-full bg-blue-100 p-2 text-blue-600">
-                <MessageSquare className="h-5 w-5" />
+            
+            <div className="rounded-3xl bg-white/5 backdrop-blur-md p-6 border border-white/10 hover:border-harx-500/30 transition-all group">
+              <div className="w-12 h-12 rounded-2xl bg-harx-500/20 text-harx-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <MessageSquare className="h-6 w-6" />
               </div>
-              <div>
-                <h4 className="font-medium text-gray-900">Clear Communication</h4>
-                <p className="text-sm text-gray-500">
-                  Use simple language and provide examples
-                </p>
-              </div>
+              <h4 className="text-lg font-bold text-white mb-2">Human-Centric</h4>
+              <p className="text-sm text-gray-400 font-medium leading-relaxed">
+                Don't just list facts. Craft narratives. REPS convert better with stories than specs.
+              </p>
             </div>
-          </div>
-          <div className="rounded-lg bg-white p-4 shadow-sm">
-            <div className="flex items-center space-x-3">
-              <div className="rounded-full bg-purple-100 p-2 text-purple-600">
-                <Share2 className="h-5 w-5" />
+            
+            <div className="rounded-3xl bg-white/5 backdrop-blur-md p-6 border border-white/10 hover:border-harx-500/30 transition-all group">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Share2 className="h-6 w-6" />
               </div>
-              <div>
-                <h4 className="font-medium text-gray-900">Easy Access</h4>
-                <p className="text-sm text-gray-500">
-                  Organize content logically for quick reference
-                </p>
-              </div>
+              <h4 className="text-lg font-bold text-white mb-2">Accessible Flow</h4>
+              <p className="text-sm text-gray-400 font-medium leading-relaxed">
+                Organize by "Moment of Need". The easier it is to find, the faster the close.
+              </p>
             </div>
           </div>
         </div>
       </div>
     </div>
+
   );
 };
 
