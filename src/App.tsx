@@ -5,7 +5,8 @@ import {
   Building2,
   ChevronRight,
   Sparkles,
-  Info
+  Info,
+  X
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import Cookies from 'js-cookie';
@@ -196,19 +197,26 @@ function App() {
       <Toaster position="top-right" />
       {/* Sidebar */}
       <div
-        className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } fixed inset-y-0 left-0 z-30 w-72 bg-[#0a0b14] text-white transition-all duration-300 ease-in-out md:relative md:translate-x-0 shadow-2xl border-r border-white/5 flex flex-col`}
+        className={`${isSidebarOpen ? 'w-72 translate-x-0' : 'w-0 -translate-x-full md:translate-x-0'} fixed inset-y-0 left-0 z-30 bg-[#0a0b14] text-white transition-all duration-300 ease-in-out md:relative shadow-2xl border-r border-white/5 flex flex-col overflow-hidden`}
       >
-        <div className="px-6 py-8 flex items-center space-x-3">
-          <div className="h-10 w-10 bg-gradient-harx rounded-xl flex items-center justify-center shadow-lg shadow-harx-500/20">
-            <div className="grid grid-cols-2 gap-0.5">
-              <div className="w-1.5 h-1.5 rounded-sm bg-white" />
-              <div className="w-1.5 h-1.5 rounded-sm bg-white/60" />
-              <div className="w-1.5 h-1.5 rounded-sm bg-white/60" />
-              <div className="w-1.5 h-1.5 rounded-sm bg-white" />
+        <div className="px-6 py-8 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="h-10 w-10 bg-gradient-harx rounded-xl flex items-center justify-center shadow-lg shadow-harx-500/20 shrink-0">
+              <div className="grid grid-cols-2 gap-0.5">
+                <div className="w-1.5 h-1.5 rounded-sm bg-white" />
+                <div className="w-1.5 h-1.5 rounded-sm bg-white/60" />
+                <div className="w-1.5 h-1.5 rounded-sm bg-white/60" />
+                <div className="w-1.5 h-1.5 rounded-sm bg-white" />
+              </div>
             </div>
+            <span className="text-2xl font-black tracking-tighter text-white">HARX<span className="text-harx-500">.</span></span>
           </div>
-          <span className="text-2xl font-black tracking-tighter text-white">HARX<span className="text-harx-500">.</span></span>
+          <button 
+            onClick={() => setIsSidebarOpen(false)}
+            className="md:hidden p-2 hover:bg-white/10 rounded-xl transition-colors"
+          >
+            <X className="h-5 w-5 text-gray-400" />
+          </button>
         </div>
 
 
@@ -225,7 +233,7 @@ function App() {
               <div className={`p-2 rounded-xl transition-all ${activeTab === 'company-onboarding' ? 'bg-white/20' : 'bg-gray-800/40 group-hover:bg-gray-800'}`}>
                 <Building2 className="h-5 w-5" />
               </div>
-              <span className="font-black text-sm tracking-tight">Overview</span>
+              <span className="font-black text-sm tracking-tight">Company Onboarding</span>
             </button>
           </div>
 
@@ -279,10 +287,10 @@ function App() {
         <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 h-20 flex items-center shrink-0 px-8 relative z-20">
           <div className="flex w-full items-center justify-between">
             <button
-              className="md:hidden p-2 rounded-xl bg-gray-100"
-              onClick={() => setIsSidebarOpen(true)}
+              className="p-2.5 rounded-xl bg-gray-50 border border-gray-100 text-gray-500 hover:bg-gray-100 hover:text-harx-500 transition-all duration-300 shadow-sm"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             >
-              <Menu className="h-6 w-6 text-gray-600" />
+              <Menu className="h-5 w-5" />
             </button>
             <div className="flex items-center space-x-4 ml-auto">
               <div className="flex items-center space-x-3 bg-gray-50 p-1.5 pr-4 rounded-2xl border border-gray-100 shadow-sm">
