@@ -206,16 +206,7 @@ function App() {
           </div>
         </div>
 
-        <div className="px-4 py-2 flex flex-col items-center">
-          <div className="relative group">
-            <div className="absolute -inset-3 bg-gradient-harx/20 rounded-full blur-xl group-hover:bg-harx-500/30 transition-all duration-700" />
-            <img
-              src={`${import.meta.env.BASE_URL || '/'}mascotte2.png`}
-              alt="HARX Mascotte"
-              className="w-24 h-24 object-contain drop-shadow-[0_0_15px_rgba(255,77,77,0.3)] relative z-10 transition-transform duration-500 group-hover:scale-105"
-            />
-          </div>
-        </div>
+
 
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto min-h-0">
           <div className="space-y-1">
@@ -231,6 +222,17 @@ function App() {
               </div>
               <span className="font-bold text-sm text-shadow-sm">Company Onboarding</span>
             </button>
+          </div>
+
+          <div className="py-4 flex flex-col items-center">
+            <div className="relative group">
+              <div className="absolute -inset-3 bg-gradient-harx/20 rounded-full blur-xl group-hover:bg-harx-500/30 transition-all duration-700" />
+              <img
+                src={`${import.meta.env.BASE_URL || '/'}mascotte2.png`}
+                alt="HARX Mascotte"
+                className="w-24 h-24 object-contain drop-shadow-[0_0_15px_rgba(255,77,77,0.3)] relative z-10 transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
           </div>
 
           {currentStepGuide && (
