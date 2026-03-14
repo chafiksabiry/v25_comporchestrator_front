@@ -660,28 +660,30 @@ export default function SessionPlanning() {
             <div className="w-16 h-16 rounded-[1.5rem] bg-gradient-harx flex items-center justify-center shadow-xl shadow-harx-500/30 transform group-hover:rotate-6 transition-transform">
               <LucideCalendar className="w-8 h-8 text-white" />
             </div>
-            <div className="flex-1 space-y-4">
-              <div>
-                <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-4 italic uppercase">
-                  Session Strategic Planning
-                  <span className="bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-2xl text-[10px] uppercase font-black tracking-[0.2em] border border-emerald-100 not-italic">
-                    Real-time Sync
-                  </span>
-                </h1>
-                <p className="text-base text-gray-400 font-medium">Orchestrate field operations with surgical precision and AI-backed slot optimization.</p>
-              </div>
-              <div className="inline-block bg-gray-50 p-2 rounded-2xl border border-gray-100">
-                <PremiumDropdown
-                  label="Strategic Project Focus"
-                  options={projects}
-                  value={selectedGigId || ''}
-                  onChange={(val) => setSelectedGigId(val)}
-                  placeholder="Select Project Target..."
-                />
-              </div>
+            <div className="flex-1">
+              <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-4 italic uppercase">
+                Session Strategic Planning
+                <span className="bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-2xl text-[10px] uppercase font-black tracking-[0.2em] border border-emerald-100 not-italic">
+                  Real-time Sync
+                </span>
+              </h1>
+              <p className="text-base text-gray-400 font-medium">Orchestrate field operations with surgical precision and AI-backed slot optimization.</p>
             </div>
           </div>
         </header>
+
+        <div className="flex justify-start">
+          <div className="bg-white p-1.5 rounded-2xl border border-harx-100 shadow-xl">
+            <PremiumDropdown
+              label="Strategic Project Focus"
+              options={projects}
+              value={selectedGigId || ''}
+              onChange={(val) => setSelectedGigId(val)}
+              placeholder="Select Project Target..."
+              triggerClassName="!min-w-[280px]"
+            />
+          </div>
+        </div>
 
         <main className="space-y-6">
           {userRole === 'company' ? (
