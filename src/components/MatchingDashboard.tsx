@@ -1269,7 +1269,7 @@ export const MatchingDashboard = () => {
                                                                 <div className="flex-1 min-w-0">
                                                                     <div className="flex items-center gap-3 mb-2">
                                                                         <h4
-                                                                            className="text-lg font-bold text-antigravity-text truncate cursor-pointer hover:text-antigravity-primary transition-colors"
+                                                                            className="text-lg font-bold text-gray-900 truncate cursor-pointer hover:text-harx-600 transition-colors"
                                                                             onClick={() => toggleRepDetails(match.agentId)}
                                                                         >
                                                                             {match.agentInfo?.name}
@@ -1281,8 +1281,8 @@ export const MatchingDashboard = () => {
                                                                             {matchScore}% Match
                                                                         </div>
                                                                     </div>
-                                                                    <p className="text-sm text-antigravity-muted truncate">{match.agentInfo?.email}</p>
-                                                                    <div className="flex items-center gap-4 text-xs text-antigravity-muted mt-1">
+                                                                    <p className="text-sm text-gray-500 truncate">{match.agentInfo?.email}</p>
+                                                                    <div className="flex items-center gap-4 text-xs text-gray-400 mt-1">
                                                                         {(match.agentInfo?.timezone?.countryName || match.agentInfo?.location) && (
                                                                             <span>📍 {match.agentInfo?.timezone?.countryName || match.agentInfo?.location}</span>
                                                                         )}
@@ -1313,7 +1313,7 @@ export const MatchingDashboard = () => {
                                                                         </span>
                                                                     ) : (
                                                                         <button
-                                                                            className="inline-flex items-center px-3 py-1 bg-antigravity-primary text-white rounded-lg hover:bg-indigo-700 transition-all duration-200 text-sm font-medium gap-1 shadow-sm"
+                                                                            className="inline-flex items-center px-3 py-1 bg-harx-600 text-white rounded-lg hover:bg-harx-700 transition-all duration-200 text-sm font-medium gap-1 shadow-sm"
                                                                             onClick={() => handleCreateGigAgent(match)}
                                                                             disabled={creatingGigAgent}
                                                                         >
@@ -1328,7 +1328,7 @@ export const MatchingDashboard = () => {
                                                             <div className="flex justify-center mt-4">
                                                                 <button
                                                                     onClick={() => toggleRepDetails(match.agentId)}
-                                                                    className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-lg transition-all duration-200 text-sm font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                                                                    className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-harx-600 to-harx-700 hover:from-harx-700 hover:to-harx-800 text-white rounded-lg transition-all duration-200 text-sm font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                                                                 >
                                                                     <span>{isExpanded ? 'Hide Details' : 'View Details'}</span>
                                                                     <svg
