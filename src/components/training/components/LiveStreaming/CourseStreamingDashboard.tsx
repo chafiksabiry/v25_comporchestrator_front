@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, Calendar, Users, Video, BarChart3, Clock, Eye, MessageSquare, TrendingUp, Settings, Plus, CreditCard as Edit, Trash2, BookOpen, Award, Target, Zap, CheckCircle, AlertTriangle, Presentation, Monitor, Mic, Camera } from 'lucide-react';
+import { Play, Calendar, Users, Video, BarChart3, Clock, Eye, MessageSquare, TrendingUp, Settings, Plus, Edit2, Trash2, BookOpen, Award, Target, Zap, CheckCircle, AlertTriangle, Presentation, Monitor, Mic, Camera, CheckSquare } from 'lucide-react';
 import { LiveStreamSession, StreamAnalytics, TrainingModule } from '../../types';
 
 interface CourseStreamingDashboardProps {
@@ -193,7 +193,7 @@ export default function CourseStreamingDashboard({
                     onClick={() => onEditSession(session)}
                     className="text-gray-400 hover:text-gray-600"
                   >
-                    <Edit className="h-4 w-4" />
+                    <Edit2 className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => onDeleteSession(session.id)}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Brain, BookOpen, CheckSquare, Trash2, Plus, ArrowRight, Sparkles, Video, Music, BarChart3, Zap, Eye, Wand2, FileDown, ChevronRight, FileText, Rocket, RotateCcw } from 'lucide-react';
+import { Brain, BookOpen, CheckSquare, Trash2, Plus, ArrowRight, Sparkles, Video, Music, BarChart3, Zap, Eye, Wand2, FileDown, ChevronRight, FileText, Rocket, RotateCcw, Edit2 } from 'lucide-react';
 import { ContentUpload, TrainingModule, ModuleContent, Assessment, Question } from '../../types/core';
 import { TrainingMethodology } from '../../types/methodology';
 import { TrainingSection } from '../../types/manualTraining';
@@ -378,8 +378,9 @@ export default function CurriculumDesigner({ uploads, methodology, onComplete, o
           );
 
           setFinalExam(examData);
-          console.log(`✅ Examen final généré : ${examData.questionCount} questions (${examData.totalPoints} points)`);
-          console.log(`⏱️ Temps: ${examData.duration} minutes | Score passage: ${examData.passingScore}%`);
+          console.log('📦 FULL EXAM DATA RECEIVED:', examData);
+          console.log(`✅ Examen final généré : ${examData?.questionCount || 0} questions (${examData?.totalPoints || 0} points)`);
+          console.log(`⏱️ Temps: ${examData?.duration || 0} minutes | Score passage: ${examData?.passingScore || 0}%`);
         } catch (error) {
           console.warn('⚠️ Using fallback final exam');
           // Fallback simple si l'API échoue
@@ -780,8 +781,9 @@ export default function CurriculumDesigner({ uploads, methodology, onComplete, o
 
       setFinalExam(examData);
 
-      console.log(`✅ Examen final généré : ${examData.questionCount} questions (${examData.totalPoints} points)`);
-      console.log(`⏱️ Temps: ${examData.duration} minutes | Score passage: ${examData.passingScore}%`);
+      console.log('📦 FULL EXAM DATA RECEIVED:', examData);
+      console.log(`✅ Examen final généré : ${examData?.questionCount || 0} questions (${examData?.totalPoints || 0} points)`);
+      console.log(`⏱️ Temps: ${examData?.duration || 0} minutes | Score passage: ${examData?.passingScore || 0}%`);
       console.log('✅ Final exam data:', examData);
 
     } catch (error) {
@@ -1433,7 +1435,7 @@ export default function CurriculumDesigner({ uploads, methodology, onComplete, o
                                 </>
                               ) : (
                                 <>
-                                  <Edit className="h-4 w-4 inline mr-1" />
+                                  <Edit2 className="h-4 w-4 inline mr-1" />
                                   Edit
                                 </>
                               )}
