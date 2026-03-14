@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Check, CheckCircle2, Rocket } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import React from 'react';
 
 const SubscriptionPlan = () => {
   const [isStepCompleted, setIsStepCompleted] = useState(false);
