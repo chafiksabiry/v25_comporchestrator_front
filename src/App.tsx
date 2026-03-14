@@ -6,7 +6,8 @@ import {
   ChevronRight,
   Sparkles,
   Info,
-  X
+  X,
+  Cpu
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import Cookies from 'js-cookie';
@@ -201,15 +202,13 @@ function App() {
       >
         <div className="px-6 py-8 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="h-10 w-10 bg-gradient-harx rounded-xl flex items-center justify-center shadow-lg shadow-harx-500/20 shrink-0">
-              <div className="grid grid-cols-2 gap-0.5">
-                <div className="w-1.5 h-1.5 rounded-sm bg-white" />
-                <div className="w-1.5 h-1.5 rounded-sm bg-white/60" />
-                <div className="w-1.5 h-1.5 rounded-sm bg-white/60" />
-                <div className="w-1.5 h-1.5 rounded-sm bg-white" />
-              </div>
+            <div className="h-10 w-10 bg-gradient-to-br from-harx-400 to-harx-600 rounded-xl flex items-center justify-center shadow-lg shadow-harx-500/20 shrink-0">
+              <Cpu className="h-6 w-6 text-white" />
             </div>
-            <span className="text-2xl font-black tracking-tighter text-white">HARX<span className="text-harx-500">.</span></span>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-harx-500 tracking-[0.2em] uppercase italic leading-none mb-1">Smart</span>
+              <span className="text-xl font-black tracking-tighter text-white leading-none">Orchestrator</span>
+            </div>
           </div>
           <button 
             onClick={() => setIsSidebarOpen(false)}
