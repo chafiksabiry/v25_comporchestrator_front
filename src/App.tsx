@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import React from 'react';
 import {
   Menu,
   LogOut,
   Building2,
   ChevronRight,
+  Sparkles,
+  Info
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import Cookies from 'js-cookie';
@@ -26,6 +27,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [userFullName, setUserFullName] = useState('Admin User');
+  const [currentStepGuide, setCurrentStepGuide] = useState<{ title: string; description: string } | null>(null);
 
   // Vérifier si nous sommes sur une page spéciale
   const isZohoCallback = window.location.pathname === '/zoho-callback';
@@ -98,10 +100,21 @@ function App() {
       localStorage.removeItem('activeTab'); // Clear after reading
     }
 
+    const handleStepGuideUpdate = (event: CustomEvent) => {
+      if (event.detail) {
+        setCurrentStepGuide({
+          title: event.detail.title,
+          description: event.detail.description
+        });
+      }
+    };
+
     window.addEventListener('tabChange', handleTabChange as EventListener);
+    window.addEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
 
     return () => {
       window.removeEventListener('tabChange', handleTabChange as EventListener);
+      window.removeEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
     };
   }, []);
 
@@ -184,62 +197,73 @@ function App() {
       {/* Sidebar */}
       <div
         className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } fixed inset-y-0 left-0 z-30 w-72 bg-gradient-to-b from-gray-900 via-harx-900 to-gray-900 text-white transition-all duration-300 ease-in-out md:relative md:translate-x-0 shadow-2xl border-r border-harx-500/20`}
+          } fixed inset-y-0 left-0 z-30 w-72 bg-gradient-to-b from-gray-900 via-harx-900 to-black text-white transition-all duration-300 ease-in-out md:relative md:translate-x-0 shadow-2xl border-r border-harx-500/20 flex flex-col`}
       >
-        <div className="px-6 py-6 border-b border-white/10">
+        <div className="px-4 py-3 border-b border-white/5 bg-black/20">
+          <div className="flex flex-col items-center text-center space-y-0.5">
+            <span className="text-[9px] font-black text-harx-500 tracking-[0.2em] uppercase italic">Smart Orchestrator</span>
+            <h2 className="text-xs font-black text-white/90 uppercase tracking-tight">Company Onboarding</h2>
+          </div>
+        </div>
+
+        <div className="px-4 py-2 flex flex-col items-center">
           <div className="relative group">
-            <div className="absolute -inset-4 bg-gradient-harx/20 rounded-full blur-2xl group-hover:bg-harx-500/30 transition-all duration-700" />
+            <div className="absolute -inset-3 bg-gradient-harx/20 rounded-full blur-xl group-hover:bg-harx-500/30 transition-all duration-700" />
             <img
-              src={`${import.meta.env.BASE_URL || '/'}mascotte.webp`}
+              src={`${import.meta.env.BASE_URL || '/'}mascotte2.png`}
               alt="HARX Mascotte"
-              className="w-24 h-24 mx-auto object-contain animate-bounce-slow relative z-10"
+              className="w-24 h-24 object-contain drop-shadow-[0_0_15px_rgba(255,77,77,0.3)] relative z-10 transition-transform duration-500 group-hover:scale-105"
             />
           </div>
         </div>
 
-        <nav className="mt-8 px-4 space-y-2">
+        <nav className="flex-1 px-4 space-y-1 overflow-y-auto min-h-0">
           <div className="space-y-1">
             <button
-              className={`flex w-full items-center space-x-3 rounded-2xl py-3 px-4 transition-all duration-300 group ${activeTab === 'company-onboarding'
+              className={`flex w-full items-center space-x-3 rounded-2xl py-2.5 px-4 transition-all duration-300 group ${activeTab === 'company-onboarding'
                 ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/40'
                 : 'text-gray-400 hover:bg-white/5 hover:text-white'
                 }`}
               onClick={() => setActiveTab('company-onboarding')}
             >
-              <div className={`p-2 rounded-xl transition-all ${activeTab === 'company-onboarding' ? 'bg-white/20' : 'bg-gray-800 group-hover:bg-gray-700'}`}>
-                <Building2 className="h-5 w-5" />
+              <div className={`p-1.5 rounded-xl transition-all ${activeTab === 'company-onboarding' ? 'bg-white/20' : 'bg-gray-800 group-hover:bg-gray-700'}`}>
+                <Building2 className="h-4 w-4" />
               </div>
-              <span className="font-bold">Company Onboarding</span>
+              <span className="font-bold text-sm text-shadow-sm">Company Onboarding</span>
             </button>
-
-
-            {/* 
-            <button
-              className={`flex w-full items-center space-x-2 rounded-lg py-2 px-3 ${
-                activeTab === 'approval-publishing' ? 'bg-indigo-800' : 'hover:bg-indigo-800'
-              }`}
-              onClick={() => setActiveTab('approval-publishing')}
-            >
-              <CheckCircle className="h-5 w-5" />
-              <span>Approval & Publishing</span>
-            </button>
-            */}
           </div>
-          <div className="absolute bottom-6 left-4 right-4">
-            <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10">
-              <button
-                onClick={handleLogout}
-                className="flex w-full items-center space-x-3 rounded-xl py-3 px-4 text-harx-300 hover:bg-harx-500 hover:text-white transition-all duration-300 group font-bold"
-              >
-                <div className="p-2 rounded-lg bg-harx-500/10 group-hover:bg-white/20">
-                  <LogOut className="h-5 w-5" />
+
+          {currentStepGuide && (
+            <div className="mt-4 px-2 animate-fade-in-up">
+              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 shadow-inner">
+                <div className="flex items-center gap-2 mb-2 text-harx-400">
+                  <Sparkles className="h-4 w-4" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Active Guide</span>
                 </div>
-                <span>Logout</span>
-              </button>
+                <h4 className="text-xs font-bold text-white mb-1">{currentStepGuide.title}</h4>
+                <p className="text-[10px] text-gray-400 leading-relaxed italic line-clamp-3">
+                  {currentStepGuide.description}
+                </p>
+                <div className="mt-2 flex items-center gap-1.5 text-[9px] text-harx-500/80 font-bold uppercase tracking-tighter">
+                  <Info className="h-3 w-3" />
+                  <span>Interactive Step</span>
+                </div>
+              </div>
             </div>
-          </div>
-
+          )}
         </nav>
+
+        <div className="p-4 bg-black/40 border-t border-white/5">
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center space-x-3 rounded-xl py-2 px-4 text-gray-400 hover:bg-harx-600/20 hover:text-harx-400 transition-all duration-300 group font-bold text-sm"
+          >
+            <div className="p-2 rounded-lg bg-gray-800/50 group-hover:bg-harx-500/20 transition-colors">
+              <LogOut className="h-4 w-4" />
+            </div>
+            <span>Logout</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Content */}

@@ -59,6 +59,136 @@ interface Phase {
   steps: Step[];
 }
 
+const phases: Phase[] = [
+  {
+    id: 1,
+    title: "Company Account Setup & Identity",
+    icon: Building2,
+    color: "blue",
+    steps: [
+      {
+        id: 1,
+        title: "Create Company Profile",
+        description:
+          "Legal and commercial details, key contacts, terms agreement",
+        status: "completed",
+        component: CompanyProfile,
+      },
+      {
+        id: 2,
+        title: "KYC / KYB Verification",
+        description:
+          "Identity verification through Stripe Identity or Sumsub",
+        status: "current",
+        component: KYCVerification,
+        disabled: true,
+      },
+    ],
+  },
+  {
+    id: 2,
+    title: "Operational Setup",
+    icon: Settings,
+    color: "yellow",
+    steps: [
+      {
+        id: 3,
+        title: "Create Gigs",
+        description: "Define multi-channel gigs and requirements",
+        status: "pending",
+        component: GigDetails,
+      },
+      {
+        id: 4,
+        title: "Telephony Setup",
+        description: "Phone numbers, call tracking, and dialer configuration",
+        status: "pending",
+        component: TelephonySetup,
+      },
+      {
+        id: 5,
+        title: "Upload Contacts",
+        description: "Import contacts for multi-channel engagement",
+        status: "pending",
+        component: UploadContacts,
+      },
+      {
+        id: 6,
+        title: "Call Script",
+        description: "Define script and conversation flows",
+        status: "pending",
+        component: CallScript,
+      },
+      {
+        id: 7,
+        title: "Reporting Setup",
+        description: "Configure KPIs and reporting preferences",
+        status: "pending",
+        component: ReportingSetup,
+        disabled: true,
+      },
+    ],
+  },
+  {
+    id: 3,
+    title: "REPS Engagement",
+    icon: Users,
+    color: "green",
+    steps: [
+      {
+        id: 8,
+        title: "Knowledge Base",
+        description: "Create training materials and FAQs",
+        status: "pending",
+        component: KnowledgeBase,
+      },
+      {
+        id: 9,
+        title: "REP Onboarding",
+        description: "Training, validation, and contract acceptance",
+        status: "pending",
+        component: RepOnboarding,
+      },
+      {
+        id: 10,
+        title: "Session Planning",
+        description: "Schedule call slots and prioritize leads",
+        status: "pending",
+        component: SessionPlanning,
+      },
+    ],
+  },
+  {
+    id: 4,
+    title: "Activation",
+    icon: Rocket,
+    color: "red",
+    steps: [
+      {
+        id: 11,
+        title: "Subscription Plan",
+        description: "Select plan: Free, Standard, or Premium",
+        status: "pending",
+        component: SubscriptionPlan,
+      },
+      {
+        id: 12,
+        title: "Gig Activation",
+        description: "Launch multi-channel operations",
+        status: "pending",
+        component: ApprovalPublishing,
+      },
+      {
+        id: 13,
+        title: "MATCH HARX REPS",
+        description: "Connect with qualified REPS based on requirements",
+        status: "pending",
+        component: MatchHarxReps,
+      },
+    ],
+  },
+];
+
 interface OnboardingProgressResponse {
   currentPhase: number;
   completedSteps: number[];
@@ -349,8 +479,7 @@ const CompanyOnboarding = () => {
       }
 
       const response = await axios.get<HasLeadsResponse>(
-        `${import.meta.env.VITE_DASHBOARD_API
-        }/leads/company/${companyId}/has-leads`
+        `${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads`
       );
       const leadsCheck = response.data.hasLeads;
 
@@ -359,8 +488,7 @@ const CompanyOnboarding = () => {
         console.log("✅ Company has leads - auto-completing step 5");
         try {
           await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL
-            }/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
             { status: "completed" }
           );
           // Update local state to reflect the completed step
@@ -439,8 +567,7 @@ const CompanyOnboarding = () => {
           try {
             console.log("✅ Found active gig - completing Step 12 (Gig Activation)");
             const completeResponse = await axios.put(
-              `${import.meta.env.VITE_COMPANY_API_URL
-              }/onboarding/companies/${companyId}/onboarding/phases/4/steps/12`,
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/12`,
               { status: "completed" }
             );
 
@@ -484,8 +611,7 @@ const CompanyOnboarding = () => {
             // Mark step 12 as in_progress - seulement si on est en phase 4
             if (currentPhase >= 4) {
               await axios.put(
-                `${import.meta.env.VITE_COMPANY_API_URL
-                }/onboarding/companies/${companyId}/onboarding/phases/4/steps/12`,
+                `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/12`,
                 { status: "in_progress" }
               );
             }
@@ -555,8 +681,7 @@ const CompanyOnboarding = () => {
       }
 
       const response = await axios.get<OnboardingProgressResponse>(
-        `${import.meta.env.VITE_COMPANY_API_URL
-        }/onboarding/companies/${companyId}/onboarding`
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
       );
       const progress = response.data;
       console.log("🔄 API Response:", response.data);
@@ -613,15 +738,9 @@ const CompanyOnboarding = () => {
 
           if (previousPhaseCompleted) {
             validPhase = phaseId;
-            console.log(
-              `✅ Phase ${phaseId - 1
-              } is fully completed, allowing access to phase ${phaseId}`
-            );
+            console.log(`✅ Phase ${phaseId - 1} is fully completed, allowing access to phase ${phaseId}`);
           } else {
-            console.log(
-              `⚠️ Phase ${phaseId - 1
-              } is not fully completed, stopping at phase ${validPhase}`
-            );
+            console.log(`⚠️ Phase ${phaseId - 1} is not fully completed, stopping at phase ${validPhase}`);
             break; // Arrêter ici, ne pas avancer plus loin
           }
         }
@@ -678,6 +797,33 @@ const CompanyOnboarding = () => {
     }
   };
 
+  // Dispatch step guide to sidebar
+  useEffect(() => {
+    if (phases.length === 0) return;
+
+    const currentPhaseSteps = phases[displayedPhase - 1]?.steps || [];
+    const currentStep = currentPhaseSteps.find(step =>
+      !completedSteps.includes(step.id) && !step.disabled
+    );
+
+    if (currentStep) {
+      window.dispatchEvent(new CustomEvent('stepGuideUpdate', {
+        detail: {
+          title: currentStep.title,
+          description: currentStep.description
+        }
+      }));
+    } else {
+      // If all steps in phase are completed, show phase summary or next instruction
+      window.dispatchEvent(new CustomEvent('stepGuideUpdate', {
+        detail: {
+          title: phases[displayedPhase - 1]?.title,
+          description: "All steps in this phase are completed. You can proceed to the next phase."
+        }
+      }));
+    }
+  }, [completedSteps, displayedPhase, phases]);
+
   // Fonction pour vérifier si l'utilisateur vient de se connecter à Zoho
   const checkZohoConnection = async () => {
     try {
@@ -715,8 +861,7 @@ const CompanyOnboarding = () => {
           ) + 1;
 
         await axios.put(
-          `${import.meta.env.VITE_COMPANY_API_URL
-          }/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
           { status: "in_progress" }
         );
         console.log(`🔄 Step ${stepId} status updated to in_progress`);
@@ -905,8 +1050,7 @@ const CompanyOnboarding = () => {
       ) {
         try {
           await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL
-            }/onboarding/companies/${companyId}/onboarding/current-phase`,
+            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/current-phase`,
             { phase: newPhase }
           );
           setCurrentPhase(newPhase);
@@ -982,135 +1126,6 @@ const CompanyOnboarding = () => {
       .every((step) => completedSteps.includes(step.id));
   };
 
-  const phases: Phase[] = [
-    {
-      id: 1,
-      title: "Company Account Setup & Identity",
-      icon: Building2,
-      color: "blue",
-      steps: [
-        {
-          id: 1,
-          title: "Create Company Profile",
-          description:
-            "Legal and commercial details, key contacts, terms agreement",
-          status: "completed",
-          component: CompanyProfile,
-        },
-        {
-          id: 2,
-          title: "KYC / KYB Verification",
-          description:
-            "Identity verification through Stripe Identity or Sumsub",
-          status: "current",
-          component: KYCVerification,
-          disabled: true,
-        },
-      ],
-    },
-    {
-      id: 2,
-      title: "Operational Setup",
-      icon: Settings,
-      color: "yellow",
-      steps: [
-        {
-          id: 3,
-          title: "Create Gigs",
-          description: "Define multi-channel gigs and requirements",
-          status: "pending",
-          component: GigDetails,
-        },
-        {
-          id: 4,
-          title: "Telephony Setup",
-          description: "Phone numbers, call tracking, and dialer configuration",
-          status: "pending",
-          component: TelephonySetup,
-        },
-        {
-          id: 5,
-          title: "Upload Contacts",
-          description: "Import contacts for multi-channel engagement",
-          status: "pending",
-          component: UploadContacts,
-        },
-        {
-          id: 6,
-          title: "Call Script",
-          description: "Define script and conversation flows",
-          status: "pending",
-          component: CallScript,
-        },
-        {
-          id: 7,
-          title: "Reporting Setup",
-          description: "Configure KPIs and reporting preferences",
-          status: "pending",
-          component: ReportingSetup,
-          disabled: true,
-        },
-      ],
-    },
-    {
-      id: 3,
-      title: "REPS Engagement",
-      icon: Users,
-      color: "green",
-      steps: [
-        {
-          id: 8,
-          title: "Knowledge Base",
-          description: "Create training materials and FAQs",
-          status: "pending",
-          component: KnowledgeBase,
-        },
-        {
-          id: 9,
-          title: "REP Onboarding",
-          description: "Training, validation, and contract acceptance",
-          status: "pending",
-          component: RepOnboarding,
-        },
-        {
-          id: 10,
-          title: "Session Planning",
-          description: "Schedule call slots and prioritize leads",
-          status: "pending",
-          component: SessionPlanning,
-        },
-      ],
-    },
-    {
-      id: 4,
-      title: "Activation",
-      icon: Rocket,
-      color: "red",
-      steps: [
-        {
-          id: 11,
-          title: "Subscription Plan",
-          description: "Select plan: Free, Standard, or Premium",
-          status: "pending",
-          component: SubscriptionPlan,
-        },
-        {
-          id: 12,
-          title: "Gig Activation",
-          description: "Launch multi-channel operations",
-          status: "pending",
-          component: ApprovalPublishing,
-        },
-        {
-          id: 13,
-          title: "MATCH HARX REPS",
-          description: "Connect with qualified REPS based on requirements",
-          status: "pending",
-          component: MatchHarxReps,
-        },
-      ],
-    },
-  ];
 
   const getStepIcon = (step: any) => {
     switch (step.id) {
