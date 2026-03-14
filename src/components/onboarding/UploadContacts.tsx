@@ -68,9 +68,10 @@ interface ApiResponse {
 
 interface UploadContactsProps {
   onCancelProcessing?: () => void;
+  companyId?: string | null;
 }
 
-const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) => {
+const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyId }: UploadContactsProps) => {
   // Component will render normally - no early return needed
 
   // Function to cancel processing
@@ -205,7 +206,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
     clientId: '',
     clientSecret: '',
     refreshToken: '',
-    companyId: Cookies.get('companyId') || ''
+    companyId: propCompanyId || Cookies.get('companyId') || ''
   });
   const [isImportingZoho, setIsImportingZoho] = useState(false);
   const [isDisconnectingZoho, setIsDisconnectingZoho] = useState(false);

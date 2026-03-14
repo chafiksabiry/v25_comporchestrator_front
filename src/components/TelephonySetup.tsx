@@ -75,10 +75,10 @@ interface Gig {
   updatedAt: string;
 }
 
-const TelephonySetup = (): JSX.Element => {
+const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | null }): JSX.Element => {
   const [provider, setProvider] = useState<'telnyx' | 'twilio'>('twilio');
   const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
-  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [companyId, setCompanyId] = useState<string | null>(propCompanyId || null);
   const [cookieError, setCookieError] = useState<string | null>(null);
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [isLoadingGigs, setIsLoadingGigs] = useState(false);
@@ -98,6 +98,13 @@ const TelephonySetup = (): JSX.Element => {
       }
       return false;
     };
+
+    // Sync with prop if provided
+    if (propCompanyId) {
+      setCompanyId(propCompanyId);
+      setCookieError(null);
+      return;
+    }
 
     // Première lecture
     if (!readCookies()) {

@@ -1350,25 +1350,22 @@ const CompanyOnboarding = () => {
     };
   } else if (showTelephonySetup) {
     activeComponent = (
-      <TelephonySetup />
+      <TelephonySetup companyId={companyId} />
     );
     onBack = async () => {
       setShowTelephonySetup(false);
       await handleBackToOnboarding();
     };
   } else if (showUploadContacts) {
-    activeComponent = <UploadContacts />;
+    activeComponent = <UploadContacts companyId={companyId} />;
     onBack = handleBackToOnboarding;
   } else if (ActiveStepComponent) {
-    // If it's RepOnboarding, pass the prop
-    if (activeStep === 9) {
-      const RepOnboardingComponent = ActiveStepComponent as React.FC<any>;
-      activeComponent = <RepOnboardingComponent />;
-    } else if (activeStep === 12) {
-      const ApprovalPublishingComponent = ActiveStepComponent as React.FC<any>;
-      activeComponent = <ApprovalPublishingComponent onBackToOnboarding={handleBackToOnboarding} />;
-    } else {
-      activeComponent = <ActiveStepComponent />;
+    // Pass companyId as a prop to all step components
+    const DynamicStepComponent = ActiveStepComponent as React.FC<any>;
+    activeComponent = <DynamicStepComponent companyId={companyId} />;
+    
+    if (activeStep === 12) {
+      activeComponent = <DynamicStepComponent companyId={companyId} onBackToOnboarding={handleBackToOnboarding} />;
     }
     onBack = handleBackToOnboarding;
   }
