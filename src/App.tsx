@@ -202,7 +202,7 @@ function App() {
         <div className="px-4 py-3 border-b border-white/5 bg-black/20">
           <div className="flex flex-col items-center text-center space-y-0.5">
             <span className="text-[9px] font-black text-harx-500 tracking-[0.2em] uppercase italic">Smart Orchestrator</span>
-            <h2 className="text-xs font-black text-white/90 uppercase tracking-tight">Company Onboarding</h2>
+            <h2 className="text-xs font-black text-white/90 uppercase tracking-tight">HARX.AI</h2>
           </div>
         </div>
 
