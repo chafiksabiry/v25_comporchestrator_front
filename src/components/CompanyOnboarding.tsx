@@ -1305,13 +1305,14 @@ const CompanyOnboarding = () => {
     console.log("User ID not found, redirecting to /auth");
     window.location.href = "/auth";
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting to authentication...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-harx-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Redirecting to authentication...</p>
         </div>
       </div>
     );
+
   }
 
   // Find the active step component
@@ -1323,11 +1324,12 @@ const CompanyOnboarding = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-harx-600"></div>
       </div>
     );
   }
+
 
   // Don't skip rendering - allow component to render normally
   // Navigation will be handled directly by the child components
@@ -1368,19 +1370,23 @@ const CompanyOnboarding = () => {
 
   if (activeComponent) {
     return (
-      <div className="space-y-2">
-        <div className="flex items-center space-x-4">
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-between">
           <button
             onClick={() => {
               onBack();
             }}
-            className="flex items-center transition-colors text-gray-600 hover:text-gray-900"
+            className="flex items-center gap-2 transition-all duration-300 text-gray-500 hover:text-harx-600 font-bold group"
           >
-            <ChevronRight className="h-5 w-5 rotate-180" />
-            <span>Back to Onboarding</span>
+            <div className="p-2 rounded-xl bg-gray-100 group-hover:bg-harx-50 transition-colors">
+              <ChevronRight className="h-5 w-5 rotate-180" />
+            </div>
+            <span>Back to Onboarding overview</span>
           </button>
         </div>
-        {activeComponent}
+        <div className="bg-white/40 backdrop-blur-xl rounded-3xl p-1 border border-white/20 shadow-2xl">
+          {activeComponent}
+        </div>
       </div>
     );
   }
@@ -1398,65 +1404,56 @@ const CompanyOnboarding = () => {
   }
 
   return (
-    <div className="space-y-3">
-      {/* <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Company Onboarding</h1>
-        <button className="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
-          Save Progress
-        </button>
-      </div> */}
-
+    <div className="space-y-6">
       {/* Progress Overview */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-5 gap-4">
         {phases.map((phase) => {
           const PhaseIcon = phase.icon;
           const isActive = displayedPhase === phase.id;
           const isCompleted = isPhaseCompleted(phase.id);
           const isAccessible = isPhaseAccessible(phase.id);
 
-
-
           return (
             <div
               key={phase.id}
-              className={`relative rounded-lg p-2 ${isActive
-                ? "bg-indigo-50 border-2 border-indigo-500"
+              className={`relative rounded-3xl p-4 transition-all duration-500 overflow-hidden group ${isActive
+                ? "bg-white shadow-2xl shadow-harx-500/20 scale-[1.02] border-2 border-harx-500/50"
                 : isCompleted
-                  ? "bg-green-50 border border-green-500"
+                  ? "bg-green-50/50 border border-green-200"
                   : !isAccessible
-                    ? "bg-gray-50 border border-gray-300"
-                    : "bg-white border border-gray-200"
+                    ? "bg-gray-50/50 border border-gray-100 opacity-60"
+                    : "bg-white/50 border border-white hover:bg-white hover:shadow-xl transition-all"
                 } cursor-pointer`}
               onClick={() => handlePhaseChange(phase.id)}
             >
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-4 relative z-10">
                 <div
-                  className={`rounded-full p-1.5 ${isActive
-                    ? "bg-indigo-100 text-indigo-600"
+                  className={`rounded-2xl p-3 transition-all duration-300 ${isActive
+                    ? "bg-gradient-harx text-white rotate-6 scale-110 shadow-lg shadow-harx-500/30"
                     : isCompleted
                       ? "bg-green-100 text-green-600"
                       : !isAccessible
-                        ? "bg-gray-200 text-gray-500"
-                        : "bg-gray-100 text-gray-500"
+                        ? "bg-gray-200 text-gray-400"
+                        : "bg-harx-50 text-harx-400 group-hover:bg-harx-100"
                     }`}
                 >
-                  <PhaseIcon className="h-5 w-5" />
+                  <PhaseIcon className="h-6 w-6" />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs font-black uppercase tracking-widest ${isActive ? "text-harx-600" : "text-gray-400"}`}>
                     Phase {phase.id}
                   </p>
-                  <p className="text-xs text-gray-500">{phase.title}</p>
-                  {!isAccessible && phase.id > 1 && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Complete previous phase first
-                    </p>
-                  )}
+                  <p className={`text-sm font-bold truncate ${isActive ? "text-gray-900" : "text-gray-600"}`}>{phase.title}</p>
                 </div>
               </div>
+              
+              {isActive && (
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-harx/10 blur-3xl rounded-full -mr-12 -mt-12" />
+              )}
+
               {phase.id < 4 && (
-                <div className="absolute -right-2 top-1/2 -translate-y-1/2">
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                <div className="absolute -right-2 top-1/2 -translate-y-1/2 z-20">
+                  <ChevronRight className={`h-4 w-4 transition-colors ${isActive ? "text-harx-500" : "text-gray-300"}`} />
                 </div>
               )}
             </div>
@@ -1465,16 +1462,25 @@ const CompanyOnboarding = () => {
       </div>
 
       {/* Current Phase Details */}
-      <div className="rounded-lg bg-white p-4 shadow-sm">
-        <div className="mb-2">
-          <h2 className="text-xl font-bold text-gray-900">
-            Phase {displayedPhase}: {phases[displayedPhase - 1]?.title}
-          </h2>
-          <p className="text-sm text-gray-500">
-            {isPhaseAccessible(displayedPhaseData.id)
-              ? "Complete the following steps to proceed to the next phase"
-              : "Complete all steps in the previous phase to unlock this phase"}
-          </p>
+      <div className="rounded-[2.5rem] bg-white p-8 shadow-2xl shadow-gray-200/50 border border-gray-100 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-harx-50/50 blur-[100px] rounded-full -mr-32 -mt-32" />
+        
+        <div className="mb-8 relative z-10">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-3xl font-black text-gray-900 tracking-tight">
+                Phase {displayedPhase}: <span className="text-transparent bg-clip-text bg-gradient-harx">{phases[displayedPhase - 1]?.title}</span>
+              </h2>
+              <p className="text-gray-500 mt-2 font-medium max-w-2xl">
+                {isPhaseAccessible(displayedPhaseData.id)
+                  ? "Follow the sequence to complete your company setup and unlock premium features."
+                  : "This phase is currently locked. Please complete the previous phase to continue."}
+              </p>
+            </div>
+            <div className={`px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-widest ${isPhaseAccessible(displayedPhaseData.id) ? "bg-harx-50 text-harx-600" : "bg-gray-100 text-gray-400"}`}>
+              {isPhaseAccessible(displayedPhaseData.id) ? "Progressing" : "Locked"}
+            </div>
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -1499,17 +1505,17 @@ const CompanyOnboarding = () => {
             return (
               <div
                 key={step.id}
-                className={`rounded-lg border p-3 ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
-                  ? "opacity-50 cursor-not-allowed border-gray-200 bg-gray-50"
+                className={`rounded-3xl border-2 p-6 transition-all duration-500 relative group overflow-hidden ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
+                  ? "opacity-50 grayscale border-gray-100 bg-gray-50/50"
                   : step.disabled
-                    ? "opacity-50 cursor-not-allowed border-gray-200"
+                    ? "opacity-60 border-gray-100 bg-gray-50/20"
                     : isCompleted
-                      ? "border-green-200 bg-green-50"
+                      ? "border-green-100 bg-green-50/30"
                       : isCurrentStep
-                        ? "border-indigo-200 bg-indigo-50 ring-2 ring-indigo-500"
-                        : "border-gray-200 bg-white"
+                        ? "border-harx-200 bg-white shadow-xl shadow-harx-500/5 ring-1 ring-harx-500/20"
+                        : "border-gray-100 bg-white"
                   } ${isClickable && !step.disabled && canAccessStep
-                    ? "cursor-pointer hover:border-indigo-300"
+                    ? "cursor-pointer hover:border-harx-300 hover:scale-[1.01]"
                     : ""
                   }`}
                 onClick={() =>
@@ -1521,18 +1527,18 @@ const CompanyOnboarding = () => {
               >
                 <div className="flex items-start space-x-3">
                   <div
-                    className={`rounded-full p-1.5 ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
-                      ? "bg-gray-200 text-gray-400"
+                    className={`rounded-2xl p-4 transition-all duration-300 ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
+                      ? "bg-gray-100 text-gray-400"
                       : step.disabled
-                        ? "bg-gray-200 text-gray-400"
+                        ? "bg-gray-100 text-gray-400"
                         : isCompleted
                           ? "bg-green-100 text-green-600"
                           : isCurrentStep
-                            ? "bg-indigo-100 text-indigo-600"
-                            : "bg-gray-100 text-gray-500"
+                            ? "bg-gradient-harx text-white shadow-lg shadow-harx-500/30 rotate-3"
+                            : "bg-harx-50 text-harx-500"
                       }`}
                   >
-                    <StepIcon className="h-5 w-5" />
+                    <StepIcon className="h-6 w-6" />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
@@ -1568,13 +1574,14 @@ const CompanyOnboarding = () => {
                     </p>
                     {isClickable && !step.disabled && canAccessStep && (
                       <button
-                        className="mt-3 text-sm font-medium text-indigo-600 hover:text-indigo-500"
+                        className="mt-6 flex items-center gap-2 px-6 py-2.5 bg-gradient-harx text-white rounded-xl font-black text-sm shadow-lg shadow-harx-500/20 hover:shadow-harx-500/40 transition-all hover:-translate-y-0.5"
                         onClick={(e) => {
                           e.stopPropagation();
                           isCompleted ? handleReviewStep(step.id) : handleStartStep(step.id);
                         }}
                       >
                         {isCompleted ? "Review Step" : "Start Step"}
+                        <ChevronRight className="h-4 w-4" />
                       </button>
                     )}
                   </div>
@@ -1584,26 +1591,27 @@ const CompanyOnboarding = () => {
           })}
         </div>
 
-        <div className="mt-4 flex justify-between">
+        <div className="mt-10 flex justify-between items-center relative z-10">
           <button
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+            className="px-8 py-4 rounded-2xl border-2 border-gray-100 bg-white text-sm font-black text-gray-600 hover:bg-gray-50 hover:border-gray-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             disabled={displayedPhase === 1}
             onClick={handlePreviousPhase}
           >
             Previous Phase
           </button>
           <button
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+            className="px-10 py-4 rounded-2xl bg-gray-900 text-sm font-black text-white shadow-xl hover:bg-black transition-all group flex items-center gap-3"
             disabled={false}
             onClick={handleNextPhase}
           >
             {displayedPhase === 4 ? "Go to Dashboard" : "Next Phase"}
+            <ChevronRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
       </div>
-
     </div>
   );
 };
 
 export default CompanyOnboarding;
+

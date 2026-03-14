@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, CheckCircle2 } from 'lucide-react';
+import { Check, CheckCircle2, Rocket } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
@@ -180,64 +180,98 @@ const SubscriptionPlan = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-gray-900">Free Plan</h2>
+    <div className="space-y-8 max-w-4xl mx-auto">
+      <div className="bg-white rounded-3xl p-10 border border-harx-100 shadow-2xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-harx-50 rounded-full blur-3xl group-hover:bg-harx-100 transition-colors duration-1000"></div>
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="flex-1">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-harx flex items-center justify-center shadow-lg shadow-harx-500/20">
+                <CheckCircle2 className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight">Select Your Plan</h2>
+                <p className="text-xl text-gray-500 font-medium">Choose the perfect scale for your company's growth.</p>
+              </div>
+            </div>
           </div>
-          <p className="mt-1 text-sm text-gray-600">
-            Start using our platform with our comprehensive free plan.
-          </p>
+          <div className="flex flex-col items-center p-6 bg-harx-50/50 rounded-3xl border border-harx-100 backdrop-blur-sm">
+            <span className="text-sm font-black text-harx-600 uppercase tracking-[0.2em] mb-2">Current Selection</span>
+            <div className="text-3xl font-black text-gray-900 tracking-tight">{freePlan.name} Plan</div>
+          </div>
         </div>
       </div>
 
-      <div className="max-w-md">
-        <div className="rounded-lg border border-indigo-600 p-4 shadow-sm ring-1 ring-indigo-600">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold text-gray-900">{freePlan.name}</h3>
-            <span className="inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+        <div className="rounded-[2.5rem] border-4 border-harx-500 p-10 shadow-2xl bg-white relative transform transition-all duration-500 hover:scale-[1.02] flex flex-col h-full ring-8 ring-harx-500/5">
+          <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+            <span className="inline-flex items-center rounded-2xl bg-gradient-harx px-6 py-2 text-sm font-black text-white uppercase tracking-widest shadow-xl shadow-harx-500/30">
               Recommended
             </span>
           </div>
 
-          <p className="mt-2 text-sm text-gray-500">{freePlan.description}</p>
+          <div className="mb-8">
+            <h3 className="text-3xl font-black text-gray-900 tracking-tight">{freePlan.name} <span className="text-harx-500">Tier</span></h3>
+            <p className="mt-4 text-lg text-gray-500 font-medium leading-relaxed">{freePlan.description}</p>
+          </div>
 
-          <p className="mt-4">
-            <span className="text-3xl font-bold text-gray-900">${freePlan.price}</span>
-            <span className="text-sm font-medium text-gray-500">/month</span>
-          </p>
+          <div className="mb-10 p-6 bg-gray-50 rounded-3xl border border-gray-100">
+            <div className="flex items-baseline gap-1">
+              <span className="text-6xl font-black text-gray-900 tracking-tighter">${freePlan.price}</span>
+              <span className="text-xl font-bold text-gray-400">/month</span>
+            </div>
+          </div>
 
-          <ul className="mt-4 space-y-1">
-            {freePlan.features.map((feature) => (
-              <li key={feature} className="flex items-center">
-                <Check className="h-4 w-4 text-indigo-600" />
-                <span className="ml-2 text-sm text-gray-700">{feature}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="flex-grow">
+            <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6 px-1">What's included:</h4>
+            <ul className="space-y-4 mb-10">
+              {freePlan.features.map((feature) => (
+                <li key={feature} className="flex items-center gap-4 group">
+                  <div className="w-6 h-6 rounded-full bg-harx-50 flex items-center justify-center group-hover:bg-harx-100 transition-colors">
+                    <Check className="h-4 w-4 text-harx-500" />
+                  </div>
+                  <span className="text-base text-gray-700 font-bold group-hover:text-gray-900 transition-colors">{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
 
           <button
             onClick={isStepCompleted ? undefined : handleActivatePlan}
             disabled={isStepCompleted || isLoading}
-            className={`mt-6 w-full rounded-lg px-4 py-2 text-center text-sm font-semibold text-white shadow-sm transition-all ${isStepCompleted
-              ? 'bg-green-600 cursor-not-allowed'
+            className={`w-full rounded-2xl py-6 text-xl font-black transition-all duration-300 transform active:scale-95 shadow-2xl ${isStepCompleted
+              ? 'bg-emerald-600 text-white cursor-not-allowed shadow-emerald-500/20'
               : isLoading
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-indigo-600 hover:bg-indigo-700'
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-gradient-harx text-white hover:brightness-110 shadow-harx-500/40 hover:-translate-y-1'
               }`}
           >
             {isStepCompleted ? (
-              <span className="flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
-                Plan Already Activated
+              <span className="flex items-center justify-center gap-3">
+                <CheckCircle2 className="w-6 h-6" />
+                Plan Active
               </span>
             ) : isLoading ? (
-              'Activating Plan...'
+              <span className="flex items-center justify-center gap-3">
+                <div className="w-5 h-5 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                Activating...
+              </span>
             ) : (
-              'Activate Free Plan'
+              'Unlock Full Potential'
             )}
           </button>
+        </div>
+
+        {/* Placeholder for future plans */}
+        <div className="rounded-[2.5rem] border-4 border-dashed border-gray-200 p-10 bg-gray-50/50 flex flex-col items-center justify-center text-center group transition-all duration-500 hover:border-harx-200 hover:bg-white">
+          <div className="w-20 h-20 rounded-3xl bg-white border border-gray-200 flex items-center justify-center mb-6 group-hover:border-harx-200 group-hover:scale-110 transition-all shadow-sm">
+            <Rocket className="w-10 h-10 text-gray-300 group-hover:text-harx-400 transition-colors" />
+          </div>
+          <h3 className="text-2xl font-black text-gray-400 group-hover:text-gray-900 transition-colors">Enterprise Tier</h3>
+          <p className="mt-3 text-lg text-gray-400 font-medium px-6">Advanced scaling and dedicated infrastructure coming soon.</p>
+          <div className="mt-8 px-6 py-3 rounded-xl bg-white border border-gray-200 text-sm font-black text-gray-400 group-hover:text-harx-500 transition-all">
+            STAY TUNED
+          </div>
         </div>
       </div>
     </div>

@@ -273,79 +273,85 @@ const KYCVerification = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-gray-900">KYC/KYB Verification</h2>
-            {isStepCompleted && (
-              <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                <CheckCircle2 className="w-4 h-4" />
-                Completed
+      <div className="flex items-center justify-between bg-white rounded-3xl p-8 border border-harx-100 shadow-xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-harx-50 rounded-full blur-3xl group-hover:bg-harx-100 transition-colors duration-700"></div>
+        <div className="relative z-10">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-harx flex items-center justify-center shadow-lg shadow-harx-500/20">
+              <Shield className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-3">
+                <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">KYC/KYB Verification</h2>
+                {isStepCompleted && (
+                  <div className="flex items-center gap-2 bg-emerald-100 text-emerald-800 px-4 py-1 rounded-full text-sm font-black uppercase tracking-widest shadow-sm">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Verified
+                  </div>
+                )}
               </div>
-            )}
+              <p className="text-lg text-gray-500 mt-1">Complete identity verification for your company to unlock all features.</p>
+            </div>
           </div>
-          <p className="text-sm text-gray-500">Complete identity verification for your company</p>
         </div>
-        <div className="flex space-x-3">
-          {/* <button className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-            Save Progress
-          </button> */}
+        <div className="flex space-x-4 relative z-10">
           {!isStepCompleted ? (
             <button
               onClick={handleCompleteVerification}
-              className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700"
+              className="rounded-2xl bg-gradient-harx px-8 py-4 text-lg font-black text-white shadow-xl shadow-harx-500/30 hover:brightness-110 transition-all duration-300 transform hover:scale-[1.05] active:scale-[0.98] disabled:opacity-50 disabled:grayscale"
               disabled={!hasBasicInfo()}
             >
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Complete Verification
+              <CheckCircle className="mr-2 h-6 w-6 inline-block" />
+              Submit Verification
             </button>
           ) : (
-            <button className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm cursor-not-allowed">
-              <CheckCircle2 className="mr-2 h-4 w-4" />
-              Verification Completed
+            <button className="rounded-2xl bg-emerald-600 px-8 py-4 text-lg font-black text-white shadow-xl shadow-emerald-500/20 cursor-not-allowed opacity-90">
+              <CheckCircle2 className="mr-2 h-6 w-6 inline-block" />
+              Verified Successfully
             </button>
           )}
         </div>
       </div>
 
+
       {/* Progress Steps */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium text-gray-900">Verification Progress</h3>
-          <span className="text-sm text-gray-500">Step {currentStep} of 4</span>
+      <div className="rounded-3xl bg-white p-10 shadow-xl border border-harx-100">
+        <div className="flex items-center justify-between mb-10">
+          <h3 className="text-2xl font-bold text-gray-900 tracking-tight">Verification Roadmap</h3>
+          <span className="text-base font-bold text-harx-500 bg-harx-50 px-4 py-1 rounded-full border border-harx-100">Step {currentStep} of 4</span>
         </div>
         <div className="mt-4">
           <div className="relative">
-            <div className="absolute left-0 top-2 h-0.5 w-full bg-gray-200">
+            <div className="absolute left-0 top-5 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner">
               <div
-                className="absolute h-0.5 bg-indigo-600 transition-all duration-500"
+                className="absolute h-full bg-gradient-harx transition-all duration-700 ease-out shadow-lg"
                 style={{ width: `${(currentStep - 1) * 33.33}%` }}
               />
             </div>
             <div className="relative flex justify-between">
               {verificationSteps.map((step, index) => (
                 <div key={index} className="flex flex-col items-center">
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${step.status === 'completed' ? 'border-indigo-600 bg-indigo-600' :
-                    step.status === 'current' ? 'border-indigo-600 bg-white' :
-                      'border-gray-300 bg-white'
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border-4 transition-all duration-500 shadow-md ${step.status === 'completed' ? 'border-harx-400 bg-gradient-harx text-white scale-110 shadow-harx-500/20' :
+                    step.status === 'current' ? 'border-harx-500 bg-white text-harx-600 scale-125 shadow-xl ring-4 ring-harx-500/10' :
+                      'border-gray-200 bg-white text-gray-300'
                     }`}>
                     {step.status === 'completed' ? (
-                      <CheckCircle className="h-5 w-5 text-white" />
+                      <CheckCircle className="h-6 w-6" />
                     ) : (
-                      <span className={`text-sm font-medium ${step.status === 'current' ? 'text-indigo-600' : 'text-gray-500'
+                      <span className={`text-lg font-black transition-colors duration-500 ${step.status === 'current' ? 'text-harx-600' : 'text-gray-400'
                         }`}>
                         {index + 1}
                       </span>
                     )}
                   </div>
-                  <div className="mt-2 text-center">
-                    <p className={`text-sm font-medium ${step.status === 'completed' ? 'text-indigo-600' :
-                      step.status === 'current' ? 'text-gray-900' :
-                        'text-gray-500'
+                  <div className="mt-4 text-center">
+                    <p className={`text-base font-black tracking-tight transition-colors duration-500 ${step.status === 'completed' ? 'text-harx-600' :
+                      step.status === 'current' ? 'text-gray-900 border-b-2 border-harx-500 pb-1' :
+                        'text-gray-400'
                       }`}>
                       {step.title}
                     </p>
-                    <p className="mt-1 text-xs text-gray-500">{step.description}</p>
+                    <p className="mt-2 text-sm text-gray-500 font-medium max-w-[120px]">{step.description}</p>
                   </div>
                 </div>
               ))}
@@ -354,162 +360,175 @@ const KYCVerification = () => {
         </div>
       </div>
 
+
       {/* Verification Method Selection */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h3 className="text-lg font-medium text-gray-900">Choose Verification Method</h3>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="rounded-3xl bg-white p-8 shadow-xl border border-harx-100">
+        <h3 className="text-2xl font-bold text-gray-900 mb-8 tracking-tight">Choose Verification Method</h3>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <button
-            className={`flex items-center justify-between rounded-lg border p-4 ${verificationMethod === 'automatic'
-              ? 'border-indigo-500 bg-indigo-50'
-              : 'border-gray-200 hover:bg-gray-50'
+            className={`flex items-center justify-between rounded-2xl border-2 p-6 transition-all duration-500 group relative overflow-hidden ${verificationMethod === 'automatic'
+              ? 'border-harx-500 bg-harx-50 ring-4 ring-harx-500/10'
+              : 'border-gray-100 hover:border-harx-200 hover:bg-gray-50'
               }`}
             onClick={() => setVerificationMethod('automatic')}
           >
-            <div className="flex items-center">
-              <Shield className="mr-3 h-6 w-6 text-indigo-600" />
+            <div className="flex items-center relative z-10">
+              <div className={`w-14 h-14 rounded-xl flex items-center justify-center mr-5 transition-colors duration-500 ${verificationMethod === 'automatic' ? 'bg-gradient-harx text-white' : 'bg-gray-100 text-gray-400 group-hover:bg-harx-100 group-hover:text-harx-500'}`}>
+                <Shield className="h-7 w-7" />
+              </div>
               <div className="text-left">
-                <p className="font-medium text-gray-900">Automatic Verification</p>
-                <p className="text-sm text-gray-500">Quick verification through our trusted partners</p>
+                <p className={`text-xl font-bold transition-colors duration-500 ${verificationMethod === 'automatic' ? 'text-gray-900' : 'text-gray-500'}`}>Automatic</p>
+                <p className="text-base text-gray-500 mt-1">Verified partner network</p>
               </div>
             </div>
             {verificationMethod === 'automatic' && (
-              <CheckCircle className="h-5 w-5 text-indigo-600" />
+              <CheckCircle className="h-6 w-6 text-harx-500 relative z-10" />
             )}
+            <div className={`absolute bottom-0 right-0 w-24 h-24 bg-gradient-harx rounded-tl-[80px] transition-transform duration-700 translate-x-12 translate-y-12 opacity-10 group-hover:translate-x-8 group-hover:translate-y-8`}></div>
           </button>
 
           <button
-            className={`flex items-center justify-between rounded-lg border p-4 ${verificationMethod === 'manual'
-              ? 'border-indigo-500 bg-indigo-50'
-              : 'border-gray-200 hover:bg-gray-50'
+            className={`flex items-center justify-between rounded-2xl border-2 p-6 transition-all duration-500 group relative overflow-hidden ${verificationMethod === 'manual'
+              ? 'border-harx-500 bg-harx-50 ring-4 ring-harx-500/10'
+              : 'border-gray-100 hover:border-harx-200 hover:bg-gray-50'
               }`}
             onClick={() => setVerificationMethod('manual')}
           >
-            <div className="flex items-center">
-              <Upload className="mr-3 h-6 w-6 text-indigo-600" />
+            <div className="flex items-center relative z-10">
+              <div className={`w-14 h-14 rounded-xl flex items-center justify-center mr-5 transition-colors duration-500 ${verificationMethod === 'manual' ? 'bg-gradient-harx text-white' : 'bg-gray-100 text-gray-400 group-hover:bg-harx-100 group-hover:text-harx-500'}`}>
+                <Upload className="h-7 w-7" />
+              </div>
               <div className="text-left">
-                <p className="font-medium text-gray-900">Manual Document Upload</p>
-                <p className="text-sm text-gray-500">Upload required documents manually</p>
+                <p className={`text-xl font-bold transition-colors duration-500 ${verificationMethod === 'manual' ? 'text-gray-900' : 'text-gray-500'}`}>Manual Review</p>
+                <p className="text-base text-gray-500 mt-1">Direct document upload</p>
               </div>
             </div>
             {verificationMethod === 'manual' && (
-              <CheckCircle className="h-5 w-5 text-indigo-600" />
+              <CheckCircle className="h-6 w-6 text-harx-500 relative z-10" />
             )}
+            <div className={`absolute bottom-0 right-0 w-24 h-24 bg-gradient-harx rounded-tl-[80px] transition-transform duration-700 translate-x-12 translate-y-12 opacity-10 group-hover:translate-x-8 group-hover:translate-y-8`}></div>
           </button>
         </div>
       </div>
 
+
       {verificationMethod === 'automatic' ? (
-        <div className="rounded-lg bg-white p-6 shadow">
-          <h3 className="text-lg font-medium text-gray-900">Automatic Verification</h3>
-          <div className="mt-4 space-y-4">
-            <div className="rounded-lg bg-gray-50 p-4">
+        <div className="rounded-3xl bg-white p-8 shadow-xl border border-harx-100">
+          <div className="flex items-center gap-3 mb-6">
+            <Shield className="h-7 w-7 text-harx-500" />
+            <h3 className="text-2xl font-bold text-gray-900 tracking-tight">Automatic Verification</h3>
+          </div>
+          <div className="mt-4 space-y-6">
+            <div className="rounded-2xl bg-gray-50 p-6 border border-gray-100 group hover:border-harx-200 transition-all duration-300">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <Camera className="mr-2 h-5 w-5 text-indigo-600" />
-                  <span className="font-medium text-gray-900">Identity Verification</span>
+                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center mr-4 shadow-sm group-hover:bg-harx-100 transition-colors">
+                    <Camera className="h-5 w-5 text-harx-500" />
+                  </div>
+                  <span className="text-xl font-bold text-gray-900 tracking-tight">Identity Verification</span>
                 </div>
-                <button className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
+                <button className="rounded-xl bg-gradient-harx px-6 py-3 text-sm font-black text-white shadow-lg shadow-harx-500/20 hover:brightness-110 transition-all duration-300 transform hover:scale-105 active:scale-95">
                   Start Verification
                 </button>
               </div>
-              <p className="mt-2 text-sm text-gray-500">
-                Complete the verification process through our secure partner platform
+              <p className="mt-3 text-base text-gray-500 font-medium">
+                Complete the verification process through our secure partner platform using your camera.
               </p>
             </div>
 
-            <div className="rounded-lg bg-gray-50 p-4">
+            <div className="rounded-2xl bg-gray-50 p-6 border border-gray-100 group hover:border-harx-200 transition-all duration-300">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <Building2 className="mr-2 h-5 w-5 text-indigo-600" />
-                  <span className="font-medium text-gray-900">Business Verification</span>
+                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center mr-4 shadow-sm group-hover:bg-harx-100 transition-colors">
+                    <Building2 className="h-5 w-5 text-harx-500" />
+                  </div>
+                  <span className="text-xl font-bold text-gray-900 tracking-tight">Business Verification</span>
                 </div>
-                <button className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
+                <button className="rounded-xl bg-gradient-harx px-6 py-3 text-sm font-black text-white shadow-lg shadow-harx-500/20 hover:brightness-110 transition-all duration-300 transform hover:scale-105 active:scale-95">
                   Verify Business
                 </button>
               </div>
-              <p className="mt-2 text-sm text-gray-500">
-                Verify your business through official registries and databases
+              <p className="mt-3 text-base text-gray-500 font-medium">
+                Verify your business through official registries and databases automatically.
               </p>
             </div>
 
-            <div className="rounded-lg border border-gray-200 p-4">
-              <h4 className="font-medium text-gray-900">Verification Steps</h4>
-              <ul className="mt-2 space-y-2">
-                <li className="flex items-center text-sm text-gray-500">
-                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                  Prepare valid government-issued ID
-                </li>
-                <li className="flex items-center text-sm text-gray-500">
-                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                  Ensure good lighting for photo capture
-                </li>
-                <li className="flex items-center text-sm text-gray-500">
-                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                  Follow on-screen instructions
-                </li>
-                <li className="flex items-center text-sm text-gray-500">
-                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                  Complete facial recognition check
-                </li>
+            <div className="rounded-2xl border-2 border-dashed border-harx-100 p-6 bg-harx-50/20">
+              <h4 className="text-lg font-black text-harx-900 mb-4 uppercase tracking-widest">Verification Steps</h4>
+              <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  'Prepare valid government-issued ID',
+                  'Ensure good lighting for photo capture',
+                  'Follow on-screen instructions',
+                  'Complete facial recognition check'
+                ].map((step, i) => (
+                  <li key={i} className="flex items-center text-sm text-gray-600 font-bold bg-white p-3 rounded-xl border border-harx-100 shadow-sm">
+                    <CheckCircle className="mr-3 h-5 w-5 text-harx-500" />
+                    {step}
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
         </div>
+
       ) : (
         <div className="space-y-6">
           {/* Document Categories */}
-          <div className="rounded-lg bg-white p-6 shadow">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">Required Documents</h3>
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500">
-                  {uploadedFiles.length} of {requiredDocuments.length} uploaded
+          <div className="rounded-3xl bg-white p-8 shadow-xl border border-harx-100">
+            <div className="mb-8 flex items-center justify-between">
+              <h3 className="text-2xl font-bold text-gray-900 tracking-tight">Required Documents</h3>
+              <div className="flex flex-col items-end">
+                <span className="text-base font-bold text-gray-600 mb-2">
+                  <span className="text-harx-600">{uploadedFiles.length}</span> of {requiredDocuments.length} uploaded
                 </span>
-                <div className="h-2 w-24 rounded-full bg-gray-200">
+                <div className="h-3 w-48 rounded-full bg-gray-100 shadow-inner overflow-hidden border border-gray-200">
                   <div
-                    className="h-2 rounded-full bg-indigo-600"
+                    className="h-full bg-gradient-harx transition-all duration-700 shadow-lg"
                     style={{ width: `${(uploadedFiles.length / requiredDocuments.length) * 100}%` }}
                   />
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-8">
               {['company', 'personal', 'financial'].map((category) => (
-                <div key={category} className="rounded-lg border border-gray-200 p-4">
-                  <h4 className="mb-3 font-medium text-gray-900 capitalize">{category} Documents</h4>
-                  <div className="space-y-3">
+                <div key={category} className="rounded-2xl border border-gray-100 p-6 bg-gray-50/30">
+                  <h4 className="mb-6 text-lg font-black text-gray-900 uppercase tracking-widest border-b-2 border-harx-100 pb-2 inline-block capitalize">{category} Documents</h4>
+                  <div className="space-y-4">
                     {requiredDocuments
                       .filter(doc => doc.type === category)
                       .map((doc, index) => (
-                        <div key={index} className="rounded-lg border border-gray-200 p-4">
+                        <div key={index} className="rounded-2xl border border-gray-100 bg-white p-5 hover:border-harx-200 hover:shadow-lg transition-all duration-300 group">
                           <div className="flex items-start justify-between">
-                            <div className="flex items-start space-x-3">
-                              <div className="mt-1">
-                                <FileText className="h-5 w-5 text-indigo-600" />
+                            <div className="flex items-start space-x-4">
+                              <div className="mt-1 w-12 h-12 rounded-xl bg-harx-50 flex items-center justify-center transition-colors group-hover:bg-harx-100">
+                                <FileText className="h-6 w-6 text-harx-500" />
                               </div>
                               <div>
-                                <h4 className="font-medium text-gray-900">{doc.title}</h4>
-                                <p className="text-sm text-gray-500">{doc.description}</p>
-                                <p className="mt-1 text-xs text-gray-400">Format: {doc.format}</p>
+                                <h4 className="text-lg font-bold text-gray-900 tracking-tight group-hover:text-harx-600 transition-colors">{doc.title}</h4>
+                                <p className="text-sm text-gray-500 font-medium">{doc.description}</p>
+                                <p className="mt-2 text-xs font-black text-harx-400 uppercase tracking-tighter">Format: {doc.format}</p>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-3">
                               {uploadedFiles.includes(doc.title) ? (
-                                <div className="flex items-center space-x-2">
+                                <div className="flex items-center gap-3">
                                   <button
                                     onClick={() => handleDocumentPreview(doc.title)}
-                                    className="rounded-md bg-gray-100 p-1 text-gray-600 hover:bg-gray-200"
+                                    className="rounded-xl bg-gray-100 p-3 text-gray-600 hover:bg-harx-100 hover:text-harx-600 transition-all duration-300"
                                   >
-                                    <Eye className="h-4 w-4" />
+                                    <Eye className="h-5 w-5" />
                                   </button>
-                                  <span className="text-sm text-green-600">Uploaded</span>
-                                  <CheckCircle className="h-5 w-5 text-green-500" />
+                                  <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl text-sm font-black border border-emerald-100">
+                                    <CheckCircle className="h-5 w-5" />
+                                    <span>UPLOADED</span>
+                                  </div>
                                 </div>
                               ) : (
                                 <button
                                   onClick={() => document.getElementById(`file-${index}`)?.click()}
-                                  className="rounded-md bg-white px-3 py-2 text-sm font-medium text-indigo-600 shadow-sm ring-1 ring-inset ring-indigo-300 hover:bg-indigo-50"
+                                  className="rounded-xl bg-white px-6 py-3 text-sm font-black text-harx-600 shadow-sm ring-2 ring-inset ring-harx-100 hover:bg-harx-50 hover:ring-harx-200 transition-all duration-300"
                                 >
                                   Upload
                                 </button>
@@ -530,6 +549,7 @@ const KYCVerification = () => {
               ))}
             </div>
           </div>
+
 
           {/* Document Preview Modal */}
           {showPreview && selectedDocument && (
@@ -564,46 +584,63 @@ const KYCVerification = () => {
             </div>
           )}
 
-          <div className="mt-6 rounded-lg bg-yellow-50 p-4">
+          <div className="mt-6 rounded-2xl bg-amber-50 p-6 border border-amber-100 shadow-sm">
             <div className="flex">
               <div className="flex-shrink-0">
-                <AlertCircle className="h-5 w-5 text-yellow-400" />
+                <AlertCircle className="h-6 w-6 text-amber-500" />
               </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-yellow-800">Document Guidelines</h3>
-                <div className="mt-2 text-sm text-yellow-700">
-                  <ul className="list-disc space-y-1 pl-5">
-                    <li>All documents must be clear and legible</li>
-                    <li>Files should not exceed 5MB in size</li>
-                    <li>Supported formats: PDF, JPG, PNG</li>
-                    <li>Documents must be in color and not black and white</li>
-                    <li>No expired documents will be accepted</li>
+              <div className="ml-4">
+                <h3 className="text-lg font-black text-amber-900 tracking-tight uppercase">Document Guidelines</h3>
+                <div className="mt-3 text-base text-amber-800 font-medium">
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-8 list-none">
+                    {[
+                      'All documents must be clear and legible',
+                      'Files should not exceed 5MB in size',
+                      'Supported formats: PDF, JPG, PNG',
+                      'Documents must be in color',
+                      'No expired documents will be accepted'
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-center">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mr-2 flex-shrink-0"></span>
+                        {item}
+                      </li>
+                    ))}
                   </ul>
                 </div>
               </div>
             </div>
           </div>
+
         </div>
       )
       }
 
       {/* Verification Status */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h3 className="text-lg font-medium text-gray-900">Verification Status</h3>
+      <div className="rounded-3xl bg-white p-8 shadow-xl border border-harx-100">
+        <h3 className="text-2xl font-bold text-gray-900 tracking-tight mb-8">Verification Status</h3>
         <div className="mt-4">
-          <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4">
-            <div className="flex items-center space-x-3">
-              {verificationStatus === 'completed' ? (
-                <CheckCircle className="h-6 w-6 text-green-500" />
-              ) : verificationStatus === 'failed' ? (
-                <AlertCircle className="h-6 w-6 text-red-500" />
-              ) : verificationStatus === 'in_progress' ? (
-                <RefreshCw className="h-6 w-6 animate-spin text-indigo-600" />
-              ) : (
-                <Clock className="h-6 w-6 text-gray-400" />
-              )}
+          <div className="flex items-center justify-between rounded-2xl bg-gray-50 p-8 border border-gray-100 relative overflow-hidden">
+            <div className={`absolute left-0 top-0 bottom-0 w-2 ${verificationStatus === 'completed' ? 'bg-emerald-500' :
+              verificationStatus === 'failed' ? 'bg-red-500' :
+                verificationStatus === 'in_progress' ? 'bg-harx-500' : 'bg-gray-300'
+              }`}></div>
+            <div className="flex items-center space-x-6">
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${verificationStatus === 'completed' ? 'bg-emerald-100 text-emerald-600 shadow-lg shadow-emerald-500/10' :
+                verificationStatus === 'failed' ? 'bg-red-100 text-red-600 shadow-lg shadow-red-500/10' :
+                  verificationStatus === 'in_progress' ? 'bg-harx-50 text-harx-500 shadow-lg shadow-harx-500/10' : 'bg-gray-100 text-gray-400'
+                }`}>
+                {verificationStatus === 'completed' ? (
+                  <CheckCircle className="h-8 w-8" />
+                ) : verificationStatus === 'failed' ? (
+                  <AlertCircle className="h-8 w-8" />
+                ) : verificationStatus === 'in_progress' ? (
+                  <RefreshCw className="h-8 w-8 animate-spin" />
+                ) : (
+                  <Clock className="h-8 w-8" />
+                )}
+              </div>
               <div>
-                <p className="font-medium text-gray-900">
+                <p className="text-2xl font-black text-gray-900 tracking-tight">
                   {verificationStatus === 'completed'
                     ? 'Verification Complete'
                     : verificationStatus === 'failed'
@@ -612,49 +649,51 @@ const KYCVerification = () => {
                         ? 'Verification in Progress'
                         : 'Verification Pending'}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-base text-gray-500 font-medium mt-1">
                   {verificationStatus === 'completed'
-                    ? 'Your company has been successfully verified'
+                    ? 'Your company has been successfully verified.'
                     : verificationStatus === 'failed'
-                      ? 'Please review and resubmit your documents'
+                      ? 'Please review and resubmit your documents.'
                       : verificationStatus === 'in_progress'
-                        ? 'This process may take 1-2 business days'
-                        : 'Please submit all required documents'}
+                        ? 'This process may take 1-2 business days.'
+                        : 'Please submit all required documents.'}
                 </p>
               </div>
             </div>
             {verificationStatus === 'completed' && (
-              <button className="flex items-center rounded-md bg-white px-3 py-2 text-sm font-medium text-indigo-600 shadow-sm ring-1 ring-inset ring-indigo-300 hover:bg-indigo-50">
-                <Download className="mr-2 h-4 w-4" />
-                Download Certificate
+              <button className="flex items-center rounded-xl bg-white px-6 py-3 text-sm font-black text-harx-600 shadow-md ring-1 ring-inset ring-harx-100 hover:bg-harx-50 transition-all duration-300 transform hover:scale-105">
+                <Download className="mr-2 h-5 w-5" />
+                Get Certificate
               </button>
             )}
           </div>
         </div>
       </div>
 
+
       {/* Help Section */}
-      <div className="rounded-lg bg-white p-6 shadow">
+      <div className="rounded-3xl bg-white p-8 shadow-xl border border-harx-100 group">
         <div className="flex items-start">
-          <div className="flex-shrink-0">
-            <HelpCircle className="h-6 w-6 text-gray-400" />
+          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center group-hover:bg-harx-50 transition-colors">
+            <HelpCircle className="h-6 w-6 text-gray-400 group-hover:text-harx-500 transition-colors" />
           </div>
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-gray-900">Need Help?</h3>
-            <div className="mt-2 text-sm text-gray-500">
+          <div className="ml-5">
+            <h3 className="text-xl font-bold text-gray-900 tracking-tight">Need Assistance?</h3>
+            <div className="mt-2 text-base text-gray-500 font-medium leading-relaxed">
               <p>
-                If you're having trouble with the verification process, our support team is here to help.
+                If you're having trouble with the verification process, our dedicated support team is here to help.
                 Contact us through our support portal or schedule a call with our verification specialists.
               </p>
             </div>
-            <div className="mt-3">
-              <a href="#" className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-                Contact Support <ChevronRight className="ml-1 inline-block h-4 w-4" />
+            <div className="mt-4">
+              <a href="#" className="inline-flex items-center text-sm font-black text-harx-500 hover:text-harx-700 transition-colors tracking-widest uppercase">
+                Contact Support <ChevronRight className="ml-2 h-4 w-4" />
               </a>
             </div>
           </div>
         </div>
       </div>
+
     </div >
   );
 };

@@ -1522,14 +1522,15 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
         <button
           key={totalPages}
           onClick={() => fetchLeads(totalPages, searchQuery)}
-          className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${totalPages === currentPage
-            ? 'z-10 bg-indigo-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
-            : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+          className={`relative inline-flex items-center px-4 py-2 text-sm font-black rounded-xl transition-all duration-300 ${totalPages === currentPage
+            ? 'z-10 bg-gradient-harx text-white shadow-lg shadow-harx-500/20'
+            : 'text-gray-900 ring-1 ring-inset ring-gray-200 hover:bg-harx-50 hover:text-harx-600'
             }`}
         >
           {totalPages}
         </button>
       );
+
     }
 
     return buttons;
@@ -1662,70 +1663,76 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
 
   return (
-    <div className="space-y-4 bg-gradient-to-br from-blue-50 to-white min-h-screen p-4">
+    <div className="space-y-6 bg-gray-50/50 min-h-screen p-6">
       {/* Page Header */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-        <div className="flex items-start justify-between mb-6">
+      <div className="bg-white rounded-3xl shadow-xl border border-harx-100 p-8 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-harx-50 rounded-full blur-3xl group-hover:bg-harx-100 transition-colors duration-700"></div>
+        <div className="flex items-start justify-between relative z-10">
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900 mb-3 flex items-center">
-              <UserPlus className="mr-3 h-8 w-8 text-blue-600" />
+            <h1 className="text-4xl font-extrabold text-gray-900 mb-4 flex items-center tracking-tight">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-harx flex items-center justify-center mr-4 shadow-lg shadow-harx-500/20">
+                <UserPlus className="h-6 w-6 text-white" />
+              </div>
               Upload Contacts
             </h1>
-            <p className="text-lg text-gray-600">
+            <p className="text-xl text-gray-600 max-w-3xl leading-relaxed">
               Import, manage, and organize your leads efficiently. Choose between connecting with your CRM system or uploading contact files directly.
             </p>
           </div>
-
         </div>
       </div>
 
 
 
+
       {/* Gigs Selection Dropdown */}
-      <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 transition-all duration-300 ease-in-out">
-        <h4 className="text-xl font-bold text-slate-900 mb-6 flex items-center">
-          <Settings className="mr-3 h-6 w-6 text-slate-600" />
+      <div className="bg-white rounded-3xl shadow-xl border border-harx-100 p-8 transition-all duration-300">
+        <h4 className="text-2xl font-bold text-gray-900 mb-8 flex items-center tracking-tight">
+          <Settings className="mr-3 h-7 w-7 text-harx-500" />
           Select a Gig
         </h4>
         {isLoadingGigs ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
-            <span className="ml-4 text-base text-slate-600 font-medium">Loading gigs...</span>
+          <div className="flex items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-harx-500"></div>
+            <span className="ml-4 text-lg text-gray-600 font-semibold">Loading gigs...</span>
           </div>
         ) : gigs.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="mx-auto h-16 w-16 text-slate-300 mb-4">
-              <Settings className="h-16 w-16" />
+          <div className="text-center py-16 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+            <div className="mx-auto h-20 w-20 text-gray-300 mb-6">
+              <Settings className="h-20 w-20" />
             </div>
-            <p className="text-base text-slate-500 font-medium">No gigs available.</p>
+            <p className="text-xl text-gray-500 font-bold">No gigs available.</p>
           </div>
         ) : (
-          <div className="max-w-lg relative" ref={gigDropdownRef}>
+          <div className="max-w-2xl relative" ref={gigDropdownRef}>
             {/* Trigger button */}
             <button
               type="button"
               onClick={() => setGigDropdownOpen(prev => !prev)}
-              className={`w-full flex items-center justify-between gap-3 rounded-2xl border-2 py-4 px-5 text-base font-semibold shadow-md transition-all duration-200 focus:outline-none ${gigDropdownOpen
-                ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200 ring-offset-1'
-                : 'border-slate-200 bg-white hover:border-blue-400 hover:shadow-lg'
+              className={`w-full flex items-center justify-between gap-4 rounded-2xl border-2 py-5 px-6 text-lg font-bold shadow-lg transition-all duration-300 focus:outline-none ${gigDropdownOpen
+                ? 'border-harx-500 bg-harx-50 ring-4 ring-harx-500/10'
+                : 'border-harx-100 bg-white hover:border-harx-400 hover:shadow-xl'
                 }`}
             >
-              <span className="flex items-center gap-3 min-w-0">
-                <span className={`flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg ${selectedGigId ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'
+
+              <span className="flex items-center gap-4 min-w-0">
+                <span className={`flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl ${selectedGigId ? 'bg-gradient-harx text-white' : 'bg-gray-100 text-gray-400'
                   }`}>
-                  <Settings className="w-4 h-4" />
+                  <Settings className="w-5 h-5" />
                 </span>
-                <span className={`truncate ${selectedGigId ? 'text-slate-900' : 'text-slate-400'
+                <span className={`truncate text-xl ${selectedGigId ? 'text-gray-900' : 'text-gray-400'
                   }`}>
+
                   {selectedGigId
                     ? gigs.find(g => g._id === selectedGigId)?.title ?? 'Select a gig…'
                     : 'Select a gig…'}
                 </span>
               </span>
               <ChevronDown
-                className={`flex-shrink-0 w-5 h-5 text-slate-500 transition-transform duration-200 ${gigDropdownOpen ? 'rotate-180 text-blue-500' : ''
+                className={`flex-shrink-0 w-6 h-6 text-gray-400 transition-transform duration-300 ${gigDropdownOpen ? 'rotate-180 text-harx-500' : ''
                   }`}
               />
+
             </button>
 
             {/* Dropdown panel */}
@@ -1735,9 +1742,10 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                 style={{ animation: 'fadeSlideDown 0.15s ease' }}
               >
                 {/* Header row */}
-                <div className="px-4 pt-3 pb-2 border-b border-slate-100">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Your Gigs</p>
+                <div className="px-6 pt-5 pb-3 border-b border-gray-100 bg-gray-50/50">
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Available Gigs</p>
                 </div>
+
 
                 {/* Options list */}
                 <ul className="py-2 max-h-64 overflow-y-auto">
@@ -1751,16 +1759,17 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                             setSelectedGigId(gig._id);
                             setGigDropdownOpen(false);
                           }}
-                          className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all duration-150 ${isSelected
-                            ? 'bg-blue-50 text-blue-700'
-                            : 'text-slate-700 hover:bg-slate-50'
+                          className={`w-full flex items-center gap-4 px-6 py-4 text-base font-bold transition-all duration-200 ${isSelected
+                            ? 'bg-gradient-harx text-white shadow-lg'
+                            : 'text-gray-700 hover:bg-harx-50 hover:text-harx-600'
                             }`}
                         >
                           {/* Colored index badge */}
-                          <span className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
+                          <span className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black ${isSelected ? 'bg-white text-harx-600' : 'bg-gray-100 text-gray-500'
                             }`}>
                             {idx + 1}
                           </span>
+
 
                           {/* Gig info */}
                           <span className="flex-1 text-left truncate">{gig.title}</span>
@@ -1774,10 +1783,11 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
                           {/* Check mark */}
                           {isSelected && (
-                            <span className="flex-shrink-0 text-blue-500">
-                              <CheckCircle className="w-4 h-4" />
+                            <span className="flex-shrink-0 text-white">
+                              <CheckCircle className="w-5 h-5" />
                             </span>
                           )}
+
                         </button>
                       </li>
                     );
@@ -1806,55 +1816,59 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
       </div>
 
       {/* Import Methods Section */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
-        <div className="mb-4">
-          <h3 className="text-xl font-semibold text-gray-900 flex items-center">
-            <Cloud className="mr-2 h-5 w-5 text-blue-600" />
+      <div className="bg-white rounded-3xl shadow-xl border border-harx-100 p-8">
+        <div className="mb-8">
+          <h3 className="text-2xl font-bold text-gray-900 flex items-center tracking-tight">
+            <Cloud className="mr-3 h-7 w-7 text-harx-500" />
             Import Leads
           </h3>
-          <p className="mt-1 text-sm text-gray-600">Choose your preferred method to import leads into your selected gig.</p>
+          <p className="mt-2 text-lg text-gray-600">Choose your preferred method to import leads into your selected gig.</p>
         </div>
 
         {/* Import Methods Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Zoho Import Card - DISABLED FOR NOW */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 flex flex-col h-full grayscale opacity-60 pointer-events-none relative overflow-hidden">
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-3xl p-8 flex flex-col h-full grayscale opacity-60 pointer-events-none relative overflow-hidden group">
             {/* Overlay to ensure it's not clickable and shows disabled cursor */}
             <div className="absolute inset-0 z-10 cursor-not-allowed" title="Zoho CRM Integration is currently disabled" />
             {/* Header */}
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-blue-200 shadow-sm">
+            <div className="flex items-center mb-6">
+              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mr-6 border-2 border-gray-100 shadow-sm relative z-20">
                 <img
                   src={zohoLogo}
                   alt="Zoho CRM"
-                  className="h-7 w-7 object-contain"
+                  className="h-10 w-10 object-contain"
                 />
               </div>
-              <div className="flex-1">
-                <h4 className="text-xl font-bold text-blue-900">Zoho CRM Integration</h4>
-                <p className="text-sm text-blue-700">Connect and sync with your Zoho CRM</p>
+              <div className="flex-1 relative z-20">
+                <h4 className="text-2xl font-bold text-gray-900">Zoho CRM Integration</h4>
+                <p className="text-base text-gray-600 font-medium">Connect and sync with your Zoho CRM</p>
               </div>
             </div>
 
             {/* Connection Status */}
-            <div className="mb-4">
+            <div className="mb-6 relative z-20">
               {hasZohoAccessToken ? (
-                <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3">
-                  <span className="text-sm font-medium text-green-800">✓ Connected to Zoho CRM</span>
+                <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                  <span className="text-base font-bold text-emerald-800 flex items-center">
+                    <CheckCircle className="mr-2 h-5 w-5" /> Connected to Zoho CRM
+                  </span>
                   <button
                     onClick={handleZohoDisconnect}
                     disabled={isDisconnectingZoho}
-                    className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                    className="px-4 py-2 text-sm font-bold text-red-700 bg-red-100/50 hover:bg-red-200 rounded-xl transition-all duration-300 disabled:opacity-50"
                   >
                     {isDisconnectingZoho ? 'Disconnecting...' : 'Disconnect'}
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center justify-between bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                  <span className="text-sm font-medium text-yellow-800">⚠ Not connected</span>
+                <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <span className="text-base font-bold text-amber-800 flex items-center">
+                    <AlertTriangle className="mr-2 h-5 w-5" /> Not connected
+                  </span>
                   <button
                     onClick={handleZohoConnect}
-                    className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors duration-200"
+                    className="px-4 py-2 text-sm font-bold text-harx-700 bg-harx-100/50 hover:bg-harx-200 rounded-xl transition-all duration-300"
                   >
                     Connect
                   </button>
@@ -1863,7 +1877,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
             </div>
 
             {/* Action Button - Pushed to bottom */}
-            <div className="mt-auto">
+            <div className="mt-auto relative z-20">
               <button
                 onClick={async () => {
                   if (!selectedGigId) {
@@ -1873,29 +1887,19 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                   await handleImportFromZoho();
                 }}
                 disabled={!hasZohoAccessToken || isImportingZoho}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center"
+                className="w-full bg-gray-200 text-gray-500 font-black py-5 px-8 rounded-2xl transition-all duration-500"
               >
                 {isImportingZoho ? (
                   <>
-                    <RefreshCw className="mr-3 h-5 w-5 animate-spin" />
+                    <RefreshCw className="mr-3 h-6 w-6 animate-spin" />
                     Importing from Zoho...
                   </>
                 ) : !hasZohoAccessToken ? (
                   <>
-                    <img
-                      src={zohoLogo}
-                      alt="Zoho"
-                      className="h-5 w-5 mr-3 object-contain"
-                    />
                     Connect to Zoho CRM First
                   </>
                 ) : (
                   <>
-                    <img
-                      src={zohoLogo}
-                      alt="Zoho"
-                      className="h-5 w-5 mr-3 object-contain"
-                    />
                     Sync with Zoho CRM
                   </>
                 )}
@@ -1904,38 +1908,40 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
           </div>
 
           {/* File Upload Card */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] flex flex-col h-full" data-file-upload>
+          <div className="bg-gradient-to-br from-harx-50/50 to-harx-100/30 border-2 border-harx-100 rounded-3xl p-8 hover:border-harx-300 hover:shadow-2xl hover:shadow-harx-500/10 transition-all duration-500 group relative overflow-hidden" data-file-upload>
+            <div className="absolute top-0 right-0 -mt-8 -mr-8 w-48 h-48 bg-harx-100/50 rounded-full blur-3xl group-hover:bg-harx-200 transition-colors duration-700"></div>
             {/* Header */}
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mr-4 border-2 border-blue-200 shadow-sm">
-                <FileSpreadsheet className="h-6 w-6 text-blue-700" />
+            <div className="flex items-center mb-6 relative z-10">
+              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mr-6 border-2 border-harx-100 shadow-sm transition-transform duration-500 group-hover:scale-110">
+                <FileSpreadsheet className="h-8 w-8 text-harx-600" />
               </div>
               <div className="flex-1">
-                <h4 className="text-xl font-bold text-blue-900">File Upload</h4>
-                <p className="text-sm text-blue-700">Upload and process contact files</p>
+                <h4 className="text-2xl font-bold text-gray-900">File Upload</h4>
+                <p className="text-base text-gray-600 font-medium">Upload and process contact files</p>
               </div>
             </div>
 
             {/* File Info */}
-            <div className="mb-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <span className="text-sm font-medium text-blue-800">📁 Supported: CSV, Excel</span>
+            <div className="mb-6 relative z-10">
+              <div className="bg-white/80 backdrop-blur-sm border border-harx-100 rounded-xl p-4 flex items-center transition-all duration-300 group-hover:border-harx-200">
+                <div className="w-2 h-2 rounded-full bg-harx-500 mr-3 animate-ping"></div>
+                <span className="text-base font-bold text-harx-800">Supported: CSV, Excel (XLSX, XLS)</span>
               </div>
             </div>
 
             {/* Upload Button - Pushed to bottom */}
-            <div className="mt-auto">
-              <div className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl cursor-pointer flex items-center justify-center">
+            <div className="mt-auto relative z-10">
+              <div className="w-full bg-gradient-harx text-white font-black py-5 px-8 rounded-2xl hover:brightness-110 transition-all duration-300 transform hover:scale-[1.03] active:scale-[0.98] shadow-xl shadow-harx-500/30 cursor-pointer flex items-center justify-center">
                 <label htmlFor="file-upload" className="cursor-pointer flex items-center justify-center w-full">
-                  <FileSpreadsheet className="h-5 w-5 mr-3 text-white" />
-                  <span className="text-base font-semibold text-white">
+                  <FileSpreadsheet className="h-6 w-6 mr-3 text-white" />
+                  <span className="text-lg">
                     {isProcessing ? (
-                      <div className="flex items-center">
-                        <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                      <div className="flex items-center font-black">
+                        <RefreshCw className="mr-3 h-6 w-6 animate-spin" />
                         Processing...
                       </div>
                     ) : (
-                      'Click to upload or drag and drop'
+                      'Click to upload or drag & drop'
                     )}
                   </span>
                   <input
@@ -1951,6 +1957,7 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
             </div>
           </div>
         </div>
+
 
         {/* File Processing Results */}
         {selectedFile && showFileName && (
@@ -1971,19 +1978,19 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                 <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
               </button>
             </div>
-            <div className="mt-3">
+            <div className="mt-4">
               <div className="relative">
-                <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
+                <div className="h-4 rounded-full bg-gray-200 overflow-hidden shadow-inner">
                   <div
-                    className={`h-3 rounded-full transition-all duration-300 ${uploadError ? 'bg-red-500' : uploadSuccess ? 'bg-green-500' : 'bg-gradient-to-r from-blue-500 to-indigo-500'
+                    className={`h-4 rounded-full transition-all duration-500 shadow-lg ${uploadError ? 'bg-gradient-to-r from-red-500 to-red-600' : uploadSuccess ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-harx'
                       }`}
                     style={{
                       width: `${uploadProgress}%`,
-                      background: isProcessing && !uploadError && !uploadSuccess ? 'linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%)' : undefined
                     }}
                   />
                 </div>
               </div>
+
               <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
                 <span>
                   {isProcessing && !uploadError && !uploadSuccess
@@ -1996,32 +2003,34 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
 
               {/* Real-time Progress Status for OpenAI Processing */}
               {isProcessing && !uploadError && !uploadSuccess && (
-                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-blue-700 font-medium">
-                      {processingProgress.status || 'Traitement OpenAI en cours...'}
+                <div className="mt-6 p-6 bg-harx-50/50 border border-harx-100 rounded-2xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 -mt-4 -mr-4 w-16 h-16 bg-harx-100 rounded-full blur-2xl animate-pulse"></div>
+                  <div className="flex items-center justify-between text-base relative z-10">
+                    <span className="text-harx-700 font-bold tracking-tight">
+                      {processingProgress.status || 'AI Orchestrator at work...'}
                     </span>
                   </div>
 
                   {/* Animated activity indicator */}
-                  <div className="mt-2 flex items-center space-x-1">
-                    <div className="flex space-x-1">
+                  <div className="mt-6 flex items-center space-x-3 relative z-10">
+                    <div className="flex space-x-2">
                       {[0, 1, 2].map((i) => (
                         <div
                           key={i}
-                          className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"
+                          className="w-3 h-3 bg-harx-500 rounded-full animate-bounce"
                           style={{
-                            animationDelay: `${i * 0.2}s`,
-                            animationDuration: '1s'
+                            animationDelay: `${i * 0.15}s`,
+                            animationDuration: '0.6s'
                           }}
                         />
                       ))}
                     </div>
-                    <span className="text-xs text-blue-600 ml-2">Traitement en cours...</span>
+                    <span className="text-base text-harx-600 font-bold ml-2">Syncing database...</span>
                   </div>
                 </div>
               )}
             </div>
+
 
             {uploadError && (
               <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
@@ -2036,35 +2045,40 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
             {parsedLeads.length > 0 && !uploadSuccess && !isProcessing && showSaveButton && (
               <div className="mt-4 space-y-4">
                 {validationResults && (
-                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3">
-                    <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
-                      <Info className="mr-2 h-4 w-4" />
-                      AI Processing Results
+                  <div className="bg-gradient-to-r from-harx-50 to-harx-100/50 border border-harx-100 rounded-2xl p-6 shadow-sm">
+                    <h4 className="text-lg font-bold text-harx-900 mb-4 flex items-center tracking-tight">
+                      <Info className="mr-3 h-5 w-5 text-harx-500" />
+                      AI Processing Analysis
                     </h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-blue-600 font-medium">Total Rows:</span> {validationResults.totalRows}
+                    <div className="grid grid-cols-2 gap-6 text-base">
+                      <div className="bg-white/60 backdrop-blur-sm p-3 rounded-xl border border-harx-100">
+                        <span className="text-gray-500 font-bold block text-xs uppercase tracking-widest mb-1">Total Found</span> 
+                        <span className="text-xl font-black text-gray-900">{validationResults.totalRows}</span>
                       </div>
-                      <div>
-                        <span className="text-green-600 font-medium">Valid Rows:</span> {validationResults.validRows > 0 ? validationResults.validRows : parsedLeads.length}
+                      <div className="bg-white/60 backdrop-blur-sm p-3 rounded-xl border border-harx-100">
+                        <span className="text-emerald-600 font-bold block text-xs uppercase tracking-widest mb-1">Verified</span> 
+                        <span className="text-xl font-black text-emerald-700">{validationResults.validRows > 0 ? validationResults.validRows : parsedLeads.length}</span>
                       </div>
                       {validationResults.invalidRows > 0 && (
-                        <div className="col-span-2">
-                          <span className="text-red-600 font-medium">Invalid Rows:</span> {validationResults.invalidRows}
+                        <div className="col-span-2 bg-red-50 p-3 rounded-xl border border-red-100">
+                          <span className="text-red-500 font-bold block text-xs uppercase tracking-widest mb-1">Requiring Attention</span> 
+                          <span className="text-xl font-black text-red-700">{validationResults.invalidRows}</span>
                         </div>
                       )}
                     </div>
 
+
                     {validationResults.errors && validationResults.errors.length > 0 && (
-                      <div className="mt-3">
-                        <details className="text-xs">
-                          <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
-                            View validation errors ({validationResults.errors.length})
+                      <div className="mt-4">
+                        <details className="text-sm group">
+                          <summary className="cursor-pointer text-harx-600 hover:text-harx-800 font-bold flex items-center transition-colors duration-300">
+                            <span className="bg-harx-100 px-2 py-0.5 rounded-lg mr-2 group-hover:bg-harx-200">View Details</span>
+                            ({validationResults.errors.length} issues identified)
                           </summary>
-                          <div className="mt-2 space-y-1">
+                          <div className="mt-3 space-y-2">
                             {validationResults.errors.map((error: string, index: number) => (
-                              <div key={index} className="text-red-600 bg-red-50 p-2 rounded">
-                                {error}
+                              <div key={index} className="text-red-700 bg-red-50/80 backdrop-blur-sm p-3 rounded-xl border border-red-100 text-xs font-semibold">
+                                • {error}
                               </div>
                             ))}
                           </div>
@@ -2072,23 +2086,27 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                       </div>
                     )}
                   </div>
+
                 )}
 
                 {/* Preview Section */}
-                <div className="bg-white border border-gray-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-3">
+                <div className="bg-white border border-harx-100 rounded-3xl p-6 shadow-lg shadow-harx-500/5">
+                  <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center">
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      <h4 className="text-sm font-semibold text-gray-800">
-                        Confirm & Edit Leads ({parsedLeads.length})
+                      <div className="w-10 h-10 rounded-xl bg-harx-50 flex items-center justify-center mr-3">
+                        <CheckCircle className="h-5 w-5 text-harx-500" />
+                      </div>
+                      <h4 className="text-xl font-bold text-gray-900 tracking-tight">
+                        Confirm & Edit Leads <span className="text-harx-500 ml-1">({parsedLeads.length})</span>
                       </h4>
                       {dataTooLarge && (
-                        <span className="ml-2 inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800">
+                        <span className="ml-4 inline-flex items-center rounded-full px-3 py-1 text-xs font-black bg-amber-100 text-amber-800 uppercase tracking-tighter shadow-sm">
                           <AlertTriangle className="mr-1 h-3 w-3" />
-                          Large dataset - memory only
+                          Memory Only
                         </span>
                       )}
                     </div>
+
                     <button
                       onClick={() => setShowLeadsPreview(!showLeadsPreview)}
                       className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200"
@@ -2103,27 +2121,27 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                   </div>
                   {showLeadsPreview && (
                     <>
-                      <p className="text-xs text-gray-600 mb-3">Review and edit your leads before saving. Click the edit icon to modify any field.</p>
-                      <div className="max-h-60 overflow-y-auto">
-                        <div className="space-y-2">
+                      <p className="text-sm text-gray-500 mb-6 font-medium leading-relaxed">Review and edit your leads before saving. Click the edit icon to modify any field to ensure data integrity.</p>
+                      <div className="max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="space-y-4">
                           {parsedLeads.map((lead: any, index: number) => (
-                            <div key={index} className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-lg p-3 border border-gray-200 hover:border-slate-300 transition-all duration-200">
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center space-x-3">
-                                  <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
-                                    <span className="text-xs font-bold text-slate-600">{index + 1}</span>
+                            <div key={index} className="bg-gray-50/80 rounded-2xl p-4 border border-gray-100 hover:border-harx-200 hover:bg-white transition-all duration-300 group">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center space-x-4">
+                                  <div className="w-10 h-10 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:border-harx-100">
+                                    <span className="text-sm font-black text-harx-600">{index + 1}</span>
                                   </div>
-                                  <span className="text-sm font-semibold text-gray-900">
+                                  <span className="text-base font-bold text-gray-900 group-hover:text-harx-700 transition-colors duration-300">
                                     {lead.Deal_Name || 'Unnamed Lead'}
                                   </span>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <button
                                     onClick={() => setEditingLeadIndex(editingLeadIndex === index ? null : index)}
-                                    className="text-slate-600 hover:text-slate-800 p-2 rounded-md hover:bg-slate-50 transition-colors duration-200"
+                                    className="p-2.5 rounded-xl bg-white border border-gray-100 text-gray-400 hover:text-harx-600 hover:border-harx-200 hover:shadow-md transition-all duration-300"
                                     title="Edit lead"
                                   >
-                                    <Edit className="h-4 w-4" />
+                                    <Edit className="h-4.5 w-4.5" />
                                   </button>
                                   <button
                                     onClick={() => {
@@ -2131,114 +2149,117 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                                       newLeads.splice(index, 1);
                                       setParsedLeads(newLeads);
                                     }}
-                                    className="text-red-500 hover:text-red-700 p-2 rounded-md hover:bg-red-50 transition-colors duration-200"
+                                    className="p-2.5 rounded-xl bg-white border border-gray-100 text-red-300 hover:text-red-500 hover:border-red-100 hover:shadow-md transition-all duration-300"
                                     title="Delete lead"
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash2 className="h-4.5 w-4.5" />
                                   </button>
                                 </div>
                               </div>
 
+
                               {editingLeadIndex === index ? (
                                 <div className="space-y-3 bg-white rounded-lg p-3 border border-slate-200 shadow-sm">
                                   <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">First Name</label>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">First Name</label>
                                     <input
                                       type="text"
                                       value={lead.First_Name || ''}
                                       onChange={(e) => handleEditLead(index, 'First_Name', e.target.value)}
                                       placeholder="Enter first name"
-                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                      className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Last Name</label>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Last Name</label>
                                     <input
                                       type="text"
                                       value={lead.Last_Name || ''}
                                       onChange={(e) => handleEditLead(index, 'Last_Name', e.target.value)}
                                       placeholder="Enter last name"
-                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                      className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Email</label>
                                     <input
                                       type="email"
                                       value={lead.Email_1 || ''}
                                       onChange={(e) => handleEditLead(index, 'Email_1', e.target.value)}
                                       placeholder="Enter email address"
-                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                      className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Phone</label>
                                     <input
                                       type="tel"
                                       value={lead.Phone || ''}
                                       onChange={(e) => handleEditLead(index, 'Phone', e.target.value)}
                                       placeholder="Enter phone number"
-                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                      className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Address</label>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Address</label>
                                     <input
                                       type="text"
                                       value={lead.Address || ''}
                                       onChange={(e) => handleEditLead(index, 'Address', e.target.value)}
                                       placeholder="Enter address"
-                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                      className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
                                     />
                                   </div>
-                                  <div className="grid grid-cols-2 gap-3">
+                                  <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                      <label className="block text-sm font-semibold text-gray-700 mb-2">Postal Code</label>
+                                      <label className="block text-sm font-bold text-gray-700 mb-2">Postal Code</label>
                                       <input
                                         type="text"
                                         value={lead.Postal_Code || ''}
                                         onChange={(e) => handleEditLead(index, 'Postal_Code', e.target.value)}
                                         placeholder="Zip code"
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                        className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
                                       />
                                     </div>
                                     <div>
-                                      <label className="block text-sm font-semibold text-gray-700 mb-2">City</label>
+                                      <label className="block text-sm font-bold text-gray-700 mb-2">City</label>
                                       <input
                                         type="text"
                                         value={lead.City || ''}
                                         onChange={(e) => handleEditLead(index, 'City', e.target.value)}
                                         placeholder="City"
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                        className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
                                       />
                                     </div>
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Date of Birth</label>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Date of Birth</label>
                                     <input
                                       type="text"
                                       value={lead.Date_of_Birth || ''}
                                       onChange={(e) => handleEditLead(index, 'Date_of_Birth', e.target.value)}
                                       placeholder="DD/MM/YYYY"
-                                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all duration-200 bg-white shadow-sm"
+                                      className="w-full px-4 py-3 text-sm border-2 border-gray-100 rounded-xl focus:ring-2 focus:ring-harx-500 focus:border-harx-500 transition-all duration-300 bg-white shadow-sm"
                                     />
                                   </div>
-                                  <div className="flex justify-end space-x-2 pt-2 border-t border-gray-100">
+
+                                  <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
                                     <button
                                       onClick={() => setEditingLeadIndex(null)}
-                                      className="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 border border-gray-300"
+                                      className="px-6 py-2 text-sm font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all duration-300 border border-gray-200"
                                     >
-                                      Cancel
+                                      Discard
                                     </button>
                                     <button
                                       onClick={() => {
                                         setEditingLeadIndex(null);
                                       }}
-                                      className="px-3 py-1 text-sm font-medium text-white bg-gradient-to-r from-slate-700 to-slate-900 rounded-lg hover:from-slate-800 hover:to-slate-950 transition-all duration-200 shadow-sm"
+                                      className="px-6 py-2 text-sm font-black text-white bg-gradient-harx rounded-xl hover:brightness-110 transition-all duration-300 shadow-md shadow-harx-500/20"
                                     >
-                                      Save Changes
+                                      Confirm Changes
                                     </button>
                                   </div>
+
                                 </div>
                               ) : (
                                 <div className="grid grid-cols-2 gap-2 text-sm">
@@ -2277,15 +2298,16 @@ const UploadContacts = React.memo(({ onCancelProcessing }: UploadContactsProps) 
                 </div>
 
                 <button
-                  className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-white font-bold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  className="w-full rounded-2xl bg-gradient-harx p-5 text-white font-black text-lg hover:brightness-110 disabled:opacity-50 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-harx-500/30 flex items-center justify-center group"
                   onClick={handleSaveLeads}
                   disabled={isSavingLeads}
                 >
                   <div className="flex items-center justify-center">
-                    <UserPlus className="mr-2 h-5 w-5" />
-                    Save {parsedLeads.length} Contacts
+                    <UserPlus className="mr-3 h-6 w-6 transition-transform duration-300 group-hover:rotate-12" />
+                    Save {parsedLeads.length} Contacts to Database
                   </div>
                 </button>
+
 
                 {/* Bouton de sauvegarde séparé qui apparaît pendant la sauvegarde */}
                 {isSavingLeads && (
