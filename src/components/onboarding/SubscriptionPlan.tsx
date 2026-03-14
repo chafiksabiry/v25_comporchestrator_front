@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Check, CheckCircle2, Rocket } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
@@ -180,57 +180,57 @@ const SubscriptionPlan = () => {
   };
 
   return (
-    <div className="space-y-4 max-w-4xl mx-auto">
-      <div className="bg-white rounded-2xl p-4 border border-harx-100 shadow-xl relative overflow-hidden group">
+    <div className="space-y-2 max-w-4xl mx-auto">
+      <div className="bg-white rounded-xl p-3 border border-harx-100 shadow-lg relative overflow-hidden group">
         <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-harx-50 rounded-full blur-3xl group-hover:bg-harx-100 transition-colors duration-1000"></div>
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-2">
           <div className="flex-1">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-harx flex items-center justify-center shadow-lg shadow-harx-500/20">
-                <CheckCircle2 className="h-6 w-6 text-white" />
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-lg bg-gradient-harx flex items-center justify-center shadow-lg shadow-harx-500/20">
+                  <CheckCircle2 className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-extrabold text-gray-900 tracking-tight">Select Your Plan</h2>
+                  <p className="text-xs text-gray-400 font-black uppercase tracking-widest mt-1">Personnel vs Timeline</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Select Your Plan</h2>
-                <p className="text-base text-gray-500 font-medium">Choose the perfect scale for your company's growth.</p>
-              </div>
-            </div>
           </div>
-          <div className="flex flex-col items-center p-3 bg-harx-50/50 rounded-xl border border-harx-100 backdrop-blur-sm">
+          <div className="flex flex-col items-center p-1.5 bg-harx-50/50 rounded-lg border border-harx-100 backdrop-blur-sm">
             <span className="text-sm font-black text-harx-600 uppercase tracking-[0.2em] mb-2">Current Selection</span>
-            <div className="text-xl font-black text-gray-900 tracking-tight">{freePlan.name} Plan</div>
+            <div className="text-base font-black text-gray-900 tracking-tight">{freePlan.name} Plan</div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-        <div className="rounded-2xl border-4 border-harx-500 p-6 shadow-xl bg-white relative transform transition-all duration-500 hover:scale-[1.01] flex flex-col h-full ring-4 ring-harx-500/5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+        <div className="rounded-xl border-4 border-harx-500 p-4 shadow-xl bg-white relative transform transition-all duration-500 hover:scale-[1.01] flex flex-col h-full ring-4 ring-harx-500/5">
           <div className="absolute -top-6 left-1/2 -translate-x-1/2">
             <span className="inline-flex items-center rounded-2xl bg-gradient-harx px-6 py-2 text-sm font-black text-white uppercase tracking-widest shadow-xl shadow-harx-500/30">
               Recommended
             </span>
           </div>
 
-          <div className="mb-4">
-            <h3 className="text-2xl font-black text-gray-900 tracking-tight">{freePlan.name} <span className="text-harx-500">Tier</span></h3>
-            <p className="mt-2 text-base text-gray-500 font-medium leading-relaxed">{freePlan.description}</p>
+          <div className="mb-2">
+            <h3 className="text-lg font-black text-gray-900 tracking-tight">{freePlan.name} <span className="text-harx-500">Tier</span></h3>
+            <p className="mt-1 text-xs text-gray-500 font-medium leading-relaxed">{freePlan.description}</p>
           </div>
 
-          <div className="mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-            <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-black text-gray-900 tracking-tighter">${freePlan.price}</span>
-              <span className="text-lg font-bold text-gray-400">/month</span>
+          <div className="mb-3 p-2 bg-gray-50 rounded-xl border border-gray-100 text-center">
+            <div className="flex items-baseline justify-center gap-1">
+              <span className="text-2xl font-black text-gray-900 tracking-tighter">${freePlan.price}</span>
+              <span className="text-base font-bold text-gray-400">/month</span>
             </div>
           </div>
 
           <div className="flex-grow">
-            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 px-1">What's included:</h4>
-            <ul className="space-y-3 mb-6">
+            <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">What's included:</h4>
+            <ul className="space-y-1 mb-3">
               {freePlan.features.map((feature) => (
-                <li key={feature} className="flex items-center gap-4 group">
-                  <div className="w-6 h-6 rounded-full bg-harx-50 flex items-center justify-center group-hover:bg-harx-100 transition-colors">
-                    <Check className="h-4 w-4 text-harx-500" />
+                <li key={feature} className="flex items-center gap-2 group">
+                  <div className="w-4 h-4 rounded-full bg-harx-50 flex items-center justify-center group-hover:bg-harx-100 transition-colors">
+                    <Check className="h-3 w-3 text-harx-500" />
                   </div>
-                  <span className="text-base text-gray-700 font-bold group-hover:text-gray-900 transition-colors">{feature}</span>
+                  <span className="text-xs text-gray-700 font-bold group-hover:text-gray-900 transition-colors">{feature}</span>
                 </li>
               ))}
             </ul>
@@ -239,7 +239,7 @@ const SubscriptionPlan = () => {
           <button
             onClick={isStepCompleted ? undefined : handleActivatePlan}
             disabled={isStepCompleted || isLoading}
-            className={`w-full rounded-xl py-4 text-lg font-black transition-all duration-300 transform active:scale-95 shadow-xl ${isStepCompleted
+            className={`w-full rounded-lg py-2 text-sm font-black transition-all duration-300 transform active:scale-95 shadow-lg ${isStepCompleted
               ? 'bg-emerald-600 text-white cursor-not-allowed shadow-emerald-500/20'
               : isLoading
                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
@@ -263,13 +263,13 @@ const SubscriptionPlan = () => {
         </div>
 
         {/* Placeholder for future plans */}
-        <div className="rounded-2xl border-2 border-dashed border-gray-200 p-6 bg-gray-50/50 flex flex-col items-center justify-center text-center group transition-all duration-500 hover:border-harx-200 hover:bg-white">
-          <div className="w-16 h-16 rounded-2xl bg-white border border-gray-200 flex items-center justify-center mb-4 group-hover:border-harx-200 group-hover:scale-110 transition-all shadow-sm">
-            <Rocket className="w-8 h-8 text-gray-300 group-hover:text-harx-400 transition-colors" />
+        <div className="rounded-xl border-2 border-dashed border-gray-200 p-3 bg-gray-50/50 flex flex-col items-center justify-center text-center group transition-all duration-500 hover:border-harx-200 hover:bg-white">
+          <div className="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center mb-2 group-hover:border-harx-200 group-hover:scale-110 transition-all shadow-sm">
+            <Rocket className="w-6 h-6 text-gray-300 group-hover:text-harx-400 transition-colors" />
           </div>
-          <h3 className="text-xl font-black text-gray-400 group-hover:text-gray-900 transition-colors">Enterprise Tier</h3>
-          <p className="mt-2 text-base text-gray-400 font-medium px-4">Advanced scaling and dedicated infrastructure coming soon.</p>
-          <div className="mt-8 px-6 py-3 rounded-xl bg-white border border-gray-200 text-sm font-black text-gray-400 group-hover:text-harx-500 transition-all">
+          <h3 className="text-base font-black text-gray-400 group-hover:text-gray-900 transition-colors">Enterprise Tier</h3>
+          <p className="mt-1 text-xs text-gray-400 font-medium px-2">Advanced scaling and dedicated infrastructure coming soon.</p>
+          <div className="mt-4 px-4 py-1.5 rounded-lg bg-white border border-gray-200 text-[10px] font-black text-gray-400 group-hover:text-harx-500 transition-all">
             STAY TUNED
           </div>
         </div>
