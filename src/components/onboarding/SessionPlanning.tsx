@@ -690,12 +690,6 @@ export default function SessionPlanning() {
             <div className="grid grid-cols-1 gap-10">
               {selectedGigId && (
                 <div className="rounded-2xl bg-white shadow-xl border border-harx-100/50 p-4 overflow-hidden relative">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h2 className="text-xl font-black text-gray-900 uppercase tracking-widest italic">Deployment Matrix</h2>
-                      <p className="text-xs text-gray-400 font-black uppercase tracking-widest mt-1">Personnel vs Timeline</p>
-                    </div>
-                  </div>
                   <PlanningMatrix
                     selectedDate={selectedDate}
                     gigId={selectedGigId}
