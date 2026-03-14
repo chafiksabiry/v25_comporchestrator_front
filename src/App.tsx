@@ -197,13 +197,18 @@ function App() {
       {/* Sidebar */}
       <div
         className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } fixed inset-y-0 left-0 z-30 w-72 bg-gradient-to-b from-gray-900 via-harx-900 to-black text-white transition-all duration-300 ease-in-out md:relative md:translate-x-0 shadow-2xl border-r border-harx-500/20 flex flex-col`}
+          } fixed inset-y-0 left-0 z-30 w-72 bg-[#0a0b14] text-white transition-all duration-300 ease-in-out md:relative md:translate-x-0 shadow-2xl border-r border-white/5 flex flex-col`}
       >
-        <div className="px-4 py-3 border-b border-white/5 bg-black/20">
-          <div className="flex flex-col items-center text-center space-y-0.5">
-            <span className="text-[9px] font-black text-harx-500 tracking-[0.2em] uppercase italic">Smart Orchestrator</span>
-            <h2 className="text-xs font-black text-white/90 uppercase tracking-tight">HARX.AI</h2>
+        <div className="px-6 py-8 flex items-center space-x-3">
+          <div className="h-10 w-10 bg-gradient-harx rounded-xl flex items-center justify-center shadow-lg shadow-harx-500/20">
+            <div className="grid grid-cols-2 gap-0.5">
+              <div className="w-1.5 h-1.5 rounded-sm bg-white" />
+              <div className="w-1.5 h-1.5 rounded-sm bg-white/60" />
+              <div className="w-1.5 h-1.5 rounded-sm bg-white/60" />
+              <div className="w-1.5 h-1.5 rounded-sm bg-white" />
+            </div>
           </div>
+          <span className="text-2xl font-black tracking-tighter text-white">HARX<span className="text-harx-500">.</span></span>
         </div>
 
 
@@ -211,16 +216,16 @@ function App() {
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto min-h-0">
           <div className="space-y-1">
             <button
-              className={`flex w-full items-center space-x-3 rounded-2xl py-2.5 px-4 transition-all duration-300 group ${activeTab === 'company-onboarding'
-                ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/40'
-                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+              className={`flex w-full items-center space-x-3 rounded-2xl py-3 px-5 transition-all duration-300 group ${activeTab === 'company-onboarding'
+                ? 'bg-gradient-harx text-white shadow-xl shadow-harx-500/25 ring-1 ring-white/10'
+                : 'text-gray-500 hover:bg-white/5 hover:text-gray-200'
                 }`}
               onClick={() => setActiveTab('company-onboarding')}
             >
-              <div className={`p-1.5 rounded-xl transition-all ${activeTab === 'company-onboarding' ? 'bg-white/20' : 'bg-gray-800 group-hover:bg-gray-700'}`}>
-                <Building2 className="h-4 w-4" />
+              <div className={`p-2 rounded-xl transition-all ${activeTab === 'company-onboarding' ? 'bg-white/20' : 'bg-gray-800/40 group-hover:bg-gray-800'}`}>
+                <Building2 className="h-5 w-5" />
               </div>
-              <span className="font-bold text-sm text-shadow-sm">Company Onboarding</span>
+              <span className="font-black text-sm tracking-tight">Overview</span>
             </button>
           </div>
 
