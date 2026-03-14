@@ -230,7 +230,7 @@ function App() {
               <img
                 src={`${import.meta.env.BASE_URL || '/'}mascotte2.png`}
                 alt="HARX Mascotte"
-                className="w-24 h-24 object-contain drop-shadow-[0_0_15px_rgba(255,77,77,0.3)] relative z-10 transition-transform duration-500 group-hover:scale-105"
+                className="w-36 h-36 object-contain drop-shadow-[0_0_15px_rgba(255,77,77,0.3)] relative z-10 transition-transform duration-500 group-hover:scale-105"
               />
             </div>
           </div>
