@@ -656,29 +656,29 @@ export default function SessionPlanning() {
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <header className="bg-white rounded-2xl p-4 border border-harx-100 shadow-xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 -mt-20 -mr-20 w-64 h-64 bg-harx-50/50 rounded-full blur-[100px] group-hover:bg-harx-100/60 transition-colors duration-1000"></div>
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="flex items-center gap-6">
-              <div className="w-16 h-16 rounded-[1.5rem] bg-gradient-harx flex items-center justify-center shadow-xl shadow-harx-500/30 transform group-hover:rotate-6 transition-transform">
-                <LucideCalendar className="w-8 h-8 text-white" />
-              </div>
+          <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
+            <div className="w-16 h-16 rounded-[1.5rem] bg-gradient-harx flex items-center justify-center shadow-xl shadow-harx-500/30 transform group-hover:rotate-6 transition-transform">
+              <LucideCalendar className="w-8 h-8 text-white" />
+            </div>
+            <div className="flex-1 space-y-4">
               <div>
-                <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-4 italic uppercase">
+                <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-4 italic uppercase">
                   Session Strategic Planning
                   <span className="bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-2xl text-[10px] uppercase font-black tracking-[0.2em] border border-emerald-100 not-italic">
                     Real-time Sync
                   </span>
                 </h1>
-                <p className="text-lg text-gray-400 font-medium">Orchestrate field operations with surgical precision and AI-backed slot optimization.</p>
+                <p className="text-base text-gray-400 font-medium">Orchestrate field operations with surgical precision and AI-backed slot optimization.</p>
               </div>
-            </div>
-            <div className="flex items-center gap-4 bg-gray-50 p-2 rounded-2xl border border-gray-100">
-              <PremiumDropdown
-                label="Strategic Project Focus"
-                options={projects}
-                value={selectedGigId || ''}
-                onChange={(val) => setSelectedGigId(val)}
-                placeholder="Select Project Target..."
-              />
+              <div className="inline-block bg-gray-50 p-2 rounded-2xl border border-gray-100">
+                <PremiumDropdown
+                  label="Strategic Project Focus"
+                  options={projects}
+                  value={selectedGigId || ''}
+                  onChange={(val) => setSelectedGigId(val)}
+                  placeholder="Select Project Target..."
+                />
+              </div>
             </div>
           </div>
         </header>
