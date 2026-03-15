@@ -1443,14 +1443,16 @@ const CompanyOnboarding = () => {
 
           <div className="space-y-5 relative z-10">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-[2rem] border-2 border-gray-50/50 p-7 bg-gray-50/20 h-36 flex items-start space-x-5">
-                <div className="rounded-2xl p-4 bg-gray-100/80 h-16 w-16 shadow-sm" />
-                <div className="flex-1 space-y-5 pt-3">
+              <div key={i} className="rounded-[2rem] border-2 border-gray-50/50 p-5 bg-gray-50/20 flex items-start space-x-4">
+                <div className="rounded-2xl p-3 bg-gray-100/80 h-14 w-14 shadow-sm shrink-0" />
+                <div className="flex-1 space-y-3 pt-1">
                   <div className="flex justify-between items-center">
-                    <div className="h-5 bg-gray-100 rounded-lg w-1/3" />
-                    <div className="h-8 bg-gray-100/50 rounded-2xl w-24 shadow-sm" />
+                    <div className="h-4 bg-gray-200/80 rounded-lg w-1/3" />
+                    <div className="h-7 bg-gray-100/50 rounded-2xl w-24 shadow-sm" />
                   </div>
-                  <div className="h-3.5 bg-gray-50 rounded-lg w-3/4" />
+                  <div className="h-3 bg-gray-100 rounded-lg w-3/4" />
+                  <div className="h-3 bg-gray-50 rounded-lg w-1/2" />
+                  <div className="h-7 bg-gradient-to-r from-harx-100/50 to-harx-50/30 rounded-2xl w-28 mt-1" />
                 </div>
               </div>
             ))}
