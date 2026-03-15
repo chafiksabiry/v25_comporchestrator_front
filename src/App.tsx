@@ -232,6 +232,17 @@ function App() {
             </button>
           </div>
           <div className="flex-1 flex flex-col justify-center space-y-8 pb-8">
+            <div className="flex flex-col items-center shrink-0">
+              <div className="relative group">
+                <div className="absolute -inset-4 bg-gradient-harx/20 rounded-full blur-2xl group-hover:bg-harx-500/30 transition-all duration-700" />
+                <img
+                  src={`${import.meta.env.BASE_URL || '/'}mascotte2.png`}
+                  alt="HARX Mascotte"
+                  className="w-40 h-40 object-contain drop-shadow-[0_0_20px_rgba(255,77,77,0.3)] relative z-10 transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
+            </div>
+
             {currentStepGuide && (
               <div className="px-2 animate-fade-in-up shrink-0">
                 <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 shadow-inner">
@@ -250,17 +261,6 @@ function App() {
                 </div>
               </div>
             )}
-
-            <div className="flex flex-col items-center shrink-0 mt-auto">
-              <div className="relative group">
-                <div className="absolute -inset-4 bg-gradient-harx/20 rounded-full blur-2xl group-hover:bg-harx-500/30 transition-all duration-700" />
-                <img
-                  src={`${import.meta.env.BASE_URL || '/'}mascotte2.png`}
-                  alt="HARX Mascotte"
-                  className="w-40 h-40 object-contain drop-shadow-[0_0_20px_rgba(255,77,77,0.3)] relative z-10 transition-transform duration-500 group-hover:scale-105"
-                />
-              </div>
-            </div>
           </div>
         </nav>
 
