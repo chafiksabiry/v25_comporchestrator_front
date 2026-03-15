@@ -1417,7 +1417,7 @@ const CompanyOnboarding = () => {
         {/* Phase Cards Skeleton - Premium Glassmorphism */}
         <div className="grid grid-cols-5 gap-4">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="relative rounded-3xl p-5 bg-white/40 backdrop-blur-sm border border-white/60 h-28 overflow-hidden shadow-sm">
+            <div key={i} className="relative rounded-3xl p-3 bg-white/40 backdrop-blur-sm border border-white/60 h-28 overflow-hidden shadow-sm">
               <div className="flex items-center space-x-4">
                 <div className="rounded-2xl p-3 bg-gray-200/50 h-14 w-14 shadow-inner" />
                 <div className="flex-1 space-y-3">
@@ -1432,7 +1432,7 @@ const CompanyOnboarding = () => {
         </div>
 
         {/* Main Content Skeleton - Structured & Elegant */}
-        <div className="rounded-[2.5rem] bg-white p-10 border border-gray-100/80 shadow-2xl shadow-gray-200/30 relative overflow-hidden">
+        <div className="rounded-[2.5rem] bg-white p-6 border border-gray-100/80 shadow-2xl shadow-gray-200/30 relative overflow-hidden">
           {/* Subtle background glow */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-harx-50/20 blur-[100px] rounded-full -mr-32 -mt-32" />
           
@@ -1478,7 +1478,7 @@ const CompanyOnboarding = () => {
           return (
             <div
               key={phase.id}
-              className={`relative rounded-3xl p-4 transition-all duration-500 overflow-hidden group ${isCompleted
+              className={`relative rounded-3xl p-3 transition-all duration-500 overflow-hidden group ${isCompleted
                 ? "bg-green-50/50 border border-green-200"
                 : isActive
                   ? "bg-white shadow-2xl shadow-harx-500/20 scale-[1.02] border-2 border-harx-500/50"
@@ -1524,7 +1524,7 @@ const CompanyOnboarding = () => {
       </div>
 
       {/* Current Phase Details */}
-      <div className="rounded-[2.5rem] bg-white p-8 shadow-2xl shadow-gray-200/50 border border-gray-100 relative overflow-hidden">
+      <div className="rounded-[2.5rem] bg-white p-6 shadow-2xl shadow-gray-200/50 border border-gray-100 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-harx-50/50 blur-[100px] rounded-full -mr-32 -mt-32" />
 
         <div className="mb-8 relative z-10">
@@ -1551,7 +1551,7 @@ const CompanyOnboarding = () => {
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-2">
           {displayedPhaseData.steps.map((step) => {
             const StepIcon = getStepIcon(step);
             const isClickable = !!step.component || step.id === 3;
@@ -1573,7 +1573,7 @@ const CompanyOnboarding = () => {
             return (
               <div
                 key={step.id}
-                className={`rounded-3xl border-2 p-6 transition-all duration-500 relative group overflow-hidden ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
+                className={`rounded-3xl border-2 p-4 transition-all duration-500 relative group overflow-hidden ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
                   ? "opacity-50 grayscale border-gray-100 bg-gray-50/50"
                   : step.disabled
                     ? "opacity-60 border-gray-100 bg-gray-50/20"
@@ -1595,7 +1595,7 @@ const CompanyOnboarding = () => {
               >
                 <div className="flex items-start space-x-3">
                   <div
-                    className={`rounded-2xl p-4 transition-all duration-300 ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
+                    className={`rounded-2xl p-3 transition-all duration-300 ${!canAccessPhase || (!isCompleted && !isCurrentStep && !step.disabled)
                       ? "bg-gray-100 text-gray-400"
                       : step.disabled
                         ? "bg-gray-100 text-gray-400"

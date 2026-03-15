@@ -9,10 +9,36 @@ body {
   /* antigravity-text (Slate-900) */
 }
 
-/* Custom scrollbar styles */
+/* Global custom scrollbar styles with HARX branding */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ff4d4d 0%, #ec4899 100%);
+  border-radius: 5px;
+  border: 2px solid #f8fafc;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ff3333 0%, #db2777 100%);
+}
+
+/* Firefox support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #ff4d4d #f8fafc;
+}
+
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: #d1d5db #f3f4f6;
+  scrollbar-color: #ff4d4d #f8fafc;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
@@ -25,23 +51,6 @@ body {
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: linear-gradient(180deg, #ff4d4d 0%, #ec4899 100%);
   border-radius: 3px;
-  transition: background-color 0.2s ease;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
-}
-
-.scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-}
-
-.scrollbar-track-gray-100::-webkit-scrollbar-track {
-  background: #f3f4f6;
-}
-
-.hover\:scrollbar-thumb-gray-400:hover::-webkit-scrollbar-thumb {
-  background: #9ca3af;
-}
+}
