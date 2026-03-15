@@ -813,10 +813,13 @@ const CompanyOnboarding = () => {
       }));
     } else {
       // If all steps in phase are completed, show phase summary or next instruction
+      const isLastPhase = displayedPhase === 4;
       window.dispatchEvent(new CustomEvent('stepGuideUpdate', {
         detail: {
           title: phases[displayedPhase - 1]?.title,
-          description: "All steps in this phase are completed. You can proceed to the next phase."
+          description: isLastPhase
+            ? "All steps in this phase are completed. Congratulations, all onboarding phases are now successfully completed! 👏🎺🎊"
+            : "All steps in this phase are completed. You can proceed to the next phase."
         }
       }));
     }
