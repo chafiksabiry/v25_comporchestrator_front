@@ -202,19 +202,15 @@ function App() {
       >
         <div className="px-6 py-8 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="h-10 w-10 flex items-center justify-center shadow-lg shadow-harx-500/10 shrink-0">
-              <img 
-                src={`${import.meta.env.BASE_URL || '/'}mascotte2.png`} 
-                alt="HARX" 
-                className="w-full h-full object-contain"
-              />
+            <div className="h-10 w-10 bg-gradient-to-br from-harx-400 to-harx-600 rounded-xl flex items-center justify-center shadow-lg shadow-harx-500/20 shrink-0">
+              <Cpu className="h-6 w-6 text-white" />
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] font-black text-harx-500 tracking-[0.2em] uppercase italic leading-none mb-1">Smart</span>
               <span className="text-xl font-black tracking-tighter text-white leading-none">Orchestrator</span>
             </div>
           </div>
-          <button 
+          <button
             onClick={() => setIsSidebarOpen(false)}
             className="md:hidden p-2 hover:bg-white/10 rounded-xl transition-colors"
           >

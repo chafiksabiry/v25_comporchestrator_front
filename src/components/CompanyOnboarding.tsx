@@ -243,7 +243,6 @@ const CompanyOnboarding = () => {
   const [displayedPhase, setDisplayedPhase] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [activeStep, setActiveStep] = useState<number | null>(null);
-  const [isLoadingProgress, setIsLoadingProgress] = useState(true);
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
   const [showUploadContacts, setShowUploadContacts] = useState(false);
 
@@ -671,7 +670,6 @@ const CompanyOnboarding = () => {
   }, [companyId]);
 
   const loadCompanyProgress = async () => {
-    setIsLoadingProgress(true);
     try {
       // Vérifier que companyId est disponible
       if (!companyId) {
@@ -792,7 +790,7 @@ const CompanyOnboarding = () => {
       setDisplayedPhase(1);
       setCompletedSteps([]);
     } finally {
-      setIsLoadingProgress(false);
+      // isLoading removed
     }
   };
 
@@ -1314,34 +1312,6 @@ const CompanyOnboarding = () => {
     }
   };
 
-  // Placeholder during loading to prevent Phase 1 flash
-  if (isLoadingProgress) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="relative mb-6">
-            <div className="absolute -inset-4 bg-harx-500/20 rounded-full blur-2xl animate-pulse" />
-            <img
-              src={`${import.meta.env.BASE_URL || '/'}mascotte2.png`}
-              alt="Loading"
-              className="w-32 h-32 object-contain relative z-10 animate-bounce"
-            />
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-harx-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
-              <div className="w-2 h-2 bg-harx-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
-              <div className="w-2 h-2 bg-harx-500 rounded-full animate-bounce" />
-            </div>
-            <p className="text-sm font-black text-gray-900 uppercase tracking-widest italic flex items-center gap-2">
-              Verifying <span className="text-harx-500">Progress</span>
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Vérifier si l'utilisateur est authentifié
   if (!userId) {
     console.log("User ID not found, redirecting to /auth");
@@ -1393,7 +1363,7 @@ const CompanyOnboarding = () => {
     // Pass companyId as a prop to all step components
     const DynamicStepComponent = ActiveStepComponent as React.FC<any>;
     activeComponent = <DynamicStepComponent companyId={companyId} />;
-    
+
     if (activeStep === 12) {
       activeComponent = <DynamicStepComponent companyId={companyId} onBackToOnboarding={handleBackToOnboarding} />;
     }
@@ -1478,7 +1448,7 @@ const CompanyOnboarding = () => {
                   <p className={`text-sm font-bold truncate ${isActive ? "text-gray-900" : "text-gray-600"}`}>{phase.title}</p>
                 </div>
               </div>
-              
+
               {isActive && (
                 <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-harx/10 blur-3xl rounded-full -mr-12 -mt-12" />
               )}
@@ -1496,7 +1466,7 @@ const CompanyOnboarding = () => {
       {/* Current Phase Details */}
       <div className="rounded-[2.5rem] bg-white p-8 shadow-2xl shadow-gray-200/50 border border-gray-100 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-harx-50/50 blur-[100px] rounded-full -mr-32 -mt-32" />
-        
+
         <div className="mb-8 relative z-10">
           <div className="flex items-center justify-between mb-4">
             <div>
