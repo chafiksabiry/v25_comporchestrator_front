@@ -95,12 +95,8 @@ function App() {
 
     // Removed postMessage handling - using localStorage and CustomEvent instead
 
-    // Check localStorage for activeTab on mount
-    const storedActiveTab = localStorage.getItem('activeTab');
-    if (storedActiveTab) {
-      setActiveTab(storedActiveTab);
-      localStorage.removeItem('activeTab'); // Clear after reading
-    }
+    // activeTab persistence removed per user request: always start on company-onboarding on refresh
+    localStorage.removeItem('activeTab');
 
     const handleStepGuideUpdate = (event: CustomEvent) => {
       if (event.detail) {
