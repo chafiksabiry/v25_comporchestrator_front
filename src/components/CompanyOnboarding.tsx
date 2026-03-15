@@ -1413,47 +1413,52 @@ const CompanyOnboarding = () => {
 
   if (isInitialLoad) {
     return (
-      <div className="space-y-6 animate-pulse">
-        {/* Phase Cards Skeleton */}
+      <div className="space-y-8 animate-pulse">
+        {/* Phase Cards Skeleton - Premium Glassmorphism */}
         <div className="grid grid-cols-5 gap-4">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="rounded-3xl p-4 bg-gray-100/50 border border-gray-100 h-24">
+            <div key={i} className="relative rounded-3xl p-5 bg-white/40 backdrop-blur-sm border border-white/60 h-28 overflow-hidden shadow-sm">
               <div className="flex items-center space-x-4">
-                <div className="rounded-2xl p-3 bg-gray-200 h-12 w-12" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-2 bg-gray-200 rounded w-12" />
-                  <div className="h-3 bg-gray-200 rounded w-20" />
+                <div className="rounded-2xl p-3 bg-gray-200/50 h-14 w-14 shadow-inner" />
+                <div className="flex-1 space-y-3">
+                  <div className="h-2 bg-harx-500/10 rounded-full w-12" />
+                  <div className="h-3 bg-gray-200/60 rounded-lg w-24" />
                 </div>
               </div>
+              {/* Subtle accent line */}
+              <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-transparent via-harx-200/30 to-transparent w-full" />
             </div>
           ))}
         </div>
 
-        {/* Main Content Skeleton */}
-        <div className="rounded-[2.5rem] bg-white p-8 border border-gray-100">
-          <div className="mb-8 space-y-4">
-            <div className="h-8 bg-gray-100 rounded-xl w-1/3" />
-            <div className="h-4 bg-gray-50 rounded-lg w-2/3" />
+        {/* Main Content Skeleton - Structured & Elegant */}
+        <div className="rounded-[2.5rem] bg-white p-10 border border-gray-100/80 shadow-2xl shadow-gray-200/30 relative overflow-hidden">
+          {/* Subtle background glow */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-harx-50/20 blur-[100px] rounded-full -mr-32 -mt-32" />
+          
+          <div className="mb-10 space-y-5 relative z-10">
+            <div className="h-10 bg-gradient-to-r from-gray-100 to-gray-50 rounded-2xl w-2/5" />
+            <div className="h-5 bg-gray-50/80 rounded-xl w-3/5" />
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-5 relative z-10">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-3xl border-2 border-gray-50 p-6 bg-gray-50/30 h-32 flex items-start space-x-3">
-                <div className="rounded-2xl p-4 bg-gray-100 h-14 w-14" />
-                <div className="flex-1 space-y-4 pt-2">
+              <div key={i} className="rounded-[2rem] border-2 border-gray-50/50 p-7 bg-gray-50/20 h-36 flex items-start space-x-5">
+                <div className="rounded-2xl p-4 bg-gray-100/80 h-16 w-16 shadow-sm" />
+                <div className="flex-1 space-y-5 pt-3">
                   <div className="flex justify-between items-center">
-                    <div className="h-4 bg-gray-100 rounded w-1/4" />
-                    <div className="h-6 bg-gray-100 rounded-full w-20" />
+                    <div className="h-5 bg-gray-100 rounded-lg w-1/3" />
+                    <div className="h-8 bg-gray-100/50 rounded-2xl w-24 shadow-sm" />
                   </div>
-                  <div className="h-3 bg-gray-50 rounded w-1/2" />
+                  <div className="h-3.5 bg-gray-50 rounded-lg w-3/4" />
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="mt-10 flex justify-between">
-            <div className="h-12 bg-gray-100 rounded-2xl w-32" />
-            <div className="h-12 bg-gray-100 rounded-2xl w-32" />
+          <div className="mt-12 flex justify-between relative z-10">
+            <div className="h-14 bg-gray-100/80 rounded-2xl w-40 shadow-sm" />
+            <div className="h-14 bg-gray-900/5 rounded-2xl w-40 shadow-sm" />
           </div>
         </div>
       </div>
