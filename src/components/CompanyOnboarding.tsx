@@ -1535,11 +1535,26 @@ const CompanyOnboarding = () => {
               <h2 className="text-3xl font-black text-gray-900 tracking-tight">
                 Phase {displayedPhase}: <span className={`text-transparent bg-clip-text ${isPhaseCompleted(displayedPhase) ? "bg-green-600" : "bg-gradient-harx"}`}>{phases[displayedPhase - 1]?.title}</span>
               </h2>
-              <p className="text-gray-500 mt-2 font-medium max-w-2xl">
-                {isPhaseAccessible(displayedPhaseData.id)
-                  ? "Follow the sequence to complete your company setup and unlock premium features."
-                  : "This phase is currently locked. Please complete the previous phase to continue."}
-              </p>
+              {displayedPhase === 4 && isPhaseCompleted(4) ? (
+                <div className="mt-3 flex items-start gap-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl px-5 py-4 max-w-2xl shadow-sm">
+                  <span className="text-2xl leading-none mt-0.5 shrink-0">🎉</span>
+                  <div>
+                    <p className="text-green-800 font-black text-sm tracking-tight mb-1">
+                      🏆 Félicitations ! Toutes les phases sont complétées !
+                    </p>
+                    <p className="text-green-700 text-xs font-medium leading-relaxed">
+                      👏 Bravo ! Vous avez terminé l'ensemble du processus d'onboarding HARX avec succès. Votre entreprise est maintenant entièrement configurée et prête à passer à l'action. 🎺🎊
+                    </p>
+                  </div>
+                  <span className="text-2xl leading-none mt-0.5 shrink-0">🦾</span>
+                </div>
+              ) : (
+                <p className="text-gray-500 mt-2 font-medium max-w-2xl">
+                  {isPhaseAccessible(displayedPhaseData.id)
+                    ? "Follow the sequence to complete your company setup and unlock premium features."
+                    : "This phase is currently locked. Please complete the previous phase to continue."}
+                </p>
+              )}
             </div>
             <div className={`px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-widest ${
               isPhaseCompleted(displayedPhase)
