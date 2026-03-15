@@ -1413,10 +1413,48 @@ const CompanyOnboarding = () => {
 
   if (isInitialLoad) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] animate-pulse">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-harx-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-sm font-black text-gray-400 uppercase tracking-widest">Initialising Onboarding...</p>
+      <div className="space-y-6 animate-pulse">
+        {/* Phase Cards Skeleton */}
+        <div className="grid grid-cols-5 gap-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="rounded-3xl p-4 bg-gray-100/50 border border-gray-100 h-24">
+              <div className="flex items-center space-x-4">
+                <div className="rounded-2xl p-3 bg-gray-200 h-12 w-12" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-2 bg-gray-200 rounded w-12" />
+                  <div className="h-3 bg-gray-200 rounded w-20" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Main Content Skeleton */}
+        <div className="rounded-[2.5rem] bg-white p-8 border border-gray-100">
+          <div className="mb-8 space-y-4">
+            <div className="h-8 bg-gray-100 rounded-xl w-1/3" />
+            <div className="h-4 bg-gray-50 rounded-lg w-2/3" />
+          </div>
+
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="rounded-3xl border-2 border-gray-50 p-6 bg-gray-50/30 h-32 flex items-start space-x-3">
+                <div className="rounded-2xl p-4 bg-gray-100 h-14 w-14" />
+                <div className="flex-1 space-y-4 pt-2">
+                  <div className="flex justify-between items-center">
+                    <div className="h-4 bg-gray-100 rounded w-1/4" />
+                    <div className="h-6 bg-gray-100 rounded-full w-20" />
+                  </div>
+                  <div className="h-3 bg-gray-50 rounded w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-10 flex justify-between">
+            <div className="h-12 bg-gray-100 rounded-2xl w-32" />
+            <div className="h-12 bg-gray-100 rounded-2xl w-32" />
+          </div>
         </div>
       </div>
     );
