@@ -243,6 +243,7 @@ const CompanyOnboarding = () => {
   const [displayedPhase, setDisplayedPhase] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [activeStep, setActiveStep] = useState<number | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
   const [showUploadContacts, setShowUploadContacts] = useState(false);
 
@@ -790,13 +791,13 @@ const CompanyOnboarding = () => {
       setDisplayedPhase(1);
       setCompletedSteps([]);
     } finally {
-      // isLoading removed
+      setIsInitialLoad(false);
     }
   };
 
   // Dispatch step guide to sidebar
   useEffect(() => {
-    if (phases.length === 0) return;
+    if (phases.length === 0 || isInitialLoad) return;
 
     const currentPhaseSteps = phases[displayedPhase - 1]?.steps || [];
     const currentStep = currentPhaseSteps.find(step =>
@@ -1401,6 +1402,22 @@ const CompanyOnboarding = () => {
     return (
       <div className="text-center text-red-600">
         Error: Phase data not found. Please try refreshing the page.
+      </div>
+    );
+  }
+
+  // Placeholder during initial load to prevent Phase 1 flash
+  if (isInitialLoad && !userId) {
+    return null; // The auth check handles redirection
+  }
+
+  if (isInitialLoad) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] animate-pulse">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-harx-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-sm font-black text-gray-400 uppercase tracking-widest">Initialising Onboarding...</p>
+        </div>
       </div>
     );
   }
