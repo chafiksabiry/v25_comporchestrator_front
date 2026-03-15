@@ -1478,31 +1478,31 @@ const CompanyOnboarding = () => {
           return (
             <div
               key={phase.id}
-              className={`relative rounded-3xl p-4 transition-all duration-500 overflow-hidden group ${isActive
-                ? "bg-white shadow-2xl shadow-harx-500/20 scale-[1.02] border-2 border-harx-500/50"
-                : isCompleted
-                  ? "bg-green-50/50 border border-green-200"
+              className={`relative rounded-3xl p-4 transition-all duration-500 overflow-hidden group ${isCompleted
+                ? "bg-green-50/50 border border-green-200"
+                : isActive
+                  ? "bg-white shadow-2xl shadow-harx-500/20 scale-[1.02] border-2 border-harx-500/50"
                   : !isAccessible
                     ? "bg-gray-50/50 border border-gray-100 opacity-60"
                     : "bg-white/50 border border-white hover:bg-white hover:shadow-xl transition-all"
-                } cursor-pointer`}
+                } ${isActive ? "scale-[1.02] shadow-2xl" : ""} cursor-pointer`}
               onClick={() => handlePhaseChange(phase.id)}
             >
               <div className="flex items-center space-x-4 relative z-10">
                 <div
-                  className={`rounded-2xl p-3 transition-all duration-300 ${isActive
+                  className={`rounded-2xl p-3 transition-all duration-300 ${isCompleted
+                  ? "bg-green-100 text-green-600"
+                  : isActive
                     ? "bg-gradient-harx text-white rotate-6 scale-110 shadow-lg shadow-harx-500/30"
-                    : isCompleted
-                      ? "bg-green-100 text-green-600"
-                      : !isAccessible
-                        ? "bg-gray-200 text-gray-400"
-                        : "bg-harx-50 text-harx-400 group-hover:bg-harx-100"
-                    }`}
+                    : !isAccessible
+                      ? "bg-gray-200 text-gray-400"
+                      : "bg-harx-50 text-harx-400 group-hover:bg-harx-100"
+                  }`}
                 >
                   <PhaseIcon className="h-6 w-6" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-xs font-black uppercase tracking-widest ${isActive ? "text-harx-600" : "text-gray-400"}`}>
+                  <p className={`text-xs font-black uppercase tracking-widest ${isCompleted ? "text-green-600" : isActive ? "text-harx-600" : "text-gray-400"}`}>
                     Phase {phase.id}
                   </p>
                   <p className={`text-sm font-bold truncate ${isActive ? "text-gray-900" : "text-gray-600"}`}>{phase.title}</p>
@@ -1531,7 +1531,7 @@ const CompanyOnboarding = () => {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-3xl font-black text-gray-900 tracking-tight">
-                Phase {displayedPhase}: <span className="text-transparent bg-clip-text bg-gradient-harx">{phases[displayedPhase - 1]?.title}</span>
+                Phase {displayedPhase}: <span className={`text-transparent bg-clip-text ${isPhaseCompleted(displayedPhase) ? "bg-green-600" : "bg-gradient-harx"}`}>{phases[displayedPhase - 1]?.title}</span>
               </h2>
               <p className="text-gray-500 mt-2 font-medium max-w-2xl">
                 {isPhaseAccessible(displayedPhaseData.id)
@@ -1539,8 +1539,14 @@ const CompanyOnboarding = () => {
                   : "This phase is currently locked. Please complete the previous phase to continue."}
               </p>
             </div>
-            <div className={`px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-widest ${isPhaseAccessible(displayedPhaseData.id) ? "bg-harx-50 text-harx-600" : "bg-gray-100 text-gray-400"}`}>
-              {isPhaseAccessible(displayedPhaseData.id) ? "Progressing" : "Locked"}
+            <div className={`px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-widest ${
+              isPhaseCompleted(displayedPhase)
+                ? "bg-green-100 text-green-600"
+                : isPhaseAccessible(displayedPhaseData.id)
+                  ? "bg-harx-50 text-harx-600"
+                  : "bg-gray-100 text-gray-400"
+              }`}>
+              {isPhaseCompleted(displayedPhase) ? "Completed" : isPhaseAccessible(displayedPhaseData.id) ? "Progressing" : "Locked"}
             </div>
           </div>
         </div>
