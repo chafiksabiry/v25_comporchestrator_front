@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Menu,
   LogOut,
@@ -8,7 +8,8 @@ import {
   Sparkles,
   Info,
   X,
-  Cpu
+  Cpu,
+  CreditCard
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import Cookies from 'js-cookie';
@@ -22,6 +23,7 @@ import ZohoCallback from './components/onboarding/ZohoCallback';
 import ZohoAuth from './components/onboarding/ZohoAuth';
 import KnowledgeBase from './components/KnowledgeBase';
 import ScriptGenerator from './components/ScriptGenerator';
+import Subscription from './components/Subscription';
 import ZohoService from './services/zohoService';
 
 function App() {
@@ -172,6 +174,8 @@ function App() {
         return <KnowledgeBase />;
       case 'script-generator':
         return <ScriptGenerator />;
+      case 'subscription':
+        return <Subscription />;
       case 'company-onboarding':
       default:
         return <CompanyOnboarding />;
@@ -257,6 +261,31 @@ function App() {
               {isCollapsed && (
                 <div className="absolute left-16 bg-slate-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10">
                   Company Onboarding
+                </div>
+              )}
+            </button>
+          </div>
+
+          <div className="shrink-0 pt-2 pb-4 border-t border-white/5 mx-4">
+            <button
+              className={`flex w-full items-center rounded-2xl transition-all duration-300 group relative ${
+                isCollapsed ? 'justify-center p-3' : 'space-x-3 py-3 px-5'
+              } ${
+                activeTab === 'subscription'
+                  ? 'bg-gradient-harx text-white shadow-xl shadow-harx-500/25 ring-1 ring-white/10'
+                  : 'text-gray-500 hover:bg-white/5 hover:text-gray-200'
+              }`}
+              onClick={() => setActiveTab('subscription')}
+            >
+              <div className={`p-2 rounded-xl transition-all shrink-0 ${activeTab === 'subscription' ? 'bg-white/20' : 'bg-gray-800/40 group-hover:bg-gray-800'}`}>
+                <CreditCard className="h-5 w-5" />
+              </div>
+              {!isCollapsed && (
+                <span className="font-black text-sm tracking-tight whitespace-nowrap overflow-hidden">Subscription</span>
+              )}
+              {isCollapsed && (
+                <div className="absolute left-16 bg-slate-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10">
+                  Subscription
                 </div>
               )}
             </button>
