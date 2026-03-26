@@ -1,13 +1,70 @@
 import { useState, useEffect } from 'react';
-import { Check, CheckCircle2, Rocket } from 'lucide-react';
+import { Check, CreditCard, Sparkles } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import React from 'react';
+
+const plans = [
+  {
+    name: 'STARTER',
+    price: '99',
+    description: 'Start your campaigns with simplicity and efficiency',
+    features: [
+      'Active GIGs: 3',
+      'Active REPs: 5',
+      'AI Powered Gig Engine',
+      'AI Powered Script Engine',
+      'AI Powered Learning Planner',
+      'AI Powered GIGS REPS Matching',
+      'Qualified REPs on demand',
+      'Dashboard with Standard KPIs',
+      'Email support + assisted onboarding'
+    ],
+    buttonText: 'Start trial',
+    popular: false
+  },
+  {
+    name: 'GROWTH',
+    price: '249',
+    description: 'Drive multi channel efforts with AI automation',
+    features: [
+      'Active GIGs: 10',
+      'Active REPs: 15',
+      'Channels: Outbound Calls Only',
+      'All Starter Features',
+      'AI Powered Lead Management Engine',
+      'AI Powered Knowledge Base Engine',
+      'AI Powered Call Monitoring & Audit',
+      'Call storage - 3 months',
+      'Priority support + chat'
+    ],
+    buttonText: 'Start trial',
+    popular: true
+  },
+  {
+    name: 'SCALE',
+    price: '499',
+    description: 'Activate Intelligence at scale',
+    features: [
+      'Active GIGs: 25',
+      'Active REPs: 50',
+      'Channels: Outbound Calls Only',
+      'Global Coverage',
+      'All Growth Features Included',
+      'Priority Support - live chat, email',
+      'Customization - Dashboard, Analytics',
+      'Full Integrations'
+    ],
+    buttonText: 'Start trial',
+    popular: false
+  }
+];
 
 const SubscriptionPlan = () => {
   const [isStepCompleted, setIsStepCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const companyId = Cookies.get('companyId');
+  const userId = Cookies.get('userId');
 
   // Vérifier l'état de l'étape au chargement
   useEffect(() => {
@@ -21,39 +78,15 @@ const SubscriptionPlan = () => {
     try {
       if (!companyId) return;
 
-      // Vérifier si l'entreprise a déjà un abonnement
+      // Vérifier si l'entreprise a déjà un abonnement (sur le nouveau backend)
       const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/subscription`
+        `${import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL}/api/subscriptions/current/${companyId}`
       );
 
-      if (response.data && (response.data as any).subscription) {
+      if (response.data && (response.data as any).data && (response.data as any).data.status === 'active') {
         // Si un abonnement existe, marquer automatiquement l'étape comme complétée
         if (!isStepCompleted) {
-          try {
-            const stepResponse = await axios.put(
-              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/11`,
-              { status: 'completed' }
-            );
-
-            console.log('✅ Subscription step 11 automatically marked as completed:', stepResponse.data);
-
-            // Mettre à jour l'état local
-            setIsStepCompleted(true);
-
-            // Mettre à jour le localStorage
-            const currentProgress = {
-              currentPhase: 4,
-              completedSteps: [11],
-              lastUpdated: new Date().toISOString()
-            };
-            localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-
-            // Synchroniser avec les cookies
-            Cookies.set('subscriptionStepCompleted', 'true', { expires: 7 });
-
-          } catch (autoCompleteError) {
-            console.error('Error auto-completing subscription step:', autoCompleteError);
-          }
+          completeOnboardingStep();
         }
       }
 
@@ -95,184 +128,143 @@ const SubscriptionPlan = () => {
     }
   };
 
-  const freePlan = {
-    name: 'Free',
-    value: 'free',
-    price: '0',
-    description: 'Perfect for trying out our platform',
-    features: [
-      'Up to 5 active gigs',
-      'Basic reporting',
-      'Email support',
-      'Community access',
-      'Standard support',
-      'Basic analytics',
-      'Single phone number'
-    ]
-  };
-
-  const handleActivatePlan = async () => {
+  const completeOnboardingStep = async () => {
     try {
-      setIsLoading(true);
-      console.log('Starting plan activation...');
-      console.log('Company ID:', companyId);
-
-      // Mettre à jour le plan d'abonnement
-      const subscriptionResponse = await axios.put(
-        `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}/subscription`,
-        {
-          subscription: 'free'
-        }
-      );
-
-      if (!subscriptionResponse.data) {
-        throw new Error('Pas de réponse du serveur pour la mise à jour du plan');
-      }
-      console.log('Subscription update response:', subscriptionResponse.data);
-
-      // Marquer l'étape comme complétée
-      const stepId = 11; // ID du step Subscription Plan
-      const phaseId = 4; // ID de la phase Activation
-      const stepResponse = await axios.put(
+      if (!companyId) return;
+      
+      const stepId = 11;
+      const phaseId = 4;
+      await axios.put(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
         { status: 'completed' }
       );
 
-      if (!stepResponse.data) {
-        throw new Error('Pas de réponse du serveur pour la mise à jour de l\'étape');
-      }
-      console.log('Step completion response:', stepResponse.data);
-
-      // Mettre à jour l'état local
       setIsStepCompleted(true);
-
-      // Mettre à jour le localStorage
-      const currentProgress = {
-        currentPhase: 4,
-        completedSteps: [11],
-        lastUpdated: new Date().toISOString()
-      };
-      localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-
-      // Synchroniser avec les cookies
-      Cookies.set('subscriptionStepCompleted', 'true', { expires: 7 });
-
-      // Attendre un moment pour que l'API soit traitée
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Recharger la page pour mettre à jour l'interface
-      window.location.reload();
-
-    } catch (error: any) {
-      console.error('Error details:', error);
-      if (error.response) {
-        console.error('API Error:', {
-          status: error.response.status,
-          data: error.response.data,
-          url: error.config?.url
-        });
-        console.log(`Erreur lors de l'activation du plan: ${error.response.data?.message || error.message}`);
-      } else {
-        console.log('Une erreur est survenue lors de l\'activation du plan');
+      
+      const currentProgressStr = localStorage.getItem('companyOnboardingProgress');
+      let currentProgress = currentProgressStr ? JSON.parse(currentProgressStr) : { completedSteps: [] };
+      if (!currentProgress.completedSteps.includes(11)) {
+        currentProgress.completedSteps.push(11);
       }
+      localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+      
+    } catch (error) {
+      console.error('Error completing onboarding step:', error);
+    }
+  };
+
+  const handleStartTrial = async (planName: string) => {
+    try {
+      setIsLoading(true);
+      
+      const response = await axios.post(`${import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL}/api/subscriptions/checkout`, {
+        userId,
+        planName,
+        successUrl: `${window.location.origin}/subscription?success=true`,
+        cancelUrl: `${window.location.origin}/subscription?cancel=true`
+      });
+
+      if (response.data && (response.data as any).data && (response.data as any).data.url) {
+        window.location.href = (response.data as any).data.url;
+      } else {
+        alert('Erreur lors de la création de la session de paiement.');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Une erreur est survenue lors de la redirection vers Stripe.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="space-y-2 max-w-4xl mx-auto">
-      <div className="bg-white rounded-xl p-3 border border-harx-100 shadow-lg relative overflow-hidden group">
-        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-harx-50 rounded-full blur-3xl group-hover:bg-harx-100 transition-colors duration-1000"></div>
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-2">
-          <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-gradient-harx flex items-center justify-center shadow-lg shadow-harx-500/20">
-                  <CheckCircle2 className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-extrabold text-gray-900 tracking-tight">Select Your Plan</h2>
-                  <p className="text-xs text-gray-400 font-black uppercase tracking-widest mt-1">Personnel vs Timeline</p>
-                </div>
-              </div>
+    <div className="min-h-full bg-transparent p-2">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+          <div>
+            <div className="flex items-center gap-2 mb-2 text-harx-500">
+              <span className="text-xs font-black uppercase tracking-[0.2em]">Premium Access</span>
+            </div>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Select Your Plan</h1>
+            <p className="text-gray-500 mt-1 font-medium text-sm">Choose the perfect scale for your AI-powered orchestration engine.</p>
           </div>
-          <div className="flex flex-col items-center p-1.5 bg-harx-50/50 rounded-lg border border-harx-100 backdrop-blur-sm">
-            <span className="text-sm font-black text-harx-600 uppercase tracking-[0.2em] mb-2">Current Selection</span>
-            <div className="text-base font-black text-gray-900 tracking-tight">{freePlan.name} Plan</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
-        <div className="rounded-xl border-4 border-harx-500 p-4 shadow-xl bg-white relative transform transition-all duration-500 hover:scale-[1.01] flex flex-col h-full ring-4 ring-harx-500/5">
-          <div className="absolute -top-6 left-1/2 -translate-x-1/2">
-            <span className="inline-flex items-center rounded-2xl bg-gradient-harx px-6 py-2 text-sm font-black text-white uppercase tracking-widest shadow-xl shadow-harx-500/30">
-              Recommended
-            </span>
-          </div>
-
-          <div className="mb-2">
-            <h3 className="text-lg font-black text-gray-900 tracking-tight">{freePlan.name} <span className="text-harx-500">Tier</span></h3>
-            <p className="mt-1 text-xs text-gray-500 font-medium leading-relaxed">{freePlan.description}</p>
-          </div>
-
-          <div className="mb-3 p-2 bg-gray-50 rounded-xl border border-gray-100 text-center">
-            <div className="flex items-baseline justify-center gap-1">
-              <span className="text-2xl font-black text-gray-900 tracking-tighter">${freePlan.price}</span>
-              <span className="text-base font-bold text-gray-400">/month</span>
+          
+          <div className="bg-white/50 backdrop-blur-sm p-3 rounded-2xl border border-gray-100 flex items-center gap-4 shadow-sm">
+            <div className="h-10 w-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+              <CreditCard size={20} />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Status</p>
+              <p className="text-sm font-black text-gray-800 tracking-tight">
+                {isStepCompleted ? 'Plan Active' : 'Action Required'}
+              </p>
             </div>
           </div>
-
-          <div className="flex-grow">
-            <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">What's included:</h4>
-            <ul className="space-y-1 mb-3">
-              {freePlan.features.map((feature) => (
-                <li key={feature} className="flex items-center gap-2 group">
-                  <div className="w-4 h-4 rounded-full bg-harx-50 flex items-center justify-center group-hover:bg-harx-100 transition-colors">
-                    <Check className="h-3 w-3 text-harx-500" />
-                  </div>
-                  <span className="text-xs text-gray-700 font-bold group-hover:text-gray-900 transition-colors">{feature}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <button
-            onClick={isStepCompleted ? undefined : handleActivatePlan}
-            disabled={isStepCompleted || isLoading}
-            className={`w-full rounded-lg py-2 text-sm font-black transition-all duration-300 transform active:scale-95 shadow-lg ${isStepCompleted
-              ? 'bg-emerald-600 text-white cursor-not-allowed shadow-emerald-500/20'
-              : isLoading
-                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                : 'bg-gradient-harx text-white hover:brightness-110 shadow-harx-500/40 hover:-translate-y-1'
-              }`}
-          >
-            {isStepCompleted ? (
-              <span className="flex items-center justify-center gap-3">
-                <CheckCircle2 className="w-6 h-6" />
-                Plan Active
-              </span>
-            ) : isLoading ? (
-              <span className="flex items-center justify-center gap-3">
-                <div className="w-5 h-5 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-                Activating...
-              </span>
-            ) : (
-              'Unlock Full Potential'
-            )}
-          </button>
         </div>
 
-        {/* Placeholder for future plans */}
-        <div className="rounded-xl border-2 border-dashed border-gray-200 p-3 bg-gray-50/50 flex flex-col items-center justify-center text-center group transition-all duration-500 hover:border-harx-200 hover:bg-white">
-          <div className="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center mb-2 group-hover:border-harx-200 group-hover:scale-110 transition-all shadow-sm">
-            <Rocket className="w-6 h-6 text-gray-300 group-hover:text-harx-400 transition-colors" />
-          </div>
-          <h3 className="text-base font-black text-gray-400 group-hover:text-gray-900 transition-colors">Enterprise Tier</h3>
-          <p className="mt-1 text-xs text-gray-400 font-medium px-2">Advanced scaling and dedicated infrastructure coming soon.</p>
-          <div className="mt-4 px-4 py-1.5 rounded-lg bg-white border border-gray-200 text-[10px] font-black text-gray-400 group-hover:text-harx-500 transition-all">
-            STAY TUNED
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {plans.map((plan) => (
+            <div 
+              key={plan.name}
+              className={`relative flex flex-col p-6 rounded-[2rem] transition-all duration-500 group ${
+                plan.popular 
+                  ? 'bg-[#0a0b14] text-white scale-105 shadow-2xl shadow-harx-500/20 ring-1 ring-white/10' 
+                  : 'bg-white text-gray-900 border border-gray-100 shadow-xl hover:shadow-2xl hover:border-harx-500/30'
+              }`}
+            >
+              {plan.popular && (
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-gradient-harx text-white px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-lg shadow-harx-500/30">
+                  Most Popular
+                </div>
+              )}
+
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className={`text-xl font-black tracking-tight ${plan.popular ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>
+                  {plan.popular && <Sparkles className="h-4 w-4 text-harx-400" />}
+                </div>
+                <p className={`text-[10px] font-medium leading-relaxed ${plan.popular ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {plan.description}
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-black tracking-tighter">€{plan.price}</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-widest opacity-60 ${plan.popular ? 'text-gray-400' : 'text-gray-500'}`}>/ Mo</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => handleStartTrial(plan.name)}
+                disabled={isLoading}
+                className={`w-full py-3 px-4 rounded-xl font-black text-[11px] uppercase tracking-[0.15em] transition-all duration-300 mb-6 transform group-hover:scale-[1.02] active:scale-95 ${
+                  plan.popular
+                    ? 'bg-gradient-harx text-white shadow-xl shadow-harx-500/30 hover:shadow-harx-500/50'
+                    : 'bg-gray-900 text-white hover:bg-black shadow-lg shadow-black/10'
+                }`}
+              >
+                {isLoading ? 'Loading...' : plan.buttonText}
+              </button>
+
+              <div className={`h-px w-full mb-6 ${plan.popular ? 'bg-white/10' : 'bg-gray-100'}`} />
+
+              <ul className="space-y-3 flex-grow">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2">
+                    <div className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5 ${
+                      plan.popular ? 'bg-harx-500/20 text-harx-400' : 'bg-green-50 text-green-600'
+                    }`}>
+                      <Check size={10} strokeWidth={3} />
+                    </div>
+                    <span className={`text-[10px] font-bold leading-tight ${plan.popular ? 'text-gray-300' : 'text-gray-600'}`}>
+                      {feature}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       </div>
     </div>
