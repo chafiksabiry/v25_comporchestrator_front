@@ -98,14 +98,16 @@ const SubscriptionPlan = () => {
     try {
       if (!companyId) return;
 
-      // Vérifier l'état de l'étape 11 (Subscription Plan) dans la phase 4
+      // Fetch full onboarding progress instead of specific step GET (which doesn't exist)
       const response = await axios.get(
-        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/11`
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
       );
 
-      if (response.data && (response.data as any).status === 'completed') {
-        setIsStepCompleted(true);
-        return;
+      if (response.data && (response.data as any).completedSteps && Array.isArray((response.data as any).completedSteps)) {
+        if ((response.data as any).completedSteps.includes(11)) {
+          setIsStepCompleted(true);
+          return;
+        }
       }
 
       // Vérifier aussi le localStorage pour la cohérence
