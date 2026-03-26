@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Check, CreditCard, Sparkles } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import React from 'react';
 
 const plans = [
   {
@@ -159,6 +158,7 @@ const SubscriptionPlan = () => {
       
       const response = await axios.post(`${import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL}/api/subscriptions/checkout`, {
         userId,
+        companyId,
         planName,
         successUrl: `${window.location.origin}/subscription?success=true`,
         cancelUrl: `${window.location.origin}/subscription?cancel=true`
