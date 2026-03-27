@@ -1042,7 +1042,10 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
       </div>
 
       {/* Gig Selection */}
-      <div className="relative z-20 overflow-visible rounded-xl bg-white/40 backdrop-blur-md p-4 shadow-lg border border-white/20 group">
+      <div className="relative z-20 overflow-visible rounded-xl bg-white border border-gray-100 p-4 shadow-sm group">
+        {/* HARX Accent Line */}
+        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-harx rounded-l-xl"></div>
+        
         <div className="flex items-center space-x-3 mb-4">
           <div className="flex-shrink-0">
             <div className="w-10 h-10 rounded-xl bg-gradient-harx flex items-center justify-center shadow-lg shadow-harx-500/10">
@@ -1052,7 +1055,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Select Gig</h3>
-              <span className="inline-flex items-center rounded-lg bg-gradient-harx px-2 py-0.5 text-[8px] font-black uppercase tracking-widest text-white">
+              <span className="inline-flex items-center rounded-lg bg-harx-500 px-2 py-0.5 text-[8px] font-black uppercase tracking-widest text-white">
                 Required
               </span>
             </div>
@@ -1061,19 +1064,19 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
         </div>
 
         {isLoadingGigs ? (
-          <div className="mt-4 flex items-center justify-center space-x-3 p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-white/40">
+          <div className="mt-4 flex items-center justify-center space-x-3 p-4 rounded-xl bg-gray-50 border border-gray-100">
             <div className="animate-spin rounded-full h-5 w-5 border-2 border-harx-200 border-t-harx-600"></div>
-            <span className="text-[10px] font-black text-harx-600 uppercase tracking-widest">Loading...</span>
+            <span className="text-[10px] font-black text-harx-600 uppercase tracking-widest">Loading Profiles...</span>
           </div>
         ) : gigs.length > 0 ? (
           <div className="mt-4">
             <div className="relative gig-dropdown">
               <button
                 type="button"
-                className={`relative w-full rounded-xl border-2 py-3.5 pl-5 pr-14 text-left text-[13px] font-black transition-all duration-300 shadow-md ${selectedGigId
-                  ? 'border-harx-100 bg-white text-gray-900 focus:border-harx-500 focus:ring-harx-500/10'
-                  : 'border-white bg-white/60 text-gray-400 focus:border-harx-200 focus:ring-harx-400/10 hover:border-harx-100'
-                  } focus:outline-none focus:ring-4 focus:ring-opacity-50`}
+                className={`relative w-full rounded-xl border-2 py-3 pl-4 pr-12 text-left text-[13px] font-black transition-all duration-200 ${selectedGigId
+                  ? 'border-harx-500 bg-white text-gray-900'
+                  : 'border-gray-100 bg-gray-50 text-gray-400 hover:border-harx-200 hover:bg-white'
+                  } focus:outline-none focus:ring-2 focus:ring-harx-500/20`}
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               >
                 <span className="flex items-center">
@@ -1094,21 +1097,21 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                       ) : 'Select a gig...';
                     })()
                   ) : (
-                    <span className="italic">🎯 Select a gig profile...</span>
+                    <span className="italic">🎯 Choose a gig profile to begin...</span>
                   )}
                 </span>
-                <span className="absolute inset-y-0 right-0 flex items-center pr-5">
-                  <ChevronDown className={`h-4 w-4 text-harx-300 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                <span className="absolute inset-y-0 right-0 flex items-center pr-4">
+                  <ChevronDown className={`h-4 w-4 text-harx-300 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 </span>
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute z-50 mt-2 w-full bg-white/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl max-h-60 overflow-auto scrollbar-hide py-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute z-50 mt-2 w-full bg-white border border-gray-100 rounded-xl shadow-2xl max-h-60 overflow-auto py-1 animate-in fade-in slide-in-from-top-1 duration-150">
                   {gigs.map((gig: Gig) => (
                     <button
                       key={gig._id}
                       type="button"
-                      className="relative w-full px-5 py-3 text-left hover:bg-harx-50 focus:bg-harx-50 focus:outline-none transition-all duration-200 border-b border-gray-50 last:border-0"
+                      className="relative w-full px-4 py-2.5 text-left hover:bg-harx-50 focus:bg-harx-50 focus:outline-none transition-colors border-b border-gray-50 last:border-0"
                       onClick={() => {
                         setSelectedGigId(gig._id);
                         setIsDropdownOpen(false);
@@ -1126,7 +1129,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                         <img
                           src={gig.destination_zone.flags?.png}
                           alt={gig.destination_zone.flags?.alt}
-                          className="w-5 h-3.5 rounded-sm shadow-sm border border-gray-100 object-cover"
+                          className="w-4 h-2.5 rounded-sm shadow-sm border border-gray-100 object-cover"
                         />
                       </div>
                     </button>
@@ -1136,7 +1139,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
             </div>
           </div>
         ) : (
-          <div className="mt-2 rounded-xl bg-white/60 backdrop-blur-md p-4 border border-white/40 shadow-lg">
+          <div className="mt-2 rounded-xl bg-gray-50 p-4 border border-gray-100">
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
@@ -1155,33 +1158,35 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
       {!isLoadingGigs && (
         <div className="space-y-3">
           {/* Provider Selection */}
-          <div className="rounded-xl bg-white/40 backdrop-blur-md p-4 shadow-lg border border-white/20">
-            <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-3">Select Provider</h3>
+          <div className="relative rounded-xl bg-white p-4 shadow-sm border border-gray-100 overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-harx"></div>
+            <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-3 pl-1">Select Provider</h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {providers.map((p) => {
                 const Logo = p.logo;
                 const isDisabled = p.id === 'telnyx';
+                const isSelected = provider === p.id;
                 return (
                   <button
                     key={p.id}
                     disabled={isDisabled}
-                    className={`relative overflow-hidden flex items-center justify-center h-14 rounded-lg border-2 transition-all duration-300 group ${isDisabled
-                      ? 'opacity-40 grayscale cursor-not-allowed bg-gray-50/50 border-gray-100'
-                      : provider === p.id
-                        ? 'border-harx-500 bg-white shadow-md shadow-harx-500/5'
-                        : 'border-white bg-white/60 hover:border-harx-200 hover:bg-white shadow-sm'
+                    className={`relative overflow-hidden flex items-center justify-center h-14 rounded-lg border-2 transition-all duration-200 group ${isDisabled
+                      ? 'opacity-40 grayscale cursor-not-allowed bg-gray-50 border-gray-100'
+                      : isSelected
+                        ? 'border-harx-500 bg-white ring-4 ring-harx-500/5'
+                        : 'border-gray-50 bg-gray-50/50 hover:border-harx-200 hover:bg-white'
                       }`}
                     onClick={() => setProvider(p.id)}
                   >
-                    {!isDisabled && provider === p.id && (
+                    {!isDisabled && isSelected && (
                       <div className="absolute top-0 right-0 p-1 bg-harx-500 rounded-bl-lg shadow-sm">
                         <CheckCircle className="w-2.5 h-2.5 text-white" />
                       </div>
                     )}
-                    <Logo className={`mr-2 h-4 w-4 transition-colors duration-300 ${isDisabled ? 'text-gray-400' : provider === p.id ? 'text-harx-500' : 'text-gray-400 group-hover:text-harx-400'}`} />
-                    <span className={`text-[10px] font-black uppercase tracking-widest transition-colors duration-300 ${isDisabled ? 'text-gray-400' : provider === p.id ? 'text-gray-900' : 'text-gray-600 group-hover:text-gray-900'}`}>
+                    <Logo className={`mr-2.5 h-5 w-5 transition-colors duration-200 ${isDisabled ? 'text-gray-400' : isSelected ? 'text-harx-500' : 'text-gray-400 group-hover:text-harx-400'}`} />
+                    <span className={`text-[11px] font-black uppercase tracking-widest transition-colors duration-200 ${isDisabled ? 'text-gray-400' : isSelected ? 'text-gray-900' : 'text-gray-600 group-hover:text-gray-900'}`}>
                       {p.name}
-                      {isDisabled && <span className="ml-1.5 text-[8px] font-bold text-harx-500">(Beta Soon)</span>}
+                      {isDisabled && <span className="ml-1.5 text-[8px] font-bold text-harx-500">BETA</span>}
                     </span>
                   </button>
                 );
@@ -1189,15 +1194,16 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
             </div>
           </div>
 
-          {/* Phone Numbers Container */}
-          <div className="rounded-xl bg-white/40 backdrop-blur-md p-4 shadow-lg border border-white/20">
-            <div className="flex items-center justify-between mb-3">
+          {/* Phone Nodes Container */}
+          <div className="relative rounded-xl bg-white p-4 shadow-sm border border-gray-100 overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-harx"></div>
+            <div className="flex items-center justify-between mb-3 pl-1">
               <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest">Phone Nodes</h3>
               {destinationZone && selectedGigId && (
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/60 border border-white shadow-sm">
-                  <div className={`w-1 h-1 rounded-full ${isQuotaReached ? 'bg-emerald-500' : 'bg-harx-500 pulse'}`}></div>
-                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-900">
-                    {purchasedNumbersCount}/{teamSize} Active
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-gray-50 border border-gray-100">
+                  <div className={`w-1.5 h-1.5 rounded-full ${isQuotaReached ? 'bg-emerald-500' : 'bg-harx-500 pulse'}`}></div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-900">
+                    {purchasedNumbersCount}/{teamSize} Nodes
                   </span>
                 </div>
               )}
@@ -1205,27 +1211,27 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
             {/* Requirements Warning */}
             {provider === 'telnyx' && requirementStatus.hasRequirements && !requirementStatus.isComplete && (
-              <div className="mb-3 rounded-lg bg-amber-50/50 border border-amber-100 p-3">
+              <div className="mb-3 rounded-lg bg-amber-50 border border-amber-100 p-3 mx-1">
                 <div className="flex gap-2.5">
-                  <AlertCircle className="h-3.5 w-3.5 text-amber-500 mt-0.5" />
+                  <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5" />
                   <div className="flex-1">
-                    <h4 className="text-[10px] font-black text-amber-900 uppercase tracking-tight">Requirements Needed</h4>
+                    <h4 className="text-[10px] font-black text-amber-900 uppercase tracking-tight">Sync Requirements</h4>
                     <div className="mt-1.5 text-[9px] text-amber-800 font-bold leading-relaxed">
-                      <p>Regulatory documentation required for this destination.</p>
+                      <p>Regulatory documentation is required for this destination.</p>
                       {requirementStatus.completionPercentage !== undefined && (
-                        <div className="mt-2 text-[8px] font-black">
-                          <div className="flex justify-between mb-1">
-                            <span>Status</span>
+                        <div className="mt-2.5">
+                          <div className="flex justify-between mb-1 text-[8px] font-black uppercase">
+                            <span>Progress</span>
                             <span>{requirementStatus.completionPercentage}%</span>
                           </div>
                           <div className="w-full bg-amber-200/50 rounded-full h-1">
-                            <div className="bg-amber-500 h-1 rounded-full" style={{ width: `${requirementStatus.completionPercentage}%` }} />
+                            <div className="bg-amber-500 h-1 rounded-full transition-all duration-300" style={{ width: `${requirementStatus.completionPercentage}%` }} />
                           </div>
                         </div>
                       )}
                       <button
                         onClick={() => setShowRequirementModal(true)}
-                        className="mt-2 inline-flex items-center px-2 py-1 rounded-md bg-amber-100/50 text-amber-900 text-[8px] font-black uppercase hover:bg-amber-200 transition-colors"
+                        className="mt-2.5 inline-flex items-center px-2.5 py-1 rounded bg-amber-200/50 text-amber-900 text-[8px] font-black uppercase tracking-widest hover:bg-amber-300 transition-all"
                       >
                         Resolve Requirements
                       </button>
@@ -1236,28 +1242,28 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
             )}
 
             {/* Combined Active & Available List */}
-            <div className="space-y-2">
+            <div className="space-y-1.5 px-1">
               {/* Active Numbers */}
               {Array.isArray(phoneNumbers) && phoneNumbers.filter(n => n.provider === provider).map((number: any) => (
-                <div key={number.phoneNumber} className="flex items-center justify-between rounded-lg bg-white border border-gray-50 p-3 shadow-sm">
+                <div key={number.phoneNumber} className="flex items-center justify-between rounded-lg bg-gray-50/50 border border-gray-50 p-3 hover:bg-white hover:border-harx-100 transition-all duration-200">
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
-                      <span className="text-[13px] font-black text-gray-900">{number.phoneNumber}</span>
-                      <span className="px-1 py-0.5 text-[7px] font-black uppercase rounded bg-gray-50 text-gray-400 border border-gray-100">
-                        {number.metadata?.type || 'Active'}
+                      <span className="text-sm font-black text-gray-900">{number.phoneNumber}</span>
+                      <span className="px-1 py-0.5 text-[7px] font-black uppercase rounded bg-white text-gray-400 border border-gray-100">
+                        {number.metadata?.type || 'ACTIVE'}
                       </span>
                     </div>
-                    <span className="text-[8px] font-bold text-gray-400 uppercase italic">Operational Node</span>
+                    <span className="text-[8px] font-bold text-gray-400 uppercase italic">Initialized Node</span>
                   </div>
-                  <span className={`px-2 py-0.5 text-[7px] font-black uppercase rounded-md border ${number.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
-                    {number.status === 'active' ? 'Online' : 'Syncing'}
+                  <span className={`px-2 py-0.5 text-[8px] font-black uppercase rounded border ${number.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
+                    {number.status === 'active' ? 'Online' : 'Pending'}
                   </span>
                 </div>
               ))}
 
               {/* Available Numbers */}
               {Array.isArray(availableNumbers) && availableNumbers.length > 0 && (
-                <div className="mt-6 pt-4 border-t border-gray-100/50">
+                <div className="mt-6 pt-4 border-t border-gray-100">
                   <div className="flex items-center gap-2 mb-3">
                     <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Available Entry Points</h4>
                     <div className="h-px flex-1 bg-gray-50"></div>
@@ -1267,13 +1273,13 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                       const phoneNumber = getPhoneNumber(number);
                       const isDisabled = isQuotaReached || (provider === 'telnyx' && requirementStatus.hasRequirements && !requirementStatus.isComplete);
                       return (
-                        <div key={phoneNumber} className="flex items-center justify-between rounded-lg bg-white/60 border border-gray-50 p-3 hover:border-harx-200 transition-all duration-300 group">
+                        <div key={phoneNumber} className="flex items-center justify-between rounded-lg bg-white border border-gray-100 p-3 hover:border-harx-500/30 transition-all duration-200 group">
                           <div className="flex flex-col">
                             <div className="flex items-center gap-2">
-                              <span className="text-[12px] font-black text-gray-900 group-hover:text-harx-600 transition-colors">{phoneNumber}</span>
-                              <span className="text-[7px] font-black text-gray-400 uppercase">{number.type}</span>
+                              <span className="text-[13px] font-black text-gray-900 group-hover:text-harx-600 transition-colors">{phoneNumber}</span>
+                              <span className="text-[8px] font-black text-harx-400 uppercase">{number.type}</span>
                             </div>
-                            <span className="text-[8px] font-black text-gray-400 uppercase italic">{number.locality || 'Remote'}, {number.region || 'Node'}</span>
+                            <span className="text-[9px] font-bold text-gray-400 uppercase italic leading-none">{number.locality || 'Remote'}, {number.region || 'Node'}</span>
                           </div>
                           <button
                             onClick={() => {
@@ -1283,9 +1289,9 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                               setShowPurchaseModal(true);
                             }}
                             disabled={isDisabled}
-                            className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${isDisabled
+                            className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${isDisabled
                               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                              : 'bg-gradient-harx text-white shadow hover:-translate-y-0.5'
+                              : 'bg-gradient-harx text-white shadow-md shadow-harx-500/10 hover:shadow-harx-500/30 hover:-translate-y-0.5'
                               }`}
                           >
                             Add Node
@@ -1299,8 +1305,8 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
               {/* Empty State */}
               {(!phoneNumbers || phoneNumbers.filter(n => n.provider === provider).length === 0) && (!availableNumbers || availableNumbers.length === 0) && (
-                <div className="rounded-lg border-2 border-dashed border-gray-50 p-4 text-center text-[9px] text-gray-400 font-bold italic uppercase tracking-widest">
-                  No nodes initialized. Search for entry points below.
+                <div className="rounded-lg border-2 border-dashed border-gray-100 p-4 text-center text-[10px] text-gray-400 font-bold italic uppercase tracking-widest">
+                  No nodes initialized. Search for entry points...
                 </div>
               )}
             </div>
