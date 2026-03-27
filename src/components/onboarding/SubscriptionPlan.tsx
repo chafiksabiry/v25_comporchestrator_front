@@ -13,6 +13,7 @@ interface Plan {
   isPopular: boolean;
   buttonText: string;
   popular: boolean;
+  stripePriceId: string;
 }
 
 // Les plans seront récupérés dynamiquement depuis le backend
@@ -128,13 +129,14 @@ const SubscriptionPlan = () => {
     }
   };
 
-  const handleStartTrial = async (planName: string) => {
+  const handleStartTrial = async (priceId: string, planName: string) => {
     try {
       setIsLoading(true);
       
       const response = await axios.post(`${import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL}/api/subscriptions/checkout`, {
         userId,
         companyId,
+        priceId,
         planName,
         successUrl: `${window.location.origin}/app11?success=true`,
         cancelUrl: `${window.location.origin}/app11?cancel=true`
@@ -212,7 +214,7 @@ const SubscriptionPlan = () => {
               </div>
 
               <button
-                onClick={() => handleStartTrial(plan.name)}
+                onClick={() => handleStartTrial(plan.stripePriceId, plan.name)}
                 disabled={isLoading}
                 className={`w-full py-3 px-4 rounded-xl font-black text-[11px] uppercase tracking-[0.15em] transition-all duration-300 mb-6 transform group-hover:scale-[1.02] active:scale-95 ${
                   plan.popular
