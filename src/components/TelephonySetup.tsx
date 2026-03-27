@@ -1029,42 +1029,41 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
           </div>
         </div>
       )}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-2">
         <div>
           <div className="flex items-center space-x-2">
-            <h2 className="text-xl font-bold text-gray-900">Telephony Setup</h2>
+            <h2 className="text-2xl font-black text-gray-900 uppercase tracking-widest">Telephony Setup</h2>
             {completedSteps.includes(5) && (
-              <CheckCircle className="h-6 w-6 text-green-500" />
+              <CheckCircle className="h-6 w-6 text-emerald-500" />
             )}
           </div>
-          <p className="text-sm text-gray-500">Configure your call center infrastructure</p>
+          <p className="text-sm font-medium text-gray-500 italic">Configure your call center infrastructure</p>
         </div>
-
       </div>
 
       {/* Gig Selection */}
-      <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 p-6 shadow-lg border border-blue-200">
-        <div className="flex items-center space-x-3 mb-2">
+      <div className="relative overflow-hidden rounded-3xl bg-white/40 backdrop-blur-md p-8 shadow-2xl border border-white/20 group">
+        <div className="flex items-center space-x-4 mb-6">
           <div className="flex-shrink-0">
-            <div className="rounded-full bg-blue-500 p-2">
-              <Briefcase className="h-5 w-5 text-white" />
+            <div className="w-12 h-12 rounded-2xl bg-gradient-harx flex items-center justify-center shadow-lg shadow-harx-500/20">
+              <Briefcase className="h-6 w-6 text-white" />
             </div>
           </div>
           <div className="flex-1">
-            <div className="flex items-center space-x-2">
-              <h3 className="text-xl font-semibold text-blue-900">Select Gig</h3>
-              <span className="inline-flex items-center rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-sm">
+            <div className="flex items-center space-x-3">
+              <h3 className="text-xl font-black text-gray-900 uppercase tracking-widest">Select Gig</h3>
+              <span className="inline-flex items-center rounded-xl bg-gradient-harx px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white shadow-md">
                 Required
               </span>
             </div>
-            <p className="mt-1 text-sm text-blue-700">Choose the gig for which you want to configure telephony <span className="text-blue-600 font-medium">*</span></p>
+            <p className="mt-1 text-sm font-medium text-gray-600 italic">Choose the gig for which you want to configure telephony <span className="text-harx-500 font-black">*</span></p>
           </div>
         </div>
 
         {isLoadingGigs ? (
-          <div className="mt-6 flex items-center justify-center space-x-3 p-4 rounded-lg bg-white/50 backdrop-blur-sm">
-            <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-200 border-t-blue-600"></div>
-            <span className="text-sm font-medium text-blue-700">Loading gigs...</span>
+          <div className="mt-6 flex items-center justify-center space-x-3 p-6 rounded-2xl bg-white/50 backdrop-blur-sm border border-white/40">
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-harx-200 border-t-harx-600"></div>
+            <span className="text-sm font-black text-harx-600 uppercase tracking-widest">Loading Gigs...</span>
           </div>
         ) : gigs.length > 0 ? (
           <div className="mt-6">
@@ -1072,10 +1071,10 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
               {/* Custom Dropdown */}
               <button
                 type="button"
-                className={`relative w-full rounded-xl border-2 py-4 pl-5 pr-12 text-left text-base font-medium transition-all duration-300 shadow-md ${selectedGigId
-                  ? 'border-blue-400 bg-blue-50 text-blue-900 focus:border-blue-500 focus:ring-blue-500 shadow-blue-200/50'
-                  : 'border-blue-200 bg-white text-blue-800 focus:border-blue-400 focus:ring-blue-400 hover:border-blue-300'
-                  } focus:outline-none focus:ring-2 focus:ring-opacity-50`}
+                className={`relative w-full rounded-2xl border-2 py-5 pl-6 pr-14 text-left text-base font-black transition-all duration-300 shadow-xl ${selectedGigId
+                  ? 'border-harx-200 bg-white text-gray-900 focus:border-harx-500 focus:ring-harx-500/20'
+                  : 'border-white bg-white/60 text-gray-400 focus:border-harx-400 focus:ring-harx-400/20 hover:border-harx-200'
+                  } focus:outline-none focus:ring-4 focus:ring-opacity-50 group-hover:shadow-2xl`}
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               >
                 <span className="flex items-center">
@@ -1084,45 +1083,52 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                       const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
                       return selectedGig ? (
                         <>
-                          {selectedGig.title} - {selectedGig.destination_zone.name.common}
+                          <span className="truncate">{selectedGig.title}</span>
+                          <span className="mx-2 text-gray-300">|</span>
+                          <span className="text-harx-500 uppercase tracking-widest text-xs">{selectedGig.destination_zone.name.common}</span>
                           <img
                             src={selectedGig.destination_zone.flags?.png}
                             alt={selectedGig.destination_zone.flags?.alt}
-                            className="inline-block w-6 h-4 ml-2 rounded-sm border border-gray-200 object-cover"
+                            className="inline-block w-6 h-4 ml-3 rounded shadow-sm border border-gray-100 object-cover"
                           />
                         </>
                       ) : 'Select a gig...';
                     })()
                   ) : (
-                    '🎯 Select a gig (required)...'
+                    <span className="italic">🎯 Select a gig profile...</span>
                   )}
                 </span>
-                <span className="absolute inset-y-0 right-0 flex items-center pr-4">
-                  <ChevronDown className={`h-5 w-5 text-blue-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                <span className="absolute inset-y-0 right-0 flex items-center pr-6">
+                  <ChevronDown className={`h-6 w-6 text-harx-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 </span>
               </button>
 
               {/* Dropdown Options */}
               {isDropdownOpen && (
-                <div className="absolute z-10 mt-1 w-full bg-white border-2 border-blue-200 rounded-xl shadow-lg max-h-60 overflow-auto">
+                <div className="absolute z-50 mt-3 w-full bg-white/90 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl max-h-80 overflow-auto scrollbar-hide py-2 animate-in fade-in slide-in-from-top-2 duration-200">
                   {gigs.map((gig: Gig) => (
                     <button
                       key={gig._id}
                       type="button"
-                      className="relative w-full px-5 py-4 text-left hover:bg-blue-50 focus:bg-blue-50 focus:outline-none transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl"
+                      className="relative w-full px-6 py-4 text-left hover:bg-harx-50 focus:bg-harx-50 focus:outline-none transition-all duration-200 border-b border-gray-50 last:border-0"
                       onClick={() => {
                         setSelectedGigId(gig._id);
                         setIsDropdownOpen(false);
                       }}
                     >
-                      <div className="flex items-center">
-                        <span className="text-blue-800 font-medium">
-                          📋 {gig.title} - {gig.destination_zone.name.common}
-                        </span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <span className="text-gray-900 font-black text-sm uppercase tracking-tight">
+                            {gig.title}
+                          </span>
+                          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5 italic">
+                            {gig.destination_zone.name.common}
+                          </span>
+                        </div>
                         <img
                           src={gig.destination_zone.flags?.png}
                           alt={gig.destination_zone.flags?.alt}
-                          className="inline-block w-6 h-4 ml-2 rounded-sm border border-gray-200 object-cover"
+                          className="w-8 h-5 rounded shadow-sm border border-gray-100 object-cover"
                         />
                       </div>
                     </button>
@@ -1131,23 +1137,23 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
               )}
 
               {selectedGigId && (
-                <div className="absolute inset-y-0 right-10 flex items-center pointer-events-none">
-                  <CheckCircle className="h-6 w-6 text-blue-500 drop-shadow-sm" />
+                <div className="absolute inset-y-0 right-14 flex items-center pointer-events-none">
+                  <div className="w-2.5 h-2.5 rounded-full bg-harx-500 shadow-lg shadow-harx-500/50 animate-pulse"></div>
                 </div>
               )}
             </div>
           </div>
         ) : (
-          <div className="mt-6 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-2 border-blue-200">
-            <div className="flex items-start space-x-3">
+          <div className="mt-6 rounded-3xl bg-white/60 backdrop-blur-md p-8 border border-white/40 shadow-xl">
+            <div className="flex items-start space-x-4">
               <div className="flex-shrink-0">
-                <div className="rounded-full bg-blue-100 p-2">
-                  <AlertCircle className="h-6 w-6 text-blue-500" />
+                <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
+                  <AlertCircle className="h-6 w-6 text-gray-400" />
                 </div>
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-blue-900 mb-2">No Gigs Found</h3>
-                <p className="text-sm text-blue-700 leading-relaxed">No gigs were found for this company. Please create a gig first before configuring telephony.</p>
+                <h3 className="text-lg font-black text-gray-900 uppercase tracking-widest mb-1">No Intelligence Profiles Found</h3>
+                <p className="text-sm font-medium text-gray-500 italic leading-relaxed">No primary gigs were detected for this organization. Please initialize an intelligence profile first.</p>
               </div>
             </div>
           </div>
@@ -1155,9 +1161,9 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
       </div>
 
       {/* Provider Selection */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h3 className="text-lg font-medium text-gray-900">Select Provider</h3>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="overflow-hidden rounded-3xl bg-white/40 backdrop-blur-md p-8 shadow-2xl border border-white/20">
+        <h3 className="text-xl font-black text-gray-900 uppercase tracking-widest mb-6">Select Infrastructure Provider</h3>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           {providers.map((p) => {
             const Logo = p.logo;
             const isDisabled = p.id === 'telnyx';
@@ -1165,18 +1171,23 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
               <button
                 key={p.id}
                 disabled={isDisabled}
-                className={`flex items-center justify-center rounded-lg border p-4 transition-all duration-200 ${isDisabled
-                  ? 'opacity-40 grayscale cursor-not-allowed bg-gray-50 border-gray-200'
+                className={`relative overflow-hidden flex items-center justify-center h-24 rounded-2xl border-2 transition-all duration-300 group ${isDisabled
+                  ? 'opacity-40 grayscale cursor-not-allowed bg-gray-50/50 border-gray-100'
                   : provider === p.id
-                    ? 'border-indigo-500 bg-indigo-50 shadow-sm'
-                    : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+                    ? 'border-harx-500 bg-white shadow-xl shadow-harx-500/10'
+                    : 'border-white bg-white/60 hover:border-harx-200 hover:bg-white shadow-md'
                   }`}
                 onClick={() => setProvider(p.id)}
               >
-                <Logo className={`mr-2 h-5 w-5 ${isDisabled ? 'text-gray-400' : 'text-indigo-600'}`} />
-                <span className={`font-medium ${isDisabled ? 'text-gray-400' : 'text-gray-900'}`}>
+                {!isDisabled && provider === p.id && (
+                  <div className="absolute top-0 right-0 p-1.5 bg-harx-500 rounded-bl-xl shadow-lg">
+                    <CheckCircle className="w-3.5 h-3.5 text-white" />
+                  </div>
+                )}
+                <Logo className={`mr-3 h-6 w-6 transition-colors duration-300 ${isDisabled ? 'text-gray-400' : provider === p.id ? 'text-harx-500 font-black' : 'text-gray-400 group-hover:text-harx-400'}`} />
+                <span className={`text-sm font-black uppercase tracking-widest transition-colors duration-300 ${isDisabled ? 'text-gray-400' : provider === p.id ? 'text-gray-900' : 'text-gray-600 group-hover:text-gray-900'}`}>
                   {p.name}
-                  {isDisabled && <span className="ml-2 text-[10px] uppercase tracking-tighter">(Soon)</span>}
+                  {isDisabled && <span className="ml-2 text-[10px] font-bold text-harx-500">(Beta Soon)</span>}
                 </span>
               </button>
             );
@@ -1186,19 +1197,23 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
       </div>
 
       {/* Phone Numbers */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900">Phone Numbers</h3>
+      <div className="overflow-hidden rounded-3xl bg-white/40 backdrop-blur-md p-8 shadow-2xl border border-white/20">
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-xl font-black text-gray-900 uppercase tracking-widest">Active Connectivity</h3>
           {destinationZone && selectedGigId && (() => {
             const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
             return selectedGig ? (
               <div className="flex flex-col items-end">
-                <span className="text-sm text-gray-600">
-                  Destination Zone: <span className="font-medium">{selectedGig.destination_zone.name.common}</span>
-                </span>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full mt-1 ${isQuotaReached ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-                  {purchasedNumbersCount} / {teamSize} Numbers Purchased
-                </span>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Zone:</span>
+                  <span className="text-xs font-black text-harx-600 uppercase tracking-tight">{selectedGig.destination_zone.name.common}</span>
+                </div>
+                <div className={`flex items-center gap-2 px-3 py-1 rounded-xl shadow-sm border ${isQuotaReached ? 'bg-emerald-50 border-emerald-100' : 'bg-harx-50 border-harx-100'}`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${isQuotaReached ? 'bg-emerald-500 shadow-lg shadow-emerald-500/50' : 'bg-harx-500 shadow-lg shadow-harx-500/50 pulse'}`}></div>
+                  <span className={`text-[10px] font-black uppercase tracking-widest ${isQuotaReached ? 'text-emerald-700' : 'text-harx-700'}`}>
+                    {purchasedNumbersCount} / {teamSize} Intelligence Assets
+                  </span>
+                </div>
               </div>
             ) : null;
           })()}
@@ -1322,65 +1337,68 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                   .map((number: any) => (
                     <div
                       key={number.phoneNumber}
-                      className="flex items-center justify-between rounded-lg border p-3"
+                      className="flex items-center justify-between rounded-2xl bg-white border border-gray-100 p-5 shadow-sm hover:shadow-md transition-all duration-300"
                     >
                       <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{number.phoneNumber}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg font-black text-gray-900">{number.phoneNumber}</span>
                           {number.metadata?.type && (
-                            <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full ${number.metadata.type === 'local' ? 'bg-blue-100 text-blue-700' :
-                              number.metadata.type === 'national' ? 'bg-purple-100 text-purple-700' :
-                                'bg-orange-100 text-orange-700'
+                            <span className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg border ${number.metadata.type === 'local' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
+                              number.metadata.type === 'national' ? 'bg-rose-50 text-rose-700 border-rose-100' :
+                                'bg-harx-50 text-harx-700 border-harx-100'
                               }`}>
                               {number.metadata.type}
                             </span>
                           )}
                         </div>
-                        <span className="text-sm text-gray-500">
-                          Status: {number.status}
-                        </span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Network Node {number.status}</span>
+                        </div>
                       </div>
                       <div className="flex items-center">
-                        <span className={`px-2 py-1 text-xs rounded-full ${number.status === 'active' ? 'bg-green-100 text-green-800' :
-                          number.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
+                        <span className={`px-4 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm border ${number.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                          number.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                            'bg-gray-50 text-gray-600 border-gray-100'
                           }`}>
-                          {number.status}
+                          {number.status === 'active' ? 'Operational' : 'Syncing'}
                         </span>
                       </div>
                     </div>
                   ))
               ) : (
-                <div className="rounded-lg border border-gray-200 p-4 text-center text-gray-500">
-                  No Twilio numbers purchased yet
+                <div className="rounded-2xl border-2 border-dashed border-gray-100 p-8 text-center text-gray-400 font-bold italic text-sm">
+                  Waiting for network node initialization...
                 </div>
               )}
             </div>
 
-            {/* Available Numbers or Warning */}
+            {/* Available Numbers Section */}
             {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
-              <div className="mt-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Available Numbers</h4>
-                <div className="grid gap-2">
+              <div className="mt-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest">Available Entry Points</h4>
+                  <div className="h-px flex-1 bg-gray-100"></div>
+                </div>
+                <div className="grid gap-4">
                   {availableNumbers.map((number) => {
                     const phoneNumber = getPhoneNumber(number);
                     return (
                       <div
                         key={phoneNumber}
-                        className="flex items-center justify-between rounded-lg border p-3"
+                        className="flex items-center justify-between rounded-2xl bg-white/60 border border-white p-5 shadow-lg group hover:bg-white hover:border-harx-200 transition-all duration-300"
                       >
                         <div className="flex flex-col">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{phoneNumber}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-lg font-black text-gray-900 group-hover:text-harx-600 transition-colors">{phoneNumber}</span>
                             {number.type && (
-                              <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full ${number.type === 'local' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                              <span className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg border ${number.type === 'local' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-rose-50 text-rose-700 border-rose-100'
                                 }`}>
                                 {number.type}
                               </span>
                             )}
                           </div>
                           {number.locality && (
-                            <span className="text-sm text-gray-500">
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
                               {number.locality}, {number.region}
                             </span>
                           )}
@@ -1388,24 +1406,26 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                         <button
                           onClick={() => {
                             setSelectedNumber(phoneNumber);
-                            // Bypass modal for FR National numbers because the user provided default SIDs
                             if (destinationZone === 'FR' && number.type === 'national' && twilioRegulatorySids.bundleSid) {
                               handleConfirmPurchase(undefined, phoneNumber, number.type);
                               setShowPurchaseModal(true);
                             } else {
                               setPurchaseStatus('confirming');
                               setShowPurchaseModal(true);
-                              setPurchaseType(number.type); // Store type in state for modal
+                              setPurchaseType(number.type);
                             }
                           }}
                           disabled={isQuotaReached}
-                          className={`rounded-md px-3 py-1 text-sm text-white ${isQuotaReached
-                            ? 'bg-gray-400 cursor-not-allowed'
-                            : 'bg-green-600 hover:bg-green-700'
+                          className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all duration-300 ${isQuotaReached
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                            : 'bg-gradient-harx text-white shadow-harx-500/20 hover:shadow-harx-500/40 hover:-translate-y-0.5'
                             }`}
                           title={isQuotaReached ? 'Quota reached for this gig team size' : undefined}
                         >
-                          Purchase
+                          Initialize Node
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
                         </button>
                       </div>
                     );
