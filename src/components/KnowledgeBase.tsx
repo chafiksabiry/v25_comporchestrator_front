@@ -1155,7 +1155,7 @@ const KnowledgeBase: React.FC = () => {
                       className="fixed inset-0 z-20" 
                       onClick={() => setIsGigDropdownOpen(false)} 
                     />
-                    <div className="absolute top-full left-0 mt-2 w-72 bg-white/70 backdrop-blur-2xl border border-white/40 rounded-[2rem] shadow-[0_25px_70px_-15px_rgba(0,0,0,0.15)] p-2 z-30 animate-in fade-in slide-in-from-top-2 zoom-in duration-300 origin-top-left">
+                    <div className="absolute top-full left-0 mt-2 w-max min-w-[280px] max-w-[400px] bg-white/70 backdrop-blur-2xl border border-white/40 rounded-[2rem] shadow-[0_25px_70px_-15px_rgba(0,0,0,0.15)] p-2 z-30 animate-in fade-in slide-in-from-top-2 zoom-in duration-300 origin-top-left">
                       <div className="max-h-80 overflow-y-auto custom-scrollbar px-1">
                         <button
                           onClick={() => {
@@ -1201,7 +1201,7 @@ const KnowledgeBase: React.FC = () => {
                                 <div className={`p-1.5 rounded-lg transition-colors ${isSelected ? 'bg-white/20' : 'bg-harx-50 group-hover/item:bg-harx-100'}`}>
                                   <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white ripple-ping' : 'bg-harx-500'}`} />
                                 </div>
-                                <span className="truncate max-w-[150px]">{gig.title}</span>
+                                <span className="whitespace-nowrap">{gig.title}</span>
                               </div>
                               {isSelected && <CheckCircle size={14} className="text-white animate-in zoom-in" />}
                             </button>
