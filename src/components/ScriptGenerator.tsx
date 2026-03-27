@@ -4,8 +4,7 @@ import apiClient from '../api/client';
 import Cookies from 'js-cookie';
 import {
   User, Headphones, Plus, ArrowLeft, Eye, Calendar, Target, Globe, Trash2, ToggleLeft, ToggleRight, Filter,
-  FileText, HandHeart, Shield, Search, Star, FileCheck, AlertTriangle, CheckCircle, RefreshCw, Edit2, MessageSquare, X,
-  ChevronRight
+  FileText, HandHeart, Shield, Search, Star, FileCheck, AlertTriangle, CheckCircle, RefreshCw, Edit2, MessageSquare, X
 } from 'lucide-react';
 
 interface ScriptResponse {
@@ -397,6 +396,27 @@ const ScriptGenerator: React.FC = () => {
   useEffect(() => {
     fetchAllScripts();
   }, [statusFilter]);
+
+  // Handle global back navigation
+  useEffect(() => {
+    if (isInAppMode()) {
+      const event = new CustomEvent('setGlobalBack', {
+        detail: {
+          label: 'Back to onboarding',
+          action: handleBackToOrchestrator
+        }
+      });
+      window.dispatchEvent(event);
+
+      // Cleanup on unmount
+      return () => {
+        const cleanupEvent = new CustomEvent('setGlobalBack', {
+          detail: null
+        });
+        window.dispatchEvent(cleanupEvent);
+      };
+    }
+  }, []);
 
   const handleGigSelection = (gig: Gig) => {
     setSelectedGig(gig);
@@ -830,53 +850,46 @@ const ScriptGenerator: React.FC = () => {
   const [refiningStep, setRefiningStep] = useState<{ index: number; prompt: string } | null>(null);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="max-w-6xl mx-auto p-6">
-        {isInAppMode() && (
-          <div className="mb-6 flex items-center space-x-4">
-            <button
-              onClick={handleBackToOrchestrator}
-              className="flex items-center transition-colors text-gray-600 hover:text-gray-900"
-            >
-              <ChevronRight className="h-5 w-5 rotate-180" />
-              <span>Back to Onboarding</span>
-            </button>
-          </div>
-        )}
-
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl">
-                <Headphones className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Script Generator
-                </h1>
-                <p className="text-gray-500 text-sm">Create personalized call scripts for your gigs</p>
+    <div className="w-full py-2 space-y-4 animate-in fade-in duration-500">
+      <div className="max-w-7xl mx-auto">
+        {/* Header Area - Branded Gradient */}
+        <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-6 mb-3 shadow-lg shadow-harx-500/20">
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20">
+                  <Headphones className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
+                    Script Generator
+                  </h2>
+                  <p className="text-[14px] font-medium text-white/90">Create personalized call scripts for your gigs</p>
+                </div>
               </div>
             </div>
+            {view !== 'form' && (
+              <button
+                className="px-6 py-2.5 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-black rounded-2xl shadow-xl border border-white/20 transition-all duration-200 uppercase tracking-widest text-[10px] flex items-center gap-2"
+                onClick={handleShowFormClick}
+              >
+                <Plus className="w-5 h-5" />
+                Generate New Script
+              </button>
+            )}
+            {(view === 'form' || view === 'script') && (
+              <button
+                className="px-6 py-2.5 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-black rounded-2xl shadow-xl border border-white/20 transition-all duration-200 uppercase tracking-widest text-[10px] flex items-center gap-2"
+                onClick={handleBackToTable}
+              >
+                <ArrowLeft className="w-5 h-5" />
+                Back to Scripts
+              </button>
+            )}
           </div>
-          {view !== 'form' && (
-            <button
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 font-medium"
-              onClick={handleShowFormClick}
-            >
-              <Plus className="w-5 h-5" />
-              Generate New Script
-            </button>
-          )}
-          {(view === 'form' || view === 'script') && (
-            <button
-              className="px-6 py-3 bg-white text-gray-700 border-2 border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 font-medium"
-              onClick={handleBackToTable}
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Back to Scripts
-            </button>
-          )}
+          {/* Abstract background pattern */}
+          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-black/10 rounded-full blur-2xl" />
         </div>
 
         {/* Table view */}

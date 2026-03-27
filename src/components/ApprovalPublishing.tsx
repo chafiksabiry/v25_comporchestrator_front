@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   CheckCircle,
@@ -14,9 +14,7 @@ import {
   CheckSquare,
   Square,
   ArrowLeft,
-  ArrowLeft as ArrowLeftIcon,
   DollarSign,
-  Plus,
   Building,
   Calendar,
   MapPin,
@@ -144,6 +142,18 @@ const ApprovalPublishing = () => {
     fetchActivities();
     fetchIndustries();
     fetchLanguages();
+
+    // Global Navigation Integration
+    window.dispatchEvent(new CustomEvent('setGlobalBack', {
+      detail: {
+        label: 'Back to Onboarding',
+        action: () => window.dispatchEvent(new CustomEvent('tabChange', { detail: 'company-onboarding' }))
+      }
+    }));
+
+    return () => {
+      window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
+    };
   }, []);
 
   const fetchCompanyDetails = async () => {
@@ -1234,40 +1244,42 @@ const ApprovalPublishing = () => {
   };
 
   if (isLoading) {
-    console.log('⏳ Rendering loading state');
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Approval & Publishing</h1>
-        </div>
-        <div className="rounded-lg bg-white shadow p-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-            <p className="mt-2 text-gray-500">Loading gigs...</p>
+      <div className="w-full py-2 space-y-4">
+        <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-6 shadow-lg shadow-harx-500/20">
+          <div className="relative z-10">
+            <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Approval & Publishing</h1>
+            <p className="text-[14px] font-medium text-white/90">Loading your gigs...</p>
           </div>
+        </div>
+        <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-12 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-harx-600 mx-auto"></div>
+          <p className="mt-4 text-gray-500 font-medium">Synchronizing data...</p>
         </div>
       </div>
     );
   }
 
   if (error) {
-    console.log('❌ Rendering error state:', error);
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Approval & Publishing</h1>
-        </div>
-        <div className="rounded-lg bg-white shadow p-8">
-          <div className="text-center">
-            <AlertTriangle className="h-8 w-8 text-red-500 mx-auto" />
-            <p className="mt-2 text-red-600">{error}</p>
-            <button
-              onClick={fetchGigs}
-              className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-            >
-              Retry
-            </button>
+      <div className="w-full py-2 space-y-4">
+        <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-6 shadow-lg shadow-harx-500/20">
+          <div className="relative z-10">
+            <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Approval & Publishing</h1>
+            <p className="text-[14px] font-medium text-white/90">Error encountered</p>
           </div>
+        </div>
+        <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-12 text-center">
+          <div className="p-4 bg-red-50 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+            <AlertTriangle className="h-8 w-8 text-red-500" />
+          </div>
+          <p className="text-red-600 font-bold text-lg mb-2">{error}</p>
+          <button
+            onClick={fetchGigs}
+            className="px-6 py-2.5 bg-gradient-harx text-white font-black rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-95 uppercase tracking-widest text-[10px]"
+          >
+            Retry Connection
+          </button>
         </div>
       </div>
     );
@@ -1278,18 +1290,35 @@ const ApprovalPublishing = () => {
   // Preview View
   if (currentView === 'preview' && currentGigData) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={backToMain}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
-            >
-              <ArrowLeft size={16} />
-              Back to Approval
-            </button>
-            <div className="h-6 w-px bg-gray-300"></div>
-            <h1 className="text-2xl font-bold text-gray-900">Preview: {currentGigData.title}</h1>
+      <div className="w-full py-2 space-y-4">
+        {/* Header Area - Branded Gradient */}
+        <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-6 mb-3 shadow-lg shadow-harx-500/20">
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={backToMain}
+                  className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all border border-white/20"
+                >
+                  <ArrowLeft className="h-5 w-5 text-white" />
+                </button>
+                <div>
+                  <h2 className="text-3xl font-black text-white uppercase tracking-tighter">
+                    Preview: {currentGigData.title}
+                  </h2>
+                  <p className="text-[14px] font-medium text-white/90 italic">Review all specifications before going live</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setCurrentView('edit')}
+                className="px-6 py-2.5 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-black rounded-2xl shadow-xl border border-white/20 transition-all duration-200 uppercase tracking-widest text-[10px] flex items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Edit Details
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1697,18 +1726,26 @@ const ApprovalPublishing = () => {
   // Edit View
   if (currentView === 'edit' && currentGigData) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={backToMain}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
-            >
-              <ArrowLeft size={16} />
-              Back to Approval
-            </button>
-            <div className="h-6 w-px bg-gray-300"></div>
-            <h1 className="text-2xl font-bold text-gray-900">Edit: {currentGigData.title}</h1>
+      <div className="w-full py-2 space-y-4">
+        {/* Header Area - Branded Gradient */}
+        <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-6 mb-3 shadow-lg shadow-harx-500/20">
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={backToMain}
+                  className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center hover:bg-white/20 transition-all border border-white/20"
+                >
+                  <ArrowLeft className="h-5 w-5 text-white" />
+                </button>
+                <div>
+                  <h2 className="text-3xl font-black text-white uppercase tracking-tighter">
+                    Edit: {currentGigData.title}
+                  </h2>
+                  <p className="text-[14px] font-medium text-white/90 italic">Refine your gig specifications</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -2393,44 +2430,66 @@ const ApprovalPublishing = () => {
 
   // Main View
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold text-gray-900">Approval & Publishing</h1>
+    <div className="w-full py-2 space-y-4 animate-in fade-in duration-500">
+      {/* Header Area - Branded Gradient */}
+      <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-6 shadow-lg shadow-harx-500/20">
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20">
+                <CheckCircle className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-none">
+                  Approval & Publishing
+                </h2>
+                <p className="text-[14px] font-medium text-white/90 mt-1 italic">Activate your gigs and start receiving applications</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              className={`px-6 py-2.5 font-black rounded-2xl shadow-xl transition-all duration-200 uppercase tracking-widest text-[10px] flex items-center gap-2 ${selectedGigs.length > 0
+                ? 'bg-white text-emerald-600 hover:bg-emerald-50 border border-white'
+                : 'bg-white/10 text-white/50 cursor-not-allowed border border-white/10 backdrop-blur-sm'
+                }`}
+              disabled={selectedGigs.length === 0}
+              onClick={approveSelectedGigs}
+            >
+              <CheckCircle className="h-4 w-4" />
+              Approve
+            </button>
+            <button
+              className={`px-6 py-2.5 font-black rounded-2xl shadow-xl transition-all duration-200 uppercase tracking-widest text-[10px] flex items-center gap-2 ${selectedGigs.length > 0
+                ? 'bg-white text-red-600 hover:bg-red-50 border border-white'
+                : 'bg-white/10 text-white/50 cursor-not-allowed border border-white/10 backdrop-blur-sm'
+                }`}
+              disabled={selectedGigs.length === 0}
+              onClick={rejectSelectedGigs}
+            >
+              <XCircle className="h-4 w-4" />
+              Reject
+            </button>
+          </div>
         </div>
-        <div className="flex space-x-2">
-          <button
-            className={`rounded-lg px-4 py-2 ${selectedGigs.length > 0 ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
-            disabled={selectedGigs.length === 0}
-            onClick={approveSelectedGigs}
-          >
-            Approve Selected
-          </button>
-          <button
-            className={`rounded-lg px-4 py-2 ${selectedGigs.length > 0 ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
-            disabled={selectedGigs.length === 0}
-            onClick={rejectSelectedGigs}
-          >
-            Reject Selected
-          </button>
-        </div>
+        {/* Abstract pattern */}
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
       </div>
 
       {/* Filters */}
-      <div className="flex space-x-1 rounded-lg bg-white p-1 shadow">
+      <div className="flex space-x-1 rounded-xl bg-white p-1 border border-gray-100 shadow-sm">
         <button
-          className={`flex-1 rounded-md py-2 text-sm font-medium ${filter === 'all' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
+          className={`flex-1 rounded-lg py-2 text-sm font-bold transition-all ${filter === 'all' ? 'bg-harx-50 text-harx-600' : 'text-gray-500 hover:bg-gray-50'
             }`}
           onClick={() => {
             console.log('🔍 Filter changed to: all');
             setFilter('all');
           }}
         >
-          All
+          All Gigs
         </button>
         <button
-          className={`flex-1 rounded-md py-2 text-sm font-medium ${filter === 'approved' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
+          className={`flex-1 rounded-lg py-2 text-sm font-bold transition-all ${filter === 'approved' ? 'bg-harx-50 text-harx-600' : 'text-gray-500 hover:bg-gray-50'
             }`}
           onClick={() => {
             console.log('🔍 Filter changed to: approved');
@@ -2440,7 +2499,7 @@ const ApprovalPublishing = () => {
           Active
         </button>
         <button
-          className={`flex-1 rounded-md py-2 text-sm font-medium ${filter === 'rejected' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
+          className={`flex-1 rounded-lg py-2 text-sm font-bold transition-all ${filter === 'rejected' ? 'bg-harx-50 text-harx-600' : 'text-gray-500 hover:bg-gray-50'
             }`}
           onClick={() => {
             console.log('🔍 Filter changed to: rejected');
@@ -2450,7 +2509,7 @@ const ApprovalPublishing = () => {
           Inactive
         </button>
         <button
-          className={`flex-1 rounded-md py-2 text-sm font-medium ${filter === 'archived' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
+          className={`flex-1 rounded-lg py-2 text-sm font-bold transition-all ${filter === 'archived' ? 'bg-harx-50 text-harx-600' : 'text-gray-500 hover:bg-gray-50'
             }`}
           onClick={() => {
             console.log('🔍 Filter changed to: archived');
@@ -2462,21 +2521,21 @@ const ApprovalPublishing = () => {
       </div>
 
       {/* Gigs for Approval */}
-      <div className="rounded-lg bg-white shadow">
-        <div className="flex items-center justify-between border-b border-gray-200 p-4">
+      <div className="rounded-xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 p-3">
           <div className="flex items-center space-x-3">
-            <button onClick={selectAllGigs}>
+            <button onClick={selectAllGigs} className="transition-transform active:scale-90">
               {selectedGigs.length === filteredGigs.length && filteredGigs.length > 0 ? (
-                <CheckSquare className="h-5 w-5 text-indigo-600" />
+                <CheckSquare className="h-5 w-5 text-harx-600" />
               ) : (
                 <Square className="h-5 w-5 text-gray-400" />
               )}
             </button>
-            <span className="font-medium text-gray-700">
+            <span className="text-sm font-bold text-gray-700">
               {selectedGigs.length} of {filteredGigs.length} selected
             </span>
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-[11px] font-black uppercase tracking-wider text-harx-500 bg-harx-50 px-2 py-1 rounded-md">
             {filteredGigs.filter(g => g.status === 'pending').length} pending approval
           </div>
         </div>

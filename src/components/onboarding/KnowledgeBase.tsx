@@ -258,38 +258,38 @@ const KnowledgeBase = () => {
   };
 
   return (
-    <div className="w-full py-4 space-y-6 animate-in fade-in duration-500">
+    <div className="w-full py-2 space-y-4 animate-in fade-in duration-500">
       {/* Header Area - Branded Gradient */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-8 mb-4 shadow-lg shadow-harx-500/20">
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-6 mb-3 shadow-lg shadow-harx-500/20">
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20">
                 <BookOpen className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h2 className="text-4xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
+                <h2 className="text-3xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
                   Knowledge Base
                   {isStepCompleted && (
-                    <span className="flex items-center gap-1.5 bg-emerald-500/20 text-emerald-100 px-4 py-1.5 rounded-2xl text-xs font-black uppercase tracking-widest border border-emerald-500/30 backdrop-blur-md italic">
+                    <span className="flex items-center gap-1.5 bg-emerald-500/20 text-emerald-100 px-3 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-emerald-500/30 backdrop-blur-md italic">
                       <CheckCircle2 className="w-4 h-4" />
                       Ready to Scale
                     </span>
                   )}
                 </h2>
-                <p className="text-[16px] font-medium text-white/90">Equip your REPS with essential product wisdom and objection handlers.</p>
+                <p className="text-[14px] font-medium text-white/90">Equip your REPS with essential product wisdom and objection handlers.</p>
               </div>
             </div>
           </div>
           <div className="flex flex-wrap gap-4 relative z-10">
-            <button className="flex items-center rounded-2xl bg-white/10 backdrop-blur-md px-6 py-3 text-sm font-black text-white shadow-sm border border-white/20 hover:bg-white/20 transition-all">
+            <button className="flex items-center rounded-2xl bg-white/10 backdrop-blur-md px-5 py-2.5 text-xs font-black text-white shadow-sm border border-white/20 hover:bg-white/20 transition-all">
               <FolderPlus className="mr-2 h-4 w-4" />
               New Section
             </button>
             {!isStepCompleted ? (
               <button
                 onClick={handleCompleteKnowledgeBase}
-                className={`flex items-center rounded-2xl px-6 py-3 text-sm font-black text-white shadow-lg transition-all transform active:scale-95 ${hasBasicInfo() ? 'bg-white text-harx-600 hover:scale-105' : 'bg-white/10 text-white/50 cursor-not-allowed shadow-none border border-white/10'}`}
+                className={`flex items-center rounded-2xl px-5 py-2.5 text-xs font-black text-white shadow-lg transition-all transform active:scale-95 ${hasBasicInfo() ? 'bg-white text-harx-600 hover:scale-105' : 'bg-white/10 text-white/50 cursor-not-allowed shadow-none border border-white/10'}`}
                 disabled={!hasBasicInfo()}
               >
                 <CheckCircle className="mr-2 h-4 w-4" />

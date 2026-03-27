@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, File, FileText, Plus, Trash2, Mic, Play, Clock, Pause, X, ExternalLink, Eye, Brain, Loader2, RefreshCw, Languages, CheckCircle, ChevronRight, Sparkles } from 'lucide-react';
+import { Upload, File, FileText, Plus, Trash2, Mic, Play, Clock, Pause, X, Eye, Brain, Loader2, RefreshCw, Languages, CheckCircle, ChevronRight, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types';
 import apiClient from '../api/knowledgeClient';
@@ -117,6 +117,20 @@ const KnowledgeBase: React.FC = () => {
     if (savedItems) {
       setKnowledgeItems(JSON.parse(savedItems));
     }
+
+    // Dispatch global back navigation
+    window.dispatchEvent(new CustomEvent('setGlobalBack', {
+      detail: {
+        label: 'Back to Onboarding',
+        onClick: () => {
+          window.dispatchEvent(new CustomEvent('switchTab', { detail: 'company-onboarding' }));
+        }
+      }
+    }));
+
+    return () => {
+      window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
+    };
   }, []);
 
   // Save items to localStorage when they change
@@ -408,17 +422,7 @@ const KnowledgeBase: React.FC = () => {
             formData.append('gigId', selectedGigId);
           }
 
-          const response = await apiClient.post('/call-recordings/upload', formData);
-          
-          // No need to manually add to callRecords here as we refresh below,
-          // but if we want immediate UI update without refetching everything:
-          /*
-          const newCall: CallRecord = {
-            id: (response.data as any).callRecording.id,
-            // ... (populate from response)
-          };
-          setCallRecords(prev => [...prev, newCall]);
-          */
+          await apiClient.post('/call-recordings/upload', formData);
         }
       }
 
@@ -688,11 +692,6 @@ const KnowledgeBase: React.FC = () => {
     }
   };
 
-  const handleBackToOrchestrator = () => {
-    window.dispatchEvent(new CustomEvent('tabChange', {
-      detail: { tab: 'company-onboarding' }
-    }));
-  };
 
   // Fonction utilitaire pour charger la durée d'un audio
   const fetchAudioDuration = (recordingUrl: string, callId: string) => {
@@ -1244,16 +1243,7 @@ const KnowledgeBase: React.FC = () => {
       <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-harx-500/10 blur-[120px] rounded-full -z-10 animate-float" />
       <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-harx-alt-500/10 blur-[120px] rounded-full -z-10 animate-float" style={{ animationDelay: '-3s' }} />
       
-      <div className="relative z-10 p-8">
-      <button
-        onClick={handleBackToOrchestrator}
-        className="mb-8 flex items-center transition-all text-gray-400 hover:text-harx-500 group"
-      >
-        <div className="p-2 rounded-xl bg-white shadow-sm border border-gray-100 mr-3 group-hover:scale-110 transition-transform">
-          <ChevronRight className="h-4 w-4 rotate-180" />
-        </div>
-        <span className="text-xs font-black uppercase tracking-widest leading-none">Back to Orchestrator</span>
-      </button>
+      <div className="relative z-10 p-4">
 
       <div className="mb-10">
         <div className="flex items-center gap-3 mb-3">

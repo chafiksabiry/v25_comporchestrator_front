@@ -12,20 +12,35 @@ import {
 
 const ProfileCreation = () => {
   const [activeTab, setActiveTab] = useState('automatic');
-  const [profiles, setProfiles] = useState([
-    { id: 1, name: 'John Smith', skills: ['Web Development', 'UI/UX Design'], status: 'Complete', successRate: '95%' },
-    { id: 2, name: 'Sarah Johnson', skills: ['Digital Marketing', 'Content Creation'], status: 'Incomplete', successRate: '87%' },
-    { id: 3, name: 'Michael Brown', skills: ['Project Management', 'Agile'], status: 'Complete', successRate: '92%' },
-    { id: 4, name: 'Emily Davis', skills: ['Data Analysis', 'Machine Learning'], status: 'Complete', successRate: '89%' },
+  const [profiles] = useState([
     { id: 5, name: 'David Wilson', skills: ['Mobile Development', 'React Native'], status: 'Incomplete', successRate: '78%' },
   ]);
 
+  React.useEffect(() => {
+    // Dispatch global back navigation
+    window.dispatchEvent(new CustomEvent('setGlobalBack', {
+      detail: {
+        label: 'Back to Onboarding',
+        onClick: () => {
+          window.dispatchEvent(new CustomEvent('switchTab', { detail: 'company-onboarding' }));
+        }
+      }
+    }));
+
+    return () => {
+      window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
+    };
+  }, []);
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Profile Creation</h1>
-        <button className="flex items-center space-x-2 rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
-          <Plus className="h-5 w-5" />
+    <div className="space-y-4 p-4 animate-fade-in">
+      <div className="flex items-center justify-between bg-gradient-harx p-4 rounded-xl shadow-lg border border-harx-600 mb-6">
+        <div>
+          <h1 className="text-xl font-black text-white uppercase tracking-tight">Profile Creation</h1>
+          <p className="text-harx-50 text-[10px] font-bold uppercase tracking-widest opacity-80">AI-Enhanced Talent Management</p>
+        </div>
+        <button className="flex items-center space-x-2 rounded-lg bg-white/20 px-4 py-2 text-white hover:bg-white/30 border border-white/20 backdrop-blur-md transition-all font-black text-xs uppercase tracking-widest group">
+          <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
           <span>New Profile</span>
         </button>
       </div>
@@ -33,30 +48,30 @@ const ProfileCreation = () => {
       <div className="rounded-lg bg-white p-6 shadow">
         <div className="mb-6 flex space-x-4 border-b border-gray-200">
           <button
-            className={`border-b-2 px-4 py-2 font-medium ${
+            className={`border-b-2 px-4 py-2 text-xs font-black uppercase tracking-widest transition-all ${
               activeTab === 'automatic'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-harx-500 text-harx-600'
+                : 'border-transparent text-gray-400 hover:text-gray-600'
             }`}
             onClick={() => setActiveTab('automatic')}
           >
             Automatic Generation
           </button>
           <button
-            className={`border-b-2 px-4 py-2 font-medium ${
+            className={`border-b-2 px-4 py-2 text-xs font-black uppercase tracking-widest transition-all ${
               activeTab === 'manual'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-harx-500 text-harx-600'
+                : 'border-transparent text-gray-400 hover:text-gray-600'
             }`}
             onClick={() => setActiveTab('manual')}
           >
             Manual Creation
           </button>
           <button
-            className={`border-b-2 px-4 py-2 font-medium ${
+            className={`border-b-2 px-4 py-2 text-xs font-black uppercase tracking-widest transition-all ${
               activeTab === 'import'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-harx-500 text-harx-600'
+                : 'border-transparent text-gray-400 hover:text-gray-600'
             }`}
             onClick={() => setActiveTab('import')}
           >
@@ -66,8 +81,8 @@ const ProfileCreation = () => {
 
         {activeTab === 'automatic' && (
           <div className="space-y-6">
-            <div className="rounded-lg bg-indigo-50 p-4 text-indigo-700">
-              <p className="text-sm">
+            <div className="rounded-xl bg-harx-50 p-4 text-harx-700 border border-harx-100 italic">
+              <p className="text-xs font-medium">
                 The AI will automatically generate detailed profiles based on available data sources. You can review and customize the generated profiles before finalizing.
               </p>
             </div>

@@ -7,27 +7,41 @@ import {
   Trash2, 
   CheckCircle,
   Clock,
-  AlertCircle,
   Sparkles,
   ArrowRight
 } from 'lucide-react';
 
 const GigGeneration = () => {
   const [activeTab, setActiveTab] = useState('create');
-  const [gigs, setGigs] = useState([
-    { id: 1, title: 'Web Development Project', client: 'XYZ Corp', budget: '$2,500', status: 'Published', matches: 8 },
-    { id: 2, title: 'Digital Marketing Campaign', client: 'ABC Inc', budget: '$1,800', status: 'Draft', matches: 0 },
-    { id: 3, title: 'Mobile App Development', client: 'Tech Startup', budget: '$5,000', status: 'Published', matches: 12 },
-    { id: 4, title: 'Content Creation for Blog', client: 'Marketing Agency', budget: '$800', status: 'Pending Approval', matches: 0 },
+  const [gigs] = useState([
     { id: 5, title: 'UI/UX Design for Website', client: 'E-commerce Store', budget: '$1,200', status: 'Published', matches: 5 },
   ]);
 
+  React.useEffect(() => {
+    // Dispatch global back navigation
+    window.dispatchEvent(new CustomEvent('setGlobalBack', {
+      detail: {
+        label: 'Back to Onboarding',
+        onClick: () => {
+          window.dispatchEvent(new CustomEvent('switchTab', { detail: 'company-onboarding' }));
+        }
+      }
+    }));
+
+    return () => {
+      window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
+    };
+  }, []);
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Gig Generation</h1>
-        <button className="flex items-center space-x-2 rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
-          <Plus className="h-5 w-5" />
+    <div className="space-y-4 p-4 animate-fade-in">
+      <div className="flex items-center justify-between bg-gradient-harx p-4 rounded-xl shadow-lg border border-harx-600 mb-6">
+        <div>
+          <h1 className="text-xl font-black text-white uppercase tracking-tight">Gig Generation</h1>
+          <p className="text-harx-50 text-[10px] font-bold uppercase tracking-widest opacity-80">AI-Powered Opportunity Creator</p>
+        </div>
+        <button className="flex items-center space-x-2 rounded-lg bg-white/20 px-4 py-2 text-white hover:bg-white/30 border border-white/20 backdrop-blur-md transition-all font-black text-xs uppercase tracking-widest group">
+          <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
           <span>New Gig</span>
         </button>
       </div>
@@ -35,30 +49,30 @@ const GigGeneration = () => {
       <div className="rounded-lg bg-white p-6 shadow">
         <div className="mb-6 flex space-x-4 border-b border-gray-200">
           <button
-            className={`border-b-2 px-4 py-2 font-medium ${
+            className={`border-b-2 px-4 py-2 text-xs font-black uppercase tracking-widest transition-all ${
               activeTab === 'create'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-harx-500 text-harx-600'
+                : 'border-transparent text-gray-400 hover:text-gray-600'
             }`}
             onClick={() => setActiveTab('create')}
           >
             Create Gig
           </button>
           <button
-            className={`border-b-2 px-4 py-2 font-medium ${
+            className={`border-b-2 px-4 py-2 text-xs font-black uppercase tracking-widest transition-all ${
               activeTab === 'optimize'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-harx-500 text-harx-600'
+                : 'border-transparent text-gray-400 hover:text-gray-600'
             }`}
             onClick={() => setActiveTab('optimize')}
           >
             Optimize Existing
           </button>
           <button
-            className={`border-b-2 px-4 py-2 font-medium ${
+            className={`border-b-2 px-4 py-2 text-xs font-black uppercase tracking-widest transition-all ${
               activeTab === 'templates'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-harx-500 text-harx-600'
+                : 'border-transparent text-gray-400 hover:text-gray-600'
             }`}
             onClick={() => setActiveTab('templates')}
           >
@@ -68,7 +82,7 @@ const GigGeneration = () => {
 
         {activeTab === 'create' && (
           <div className="space-y-6">
-            <div className="rounded-lg bg-indigo-50 p-4 text-indigo-700">
+            <div className="rounded-xl bg-harx-50 p-4 text-harx-700 border border-harx-100 italic">
               <div className="flex items-start">
                 <Sparkles className="mr-2 h-5 w-5 flex-shrink-0" />
                 <p className="text-sm">

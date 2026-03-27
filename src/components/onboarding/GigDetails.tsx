@@ -271,16 +271,16 @@ const GigDetails = () => {
   };
 
   return (
-    <div className="w-full py-4 space-y-6 animate-in fade-in duration-500">
+    <div className="w-full py-2 space-y-4 animate-in fade-in duration-500">
       {/* Header Area - Branded Gradient */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-8 mb-4 shadow-lg shadow-harx-500/20">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-6 mb-3 shadow-lg shadow-harx-500/20">
         <div className="relative z-10 flex items-center justify-between font-black">
           <div className="space-y-1.5">
-            <h1 className="text-4xl font-black text-white uppercase tracking-tighter">Gig Details</h1>
-            <p className="text-[16px] font-medium text-white/90">Define and manage your multi-channel intelligence assets</p>
+            <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Gig Details</h1>
+            <p className="text-[14px] font-medium text-white/90">Define and manage your multi-channel intelligence assets</p>
           </div>
           <button
-            className="flex items-center gap-2 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-black px-6 py-3 rounded-2xl shadow-xl border border-white/20 transition-all duration-200 uppercase tracking-widest text-[10px]"
+            className="flex items-center gap-2 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-black px-5 py-2.5 rounded-2xl shadow-xl border border-white/20 transition-all duration-200 uppercase tracking-widest text-[10px]"
             onClick={() => { window.location.href = '/app6'; }}
           >
             <Plus className="w-5 h-5" />
@@ -292,7 +292,7 @@ const GigDetails = () => {
         <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-black/10 rounded-full blur-2xl" />
       </div>
       {gigs.length === 0 ? (
-        <div className="text-center py-20 bg-white/40 backdrop-blur-md rounded-[2rem] border-2 border-dashed border-gray-200">
+        <div className="text-center py-10 bg-white/40 backdrop-blur-md rounded-[2rem] border-2 border-dashed border-gray-200">
           <div className="mx-auto w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
             <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
