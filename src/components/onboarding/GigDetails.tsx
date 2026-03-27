@@ -3,7 +3,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import Swal from 'sweetalert2';
 import GigDetailsView from './GigDetailsView';
-import { Clock, Users, ChevronDown, Plus } from 'lucide-react';
+import { Clock, Users, Plus } from 'lucide-react';
 
 interface Gig {
   _id: string;
@@ -119,7 +119,7 @@ interface GigResponse {
   data: Gig[];
 }
 
-const GigDetails = ({ onBack }: { onBack?: () => void }) => {
+const GigDetails = () => {
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -274,17 +274,6 @@ const GigDetails = ({ onBack }: { onBack?: () => void }) => {
     <div className="w-full py-4 space-y-6 animate-in fade-in duration-500">
       {/* Header Area - Branded Gradient */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-8 mb-4 shadow-lg shadow-harx-500/20">
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 mb-6 group transition-all duration-300"
-          >
-            <div className="p-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white group-hover:bg-white/20 transition-all">
-              <ChevronDown className="h-5 w-5 rotate-90" />
-            </div>
-            <span className="text-white/80 group-hover:text-white font-black text-sm uppercase tracking-widest">Back to overview</span>
-          </button>
-        )}
         <div className="relative z-10 flex items-center justify-between font-black">
           <div className="space-y-1.5">
             <h1 className="text-4xl font-black text-white uppercase tracking-tighter">Gig Details</h1>
