@@ -163,8 +163,8 @@ const SubscriptionPlan = () => {
         userId,
         companyId,
         planName,
-        successUrl: `${window.location.origin}/subscription?success=true`,
-        cancelUrl: `${window.location.origin}/subscription?cancel=true`
+        successUrl: `${window.location.origin}/app11?success=true`,
+        cancelUrl: `${window.location.origin}/app11?cancel=true`
       });
 
       if (response.data && (response.data as any).data && (response.data as any).data.url) {
