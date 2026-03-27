@@ -64,7 +64,7 @@ const phases: Phase[] = [
     id: 1,
     title: "Company Account Setup & Identity",
     icon: Building2,
-    color: "blue",
+    color: "harx",
     steps: [
       {
         id: 1,
@@ -89,7 +89,7 @@ const phases: Phase[] = [
     id: 2,
     title: "Operational Setup",
     icon: Settings,
-    color: "yellow",
+    color: "harx-alt",
     steps: [
       {
         id: 3,
@@ -133,7 +133,7 @@ const phases: Phase[] = [
     id: 3,
     title: "REPS Engagement",
     icon: Users,
-    color: "green",
+    color: "harx-alt",
     steps: [
       {
         id: 8,
@@ -162,7 +162,7 @@ const phases: Phase[] = [
     id: 4,
     title: "Activation",
     icon: Rocket,
-    color: "red",
+    color: "harx",
     steps: [
       {
         id: 11,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, File, FileText, Video, Link as LinkIcon, Plus, Trash2, Filter, Download, Mic, Play, Clock, Pause, ChevronDown, ChevronUp, X, ExternalLink, Eye, ArrowLeft, Brain, Loader2, RefreshCw, Languages, CheckCircle, ChevronRight } from 'lucide-react';
+import { Upload, File, FileText, Video, Link as LinkIcon, Plus, Trash2, Filter, Download, Mic, Play, Clock, Pause, ChevronDown, ChevronUp, X, ExternalLink, Eye, ArrowLeft, Brain, Loader2, RefreshCw, Languages, CheckCircle, ChevronRight, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types';
 import apiClient from '../api/knowledgeClient';
@@ -239,7 +239,7 @@ const KnowledgeBase: React.FC = () => {
       });
       console.log('Response fetching documents:', response);
 
-      const documents = response.data.documents.map((doc: any) => ({
+      const documents = (response.data as any).documents.map((doc: any) => ({
         id: doc._id,
         name: doc.name,
         description: doc.description,
@@ -303,7 +303,7 @@ const KnowledgeBase: React.FC = () => {
           params: { userId }
         });
         console.log('Response fetching call records:', response);
-        const calls = response.data.callRecordings.map((call: any) => ({
+        const calls = (response.data as any).callRecordings.map((call: any) => ({
           id: call.id,
           contactId: call.contactId,
           date: call.date,
@@ -409,18 +409,18 @@ const KnowledgeBase: React.FC = () => {
         }
 
         const newCall: CallRecord = {
-          id: response.data.callRecording.id,
-          contactId: response.data.callRecording.contactId,
-          date: response.data.callRecording.date,
-          duration: response.data.callRecording.duration,
-          recordingUrl: response.data.callRecording.recordingUrl,
+          id: (response.data as any).callRecording.id,
+          contactId: (response.data as any).callRecording.contactId,
+          date: (response.data as any).callRecording.date,
+          duration: (response.data as any).callRecording.duration,
+          recordingUrl: (response.data as any).callRecording.recordingUrl,
           transcriptUrl: '',
-          summary: response.data.callRecording.summary,
-          sentiment: response.data.callRecording.sentiment,
-          tags: response.data.callRecording.tags,
-          aiInsights: response.data.callRecording.aiInsights,
-          repId: response.data.callRecording.repId,
-          companyId: response.data.callRecording.companyId,
+          summary: (response.data as any).callRecording.summary,
+          sentiment: (response.data as any).callRecording.sentiment,
+          tags: (response.data as any).callRecording.tags,
+          aiInsights: (response.data as any).callRecording.aiInsights,
+          repId: (response.data as any).callRecording.repId,
+          companyId: (response.data as any).callRecording.companyId,
           processingOptions: { transcription: true, sentiment: true, insights: true },
           audioState: {
             isPlaying: false,
@@ -549,7 +549,7 @@ const KnowledgeBase: React.FC = () => {
               ...prev,
               [item.id]: {
                 ...(prev[item.id] || {}),
-                summary: summaryResponse.data.summary
+                summary: (summaryResponse.data as any).summary
               }
             }));
           } catch (error) {
@@ -573,7 +573,7 @@ const KnowledgeBase: React.FC = () => {
               ...prev,
               [item.id]: {
                 ...(prev[item.id] || {}),
-                transcription: transcriptionResponse.data.transcription
+                transcription: (transcriptionResponse.data as any).transcription
               }
             }));
             setTranscriptionShowCount(prev => ({ ...prev, [item.id]: TRANSCRIPTION_PAGE_SIZE }));
@@ -598,7 +598,7 @@ const KnowledgeBase: React.FC = () => {
               ...prev,
               [item.id]: {
                 ...(prev[item.id] || {}),
-                scoring: scoringResponse.data.scoring
+                scoring: (scoringResponse.data as any).scoring
               }
             }));
           } catch (error) {
@@ -637,7 +637,7 @@ const KnowledgeBase: React.FC = () => {
       console.log('Analysis response:', response.data);
       setDocumentAnalysis(prev => ({
         ...prev,
-        [documentId]: response.data
+        [documentId]: response.data as any
       }));
     } catch (error) {
       console.error('Error analyzing document:', error);
@@ -814,8 +814,8 @@ const KnowledgeBase: React.FC = () => {
       setDocumentAnalysis(prev => ({
         ...prev,
         [recordingId]: {
-          summary: summaryResponse.data.summary,
-          transcription: transcriptionResponse.data.transcription
+          summary: (summaryResponse.data as any).summary,
+          transcription: (transcriptionResponse.data as any).transcription
         } as CallAnalysis
       }));
     } catch (error) {
@@ -884,7 +884,7 @@ const KnowledgeBase: React.FC = () => {
       // Store translated analysis
       setTranslatedAnalysis(prev => ({
         ...prev,
-        [documentId]: response.data.translatedAnalysis
+        [documentId]: (response.data as any).translatedAnalysis
       }));
 
     } catch (error) {
@@ -998,184 +998,186 @@ const KnowledgeBase: React.FC = () => {
 
                   {/* Inline Call Recording Analysis */}
                   {selectedItem?.id === call.id && (
-                    <div className="bg-purple-50 border-l-4 border-purple-500 p-6 rounded-lg shadow-sm ml-4 mb-4">
-                      <div className="flex justify-between items-start mb-4">
+                    <div className="bg-harx-50/50 border-l-4 border-harx-500 p-6 rounded-2xl shadow-sm ml-4 mb-6 backdrop-blur-sm">
+                      <div className="flex justify-between items-start mb-6">
                         <div className="flex items-center gap-4">
-                          <div className="flex items-center">
-                            <Mic size={20} className="text-purple-600 mr-2" />
-                            <h3 className="text-xl font-semibold text-gray-900">Call Recording Details</h3>
+                          <div className="p-2.5 bg-white rounded-xl shadow-sm">
+                            <Mic size={20} className="text-harx-500" />
                           </div>
+                          <h3 className="text-xl font-bold text-gray-900 tracking-tight">Call Recording Details</h3>
                           {/* Transaction Status Badge */}
-                          <div className="flex items-center px-3 py-1 bg-green-100 border border-green-200 rounded-full text-green-800 text-sm font-bold shadow-sm animate-pulse">
-                            <CheckCircle size={16} className="mr-1" />
+                          <div className="flex items-center px-3 py-1 bg-green-50 border border-green-100 rounded-full text-green-700 text-xs font-black uppercase tracking-wider shadow-sm">
+                            <CheckCircle size={14} className="mr-1.5" />
                             Transaction Aboutie
                           </div>
                         </div>
                         <button
                           onClick={() => setSelectedItem(null)}
-                          className="text-gray-400 hover:text-gray-600"
+                          className="p-2 text-gray-400 hover:text-harx-500 hover:bg-white rounded-xl transition-all"
                         >
                           <X size={20} />
                         </button>
                       </div>
 
-                      <div className="mb-6">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h2 className="text-2xl font-semibold text-gray-900 mb-2">{selectedItem.contactId}</h2>
-                            <p className="text-gray-600 mb-2">{selectedItem.summary}</p>
-                            <div className="flex items-center text-gray-500 mb-2">
-                              <Clock size={16} className="mr-2" />
-                              {formatDate(selectedItem.date)} • {callDurations[selectedItem.id] !== undefined ? formatTime(callDurations[selectedItem.id]) : '...'}
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                        <div className="lg:col-span-2">
+                          <h2 className="text-2xl font-black text-gray-900 mb-2 tracking-tighter">{selectedItem.contactId}</h2>
+                          <p className="text-gray-600 leading-relaxed mb-4">{selectedItem.summary}</p>
+                          <div className="flex items-center gap-4 text-sm font-bold text-gray-500">
+                            <div className="flex items-center">
+                              <Clock size={16} className="mr-1.5 text-harx-500" />
+                              {formatDate(selectedItem.date)}
+                            </div>
+                            <div className="h-1 w-1 bg-gray-300 rounded-full"></div>
+                            <div className="flex items-center">
+                              {callDurations[selectedItem.id] !== undefined ? formatTime(callDurations[selectedItem.id]) : '...'}
                             </div>
                           </div>
-                          <div className="flex flex-col items-end gap-2">
-                            <button
-                              className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                              onClick={() => handlePlayRecording(selectedItem.recordingUrl, selectedItem.id)}
-                              title={playingCallId === selectedItem.id && isPlaying ? "Pause" : "Play"}
-                            >
-                              {playingCallId === selectedItem.id && isPlaying ? <Pause size={18} /> : <Play size={18} />}
-                              <span className="ml-2">{playingCallId === selectedItem.id && isPlaying ? 'Pause' : 'Play'} Audio</span>
-                            </button>
-                            <span className="text-xs text-gray-500">
-                              {playingCallId === selectedItem.id ? `${formatTime(currentTime)} / ${formatTime(duration)}` : '0:00 / 0:00'}
+                        </div>
+                        <div className="flex flex-col justify-center items-end gap-3">
+                          <button
+                            className="flex items-center px-6 py-3 bg-gradient-harx text-white rounded-2xl font-black text-sm shadow-xl shadow-harx-500/25 hover:scale-105 active:scale-95 transition-all"
+                            onClick={() => handlePlayRecording(selectedItem.recordingUrl, selectedItem.id)}
+                          >
+                            {playingCallId === selectedItem.id && isPlaying ? <Pause size={18} /> : <Play size={18} />}
+                            <span className="ml-2 uppercase tracking-widest">{playingCallId === selectedItem.id && isPlaying ? 'Pause' : 'Play'} Call</span>
+                          </button>
+                          <div className="flex items-center gap-3 w-full max-w-[200px]">
+                            <span className="text-[10px] font-black text-harx-500 tabular-nums">
+                              {playingCallId === selectedItem.id ? formatTime(currentTime) : '0:00'}
+                            </span>
+                            <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-gradient-harx transition-all duration-150"
+                                style={{ width: playingCallId === selectedItem.id ? `${(currentTime / duration) * 100}%` : '0%' }}
+                              />
+                            </div>
+                            <span className="text-[10px] font-black text-gray-400 tabular-nums">
+                              {playingCallId === selectedItem.id ? formatTime(duration) : '0:00'}
                             </span>
                           </div>
                         </div>
                       </div>
 
                       {/* Call Analysis Section */}
-                      <div className="mt-6 w-full">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-6">Call Analysis</h2>
-                        {/* Key Points Section */}
-                        <details className="mb-4" open>
-                          <summary className="cursor-pointer text-gray-700 font-semibold py-2">Key Points</summary>
-                          <div className="space-y-4 p-2">
-                            {loadingSummary[selectedItem.id] ? (
-                              <div className="flex items-center space-x-2 text-blue-600">
-                                <Loader2 className="animate-spin" size={20} />
-                                <span>Analyzing call, please wait...</span>
-                              </div>
-                            ) : documentAnalysis[selectedItem.id] && 'summary' in documentAnalysis[selectedItem.id] && (documentAnalysis[selectedItem.id] as CallAnalysis).summary?.keyIdeas?.length > 0 ? (
-                              <>
-                                {(documentAnalysis[selectedItem.id] as CallAnalysis).summary.keyIdeas.map((idea, idx) => (
-                                  <div key={idx} className="bg-gray-50 p-4 rounded-lg">
-                                    <h5 className="font-medium text-gray-900 mb-2">{idea.title}</h5>
-                                    <p className="text-gray-700">{idea.description}</p>
-                                  </div>
-                                ))}
-                                <div className="mt-4 text-sm text-gray-500">
-                                  Last updated: {format(new Date((documentAnalysis[selectedItem.id] as CallAnalysis).summary.lastUpdated), 'PPpp')}
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-2 pb-2 border-b border-harx-100">
+                          <Sparkles size={20} className="text-harx-500" />
+                          <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">AI Call Analysis</h2>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Key Points Section */}
+                          <div className="bg-white p-6 rounded-2xl border border-harx-100 shadow-sm">
+                            <h4 className="text-sm font-black text-harx-500 uppercase tracking-widest mb-4">Core Insights</h4>
+                            <div className="space-y-4">
+                              {loadingSummary[selectedItem.id] ? (
+                                <div className="flex items-center space-x-3 text-harx-500 py-4">
+                                  <Loader2 className="animate-spin" size={20} />
+                                  <span className="text-xs font-bold font-black">Distilling call essence...</span>
                                 </div>
-                              </>
-                            ) : (
-                              <div className="text-gray-500 italic">No analysis available yet.</div>
-                            )}
-                          </div>
-                        </details>
-                        {/* Transcription Section */}
-                        <details className="mb-4" open>
-                          <summary className="cursor-pointer text-gray-700 font-semibold py-2">Transcription</summary>
-                          <div className="p-4">
-                            {loadingTranscription[selectedItem.id] ? (
-                              <div className="flex items-center space-x-2 text-blue-600">
-                                <Loader2 className="animate-spin" size={20} />
-                                <span>Generating transcription, please wait...</span>
-                              </div>
-                            ) : (() => {
-                              if (!documentAnalysis || !selectedItem?.id) {
-                                return <div className="text-gray-500 italic">No transcription available yet.</div>;
-                              }
-                              const analysis = documentAnalysis[selectedItem.id];
-                              if (!analysis || !('transcription' in analysis)) {
-                                return <div className="text-gray-500 italic">No transcription available yet.</div>;
-                              }
-                              const callAnalysis = analysis as CallAnalysis;
-                              if (callAnalysis.transcription?.status !== 'completed' || !callAnalysis.transcription?.segments?.length) {
-                                return <div className="text-gray-500 italic">No transcription available yet.</div>;
-                              }
-                              const showCount = transcriptionShowCount[selectedItem.id] || TRANSCRIPTION_PAGE_SIZE;
-                              const segmentsToShow = callAnalysis.transcription.segments.slice(0, showCount);
-                              return (
-                                <div className="space-y-4">
-                                  {segmentsToShow.map((segment: any, idx: number) => (
-                                    <div key={idx} className="bg-gray-50 p-4 rounded-lg">
-                                      <div className="flex justify-between items-center mb-2 text-sm text-gray-500">
-                                        <span>{typeof segment.start === 'string' ? segment.start : formatTime(segment.start)} - {typeof segment.end === 'string' ? segment.end : formatTime(segment.end)}</span>
-                                        {segment.speaker && <span className="font-medium">{segment.speaker}</span>}
-                                      </div>
-                                      <p className="text-gray-700">{segment.text}</p>
+                              ) : documentAnalysis[selectedItem.id] && 'summary' in documentAnalysis[selectedItem.id] && (documentAnalysis[selectedItem.id] as CallAnalysis).summary?.keyIdeas?.length > 0 ? (
+                                <>
+                                  {(documentAnalysis[selectedItem.id] as CallAnalysis).summary.keyIdeas.map((idea, idx) => (
+                                    <div key={idx} className="group">
+                                      <h5 className="font-bold text-gray-900 border-l-2 border-harx-500 pl-3 mb-1">{idea.title}</h5>
+                                      <p className="text-sm text-gray-600 pl-3">{idea.description}</p>
                                     </div>
                                   ))}
+                                </>
+                              ) : (
+                                <div className="text-gray-400 italic text-sm">Waiting for AI distillation...</div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Scoring Section */}
+                          <div className="bg-white p-6 rounded-2xl border border-harx-100 shadow-sm">
+                            <h4 className="text-sm font-black text-harx-500 uppercase tracking-widest mb-4">Performance Score</h4>
+                            <div className="space-y-4">
+                              {loadingScoring[selectedItem.id] ? (
+                                <div className="flex items-center space-x-3 text-harx-500 py-4">
+                                  <Loader2 className="animate-spin" size={20} />
+                                  <span className="text-xs font-bold uppercase">Evaluating metrics...</span>
+                                </div>
+                              ) : (() => {
+                                const analysis = documentAnalysis[selectedItem.id];
+                                if (!analysis || !('scoring' in analysis)) return <div className="text-gray-400 italic text-sm">No score data yet.</div>;
+                                const scoring = (analysis as any).scoring;
+                                if (scoring?.status !== 'completed' || !scoring?.result) return <div className="text-gray-400 italic text-sm">Analysis in progress...</div>;
+                                
+                                return (
+                                  <div className="space-y-4">
+                                    {Object.entries(scoring.result).map(([section, value]: [string, any]) => (
+                                      <div key={section} className="relative">
+                                        <div className="flex justify-between items-center mb-1.5">
+                                          <span className="text-xs font-black text-gray-700 uppercase">{section}</span>
+                                          <span className="text-xs font-black text-harx-600">{value.score}/100</span>
+                                        </div>
+                                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                          <div className="h-full bg-gradient-harx" style={{ width: `${value.score}%` }} />
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Transcription Section */}
+                        <div className="bg-white p-6 rounded-2xl border border-harx-100 shadow-sm">
+                          <h4 className="text-sm font-black text-harx-500 uppercase tracking-widest mb-4">Word-for-Word Transcript</h4>
+                          {loadingTranscription[selectedItem.id] ? (
+                            <div className="flex items-center space-x-3 text-harx-500 py-4">
+                              <Loader2 className="animate-spin" size={20} />
+                              <span className="text-xs font-bold uppercase">Transcribing audio stream...</span>
+                            </div>
+                          ) : (() => {
+                            const analysis = documentAnalysis[selectedItem.id];
+                            if (!analysis || !('transcription' in analysis)) return <div className="text-gray-500 italic">Transcription pending...</div>;
+                            const callAnalysis = analysis as CallAnalysis;
+                            if (callAnalysis.transcription?.status !== 'completed' || !callAnalysis.transcription?.segments?.length) return <div className="text-gray-500 italic">No segments found.</div>;
+                            
+                            const showCount = transcriptionShowCount[selectedItem.id] || TRANSCRIPTION_PAGE_SIZE;
+                            const segmentsToShow = callAnalysis.transcription.segments.slice(0, showCount);
+                            
+                            return (
+                              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
+                                {segmentsToShow.map((segment: any, idx: number) => (
+                                  <div key={idx} className="p-3 rounded-xl hover:bg-harx-50/30 transition-colors">
+                                    <div className="flex justify-between items-center mb-1">
+                                      <span className="text-[10px] font-black text-harx-400 tabular-nums">
+                                        {typeof segment.start === 'string' ? segment.start : formatTime(segment.start)}
+                                      </span>
+                                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">{segment.speaker || 'AGENT'}</span>
+                                    </div>
+                                    <p className="text-sm text-gray-700 leading-relaxed font-medium">{segment.text}</p>
+                                  </div>
+                                ))}
+                                <div className="flex justify-center gap-4 mt-6">
                                   {showCount < callAnalysis.transcription.segments.length && (
                                     <button
-                                      className="mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                      className="px-4 py-2 bg-harx-50 text-harx-600 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-harx-100 transition-colors"
                                       onClick={() => setTranscriptionShowCount(prev => ({ ...prev, [selectedItem.id]: showCount + TRANSCRIPTION_PAGE_SIZE }))}
                                     >
-                                      Show more
+                                      Load More
                                     </button>
                                   )}
                                   {showCount > TRANSCRIPTION_PAGE_SIZE && (
                                     <button
-                                      className="mt-2 ml-2 px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                                      className="px-4 py-2 text-gray-400 rounded-xl text-xs font-black uppercase tracking-widest hover:text-gray-600 transition-colors"
                                       onClick={() => setTranscriptionShowCount(prev => ({ ...prev, [selectedItem.id]: TRANSCRIPTION_PAGE_SIZE }))}
                                     >
-                                      Show less
+                                      Collapse
                                     </button>
                                   )}
-                                  {callAnalysis.transcription.lastUpdated && (
-                                    <div className="mt-4 text-sm text-gray-500">
-                                      Last updated: {format(new Date(callAnalysis.transcription.lastUpdated), 'PPpp')}
-                                    </div>
-                                  )}
                                 </div>
-                              );
-                            })()}
-                          </div>
-                        </details>
-                        {/* Scoring Section */}
-                        <details className="mb-4" open>
-                          <summary className="cursor-pointer text-gray-700 font-semibold py-2">Scoring</summary>
-                          <div className="p-4">
-                            {loadingScoring[selectedItem.id] ? (
-                              <div className="flex items-center space-x-2 text-blue-600">
-                                <Loader2 className="animate-spin" size={20} />
-                                <span>Generating scoring, please wait...</span>
                               </div>
-                            ) : (() => {
-                              if (!documentAnalysis || !selectedItem?.id) {
-                                return <div className="text-gray-500 italic">No scoring available yet.</div>;
-                              }
-                              const analysis = documentAnalysis[selectedItem.id];
-                              if (!analysis || !('scoring' in analysis)) {
-                                return <div className="text-gray-500 italic">No scoring available yet.</div>;
-                              }
-                              const scoring = (analysis as any).scoring;
-                              if (scoring?.status !== 'completed' || !scoring?.result) {
-                                return <div className="text-gray-500 italic">No scoring available yet.</div>;
-                              }
-                              return (
-                                <div className="space-y-4">
-                                  {Object.entries(scoring.result).map(([section, value]: [string, any]) => (
-                                    <div key={section} className="bg-gray-50 p-4 rounded-lg">
-                                      <div className="flex justify-between items-center mb-2 text-sm text-gray-500">
-                                        <span className="font-medium">{section}</span>
-                                        <span>Score: {value.score}</span>
-                                      </div>
-                                      <p className="text-gray-700">{value.feedback}</p>
-                                    </div>
-                                  ))}
-                                  {scoring.lastUpdated && (
-                                    <div className="mt-4 text-sm text-gray-500">
-                                      Last updated: {format(new Date(scoring.lastUpdated), 'PPpp')}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        </details>
+                            );
+                          })()}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1236,35 +1238,62 @@ const KnowledgeBase: React.FC = () => {
 
                   {/* Inline Document Analysis */}
                   {selectedDocumentForAnalysis?.id === item.id && (
-                    <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg shadow-sm ml-4 mb-4">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-center">
-                          <Brain size={20} className="text-blue-600 mr-2" />
-                          <h3 className="text-xl font-semibold text-gray-900">Document Analysis</h3>
+                    <div className="bg-white border border-harx-100 p-8 rounded-3xl shadow-2xl ml-4 mb-8 relative overflow-hidden group/analysis">
+                      {/* Decorative elements */}
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-harx opacity-5 rounded-bl-[100px]" />
+                      
+                      <div className="flex justify-between items-start mb-8 relative">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 bg-gradient-harx rounded-2xl text-white shadow-lg shadow-harx-500/30">
+                            <Brain size={24} />
+                          </div>
+                          <div>
+                            <h3 className="text-2xl font-black text-gray-900 tracking-tight">Document Analysis</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[10px] uppercase font-black tracking-[0.2em] text-harx-500">Smart Engine</span>
+                              <div className="w-1 h-1 bg-gray-300 rounded-full" />
+                              <span className="text-[10px] uppercase font-black tracking-[0.2em] text-gray-400">Deep Insights</span>
+                            </div>
+                          </div>
                         </div>
                         <button
                           onClick={() => setSelectedDocumentForAnalysis(null)}
-                          className="text-gray-400 hover:text-gray-600"
+                          className="p-2 text-gray-400 hover:text-harx-500 hover:bg-harx-50 rounded-xl transition-all"
                         >
-                          <X size={20} />
+                          <X size={24} />
                         </button>
                       </div>
 
                       {analyzingDocument === item.id ? (
-                        <div className="flex items-center justify-center py-8">
-                          <Loader2 className="animate-spin text-blue-600 mr-3" size={24} />
-                          <span className="text-gray-600">Analyzing document...</span>
+                        <div className="flex flex-col items-center justify-center py-16 gap-4">
+                          <div className="relative">
+                            <Loader2 className="animate-spin text-harx-500" size={48} />
+                            <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-harx-400 animate-pulse" size={20} />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-lg font-black text-gray-900 uppercase tracking-widest">Processing Intelligence</p>
+                            <p className="text-sm text-gray-500 mt-1 italic font-medium">Extracting key concepts from your content...</p>
+                          </div>
                         </div>
                       ) : documentAnalysis[item.id] ? (
-                        renderAnalysisContent(documentAnalysis[item.id], item.id)
+                        <div className="relative animate-fade-in">
+                           {renderAnalysisContent(documentAnalysis[item.id], item.id)}
+                        </div>
                       ) : (
-                        <div className="text-center py-8">
-                          <p className="text-gray-600 mb-4">No analysis available yet.</p>
+                        <div className="text-center py-16 bg-harx-50/50 rounded-3xl border-2 border-dashed border-harx-200">
+                          <div className="inline-flex p-4 bg-white rounded-2xl shadow-sm mb-4">
+                            <Brain size={32} className="text-harx-400" />
+                          </div>
+                          <h4 className="text-xl font-black text-gray-900 mb-2 uppercase tracking-tight">Analysis Needed</h4>
+                          <p className="text-gray-500 max-w-sm mx-auto mb-8 font-medium italic">
+                            Let the HARX Smart Engine explore this document to extract meaningful insights.
+                          </p>
                           <button
                             onClick={() => analyzeDocument(item.id)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                            className="inline-flex items-center px-8 py-4 bg-gradient-harx text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-harx-500/25 hover:scale-105 active:scale-95 transition-all"
                           >
-                            Analyze Document
+                            <Brain size={20} className="mr-3" />
+                            Analyze Now
                           </button>
                         </div>
                       )}
@@ -1538,127 +1567,186 @@ const KnowledgeBase: React.FC = () => {
       const showTranslateButton = documentId && needsTranslation(documentAnalysis) && !hasTranslation;
 
       return (
-        <div>
-          {/* Translation status and button */}
-          {documentId && (
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                {hasTranslation && (
-                  <div className="flex items-center text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
-                    <Languages size={14} className="mr-1" />
-                    Translated to English
-                  </div>
-                )}
+        <div className="space-y-10">
+          {/* Translation Controls - Premium Floating Bar */}
+          {documentId && (hasTranslation || showTranslateButton) && (
+            <div className="flex items-center justify-between bg-white/60 backdrop-blur-md p-4 rounded-2xl border border-harx-100 shadow-sm sticky top-0 z-10 mb-8">
+              <div className="flex items-center gap-4">
+                <div className="p-2 bg-harx-50 rounded-lg">
+                  <Languages size={18} className="text-harx-500" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest">Language Hub</h4>
+                  <p className="text-[10px] text-gray-500 font-bold italic">
+                    {hasTranslation ? 'View in English' : 'Need translation?'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
                 {showTranslateButton && (
                   <button
                     onClick={() => translateAnalysis(documentId, documentAnalysis)}
                     disabled={translatingDocument === documentId}
-                    className="flex items-center text-sm px-3 py-1 bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 disabled:opacity-50"
+                    className="flex items-center px-4 py-2 bg-harx-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-harx-600 shadow-lg shadow-harx-500/20 transition-all disabled:opacity-50"
                   >
                     {translatingDocument === documentId ? (
                       <>
-                        <Loader2 size={14} className="mr-1 animate-spin" />
+                        <RefreshCw size={14} className="mr-2 animate-spin" />
                         Translating...
                       </>
                     ) : (
                       <>
-                        <Languages size={14} className="mr-1" />
+                        <Languages size={14} className="mr-2" />
                         Translate to English
                       </>
                     )}
                   </button>
                 )}
+                {hasTranslation && (
+                  <button
+                    onClick={() => setTranslatedAnalysis(prev => {
+                      const newState = { ...prev };
+                      delete newState[documentId];
+                      return newState;
+                    })}
+                    className="text-[10px] font-black text-harx-500 uppercase tracking-widest hover:underline px-2"
+                  >
+                    Show Original
+                  </button>
+                )}
               </div>
-              {hasTranslation && (
-                <button
-                  onClick={() => setTranslatedAnalysis(prev => {
-                    const newState = { ...prev };
-                    delete newState[documentId];
-                    return newState;
-                  })}
-                  className="text-sm text-gray-500 hover:text-gray-700"
-                >
-                  Show Original
-                </button>
-              )}
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Summary</h3>
-                <p className="text-gray-700">{displayAnalysis.summary}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div className="space-y-8">
+              <div className="group/item">
+                <h3 className="text-xs font-black text-harx-500 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-harx-500 rounded-full" />
+                  Executive Summary
+                </h3>
+                <p className="text-gray-700 leading-relaxed font-medium bg-harx-50/30 p-4 rounded-2xl border border-harx-50/50 group-hover/item:border-harx-100 transition-colors">
+                  {displayAnalysis.summary}
+                </p>
               </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Domain</h3>
-                <p className="text-gray-700">{displayAnalysis.domain}</p>
+              
+              <div className="grid grid-cols-2 gap-6">
+                <div className="group/item">
+                  <h3 className="text-[10px] font-black text-harx-400 uppercase tracking-widest mb-2">Subject Domain</h3>
+                  <div className="bg-white p-3 rounded-xl border border-gray-100 font-bold text-sm text-gray-800 shadow-sm group-hover/item:shadow-md transition-all">
+                    {displayAnalysis.domain}
+                  </div>
+                </div>
+                <div className="group/item">
+                  <h3 className="text-[10px] font-black text-harx-400 uppercase tracking-widest mb-2">Target Audience</h3>
+                  <div className="bg-white p-3 rounded-xl border border-gray-100 font-bold text-sm text-gray-800 shadow-sm group-hover/item:shadow-md transition-all">
+                    {displayAnalysis.targetAudience}
+                  </div>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Theme</h3>
-                <p className="text-gray-700">{displayAnalysis.theme}</p>
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Technical Level</h3>
-                <p className="text-gray-700">{displayAnalysis.technicalLevel}</p>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="group/item">
+                  <h3 className="text-[10px] font-black text-harx-400 uppercase tracking-widest mb-2">Expertise Level</h3>
+                  <div className="bg-white p-3 rounded-xl border border-gray-100 font-bold text-sm text-gray-800 shadow-sm flex items-center gap-2">
+                    <span className="flex gap-0.5">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className={`w-1 h-3 rounded-full ${i <= 2 ? 'bg-harx-500' : 'bg-gray-100'}`} />
+                      ))}
+                    </span>
+                    {displayAnalysis.technicalLevel}
+                  </div>
+                </div>
+                <div className="group/item">
+                  <h3 className="text-[10px] font-black text-harx-400 uppercase tracking-widest mb-2">Primary Theme</h3>
+                  <div className="bg-white p-3 rounded-xl border border-gray-100 font-bold text-sm text-gray-800 shadow-sm">
+                    {displayAnalysis.theme}
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Main Points</h3>
-                <ul className="list-disc list-inside space-y-2">
+
+            <div className="space-y-8">
+              <div className="group/item bg-gradient-to-br from-white to-harx-50/30 p-6 rounded-3xl border border-harx-100 shadow-inner">
+                <h3 className="text-xs font-black text-gray-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-harx-500 rounded-full" />
+                  Main Strategic Points
+                </h3>
+                <ul className="space-y-3">
                   {displayAnalysis.mainPoints.map((point: string, index: number) => (
-                    <li key={index} className="text-gray-700">{point}</li>
+                    <li key={index} className="flex items-start gap-3 group/li">
+                      <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-harx-500 group-hover/li:scale-150 transition-transform flex-shrink-0" />
+                      <span className="text-sm text-gray-700 font-medium leading-relaxed">{point}</span>
+                    </li>
                   ))}
                 </ul>
               </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Target Audience</h3>
-                <p className="text-gray-700">{displayAnalysis.targetAudience}</p>
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Key Terms</h3>
-                <ul className="list-disc list-inside space-y-2">
-                  {displayAnalysis.keyTerms.map((term: string, index: number) => (
-                    <li key={index} className="text-gray-700">{term}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Recommendations</h3>
-                <ul className="list-disc list-inside space-y-2">
-                  {displayAnalysis.recommendations.map((rec: string, index: number) => (
-                    <li key={index} className="text-gray-700">{rec}</li>
-                  ))}
-                </ul>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="group/item">
+                  <h3 className="text-[10px] font-black text-harx-400 uppercase tracking-widest mb-3">Key Terms</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {displayAnalysis.keyTerms.map((term: string, index: number) => (
+                      <span key={index} className="px-3 py-1 bg-white border border-gray-100 rounded-lg text-xs font-black text-gray-600 shadow-sm hover:border-harx-200 hover:text-harx-500 transition-all">
+                        {term}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="group/item">
+                  <h3 className="text-[10px] font-black text-harx-400 uppercase tracking-widest mb-3">Recommendations</h3>
+                   <div className="space-y-2">
+                    {displayAnalysis.recommendations.map((rec: string, index: number) => (
+                      <div key={index} className="p-2 bg-white/50 border border-gray-50 rounded-xl flex items-center gap-2 group/rec">
+                        <Plus size={10} className="text-harx-400 group-hover/rec:text-harx-500 transition-colors" />
+                        <span className="text-[11px] font-bold text-gray-600 line-clamp-1">{rec}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       );
     } else if ('summary' in analysis && analysis.summary && 'keyIdeas' in analysis.summary) {
-      // This is a CallAnalysis
+      // This is a CallAnalysis - used in modal view
       const callAnalysis = analysis as CallAnalysis;
       return (
         <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Call Summary</h3>
-            <div className="space-y-4">
-              {callAnalysis.summary.keyIdeas.map((idea, index) => (
-                <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-2">{idea.title}</h4>
-                  <p className="text-gray-700">{idea.description}</p>
-                </div>
-              ))}
+           <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
+            <Sparkles size={20} className="text-harx-500" />
+            Executive Call Summary
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {callAnalysis.summary.keyIdeas.map((idea, index) => (
+              <div key={index} className="bg-white p-5 rounded-2xl border border-harx-100 shadow-sm hover:shadow-md transition-all">
+                <h4 className="font-bold text-harx-600 mb-2 truncate">{idea.title}</h4>
+                <p className="text-sm text-gray-600 leading-relaxed font-medium">{idea.description}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 pt-6 border-t border-gray-100 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+              <Clock size={14} />
+              AI DISTILLED ON {format(new Date(callAnalysis.summary.lastUpdated), 'PPpp')}
             </div>
-            <div className="mt-4 text-sm text-gray-500">
-              Last updated: {format(new Date(callAnalysis.summary.lastUpdated), 'PPpp')}
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="w-1 h-3 rounded-full bg-harx-500 opacity-20" />
+              ))}
             </div>
           </div>
         </div>
       );
     } else {
-      return <div className="text-gray-500 italic">No analysis available yet.</div>;
+      return (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <Brain size={48} className="text-gray-200 mb-4" />
+          <p className="text-sm font-bold text-gray-400 uppercase tracking-widest italic">Intelligence stream offline</p>
+        </div>
+      );
     }
   };
 

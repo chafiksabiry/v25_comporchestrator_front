@@ -91,7 +91,7 @@ const Subscription: React.FC = () => {
           </div>
           
           <div className="bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-gray-100 flex items-center gap-4 shadow-sm">
-            <div className="h-12 w-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+            <div className="h-12 w-12 bg-harx-50 rounded-xl flex items-center justify-center text-harx-600">
               <CreditCard size={24} />
             </div>
             <div>
