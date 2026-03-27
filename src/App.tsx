@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Menu,
   LogOut,
@@ -33,6 +33,7 @@ function App() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [userFullName, setUserFullName] = useState('Admin User');
   const [currentStepGuide, setCurrentStepGuide] = useState<{ title: string; description: string } | null>(null);
+  const [globalBackConfig, setGlobalBackConfig] = useState<{ label: string; action: () => void } | null>(null);
 
   // Vérifier si nous sommes sur une page spéciale
   const isZohoCallback = window.location.pathname === '/zoho-callback';
@@ -110,12 +111,25 @@ function App() {
       }
     };
 
+    const handleGlobalBackUpdate = (event: CustomEvent) => {
+      if (event.detail && event.detail.action) {
+        setGlobalBackConfig({
+          label: event.detail.label || 'Back',
+          action: event.detail.action
+        });
+      } else {
+        setGlobalBackConfig(null);
+      }
+    };
+
     window.addEventListener('tabChange', handleTabChange as EventListener);
     window.addEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
+    window.addEventListener('setGlobalBack', handleGlobalBackUpdate as EventListener);
 
     return () => {
       window.removeEventListener('tabChange', handleTabChange as EventListener);
       window.removeEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
+      window.removeEventListener('setGlobalBack', handleGlobalBackUpdate as EventListener);
     };
   }, []);
 
@@ -323,12 +337,26 @@ function App() {
         {/* Top Navigation */}
         <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 h-20 flex items-center shrink-0 px-8 relative z-20">
           <div className="flex w-full items-center justify-between">
-            <button
-              className="p-2.5 rounded-xl bg-gray-50 border border-gray-100 text-gray-500 hover:bg-gray-100 hover:text-harx-500 transition-all duration-300 shadow-sm"
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            >
-              <Menu className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-6">
+              <button
+                className="p-2.5 rounded-xl bg-gray-50 border border-gray-100 text-gray-500 hover:bg-gray-100 hover:text-harx-500 transition-all duration-300 shadow-sm"
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+
+              {globalBackConfig && (
+                <button
+                  onClick={globalBackConfig.action}
+                  className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-gradient-harx/10 border border-harx-500/20 text-harx-600 hover:bg-gradient-harx/20 transition-all duration-300 group shadow-sm shadow-harx-500/5 animate-in slide-in-from-left-4 fade-in"
+                >
+                  <div className="p-1.5 rounded-lg bg-white shadow-sm transition-transform duration-300 group-hover:-translate-x-1">
+                    <ChevronRight className="h-4 w-4 rotate-180" />
+                  </div>
+                  <span className="text-sm font-black uppercase tracking-widest">{globalBackConfig.label}</span>
+                </button>
+              )}
+            </div>
             <div className="flex items-center space-x-4 ml-auto">
               <div className="flex items-center space-x-3 bg-gray-50 p-1.5 pr-4 rounded-2xl border border-gray-100 shadow-sm">
                 <div className="h-10 w-10 rounded-xl bg-gradient-harx flex items-center justify-center text-white font-black shadow-md">

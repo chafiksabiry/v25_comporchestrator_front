@@ -76,7 +76,7 @@ interface Gig {
   updatedAt: string;
 }
 
-const TelephonySetup = ({ companyId: propCompanyId, onBack }: { companyId?: string | null; onBack?: () => void }): JSX.Element => {
+const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | null }): JSX.Element => {
   const [provider, setProvider] = useState<'telnyx' | 'twilio'>('twilio');
   const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(propCompanyId || null);
@@ -1027,17 +1027,6 @@ const TelephonySetup = ({ companyId: propCompanyId, onBack }: { companyId?: stri
     <div className="w-full py-4 space-y-6 animate-in fade-in duration-500">
       {/* Header Area - Subtle Gradient Accent */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-8 mb-4 shadow-lg shadow-harx-500/20">
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 mb-6 group transition-all duration-300"
-          >
-            <div className="p-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white group-hover:bg-white/20 transition-all">
-              <ChevronDown className="h-5 w-5 rotate-90" />
-            </div>
-            <span className="text-white/80 group-hover:text-white font-black text-sm uppercase tracking-widest">Back to overview</span>
-          </button>
-        )}
         <div className="relative z-10 flex items-center justify-between">
           <div className="space-y-1.5">
             <h1 className="text-4xl font-black text-white uppercase tracking-tighter">Telephony Setup</h1>
