@@ -58,8 +58,8 @@ const SubscriptionPlan = () => {
         `${import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL}/api/subscriptions/current/${companyId}`
       );
 
-      if (response.data && (response.data as any).data && (response.data as any).data.status === 'active') {
-        const subData = (response.data as any).data;
+      const subData = (response.data as any).data;
+      if (subData && (subData.status === 'active' || subData.status === 'trialing')) {
         if (subData.planId && subData.planId.stripePriceId) {
           setActivePriceId(subData.planId.stripePriceId);
         }
