@@ -1037,30 +1037,58 @@ const KnowledgeBase: React.FC = () => {
                         <button onClick={() => setSelectedItem(null)} className="p-2 hover:bg-white rounded-xl transition-colors text-gray-400 hover:text-harx-500"><X size={24} /></button>
                       </div>
                     </div>
-                    {/* Audio/Video Player */}
-                    <div className="flex items-center gap-6 mb-10 bg-white/60 p-4 rounded-[2rem] border border-white shadow-inner">
-                       <button
-                          className="flex items-center justify-center w-14 h-14 bg-gradient-harx text-white rounded-2xl font-black shadow-lg shadow-harx-500/30 hover:scale-105 active:scale-95 transition-all"
-                          onClick={() => handlePlayRecording(item.fileUrl, item.id)}
-                        >
-                          {playingCallId === item.id && isPlaying ? <Pause size={24} /> : <Play size={24} />}
-                        </button>
-                        <div className="flex-1">
-                          <div className="flex justify-between items-center mb-2 px-1">
-                             <span className="text-[10px] font-black text-harx-500 uppercase tracking-widest italic">Live Content Stream</span>
-                             <span className="text-[10px] font-black text-gray-400 tabular-nums">
-                              {playingCallId === item.id ? formatTime(currentTime) : '0:00'} / {playingCallId === item.id ? formatTime(duration) : '0:00'}
-                            </span>
+                    {/* Media Player (Audio or Video) */}
+                    <div className="mb-10 group/player relative">
+                      {item.callData?.fileType?.startsWith('video/') || item.fileUrl?.match(/\.(mp4|webm|mov|avi)$/i) ? (
+                        <div className="relative rounded-[2rem] overflow-hidden border border-white/50 shadow-2xl bg-black/5 aspect-video group/video">
+                          <video 
+                            src={item.fileUrl} 
+                            controls 
+                            className="w-full h-full object-contain"
+                          />
+                          {/* Premium Overlay for Video */}
+                          <div className="absolute top-4 left-4 pointer-events-none transition-opacity duration-300">
+                             <div className="bg-harx-500/90 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-2 border border-white/20 shadow-lg">
+                               <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                               <span className="text-[10px] font-black text-white uppercase tracking-widest">Master Video Stream</span>
+                             </div>
                           </div>
-                          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden cursor-pointer">
-                            <div 
-                              className="h-full bg-gradient-harx transition-all duration-150 relative"
-                              style={{ width: playingCallId === item.id ? `${(currentTime / duration) * 100}%` : '0%' }}
-                            >
-                              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-harx-500 rounded-full shadow-md" />
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-6 bg-white/60 p-4 rounded-[2rem] border border-white shadow-inner">
+                          <button 
+                            className="flex items-center justify-center w-14 h-14 bg-gradient-harx text-white rounded-2xl font-black shadow-lg shadow-harx-500/30 hover:scale-105 active:scale-95 transition-all"
+                            onClick={() => handlePlayRecording(item.fileUrl, item.id)}
+                          >
+                            {playingCallId === item.id && isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                          </button>
+                          <div className="flex-1">
+                            <div className="flex justify-between items-center mb-2 px-1">
+                               <span className="text-[10px] font-black text-harx-500 uppercase tracking-widest italic flex items-center gap-2">
+                                 <div className="w-2 h-2 bg-harx-500 rounded-full animate-pulse" />
+                                 Live Content Stream
+                               </span>
+                               <span className="text-[10px] font-black text-gray-400 tabular-nums">
+                                {playingCallId === item.id ? formatTime(currentTime) : '0:00'} / {playingCallId === item.id ? formatTime(duration) : '0:00'}
+                              </span>
+                            </div>
+                            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden cursor-pointer group/progress"
+                                 onClick={(e) => {
+                                   if (playingCallId !== item.id) return;
+                                   const rect = e.currentTarget.getBoundingClientRect();
+                                   const pos = (e.clientX - rect.left) / rect.width;
+                                   // Logic for seeking handled by handlePlayRecording or specialized seek function
+                                 }}>
+                              <div 
+                                className="h-full bg-gradient-harx transition-all duration-150 relative"
+                                style={{ width: playingCallId === item.id ? `${(currentTime / duration) * 100}%` : '0%' }}
+                              >
+                                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-harx-500 rounded-full shadow-md" />
+                              </div>
                             </div>
                           </div>
                         </div>
+                      )}
                     </div>
                     {documentAnalysis[item.id] ? (
                       renderAnalysisContent(documentAnalysis[item.id], item.id)
