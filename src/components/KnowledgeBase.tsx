@@ -1129,7 +1129,7 @@ const KnowledgeBase: React.FC = () => {
         </p>
       </div>
 
-      <div className="bg-white/60 backdrop-blur-md p-5 rounded-[2rem] border border-white/20 shadow-xl shadow-gray-200/20 mb-10">
+      <div className="relative z-20 bg-white/60 backdrop-blur-md p-5 rounded-[2rem] border border-white/20 shadow-xl shadow-gray-200/20 mb-10">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-4 w-full md:w-auto">
               {/* Custom Gig Dropdown */}
@@ -1155,7 +1155,7 @@ const KnowledgeBase: React.FC = () => {
                       className="fixed inset-0 z-20" 
                       onClick={() => setIsGigDropdownOpen(false)} 
                     />
-                    <div className="absolute top-full left-0 mt-3 w-80 bg-white/70 backdrop-blur-2xl border border-white/40 rounded-[2.5rem] shadow-[0_25px_70px_-15px_rgba(0,0,0,0.15)] p-3 z-30 animate-in fade-in slide-in-from-top-2 zoom-in duration-300 origin-top-left overflow-hidden">
+                    <div className="absolute top-full left-0 mt-3 w-80 bg-white/70 backdrop-blur-2xl border border-white/40 rounded-[2.5rem] shadow-[0_25px_70px_-15px_rgba(0,0,0,0.15)] p-3 z-30 animate-in fade-in slide-in-from-top-2 zoom-in duration-300 origin-top-left">
                       <div className="max-h-80 overflow-y-auto custom-scrollbar px-1">
                         <button
                           onClick={() => {
