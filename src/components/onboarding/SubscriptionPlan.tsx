@@ -4,63 +4,20 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import React from 'react';
 
-const plans = [
-  {
-    name: 'STARTER',
-    price: '99',
-    description: 'Start your campaigns with simplicity and efficiency',
-    features: [
-      'Active GIGs: 3',
-      'Active REPs: 5',
-      'AI Powered Gig Engine',
-      'AI Powered Script Engine',
-      'AI Powered Learning Planner',
-      'AI Powered GIGS REPS Matching',
-      'Qualified REPs on demand',
-      'Dashboard with Standard KPIs',
-      'Email support + assisted onboarding'
-    ],
-    buttonText: 'Start trial',
-    popular: false
-  },
-  {
-    name: 'GROWTH',
-    price: '249',
-    description: 'Drive multi channel efforts with AI automation',
-    features: [
-      'Active GIGs: 10',
-      'Active REPs: 15',
-      'Channels: Outbound Calls Only',
-      'All Starter Features',
-      'AI Powered Lead Management Engine',
-      'AI Powered Knowledge Base Engine',
-      'AI Powered Call Monitoring & Audit',
-      'Call storage - 3 months',
-      'Priority support + chat'
-    ],
-    buttonText: 'Start trial',
-    popular: true
-  },
-  {
-    name: 'SCALE',
-    price: '499',
-    description: 'Activate Intelligence at scale',
-    features: [
-      'Active GIGs: 25',
-      'Active REPs: 50',
-      'Channels: Outbound Calls Only',
-      'Global Coverage',
-      'All Growth Features Included',
-      'Priority Support - live chat, email',
-      'Customization - Dashboard, Analytics',
-      'Full Integrations'
-    ],
-    buttonText: 'Start trial',
-    popular: false
-  }
-];
+interface Plan {
+  _id: string;
+  name: string;
+  price: number;
+  description: string;
+  features: string[];
+  isPopular: boolean;
+  buttonText: string;
+  popular: boolean;
+}
 
+// Les plans seront récupérés dynamiquement depuis le backend
 const SubscriptionPlan = () => {
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [isStepCompleted, setIsStepCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const companyId = Cookies.get('companyId');
@@ -68,11 +25,27 @@ const SubscriptionPlan = () => {
 
   // Vérifier l'état de l'étape au chargement
   useEffect(() => {
+    fetchPlans();
     if (companyId) {
       checkStepStatus();
       checkExistingSubscription();
     }
   }, [companyId]);
+
+  const fetchPlans = async () => {
+    try {
+      const response = await axios.get<Plan[]>(`${import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL}/api/subscriptions/plans`);
+      // Ajouter les champs UI manquants si nécessaire
+      const formattedPlans = response.data.map((plan: Plan) => ({
+        ...plan,
+        buttonText: 'Start trial',
+        popular: plan.isPopular
+      }));
+      setPlans(formattedPlans);
+    } catch (error) {
+      console.error('Error fetching plans:', error);
+    }
+  };
 
   const checkExistingSubscription = async () => {
     try {
