@@ -21,6 +21,7 @@ const SubscriptionPlan = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isStepCompleted, setIsStepCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [activePriceId, setActivePriceId] = useState<string | null>(null);
   const companyId = Cookies.get('companyId');
   const userId = Cookies.get('userId');
 
@@ -58,6 +59,11 @@ const SubscriptionPlan = () => {
       );
 
       if (response.data && (response.data as any).data && (response.data as any).data.status === 'active') {
+        const subData = (response.data as any).data;
+        if (subData.planId && subData.planId.stripePriceId) {
+          setActivePriceId(subData.planId.stripePriceId);
+        }
+        
         // Si un abonnement existe, marquer automatiquement l'étape comme complétée
         if (!isStepCompleted) {
           completeOnboardingStep();
@@ -181,20 +187,26 @@ const SubscriptionPlan = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {plans.map((plan) => (
-            <div 
-              key={plan.name}
-              className={`relative flex flex-col p-6 rounded-[2rem] transition-all duration-500 group ${
-                plan.popular 
-                  ? 'bg-[#0a0b14] text-white scale-105 shadow-2xl shadow-harx-500/20 ring-1 ring-white/10' 
-                  : 'bg-white text-gray-900 border border-gray-100 shadow-xl hover:shadow-2xl hover:border-harx-500/30'
-              }`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-gradient-harx text-white px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-lg shadow-harx-500/30">
-                  Most Popular
-                </div>
-              )}
+          {plans.map((plan) => {
+            const isActive = activePriceId === plan.stripePriceId;
+            return (
+              <div 
+                key={plan.name}
+                className={`relative flex flex-col p-6 rounded-[2rem] transition-all duration-500 group ${
+                  isActive
+                    ? 'bg-[#0a0b14] text-white scale-105 shadow-2xl shadow-harx-500/20 ring-2 ring-harx-500'
+                    : plan.popular 
+                      ? 'bg-[#0a0b14] text-white scale-105 shadow-2xl shadow-harx-500/20 ring-1 ring-white/10' 
+                      : 'bg-white text-gray-900 border border-gray-100 shadow-xl hover:shadow-2xl hover:border-harx-500/30'
+                }`}
+              >
+                {(plan.popular || isActive) && (
+                  <div className={`absolute -top-4 left-1/2 transform -translate-x-1/2 px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-lg ${
+                    isActive ? 'bg-green-500 text-white shadow-green-500/30' : 'bg-gradient-harx text-white shadow-harx-500/30'
+                  }`}>
+                    {isActive ? 'Current Plan' : 'Most Popular'}
+                  </div>
+                )}
 
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-1">
@@ -214,15 +226,19 @@ const SubscriptionPlan = () => {
               </div>
 
               <button
-                onClick={() => handleStartTrial(plan.stripePriceId, plan.name)}
-                disabled={isLoading}
-                className={`w-full py-3 px-4 rounded-xl font-black text-[11px] uppercase tracking-[0.15em] transition-all duration-300 mb-6 transform group-hover:scale-[1.02] active:scale-95 ${
-                  plan.popular
-                    ? 'bg-gradient-harx text-white shadow-xl shadow-harx-500/30 hover:shadow-harx-500/50'
-                    : 'bg-gray-900 text-white hover:bg-black shadow-lg shadow-black/10'
+                onClick={() => !isActive && handleStartTrial(plan.stripePriceId, plan.name)}
+                disabled={isLoading || isActive}
+                className={`w-full py-3 px-4 rounded-xl font-black text-[11px] uppercase tracking-[0.15em] transition-all duration-300 mb-6 transform ${
+                  !isActive ? 'group-hover:scale-[1.02] active:scale-95' : ''
+                } ${
+                  isActive
+                    ? 'bg-green-500/20 text-green-400 border border-green-500/30 cursor-default'
+                    : plan.popular
+                      ? 'bg-gradient-harx text-white shadow-xl shadow-harx-500/30 hover:shadow-harx-500/50'
+                      : 'bg-gray-900 text-white hover:bg-black shadow-lg shadow-black/10'
                 }`}
               >
-                {isLoading ? 'Loading...' : plan.buttonText}
+                {isLoading ? 'Loading...' : isActive ? 'Current Plan' : plan.buttonText}
               </button>
 
               <div className={`h-px w-full mb-6 ${plan.popular ? 'bg-white/10' : 'bg-gray-100'}`} />
@@ -241,8 +257,9 @@ const SubscriptionPlan = () => {
                   </li>
                 ))}
               </ul>
-            </div>
-          ))}
+                </div>
+              );
+            })}
         </div>
       </div>
     </div>
