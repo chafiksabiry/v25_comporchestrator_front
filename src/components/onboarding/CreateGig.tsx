@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Phone,
   MessageSquare,
@@ -14,11 +14,10 @@ import {
   CheckCircle,
   Save,
   CheckCircle2,
-  Clock,
-  Globe,
-  Settings,
   DollarSign,
-  Calendar
+  Calendar,
+  Briefcase,
+  Target
 } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
