@@ -205,7 +205,7 @@ const KnowledgeBase: React.FC = () => {
         description: doc.description,
         type: 'document',
         fileUrl: doc.fileUrl,
-        uploadedAt: format(new Date(doc.uploadedAt), 'yyyy-MM-dd'),
+        uploadedAt: doc.uploadedAt,
         uploadedBy: doc.uploadedBy,
         tags: doc.tags,
         usagePercentage: 0,
@@ -606,7 +606,7 @@ const KnowledgeBase: React.FC = () => {
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
     try {
-      return format(new Date(dateString), 'dd MMM yyyy');
+      return format(new Date(dateString), 'dd MMM yyyy - HH:mm');
     } catch {
       return dateString;
     }
