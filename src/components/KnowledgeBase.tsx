@@ -870,8 +870,9 @@ const KnowledgeBase: React.FC = () => {
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-lg font-medium text-gray-900 truncate">{call.contactId}</h3>
                         <div className="flex items-center space-x-2">
-                          <button onClick={() => handleView(call)} className="text-blue-600 hover:text-blue-800 p-1"><Eye size={16} /></button>
-                          <button onClick={() => handleDelete(call.id)} className="text-red-600 hover:text-red-800 p-1"><Trash2 size={16} /></button>
+                          <button onClick={() => openInNewTab(call.recordingUrl)} className="text-blue-600 hover:text-blue-800 p-1" title="Open Recording"><ExternalLink size={16} /></button>
+                          <button onClick={() => handleView(call)} className="text-blue-600 hover:text-blue-800 p-1" title="AI Analysis"><Brain size={16} /></button>
+                          <button onClick={() => handleDelete(call.id)} className="text-red-600 hover:text-red-800 p-1" title="Delete"><Trash2 size={16} /></button>
                         </div>
                       </div>
                       <div className="flex items-center text-sm text-gray-500 mb-3">
@@ -923,15 +924,20 @@ const KnowledgeBase: React.FC = () => {
                   <div className="flex-grow min-w-0">
                     <div className="flex justify-between items-start mb-2">
                        <h3 className="text-lg font-black text-gray-900 truncate tracking-tight uppercase">{item.name}</h3>
-                       <div className="flex space-x-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                         <button onClick={() => handleView(item)} className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg"><Brain size={18} /></button>
-                         <button onClick={() => handleDelete(item.id)} className="text-red-400 hover:bg-red-50 p-2 rounded-lg"><Trash2 size={18} /></button>
-                       </div>
+                        <div className="flex space-x-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                          <button onClick={() => openInNewTab(item.fileUrl)} className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg" title="View Document"><Eye size={18} /></button>
+                          <button onClick={() => handleView(item)} className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg" title="AI Analysis"><Brain size={18} /></button>
+                          <button onClick={() => handleDelete(item.id)} className="text-red-400 hover:bg-red-50 p-2 rounded-lg" title="Delete"><Trash2 size={18} /></button>
+                        </div>
                     </div>
                     <p className="text-xs text-gray-500 mb-4 font-medium italic leading-relaxed line-clamp-2">{item.description}</p>
                     <div className="flex items-center justify-between border-t border-gray-50 pt-4">
                       <span className="text-[10px] font-black text-gray-300 uppercase">{formatDate(item.date)}</span>
-                      <button onClick={() => handleView(item)} className="text-[10px] font-black text-harx-500 uppercase hover:underline">View Analysis</button>
+                      <div className="flex items-center gap-4">
+                        <button onClick={() => openInNewTab(item.fileUrl)} className="text-[10px] font-black text-harx-500 uppercase hover:underline">View File</button>
+                        <div className="w-1 h-1 bg-gray-200 rounded-full" />
+                        <button onClick={() => handleView(item)} className="text-[10px] font-black text-harx-500 uppercase hover:underline">AI Analysis</button>
+                      </div>
                     </div>
                   </div>
                 </div>
