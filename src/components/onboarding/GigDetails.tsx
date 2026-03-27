@@ -10,6 +10,15 @@ interface Gig {
   description: string;
   status: string;
   category: string;
+  industries: any;
+  activities: any;
+  skills: any;
+  destination_zone: any;
+  highlights: any;
+  deliverables: any;
+  userId: any;
+  companyId: any;
+  [key: string]: any; 
   seniority: {
     level: string;
     yearsExperience: string;
@@ -140,46 +149,45 @@ const GigDetails = () => {
   const getStatusColor = (status: string) => {
     if (!status) {
       return {
-        bg: 'bg-white/30',
-        text: 'text-indigo-900',
-        border: 'border-white/40'
+        bg: 'bg-gray-100',
+        text: 'text-gray-600',
+        border: 'border-gray-200'
       };
     }
     switch (status.toLowerCase()) {
       case 'active':
         return {
-          bg: 'bg-harx-50/30',
-          text: 'text-white',
-          border: 'border-white/40'
+          bg: 'bg-emerald-50',
+          text: 'text-emerald-700',
+          border: 'border-emerald-200'
         };
       case 'pending':
         return {
-          bg: 'bg-amber-400/20',
-          text: 'text-amber-100',
-          border: 'border-amber-400/30'
+          bg: 'bg-amber-50',
+          text: 'text-amber-700',
+          border: 'border-amber-200'
         };
       case 'completed':
         return {
-          bg: 'bg-harx-alt-500/20',
-          text: 'text-white',
-          border: 'border-white/40'
+          bg: 'bg-harx-50',
+          text: 'text-harx-700',
+          border: 'border-harx-200'
         };
       case 'cancelled':
         return {
-          bg: 'bg-red-500/20',
-          text: 'text-red-100',
-          border: 'border-red-500/30'
+          bg: 'bg-rose-50',
+          text: 'text-rose-700',
+          border: 'border-rose-200'
         };
       default:
         return {
-          bg: 'bg-white/10',
-          text: 'text-white',
-          border: 'border-white/20'
+          bg: 'bg-gray-50',
+          text: 'text-gray-600',
+          border: 'border-gray-200'
         };
     }
   };
 
-  const getCardGradient = () => 'bg-gradient-harx-soft';
 
   const formatCommission = (commission: Gig['commission']) => {
     if (!commission) return 'Not specified';
@@ -231,7 +239,7 @@ const GigDetails = () => {
     console.log('Rendering GigDetailsView with gig:', selectedGig);
     return (
       <GigDetailsView
-        gig={selectedGig}
+        gig={selectedGig as any}
         onBack={() => setSelectedGig(null)}
       />
     );
@@ -288,145 +296,125 @@ const GigDetails = () => {
           </button>
         </div>
       </div>
-
       {gigs.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="text-center py-20 bg-white/40 backdrop-blur-md rounded-[2rem] border-2 border-dashed border-gray-200">
+          <div className="mx-auto w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
+            <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No gigs found</h3>
-          <p className="text-gray-500">No gigs have been created for this company yet.</p>
+          <h3 className="text-xl font-black text-gray-900 mb-2 uppercase tracking-tight">No intelligence assets found</h3>
+          <p className="text-gray-500 font-medium">Initialize your first gig to start the matching process.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {gigs.map((gig, index) => {
-            const statusColors = getStatusColor(gig.status);
+        <div className="space-y-4">
+          {/* Header Row */}
+          <div className="grid grid-cols-12 gap-4 px-8 py-4 bg-gray-900 rounded-2xl text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shadow-xl italic">
+            <div className="col-span-1">Status</div>
+            <div className="col-span-4">Gig & Category</div>
+            <div className="col-span-2">Configuration</div>
+            <div className="col-span-2">Commitment</div>
+            <div className="col-span-3 text-right">Strategic Actions</div>
+          </div>
 
-            return (
-              <div
-                key={gig._id}
-                className={`group relative overflow-hidden rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 ${getCardGradient()} border border-white/20`}
-              >
-                {/* Card Header */}
-                <div className="p-6 text-white">
-                  <div className="flex items-start justify-between mb-4">
-                    <h3 className="text-lg font-bold leading-tight line-clamp-2 flex-1">
-                      {gig.title}
-                    </h3>
-                    <div className={`ml-3 px-3 py-1 rounded-full text-xs font-semibold ${statusColors.bg} ${statusColors.text} border ${statusColors.border} flex-shrink-0`}>
+          {/* List Items */}
+          <div className="space-y-3">
+            {gigs.map((gig) => {
+              const statusColors = getStatusColor(gig.status);
+
+              return (
+                <div
+                  key={gig._id}
+                  className="grid grid-cols-12 gap-4 items-center rounded-3xl bg-white/60 backdrop-blur-md border border-white/40 p-5 transition-all duration-300 hover:bg-white hover:shadow-xl hover:shadow-harx-500/10 group cursor-default"
+                >
+                  {/* Status */}
+                  <div className="col-span-1">
+                    <div className={`inline-flex px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${statusColors.bg} ${statusColors.text} ${statusColors.border}`}>
                       {gig.status}
                     </div>
                   </div>
 
-                  {/* Category Badge */}
-                  {gig.category && (
-                    <div className="mb-3">
-                      <span className="inline-block bg-white/10 backdrop-blur-md text-white px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border border-white/20">
-                        {gig.category}
+                  {/* Title & Category */}
+                  <div className="col-span-4 pl-4 border-l border-gray-100">
+                    <h3 className="text-lg font-black text-gray-900 group-hover:text-harx-600 transition-colors leading-tight truncate">
+                      {gig.title}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] font-black text-harx-500 uppercase tracking-widest bg-harx-50 px-2 py-0.5 rounded-md border border-harx-100">
+                        {gig.category || 'Standard'}
+                      </span>
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                        Ref: {gig._id.substring(0, 8)}
                       </span>
                     </div>
-                  )}
-
-                  {/* Description */}
-                  <p className="text-white/90 text-sm leading-relaxed mb-4 overflow-hidden" style={{
-                    display: '-webkit-box',
-                    WebkitLineClamp: 3,
-                    WebkitBoxOrient: 'vertical',
-                    lineHeight: '1.4',
-                    maxHeight: '4.2em'
-                  }}>
-                    {gig.description || 'No description available'}
-                  </p>
-
-                  {/* Key Info Grid */}
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    {/* Seniority */}
-                    {gig.seniority && gig.seniority.level && (
-                      <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10 transition-colors group-hover:bg-white/20">
-                        <div className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-1">Seniority</div>
-                        <div className="text-white text-sm font-bold">
-                          {gig.seniority.level} <span className="text-white/50 font-medium">({gig.seniority.yearsExperience || '0'}y)</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Commission */}
-                    {gig.commission && (
-                      <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10 transition-colors group-hover:bg-white/20">
-                        <div className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-1">Commission</div>
-                        <div className="text-white text-sm font-bold">
-                          {formatCommission(gig.commission)}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Availability */}
-                    {gig.availability && (
-                      <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10 transition-colors group-hover:bg-white/20">
-                        <div className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-1">Availability</div>
-                        <div className="text-white text-sm font-bold">
-                          {getAvailabilityText(gig.availability)}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Team Size */}
-                    {gig.team && gig.team.size && (
-                      <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10 transition-colors group-hover:bg-white/20">
-                        <div className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-1">Team Size</div>
-                        <div className="text-white text-sm font-bold">
-                          {gig.team.size} <span className="text-white/50 font-medium">members</span>
-                        </div>
-                      </div>
-                    )}
                   </div>
 
-                  {/* Footer */}
-                  <div className="flex items-center justify-between pt-4 border-t border-white/20">
-                    <div className="flex items-center text-white/80 text-xs">
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      {gig.createdAt ? new Date(gig.createdAt).toLocaleDateString() : 'Date unknown'}
+                  {/* Configuration (Seniority & Commission) */}
+                  <div className="col-span-2 border-l border-gray-100 pl-4">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-harx-500"></div>
+                        <span className="text-xs font-bold text-gray-700">{gig.seniority?.level || 'Mid'}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                        <span className="text-xs font-bold text-gray-700">{formatCommission(gig.commission)}</span>
+                      </div>
                     </div>
+                  </div>
 
-                    <div className="flex gap-2">
-                      <button
-                        className="bg-red-500/20 hover:bg-red-500/40 text-white p-2 rounded-lg transition-all duration-200 relative z-20"
-                        onClick={(e) => handleDelete(e, gig._id)}
-                        title="Delete Gig"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  {/* Commitment (Availability & Team) */}
+                  <div className="col-span-2 border-l border-gray-100 pl-4">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                      </button>
-                      <button
-                        className="bg-white/10 hover:bg-white/30 text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-tighter transition-all duration-200 relative z-10 border border-white/20 backdrop-blur-sm"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          console.log('View Details clicked for gig:', gig);
-                          console.log('Setting selectedGig to:', gig);
-                          setSelectedGig(gig);
-                        }}
-                      >
-                        View Details
-                      </button>
+                        <span className="text-xs font-bold text-gray-700">{getAvailabilityText(gig.availability)}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span className="text-xs font-bold text-gray-700">{gig.team?.size || '1'} reps</span>
+                      </div>
                     </div>
+                  </div>
+
+                  {/* Strategic Actions */}
+                  <div className="col-span-3 flex justify-end items-center gap-3">
+                    <button
+                      className="p-3 rounded-2xl bg-gray-50 text-gray-400 hover:text-rose-600 hover:bg-rose-50 border border-gray-100 transition-all duration-300 shadow-sm"
+                      onClick={(e) => handleDelete(e, gig._id)}
+                      title="Terminate Intelligence Asset"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                    <button
+                      className="flex items-center gap-2 bg-gradient-harx text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-harx-500/20 hover:shadow-harx-500/40 hover:-translate-y-0.5 transition-all duration-300"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSelectedGig(gig);
+                      }}
+                    >
+                      Analyze Core
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
-
-                {/* Hover Effect Overlay */}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 pointer-events-none"></div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-export default GigDetails; 
+export default GigDetails;
+
