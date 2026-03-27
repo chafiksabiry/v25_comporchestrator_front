@@ -148,38 +148,38 @@ const GigDetails = () => {
     switch (status.toLowerCase()) {
       case 'active':
         return {
-          bg: 'bg-white/30',
-          text: 'text-blue-900',
+          bg: 'bg-harx-50/30',
+          text: 'text-white',
           border: 'border-white/40'
         };
       case 'pending':
         return {
-          bg: 'bg-white/30',
-          text: 'text-yellow-900',
-          border: 'border-white/40'
+          bg: 'bg-amber-400/20',
+          text: 'text-amber-100',
+          border: 'border-amber-400/30'
         };
       case 'completed':
         return {
-          bg: 'bg-white/30',
-          text: 'text-green-900',
+          bg: 'bg-harx-alt-500/20',
+          text: 'text-white',
           border: 'border-white/40'
         };
       case 'cancelled':
         return {
-          bg: 'bg-white/30',
-          text: 'text-red-900',
-          border: 'border-white/40'
+          bg: 'bg-red-500/20',
+          text: 'text-red-100',
+          border: 'border-red-500/30'
         };
       default:
         return {
-          bg: 'bg-white/30',
-          text: 'text-indigo-900',
-          border: 'border-white/40'
+          bg: 'bg-white/10',
+          text: 'text-white',
+          border: 'border-white/20'
         };
     }
   };
 
-  const getCardGradient = () => 'from-blue-500 via-indigo-500 to-purple-500';
+  const getCardGradient = () => 'bg-gradient-harx-soft';
 
   const formatCommission = (commission: Gig['commission']) => {
     if (!commission) return 'Not specified';
@@ -208,7 +208,7 @@ const GigDetails = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-harx-500"></div>
       </div>
     );
   }
@@ -278,7 +278,7 @@ const GigDetails = () => {
         <h2 className="text-2xl font-bold text-gray-900">Gig Details</h2>
         <div className="flex items-center gap-4">
           <button
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold px-5 py-2 rounded-full shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="flex items-center gap-2 bg-gradient-harx hover:opacity-90 text-white font-bold px-5 py-2 rounded-full shadow-lg shadow-harx-500/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-harx-400"
             onClick={() => { window.location.href = '/app6'; }}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -307,7 +307,7 @@ const GigDetails = () => {
             return (
               <div
                 key={gig._id}
-                className={`group relative overflow-hidden rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 bg-gradient-to-br ${getCardGradient()}`}
+                className={`group relative overflow-hidden rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 ${getCardGradient()} border border-white/20`}
               >
                 {/* Card Header */}
                 <div className="p-6 text-white">
@@ -323,7 +323,7 @@ const GigDetails = () => {
                   {/* Category Badge */}
                   {gig.category && (
                     <div className="mb-3">
-                      <span className="inline-block bg-white/20 text-white px-2 py-1 rounded-md text-xs font-medium">
+                      <span className="inline-block bg-white/10 backdrop-blur-md text-white px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border border-white/20">
                         {gig.category}
                       </span>
                     </div>
@@ -344,19 +344,19 @@ const GigDetails = () => {
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     {/* Seniority */}
                     {gig.seniority && gig.seniority.level && (
-                      <div className="bg-white/10 rounded-lg p-3">
-                        <div className="text-white/70 text-xs font-medium mb-1">Seniority</div>
-                        <div className="text-white text-sm font-semibold">
-                          {gig.seniority.level} ({gig.seniority.yearsExperience || '0'}y)
+                      <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10 transition-colors group-hover:bg-white/20">
+                        <div className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-1">Seniority</div>
+                        <div className="text-white text-sm font-bold">
+                          {gig.seniority.level} <span className="text-white/50 font-medium">({gig.seniority.yearsExperience || '0'}y)</span>
                         </div>
                       </div>
                     )}
 
                     {/* Commission */}
                     {gig.commission && (
-                      <div className="bg-white/10 rounded-lg p-3">
-                        <div className="text-white/70 text-xs font-medium mb-1">Commission</div>
-                        <div className="text-white text-sm font-semibold">
+                      <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10 transition-colors group-hover:bg-white/20">
+                        <div className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-1">Commission</div>
+                        <div className="text-white text-sm font-bold">
                           {formatCommission(gig.commission)}
                         </div>
                       </div>
@@ -364,9 +364,9 @@ const GigDetails = () => {
 
                     {/* Availability */}
                     {gig.availability && (
-                      <div className="bg-white/10 rounded-lg p-3">
-                        <div className="text-white/70 text-xs font-medium mb-1">Availability</div>
-                        <div className="text-white text-sm font-semibold">
+                      <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10 transition-colors group-hover:bg-white/20">
+                        <div className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-1">Availability</div>
+                        <div className="text-white text-sm font-bold">
                           {getAvailabilityText(gig.availability)}
                         </div>
                       </div>
@@ -374,10 +374,10 @@ const GigDetails = () => {
 
                     {/* Team Size */}
                     {gig.team && gig.team.size && (
-                      <div className="bg-white/10 rounded-lg p-3">
-                        <div className="text-white/70 text-xs font-medium mb-1">Team Size</div>
-                        <div className="text-white text-sm font-semibold">
-                          {gig.team.size} members
+                      <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10 transition-colors group-hover:bg-white/20">
+                        <div className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-1">Team Size</div>
+                        <div className="text-white text-sm font-bold">
+                          {gig.team.size} <span className="text-white/50 font-medium">members</span>
                         </div>
                       </div>
                     )}
@@ -403,7 +403,7 @@ const GigDetails = () => {
                         </svg>
                       </button>
                       <button
-                        className="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 relative z-10"
+                        className="bg-white/10 hover:bg-white/30 text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-tighter transition-all duration-200 relative z-10 border border-white/20 backdrop-blur-sm"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();

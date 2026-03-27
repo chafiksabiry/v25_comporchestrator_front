@@ -219,15 +219,15 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'active':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-harx-50 text-harx-600 border-harx-100';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-amber-50 text-amber-600 border-amber-100';
       case 'completed':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-harx-alt-50 text-harx-alt-600 border-harx-alt-100';
       case 'cancelled':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-red-50 text-red-600 border-red-100';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-50 text-gray-600 border-gray-100';
     }
   };
 
@@ -241,7 +241,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2 text-sm font-black uppercase tracking-tighter text-gray-600 bg-white/60 backdrop-blur-md border border-white/40 rounded-full hover:bg-white/80 hover:text-harx-500 transition-all duration-300 shadow-sm"
           >
             <ArrowLeft size={16} />
             Back to Gigs
@@ -253,55 +253,55 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
       
       <div className="space-y-6">
         {/* Basic Information */}
-        <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 shadow-lg p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <FileText className="h-6 w-6 text-blue-600" />
+        <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-xl p-8">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="p-3 bg-harx-50 rounded-xl shadow-inner">
+              <FileText className="h-6 w-6 text-harx-500" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Basic Information</h2>
+            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Basic Information</h2>
           </div>
           <div className="space-y-6">
-            <div className="bg-white rounded-lg p-4 border border-blue-100">
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border border-white/40 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
-                <Target className="h-4 w-4 text-blue-500" />
-                <label className="text-sm font-semibold text-gray-700">
+                <Target className="h-4 w-4 text-harx-400" />
+                <label className="text-xs font-black text-gray-500 uppercase tracking-widest">
                   Gig Title
                 </label>
               </div>
-              <p className="text-gray-900 font-medium">{gig.title}</p>
+              <p className="text-gray-900 font-bold text-lg">{gig.title}</p>
             </div>
             
-            <div className="bg-white rounded-lg p-4 border border-blue-100">
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border border-white/40 shadow-sm">
               <div className="flex items-center gap-2 mb-3">
-                <FileText className="h-4 w-4 text-blue-500" />
-                <label className="text-sm font-semibold text-gray-700">
+                <FileText className="h-4 w-4 text-harx-400" />
+                <label className="text-xs font-black text-gray-500 uppercase tracking-widest">
                   Description
                 </label>
               </div>
-              <p className="text-gray-700 leading-relaxed">
+              <p className="text-gray-700 leading-relaxed font-medium">
                 {gig.description || 'No description available'}
               </p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-lg p-4 border border-blue-100">
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border border-white/40 shadow-sm">
                 <div className="flex items-center gap-2 mb-3">
-                  <Award className="h-4 w-4 text-purple-500" />
-                  <label className="text-sm font-semibold text-gray-700">
+                  <Award className="h-4 w-4 text-harx-alt-400" />
+                  <label className="text-xs font-black text-gray-500 uppercase tracking-widest">
                     Category
                   </label>
                 </div>
-                <p className="text-gray-900 font-medium">{gig.category || 'Not specified'}</p>
+                <p className="text-gray-900 font-bold">{gig.category || 'Not specified'}</p>
               </div>
               
-              <div className="bg-white rounded-lg p-4 border border-blue-100">
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border border-white/40 shadow-sm">
                 <div className="flex items-center gap-2 mb-3">
-                  <Globe className="h-4 w-4 text-indigo-500" />
-                  <label className="text-sm font-semibold text-gray-700">
+                  <Globe className="h-4 w-4 text-harx-400" />
+                  <label className="text-xs font-black text-gray-500 uppercase tracking-widest">
                     Status
                   </label>
                 </div>
-                <div className={`inline-block px-3 py-1 rounded-full text-sm font-semibold border ${getStatusColor(gig.status)}`}>
+                <div className={`inline-block px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-tighter border ${getStatusColor(gig.status)}`}>
                   {gig.status}
                 </div>
               </div>
@@ -311,31 +311,31 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
 
         {/* Seniority */}
         {gig.seniority && (
-          <div className="rounded-xl bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-100 shadow-lg p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Award className="h-6 w-6 text-purple-600" />
+          <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-xl p-8">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="p-3 bg-harx-alt-50 rounded-xl shadow-inner">
+                <Award className="h-6 w-6 text-harx-alt-500" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Seniority Requirements</h2>
+              <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Seniority Requirements</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-lg p-4 border border-purple-100">
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border border-white/40 shadow-sm">
                 <div className="flex items-center gap-2 mb-3">
-                  <Target className="h-4 w-4 text-purple-500" />
-                  <label className="text-sm font-semibold text-gray-700">
+                  <Target className="h-4 w-4 text-harx-alt-400" />
+                  <label className="text-xs font-black text-gray-500 uppercase tracking-widest">
                     Seniority Level
                   </label>
                 </div>
-                <p className="text-gray-900 font-medium">{gig.seniority.level || 'Not specified'}</p>
+                <p className="text-gray-900 font-bold">{gig.seniority.level || 'Not specified'}</p>
               </div>
-              <div className="bg-white rounded-lg p-4 border border-purple-100">
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border border-white/40 shadow-sm">
                 <div className="flex items-center gap-2 mb-3">
-                  <ClockIcon className="h-4 w-4 text-violet-500" />
-                  <label className="text-sm font-semibold text-gray-700">
+                  <ClockIcon className="h-4 w-4 text-harx-400" />
+                  <label className="text-xs font-black text-gray-500 uppercase tracking-widest">
                     Years of Experience
                   </label>
                 </div>
-                <p className="text-gray-900 font-medium">{gig.seniority.yearsExperience || '0'} years</p>
+                <p className="text-gray-900 font-bold">{gig.seniority.yearsExperience || '0'} years</p>
               </div>
             </div>
           </div>
@@ -343,72 +343,72 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
 
         {/* Commission section updated to match the UI precisely */}
         {gig.commission && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-3 mb-4 px-2">
-              <div className="p-2 bg-blue-100/50 rounded-lg">
-                <DollarSign className="h-6 w-6 text-blue-600" />
+          <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-xl p-8">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="p-3 bg-harx-50 rounded-xl shadow-inner">
+                <DollarSign className="h-6 w-6 text-harx-500" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Commission Structure</h2>
+              <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Commission Structure</h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Card 1: Per call compensation */}
-              <div className="p-6 rounded-2xl bg-green-50/50 border border-green-100 flex flex-col justify-between h-40 group hover:shadow-md transition-shadow">
+              <div className="p-6 rounded-2xl bg-white/60 backdrop-blur-sm border border-white/40 flex flex-col justify-between h-40 group hover:shadow-lg transition-all duration-300">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-green-100/50 rounded-xl">
-                    <Phone className="h-6 w-6 text-green-600" />
+                  <div className="p-3 bg-harx-50 rounded-xl">
+                    <Phone className="h-6 w-6 text-harx-500" />
                   </div>
-                  <span className="text-lg font-semibold text-gray-700">Per call compensation</span>
+                  <span className="text-lg font-bold text-gray-700">Per call compensation</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold text-gray-900">{gig.commission.commission_per_call ?? 0}</span>
-                  <span className="text-2xl text-gray-400 font-medium">{gig.commission.currency?.symbol || '€'}</span>
+                  <span className="text-4xl font-black text-gray-900">{gig.commission.commission_per_call ?? 0}</span>
+                  <span className="text-2xl text-harx-400 font-black">{gig.commission.currency?.symbol || '€'}</span>
                 </div>
               </div>
 
               {/* Card 2: Transaction Commission */}
-              <div className="p-6 rounded-2xl bg-purple-50/50 border border-purple-100 flex flex-col justify-between h-40 group hover:shadow-md transition-shadow">
+              <div className="p-6 rounded-2xl bg-white/60 backdrop-blur-sm border border-white/40 flex flex-col justify-between h-40 group hover:shadow-lg transition-all duration-300">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-purple-100/50 rounded-xl">
-                    <Repeat className="h-6 w-6 text-purple-600" />
+                  <div className="p-3 bg-harx-alt-50 rounded-xl">
+                    <Repeat className="h-6 w-6 text-harx-alt-500" />
                   </div>
-                  <span className="text-lg font-semibold text-gray-700">Transaction Commission</span>
+                  <span className="text-lg font-bold text-gray-700">Transaction Commission</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold text-gray-900">
+                  <span className="text-4xl font-black text-gray-900">
                     {typeof gig.commission.transactionCommission === 'number' 
                       ? gig.commission.transactionCommission 
                       : ((gig.commission.transactionCommission as any)?.amount || 0)}
                   </span>
-                  <span className="text-2xl text-gray-400 font-medium">{gig.commission.currency?.symbol || '€'}</span>
+                  <span className="text-2xl text-harx-alt-300 font-black">{gig.commission.currency?.symbol || '€'}</span>
                 </div>
               </div>
 
               {/* Card 3: Bonus & Incentives */}
-              <div className="p-6 rounded-2xl bg-amber-50/50 border border-amber-100 flex flex-col justify-between h-40 group hover:shadow-md transition-shadow">
+              <div className="p-6 rounded-2xl bg-white/60 backdrop-blur-sm border border-white/40 flex flex-col justify-between h-40 group hover:shadow-lg transition-all duration-300">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-amber-100/50 rounded-xl">
-                    <Star className="h-6 w-6 text-amber-600" />
+                  <div className="p-3 bg-amber-50 rounded-xl">
+                    <Star className="h-6 w-6 text-amber-500" />
                   </div>
-                  <span className="text-lg font-semibold text-gray-700">Bonus & Incentives</span>
+                  <span className="text-lg font-bold text-gray-700">Bonus & Incentives</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold text-gray-900">{gig.commission.bonusAmount || 0}</span>
-                  <span className="text-2xl text-gray-400 font-medium">{gig.commission.currency?.symbol || '€'}</span>
+                  <span className="text-4xl font-black text-gray-900">{gig.commission.bonusAmount || 0}</span>
+                  <span className="text-2xl text-amber-400 font-black">{gig.commission.currency?.symbol || '€'}</span>
                 </div>
               </div>
 
               {/* Card 4: Minimum Volume Requirements */}
-              <div className="p-6 rounded-2xl bg-orange-50/50 border border-orange-100 flex flex-col justify-between h-40 group hover:shadow-md transition-shadow relative">
+              <div className="p-6 rounded-2xl bg-white/60 backdrop-blur-sm border border-white/40 flex flex-col justify-between h-40 group hover:shadow-lg transition-all duration-300 relative">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-orange-100/50 rounded-xl">
-                    <Target className="h-6 w-6 text-orange-600" />
+                  <div className="p-3 bg-harx-50 rounded-xl">
+                    <Target className="h-6 w-6 text-harx-500" />
                   </div>
-                  <span className="text-lg font-semibold text-gray-700">Minimum Volume Requirements</span>
+                  <span className="text-lg font-bold text-gray-700">Min Volume</span>
                 </div>
                 <div className="flex items-baseline justify-between w-full">
-                  <span className="text-4xl font-bold text-gray-900">{gig.commission.minimumVolume?.amount || 0}</span>
-                  <div className="px-3 py-1 bg-white/80 border border-gray-200 rounded-lg text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                  <span className="text-4xl font-black text-gray-900">{gig.commission.minimumVolume?.amount || 0}</span>
+                  <div className="px-3 py-1 bg-harx-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg shadow-harx-500/20">
                     {gig.commission.minimumVolume?.period || 'MONTHLY'}
                   </div>
                 </div>
@@ -416,12 +416,12 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
             </div>
 
             {gig.commission.additionalDetails && (
-              <div className="bg-white/50 rounded-xl p-4 border border-gray-100">
+              <div className="mt-6 bg-white/20 backdrop-blur-sm rounded-xl p-5 border border-white/20 shadow-inner">
                 <div className="flex items-center gap-2 mb-2">
-                  <FileText className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Additional Details</span>
+                  <FileText className="h-4 w-4 text-harx-400" />
+                  <span className="text-[10px] font-black text-harx-500 uppercase tracking-widest">Additional Details</span>
                 </div>
-                <p className="text-sm text-gray-700 leading-relaxed">{gig.commission.additionalDetails}</p>
+                <p className="text-sm text-gray-700 leading-relaxed font-medium italic">{gig.commission.additionalDetails}</p>
               </div>
             )}
           </div>
@@ -429,42 +429,42 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
 
         {/* Team */}
         {gig.team && (
-          <div className="rounded-xl bg-gradient-to-br from-pink-50 to-rose-50 border border-pink-100 shadow-lg p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-pink-100 rounded-lg">
-                <Users className="h-6 w-6 text-pink-600" />
+          <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-xl p-8">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="p-3 bg-harx-alt-50 rounded-xl shadow-inner">
+                <Users className="h-6 w-6 text-harx-alt-500" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Team Structure</h2>
+              <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Team Structure</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {gig.team.size && (
-                <div className="bg-white rounded-lg p-4 border border-pink-100">
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border border-white/40 shadow-sm transition-all hover:shadow-md">
                   <div className="flex items-center gap-2 mb-3">
-                    <Users className="h-4 w-4 text-pink-500" />
-                    <label className="text-sm font-semibold text-gray-700">
+                    <Users className="h-4 w-4 text-harx-alt-400" />
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
                       Team Size
                     </label>
                   </div>
-                  <p className="text-gray-900 font-medium">{gig.team.size} members</p>
+                  <p className="text-gray-900 font-black text-xl">{gig.team.size} <span className="text-sm text-gray-400 font-bold uppercase tracking-tighter ml-1">members</span></p>
                 </div>
               )}
               {gig.team.territories && gig.team.territories.length > 0 && (
-                <div className="bg-white rounded-lg p-4 border border-pink-100">
-                  <div className="flex items-center gap-2 mb-3">
-                    <MapPin className="h-4 w-4 text-rose-500" />
-                    <label className="text-sm font-semibold text-gray-700">
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border border-white/40 shadow-sm transition-all hover:shadow-md">
+                  <div className="flex items-center gap-2 mb-4">
+                    <MapPin className="h-4 w-4 text-harx-400" />
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
                       Territories
                     </label>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {gig.team.territories.map((territory, index) => (
-                      <div key={index} className="flex items-center gap-2 px-3 py-1 bg-rose-50 rounded-full border border-rose-200">
+                      <div key={index} className="flex items-center gap-2 px-3 py-1.5 bg-harx-50/50 rounded-lg border border-harx-100 shadow-sm">
                         <img 
                           src={territory.flags.png} 
                           alt={territory.flags.alt} 
-                          className="w-4 h-3 rounded-sm"
+                          className="w-5 h-3.5 rounded-sm object-cover shadow-sm"
                         />
-                        <span className="text-sm font-medium text-rose-800">{territory.name.common}</span>
+                        <span className="text-xs font-black text-harx-700 tracking-tight">{territory.name.common}</span>
                       </div>
                     ))}
                   </div>
@@ -476,27 +476,27 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
 
         {/* Skills */}
         {gig.skills && (
-          <div className="rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-100 shadow-lg p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Target className="h-6 w-6 text-purple-600" />
+          <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-xl p-8">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="p-3 bg-harx-50 rounded-xl shadow-inner">
+                <Target className="h-6 w-6 text-harx-500" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Skills & Requirements</h2>
+              <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Skills & Requirements</h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {gig.skills.professional && gig.skills.professional.length > 0 && (
-                <div className="bg-white rounded-lg p-4 border border-purple-100">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Professional Skills</h3>
-                  <div className="space-y-2">
+                <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-sm">
+                  <h3 className="text-sm font-black text-gray-600 uppercase tracking-[0.15em] mb-5 pb-2 border-b border-gray-100">Professional Skills</h3>
+                  <div className="space-y-3">
                     {gig.skills.professional.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-purple-50 rounded-lg">
-                        <div>
-                          <span className="text-sm font-medium text-purple-900">{item.skill.name}</span>
-                          <p className="text-xs text-purple-600">{item.skill.category}</p>
+                      <div key={index} className="flex items-center justify-between p-3 bg-harx-50/50 rounded-xl border border-harx-100 transition-transform hover:scale-[1.02]">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-black text-harx-800 tracking-tight">{item.skill.name}</span>
+                          <span className="text-[10px] font-bold text-harx-400 uppercase tracking-tighter">{item.skill.category}</span>
                         </div>
-                        <span className="text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded-full">
-                          Level {item.level}
+                        <span className="text-[10px] font-black bg-harx-500 text-white px-2.5 py-1 rounded-lg uppercase tracking-widest shadow-md shadow-harx-500/20">
+                          LVL {item.level}
                         </span>
                       </div>
                     ))}
@@ -505,17 +505,17 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
               )}
               
               {gig.skills.technical && gig.skills.technical.length > 0 && (
-                <div className="bg-white rounded-lg p-4 border border-purple-100">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Technical Skills</h3>
-                  <div className="space-y-2">
+                <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-sm">
+                  <h3 className="text-sm font-black text-gray-600 uppercase tracking-[0.15em] mb-5 pb-2 border-b border-gray-100">Technical Skills</h3>
+                  <div className="space-y-3">
                     {gig.skills.technical.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-indigo-50 rounded-lg">
-                        <div>
-                          <span className="text-sm font-medium text-indigo-900">{item.skill.name}</span>
-                          <p className="text-xs text-indigo-600">{item.skill.category}</p>
+                      <div key={index} className="flex items-center justify-between p-3 bg-harx-alt-50/50 rounded-xl border border-harx-alt-100 transition-transform hover:scale-[1.02]">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-black text-harx-alt-800 tracking-tight">{item.skill.name}</span>
+                          <span className="text-[10px] font-bold text-harx-alt-500 uppercase tracking-tighter">{item.skill.category}</span>
                         </div>
-                        <span className="text-xs bg-indigo-200 text-indigo-800 px-2 py-1 rounded-full">
-                          Level {item.level}
+                        <span className="text-[10px] font-black bg-harx-alt-500 text-white px-2.5 py-1 rounded-lg uppercase tracking-widest shadow-md shadow-harx-alt-500/20">
+                          LVL {item.level}
                         </span>
                       </div>
                     ))}
@@ -524,17 +524,17 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
               )}
               
               {gig.skills.soft && gig.skills.soft.length > 0 && (
-                <div className="bg-white rounded-lg p-4 border border-purple-100">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Soft Skills</h3>
-                  <div className="space-y-2">
+                <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-sm">
+                  <h3 className="text-sm font-black text-gray-600 uppercase tracking-[0.15em] mb-5 pb-2 border-b border-gray-100">Soft Skills</h3>
+                  <div className="space-y-3">
                     {gig.skills.soft.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-pink-50 rounded-lg">
-                        <div>
-                          <span className="text-sm font-medium text-pink-900">{item.skill.name}</span>
-                          <p className="text-xs text-pink-600">{item.skill.category}</p>
+                      <div key={index} className="flex items-center justify-between p-3 bg-amber-50/50 rounded-xl border border-amber-100 transition-transform hover:scale-[1.02]">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-black text-amber-800 tracking-tight">{item.skill.name}</span>
+                          <span className="text-[10px] font-bold text-amber-500 uppercase tracking-tighter">{item.skill.category}</span>
                         </div>
-                        <span className="text-xs bg-pink-200 text-pink-800 px-2 py-1 rounded-full">
-                          Level {item.level}
+                        <span className="text-[10px] font-black bg-amber-500 text-white px-2.5 py-1 rounded-lg uppercase tracking-widest shadow-md shadow-amber-500/20">
+                          LVL {item.level}
                         </span>
                       </div>
                     ))}
@@ -543,16 +543,16 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
               )}
               
               {gig.skills.languages && gig.skills.languages.length > 0 && (
-                <div className="bg-white rounded-lg p-4 border border-purple-100">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Languages</h3>
-                  <div className="space-y-2">
+                <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-sm">
+                  <h3 className="text-sm font-black text-gray-600 uppercase tracking-[0.15em] mb-5 pb-2 border-b border-gray-100">Languages</h3>
+                  <div className="space-y-3">
                     {gig.skills.languages.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-green-50 rounded-lg">
-                        <div>
-                          <span className="text-sm font-medium text-green-900">{item.language.name}</span>
-                          <p className="text-xs text-green-600">{item.language.nativeName}</p>
+                      <div key={index} className="flex items-center justify-between p-3 bg-harx-50/50 rounded-xl border border-harx-100 transition-transform hover:scale-[1.02]">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-black text-harx-800 tracking-tight">{item.language.name}</span>
+                          <span className="text-[10px] font-bold text-harx-400 tracking-tighter">{item.language.nativeName}</span>
                         </div>
-                        <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full">
+                        <span className="text-[10px] font-black bg-harx-500 text-white px-3 py-1.5 rounded-lg uppercase tracking-[0.2em] shadow-md shadow-harx-500/20">
                           {item.proficiency}
                         </span>
                       </div>
@@ -566,25 +566,25 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
 
         {/* Destination Zone */}
         {gig.destination_zone && (
-          <div className="rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 shadow-lg p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-emerald-100 rounded-lg">
+          <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-xl p-8">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="p-3 bg-emerald-50 rounded-xl shadow-inner">
                 <MapPin className="h-6 w-6 text-emerald-600" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Destination Zone</h2>
+              <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Destination Zone</h2>
             </div>
             
-            <div className="bg-white rounded-lg p-4 border border-emerald-100">
-              <div className="flex items-center gap-4">
-                <img 
-                  src={gig.destination_zone.flags.png} 
-                  alt={gig.destination_zone.flags.alt} 
-                  className="w-12 h-8 rounded-md border border-gray-200"
-                />
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{gig.destination_zone.name.common}</h3>
-                  <p className="text-sm text-gray-600">{gig.destination_zone.name.official}</p>
-                  <p className="text-xs text-gray-500">Code: {gig.destination_zone.cca2}</p>
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/40 shadow-sm flex items-center gap-6">
+              <img 
+                src={gig.destination_zone.flags.png} 
+                alt={gig.destination_zone.flags.alt} 
+                className="w-16 h-10 rounded-lg border border-gray-100 shadow-md object-cover"
+              />
+              <div>
+                <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight leading-none mb-1">{gig.destination_zone.name.common}</h3>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{gig.destination_zone.name.official}</p>
+                <div className="mt-2 inline-block px-2 py-0.5 bg-gray-100 rounded text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">
+                  ISO: {gig.destination_zone.cca2}
                 </div>
               </div>
             </div>
@@ -593,67 +593,80 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
 
         {/* Schedule */}
         {gig.availability && (
-          <div className="rounded-xl bg-gradient-to-br from-cyan-50 to-blue-50 border border-cyan-100 shadow-lg p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-cyan-100 rounded-lg">
-                <ClockIcon className="h-6 w-6 text-cyan-600" />
+          <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-xl p-8">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="p-3 bg-harx-50 rounded-xl shadow-inner">
+                <ClockIcon className="h-6 w-6 text-harx-500" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Schedule & Availability</h2>
+              <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Schedule & Availability</h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               {gig.availability.minimumHours && (
-                <div className="bg-white rounded-lg p-4 border border-cyan-100">
-                  <div className="flex items-center gap-2 mb-3">
-                    <ClockIcon className="h-4 w-4 text-cyan-500" />
-                    <label className="text-sm font-semibold text-gray-700">
-                      Minimum Hours
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border border-white/40 shadow-sm transition-all hover:shadow-md">
+                  <div className="flex items-center gap-2 mb-4">
+                    <ClockIcon className="h-4 w-4 text-harx-400" />
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                      Min Hours
                     </label>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm text-gray-900">Daily: <span className="font-medium">{gig.availability.minimumHours.daily}h</span></p>
-                    <p className="text-sm text-gray-900">Weekly: <span className="font-medium">{gig.availability.minimumHours.weekly}h</span></p>
-                    <p className="text-sm text-gray-900">Monthly: <span className="font-medium">{gig.availability.minimumHours.monthly}h</span></p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-tighter">Daily</span>
+                      <span className="text-sm font-black text-gray-800">{gig.availability.minimumHours.daily}h</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-tighter">Weekly</span>
+                      <span className="text-sm font-black text-gray-800">{gig.availability.minimumHours.weekly}h</span>
+                    </div>
                   </div>
                 </div>
               )}
               {gig.availability.time_zone && (
-                <div className="bg-white rounded-lg p-4 border border-cyan-100">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Globe className="h-4 w-4 text-cyan-500" />
-                    <label className="text-sm font-semibold text-gray-700">
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border border-white/40 shadow-sm transition-all hover:shadow-md">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Globe className="h-4 w-4 text-harx-alt-400" />
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
                       Time Zone
                     </label>
                   </div>
-                  <p className="text-gray-900 font-medium">{gig.availability.time_zone.zoneName}</p>
-                  <p className="text-sm text-gray-600">{gig.availability.time_zone.countryName} ({gig.availability.time_zone.countryCode})</p>
+                  <p className="text-gray-900 font-black text-lg leading-tight mb-1">{gig.availability.time_zone.zoneName}</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{gig.availability.time_zone.countryName} ({gig.availability.time_zone.countryCode})</p>
                 </div>
               )}
               {gig.availability.flexibility && gig.availability.flexibility.length > 0 && (
-                <div className="bg-white rounded-lg p-4 border border-cyan-100">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Settings className="h-4 w-4 text-blue-500" />
-                    <label className="text-sm font-semibold text-gray-700">
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border border-white/40 shadow-sm transition-all hover:shadow-md">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Settings className="h-4 w-4 text-amber-500" />
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
                       Flexibility
                     </label>
                   </div>
-                  <p className="text-gray-900 font-medium">{gig.availability.flexibility.join(', ')}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {gig.availability.flexibility.map((flex, i) => (
+                      <span key={i} className="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-[10px] font-black uppercase tracking-widest border border-amber-100">
+                        {flex}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
             {gig.availability.schedule && gig.availability.schedule.length > 0 && (
-              <div className="bg-white rounded-lg p-4 border border-cyan-100">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Working Schedule</h3>
-                <div className="space-y-3">
+              <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-inner">
+                <h3 className="text-sm font-black text-gray-600 uppercase tracking-[0.15em] mb-6 pb-2 border-b border-gray-100/20">Weekly Working Schedule</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {gig.availability.schedule.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={index} className="flex items-center justify-between p-4 bg-white/60 rounded-xl border border-white/40 shadow-sm group hover:scale-[1.02] transition-transform">
                       <div className="flex items-center gap-3">
-                        <ClockIcon className="h-4 w-4 text-cyan-500" />
-                        <span className="text-sm font-medium text-gray-900">{item.day}</span>
+                        <div className="p-2 bg-harx-50 rounded-lg group-hover:bg-harx-500 group-hover:text-white transition-all">
+                          <ClockIcon className="h-3.5 w-3.5" />
+                        </div>
+                        <span className="text-sm font-black text-gray-800 uppercase tracking-tight">{item.day}</span>
                       </div>
-                      <span className="text-sm text-gray-600">
-                        {item.hours.start} - {item.hours.end}
+                      <span className="text-xs font-bold text-harx-600 bg-harx-50 px-3 py-1 rounded-full group-hover:bg-harx-500 group-hover:text-white transition-all shadow-sm">
+                        {item.hours.start} — {item.hours.end}
                       </span>
                     </div>
                   ))}
