@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, File, FileText, Plus, Trash2, Filter, Mic, Play, Clock, Pause, ChevronDown, X, ExternalLink, Eye, Brain, Loader2, RefreshCw, Languages, ChevronRight, Sparkles } from 'lucide-react';
+import { Upload, File, FileText, Plus, Trash2, Mic, Play, Clock, Pause, ChevronDown, X, ExternalLink, Eye, Brain, Loader2, RefreshCw, Languages, ChevronRight, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types';
 import apiClient from '../api/knowledgeClient';
@@ -50,7 +50,6 @@ interface CallAnalysis {
 type AnalysisResult = DocumentAnalysis | CallAnalysis;
 
 const KnowledgeBase: React.FC = () => {
-  const [typeFilter, setTypeFilter] = useState<string>('all');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploadTags, setUploadTags] = useState<string>('');
@@ -720,7 +719,6 @@ const KnowledgeBase: React.FC = () => {
   // Create unified items list
   const getUnifiedItems = () => {
     const documentItems = knowledgeItems
-      .filter(item => typeFilter === 'all' || item.type === typeFilter)
       .map(item => ({
         ...item,
         itemType: 'document' as const,
@@ -729,7 +727,6 @@ const KnowledgeBase: React.FC = () => {
       }));
 
     const callItems = callRecords
-      .filter(call => typeFilter === 'all' || typeFilter === 'audio')
       .map(call => ({
         id: call.id,
         name: call.contactId || 'Unknown Contact',
@@ -1077,23 +1074,8 @@ const KnowledgeBase: React.FC = () => {
       <div className="bg-white/60 backdrop-blur-md p-5 rounded-[2rem] border border-white/20 shadow-xl shadow-gray-200/20 mb-10">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-4 w-full md:w-auto">
-              <div className="flex items-center gap-2 p-1.5 bg-white/50 backdrop-blur-sm rounded-2xl border border-harx-100 shadow-sm">
-                <div className="p-2 bg-harx-50 rounded-xl">
-                  <Filter size={18} className="text-harx-500" />
-                </div>
-                <select
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                  className="bg-transparent border-none text-xs font-black text-gray-900 uppercase tracking-widest focus:ring-0 cursor-pointer pr-8"
-                >
-                  <option value="all">Intelligence: All Sources</option>
-                  <option value="document">Documents Only</option>
-                  <option value="audio">Call Recordings Only</option>
-                </select>
-              </div>
-
               {/* Gig Filter */}
-              <div className="flex items-center gap-2 p-1.5 bg-white/50 backdrop-blur-sm rounded-2xl border border-harx-100 shadow-sm ml-4">
+              <div className="flex items-center gap-2 p-1.5 bg-white/50 backdrop-blur-sm rounded-2xl border border-harx-100 shadow-sm">
                 <div className="p-2 bg-harx-50 rounded-xl">
                   <Sparkles size={18} className="text-harx-500" />
                 </div>
