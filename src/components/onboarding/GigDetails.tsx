@@ -3,7 +3,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import Swal from 'sweetalert2';
 import GigDetailsView from './GigDetailsView';
-import { Clock, Users } from 'lucide-react';
+import { Clock, Users, ChevronDown, Plus } from 'lucide-react';
 
 interface Gig {
   _id: string;
@@ -119,7 +119,7 @@ interface GigResponse {
   data: Gig[];
 }
 
-const GigDetails = () => {
+const GigDetails = ({ onBack }: { onBack?: () => void }) => {
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -271,20 +271,36 @@ const GigDetails = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Gig Details</h2>
-        <div className="flex items-center gap-4">
+    <div className="w-full py-4 space-y-6 animate-in fade-in duration-500">
+      {/* Header Area - Branded Gradient */}
+      <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-8 mb-4 shadow-lg shadow-harx-500/20">
+        {onBack && (
           <button
-            className="flex items-center gap-2 bg-gradient-harx hover:opacity-90 text-white font-bold px-5 py-2 rounded-full shadow-lg shadow-harx-500/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-harx-400"
+            onClick={onBack}
+            className="flex items-center gap-2 mb-6 group transition-all duration-300"
+          >
+            <div className="p-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white group-hover:bg-white/20 transition-all">
+              <ChevronDown className="h-5 w-5 rotate-90" />
+            </div>
+            <span className="text-white/80 group-hover:text-white font-black text-sm uppercase tracking-widest">Back to overview</span>
+          </button>
+        )}
+        <div className="relative z-10 flex items-center justify-between font-black">
+          <div className="space-y-1.5">
+            <h1 className="text-4xl font-black text-white uppercase tracking-tighter">Gig Details</h1>
+            <p className="text-[16px] font-medium text-white/90">Define and manage your multi-channel intelligence assets</p>
+          </div>
+          <button
+            className="flex items-center gap-2 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-black px-6 py-3 rounded-2xl shadow-xl border border-white/20 transition-all duration-200 uppercase tracking-widest text-[10px]"
             onClick={() => { window.location.href = '/app6'; }}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Add gig
+            <Plus className="w-5 h-5" />
+            Add intelligence asset
           </button>
         </div>
+        {/* Abstract background pattern */}
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-black/10 rounded-full blur-2xl" />
       </div>
       {gigs.length === 0 ? (
         <div className="text-center py-20 bg-white/40 backdrop-blur-md rounded-[2rem] border-2 border-dashed border-gray-200">
@@ -335,7 +351,7 @@ const GigDetails = () => {
                     </div>
                   </div>
 
-                  {/* Strategic Actions */}
+                  {/* Commitment */}
                   <div className="col-span-2 border-l border-gray-100 pl-4">
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-1.5">

@@ -69,9 +69,10 @@ interface ApiResponse {
 interface UploadContactsProps {
   onCancelProcessing?: () => void;
   companyId?: string | null;
+  onBack?: () => void;
 }
 
-const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyId }: UploadContactsProps) => {
+const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyId, onBack }: UploadContactsProps) => {
   // Component will render normally - no early return needed
 
   // Function to cancel processing
@@ -1664,23 +1665,38 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
 
   return (
-    <div className="space-y-6 bg-gray-50/50 min-h-screen p-6">
-      {/* Page Header */}
-      <div className="bg-white rounded-3xl shadow-xl border border-harx-100 p-8 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-harx-50 rounded-full blur-3xl group-hover:bg-harx-100 transition-colors duration-700"></div>
-        <div className="flex items-start justify-between relative z-10">
+    <div className="w-full py-4 space-y-6 animate-in fade-in duration-500">
+      {/* Header Area - Branded Gradient */}
+      <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-8 mb-4 shadow-lg shadow-harx-500/20">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 mb-6 group transition-all duration-300"
+          >
+            <div className="p-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white group-hover:bg-white/20 transition-all">
+              <ChevronDown className="h-5 w-5 rotate-90" />
+            </div>
+            <span className="text-white/80 group-hover:text-white font-black text-sm uppercase tracking-widest">Back to onboarding overview</span>
+          </button>
+        )}
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex-1">
-            <h1 className="text-4xl font-extrabold text-gray-900 mb-4 flex items-center tracking-tight">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-harx flex items-center justify-center mr-4 shadow-lg shadow-harx-500/20">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20">
                 <UserPlus className="h-6 w-6 text-white" />
               </div>
-              Upload Contacts
-            </h1>
-            <p className="text-xl text-gray-600 max-w-3xl leading-relaxed">
-              Import, manage, and organize your leads efficiently. Choose between connecting with your CRM system or uploading contact files directly.
-            </p>
+              <div>
+                <h2 className="text-4xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
+                  Upload Contacts
+                </h2>
+                <p className="text-[16px] font-medium text-white/90">Import, manage, and organize your leads efficiently with AI precision.</p>
+              </div>
+            </div>
           </div>
         </div>
+        {/* Abstract background pattern */}
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-black/10 rounded-full blur-2xl" />
       </div>
 
 
