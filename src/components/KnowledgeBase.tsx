@@ -94,19 +94,12 @@ const KnowledgeBase: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [playingCallId, setPlayingCallId] = useState<string | null>(null);
-  const [processingOptions, setProcessingOptions] = useState({
-    transcription: true,
-    sentiment: true,
-    insights: true
-  });
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const [analyzingDocument, setAnalyzingDocument] = useState<string | null>(null);
   const [documentAnalysis, setDocumentAnalysis] = useState<{ [key: string]: AnalysisResult }>({});
-  const [showAnalysisPage, setShowAnalysisPage] = useState(false);
   const [selectedDocumentForAnalysis, setSelectedDocumentForAnalysis] = useState<any>(null);
   const [loadingSummary, setLoadingSummary] = useState<{ [key: string]: boolean }>({});
   const [loadingTranscription, setLoadingTranscription] = useState<{ [key: string]: boolean }>({});
-  const [transcriptionShowCount, setTranscriptionShowCount] = useState<{ [key: string]: number }>({});
   const [loadingScoring, setLoadingScoring] = useState<{ [key: string]: boolean }>({});
   const [callDurations, setCallDurations] = useState<{ [id: string]: number }>({});
   const [translatedAnalysis, setTranslatedAnalysis] = useState<{ [key: string]: DocumentAnalysis }>({});
@@ -129,13 +122,14 @@ const KnowledgeBase: React.FC = () => {
     localStorage.setItem('knowledgeItems', JSON.stringify(knowledgeItems));
   }, [knowledgeItems]);
 
-  // Get icon based on item type
   const getItemIcon = (type: string) => {
     switch (type) {
       case 'document':
         return <FileText size={20} className="text-blue-500" />;
       case 'audio':
         return <Mic size={20} className="text-purple-500" />;
+      case 'video':
+        return <Play size={20} className="text-red-500" />;
       default:
         return <File size={20} className="text-gray-500" />;
     }
@@ -216,8 +210,8 @@ const KnowledgeBase: React.FC = () => {
       return response.data;
     } catch (error: any) {
       console.error('Error updating onboarding progress:', error);
-      if (axios && axios.isAxiosError && axios.isAxiosError(error)) {
-        console.error('Axios error details:', {
+      if (error.response) {
+        console.error('API error details:', {
           status: error.response?.status,
           data: error.response?.data,
           headers: error.response?.headers
@@ -275,8 +269,8 @@ const KnowledgeBase: React.FC = () => {
       return documents.length > 1;
     } catch (error: any) {
       console.error('Error fetching knowledge items:', error);
-      if (axios && axios.isAxiosError && axios.isAxiosError(error)) {
-        const errorMessage = (error as any).response?.data?.message || error.message;
+      if (error.response) {
+        const errorMessage = error.response?.data?.message || error.message;
         console.error('API specific error:', errorMessage);
       }
       return false;
@@ -376,8 +370,10 @@ const KnowledgeBase: React.FC = () => {
         // Determine type based on file extension or mime type
         const isAudio = file.type.startsWith('audio/') || 
                        /\.(mp3|wav|m4a|ogg|aac|flac)$/i.test(file.name);
+        const isVideo = file.type.startsWith('video/') ||
+                       /\.(mp4|mpeg|mov|avi|webm)$/i.test(file.name);
         
-        if (!isAudio) {
+        if (!isAudio && !isVideo) {
           // Upload as document
           const formData = new FormData();
           formData.append('file', file);
@@ -580,6 +576,16 @@ const KnowledgeBase: React.FC = () => {
           }
         }
       }
+    } else if (item.itemType === 'video' || (item.fileType && item.fileType.startsWith('video/')) || item.type === 'video') {
+      // Handle Video view
+      if (selectedItem?.id === item.id) {
+        setSelectedItem(null);
+      } else {
+        setSelectedItem(item);
+        if (!documentAnalysis[item.id] || !documentAnalysis[item.id].summary) {
+          await analyzeDocument(item.id);
+        }
+      }
     } else {
       if (selectedDocumentForAnalysis?.id === item.id) {
         setSelectedDocumentForAnalysis(null);
@@ -683,26 +689,10 @@ const KnowledgeBase: React.FC = () => {
     }
   };
 
-  // Clean up audio on unmount
-  useEffect(() => {
-    return () => {
-      if (currentAudio) {
-        currentAudio.pause();
-        setCurrentAudio(null);
-        setIsPlaying(false);
-      }
-    };
-  }, []);
-
   const handleBackToOrchestrator = () => {
     window.dispatchEvent(new CustomEvent('tabChange', {
       detail: { tab: 'company-onboarding' }
     }));
-  };
-
-  const handleBackToList = () => {
-    setShowAnalysisPage(false);
-    setSelectedDocumentForAnalysis(null);
   };
 
   // Fonction utilitaire pour charger la durée d'un audio
@@ -780,11 +770,23 @@ const KnowledgeBase: React.FC = () => {
         date: call.date,
         fileUrl: call.recordingUrl, // Use recordingUrl as fileUrl for consistent UI 
         isCallRecording: true,
-        callData: call,
         gigId: call.gigId
       }));
 
-    return [...documentItems, ...callItems].sort((a, b) =>
+    const videoItems = knowledgeItems
+      .filter(item => item.fileType && item.fileType.startsWith('video/'))
+      .map(item => ({
+        ...item,
+        itemType: 'video' as const,
+        date: item.uploadedAt,
+        isCallRecording: false,
+        gigId: item.gigId
+      }));
+
+    // Filter out videos from documentItems if they are already in videoItems
+    const filteredDocumentItems = documentItems.filter(item => !item.fileType || !item.fileType.startsWith('video/'));
+
+    return [...filteredDocumentItems, ...callItems, ...videoItems].sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime()
     );
   };
@@ -1062,7 +1064,7 @@ const KnowledgeBase: React.FC = () => {
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
             {/* Removed Title and Brief fields per user request */}
             <div className="border-2 border-dashed border-gray-100 rounded-2xl p-6 text-center hover:border-harx-200 transition-colors cursor-pointer group relative bg-gray-50/30">
-              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileChange} multiple />
+              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileChange} multiple accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,audio/*,video/*" />
               <div className="flex flex-col items-center">
                 <Upload size={24} className="text-gray-300 group-hover:text-harx-500 transition-colors mb-2" />
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Click or drag to add items</p>
@@ -1079,7 +1081,7 @@ const KnowledgeBase: React.FC = () => {
                   <div key={`${file.name}-${idx}`} className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100 shadow-sm group/file">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="p-2 bg-harx-50 rounded-lg text-harx-500 flex-shrink-0">
-                        {file.type.startsWith('audio/') ? <Mic size={14} /> : <FileText size={14} />}
+                        {file.type.startsWith('audio/') ? <Mic size={14} /> : file.type.startsWith('video/') ? <Play size={14} /> : <FileText size={14} />}
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-gray-700 truncate">{file.name}</p>
