@@ -9,6 +9,7 @@ import {
   Briefcase
 } from 'lucide-react';
 import Cookies from 'js-cookie';
+import twilioIcon from '../assets/twilio-icon.svg';
 
 import { phoneNumberService } from '../services/api';
 import { requirementService, RequirementDetail } from '../services/requirementService';
@@ -1146,7 +1147,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                     <div className="flex items-center space-x-6">
                       {p.id === 'twilio' ? (
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isSelected ? 'bg-white shadow-sm' : 'bg-gray-50'}`}>
-                          <img src="/twilio-icon.svg" className={`h-7 w-7 ${isSelected ? '' : 'opacity-40 grayscale'}`} alt="Twilio" />
+                          <img src={twilioIcon} className={`h-7 w-7 ${isSelected ? '' : 'opacity-40 grayscale'}`} alt="Twilio" />
                         </div>
                       ) : (
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-gray-50`}>
