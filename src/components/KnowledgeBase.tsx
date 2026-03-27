@@ -1182,59 +1182,74 @@ const KnowledgeBase: React.FC = () => {
                     </div>
                   )}
                 </React.Fragment>
-              );
-            } else {
-              // Document item
+                 // Document item
               return (
                 <React.Fragment key={item.id}>
-                  <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100">
+                  <div className="bg-white/70 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:border-harx-100 transition-all group/card mb-4">
                     <div className="flex items-start">
-                      <div className="p-3 rounded-lg bg-gray-100 mr-4 flex-shrink-0">
+                      <div className="p-4 rounded-xl bg-harx-50 mr-5 flex-shrink-0 group-hover/card:scale-110 transition-transform text-harx-500 shadow-inner">
                         {getItemIcon(item.type)}
                       </div>
                       <div className="flex-grow min-w-0">
-                        <h3 className="text-lg font-medium text-gray-900 mb-1 truncate">{item.name}</h3>
-                        <p className="text-sm text-gray-500 mb-3 break-words line-clamp-2">{item.description}</p>
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-lg font-black text-gray-900 truncate tracking-tight uppercase">{item.name}</h3>
+                          <div className="flex space-x-1 flex-shrink-0 ml-4 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => handleView(item)}
+                              className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg transition-all"
+                              title="Deep Intelligence Analysis"
+                            >
+                              <Brain size={18} />
+                            </button>
+                            <button
+                              className="text-red-400 hover:bg-red-50 p-2 rounded-lg transition-all"
+                              onClick={() => handleDelete(item.id)}
+                              title="Purge Resource"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <p className="text-xs text-gray-500 mb-4 font-medium italic leading-relaxed line-clamp-2">{item.description}</p>
 
-                        <div className="flex flex-wrap gap-1 mb-3">
+                        <div className="flex flex-wrap gap-2 mb-4">
                           {item.tags.map((tag: string, index: number) => (
                             <span
                               key={`${item.id}-${tag}`}
-                              className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 whitespace-nowrap"
+                              className="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full bg-gray-50 text-gray-400 border border-gray-100 transition-colors hover:border-harx-100/30 hover:text-harx-500"
                             >
                               {tag}
                             </span>
                           ))}
                         </div>
 
-                        <div className="flex items-center justify-between">
-                          <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${item.type === 'document' ? 'bg-blue-100 text-blue-800' :
-                            item.type === 'audio' ? 'bg-purple-100 text-purple-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                            {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-                          </span>
-
-                          <div className="flex space-x-2 flex-shrink-0">
-                            <button
-                              onClick={() => handleView(item)}
-                              className="text-blue-600 hover:text-blue-800 p-1"
-                              title="View details"
-                            >
-                              <Eye size={16} />
-                            </button>
-                            <button
-                              className="text-red-600 hover:text-red-800 p-1"
-                              onClick={() => handleDelete(item.id)}
-                              title="Delete"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                        <div className="flex items-center justify-between border-t border-gray-50 pt-4">
+                          <div className="flex items-center gap-3">
+                             <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg ${item.type === 'document' ? 'bg-harx-50 text-harx-600 border border-harx-100/50' :
+                              item.type === 'audio' ? 'bg-harx-alt-50 text-harx-alt-600 border border-harx-alt-100/50' :
+                                'bg-gray-50 text-gray-500'
+                              }`}>
+                              {item.type === 'document' ? 'Raw Data' : 'Voice Flux'}
+                            </span>
+                            <div className="w-1 h-1 bg-gray-200 rounded-full" />
+                            <span className="text-[10px] font-black text-gray-300 uppercase tracking-tighter tabular-nums">
+                               {format(new Date(item.uploadedAt), 'MMM d, yyyy')}
+                            </span>
                           </div>
+                          
+                          <button
+                            onClick={() => handleView(item)} 
+                            className="text-[10px] font-black text-harx-500 uppercase tracking-widest hover:underline flex items-center gap-1 group/btn"
+                          >
+                             View Analysis
+                             <ChevronRight size={12} className="group-hover/btn:translate-x-1 transition-transform" />
+                          </button>
                         </div>
                       </div>
                     </div>
                   </div>
+       </div>
 
                   {/* Inline Document Analysis */}
                   {selectedDocumentForAnalysis?.id === item.id && (
@@ -1308,23 +1323,23 @@ const KnowledgeBase: React.FC = () => {
       );
     } else {
       return (
-        <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-            <File size={24} className="text-gray-400" />
+        <div className="bg-white/50 backdrop-blur-sm p-16 rounded-[3rem] border border-gray-100 text-center shadow-sm">
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-[2rem] bg-gray-50 mb-6 text-gray-300 shadow-inner">
+            <Brain size={48} />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-1">No resources found</h3>
-          <p className="text-gray-500 max-w-md mx-auto">
+          <h3 className="text-2xl font-black text-gray-900 mb-2 uppercase tracking-tight">Intelligence Stream Empty</h3>
+          <p className="text-gray-500 max-w-sm mx-auto font-medium italic mb-10 leading-relaxed">
             {typeFilter !== 'all'
-              ? `No ${typeFilter === 'document' ? 'documents' : 'audio recordings'} found. Try changing the filter or add new resources.`
-              : "Your knowledge base is empty. Add documents or call recordings to get started."}
+              ? `No ${typeFilter === 'document' ? 'documents' : 'voice recordings'} synchronized. Transition your data into the HARX eco-system.`
+              : "Your enterprise knowledge has not been synchronized yet. Initiate data ingestion to empower your REPS."}
           </p>
           {typeFilter === 'all' && (
             <button
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center mx-auto"
+              className="mt-4 bg-gradient-harx text-white px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-harx-500/30 hover:scale-105 active:scale-95 transition-all flex items-center mx-auto"
               onClick={() => setShowUploadModal(true)}
             >
-              <Plus size={18} className="mr-2" />
-              Add Your First Resource
+              <Plus size={18} className="mr-3" />
+              Ingest First Resource
             </button>
           )}
         </div>
@@ -1852,47 +1867,56 @@ const KnowledgeBase: React.FC = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-8 bg-transparent min-h-full">
       <button
         onClick={handleBackToOrchestrator}
-        className="mb-6 flex items-center transition-colors text-gray-600 hover:text-gray-900"
+        className="mb-8 flex items-center transition-all text-gray-400 hover:text-harx-500 group"
       >
-        <ChevronRight className="h-5 w-5 rotate-180" />
-        <span>Back to Onboarding</span>
+        <div className="p-2 rounded-xl bg-white shadow-sm border border-gray-100 mr-3 group-hover:scale-110 transition-transform">
+          <ChevronRight className="h-4 w-4 rotate-180" />
+        </div>
+        <span className="text-xs font-black uppercase tracking-widest leading-none">Back to Orchestrator</span>
       </button>
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Knowledge Base</h1>
-        <p className="text-gray-600">
-          Upload documents and call recordings to build your company's knowledge base.
-          The AI will use this information to provide better insights and assistance when handling contacts.
+      <div className="mb-10">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="h-px w-8 bg-harx-500" />
+          <span className="text-[10px] font-black text-harx-500 uppercase tracking-[0.3em]">Knowledge System</span>
+        </div>
+        <h1 className="text-4xl font-black text-gray-900 mb-3 tracking-tight uppercase">Knowledge Base</h1>
+        <p className="text-gray-500 max-w-2xl font-medium leading-relaxed italic">
+          Power your AI with enterprise intelligence. Synchronize documents and call recordings 
+           to build a high-fidelity knowledge graph for your HARX REPS.
         </p>
       </div>
 
-
-
-      {/* Filter and Add Resource */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 mb-6">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <Filter size={18} className="text-gray-500" />
-            <select
-              className="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-            >
-              <option value="all">All Types</option>
-              <option value="document">Documents</option>
-              <option value="audio">Audio / Call Recordings</option>
-            </select>
+      {/* Filter and Add Resource Bar */}
+      <div className="bg-white/60 backdrop-blur-md p-5 rounded-[2rem] border border-white/20 shadow-xl shadow-gray-200/20 mb-10">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <div className="p-3 bg-harx-50 rounded-2xl text-harx-500 flex-shrink-0">
+              <Filter size={20} />
+            </div>
+            <div className="relative w-full">
+              <select
+                className="appearance-none w-full bg-white border border-gray-100 text-gray-900 text-xs font-black uppercase tracking-widest rounded-xl focus:ring-2 focus:ring-harx-500/20 focus:border-harx-500 outline-none block p-3.5 pr-10 transition-all cursor-pointer shadow-sm shadow-inner"
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+              >
+                <option value="all">Intelligence: All Sources</option>
+                <option value="document">Intelligence: Raw Documents</option>
+                <option value="audio">Intelligence: Voice Streams</option>
+              </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+            </div>
           </div>
 
           <button
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center"
+            className="w-full md:w-auto bg-gradient-harx hover:scale-105 active:scale-95 text-white px-8 py-4 rounded-xl flex items-center justify-center font-black text-xs uppercase tracking-widest shadow-xl shadow-harx-500/30 transition-all group"
             onClick={() => setShowUploadModal(true)}
           >
-            <Plus size={18} className="mr-2" />
-            Add Resource
+            <Plus size={18} className="mr-3 group-hover:rotate-90 transition-transform" />
+            Integrate Resource
           </button>
         </div>
       </div>
