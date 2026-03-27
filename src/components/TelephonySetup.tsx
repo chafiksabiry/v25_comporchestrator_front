@@ -1024,13 +1024,13 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
   };
 
   return (
-    <div className="w-full py-4 space-y-6 animate-in fade-in duration-500">
+    <div className="w-full py-2 space-y-4 animate-in fade-in duration-500">
       {/* Header Area - Subtle Gradient Accent */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-8 mb-4 shadow-lg shadow-harx-500/20">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-6 mb-3 shadow-lg shadow-harx-500/20">
         <div className="relative z-10 flex items-center justify-between">
           <div className="space-y-1.5">
-            <h1 className="text-4xl font-black text-white uppercase tracking-tighter">Telephony Setup</h1>
-            <p className="text-[16px] font-medium text-white/90">Manage and configure your global network entry points</p>
+            <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Telephony Setup</h1>
+            <p className="text-[14px] font-medium text-white/90">Manage and configure your global network entry points</p>
           </div>
           {completedSteps.includes(5) && (
             <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-xl self-start">

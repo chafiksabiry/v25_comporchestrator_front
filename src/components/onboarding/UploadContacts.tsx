@@ -1664,10 +1664,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
 
   return (
-    <div className="w-full py-4 space-y-6 animate-in fade-in duration-500">
+    <div className="w-full py-2 space-y-4 animate-in fade-in duration-500">
       {/* Header Area - Branded Gradient */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-8 mb-4 shadow-lg shadow-harx-500/20">
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-6 mb-3 shadow-lg shadow-harx-500/20">
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20">
@@ -1691,18 +1691,18 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
 
       {/* Gigs Selection Dropdown */}
-      <div className="bg-white rounded-3xl shadow-xl border border-harx-100 p-8 transition-all duration-300">
-        <h4 className="text-2xl font-bold text-gray-900 mb-8 flex items-center tracking-tight">
-          <Settings className="mr-3 h-7 w-7 text-harx-500" />
+      <div className="bg-white rounded-3xl shadow-xl border border-harx-100 p-6 transition-all duration-300">
+        <h4 className="text-xl font-bold text-gray-900 mb-4 flex items-center tracking-tight">
+          <Settings className="mr-3 h-6 w-6 text-harx-500" />
           Select a Gig
         </h4>
         {isLoadingGigs ? (
-          <div className="flex items-center justify-center py-16">
+          <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-harx-500"></div>
             <span className="ml-4 text-lg text-gray-600 font-semibold">Loading gigs...</span>
           </div>
         ) : gigs.length === 0 ? (
-          <div className="text-center py-16 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+          <div className="text-center py-8 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
             <div className="mx-auto h-20 w-20 text-gray-300 mb-6">
               <Settings className="h-20 w-20" />
             </div>

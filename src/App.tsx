@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   LogOut,
   Building2,
@@ -166,20 +166,7 @@ function App() {
       case 'matching':
         return <Matching />;
       case 'approval-publishing':
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setActiveTab('company-onboarding')}
-                className="flex items-center transition-colors text-gray-600 hover:text-gray-900"
-              >
-                <ChevronRight className="h-5 w-5 rotate-180" />
-                <span>Back to Onboarding</span>
-              </button>
-            </div>
-            <ApprovalPublishing />
-          </div>
-        );
+        return <ApprovalPublishing />;
       case 'optimization':
         return <Optimization />;
       case 'knowledge-base':

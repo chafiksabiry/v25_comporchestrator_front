@@ -19,6 +19,22 @@ const Optimization = () => {
   const [expandedGig, setExpandedGig] = useState<number | null>(1);
   const [timeRange, setTimeRange] = useState('30d');
 
+  React.useEffect(() => {
+    // Dispatch global back navigation
+    window.dispatchEvent(new CustomEvent('setGlobalBack', {
+      detail: {
+        label: 'Back to Onboarding',
+        onClick: () => {
+          window.dispatchEvent(new CustomEvent('switchTab', { detail: 'company-onboarding' }));
+        }
+      }
+    }));
+
+    return () => {
+      window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
+    };
+  }, []);
+
   const gigs = [
     { 
       id: 1, 
@@ -71,22 +87,25 @@ const Optimization = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Optimization & Performance</h1>
+    <div className="space-y-4 p-4 animate-fade-in">
+      <div className="flex items-center justify-between bg-gradient-harx p-4 rounded-xl shadow-lg border border-harx-600 mb-6">
+        <div>
+          <h1 className="text-xl font-black text-white uppercase tracking-tight">Optimization & Performance</h1>
+          <p className="text-harx-50 text-xs font-bold uppercase tracking-widest opacity-80">AI-Powered Strategic Insights</p>
+        </div>
         <div className="flex space-x-2">
           <select 
-            className="rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-harx-500 focus:outline-none focus:ring-harx-500 sm:text-sm shadow-sm"
+            className="rounded-lg border-white/20 bg-white/10 text-white py-1.5 pl-3 pr-8 text-xs font-bold focus:border-white focus:outline-none focus:ring-1 focus:ring-white sm:text-xs shadow-sm backdrop-blur-md appearance-none cursor-pointer"
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
           >
-            <option value="7d">Last 7 days</option>
-            <option value="30d">Last 30 days</option>
-            <option value="90d">Last 90 days</option>
-            <option value="all">All time</option>
+            <option value="7d" className="text-gray-900">Last 7 days</option>
+            <option value="30d" className="text-gray-900">Last 30 days</option>
+            <option value="90d" className="text-gray-900">Last 90 days</option>
+            <option value="all" className="text-gray-900">All time</option>
           </select>
-          <button className="rounded-lg bg-harx-100 p-2 text-harx-600 hover:bg-harx-200 transition-colors">
-            <RefreshCw className="h-5 w-5" />
+          <button className="rounded-lg bg-white/20 p-1.5 text-white hover:bg-white/30 transition-all border border-white/20 backdrop-blur-md group">
+            <RefreshCw className="h-4 w-4 group-active:rotate-180 transition-transform duration-500" />
           </button>
         </div>
       </div>

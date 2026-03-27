@@ -223,50 +223,65 @@ const CreateGig = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-gray-900">Create Multi-Channel Gig</h2>
-            {isStepCompleted && (
-              <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                <CheckCircle2 className="w-4 h-4" />
-                Completed
+    <div className="w-full py-2 space-y-4 animate-in fade-in duration-500">
+      {/* Header Area - Branded Gradient */}
+      <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-6 mb-3 shadow-lg shadow-harx-500/20">
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20">
+                <Plus className="h-6 w-6 text-white" />
               </div>
-            )}
+              <div>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-3xl font-black text-white uppercase tracking-tighter">
+                    Create Multi-Channel Gig
+                  </h2>
+                  {isStepCompleted && (
+                    <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Completed
+                    </div>
+                  )}
+                </div>
+                <p className="text-[14px] font-medium text-white/90">Define requirements and specifications for your gig</p>
+              </div>
+            </div>
           </div>
-          <p className="text-sm text-gray-500">Define requirements and specifications for your gig</p>
+          <div className="flex items-center gap-3">
+            <button className="px-6 py-2.5 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-black rounded-2xl shadow-xl border border-white/20 transition-all duration-200 uppercase tracking-widest text-[10px] flex items-center gap-2">
+              <Save className="h-4 w-4" />
+              Save Draft
+            </button>
+            <button
+              onClick={isStepCompleted ? undefined : handlePublishGig}
+              className={`px-6 py-2.5 font-black rounded-2xl shadow-xl transition-all duration-200 uppercase tracking-widest text-[10px] flex items-center gap-2 ${isStepCompleted
+                ? 'bg-emerald-600/50 text-white/50 cursor-not-allowed border border-white/10'
+                : 'bg-white text-harx-600 hover:bg-gray-50 border border-white shadow-harx-500/25 hover:shadow-harx-500/40'
+                }`}
+              disabled={isStepCompleted}
+            >
+              {isStepCompleted ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  Published
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4" />
+                  Publish Gig
+                </>
+              )}
+            </button>
+          </div>
         </div>
-        <div className="flex space-x-3">
-          <button className="flex items-center rounded-xl bg-white px-5 py-2.5 text-sm font-black text-gray-700 shadow-sm border border-gray-200 hover:border-harx-300 hover:text-harx-600 transition-all active:scale-95">
-            <Save className="mr-2 h-4 w-4" />
-            Save Draft
-          </button>
-          <button
-            onClick={isStepCompleted ? undefined : handlePublishGig}
-            className={`flex items-center rounded-xl px-6 py-2.5 text-sm font-black shadow-lg transition-all active:scale-95 ${isStepCompleted
-              ? 'bg-emerald-600 text-white cursor-not-allowed opacity-80 italic'
-              : 'bg-gradient-harx text-white hover:brightness-110 shadow-harx-500/25 hover:shadow-harx-500/40'
-              }`}
-            disabled={isStepCompleted}
-          >
-            {isStepCompleted ? (
-              <span className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-white" />
-                Gig Already Published
-              </span>
-            ) : (
-              <>
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Publish Gig
-              </>
-            )}
-          </button>
-        </div>
+        {/* Abstract background pattern */}
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-black/10 rounded-full blur-2xl" />
       </div>
 
       {/* Basic Information */}
-      <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-xl p-8">
+      <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-6">
         <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight mb-8">Base Intelligence</h3>
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
           <div className="space-y-2">
@@ -296,7 +311,7 @@ const CreateGig = () => {
       </div>
 
       {/* Channel Selection */}
-      <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-xl p-8">
+      <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-6">
         <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight mb-2">Communication Channels</h3>
         <p className="text-sm font-medium text-gray-500 mb-8 tracking-tight">Select the multi-channel capabilities for this specific gig execution.</p>
 
@@ -332,7 +347,7 @@ const CreateGig = () => {
       </div>
 
       {/* Requirements */}
-      <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-xl p-8">
+      <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-6">
         <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight mb-8">Role Requirements</h3>
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
           <div className="space-y-2">
@@ -415,7 +430,7 @@ const CreateGig = () => {
       </div>
 
       {/* Schedule & Availability */}
-      <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-xl p-8">
+      <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-6">
         <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight mb-8">Schedule & Availability</h3>
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
           <div className="space-y-2">
@@ -461,7 +476,7 @@ const CreateGig = () => {
       </div>
 
       {/* Compensation */}
-      <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-xl p-8">
+      <div className="rounded-xl bg-white border border-gray-100 shadow-sm p-6">
         <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight mb-8">Compensation & Benefits</h3>
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
           <div className="space-y-2">

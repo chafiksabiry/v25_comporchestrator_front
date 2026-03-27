@@ -176,6 +176,20 @@ export const MatchingDashboard = () => {
         };
 
         fetchData();
+
+        // Dispatch global back navigation
+        window.dispatchEvent(new CustomEvent('setGlobalBack', {
+            detail: {
+                label: 'Back to Onboarding',
+                onClick: () => {
+                    window.dispatchEvent(new CustomEvent('switchTab', { detail: 'company-onboarding' }));
+                }
+            }
+        }));
+
+        return () => {
+            window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
+        };
     }, []);
 
     // Restore selected gig from localStorage when gigs are available
@@ -726,7 +740,7 @@ export const MatchingDashboard = () => {
             </header>
 
             {/* Main Content */}
-            <main className="container mx-auto p-6 w-full max-w-full overflow-hidden">
+            <main className="container mx-auto p-4 w-full max-w-full overflow-hidden">
 
                 {/* Error Message */}
                 {error && (
