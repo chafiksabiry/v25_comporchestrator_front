@@ -158,23 +158,23 @@ const REPS_PHASES = [
   {
     name: 'Context & Preparation',
     icon: FileText,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-200',
+    color: 'text-harx-600',
+    bgColor: 'bg-harx-50/50',
+    borderColor: 'border-harx-200/50',
     description: 'Preparation and context setting'
   },
   {
     name: 'SBAM & Opening',
     icon: HandHeart,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
+    color: 'text-harx-alt-500',
+    bgColor: 'bg-harx-alt-50/50',
+    borderColor: 'border-harx-alt-200/50',
     description: 'Salutation, Bonjour, Accroche, Motif'
   },
   {
     name: 'Legal & Compliance',
     icon: Shield,
-    color: 'text-red-600',
+    color: 'text-red-500',
     bgColor: 'bg-red-50',
     borderColor: 'border-red-200',
     description: 'Legal aspects and compliance'
@@ -182,7 +182,7 @@ const REPS_PHASES = [
   {
     name: 'Need Discovery',
     icon: Search,
-    color: 'text-orange-600',
+    color: 'text-orange-500',
     bgColor: 'bg-orange-50',
     borderColor: 'border-orange-200',
     description: 'Needs discovery and qualification'
@@ -190,23 +190,23 @@ const REPS_PHASES = [
   {
     name: 'Value Proposition',
     icon: Star,
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-50',
-    borderColor: 'border-yellow-200',
+    color: 'text-harx-500',
+    bgColor: 'bg-harx-50',
+    borderColor: 'border-harx-200',
     description: 'Value proposition presentation'
   },
   {
     name: 'Documents/Quote',
     icon: FileCheck,
-    color: 'text-indigo-600',
-    bgColor: 'bg-indigo-50',
-    borderColor: 'border-indigo-200',
+    color: 'text-harx-600',
+    bgColor: 'bg-harx-50',
+    borderColor: 'border-harx-200',
     description: 'Documentation and quotation'
   },
   {
     name: 'Objection Handling',
     icon: AlertTriangle,
-    color: 'text-pink-600',
+    color: 'text-pink-500',
     bgColor: 'bg-pink-50',
     borderColor: 'border-pink-200',
     description: 'Objection handling and resolution'
@@ -214,7 +214,7 @@ const REPS_PHASES = [
   {
     name: 'Confirmation & Closing',
     icon: CheckCircle,
-    color: 'text-green-600',
+    color: 'text-green-500',
     bgColor: 'bg-green-50',
     borderColor: 'border-green-200',
     description: 'Confirmation and closing'
