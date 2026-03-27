@@ -51,8 +51,6 @@ type AnalysisResult = DocumentAnalysis | CallAnalysis;
 const KnowledgeBase: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadName, setUploadName] = useState('');
-  const [uploadDescription, setUploadDescription] = useState('');
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploadTags, setUploadTags] = useState<string>('');
   const [knowledgeItems, setKnowledgeItems] = useState<KnowledgeItem[]>([]);
@@ -126,9 +124,6 @@ const KnowledgeBase: React.FC = () => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
       setUploadFiles(files);
-      if (files.length === 1 && !uploadName) {
-        setUploadName(files[0].name);
-      }
     }
   };
 
@@ -307,14 +302,12 @@ const KnowledgeBase: React.FC = () => {
         const isAudio = file.type.startsWith('audio/') || 
                        /\.(mp3|wav|m4a|ogg|aac|flac)$/i.test(file.name);
         
-        const resourceName = uploadFiles.length === 1 ? uploadName : file.name;
-
         if (!isAudio) {
           // Upload as document
           const formData = new FormData();
           formData.append('file', file);
-          formData.append('name', resourceName);
-          formData.append('description', uploadDescription);
+          formData.append('name', file.name);
+          formData.append('description', '');
           formData.append('tags', uploadTags);
           formData.append('uploadedBy', 'Current User');
           formData.append('userId', userId);
@@ -325,10 +318,10 @@ const KnowledgeBase: React.FC = () => {
           const duration = await getAudioDuration(file);
           const formData = new FormData();
           formData.append('file', file);
-          formData.append('contactId', resourceName);
+          formData.append('contactId', file.name);
           formData.append('date', format(new Date(), 'yyyy-MM-dd'));
           formData.append('duration', duration.toString());
-          formData.append('summary', uploadDescription);
+          formData.append('summary', '');
           formData.append('sentiment', 'neutral');
           formData.append('tags', uploadTags);
           formData.append('aiInsights', '');
@@ -362,8 +355,6 @@ const KnowledgeBase: React.FC = () => {
       // For now, let's assume the user knows they might need to refresh or I'll fix the fetch.
       window.location.reload(); // Quickest way to ensure everything reloads from backend
 
-      setUploadName('');
-      setUploadDescription('');
       setUploadFiles([]);
       setUploadTags('');
       setShowUploadModal(false);
@@ -552,8 +543,6 @@ const KnowledgeBase: React.FC = () => {
   const handleUploadModalClose = () => {
     if (!isUploading) {
       setShowUploadModal(false);
-      setUploadName('');
-      setUploadDescription('');
       setUploadFiles([]);
       setUploadTags('');
     }
@@ -975,14 +964,7 @@ const KnowledgeBase: React.FC = () => {
             <button onClick={handleUploadModalClose} className="text-gray-400 hover:text-gray-600 focus:outline-none text-2xl font-bold">×</button>
           </div>
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
-            <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Resource Identity</label>
-              <input type="text" className="w-full bg-gray-50 border border-gray-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-harx-500/20 focus:border-harx-500 outline-none transition-all" value={uploadName} onChange={(e) => setUploadName(e.target.value)} placeholder={uploadFiles.length > 1 ? "Used for single uploads only" : "Name your resource"} disabled={uploadFiles.length > 1} />
-            </div>
-            <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Intelligence Brief</label>
-              <textarea className="w-full bg-gray-50 border border-gray-100 rounded-xl p-4 text-sm font-bold focus:ring-2 focus:ring-harx-500/20 focus:border-harx-500 outline-none transition-all" rows={3} value={uploadDescription} onChange={(e) => setUploadDescription(e.target.value)} placeholder="Quick summary" required />
-            </div>
+            {/* Removed Title and Brief fields per user request */}
             <div className="border-2 border-dashed border-gray-100 rounded-2xl p-8 text-center hover:border-harx-200 transition-colors cursor-pointer group relative">
               <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileChange} required multiple />
               <Upload size={32} className="mx-auto text-gray-300 group-hover:text-harx-500 transition-colors mb-3" />
