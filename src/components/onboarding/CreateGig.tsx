@@ -15,9 +15,7 @@ import {
   Save,
   CheckCircle2,
   DollarSign,
-  Calendar,
-  Briefcase,
-  Target
+  Calendar
 } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';

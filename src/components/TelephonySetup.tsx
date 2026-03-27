@@ -1015,66 +1015,65 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {cookieError && (
-        <div className="rounded-lg bg-yellow-50 p-4">
+        <div className="rounded-lg bg-yellow-50 p-3">
           <div className="flex">
-            <AlertCircle className="h-5 w-5 text-yellow-400" />
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800">Configuration Error</h3>
-              <div className="mt-2 text-sm text-yellow-700">
+            <AlertCircle className="h-4 w-4 text-yellow-400" />
+            <div className="ml-2.5">
+              <h3 className="text-[11px] font-black text-yellow-800 uppercase tracking-widest">Configuration Error</h3>
+              <div className="mt-1 text-xs text-yellow-700">
                 <p>{cookieError}</p>
               </div>
             </div>
           </div>
         </div>
       )}
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between px-1">
         <div>
           <div className="flex items-center space-x-2">
-            <h2 className="text-2xl font-black text-gray-900 uppercase tracking-widest">Telephony Setup</h2>
+            <h2 className="text-lg font-black text-gray-900 uppercase tracking-widest leading-none">Telephony Setup</h2>
             {completedSteps.includes(5) && (
-              <CheckCircle className="h-6 w-6 text-emerald-500" />
+              <CheckCircle className="h-4 w-4 text-emerald-500" />
             )}
           </div>
-          <p className="text-sm font-medium text-gray-500 italic">Configure your call center infrastructure</p>
+          <p className="text-[10px] font-bold text-gray-400 italic mt-0.5">Manage your call infrastructure</p>
         </div>
       </div>
 
       {/* Gig Selection */}
-      <div className="relative overflow-hidden rounded-3xl bg-white/40 backdrop-blur-md p-8 shadow-2xl border border-white/20 group">
-        <div className="flex items-center space-x-4 mb-6">
+      <div className="relative z-20 overflow-visible rounded-xl bg-white/40 backdrop-blur-md p-4 shadow-lg border border-white/20 group">
+        <div className="flex items-center space-x-3 mb-4">
           <div className="flex-shrink-0">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-harx flex items-center justify-center shadow-lg shadow-harx-500/20">
-              <Briefcase className="h-6 w-6 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-harx flex items-center justify-center shadow-lg shadow-harx-500/10">
+              <Briefcase className="h-5 w-5 text-white" />
             </div>
           </div>
           <div className="flex-1">
-            <div className="flex items-center space-x-3">
-              <h3 className="text-xl font-black text-gray-900 uppercase tracking-widest">Select Gig</h3>
-              <span className="inline-flex items-center rounded-xl bg-gradient-harx px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white shadow-md">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Select Gig</h3>
+              <span className="inline-flex items-center rounded-lg bg-gradient-harx px-2 py-0.5 text-[8px] font-black uppercase tracking-widest text-white">
                 Required
               </span>
             </div>
-            <p className="mt-1 text-sm font-medium text-gray-600 italic">Choose the gig for which you want to configure telephony <span className="text-harx-500 font-black">*</span></p>
+            <p className="text-[10px] font-bold text-gray-400 italic">Choose an active intelligence profile</p>
           </div>
         </div>
 
         {isLoadingGigs ? (
-          <div className="mt-6 flex items-center justify-center space-x-3 p-6 rounded-2xl bg-white/50 backdrop-blur-sm border border-white/40">
-            <div className="animate-spin rounded-full h-6 w-6 border-2 border-harx-200 border-t-harx-600"></div>
-            <span className="text-sm font-black text-harx-600 uppercase tracking-widest">Loading Gigs...</span>
+          <div className="mt-4 flex items-center justify-center space-x-3 p-4 rounded-xl bg-white/50 backdrop-blur-sm border border-white/40">
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-harx-200 border-t-harx-600"></div>
+            <span className="text-[10px] font-black text-harx-600 uppercase tracking-widest">Loading...</span>
           </div>
         ) : gigs.length > 0 ? (
-          <div className="mt-6">
+          <div className="mt-4">
             <div className="relative gig-dropdown">
-              {/* Custom Dropdown */}
               <button
                 type="button"
-                className={`relative w-full rounded-2xl border-2 py-5 pl-6 pr-14 text-left text-base font-black transition-all duration-300 shadow-xl ${selectedGigId
-                  ? 'border-harx-200 bg-white text-gray-900 focus:border-harx-500 focus:ring-harx-500/20'
-                  : 'border-white bg-white/60 text-gray-400 focus:border-harx-400 focus:ring-harx-400/20 hover:border-harx-200'
-                  } focus:outline-none focus:ring-4 focus:ring-opacity-50 group-hover:shadow-2xl`}
+                className={`relative w-full rounded-xl border-2 py-3.5 pl-5 pr-14 text-left text-[13px] font-black transition-all duration-300 shadow-md ${selectedGigId
+                  ? 'border-harx-100 bg-white text-gray-900 focus:border-harx-500 focus:ring-harx-500/10'
+                  : 'border-white bg-white/60 text-gray-400 focus:border-harx-200 focus:ring-harx-400/10 hover:border-harx-100'
+                  } focus:outline-none focus:ring-4 focus:ring-opacity-50`}
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               >
                 <span className="flex items-center">
@@ -1085,11 +1084,11 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                         <>
                           <span className="truncate">{selectedGig.title}</span>
                           <span className="mx-2 text-gray-300">|</span>
-                          <span className="text-harx-500 uppercase tracking-widest text-xs">{selectedGig.destination_zone.name.common}</span>
+                          <span className="text-harx-500 uppercase tracking-widest text-[9px]">{selectedGig.destination_zone.name.common}</span>
                           <img
                             src={selectedGig.destination_zone.flags?.png}
                             alt={selectedGig.destination_zone.flags?.alt}
-                            className="inline-block w-6 h-4 ml-3 rounded shadow-sm border border-gray-100 object-cover"
+                            className="inline-block w-4 h-3 ml-2.5 rounded-sm shadow-sm border border-gray-100 object-cover"
                           />
                         </>
                       ) : 'Select a gig...';
@@ -1098,19 +1097,18 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                     <span className="italic">🎯 Select a gig profile...</span>
                   )}
                 </span>
-                <span className="absolute inset-y-0 right-0 flex items-center pr-6">
-                  <ChevronDown className={`h-6 w-6 text-harx-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                <span className="absolute inset-y-0 right-0 flex items-center pr-5">
+                  <ChevronDown className={`h-4 w-4 text-harx-300 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 </span>
               </button>
 
-              {/* Dropdown Options */}
               {isDropdownOpen && (
-                <div className="absolute z-50 mt-3 w-full bg-white/90 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl max-h-80 overflow-auto scrollbar-hide py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute z-50 mt-2 w-full bg-white/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl max-h-60 overflow-auto scrollbar-hide py-1 animate-in fade-in slide-in-from-top-2 duration-200">
                   {gigs.map((gig: Gig) => (
                     <button
                       key={gig._id}
                       type="button"
-                      className="relative w-full px-6 py-4 text-left hover:bg-harx-50 focus:bg-harx-50 focus:outline-none transition-all duration-200 border-b border-gray-50 last:border-0"
+                      className="relative w-full px-5 py-3 text-left hover:bg-harx-50 focus:bg-harx-50 focus:outline-none transition-all duration-200 border-b border-gray-50 last:border-0"
                       onClick={() => {
                         setSelectedGigId(gig._id);
                         setIsDropdownOpen(false);
@@ -1118,407 +1116,205 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex flex-col">
-                          <span className="text-gray-900 font-black text-sm uppercase tracking-tight">
+                          <span className="text-gray-900 font-black text-[11px] uppercase tracking-tight">
                             {gig.title}
                           </span>
-                          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5 italic">
+                          <span className="text-[8px] text-gray-500 font-bold uppercase tracking-widest mt-0.5 italic">
                             {gig.destination_zone.name.common}
                           </span>
                         </div>
                         <img
                           src={gig.destination_zone.flags?.png}
                           alt={gig.destination_zone.flags?.alt}
-                          className="w-8 h-5 rounded shadow-sm border border-gray-100 object-cover"
+                          className="w-5 h-3.5 rounded-sm shadow-sm border border-gray-100 object-cover"
                         />
                       </div>
                     </button>
                   ))}
                 </div>
               )}
-
-              {selectedGigId && (
-                <div className="absolute inset-y-0 right-14 flex items-center pointer-events-none">
-                  <div className="w-2.5 h-2.5 rounded-full bg-harx-500 shadow-lg shadow-harx-500/50 animate-pulse"></div>
-                </div>
-              )}
             </div>
           </div>
         ) : (
-          <div className="mt-6 rounded-3xl bg-white/60 backdrop-blur-md p-8 border border-white/40 shadow-xl">
-            <div className="flex items-start space-x-4">
+          <div className="mt-2 rounded-xl bg-white/60 backdrop-blur-md p-4 border border-white/40 shadow-lg">
+            <div className="flex items-start space-x-3">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
-                  <AlertCircle className="h-6 w-6 text-gray-400" />
+                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <AlertCircle className="h-4 w-4 text-gray-400" />
                 </div>
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-black text-gray-900 uppercase tracking-widest mb-1">No Intelligence Profiles Found</h3>
-                <p className="text-sm font-medium text-gray-500 italic leading-relaxed">No primary gigs were detected for this organization. Please initialize an intelligence profile first.</p>
+                <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-0.5">No Profiles Found</h3>
+                <p className="text-[9px] font-bold text-gray-400 italic">No primary gigs detected.</p>
               </div>
             </div>
           </div>
         )}
       </div>
+      {/* Main Content (Provider + Numbers) - Only show when gigs are loaded */}
+      {!isLoadingGigs && (
+        <div className="space-y-3">
+          {/* Provider Selection */}
+          <div className="rounded-xl bg-white/40 backdrop-blur-md p-4 shadow-lg border border-white/20">
+            <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-3">Select Provider</h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {providers.map((p) => {
+                const Logo = p.logo;
+                const isDisabled = p.id === 'telnyx';
+                return (
+                  <button
+                    key={p.id}
+                    disabled={isDisabled}
+                    className={`relative overflow-hidden flex items-center justify-center h-14 rounded-lg border-2 transition-all duration-300 group ${isDisabled
+                      ? 'opacity-40 grayscale cursor-not-allowed bg-gray-50/50 border-gray-100'
+                      : provider === p.id
+                        ? 'border-harx-500 bg-white shadow-md shadow-harx-500/5'
+                        : 'border-white bg-white/60 hover:border-harx-200 hover:bg-white shadow-sm'
+                      }`}
+                    onClick={() => setProvider(p.id)}
+                  >
+                    {!isDisabled && provider === p.id && (
+                      <div className="absolute top-0 right-0 p-1 bg-harx-500 rounded-bl-lg shadow-sm">
+                        <CheckCircle className="w-2.5 h-2.5 text-white" />
+                      </div>
+                    )}
+                    <Logo className={`mr-2 h-4 w-4 transition-colors duration-300 ${isDisabled ? 'text-gray-400' : provider === p.id ? 'text-harx-500' : 'text-gray-400 group-hover:text-harx-400'}`} />
+                    <span className={`text-[10px] font-black uppercase tracking-widest transition-colors duration-300 ${isDisabled ? 'text-gray-400' : provider === p.id ? 'text-gray-900' : 'text-gray-600 group-hover:text-gray-900'}`}>
+                      {p.name}
+                      {isDisabled && <span className="ml-1.5 text-[8px] font-bold text-harx-500">(Beta Soon)</span>}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-      {/* Provider Selection */}
-      <div className="overflow-hidden rounded-3xl bg-white/40 backdrop-blur-md p-8 shadow-2xl border border-white/20">
-        <h3 className="text-xl font-black text-gray-900 uppercase tracking-widest mb-6">Select Infrastructure Provider</h3>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          {providers.map((p) => {
-            const Logo = p.logo;
-            const isDisabled = p.id === 'telnyx';
-            return (
-              <button
-                key={p.id}
-                disabled={isDisabled}
-                className={`relative overflow-hidden flex items-center justify-center h-24 rounded-2xl border-2 transition-all duration-300 group ${isDisabled
-                  ? 'opacity-40 grayscale cursor-not-allowed bg-gray-50/50 border-gray-100'
-                  : provider === p.id
-                    ? 'border-harx-500 bg-white shadow-xl shadow-harx-500/10'
-                    : 'border-white bg-white/60 hover:border-harx-200 hover:bg-white shadow-md'
-                  }`}
-                onClick={() => setProvider(p.id)}
-              >
-                {!isDisabled && provider === p.id && (
-                  <div className="absolute top-0 right-0 p-1.5 bg-harx-500 rounded-bl-xl shadow-lg">
-                    <CheckCircle className="w-3.5 h-3.5 text-white" />
-                  </div>
-                )}
-                <Logo className={`mr-3 h-6 w-6 transition-colors duration-300 ${isDisabled ? 'text-gray-400' : provider === p.id ? 'text-harx-500 font-black' : 'text-gray-400 group-hover:text-harx-400'}`} />
-                <span className={`text-sm font-black uppercase tracking-widest transition-colors duration-300 ${isDisabled ? 'text-gray-400' : provider === p.id ? 'text-gray-900' : 'text-gray-600 group-hover:text-gray-900'}`}>
-                  {p.name}
-                  {isDisabled && <span className="ml-2 text-[10px] font-bold text-harx-500">(Beta Soon)</span>}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-      </div>
-
-      {/* Phone Numbers */}
-      <div className="overflow-hidden rounded-3xl bg-white/40 backdrop-blur-md p-8 shadow-2xl border border-white/20">
-        <div className="flex items-center justify-between mb-8">
-          <h3 className="text-xl font-black text-gray-900 uppercase tracking-widest">Active Connectivity</h3>
-          {destinationZone && selectedGigId && (() => {
-            const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
-            return selectedGig ? (
-              <div className="flex flex-col items-end">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Zone:</span>
-                  <span className="text-xs font-black text-harx-600 uppercase tracking-tight">{selectedGig.destination_zone.name.common}</span>
-                </div>
-                <div className={`flex items-center gap-2 px-3 py-1 rounded-xl shadow-sm border ${isQuotaReached ? 'bg-emerald-50 border-emerald-100' : 'bg-harx-50 border-harx-100'}`}>
-                  <div className={`w-1.5 h-1.5 rounded-full ${isQuotaReached ? 'bg-emerald-500 shadow-lg shadow-emerald-500/50' : 'bg-harx-500 shadow-lg shadow-harx-500/50 pulse'}`}></div>
-                  <span className={`text-[10px] font-black uppercase tracking-widest ${isQuotaReached ? 'text-emerald-700' : 'text-harx-700'}`}>
-                    {purchasedNumbersCount} / {teamSize} Intelligence Assets
+          {/* Phone Numbers Container */}
+          <div className="rounded-xl bg-white/40 backdrop-blur-md p-4 shadow-lg border border-white/20">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest">Phone Nodes</h3>
+              {destinationZone && selectedGigId && (
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/60 border border-white shadow-sm">
+                  <div className={`w-1 h-1 rounded-full ${isQuotaReached ? 'bg-emerald-500' : 'bg-harx-500 pulse'}`}></div>
+                  <span className="text-[8px] font-black uppercase tracking-widest text-gray-900">
+                    {purchasedNumbersCount}/{teamSize} Active
                   </span>
                 </div>
-              </div>
-            ) : null;
-          })()}
-        </div>
-
-
-        {/* Requirements Warning for Telnyx Numbers - Only show when requirements are needed and incomplete */}
-        {provider === 'telnyx' && requirementStatus.hasRequirements && !requirementStatus.isComplete && (
-          <div className="mb-4 rounded-lg bg-yellow-50 p-4">
-            <div className="flex">
-              <AlertCircle className="h-5 w-5 text-yellow-400" />
-              <div className="ml-3 flex-grow">
-                <h3 className="text-sm font-medium text-yellow-800">Requirements Needed</h3>
-                <div className="mt-2 text-sm text-yellow-700">
-                  <p>To purchase numbers in this country, you need to complete all required information.</p>
-
-                  {/* Progress bar */}
-                  {requirementStatus.completionPercentage !== undefined && (
-                    <div className="mt-2">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-medium text-yellow-800">
-                          Progress: {requirementStatus.completionPercentage}%
-                        </span>
-                        <span className="text-xs font-medium text-yellow-800">
-                          {requirementStatus.completedRequirements?.length || 0} / {requirementStatus.totalRequirements || 0}
-                        </span>
-                      </div>
-                      <div className="w-full bg-yellow-200 rounded-full h-2">
-                        <div
-                          className="bg-yellow-600 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${requirementStatus.completionPercentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <button
-                    onClick={async () => {
-                      // Make sure we have requirements loaded
-                      if (!countryReq.requirements?.length) {
-                        const selectedGig = gigs.find(g => g._id === selectedGigId);
-                        if (selectedGig?.destination_zone?.cca2) {
-                          const response = await requirementService.checkCountryRequirements(selectedGig.destination_zone.cca2);
-                          setCountryReq(response);
-                          if (response.requirements?.length) {
-                            setShowRequirementModal(true);
-                          } else {
-                            console.warn('No requirements found for country:', selectedGig.destination_zone.cca2);
-                          }
-                        }
-                      } else {
-                        setShowRequirementModal(true);
-                      }
-                    }}
-                    className="mt-3 inline-flex items-center rounded-md bg-yellow-100 px-3 py-2 text-sm font-medium text-yellow-800 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2"
-                  >
-                    {requirementStatus.completedRequirements?.length ? 'Continue Requirements' : 'Start Requirements'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Purchased Numbers Section */}
-        {provider === 'telnyx' ? (
-          <div className="mb-6 space-y-2">
-            <h4 className="text-sm font-medium text-gray-700">Purchased Telnyx Numbers</h4>
-            <div className="grid gap-2">
-              {Array.isArray(phoneNumbers) && phoneNumbers.filter(number => number.provider === 'telnyx').length > 0 ? (
-                // Case 1.1: Show existing number for the gig
-                phoneNumbers
-                  .filter(number => number.provider === 'telnyx')
-                  .map((number: any) => (
-                    <div
-                      key={number.phoneNumber}
-                      className="flex items-center justify-between rounded-lg border p-3"
-                    >
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{number.phoneNumber}</span>
-                          {number.metadata?.type && (
-                            <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full ${number.metadata.type === 'local' ? 'bg-blue-100 text-blue-700' :
-                              number.metadata.type === 'national' ? 'bg-purple-100 text-purple-700' :
-                                'bg-orange-100 text-orange-700'
-                              }`}>
-                              {number.metadata.type}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-sm text-gray-500">
-                          Status: {number.status}
-                        </span>
-                      </div>
-                      <div className="flex items-center">
-                        <span className={`px-2 py-1 text-xs rounded-full ${number.status === 'active' ? 'bg-green-100 text-green-800' :
-                          number.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                          {number.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-              ) : (
-                // Case 1.2.3 or initial state
-                <div className="rounded-lg border border-gray-200 p-4 text-center text-gray-500">
-                  No phone number purchased for this gig yet
-                </div>
-              )}
-            </div>
-          </div>
-        ) : provider === 'twilio' && (
-          // Pour Twilio, toujours afficher
-          <div className="mb-6 space-y-2">
-            <h4 className="text-sm font-medium text-gray-700">Purchased Twilio Numbers</h4>
-            <div className="grid gap-2">
-              {Array.isArray(phoneNumbers) && phoneNumbers.filter(number => number.provider === 'twilio').length > 0 ? (
-                phoneNumbers
-                  .filter(number => number.provider === 'twilio')
-                  .map((number: any) => (
-                    <div
-                      key={number.phoneNumber}
-                      className="flex items-center justify-between rounded-2xl bg-white border border-gray-100 p-5 shadow-sm hover:shadow-md transition-all duration-300"
-                    >
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-3">
-                          <span className="text-lg font-black text-gray-900">{number.phoneNumber}</span>
-                          {number.metadata?.type && (
-                            <span className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg border ${number.metadata.type === 'local' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
-                              number.metadata.type === 'national' ? 'bg-rose-50 text-rose-700 border-rose-100' :
-                                'bg-harx-50 text-harx-700 border-harx-100'
-                              }`}>
-                              {number.metadata.type}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Network Node {number.status}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center">
-                        <span className={`px-4 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm border ${number.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                          number.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-100' :
-                            'bg-gray-50 text-gray-600 border-gray-100'
-                          }`}>
-                          {number.status === 'active' ? 'Operational' : 'Syncing'}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-              ) : (
-                <div className="rounded-2xl border-2 border-dashed border-gray-100 p-8 text-center text-gray-400 font-bold italic text-sm">
-                  Waiting for network node initialization...
-                </div>
               )}
             </div>
 
-            {/* Available Numbers Section */}
-            {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
-              <div className="mt-10">
-                <div className="flex items-center gap-3 mb-6">
-                  <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest">Available Entry Points</h4>
-                  <div className="h-px flex-1 bg-gray-100"></div>
-                </div>
-                <div className="grid gap-4">
-                  {availableNumbers.map((number) => {
-                    const phoneNumber = getPhoneNumber(number);
-                    return (
-                      <div
-                        key={phoneNumber}
-                        className="flex items-center justify-between rounded-2xl bg-white/60 border border-white p-5 shadow-lg group hover:bg-white hover:border-harx-200 transition-all duration-300"
-                      >
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-3">
-                            <span className="text-lg font-black text-gray-900 group-hover:text-harx-600 transition-colors">{phoneNumber}</span>
-                            {number.type && (
-                              <span className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-widest rounded-lg border ${number.type === 'local' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-rose-50 text-rose-700 border-rose-100'
-                                }`}>
-                                {number.type}
-                              </span>
-                            )}
+            {/* Requirements Warning */}
+            {provider === 'telnyx' && requirementStatus.hasRequirements && !requirementStatus.isComplete && (
+              <div className="mb-3 rounded-lg bg-amber-50/50 border border-amber-100 p-3">
+                <div className="flex gap-2.5">
+                  <AlertCircle className="h-3.5 w-3.5 text-amber-500 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="text-[10px] font-black text-amber-900 uppercase tracking-tight">Requirements Needed</h4>
+                    <div className="mt-1.5 text-[9px] text-amber-800 font-bold leading-relaxed">
+                      <p>Regulatory documentation required for this destination.</p>
+                      {requirementStatus.completionPercentage !== undefined && (
+                        <div className="mt-2 text-[8px] font-black">
+                          <div className="flex justify-between mb-1">
+                            <span>Status</span>
+                            <span>{requirementStatus.completionPercentage}%</span>
                           </div>
-                          {number.locality && (
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
-                              {number.locality}, {number.region}
-                            </span>
-                          )}
+                          <div className="w-full bg-amber-200/50 rounded-full h-1">
+                            <div className="bg-amber-500 h-1 rounded-full" style={{ width: `${requirementStatus.completionPercentage}%` }} />
+                          </div>
                         </div>
-                        <button
-                          onClick={() => {
-                            setSelectedNumber(phoneNumber);
-                            if (destinationZone === 'FR' && number.type === 'national' && twilioRegulatorySids.bundleSid) {
-                              handleConfirmPurchase(undefined, phoneNumber, number.type);
-                              setShowPurchaseModal(true);
-                            } else {
-                              setPurchaseStatus('confirming');
-                              setShowPurchaseModal(true);
-                              setPurchaseType(number.type);
-                            }
-                          }}
-                          disabled={isQuotaReached}
-                          className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all duration-300 ${isQuotaReached
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                            : 'bg-gradient-harx text-white shadow-harx-500/20 hover:shadow-harx-500/40 hover:-translate-y-0.5'
-                            }`}
-                          title={isQuotaReached ? 'Quota reached for this gig team size' : undefined}
-                        >
-                          Initialize Node
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                          </svg>
-                        </button>
-                      </div>
-                    );
-                  })}
+                      )}
+                      <button
+                        onClick={() => setShowRequirementModal(true)}
+                        className="mt-2 inline-flex items-center px-2 py-1 rounded-md bg-amber-100/50 text-amber-900 text-[8px] font-black uppercase hover:bg-amber-200 transition-colors"
+                      >
+                        Resolve Requirements
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            ) : null}
-          </div>
-        )}
+            )}
 
-        {/* Available Numbers List */}
-        {destinationZone && provider === 'telnyx' && (
-          <div className="mb-6 space-y-2">
-            <h4 className="text-sm font-medium text-gray-700">Available Numbers (Destination: {(() => {
-              const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
-              return selectedGig ? selectedGig.destination_zone.name.common : destinationZone;
-            })()})</h4>
-            <div className="grid gap-2">
-              {Array.isArray(availableNumbers) && availableNumbers.length > 0 ? (
-                availableNumbers.map((number) => {
-                  const phoneNumber = getPhoneNumber(number);
-                  const isDisabled = isQuotaReached || (requirementStatus.hasRequirements && !requirementStatus.isComplete);
-                  const tooltipMessage = isQuotaReached
-                    ? 'Quota reached for this gig team size'
-                    : requirementStatus.hasRequirements && !requirementStatus.isComplete
-                      ? 'Please complete the requirements before purchasing'
-                      : undefined;
-
-                  return (
-                    <div
-                      key={phoneNumber}
-                      className="flex items-center justify-between rounded-lg border p-3"
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-medium">{phoneNumber}</span>
-                        {number.locality && (
-                          <span className="text-sm text-gray-500">
-                            {number.locality}, {number.region}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {isDisabled && (
-                          <span className="text-xs text-gray-500 italic mr-2">
-                            {tooltipMessage}
-                          </span>
-                        )}
-                        <button
-                          onClick={() => {
-                            setSelectedNumber(phoneNumber);
-                            setPurchaseStatus('confirming');
-                            setShowPurchaseModal(true);
-                          }}
-                          disabled={isQuotaReached}
-                          className={`rounded-md px-3 py-1 text-sm text-white ${isQuotaReached
-                            ? 'bg-gray-400 cursor-not-allowed'
-                            : 'bg-green-600 hover:bg-green-700'
-                            }`}
-                          title={isQuotaReached ? 'Quota reached for this gig team size' : undefined}
-                        >
-                          Purchase
-                        </button>
-                      </div>
+            {/* Combined Active & Available List */}
+            <div className="space-y-2">
+              {/* Active Numbers */}
+              {Array.isArray(phoneNumbers) && phoneNumbers.filter(n => n.provider === provider).map((number: any) => (
+                <div key={number.phoneNumber} className="flex items-center justify-between rounded-lg bg-white border border-gray-50 p-3 shadow-sm">
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-black text-gray-900">{number.phoneNumber}</span>
+                      <span className="px-1 py-0.5 text-[7px] font-black uppercase rounded bg-gray-50 text-gray-400 border border-gray-100">
+                        {number.metadata?.type || 'Active'}
+                      </span>
                     </div>
-                  );
-                })
-              ) : (
-                <div className="rounded-lg border border-gray-200 p-4">
-                  <div className="flex items-center justify-center">
-                    <AlertCircle className="h-5 w-5 text-yellow-400 mr-2" />
-                    <h3 className="text-sm font-medium text-yellow-800">No Numbers Available</h3>
+                    <span className="text-[8px] font-bold text-gray-400 uppercase italic">Operational Node</span>
                   </div>
-                  <div className="mt-2 text-sm text-center text-gray-500">
-                    <p className="mb-2">No Telnyx phone numbers are currently available for this destination.</p>
-                    <p className="text-sm text-gray-400">You can try again later or contact support if you need immediate assistance.</p>
+                  <span className={`px-2 py-0.5 text-[7px] font-black uppercase rounded-md border ${number.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
+                    {number.status === 'active' ? 'Online' : 'Syncing'}
+                  </span>
+                </div>
+              ))}
+
+              {/* Available Numbers */}
+              {Array.isArray(availableNumbers) && availableNumbers.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-gray-100/50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Available Entry Points</h4>
+                    <div className="h-px flex-1 bg-gray-50"></div>
                   </div>
+                  <div className="grid gap-2">
+                    {availableNumbers.map((number) => {
+                      const phoneNumber = getPhoneNumber(number);
+                      const isDisabled = isQuotaReached || (provider === 'telnyx' && requirementStatus.hasRequirements && !requirementStatus.isComplete);
+                      return (
+                        <div key={phoneNumber} className="flex items-center justify-between rounded-lg bg-white/60 border border-gray-50 p-3 hover:border-harx-200 transition-all duration-300 group">
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[12px] font-black text-gray-900 group-hover:text-harx-600 transition-colors">{phoneNumber}</span>
+                              <span className="text-[7px] font-black text-gray-400 uppercase">{number.type}</span>
+                            </div>
+                            <span className="text-[8px] font-black text-gray-400 uppercase italic">{number.locality || 'Remote'}, {number.region || 'Node'}</span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setSelectedNumber(phoneNumber);
+                              setPurchaseStatus('confirming');
+                              setPurchaseType(number.type);
+                              setShowPurchaseModal(true);
+                            }}
+                            disabled={isDisabled}
+                            className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${isDisabled
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-gradient-harx text-white shadow hover:-translate-y-0.5'
+                              }`}
+                          >
+                            Add Node
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {(!phoneNumbers || phoneNumbers.filter(n => n.provider === provider).length === 0) && (!availableNumbers || availableNumbers.length === 0) && (
+                <div className="rounded-lg border-2 border-dashed border-gray-50 p-4 text-center text-[9px] text-gray-400 font-bold italic uppercase tracking-widest">
+                  No nodes initialized. Search for entry points below.
                 </div>
               )}
             </div>
           </div>
-        )}
-
-      </div>
+        </div>
+      )}
 
       {/* Purchase Modal */}
       <PurchaseModal
         isOpen={showPurchaseModal}
         onClose={async () => {
-          // If purchase was successful, refresh purchased numbers
           if (purchaseStatus === 'success') {
             await fetchExistingNumbers();
           }
-          // Re-fetch available numbers if we were using Telnyx
           if (provider === 'telnyx') {
             await searchAvailableNumbers();
           }
@@ -1535,7 +1331,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
         provider={provider}
         purchaseError={purchaseError}
         onSubmitRequirements={handleSubmitRequirements}
-        onConfirmPurchase={(sids) => handleConfirmPurchase(sids, selectedNumber || undefined, purchaseType)}
+        onConfirmPurchase={async (sids) => await handleConfirmPurchase(sids, selectedNumber || undefined, purchaseType)}
         onSetPurchaseStatus={setPurchaseStatus}
         onSetSelectedNumber={setSelectedNumber}
         onSetShowPurchaseModal={setShowPurchaseModal}
@@ -1545,15 +1341,12 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
       <RequirementFormModal
         isOpen={showRequirementModal}
         onClose={async () => {
-          // Update requirement status before closing
           if (requirementStatus.groupId) {
             try {
               const detailedStatus = await requirementService.getDetailedGroupStatus(requirementStatus.groupId);
-
               const completionPercentage = Math.round(
                 (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
               );
-
               setRequirementStatus(prev => ({
                 ...prev,
                 isComplete: detailedStatus.isComplete,
@@ -1561,7 +1354,6 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                 completedRequirements: detailedStatus.completedRequirements,
                 totalRequirements: detailedStatus.totalRequirements,
                 pendingRequirements: detailedStatus.pendingRequirements,
-                // If requirements are complete, we don't need to show the warning anymore
                 hasRequirements: detailedStatus.isComplete ? false : prev.hasRequirements
               }));
             } catch (error) {
@@ -1583,14 +1375,11 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
         onSubmit={async (values: Record<string, any>) => {
           try {
             await handleSubmitRequirements(values);
-            // After submitting, update the status
             if (requirementStatus.groupId) {
               const detailedStatus = await requirementService.getDetailedGroupStatus(requirementStatus.groupId);
-
               const completionPercentage = Math.round(
                 (detailedStatus.completedRequirements.length / detailedStatus.totalRequirements) * 100
               );
-
               setRequirementStatus(prev => ({
                 ...prev,
                 isComplete: detailedStatus.isComplete,
