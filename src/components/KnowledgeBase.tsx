@@ -234,50 +234,50 @@ const KnowledgeBase: React.FC = () => {
   }, []);
 
   // Fetch call records from the backend
-  useEffect(() => {
-    const fetchCallRecords = async () => {
-      try {
-        const userId = getUserId();
-        if (!userId) {
-          throw new Error('userId ID not found');
-        }
-
-        const response = await apiClient.get('/call-recordings', {
-          params: { userId }
-        });
-        const calls = (response.data as any).callRecordings.map((call: any) => ({
-          id: call.id,
-          contactId: call.contactId,
-          date: call.date,
-          duration: call.duration,
-          recordingUrl: call.recordingUrl,
-          transcriptUrl: '',
-          summary: call.summary,
-          sentiment: call.sentiment,
-          tags: call.tags,
-          aiInsights: call.aiInsights,
-          repId: call.repId,
-          companyId: call.companyId,
-          processingOptions: { transcription: true, sentiment: true, insights: true },
-          audioState: {
-            isPlaying: false,
-            currentTime: 0,
-            duration: call.duration || 0,
-            audioInstance: null,
-            showPlayer: false,
-            showTranscript: false
-          }
-        }));
-        setCallRecords(calls);
-
-        if (calls.length > 0) {
-          updateOnboardingProgress().catch(err => console.error('Failed auto-completion on fetch:', err));
-        }
-      } catch (error: any) {
-        console.error('Error fetching call records:', error);
+  const fetchCallRecords = async () => {
+    try {
+      const userId = getUserId();
+      if (!userId) {
+        throw new Error('userId ID not found');
       }
-    };
 
+      const response = await apiClient.get('/call-recordings', {
+        params: { userId }
+      });
+      const calls = (response.data as any).callRecordings.map((call: any) => ({
+        id: call.id,
+        contactId: call.contactId,
+        date: call.date,
+        duration: call.duration,
+        recordingUrl: call.recordingUrl,
+        transcriptUrl: '',
+        summary: call.summary,
+        sentiment: call.sentiment,
+        tags: call.tags,
+        aiInsights: call.aiInsights,
+        repId: call.repId,
+        companyId: call.companyId,
+        processingOptions: { transcription: true, sentiment: true, insights: true },
+        audioState: {
+          isPlaying: false,
+          currentTime: 0,
+          duration: call.duration || 0,
+          audioInstance: null,
+          showPlayer: false,
+          showTranscript: false
+        }
+      }));
+      setCallRecords(calls);
+
+      if (calls.length > 0) {
+        updateOnboardingProgress().catch(err => console.error('Failed auto-completion on fetch:', err));
+      }
+    } catch (error: any) {
+      console.error('Error fetching call records:', error);
+    }
+  };
+
+  useEffect(() => {
     fetchCallRecords();
   }, []);
 
@@ -345,15 +345,9 @@ const KnowledgeBase: React.FC = () => {
       // Refresh both lists to be sure everything is in sync
       await Promise.all([
         fetchAndUpdateDocuments(),
-        // Trigger fetchCallRecords which I should probably expose or unify
+        fetchCallRecords(),
         updateOnboardingProgress().catch(err => console.error('Onboarding update failed:', err))
       ]);
-      
-      // I should also re-fetch call records
-      // Since fetchCallRecords is inside a useEffect, I'll extract it or trigger it manually
-      // Actually, I'll just refresh the page or recall the fetch logic if extracted.
-      // For now, let's assume the user knows they might need to refresh or I'll fix the fetch.
-      window.location.reload(); // Quickest way to ensure everything reloads from backend
 
       setUploadFiles([]);
       setUploadTags('');
