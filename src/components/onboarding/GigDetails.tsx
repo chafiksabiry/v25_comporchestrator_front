@@ -301,10 +301,10 @@ const GigDetails = () => {
           {/* Header Row */}
           <div className="grid grid-cols-12 gap-4 px-8 py-4 bg-gray-900 rounded-2xl text-[10px] font-black text-white/60 uppercase tracking-[0.2em] shadow-xl italic">
             <div className="col-span-1">Status</div>
-            <div className="col-span-4">Gig & Category</div>
-            <div className="col-span-2">Configuration</div>
+            <div className="col-span-3">Gig & Category</div>
+            <div className="col-span-4">Commission ROI</div>
             <div className="col-span-2">Commitment</div>
-            <div className="col-span-3 text-right">Strategic Actions</div>
+            <div className="col-span-2 text-right">Actions</div>
           </div>
 
           {/* List Items */}
@@ -325,80 +325,58 @@ const GigDetails = () => {
                   </div>
 
                   {/* Title & Category */}
-                  <div className="col-span-4 pl-4 border-l border-gray-100">
+                  <div className="col-span-3 pl-4 border-l border-gray-100">
                     <h3 className="text-lg font-black text-gray-900 group-hover:text-harx-600 transition-colors leading-tight truncate">
                       {gig.title}
                     </h3>
                     <div className="flex flex-wrap items-center gap-2 mt-1">
-                      <span className="text-[10px] font-black text-harx-500 uppercase tracking-widest bg-harx-50 px-2 py-0.5 rounded-md border border-harx-100">
+                      <span className="text-[10px] font-black text-harx-500 uppercase tracking-widest bg-harx-50 px-2 py-0.5 rounded-md border border-harx-100 italic">
                         {gig.category || 'Standard'}
-                      </span>
-                      <span className="text-[10px] font-black text-gray-700 uppercase tracking-widest bg-gray-100 px-2 py-0.5 rounded-md border border-gray-200">
-                        {gig.seniority?.level || 'Mid'}
-                      </span>
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                        Ref: {gig._id.substring(0, 8)}
                       </span>
                     </div>
                   </div>
 
                   {/* Configuration (Commission Dashboard) */}
-                  <div className="col-span-2 border-l border-gray-100 pl-4">
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                  <div className="col-span-3 border-l border-gray-100 pl-6">
+                    <div className="flex items-center gap-6 h-full">
                       {/* Per Call */}
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-rose-50 flex items-center justify-center text-rose-500">
-                          <Phone className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter leading-none">Call</span>
-                          <span className="text-[11px] font-black text-gray-900 leading-tight">
-                            {gig.commission?.commission_per_call || 0}{gig.commission?.currency?.symbol || '€'}
-                          </span>
+                      <div className="flex flex-col items-center min-w-[70px]">
+                        <span className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Per Call</span>
+                        <div className="flex items-center gap-1.5 font-black text-gray-900">
+                          <Phone className="w-3.5 h-3.5 text-rose-500" />
+                          <span className="text-xl leading-none">{gig.commission?.commission_per_call || 0}€</span>
                         </div>
                       </div>
 
                       {/* Per Transaction */}
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-harx-50 flex items-center justify-center text-harx-600">
-                          <Repeat className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter leading-none">Sale</span>
-                          <span className="text-[11px] font-black text-gray-900 leading-tight">
+                      <div className="flex flex-col items-center min-w-[70px]">
+                        <span className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Per Sale</span>
+                        <div className="flex items-center gap-1.5 font-black text-gray-900">
+                          <Repeat className="w-3.5 h-3.5 text-harx-500" />
+                          <span className="text-xl leading-none">
                             {typeof gig.commission?.transactionCommission === 'object' 
                               ? gig.commission?.transactionCommission.amount 
                               : (gig.commission?.transactionCommission || 0)}
-                            {gig.commission?.currency?.symbol || '€'}
+                            €
                           </span>
                         </div>
                       </div>
 
                       {/* Bonus */}
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500">
-                          <Star className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter leading-none">Bonus</span>
-                          <span className="text-[11px] font-black text-gray-900 leading-tight">
-                            {gig.commission?.bonusAmount || 0}{gig.commission?.currency?.symbol || '€'}
-                          </span>
+                      <div className="flex flex-col items-center min-w-[70px]">
+                        <span className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Bonus ROI</span>
+                        <div className="flex items-center gap-1.5 font-black text-gray-900">
+                          <Star className="w-3.5 h-3.5 text-amber-500" />
+                          <span className="text-xl leading-none">{gig.commission?.bonusAmount || 0}€</span>
                         </div>
                       </div>
 
                       {/* Min Volume */}
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500">
-                          <Target className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter leading-none">
-                            Min {gig.commission?.minimumVolume?.period?.substring(0, 3) || 'Mo'}
-                          </span>
-                          <span className="text-[11px] font-black text-gray-900 leading-tight">
-                            {gig.commission?.minimumVolume?.amount || 0}
-                          </span>
+                      <div className="flex flex-col items-center min-w-[70px]">
+                        <span className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Target</span>
+                        <div className="flex items-center gap-1.5 font-black text-gray-900">
+                          <Target className="w-3.5 h-3.5 text-emerald-500" />
+                          <span className="text-xl leading-none">{gig.commission?.minimumVolume?.amount || 0}</span>
                         </div>
                       </div>
                     </div>
@@ -423,7 +401,7 @@ const GigDetails = () => {
                   </div>
 
                   {/* Strategic Actions */}
-                  <div className="col-span-3 flex justify-end items-center gap-3">
+                  <div className="col-span-2 flex justify-end items-center gap-3">
                     <button
                       className="p-3 rounded-2xl bg-gray-50 text-gray-400 hover:text-rose-600 hover:bg-rose-50 border border-gray-100 transition-all duration-300 shadow-sm"
                       onClick={(e) => handleDelete(e, gig._id)}
@@ -441,7 +419,7 @@ const GigDetails = () => {
                         setSelectedGig(gig);
                       }}
                     >
-                      Analyze Core
+                      Analyze
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
