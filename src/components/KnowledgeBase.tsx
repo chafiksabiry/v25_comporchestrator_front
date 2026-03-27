@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, File, FileText, Plus, Trash2, Mic, Play, Clock, Pause, X, ExternalLink, Eye, Brain, Loader2, RefreshCw, Languages, ChevronRight, Sparkles } from 'lucide-react';
+import { Upload, File, FileText, Plus, Trash2, Mic, Play, Clock, Pause, X, ExternalLink, Eye, Brain, Loader2, RefreshCw, Languages, CheckCircle, ChevronRight, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types';
 import apiClient from '../api/knowledgeClient';
@@ -49,6 +49,39 @@ interface CallAnalysis {
 
 type AnalysisResult = DocumentAnalysis | CallAnalysis;
 
+// Add custom styles for the dropdown
+const dropdownStyles = `
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(234, 48, 149, 0.1);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(234, 48, 149, 0.2);
+  }
+  
+  @keyframes ripple-ping {
+    0% { transform: scale(0.8); opacity: 1; }
+    100% { transform: scale(2.4); opacity: 0; }
+  }
+  .ripple-ping {
+    position: relative;
+  }
+  .ripple-ping::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: currentColor;
+    animation: ripple-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+`;
+
 const KnowledgeBase: React.FC = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
@@ -80,6 +113,7 @@ const KnowledgeBase: React.FC = () => {
   const [translatingDocument, setTranslatingDocument] = useState<string | null>(null);
   const [gigs, setGigs] = useState<any[]>([]);
   const [selectedGigId, setSelectedGigId] = useState<string>('all');
+  const [isGigDropdownOpen, setIsGigDropdownOpen] = useState(false);
   const TRANSCRIPTION_PAGE_SIZE = 5;
 
   // Load items from localStorage on mount
@@ -1074,23 +1108,85 @@ const KnowledgeBase: React.FC = () => {
       <div className="bg-white/60 backdrop-blur-md p-5 rounded-[2rem] border border-white/20 shadow-xl shadow-gray-200/20 mb-10">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-4 w-full md:w-auto">
-              {/* Gig Filter */}
-              <div className="flex items-center gap-2 p-1.5 bg-white/50 backdrop-blur-sm rounded-2xl border border-harx-100 shadow-sm">
-                <div className="p-2 bg-harx-50 rounded-xl">
-                  <Sparkles size={18} className="text-harx-500" />
-                </div>
-                <select
-                  value={selectedGigId}
-                  onChange={(e) => setSelectedGigId(e.target.value)}
-                  className="bg-transparent border-none text-xs font-black text-gray-900 uppercase tracking-widest focus:ring-0 cursor-pointer pr-8"
+              {/* Custom Gig Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsGigDropdownOpen(!isGigDropdownOpen)}
+                  className="flex items-center gap-2 p-1.5 bg-white/50 backdrop-blur-sm rounded-2xl border border-harx-100 shadow-sm hover:border-harx-300 transition-all group/gig"
                 >
-                  <option value="all">Gig: All Intelligence</option>
-                  {gigs.map(gig => (
-                    <option key={gig._id || gig.id} value={gig._id || gig.id}>
-                      Gig: {gig.title}
-                    </option>
-                  ))}
-                </select>
+                  <div className="p-2 bg-harx-50 rounded-xl group-hover/gig:scale-110 transition-transform">
+                    <Sparkles size={18} className="text-harx-500" />
+                  </div>
+                  <span className="text-xs font-black text-gray-900 uppercase tracking-widest pl-1 pr-2">
+                    {selectedGigId === 'all' 
+                      ? 'Gig: All Intelligence' 
+                      : `Gig: ${gigs.find(g => (g._id || g.id) === selectedGigId)?.title || 'Selected Gig'}`}
+                  </span>
+                  <ChevronRight size={16} className={`text-gray-400 mr-2 transition-transform duration-300 ${isGigDropdownOpen ? 'rotate-90' : ''}`} />
+                </button>
+
+                {isGigDropdownOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-20" 
+                      onClick={() => setIsGigDropdownOpen(false)} 
+                    />
+                    <div className="absolute top-full left-0 mt-2 w-72 bg-white/80 backdrop-blur-xl border border-white/40 rounded-[2rem] shadow-2xl p-2 z-30 animate-in fade-in zoom-in duration-200 origin-top-left overflow-hidden">
+                      <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                        <button
+                          onClick={() => {
+                            setSelectedGigId('all');
+                            setIsGigDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between p-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all mb-1 ${
+                            selectedGigId === 'all' 
+                              ? 'bg-gradient-harx text-white shadow-lg' 
+                              : 'text-gray-700 hover:bg-harx-50/50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`p-1.5 rounded-lg ${selectedGigId === 'all' ? 'bg-white/20' : 'bg-harx-50'}`}>
+                              <Sparkles size={14} className={selectedGigId === 'all' ? 'text-white' : 'text-harx-500'} />
+                            </div>
+                            All Intelligence
+                          </div>
+                          {selectedGigId === 'all' && <CheckCircle size={14} className="text-white" />}
+                        </button>
+
+                        <div className="px-3 py-2">
+                          <div className="h-px bg-harx-100/50 w-full" />
+                        </div>
+
+                        {gigs.map(gig => {
+                          const id = gig._id || gig.id;
+                          const isSelected = selectedGigId === id;
+                          return (
+                            <button
+                              key={id}
+                              onClick={() => {
+                                setSelectedGigId(id);
+                                setIsGigDropdownOpen(false);
+                              }}
+                              className={`w-full flex items-center justify-between p-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all mb-1 ${
+                                isSelected 
+                                  ? 'bg-gradient-harx text-white shadow-lg' 
+                                  : 'text-gray-700 hover:bg-harx-50/50'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-harx-50'}`}>
+                                  <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white ripple-ping' : 'bg-harx-500'}`} />
+                                </div>
+                                <span className="truncate max-w-[160px]">{gig.title}</span>
+                              </div>
+                              {isSelected && <CheckCircle size={14} className="text-white" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           <button
@@ -1105,6 +1201,7 @@ const KnowledgeBase: React.FC = () => {
 
       {renderContent()}
       {renderUploadModal()}
+      <style>{dropdownStyles}</style>
     </div>
   );
 };
