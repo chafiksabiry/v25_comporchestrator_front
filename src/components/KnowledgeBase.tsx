@@ -1182,8 +1182,10 @@ const KnowledgeBase: React.FC = () => {
                     </div>
                   )}
                 </React.Fragment>
-                 // Document item
-              return (
+              );
+            }
+            // Document item
+            return (
                 <React.Fragment key={item.id}>
                   <div className="bg-white/70 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:border-harx-100 transition-all group/card mb-4">
                     <div className="flex items-start">
@@ -1234,7 +1236,7 @@ const KnowledgeBase: React.FC = () => {
                             </span>
                             <div className="w-1 h-1 bg-gray-200 rounded-full" />
                             <span className="text-[10px] font-black text-gray-300 uppercase tracking-tighter tabular-nums">
-                               {format(new Date(item.uploadedAt), 'MMM d, yyyy')}
+                               {format(new Date(item.date), 'MMM d, yyyy')}
                             </span>
                           </div>
                           
@@ -1246,12 +1248,11 @@ const KnowledgeBase: React.FC = () => {
                              <ChevronRight size={12} className="group-hover/btn:translate-x-1 transition-transform" />
                           </button>
                         </div>
-                      </div>
                     </div>
                   </div>
-       </div>
+                </div>
 
-                  {/* Inline Document Analysis */}
+                {/* Inline Document Analysis */}
                   {selectedDocumentForAnalysis?.id === item.id && (
                     <div className="bg-white border border-harx-100 p-8 rounded-3xl shadow-2xl ml-4 mb-8 relative overflow-hidden group/analysis">
                       {/* Decorative elements */}
@@ -1317,7 +1318,7 @@ const KnowledgeBase: React.FC = () => {
                 </React.Fragment>
               );
             }
-          })}
+          })
 
         </div>
       );
