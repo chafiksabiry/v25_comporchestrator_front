@@ -102,6 +102,7 @@ const KnowledgeBase: React.FC = () => {
   const [loadingTranscription, setLoadingTranscription] = useState<{ [key: string]: boolean }>({});
   const [loadingScoring, setLoadingScoring] = useState<{ [key: string]: boolean }>({});
   const [callDurations, setCallDurations] = useState<{ [id: string]: number }>({});
+  const [showTranscription, setShowTranscription] = useState<{ [key: string]: boolean }>({});
   const [translatedAnalysis, setTranslatedAnalysis] = useState<{ [key: string]: DocumentAnalysis }>({});
   const [translatingDocument, setTranslatingDocument] = useState<string | null>(null);
   const [gigs, setGigs] = useState<any[]>([]);
@@ -903,6 +904,47 @@ const KnowledgeBase: React.FC = () => {
               </div>
             ))}
           </div>
+
+          {/* Transcription Toggle */}
+          {callAnalysis.transcription && callAnalysis.transcription.segments && callAnalysis.transcription.segments.length > 0 && (
+            <div className="mt-10 pt-10 border-t border-harx-100 flex flex-col items-center">
+              <button 
+                onClick={() => setShowTranscription(prev => ({ ...prev, [documentId || '']: !prev[documentId || ''] }))}
+                className="flex items-center gap-3 px-8 py-4 bg-white text-harx-500 rounded-[2rem] border border-harx-100 shadow-sm hover:shadow-md hover:border-harx-200 transition-all group/toggle"
+              >
+                <div className={`p-2 rounded-xl transition-colors ${showTranscription[documentId || ''] ? 'bg-harx-500 text-white' : 'bg-harx-50 text-harx-500 group-hover/toggle:bg-harx-100'}`}>
+                  {showTranscription[documentId || ''] ? <X size={18} /> : <FileText size={18} />}
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest">
+                  {showTranscription[documentId || ''] ? 'Hide Intelligence Log' : 'View Full Transcription'}
+                </span>
+                <ChevronRight size={18} className={`transition-transform duration-300 ${showTranscription[documentId || ''] ? 'rotate-90' : 'group-hover/toggle:translate-x-1'}`}  />
+              </button>
+
+              {/* Transcription Content */}
+              {showTranscription[documentId || ''] && (
+                <div className="w-full mt-10 space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                   <div className="bg-harx-50/50 p-8 rounded-[2.5rem] border border-harx-100/50 max-h-[600px] overflow-y-auto custom-scrollbar">
+                     {callAnalysis.transcription.segments.map((segment, sIdx) => (
+                       <div key={sIdx} className="group/segment py-4 border-b border-harx-100/30 last:border-0 hover:bg-white/40 px-4 rounded-2xl transition-all">
+                         <div className="flex items-center gap-4 mb-2">
+                           <div className="px-3 py-1 bg-white text-harx-500 rounded-full text-[10px] font-black shadow-sm border border-harx-50">
+                             {segment.start}
+                           </div>
+                           {segment.speaker && (
+                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">{segment.speaker}</span>
+                           )}
+                         </div>
+                         <p className="text-gray-700 leading-relaxed font-medium">
+                           {segment.text}
+                         </p>
+                       </div>
+                     ))}
+                   </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       );
     }
@@ -1073,10 +1115,8 @@ const KnowledgeBase: React.FC = () => {
                               </span>
                             </div>
                             <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden cursor-pointer group/progress"
-                                 onClick={(e) => {
+                                 onClick={() => {
                                    if (playingCallId !== item.id) return;
-                                   const rect = e.currentTarget.getBoundingClientRect();
-                                   const pos = (e.clientX - rect.left) / rect.width;
                                    // Logic for seeking handled by handlePlayRecording or specialized seek function
                                  }}>
                               <div 
