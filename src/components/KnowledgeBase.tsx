@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, File, FileText, Video, Link as LinkIcon, Plus, Trash2, Filter, Download, Mic, Play, Clock, Pause, ChevronDown, ChevronUp, X, ExternalLink, Eye, ArrowLeft, Brain, Loader2, RefreshCw, Languages, CheckCircle, ChevronRight, Sparkles } from 'lucide-react';
+import { Upload, File, FileText, Plus, Trash2, Filter, Mic, Play, Clock, Pause, ChevronDown, X, ExternalLink, Eye, Brain, Loader2, RefreshCw, Languages, ChevronRight, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types';
 import apiClient from '../api/knowledgeClient';
 import Cookies from 'js-cookie';
 import axios from 'axios';
+import { OnboardingService } from './training/infrastructure/services/OnboardingService';
 
 interface DocumentAnalysis {
   summary: string;
@@ -78,8 +79,8 @@ const KnowledgeBase: React.FC = () => {
   const [callDurations, setCallDurations] = useState<{ [id: string]: number }>({});
   const [translatedAnalysis, setTranslatedAnalysis] = useState<{ [key: string]: DocumentAnalysis }>({});
   const [translatingDocument, setTranslatingDocument] = useState<string | null>(null);
-  const [showPlayer, setShowPlayer] = useState<{ [key: string]: boolean }>({});
-  const [showTranscript, setShowTranscript] = useState<{ [key: string]: boolean }>({});
+  const [gigs, setGigs] = useState<any[]>([]);
+  const [selectedGigId, setSelectedGigId] = useState<string>('all');
   const TRANSCRIPTION_PAGE_SIZE = 5;
 
   // Load items from localStorage on mount
@@ -176,19 +177,19 @@ const KnowledgeBase: React.FC = () => {
       return response.data;
     } catch (error: any) {
       console.error('Error updating onboarding progress:', error);
-      if (axios.isAxiosError(error)) {
+      if (axios && axios.isAxiosError && axios.isAxiosError(error)) {
         console.error('Axios error details:', {
           status: error.response?.status,
           data: error.response?.data,
           headers: error.response?.headers
         });
       }
-      throw error;
+      // Don't throw to avoid crashing the whole component for a background update
     }
   };
 
   // Separate function to fetch documents and update state
-  const fetchAndUpdateDocuments = async () => {
+  const fetchAndUpdateDocuments = async (gigId?: string) => {
     try {
       const userId = getUserId();
       if (!userId) {
@@ -196,18 +197,22 @@ const KnowledgeBase: React.FC = () => {
       }
 
       const response = await apiClient.get('/documents', {
-        params: { userId }
+        params: { 
+          userId,
+          gigId: gigId || selectedGigId
+        }
       });
 
-      const documents = (response.data as any).documents.map((doc: any) => ({
+      const docsArray = (response.data as any).documents || [];
+      const documents = docsArray.map((doc: any) => ({
         id: doc._id,
-        name: doc.name,
-        description: doc.description,
+        name: doc.name || 'Untitled Document',
+        description: doc.description || '',
         type: 'document',
         fileUrl: doc.fileUrl,
         uploadedAt: doc.uploadedAt,
-        uploadedBy: doc.uploadedBy,
-        tags: doc.tags,
+        uploadedBy: doc.uploadedBy || 'Unknown',
+        tags: doc.tags || '',
         usagePercentage: 0,
         isPublic: true,
         analysis: doc.analysis
@@ -230,7 +235,7 @@ const KnowledgeBase: React.FC = () => {
       return documents.length > 1;
     } catch (error: any) {
       console.error('Error fetching knowledge items:', error);
-      if (axios.isAxiosError(error)) {
+      if (axios && axios.isAxiosError && axios.isAxiosError(error)) {
         const errorMessage = (error as any).response?.data?.message || error.message;
         console.error('API specific error:', errorMessage);
       }
@@ -240,32 +245,36 @@ const KnowledgeBase: React.FC = () => {
 
   // Initial fetch on component mount
   useEffect(() => {
-    fetchAndUpdateDocuments();
-  }, []);
+    fetchAndUpdateDocuments().catch(err => console.error('Error on doc fetch:', err));
+  }, [selectedGigId]); // Refetch when gig filter changes
 
   // Fetch call records from the backend
   const fetchCallRecords = async () => {
     try {
       const userId = getUserId();
       if (!userId) {
-        throw new Error('userId ID not found');
+        throw new Error('User ID not found');
       }
 
       const response = await apiClient.get('/call-recordings', {
-        params: { userId }
+        params: { 
+          userId,
+          gigId: selectedGigId
+        }
       });
-      const calls = (response.data as any).callRecordings.map((call: any) => ({
+      const callsArray = (response.data as any).callRecordings || [];
+      const calls = callsArray.map((call: any) => ({
         id: call.id,
-        contactId: call.contactId,
+        contactId: call.contactId || 'Unknown Contact',
         date: call.date,
-        duration: call.duration,
+        duration: call.duration || 0,
         recordingUrl: call.recordingUrl,
         transcriptUrl: '',
-        summary: call.summary,
-        sentiment: call.sentiment,
-        tags: call.tags,
-        aiInsights: call.aiInsights,
-        repId: call.repId,
+        summary: call.summary || '',
+        sentiment: call.sentiment || 'neutral',
+        tags: call.tags || '',
+        aiInsights: call.aiInsights || '',
+        repId: call.repId || 'unknown-rep',
         companyId: call.companyId,
         processingOptions: { transcription: true, sentiment: true, insights: true },
         audioState: {
@@ -289,6 +298,21 @@ const KnowledgeBase: React.FC = () => {
 
   useEffect(() => {
     fetchCallRecords();
+  }, [selectedGigId]); // Refetch when gig filter changes
+
+  // Fetch gigs on mount
+  useEffect(() => {
+    const fetchGigs = async () => {
+      try {
+        const response = await OnboardingService.fetchGigsByCompany();
+        if (response && response.data) {
+          setGigs(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching gigs:', error);
+      }
+    };
+    fetchGigs();
   }, []);
 
   // Unified form submission handler
@@ -321,6 +345,9 @@ const KnowledgeBase: React.FC = () => {
           formData.append('tags', uploadTags);
           formData.append('uploadedBy', 'Current User');
           formData.append('userId', userId);
+          if (selectedGigId && selectedGigId !== 'all') {
+            formData.append('gigId', selectedGigId);
+          }
 
           await apiClient.post('/documents/upload', formData);
         } else {
@@ -337,6 +364,9 @@ const KnowledgeBase: React.FC = () => {
           formData.append('aiInsights', '');
           formData.append('repId', 'current-user');
           formData.append('userId', userId);
+          if (selectedGigId && selectedGigId !== 'all') {
+            formData.append('gigId', selectedGigId);
+          }
 
           const response = await apiClient.post('/call-recordings/upload', formData);
           
@@ -702,12 +732,13 @@ const KnowledgeBase: React.FC = () => {
       .filter(call => typeFilter === 'all' || typeFilter === 'audio')
       .map(call => ({
         id: call.id,
-        name: call.contactId,
-        description: call.summary,
+        name: call.contactId || 'Unknown Contact',
+        description: call.summary || '',
         type: 'audio' as const,
         itemType: 'callRecording' as const,
-        tags: call.tags,
+        tags: call.tags || '',
         date: call.date,
+        fileUrl: call.recordingUrl, // Use recordingUrl as fileUrl for consistent UI 
         isCallRecording: true,
         callData: call
       }));
@@ -1046,22 +1077,40 @@ const KnowledgeBase: React.FC = () => {
       <div className="bg-white/60 backdrop-blur-md p-5 rounded-[2rem] border border-white/20 shadow-xl shadow-gray-200/20 mb-10">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-4 w-full md:w-auto">
-             <div className="p-3 bg-harx-50 rounded-2xl text-harx-500 flex-shrink-0">
-               <Filter size={20} />
-             </div>
-             <div className="relative w-full">
-               <select
-                 className="appearance-none w-full bg-white border border-gray-100 text-gray-900 text-xs font-black uppercase tracking-widest rounded-xl focus:ring-2 focus:ring-harx-500/20 focus:border-harx-500 outline-none block p-3.5 pr-10 transition-all cursor-pointer shadow-sm shadow-inner"
-                 value={typeFilter}
-                 onChange={(e) => setTypeFilter(e.target.value)}
-               >
-                 <option value="all">Intelligence: All Sources</option>
-                 <option value="document">Intelligence: Raw Documents</option>
-                 <option value="audio">Intelligence: Voice Streams</option>
-               </select>
-               <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-             </div>
-          </div>
+              <div className="flex items-center gap-2 p-1.5 bg-white/50 backdrop-blur-sm rounded-2xl border border-harx-100 shadow-sm">
+                <div className="p-2 bg-harx-50 rounded-xl">
+                  <Filter size={18} className="text-harx-500" />
+                </div>
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="bg-transparent border-none text-xs font-black text-gray-900 uppercase tracking-widest focus:ring-0 cursor-pointer pr-8"
+                >
+                  <option value="all">Intelligence: All Sources</option>
+                  <option value="document">Documents Only</option>
+                  <option value="audio">Call Recordings Only</option>
+                </select>
+              </div>
+
+              {/* Gig Filter */}
+              <div className="flex items-center gap-2 p-1.5 bg-white/50 backdrop-blur-sm rounded-2xl border border-harx-100 shadow-sm ml-4">
+                <div className="p-2 bg-harx-50 rounded-xl">
+                  <Sparkles size={18} className="text-harx-500" />
+                </div>
+                <select
+                  value={selectedGigId}
+                  onChange={(e) => setSelectedGigId(e.target.value)}
+                  className="bg-transparent border-none text-xs font-black text-gray-900 uppercase tracking-widest focus:ring-0 cursor-pointer pr-8"
+                >
+                  <option value="all">Gig: All Intelligence</option>
+                  {gigs.map(gig => (
+                    <option key={gig._id || gig.id} value={gig._id || gig.id}>
+                      Gig: {gig.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           <button
             className="w-full md:w-auto bg-gradient-harx hover:scale-105 active:scale-95 text-white px-8 py-4 rounded-xl flex items-center justify-center font-black text-xs uppercase tracking-widest shadow-xl shadow-harx-500/30 transition-all group"
             onClick={() => setShowUploadModal(true)}
