@@ -1013,7 +1013,16 @@ const KnowledgeBase: React.FC = () => {
                           </p>
                         </div>
                       </div>
-                      <button onClick={() => setSelectedItem(null)} className="p-2 hover:bg-white rounded-xl transition-colors text-gray-400 hover:text-harx-500"><X size={24} /></button>
+                      <div className="flex items-center gap-3">
+                        <button 
+                          onClick={() => openInNewTab(item.fileUrl)}
+                          className="flex items-center gap-2 px-4 py-2 bg-white text-harx-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-harx-50 border border-harx-100 transition-all shadow-sm"
+                        >
+                          <Eye size={14} />
+                          View File
+                        </button>
+                        <button onClick={() => setSelectedItem(null)} className="p-2 hover:bg-white rounded-xl transition-colors text-gray-400 hover:text-harx-500"><X size={24} /></button>
+                      </div>
                     </div>
                     {/* Audio/Video Player */}
                     <div className="flex items-center gap-6 mb-10 bg-white/60 p-4 rounded-[2rem] border border-white shadow-inner">
@@ -1047,8 +1056,22 @@ const KnowledgeBase: React.FC = () => {
                 selectedDocumentForAnalysis?.id === item.id && (
                   <div className="bg-white border border-harx-100 p-8 rounded-3xl shadow-2xl ml-4 mb-8">
                     <div className="flex justify-between items-start mb-8">
-                      <h3 className="text-2xl font-black text-gray-900 tracking-tight">Analysis Output</h3>
-                      <button onClick={() => setSelectedDocumentForAnalysis(null)} className="text-gray-400 hover:text-harx-500"><X size={24} /></button>
+                      <div className="flex flex-col">
+                        <h3 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Analysis Output</h3>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest italic leading-none mt-1">
+                          Enterprise Intelligence Extract
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                         <button 
+                            onClick={() => openInNewTab(item.fileUrl)}
+                            className="flex items-center gap-2 px-4 py-2 bg-harx-50 text-harx-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-harx-100 transition-all"
+                          >
+                            <Eye size={14} />
+                            View Source File
+                          </button>
+                        <button onClick={() => setSelectedDocumentForAnalysis(null)} className="text-gray-400 hover:text-harx-500 transition-colors"><X size={24} /></button>
+                      </div>
                     </div>
                     {analyzingDocument === item.id ? (
                       <div className="text-center py-16"><Loader2 className="animate-spin text-harx-500 mx-auto" size={48} /><p className="mt-4 font-black text-gray-900 uppercase tracking-widest">Processing Intelligence...</p></div>
