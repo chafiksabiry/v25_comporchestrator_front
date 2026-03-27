@@ -1016,23 +1016,17 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
   return (
     <div className="max-w-[900px] mx-auto px-6 py-10 space-y-8 animate-in fade-in duration-500">
-      {/* Breadcrumb */}
-      <div className="flex items-center space-x-2 group cursor-pointer" onClick={() => window.history.back()}>
-        <ChevronDown className="h-4 w-4 text-gray-400 rotate-90 group-hover:text-gray-900 transition-colors" />
-        <span className="text-[13px] font-medium text-gray-500 group-hover:text-gray-900 transition-colors">Back to Onboarding overview</span>
-      </div>
-
       {/* Header */}
       <div className="space-y-1.5 px-1">
         <div className="flex items-center space-x-3">
-          <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tighter">Telephony Setup</h1>
+          <h1 className="text-4xl font-black text-gray-900 uppercase tracking-tighter">Telephony Setup</h1>
           {completedSteps.includes(5) && (
-            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 shadow-sm">
+            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-emerald-500 shadow-sm border-2 border-white">
               <CheckCircle className="h-4 w-4 text-white" />
             </div>
           )}
         </div>
-        <p className="text-sm font-medium text-gray-400">Manage and configure your global call infrastructure</p>
+        <p className="text-[15px] font-medium text-gray-400">Manage and configure your global call infrastructure</p>
       </div>
 
       {cookieError && (
@@ -1142,31 +1136,39 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                     key={p.id}
                     disabled={isDisabled}
                     onClick={() => setProvider(p.id)}
-                    className={`relative flex items-center justify-between p-4 rounded-lg border-[0.5px] transition-all duration-300 ${
+                    className={`relative flex items-center justify-between p-4 rounded-xl border-[0.5px] transition-all duration-300 h-16 ${
                       isDisabled 
                         ? 'opacity-45 bg-gray-50 border-gray-100 cursor-not-allowed' 
                         : isSelected
-                          ? 'bg-[#fff1f0] border-harx-500 ring-4 ring-harx-500/5'
+                          ? 'bg-[#fff1f0] border-red-500'
                           : 'bg-white border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className={`p-2 rounded-md ${isSelected ? 'bg-white' : 'bg-gray-50'} border-[0.5px] border-inherit`}>
-                        <Logo className={`h-4 w-4 ${isSelected ? 'text-harx-500' : 'text-gray-400'}`} />
-                      </div>
+                    <div className="flex items-center space-x-4">
+                      {p.id === 'twilio' ? (
+                        <svg className={`h-6 w-6 ${isSelected ? 'text-red-500' : 'text-gray-300'}`} viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                          <circle cx="9" cy="9" r="1.5" fill="white"/>
+                          <circle cx="15" cy="9" r="1.5" fill="white"/>
+                          <circle cx="9" cy="15" r="1.5" fill="white"/>
+                          <circle cx="15" cy="15" r="1.5" fill="white"/>
+                        </svg>
+                      ) : (
+                        <Logo className={`h-6 w-6 ${isSelected ? 'text-red-600' : 'text-gray-400'}`} />
+                      )}
                       <div className="flex flex-col items-start">
-                        <span className={`text-[13px] font-black uppercase tracking-widest ${isSelected ? 'text-gray-900' : 'text-gray-500'}`}>
+                        <span className={`text-[12px] font-black uppercase tracking-[0.1em] ${isSelected ? 'text-gray-900' : 'text-gray-500'}`}>
                           {p.name}
                         </span>
                         {isDisabled && (
-                          <span className="bg-harx-500 text-white text-[8px] font-black uppercase px-1.5 py-0.5 rounded-[4px] tracking-widest mt-0.5">
+                          <span className="bg-gray-200 text-gray-500 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-[4px] tracking-widest mt-0.5">
                             Beta
                           </span>
                         )}
                       </div>
                     </div>
                     {isSelected && !isDisabled && (
-                       <div className="w-5 h-5 rounded-full bg-harx-500 flex items-center justify-center">
+                       <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center shadow-sm">
                          <CheckCircle className="h-3 w-3 text-white" />
                        </div>
                     )}
