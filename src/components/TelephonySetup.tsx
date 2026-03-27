@@ -192,7 +192,15 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
   const teamSize = selectedGig ? parseInt(selectedGig.team?.size?.toString() || '1') : 1;
   const purchasedNumbersCount = phoneNumbers.length;
   const isQuotaReached = purchasedNumbersCount >= teamSize;
-
+  
+  // Helper to convert country names to flag emojis
+  const getFlagEmoji = (countryName: string) => {
+    const codePoints = countryName
+      .toUpperCase()
+      .split('')
+      .map(char => 127397 + char.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
+  };
 
   useEffect(() => {
     if (!companyId) {
@@ -1081,44 +1089,70 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                    (() => {
                     const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
                     return selectedGig ? (
-                      <div className="flex items-center space-x-2">
-                        <span className="text-[15px] font-bold text-gray-900">{selectedGig.title}</span>
-                        <span className="text-gray-300">/</span>
-                        <span className="text-[12px] font-bold text-blue-600 uppercase tracking-widest">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-[16px] font-black text-gray-900 leading-none tracking-tight">{selectedGig.title}</span>
+                        <span className="text-gray-300 font-light">|</span>
+                        <span className="text-[12px] font-black text-blue-600 uppercase tracking-[0.15em] leading-none">
                           {selectedGig.destination_zone.name.common}
                         </span>
                       </div>
-                    ) : <span className="text-[14px] text-gray-400 font-medium">Select intelligence profile...</span>;
+                    ) : <span className="text-[15px] text-gray-400 font-black uppercase tracking-widest">Select Intelligence Profile</span>;
                   })()
                 ) : (
-                  <span className="text-[14px] text-gray-400 font-medium italic">Choose an active gig profile...</span>
+                  <span className="text-[15px] text-gray-400 font-bold italic">Choose an active gig profile...</span>
                 )}
               </div>
               <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} />
             </button>
 
             {isDropdownOpen && (
-              <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border-[0.5px] border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto animate-in slide-in-from-top-2 duration-200">
+              <div className="absolute z-50 top-full left-0 right-0 mt-3 bg-white border-[0.5px] border-gray-100 rounded-2xl shadow-[0_20px_50px_rgba(37,99,235,0.15)] max-h-80 overflow-y-auto animate-in fade-in slide-in-from-top-4 duration-500 ring-1 ring-black/5">
                 {gigs.length > 0 ? (
-                  gigs.map((gig) => (
-                    <div
-                      key={gig._id}
+                  gigs.map((g: Gig) => (
+                    <button
+                      key={g._id}
                       onClick={() => {
-                        setSelectedGigId(gig._id);
+                        setSelectedGigId(g._id);
                         setIsDropdownOpen(false);
                       }}
-                      className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0 transition-colors"
+                      className={`relative flex items-center justify-between w-full px-7 py-5.5 text-left transition-all duration-300 group border-b-[0.5px] border-gray-50 last:border-0 ${
+                        selectedGigId === g._id ? 'bg-blue-50/70 shadow-inner' : 'hover:bg-blue-50/40'
+                      }`}
                     >
-                      <div className="flex flex-col">
-                        <span className="text-[13px] font-medium text-gray-900">{gig.title}</span>
-                        <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{gig.destination_zone.name.common}</span>
+                      <div className={`absolute left-0 w-2 transition-all duration-500 ${
+                        selectedGigId === g._id ? 'h-full bg-blue-600 opacity-100' : 'h-0 bg-blue-400 opacity-0 group-hover:h-12 group-hover:opacity-60'
+                      }`} />
+                      
+                      <div className="flex flex-col items-start pl-4">
+                        <span className={`text-[17px] font-black tracking-tighter transition-all duration-300 ${
+                          selectedGigId === g._id ? 'text-blue-700 translate-x-1' : 'text-gray-900 group-hover:text-blue-600'
+                        }`}>
+                          {g.title}
+                        </span>
+                        <div className="flex items-center space-x-2 mt-1.5">
+                          <span className="text-[11px] font-black text-blue-500 uppercase tracking-[0.2em] bg-blue-50 px-2 py-0.5 rounded">
+                            {g.destination_zone.name.common}
+                          </span>
+                        </div>
                       </div>
-                      <img src={gig.destination_zone.flags?.png} className="w-5 h-3.5 rounded-sm object-cover" alt="" />
-                    </div>
+                      <div className="flex items-center space-x-5">
+                        {getFlagEmoji(g.destination_zone.name.common) && (
+                          <span className="text-2xl drop-shadow-sm transition-all group-hover:scale-125 duration-500">
+                            {getFlagEmoji(g.destination_zone.name.common)}
+                          </span>
+                        )}
+                        {selectedGigId === g._id && (
+                          <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center shadow-[0_0_15px_rgba(37,99,235,0.4)] animate-in zoom-in spin-in-90 duration-700">
+                             <CheckCircle className="h-4 w-4 text-white" />
+                          </div>
+                        )}
+                      </div>
+                    </button>
                   ))
                 ) : (
-                  <div className="px-4 py-8 text-center">
-                    <p className="text-xs text-gray-400 italic">No gig profiles available</p>
+                  <div className="px-8 py-16 text-center">
+                    <Globe className="h-10 w-10 text-gray-200 mx-auto mb-4 animate-pulse" />
+                    <p className="text-[15px] text-gray-400 font-black uppercase tracking-widest italic">No Global Profiles found</p>
                   </div>
                 )}
               </div>
@@ -1210,20 +1244,20 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
             <div className="space-y-4">
               {/* Active Numbers */}
               {Array.isArray(phoneNumbers) && phoneNumbers.filter(n => n.provider === provider).map((number: any) => (
-                <div key={number.phoneNumber} className="flex items-center justify-between p-4 rounded-xl border-[0.5px] border-gray-100 bg-gray-50/30 hover:bg-white hover:border-blue-200 hover:shadow-md transition-all duration-300 group">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center group-hover:bg-blue-600 transition-colors duration-300">
-                      <Phone className="h-5 w-5 text-blue-600 group-hover:text-white" />
+                <div key={number.phoneNumber} className="flex items-center justify-between p-5 rounded-xl border-[0.5px] border-gray-100 bg-gray-50/20 hover:bg-white hover:border-blue-300 hover:shadow-xl transition-all duration-500 group">
+                  <div className="flex items-center space-x-5">
+                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center group-hover:bg-blue-600 transition-all duration-500 shadow-sm">
+                      <Phone className="h-6 w-6 text-blue-600 group-hover:text-white" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[16px] font-black text-gray-900 group-hover:text-blue-700 transition-colors">{number.phoneNumber}</span>
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest italic">{number.metadata?.type || 'STATIC'} INFRASTRUCTURE</span>
+                      <span className="text-[18px] font-black text-gray-900 group-hover:text-blue-700 transition-colors tracking-tight">{number.phoneNumber}</span>
+                      <span className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] italic">{number.metadata?.type || 'STATIC'} INFRASTRUCTURE</span>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-lg border-[0.5px] shadow-sm ${
+                  <div className="flex items-center space-x-4">
+                    <span className={`px-4 py-1.5 text-[11px] font-black uppercase rounded-lg border-[0.5px] shadow-sm transition-all ${
                       number.status === 'active' 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100 group-hover:bg-emerald-500 group-hover:text-white' 
                         : 'bg-amber-50 text-amber-700 border-amber-100 animate-pulse'
                     }`}>
                       {number.status === 'active' ? 'Operational' : 'Syncing'}
@@ -1249,11 +1283,11 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                       return (
                         <div key={phoneNumber} className="flex items-center justify-between p-4 rounded-xl border-[0.5px] border-gray-100 bg-white hover:border-blue-500 hover:shadow-xl transition-all group animate-in slide-in-from-right-4 duration-300">
                           <div className="flex flex-col">
-                             <div className="flex items-center space-x-2">
-                               <span className="text-[16px] font-black text-gray-900 group-hover:text-blue-600 transition-colors">{phoneNumber}</span>
-                               <span className="text-[10px] font-black text-blue-400 bg-blue-50 px-1.5 rounded uppercase">{number.type}</span>
+                             <div className="flex items-center space-x-3">
+                               <span className="text-[18px] font-black text-gray-900 group-hover:text-blue-600 transition-colors tracking-tight">{phoneNumber}</span>
+                               <span className="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded uppercase tracking-widest">{number.type}</span>
                              </div>
-                             <span className="text-[11px] font-bold text-gray-400 uppercase italic mt-0.5">{number.locality || 'Regional'} Global Gateway</span>
+                             <span className="text-[12px] font-bold text-gray-400 uppercase italic mt-1 leading-none">{number.locality || 'Regional'} Global Gateway</span>
                           </div>
                           <button
                             disabled={isDisabled}
