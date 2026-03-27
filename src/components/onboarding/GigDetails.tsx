@@ -3,6 +3,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import Swal from 'sweetalert2';
 import GigDetailsView from './GigDetailsView';
+import { Phone, Repeat, Star, Target } from 'lucide-react';
 
 interface Gig {
   _id: string;
@@ -39,9 +40,12 @@ interface Gig {
       updatedAt: string;
       __v: number;
     };
-    transactionCommission: {
-      type: string;
-      amount: string;
+    transactionCommission: any;
+    commission_per_call?: number;
+    minimumVolume?: {
+      amount: string | number;
+      period: string;
+      unit: string;
     };
     additionalDetails?: string;
   };
@@ -189,38 +193,6 @@ const GigDetails = () => {
   };
 
 
-  const formatCommission = (commission: any) => {
-    if (!commission) return 'Not specified';
-
-    const currencySymbol = commission.currency?.symbol || '€';
-    const components = [];
-
-    // Commission per call
-    if (commission.commission_per_call) {
-      components.push(`${commission.commission_per_call}${currencySymbol}/call`);
-    }
-
-    // Transaction commission
-    if (commission.transactionCommission) {
-      const amount = typeof commission.transactionCommission === 'object' 
-        ? commission.transactionCommission.amount 
-        : commission.transactionCommission;
-      if (amount) components.push(`${amount}${currencySymbol}/sale`);
-    }
-
-    // Bonus Amount
-    if (commission.bonusAmount) {
-      components.push(`+${commission.bonusAmount}${currencySymbol} bonus`);
-    }
-
-    // Fallback to base
-    if (components.length === 0 && commission.base) {
-      return commission.base;
-    }
-
-    return components.length > 0 ? components : ['Not specified'];
-  };
-
   const getAvailabilityText = (availability: Gig['availability']) => {
     if (!availability) return 'Not specified';
 
@@ -357,9 +329,12 @@ const GigDetails = () => {
                     <h3 className="text-lg font-black text-gray-900 group-hover:text-harx-600 transition-colors leading-tight truncate">
                       {gig.title}
                     </h3>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
                       <span className="text-[10px] font-black text-harx-500 uppercase tracking-widest bg-harx-50 px-2 py-0.5 rounded-md border border-harx-100">
                         {gig.category || 'Standard'}
+                      </span>
+                      <span className="text-[10px] font-black text-gray-700 uppercase tracking-widest bg-gray-100 px-2 py-0.5 rounded-md border border-gray-200">
+                        {gig.seniority?.level || 'Mid'}
                       </span>
                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                         Ref: {gig._id.substring(0, 8)}
@@ -367,31 +342,64 @@ const GigDetails = () => {
                     </div>
                   </div>
 
-                  {/* Configuration (Seniority & Commission) */}
+                  {/* Configuration (Commission Dashboard) */}
                   <div className="col-span-2 border-l border-gray-100 pl-4">
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-harx-500"></div>
-                        <span className="text-xs font-bold text-gray-700">{gig.seniority?.level || 'Mid'}</span>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                      {/* Per Call */}
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-rose-50 flex items-center justify-center text-rose-500">
+                          <Phone className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter leading-none">Call</span>
+                          <span className="text-[11px] font-black text-gray-900 leading-tight">
+                            {gig.commission?.commission_per_call || 0}{gig.commission?.currency?.symbol || '€'}
+                          </span>
+                        </div>
                       </div>
-                      <div className="space-y-1">
-                        {(() => {
-                          const commissions = formatCommission(gig.commission);
-                          if (Array.isArray(commissions)) {
-                            return commissions.map((c, i) => (
-                              <div key={i} className="flex items-center gap-1.5">
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                                <span className="text-[11px] font-black text-emerald-600 uppercase tracking-tight">{c}</span>
-                              </div>
-                            ));
-                          }
-                          return (
-                            <div className="flex items-center gap-1.5">
-                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                              <span className="text-[11px] font-black text-emerald-600 uppercase tracking-tight">{commissions}</span>
-                            </div>
-                          );
-                        })()}
+
+                      {/* Per Transaction */}
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-harx-50 flex items-center justify-center text-harx-600">
+                          <Repeat className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter leading-none">Sale</span>
+                          <span className="text-[11px] font-black text-gray-900 leading-tight">
+                            {typeof gig.commission?.transactionCommission === 'object' 
+                              ? gig.commission?.transactionCommission.amount 
+                              : (gig.commission?.transactionCommission || 0)}
+                            {gig.commission?.currency?.symbol || '€'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Bonus */}
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500">
+                          <Star className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter leading-none">Bonus</span>
+                          <span className="text-[11px] font-black text-gray-900 leading-tight">
+                            {gig.commission?.bonusAmount || 0}{gig.commission?.currency?.symbol || '€'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Min Volume */}
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500">
+                          <Target className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter leading-none">
+                            Min {gig.commission?.minimumVolume?.period?.substring(0, 3) || 'Mo'}
+                          </span>
+                          <span className="text-[11px] font-black text-gray-900 leading-tight">
+                            {gig.commission?.minimumVolume?.amount || 0}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
