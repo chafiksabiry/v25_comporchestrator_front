@@ -284,7 +284,7 @@ const GigDetails = () => {
             onClick={() => { window.location.href = '/app6'; }}
           >
             <Plus className="w-5 h-5" />
-            Add intelligence asset
+            Add New Gig
           </button>
         </div>
         {/* Abstract background pattern */}

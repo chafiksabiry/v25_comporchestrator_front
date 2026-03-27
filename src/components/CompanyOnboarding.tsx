@@ -265,7 +265,7 @@ const CompanyOnboarding = () => {
     const isAnyFocusedViewActive = showGigDetails || showTelephonySetup || showKnowledgeBase || showUploadContacts || activeStep !== null;
 
     if (isAnyFocusedViewActive) {
-      let label = 'Back to overview';
+      let label = 'Back to onboarding';
       let action = () => { };
 
       if (showGigDetails) {
