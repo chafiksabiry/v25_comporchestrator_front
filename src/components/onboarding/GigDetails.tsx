@@ -189,18 +189,36 @@ const GigDetails = () => {
   };
 
 
-  const formatCommission = (commission: Gig['commission']) => {
+  const formatCommission = (commission: any) => {
     if (!commission) return 'Not specified';
 
     const currencySymbol = commission.currency?.symbol || '€';
+    const components = [];
 
-    if (commission.transactionCommission?.amount) {
-      return `${commission.transactionCommission.amount} ${currencySymbol}`;
+    // Commission per call
+    if (commission.commission_per_call) {
+      components.push(`${commission.commission_per_call}${currencySymbol}/call`);
     }
+
+    // Transaction commission
+    if (commission.transactionCommission) {
+      const amount = typeof commission.transactionCommission === 'object' 
+        ? commission.transactionCommission.amount 
+        : commission.transactionCommission;
+      if (amount) components.push(`${amount}${currencySymbol}/sale`);
+    }
+
+    // Bonus Amount
     if (commission.bonusAmount) {
-      return `${commission.bonusAmount} ${currencySymbol}`;
+      components.push(`+${commission.bonusAmount}${currencySymbol} bonus`);
     }
-    return commission.base || 'Not specified';
+
+    // Fallback to base
+    if (components.length === 0 && commission.base) {
+      return commission.base;
+    }
+
+    return components.length > 0 ? components : ['Not specified'];
   };
 
   const getAvailabilityText = (availability: Gig['availability']) => {
@@ -351,14 +369,29 @@ const GigDetails = () => {
 
                   {/* Configuration (Seniority & Commission) */}
                   <div className="col-span-2 border-l border-gray-100 pl-4">
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1.5">
                       <div className="flex items-center gap-1.5">
                         <div className="w-1.5 h-1.5 rounded-full bg-harx-500"></div>
                         <span className="text-xs font-bold text-gray-700">{gig.seniority?.level || 'Mid'}</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                        <span className="text-xs font-bold text-gray-700">{formatCommission(gig.commission)}</span>
+                      <div className="space-y-1">
+                        {(() => {
+                          const commissions = formatCommission(gig.commission);
+                          if (Array.isArray(commissions)) {
+                            return commissions.map((c, i) => (
+                              <div key={i} className="flex items-center gap-1.5">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                <span className="text-[11px] font-black text-emerald-600 uppercase tracking-tight">{c}</span>
+                              </div>
+                            ));
+                          }
+                          return (
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                              <span className="text-[11px] font-black text-emerald-600 uppercase tracking-tight">{commissions}</span>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
