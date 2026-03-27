@@ -122,9 +122,19 @@ const KnowledgeBase: React.FC = () => {
   // Handle file upload
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const files = Array.from(e.target.files);
-      setUploadFiles(files);
+      const newFiles = Array.from(e.target.files);
+      setUploadFiles(prev => {
+        const combined = [...prev, ...newFiles];
+        // Ensure uniqueness by name and size to avoid duplicates
+        return combined.filter((file, index, self) =>
+          index === self.findIndex((f) => f.name === file.name && f.size === file.size)
+        );
+      });
     }
+  };
+
+  const removeFile = (index: number) => {
+    setUploadFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   // Function to get companyId from JWT
@@ -959,20 +969,38 @@ const KnowledgeBase: React.FC = () => {
           </div>
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
             {/* Removed Title and Brief fields per user request */}
-            <div className="border-2 border-dashed border-gray-100 rounded-2xl p-8 text-center hover:border-harx-200 transition-colors cursor-pointer group relative">
-              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileChange} required multiple />
-              <Upload size={32} className="mx-auto text-gray-300 group-hover:text-harx-500 transition-colors mb-3" />
-              {uploadFiles.length > 0 ? (
-                <div className="space-y-1">
-                  <p className="text-xs font-black text-harx-500 uppercase tracking-widest">{uploadFiles.length} file(s) selected</p>
-                  <p className="text-[10px] text-gray-400 truncate max-w-full italic px-4">
-                    {uploadFiles.map(f => f.name).join(', ')}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Select Intelligence Files</p>
-              )}
+            <div className="border-2 border-dashed border-gray-100 rounded-2xl p-6 text-center hover:border-harx-200 transition-colors cursor-pointer group relative bg-gray-50/30">
+              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileChange} multiple />
+              <div className="flex flex-col items-center">
+                <Upload size={24} className="text-gray-300 group-hover:text-harx-500 transition-colors mb-2" />
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Click or drag to add items</p>
+              </div>
             </div>
+
+            {uploadFiles.length > 0 && (
+              <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-black text-harx-500 uppercase tracking-widest">{uploadFiles.length} item(s) staged</span>
+                  <button type="button" onClick={() => setUploadFiles([])} className="text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-600">Clear All</button>
+                </div>
+                {uploadFiles.map((file, idx) => (
+                  <div key={`${file.name}-${idx}`} className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100 shadow-sm group/file">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="p-2 bg-harx-50 rounded-lg text-harx-500 flex-shrink-0">
+                        {file.type.startsWith('audio/') ? <Mic size={14} /> : <FileText size={14} />}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-gray-700 truncate">{file.name}</p>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-widest">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => removeFile(idx)} className="text-gray-300 hover:text-red-500 p-1 transition-colors">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="flex gap-4 pt-4">
               <button type="button" onClick={handleUploadModalClose} className="flex-1 py-4 text-xs font-black text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors">Cancel</button>
               <button type="submit" disabled={isUploading} className="flex-1 bg-gradient-harx py-4 rounded-xl text-white text-xs font-black uppercase tracking-widest shadow-xl shadow-harx-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center">
