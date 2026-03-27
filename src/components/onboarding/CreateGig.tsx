@@ -1,12 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Briefcase,
-  Users,
-  Clock,
-  DollarSign,
-  Globe,
-  MessageSquare,
   Phone,
+  MessageSquare,
   Mail,
   Video,
   Facebook,
@@ -14,17 +9,16 @@ import {
   Instagram,
   Linkedin,
   Youtube,
-  AlertCircle,
   Plus,
   Trash2,
   CheckCircle,
-  Calendar,
-  MapPin,
-  Tag,
-  FileText,
-  Settings,
   Save,
-  CheckCircle2
+  CheckCircle2,
+  Clock,
+  Globe,
+  Settings,
+  DollarSign,
+  Calendar
 } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
@@ -247,21 +241,21 @@ const CreateGig = () => {
           <p className="text-sm text-gray-500">Define requirements and specifications for your gig</p>
         </div>
         <div className="flex space-x-3">
-          <button className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+          <button className="flex items-center rounded-xl bg-white px-5 py-2.5 text-sm font-black text-gray-700 shadow-sm border border-gray-200 hover:border-harx-300 hover:text-harx-600 transition-all active:scale-95">
             <Save className="mr-2 h-4 w-4" />
             Save Draft
           </button>
           <button
             onClick={isStepCompleted ? undefined : handlePublishGig}
-            className={`flex items-center rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition-all ${isStepCompleted
-              ? 'bg-green-600 text-white cursor-not-allowed'
-              : 'bg-indigo-600 text-white hover:bg-indigo-700'
+            className={`flex items-center rounded-xl px-6 py-2.5 text-sm font-black shadow-lg transition-all active:scale-95 ${isStepCompleted
+              ? 'bg-emerald-600 text-white cursor-not-allowed opacity-80 italic'
+              : 'bg-gradient-harx text-white hover:brightness-110 shadow-harx-500/25 hover:shadow-harx-500/40'
               }`}
             disabled={isStepCompleted}
           >
             {isStepCompleted ? (
               <span className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
+                <CheckCircle2 className="w-4 h-4 text-white" />
                 Gig Already Published
               </span>
             ) : (
@@ -275,23 +269,23 @@ const CreateGig = () => {
       </div>
 
       {/* Basic Information */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h3 className="text-lg font-medium text-gray-900">Basic Information</h3>
-        <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Gig Title</label>
+      <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-xl p-8">
+        <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight mb-8">Base Intelligence</h3>
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+          <div className="space-y-2">
+            <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Gig Title</label>
             <input
               type="text"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              placeholder="e.g., Customer Support Representative"
+              className="block w-full h-12 rounded-xl bg-white border-2 border-gray-100 px-4 focus:border-harx-500 focus:ring-0 text-gray-900 font-bold tracking-tight transition-all"
+              placeholder="e.g., Customer Support Specialist"
               value={gigTitle}
               onChange={(e) => setGigTitle(e.target.value)}
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Department</label>
+          <div className="space-y-2">
+            <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Department</label>
             <select
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              className="block w-full h-12 rounded-xl bg-white border-2 border-gray-100 px-4 focus:border-harx-500 focus:ring-0 text-gray-900 font-bold tracking-tight transition-all cursor-pointer"
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
             >
@@ -305,11 +299,11 @@ const CreateGig = () => {
       </div>
 
       {/* Channel Selection */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h3 className="text-lg font-medium text-gray-900">Communication Channels</h3>
-        <p className="mt-1 text-sm text-gray-500">Select the channels this gig will handle</p>
+      <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-xl p-8">
+        <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight mb-2">Communication Channels</h3>
+        <p className="text-sm font-medium text-gray-500 mb-8 tracking-tight">Select the multi-channel capabilities for this specific gig execution.</p>
 
-        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {channels.map((channel) => {
             const Icon = channel.icon;
             const isSelected = selectedChannels.includes(channel.id);
@@ -317,18 +311,22 @@ const CreateGig = () => {
             return (
               <div
                 key={channel.id}
-                className={`cursor-pointer rounded-lg border p-4 ${isSelected
-                  ? 'border-indigo-500 bg-indigo-50'
-                  : 'border-gray-200 hover:bg-gray-50'
+                className={`cursor-pointer rounded-2xl border-2 p-5 transition-all duration-300 transform hover:-translate-y-1 ${isSelected
+                  ? 'border-harx-500 bg-white shadow-xl shadow-harx-500/10'
+                  : 'border-white/60 bg-white/40 hover:bg-white hover:border-harx-200'
                   }`}
                 onClick={() => toggleChannel(channel.id)}
               >
-                <div className="flex items-center space-x-3">
-                  <div className={`rounded-lg p-2 ${isSelected ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-500'
+                <div className="flex items-center space-x-4">
+                  <div className={`rounded-xl p-3 transition-colors ${isSelected 
+                    ? 'bg-gradient-harx text-white shadow-md' 
+                    : 'bg-gray-100 text-gray-400'
                     }`}>
                     <Icon className="h-5 w-5" />
                   </div>
-                  <span className="font-medium text-gray-900">{channel.name}</span>
+                  <span className={`text-sm font-black uppercase tracking-tight ${isSelected ? 'text-gray-900' : 'text-gray-500'}`}>
+                    {channel.name}
+                  </span>
                 </div>
               </div>
             );
@@ -337,39 +335,39 @@ const CreateGig = () => {
       </div>
 
       {/* Requirements */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h3 className="text-lg font-medium text-gray-900">Requirements</h3>
-        <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Experience Level</label>
-            <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+      <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-xl p-8">
+        <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight mb-8">Role Requirements</h3>
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+          <div className="space-y-2">
+            <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Experience Level</label>
+            <select className="block w-full h-12 rounded-xl bg-white border-2 border-gray-100 px-4 focus:border-harx-500 focus:ring-0 text-gray-900 font-bold tracking-tight transition-all cursor-pointer">
               <option>Entry Level (0-2 years)</option>
               <option>Intermediate (2-5 years)</option>
               <option>Senior (5+ years)</option>
               <option>Expert (8+ years)</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Education</label>
-            <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+          <div className="space-y-2">
+            <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Education</label>
+            <select className="block w-full h-12 rounded-xl bg-white border-2 border-gray-100 px-4 focus:border-harx-500 focus:ring-0 text-gray-900 font-bold tracking-tight transition-all cursor-pointer">
               <option>High School Diploma</option>
               <option>Bachelor's Degree</option>
               <option>Master's Degree</option>
               <option>Any Level</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Languages</label>
-            <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+          <div className="space-y-2">
+            <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Languages</label>
+            <select className="block w-full h-12 rounded-xl bg-white border-2 border-gray-100 px-4 focus:border-harx-500 focus:ring-0 text-gray-900 font-bold tracking-tight transition-all cursor-pointer">
               <option>English Only</option>
               <option>English + Spanish</option>
               <option>English + French</option>
               <option>Multiple Languages</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Location</label>
-            <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+          <div className="space-y-2">
+            <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Location</label>
+            <select className="block w-full h-12 rounded-xl bg-white border-2 border-gray-100 px-4 focus:border-harx-500 focus:ring-0 text-gray-900 font-bold tracking-tight transition-all cursor-pointer">
               <option>Remote - Any Location</option>
               <option>United States Only</option>
               <option>Europe Only</option>
@@ -379,36 +377,36 @@ const CreateGig = () => {
         </div>
 
         {/* Skills */}
-        <div className="mt-6">
-          <label className="block text-sm font-medium text-gray-700">Required Skills</label>
+        <div className="mt-8 pt-8 border-t border-gray-100">
+          <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-3 block">Required Skills</label>
           <div className="mt-2">
-            <div className="flex space-x-2">
+            <div className="flex space-x-3">
               <input
                 type="text"
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                placeholder="Add a skill"
+                className="block w-full h-12 rounded-xl bg-gray-50 border-2 border-transparent px-4 focus:bg-white focus:border-harx-500 focus:ring-0 text-gray-900 font-bold tracking-tight transition-all"
+                placeholder="Add a power skill..."
                 value={newSkill}
                 onChange={(e) => setNewSkill(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && addSkill()}
               />
               <button
                 onClick={addSkill}
-                className="flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+                className="flex items-center justify-center rounded-xl bg-harx-500 px-5 text-white shadow-lg shadow-harx-500/20 hover:brightness-110 active:scale-95 transition-all"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-5 w-5 font-black" />
               </button>
             </div>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap gap-2">
               {skills.map((skill) => (
                 <span
                   key={skill}
-                  className="inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 text-sm font-medium text-indigo-800"
+                  className="inline-flex items-center gap-2 rounded-xl bg-harx-50 px-4 py-2 text-xs font-black text-harx-700 border border-harx-100 shadow-sm transition-all hover:bg-harx-100"
                 >
                   {skill}
                   <button
                     type="button"
                     onClick={() => removeSkill(skill)}
-                    className="ml-1 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full text-indigo-600 hover:bg-indigo-200 hover:text-indigo-500 focus:bg-indigo-500 focus:text-white focus:outline-none"
+                    className="flex h-5 w-5 items-center justify-center rounded-lg text-harx-400 hover:bg-harx-500 hover:text-white transition-all shadow-inner"
                   >
                     <Trash2 className="h-3 w-3" />
                   </button>
@@ -420,82 +418,83 @@ const CreateGig = () => {
       </div>
 
       {/* Schedule & Availability */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h3 className="text-lg font-medium text-gray-900">Schedule & Availability</h3>
-        <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Work Schedule</label>
-            <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+      <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-xl p-8">
+        <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight mb-8">Schedule & Availability</h3>
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+          <div className="space-y-2">
+            <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Work Schedule</label>
+            <select className="block w-full h-12 rounded-xl bg-white border-2 border-gray-100 px-4 focus:border-harx-500 focus:ring-0 text-gray-900 font-bold tracking-tight transition-all cursor-pointer">
               <option>Full Time (40 hours/week)</option>
               <option>Part Time (20-30 hours/week)</option>
               <option>Flexible Hours</option>
               <option>Custom Schedule</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Time Zone Coverage</label>
-            <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+          <div className="space-y-2">
+            <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Time Zone Coverage</label>
+            <select className="block w-full h-12 rounded-xl bg-white border-2 border-gray-100 px-4 focus:border-harx-500 focus:ring-0 text-gray-900 font-bold tracking-tight transition-all cursor-pointer">
               <option>EST (UTC-5)</option>
               <option>PST (UTC-8)</option>
               <option>GMT (UTC+0)</option>
               <option>Multiple Time Zones</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Shift Preference</label>
-            <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+          <div className="space-y-2">
+            <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Shift Preference</label>
+            <select className="block w-full h-12 rounded-xl bg-white border-2 border-gray-100 px-4 focus:border-harx-500 focus:ring-0 text-gray-900 font-bold tracking-tight transition-all cursor-pointer">
               <option>Day Shift</option>
               <option>Night Shift</option>
               <option>Rotating Shifts</option>
               <option>Weekend Coverage</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Start Date</label>
-            <input
-              type="date"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            />
+          <div className="space-y-2">
+            <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Start Date</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Calendar className="h-4 w-4 text-harx-400" />
+              </div>
+              <input
+                type="date"
+                className="block w-full h-12 rounded-xl bg-white border-2 border-gray-100 pl-11 pr-4 focus:border-harx-500 focus:ring-0 text-gray-900 font-bold tracking-tight transition-all"
+              />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Compensation */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h3 className="text-lg font-medium text-gray-900">Compensation</h3>
-        <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Pay Range</label>
-            <div className="mt-1 flex space-x-4">
-              <div className="flex-1">
-                <div className="relative mt-1 rounded-md shadow-sm">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <DollarSign className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    className="block w-full rounded-md border-gray-300 pl-10 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    placeholder="Min"
-                  />
+      <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-xl p-8">
+        <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight mb-8">Compensation & Benefits</h3>
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+          <div className="space-y-2">
+            <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Pay Range</label>
+            <div className="flex space-x-3">
+              <div className="flex-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <DollarSign className="h-4 w-4 text-harx-400" />
                 </div>
+                <input
+                  type="text"
+                  className="block w-full h-12 rounded-xl bg-white border-2 border-gray-100 pl-10 pr-4 focus:border-harx-500 focus:ring-0 text-gray-900 font-bold tracking-tight transition-all"
+                  placeholder="Min"
+                />
               </div>
-              <div className="flex-1">
-                <div className="relative mt-1 rounded-md shadow-sm">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <DollarSign className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    className="block w-full rounded-md border-gray-300 pl-10 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    placeholder="Max"
-                  />
+              <div className="flex-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <DollarSign className="h-4 w-4 text-harx-400" />
                 </div>
+                <input
+                  type="text"
+                  className="block w-full h-12 rounded-xl bg-white border-2 border-gray-100 pl-10 pr-4 focus:border-harx-500 focus:ring-0 text-gray-900 font-bold tracking-tight transition-all"
+                  placeholder="Max"
+                />
               </div>
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Pay Period</label>
-            <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+          <div className="space-y-2">
+            <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Pay Period</label>
+            <select className="block w-full h-12 rounded-xl bg-white border-2 border-gray-100 px-4 focus:border-harx-500 focus:ring-0 text-gray-900 font-bold tracking-tight transition-all cursor-pointer">
               <option>Per Hour</option>
               <option>Per Day</option>
               <option>Per Week</option>
@@ -503,63 +502,51 @@ const CreateGig = () => {
             </select>
           </div>
         </div>
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700">Benefits</label>
-          <div className="mt-2 space-y-2">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <label className="ml-2 text-sm text-gray-700">Health Insurance</label>
-            </div>
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <label className="ml-2 text-sm text-gray-700">Paid Time Off</label>
-            </div>
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <label className="ml-2 text-sm text-gray-700">Performance Bonuses</label>
-            </div>
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <label className="ml-2 text-sm text-gray-700">Professional Development</label>
-            </div>
+        <div className="mt-8 pt-8 border-t border-gray-100">
+          <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-4 block">Perks & Benefits</label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { id: 'health', label: 'Health Insurance' },
+              { id: 'pto', label: 'Paid Time Off' },
+              { id: 'bonus', label: 'Performance Bonuses' },
+              { id: 'dev', label: 'Professional Development' }
+            ].map(benefit => (
+              <label key={benefit.id} className="flex items-center p-3 rounded-xl bg-gray-50 border border-transparent hover:border-harx-200 transition-all cursor-pointer group">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-gray-300 text-harx-500 focus:ring-harx-500 transition-all cursor-pointer"
+                />
+                <span className="ml-3 text-xs font-black text-gray-600 uppercase tracking-tight group-hover:text-harx-600">{benefit.label}</span>
+              </label>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Additional Information */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h3 className="text-lg font-medium text-gray-900">Additional Information</h3>
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700">Job Description</label>
-          <textarea
-            rows={4}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            placeholder="Describe the role, responsibilities, and expectations..."
-            value={jobDescription}
-            onChange={(e) => setJobDescription(e.target.value)}
-          />
-        </div>
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700">Technical Requirements</label>
-          <textarea
-            rows={4}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            placeholder="List any specific technical requirements or equipment needed..."
-            value={technicalRequirements}
-            onChange={(e) => setTechnicalRequirements(e.target.value)}
-          />
+      <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-white/40 shadow-xl p-8">
+        <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight mb-8">Strategic Context</h3>
+        <div className="space-y-8">
+          <div className="space-y-2">
+            <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Job Description</label>
+            <textarea
+              rows={4}
+              className="block w-full rounded-xl bg-white border-2 border-gray-100 p-4 focus:border-harx-500 focus:ring-0 text-gray-900 font-medium tracking-tight transition-all resize-none"
+              placeholder="Describe the role, responsibilities, and expectations..."
+              value={jobDescription}
+              onChange={(e) => setJobDescription(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Technical Requirements</label>
+            <textarea
+              rows={4}
+              className="block w-full rounded-xl bg-white border-2 border-gray-100 p-4 focus:border-harx-500 focus:ring-0 text-gray-900 font-medium tracking-tight transition-all resize-none"
+              placeholder="List any specific technical requirements or equipment needed..."
+              value={technicalRequirements}
+              onChange={(e) => setTechnicalRequirements(e.target.value)}
+            />
+          </div>
         </div>
       </div>
     </div>
