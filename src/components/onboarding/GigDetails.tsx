@@ -3,7 +3,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import Swal from 'sweetalert2';
 import GigDetailsView from './GigDetailsView';
-import { Clock, Users, Plus } from 'lucide-react';
+import { Clock, Users, Plus, ChevronDown } from 'lucide-react';
 
 interface Gig {
   _id: string;
@@ -119,7 +119,7 @@ interface GigResponse {
   data: Gig[];
 }
 
-const GigDetails = () => {
+const GigDetails = ({ onBack }: { onBack?: () => void }) => {
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -275,9 +275,19 @@ const GigDetails = () => {
       {/* Header Area - Branded Gradient */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-8 mb-4 shadow-lg shadow-harx-500/20">
         <div className="relative z-10 flex items-center justify-between font-black">
-          <div className="space-y-1.5">
-            <h1 className="text-4xl font-black text-white uppercase tracking-tighter">Gig Details</h1>
-            <p className="text-[16px] font-medium text-white/90">Define and manage your multi-channel intelligence assets</p>
+          <div className="flex items-center gap-6">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all shadow-xl group"
+              >
+                <ChevronDown className="h-6 w-6 rotate-90 group-hover:-translate-x-1 transition-transform" />
+              </button>
+            )}
+            <div className="space-y-1.5">
+              <h1 className="text-4xl font-black text-white uppercase tracking-tighter">Gig Details</h1>
+              <p className="text-[16px] font-medium text-white/90">Define and manage your multi-channel intelligence assets</p>
+            </div>
           </div>
           <button
             className="flex items-center gap-2 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-black px-6 py-3 rounded-2xl shadow-xl border border-white/20 transition-all duration-200 uppercase tracking-widest text-[10px]"

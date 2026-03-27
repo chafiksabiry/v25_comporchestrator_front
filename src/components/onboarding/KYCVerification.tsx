@@ -14,6 +14,7 @@ import {
   Eye,
   EyeOff,
   HelpCircle,
+  ChevronDown,
   ChevronRight,
   X,
   CheckCircle2
@@ -21,7 +22,7 @@ import {
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const KYCVerification = () => {
+const KYCVerification = ({ onBack }: { onBack?: () => void }) => {
   const [verificationMethod, setVerificationMethod] = useState('automatic');
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [verificationStatus, setVerificationStatus] = useState<'pending' | 'in_progress' | 'completed' | 'failed'>('pending');
@@ -275,7 +276,15 @@ const KYCVerification = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between bg-white rounded-3xl p-8 border border-harx-100 shadow-xl relative overflow-hidden group">
         <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-harx-50 rounded-full blur-3xl group-hover:bg-harx-100 transition-colors duration-700"></div>
-        <div className="relative z-10">
+        <div className="flex items-center gap-6 relative z-10">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="p-3 rounded-2xl bg-white shadow-sm border border-gray-200 text-gray-400 hover:text-harx-600 hover:border-harx-200 transition-all group shrink-0"
+            >
+              <ChevronDown className="h-6 w-6 rotate-90 group-hover:-translate-x-1 transition-transform" />
+            </button>
+          )}
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-gradient-harx flex items-center justify-center shadow-lg shadow-harx-500/20">
               <Shield className="h-6 w-6 text-white" />
@@ -415,6 +424,14 @@ const KYCVerification = () => {
       {verificationMethod === 'automatic' ? (
         <div className="rounded-3xl bg-white p-8 shadow-xl border border-harx-100">
           <div className="flex items-center gap-3 mb-6">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="p-3 rounded-2xl bg-white/50 backdrop-blur-sm border border-white/20 text-harx-600 hover:bg-white transition-all shadow-xl group shrink-0"
+              >
+                <ChevronDown className="h-6 w-6 rotate-90 group-hover:-translate-x-1 transition-transform" />
+              </button>
+            )}
             <Shield className="h-7 w-7 text-harx-500" />
             <h3 className="text-2xl font-bold text-gray-900 tracking-tight">Automatic Verification</h3>
           </div>

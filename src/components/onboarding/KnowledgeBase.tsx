@@ -17,7 +17,7 @@ import {
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const KnowledgeBase = () => {
+const KnowledgeBase = ({ onBack }: { onBack?: () => void }) => {
   const [expandedSection, setExpandedSection] = useState<string | null>('product');
   const [searchQuery, setSearchQuery] = useState('');
   const [isStepCompleted, setIsStepCompleted] = useState(false);
@@ -263,8 +263,16 @@ const KnowledgeBase = () => {
       <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-8 mb-4 shadow-lg shadow-harx-500/20">
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex-1">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20">
+            <div className="flex items-center gap-6">
+              {onBack && (
+                <button
+                  onClick={onBack}
+                  className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all shadow-xl group shrink-0"
+                >
+                  <ChevronDown className="h-6 w-6 rotate-90 group-hover:-translate-x-1 transition-transform" />
+                </button>
+              )}
+              <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20 shrink-0">
                 <BookOpen className="h-6 w-6 text-white" />
               </div>
               <div>

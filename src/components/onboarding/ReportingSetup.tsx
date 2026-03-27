@@ -8,29 +8,21 @@ import {
   Mail,
   Download,
   Share2,
-  Plus,
   Trash2,
   Edit,
   CheckCircle,
   AlertCircle,
+  ChevronDown,
   Clock,
-  RefreshCw,
-  Calendar,
   Users,
   PhoneCall,
   DollarSign,
-  ArrowUp,
-  ArrowDown,
   MessageSquare,
   Mail as MailIcon,
   Facebook,
-  Twitter,
-  Instagram,
   MessageCircle,
   Video,
   Globe,
-  Filter,
-  Inbox,
   BarChart,
   Activity,
   CheckCircle2
@@ -38,7 +30,7 @@ import {
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const ReportingSetup = () => {
+const ReportingSetup = ({ onBack }: { onBack?: () => void }) => {
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['calls', 'conversion']);
   const [reportSchedule, setReportSchedule] = useState('weekly');
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['voice', 'email', 'chat']);
@@ -105,10 +97,8 @@ const ReportingSetup = () => {
       if (hasBasicInfo() && !isStepCompleted) {
         console.log('🎯 Auto-completing step 7 locally because basic info is present');
 
-        // Marquer l'étape comme complétée localement
         setIsStepCompleted(true);
 
-        // Mettre à jour le localStorage avec l'étape 7 marquée comme complétée
         const currentCompletedSteps = [7];
         const currentProgress = {
           currentPhase: 2,
@@ -117,10 +107,8 @@ const ReportingSetup = () => {
         };
         localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
 
-        // Synchroniser avec les cookies
         Cookies.set('reportingSetupStepCompleted', 'true', { expires: 7 });
 
-        // Notifier le composant parent CompanyOnboarding via un événement personnalisé
         window.dispatchEvent(new CustomEvent('stepCompleted', {
           detail: {
             stepId: 7,
@@ -129,14 +117,10 @@ const ReportingSetup = () => {
             completedSteps: currentCompletedSteps
           }
         }));
-
-        console.log('💾 Step 7 marked as completed locally and parent component notified');
       }
 
     } catch (error) {
       console.error('❌ Error checking step status:', error);
-
-      // En cas d'erreur API, vérifier le localStorage
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
       if (storedProgress) {
         try {
@@ -152,50 +136,24 @@ const ReportingSetup = () => {
   };
 
   const hasBasicInfo = () => {
-    // Check if we have selected metrics and channels
-    const hasInfo = selectedMetrics.length > 0 && selectedChannels.length > 0 && reportSchedule;
-
-    console.log('🔍 Checking basic info for ReportingSetup:', {
-      selectedMetrics: selectedMetrics.length,
-      selectedChannels: selectedChannels.length,
-      reportSchedule,
-      hasInfo
-    });
-    return hasInfo;
+    return selectedMetrics.length > 0 && selectedChannels.length > 0 && reportSchedule;
   };
 
   const handleCompleteReportingSetup = async () => {
     try {
-      if (!companyId) {
-        console.error('❌ No companyId available');
-        return;
-      }
-
-      console.log('🚀 Completing reporting setup...');
-
-      // Marquer l'étape 7 comme complétée
-      const stepResponse = await axios.put(
+      if (!companyId) return;
+      const response = await axios.put(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`,
         { status: 'completed' }
       );
-
-      console.log('✅ Step 7 marked as completed:', stepResponse.data);
-
-      // Mettre à jour l'état local
       setIsStepCompleted(true);
-
-      // Mettre à jour le localStorage
       const currentProgress = {
         currentPhase: 2,
         completedSteps: [7],
         lastUpdated: new Date().toISOString()
       };
       localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-
-      // Synchroniser avec les cookies
       Cookies.set('reportingSetupStepCompleted', 'true', { expires: 7 });
-
-      // Notifier le composant parent
       window.dispatchEvent(new CustomEvent('stepCompleted', {
         detail: {
           stepId: 7,
@@ -204,9 +162,6 @@ const ReportingSetup = () => {
           completedSteps: [7]
         }
       }));
-
-      console.log('💾 Reporting setup completed and step 7 marked as completed');
-
     } catch (error) {
       console.error('❌ Error completing reporting setup:', error);
     }
@@ -258,125 +213,55 @@ const ReportingSetup = () => {
   ];
 
   const metrics = [
-    {
-      id: 'channel_performance',
-      name: 'Channel Performance',
-      description: 'Compare metrics across different channels',
-      icon: BarChart2,
-      category: 'cross_channel'
-    },
-    {
-      id: 'response_times',
-      name: 'Response Times',
-      description: 'Track response times per channel',
-      icon: Clock,
-      category: 'efficiency'
-    },
-    {
-      id: 'resolution_rates',
-      name: 'Resolution Rates',
-      description: 'First contact and overall resolution',
-      icon: CheckCircle,
-      category: 'quality'
-    },
-    {
-      id: 'customer_satisfaction',
-      name: 'Customer Satisfaction',
-      description: 'CSAT scores across channels',
-      icon: Activity,
-      category: 'quality'
-    },
-    {
-      id: 'channel_utilization',
-      name: 'Channel Utilization',
-      description: 'Usage patterns across channels',
-      icon: BarChart,
-      category: 'efficiency'
-    },
-    {
-      id: 'cross_channel_journey',
-      name: 'Customer Journey',
-      description: 'Track multi-channel customer journeys',
-      icon: Globe,
-      category: 'analysis'
-    },
-    {
-      id: 'queue_metrics',
-      name: 'Queue Metrics',
-      description: 'Wait times and queue management',
-      icon: Users,
-      category: 'efficiency'
-    },
-    {
-      id: 'channel_costs',
-      name: 'Channel Costs',
-      description: 'Cost per contact by channel',
-      icon: DollarSign,
-      category: 'financial'
-    }
+    { id: 'channel_performance', name: 'Channel Performance', description: 'Compare metrics across different channels', icon: BarChart2, category: 'cross_channel' },
+    { id: 'response_times', name: 'Response Times', description: 'Track response times per channel', icon: Clock, category: 'efficiency' },
+    { id: 'resolution_rates', name: 'Resolution Rates', description: 'First contact and overall resolution', icon: CheckCircle, category: 'quality' },
+    { id: 'customer_satisfaction', name: 'Customer Satisfaction', description: 'CSAT scores across channels', icon: Activity, category: 'quality' },
+    { id: 'channel_utilization', name: 'Channel Utilization', description: 'Usage patterns across channels', icon: BarChart, category: 'efficiency' },
+    { id: 'cross_channel_journey', name: 'Customer Journey', description: 'Track multi-channel customer journeys', icon: Globe, category: 'analysis' },
+    { id: 'queue_metrics', name: 'Queue Metrics', description: 'Wait times and queue management', icon: Users, category: 'efficiency' },
+    { id: 'channel_costs', name: 'Channel Costs', description: 'Cost per contact by channel', icon: DollarSign, category: 'financial' }
   ];
 
   const dashboards = [
-    {
-      id: 1,
-      name: 'Omnichannel Overview',
-      description: 'Cross-channel performance metrics',
-      type: 'standard',
-      metrics: ['channel_performance', 'response_times', 'customer_satisfaction']
-    },
-    {
-      id: 2,
-      name: 'Channel Efficiency',
-      description: 'Response times and resolution rates',
-      type: 'custom',
-      metrics: ['response_times', 'resolution_rates', 'queue_metrics']
-    },
-    {
-      id: 3,
-      name: 'Quality Monitoring',
-      description: 'Quality metrics across channels',
-      type: 'standard',
-      metrics: ['customer_satisfaction', 'resolution_rates']
-    },
-    {
-      id: 4,
-      name: 'Customer Journey Analysis',
-      description: 'Multi-channel interaction tracking',
-      type: 'custom',
-      metrics: ['cross_channel_journey', 'channel_utilization']
-    }
+    { id: 1, name: 'Omnichannel Overview', description: 'Cross-channel performance metrics', type: 'standard', metrics: ['channel_performance', 'response_times', 'customer_satisfaction'] },
+    { id: 2, name: 'Channel Efficiency', description: 'Response times and resolution rates', type: 'custom', metrics: ['response_times', 'resolution_rates', 'queue_metrics'] },
+    { id: 3, name: 'Quality Monitoring', description: 'Quality metrics across channels', type: 'standard', metrics: ['customer_satisfaction', 'resolution_rates'] },
+    { id: 4, name: 'Customer Journey Analysis', description: 'Multi-channel interaction tracking', type: 'custom', metrics: ['cross_channel_journey', 'channel_utilization'] }
   ];
 
   const toggleMetric = (metricId: string) => {
-    if (selectedMetrics.includes(metricId)) {
-      setSelectedMetrics(selectedMetrics.filter(id => id !== metricId));
-    } else {
-      setSelectedMetrics([...selectedMetrics, metricId]);
-    }
+    setSelectedMetrics(prev => prev.includes(metricId) ? prev.filter(id => id !== metricId) : [...prev, metricId]);
   };
 
   const toggleChannel = (channelId: string) => {
-    if (selectedChannels.includes(channelId)) {
-      setSelectedChannels(selectedChannels.filter(id => id !== channelId));
-    } else {
-      setSelectedChannels([...selectedChannels, channelId]);
-    }
+    setSelectedChannels(prev => prev.includes(channelId) ? prev.filter(id => id !== channelId) : [...prev, channelId]);
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-gray-900">Multi-Channel Reporting Setup</h2>
-            {isStepCompleted && (
-              <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                <CheckCircle2 className="w-4 h-4" />
-                Completed
-              </div>
-            )}
+        <div className="flex items-center gap-6">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="p-3 rounded-2xl bg-white shadow-sm border border-gray-200 text-gray-400 hover:text-harx-600 hover:border-harx-200 transition-all group shrink-0"
+            >
+              <ChevronDown className="h-6 w-6 rotate-90 group-hover:-translate-x-1 transition-transform" />
+            </button>
+          )}
+          <div>
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-bold text-gray-900">Multi-Channel Reporting Setup</h2>
+              {isStepCompleted && (
+                <div className="flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Completed
+                </div>
+              )}
+            </div>
+            <p className="text-sm text-gray-500">Configure reporting across all communication channels</p>
           </div>
-          <p className="text-sm text-gray-500">Configure reporting across all communication channels</p>
         </div>
         <div className="flex space-x-3">
           <button className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
@@ -401,28 +286,21 @@ const ReportingSetup = () => {
         </div>
       </div>
 
-      {/* Channel Selection */}
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="text-lg font-medium text-gray-900">Communication Channels</h3>
         <p className="mt-1 text-sm text-gray-500">Select channels to include in your reports</p>
-
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {channels.map((channel) => {
             const Icon = channel.icon;
             const isSelected = selectedChannels.includes(channel.id);
-
             return (
               <div
                 key={channel.id}
-                className={`cursor-pointer rounded-lg border p-4 ${isSelected
-                  ? 'border-indigo-500 bg-indigo-50'
-                  : 'border-gray-200 hover:bg-gray-50'
-                  }`}
+                className={`cursor-pointer rounded-lg border p-4 ${isSelected ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'}`}
                 onClick={() => toggleChannel(channel.id)}
               >
                 <div className="flex items-center space-x-3">
-                  <div className={`rounded-lg p-2 ${isSelected ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-500'
-                    }`}>
+                  <div className={`rounded-lg p-2 ${isSelected ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-500'}`}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <div>
@@ -433,10 +311,7 @@ const ReportingSetup = () => {
                 {isSelected && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {channel.metrics.map((metric) => (
-                      <span
-                        key={metric}
-                        className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800"
-                      >
+                      <span key={metric} className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800">
                         {metric.replace('_', ' ')}
                       </span>
                     ))}
@@ -448,28 +323,21 @@ const ReportingSetup = () => {
         </div>
       </div>
 
-      {/* Cross-Channel Metrics */}
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="text-lg font-medium text-gray-900">Cross-Channel Metrics</h3>
         <p className="mt-1 text-sm text-gray-500">Select metrics to track across all channels</p>
-
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {metrics.map((metric) => {
             const Icon = metric.icon;
             const isSelected = selectedMetrics.includes(metric.id);
-
             return (
               <div
                 key={metric.id}
-                className={`cursor-pointer rounded-lg border p-4 ${isSelected
-                  ? 'border-indigo-500 bg-indigo-50'
-                  : 'border-gray-200 hover:bg-gray-50'
-                  }`}
+                className={`cursor-pointer rounded-lg border p-4 ${isSelected ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'}`}
                 onClick={() => toggleMetric(metric.id)}
               >
                 <div className="flex items-center space-x-3">
-                  <div className={`rounded-lg p-2 ${isSelected ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-500'
-                    }`}>
+                  <div className={`rounded-lg p-2 ${isSelected ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-500'}`}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <div>
@@ -483,7 +351,6 @@ const ReportingSetup = () => {
         </div>
       </div>
 
-      {/* Dashboards */}
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="text-lg font-medium text-gray-900">Multi-Channel Dashboards</h3>
         <div className="mt-4 space-y-4">
@@ -497,12 +364,8 @@ const ReportingSetup = () => {
                     {dashboard.metrics.map((metricId) => {
                       const metric = metrics.find(m => m.id === metricId);
                       if (!metric) return null;
-
                       return (
-                        <span
-                          key={metricId}
-                          className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800"
-                        >
+                        <span key={metricId} className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800">
                           {metric.name}
                         </span>
                       );
@@ -526,7 +389,6 @@ const ReportingSetup = () => {
         </div>
       </div>
 
-      {/* Report Scheduling */}
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="text-lg font-medium text-gray-900">Report Scheduling</h3>
         <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -546,85 +408,51 @@ const ReportingSetup = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700">Delivery Method</label>
             <div className="mt-2 space-y-4">
-              <div className="flex items-center">
-                <input
-                  id="email-notifications"
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  checked={notifications.email}
-                  onChange={(e) => setNotifications({ ...notifications, email: e.target.checked })}
-                />
-                <label htmlFor="email-notifications" className="ml-2 flex items-center text-sm text-gray-700">
-                  <Mail className="mr-2 h-4 w-4" />
-                  Email Reports
-                </label>
-              </div>
-              <div className="flex items-center">
-                <input
-                  id="push-notifications"
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  checked={notifications.push}
-                  onChange={(e) => setNotifications({ ...notifications, push: e.target.checked })}
-                />
-                <label htmlFor="push-notifications" className="ml-2 flex items-center text-sm text-gray-700">
-                  <Bell className="mr-2 h-4 w-4" />
-                  Push Notifications
-                </label>
-              </div>
-              <div className="flex items-center">
-                <input
-                  id="threshold-alerts"
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  checked={notifications.threshold}
-                  onChange={(e) => setNotifications({ ...notifications, threshold: e.target.checked })}
-                />
-                <label htmlFor="threshold-alerts" className="ml-2 flex items-center text-sm text-gray-700">
-                  <AlertCircle className="mr-2 h-4 w-4" />
-                  Threshold Alerts
-                </label>
-              </div>
+              {[
+                { id: 'email', label: 'Email Reports', icon: Mail },
+                { id: 'push', label: 'Push Notifications', icon: Bell },
+                { id: 'threshold', label: 'Threshold Alerts', icon: AlertCircle }
+              ].map((item) => (
+                <div key={item.id} className="flex items-center">
+                  <input
+                    id={`${item.id}-notifications`}
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    checked={(notifications as any)[item.id]}
+                    onChange={(e) => setNotifications({ ...notifications, [item.id]: e.target.checked })}
+                  />
+                  <label htmlFor={`${item.id}-notifications`} className="ml-2 flex items-center text-sm text-gray-700">
+                    <item.icon className="mr-2 h-4 w-4" />
+                    {item.label}
+                  </label>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Data Visualization */}
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="text-lg font-medium text-gray-900">Cross-Channel Visualization</h3>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-lg border border-gray-200 p-4">
-            <div className="flex items-center space-x-3">
-              <BarChart2 className="h-5 w-5 text-indigo-600" />
-              <div>
-                <h4 className="font-medium text-gray-900">Channel Comparison</h4>
-                <p className="text-sm text-gray-500">Compare metrics across channels</p>
+          {[
+            { label: 'Channel Comparison', sublabel: 'Compare metrics across channels', icon: BarChart2 },
+            { label: 'Trend Analysis', sublabel: 'Track patterns over time', icon: LineChart },
+            { label: 'Channel Distribution', sublabel: 'Volume distribution by channel', icon: PieChart }
+          ].map((viz, idx) => (
+            <div key={idx} className="rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center space-x-3">
+                <viz.icon className="h-5 w-5 text-indigo-600" />
+                <div>
+                  <h4 className="font-medium text-gray-900">{viz.label}</h4>
+                  <p className="text-sm text-gray-500">{viz.sublabel}</p>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="rounded-lg border border-gray-200 p-4">
-            <div className="flex items-center space-x-3">
-              <LineChart className="h-5 w-5 text-indigo-600" />
-              <div>
-                <h4 className="font-medium text-gray-900">Trend Analysis</h4>
-                <p className="text-sm text-gray-500">Track patterns over time</p>
-              </div>
-            </div>
-          </div>
-          <div className="rounded-lg border border-gray-200 p-4">
-            <div className="flex items-center space-x-3">
-              <PieChart className="h-5 w-5 text-indigo-600" />
-              <div>
-                <h4 className="font-medium text-gray-900">Channel Distribution</h4>
-                <p className="text-sm text-gray-500">Volume distribution by channel</p>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Export Options */}
       <div className="rounded-lg bg-white p-6 shadow">
         <div className="flex items-center justify-between">
           <div>
