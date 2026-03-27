@@ -25,6 +25,7 @@ import KnowledgeBase from './components/KnowledgeBase';
 import ScriptGenerator from './components/ScriptGenerator';
 import Subscription from './components/Subscription';
 import ZohoService from './services/zohoService';
+import StripeContainer from './components/stripe/StripeContainer';
 
 function App() {
 
@@ -185,17 +186,20 @@ function App() {
   // Si nous sommes sur une page spéciale, ne pas afficher la sidebar
   if (isZohoCallback || isZohoAuth) {
     return (
-      <div className="flex h-screen bg-gray-50">
-        <Toaster position="top-right" />
-        <main className="flex-1 overflow-y-auto">
-          {renderContent()}
-        </main>
-      </div>
+      <StripeContainer>
+        <div className="flex h-screen bg-gray-50">
+          <Toaster position="top-right" />
+          <main className="flex-1 overflow-y-auto">
+            {renderContent()}
+          </main>
+        </div>
+      </StripeContainer>
     );
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <StripeContainer>
+      <div className="flex h-screen bg-gray-50 overflow-hidden">
 
       <Toaster position="top-right" />
       {/* Sidebar */}
@@ -374,6 +378,7 @@ function App() {
         </main>
       </div>
     </div>
+    </StripeContainer>
   );
 }
 
