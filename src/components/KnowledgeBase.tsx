@@ -762,19 +762,23 @@ const KnowledgeBase: React.FC = () => {
       }));
 
     const callItems = callRecords
-      .map(call => ({
-        id: call.id,
-        name: call.contactId || 'Unknown Contact',
-        description: call.summary || '',
-        type: 'audio' as const,
-        itemType: 'callRecording' as const,
-        tags: call.tags || '',
-        date: call.date,
-        fileUrl: call.recordingUrl, // Use recordingUrl as fileUrl for consistent UI 
-        isCallRecording: true,
-        gigId: call.gigId,
-        callData: call
-      }));
+      .map(call => {
+        const isVideo = call.contactId?.match(/\.(mp4|webm|mov|avi)$/i) || 
+                       call.recordingUrl?.match(/\.(mp4|webm|mov|avi|m4v)$/i);
+        return {
+          id: call.id,
+          name: call.contactId || 'Unknown Contact',
+          description: call.summary || '',
+          type: (isVideo ? 'video' : 'audio') as 'video' | 'audio',
+          itemType: 'callRecording' as const,
+          tags: call.tags || '',
+          date: call.date,
+          fileUrl: call.recordingUrl, // Use recordingUrl as fileUrl for consistent UI 
+          isCallRecording: true,
+          gigId: call.gigId,
+          callData: call
+        };
+      });
 
     const videoItems = knowledgeItems
       .filter(item => item.fileType && item.fileType.startsWith('video/'))
@@ -933,82 +937,30 @@ const KnowledgeBase: React.FC = () => {
     return (
       <div className="space-y-4">
         {unifiedItems.map((item) => {
-          if (item.isCallRecording && 'callData' in item && item.callData) {
-            const call = item.callData;
+          const isMedia = item.type === 'video' || item.type === 'audio';
+          const isCallRecording = item.isCallRecording;
+          const call = isCallRecording ? item.callData : null;
+          
+          if (isCallRecording && call) {
             fetchAudioDuration(call.recordingUrl, call.id);
-            return (
-              <React.Fragment key={call.id}>
-                <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100">
-                  <div className="flex items-start">
-                    <div className="p-3 rounded-lg bg-purple-100 mr-4 flex-shrink-0">
-                      <Mic size={20} className="text-purple-500" />
-                    </div>
-                    <div className="flex-grow min-w-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-lg font-medium text-gray-900 truncate">{call.contactId}</h3>
-                        <div className="flex items-center space-x-2">
-                          <button onClick={() => openInNewTab(call.recordingUrl)} className="text-blue-600 hover:text-blue-800 p-1" title="Open Recording"><ExternalLink size={16} /></button>
-                          <button onClick={() => handleView(call)} className="text-blue-600 hover:text-blue-800 p-1" title="AI Analysis"><Brain size={16} /></button>
-                          <button onClick={() => handleDelete(call.id)} className="text-red-600 hover:text-red-800 p-1" title="Delete"><Trash2 size={16} /></button>
-                        </div>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-500 mb-3">
-                        <Clock size={14} className="mr-1" />
-                        {formatDate(call.date)} • {callDurations[call.id] !== undefined ? formatTime(callDurations[call.id]) : '...'}
-                        {item.gigId && (
-                          <span className="ml-3 px-2 py-0.5 bg-harx-50 text-harx-600 text-[10px] font-black uppercase rounded-full border border-harx-100 flex items-center gap-1">
-                            <Sparkles size={8} />
-                            {getGigTitle(item.gigId)}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-700 mb-3">{call.summary}</p>
-                    </div>
-                  </div>
-                </div>
-                {selectedItem?.id === call.id && (
-                  <div className="bg-harx-50/50 border-l-4 border-harx-500 p-6 rounded-2xl shadow-sm ml-4 mb-6">
-                    <div className="flex justify-between items-start mb-6">
-                      <h3 className="text-xl font-bold text-gray-900">Call Recording Details</h3>
-                      <button onClick={() => setSelectedItem(null)} className="text-gray-400 hover:text-harx-500"><X size={20} /></button>
-                    </div>
-                    {/* Audio Player */}
-                    <div className="flex items-center gap-4 mb-8">
-                       <button
-                          className="flex items-center px-6 py-3 bg-gradient-harx text-white rounded-2xl font-black text-sm"
-                          onClick={() => handlePlayRecording(selectedItem.recordingUrl, selectedItem.id)}
-                        >
-                          {playingCallId === selectedItem.id && isPlaying ? <Pause size={18} /> : <Play size={18} />}
-                          <span className="ml-2 uppercase tracking-widest">{playingCallId === selectedItem.id && isPlaying ? 'Pause' : 'Play'}</span>
-                        </button>
-                        <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-gradient-harx transition-all duration-150"
-                            style={{ width: playingCallId === selectedItem.id ? `${(currentTime / duration) * 100}%` : '0%' }}
-                          />
-                        </div>
-                        <span className="text-[10px] font-black text-gray-400 tabular-nums">
-                          {playingCallId === selectedItem.id ? formatTime(currentTime) : '0:00'} / {playingCallId === selectedItem.id ? formatTime(duration) : '0:00'}
-                        </span>
-                    </div>
-                    {renderAnalysisContent(documentAnalysis[selectedItem.id], selectedItem.id)}
-                  </div>
-                )}
-              </React.Fragment>
-            );
           }
+
           return (
             <React.Fragment key={item.id}>
               <div className="bg-white/70 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:border-harx-100 transition-all group/card mb-4">
                 <div className="flex items-start">
-                  <div className="p-4 rounded-xl bg-harx-50 mr-5 flex-shrink-0 group-hover/card:scale-110 transition-transform text-harx-500 shadow-inner">
+                  <div className={`p-4 rounded-xl mr-5 flex-shrink-0 group-hover/card:scale-110 transition-transform shadow-inner ${
+                    item.type === 'document' ? 'bg-blue-50 text-blue-500' : 
+                    item.type === 'video' ? 'bg-red-50 text-red-500' : 
+                    'bg-purple-50 text-purple-500'
+                  }`}>
                     {getItemIcon(item.type)}
                   </div>
                   <div className="flex-grow min-w-0">
                     <div className="flex justify-between items-start mb-2">
                        <h3 className="text-lg font-black text-gray-900 truncate tracking-tight uppercase">{item.name}</h3>
                         <div className="flex space-x-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                          <button onClick={() => openInNewTab(item.fileUrl)} className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg" title="View Document"><Eye size={18} /></button>
+                          <button onClick={() => openInNewTab(item.fileUrl)} className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg" title="View File"><Eye size={18} /></button>
                           <button onClick={() => handleView(item)} className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg" title="AI Analysis"><Brain size={18} /></button>
                           <button onClick={() => handleDelete(item.id)} className="text-red-400 hover:bg-red-50 p-2 rounded-lg" title="Delete"><Trash2 size={18} /></button>
                         </div>
@@ -1016,7 +968,18 @@ const KnowledgeBase: React.FC = () => {
                     <p className="text-xs text-gray-500 mb-4 font-medium italic leading-relaxed line-clamp-2">{item.description}</p>
                     <div className="flex items-center justify-between border-t border-gray-50 pt-4">
                       <div className="flex items-center gap-3">
-                        <span className="text-[10px] font-black text-gray-300 uppercase">{formatDate(item.date)}</span>
+                        <div className="flex items-center gap-1.5 text-[10px] font-black text-gray-300 uppercase">
+                          <Clock size={12} className="text-gray-200" />
+                          {formatDate(item.date)}
+                          {isMedia && call && (
+                            <>
+                              <span className="text-gray-200 mx-1">•</span>
+                              <span className="text-harx-400/80">
+                                {callDurations[call.id] !== undefined ? formatTime(callDurations[call.id]) : '...'}
+                              </span>
+                            </>
+                          )}
+                        </div>
                         {item.gigId && (
                           <span className="px-2 py-0.5 bg-harx-50 text-harx-600 text-[10px] font-black uppercase rounded-full border border-harx-100 flex items-center gap-1">
                             <Sparkles size={8} />
@@ -1024,29 +987,78 @@ const KnowledgeBase: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-4">
-                        <button onClick={() => openInNewTab(item.fileUrl)} className="text-[10px] font-black text-harx-500 uppercase hover:underline">View File</button>
+                      <div className="flex items-center gap-4 text-[10px] font-black text-harx-500 uppercase">
+                        <button onClick={() => openInNewTab(item.fileUrl)} className="hover:underline">View File</button>
                         <div className="w-1 h-1 bg-gray-200 rounded-full" />
-                        <button onClick={() => handleView(item)} className="text-[10px] font-black text-harx-500 uppercase hover:underline">AI Analysis</button>
+                        <button onClick={() => handleView(item)} className="hover:underline">AI Analysis</button>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-              {selectedDocumentForAnalysis?.id === item.id && (
-                <div className="bg-white border border-harx-100 p-8 rounded-3xl shadow-2xl ml-4 mb-8">
-                  <div className="flex justify-between items-start mb-8">
-                    <h3 className="text-2xl font-black text-gray-900 tracking-tight">Analysis Output</h3>
-                    <button onClick={() => setSelectedDocumentForAnalysis(null)} className="text-gray-400 hover:text-harx-500"><X size={24} /></button>
+
+              {/* Expansion Area for Analysis */}
+              {isCallRecording ? (
+                selectedItem?.id === item.id && (
+                  <div className="bg-harx-50/10 backdrop-blur-md border border-harx-100/50 p-8 rounded-[2.5rem] shadow-xl ml-4 mb-8 animate-in slide-in-from-top-4 duration-500">
+                    <div className="flex justify-between items-start mb-8">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-white rounded-2xl shadow-sm border border-harx-50">
+                          <Brain size={24} className="text-harx-500" />
+                        </div>
+                        <div>
+                          <h3 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Intelligence Dashboard</h3>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest italic leading-none mt-1">
+                            Multimodal analysis for {item.name}
+                          </p>
+                        </div>
+                      </div>
+                      <button onClick={() => setSelectedItem(null)} className="p-2 hover:bg-white rounded-xl transition-colors text-gray-400 hover:text-harx-500"><X size={24} /></button>
+                    </div>
+                    {/* Audio/Video Player */}
+                    <div className="flex items-center gap-6 mb-10 bg-white/60 p-4 rounded-[2rem] border border-white shadow-inner">
+                       <button
+                          className="flex items-center justify-center w-14 h-14 bg-gradient-harx text-white rounded-2xl font-black shadow-lg shadow-harx-500/30 hover:scale-105 active:scale-95 transition-all"
+                          onClick={() => handlePlayRecording(item.fileUrl, item.id)}
+                        >
+                          {playingCallId === item.id && isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                        </button>
+                        <div className="flex-1">
+                          <div className="flex justify-between items-center mb-2 px-1">
+                             <span className="text-[10px] font-black text-harx-500 uppercase tracking-widest italic">Live Content Stream</span>
+                             <span className="text-[10px] font-black text-gray-400 tabular-nums">
+                              {playingCallId === item.id ? formatTime(currentTime) : '0:00'} / {playingCallId === item.id ? formatTime(duration) : '0:00'}
+                            </span>
+                          </div>
+                          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden cursor-pointer">
+                            <div 
+                              className="h-full bg-gradient-harx transition-all duration-150 relative"
+                              style={{ width: playingCallId === item.id ? `${(currentTime / duration) * 100}%` : '0%' }}
+                            >
+                              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-harx-500 rounded-full shadow-md" />
+                            </div>
+                          </div>
+                        </div>
+                    </div>
+                    {renderAnalysisContent(documentAnalysis[item.id], item.id)}
                   </div>
-                  {analyzingDocument === item.id ? (
-                    <div className="text-center py-16"><Loader2 className="animate-spin text-harx-500 mx-auto" size={48} /><p className="mt-4 font-black text-gray-900 uppercase tracking-widest">Processing Intelligence...</p></div>
-                  ) : documentAnalysis[item.id] ? (
-                    renderAnalysisContent(documentAnalysis[item.id], item.id)
-                  ) : (
-                    <div className="text-center py-16"><button onClick={() => analyzeDocument(item.id)} className="px-8 py-4 bg-gradient-harx text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl">Analyze Now</button></div>
-                  )}
-                </div>
+                )
+              ) : (
+                selectedDocumentForAnalysis?.id === item.id && (
+                  <div className="bg-white border border-harx-100 p-8 rounded-3xl shadow-2xl ml-4 mb-8">
+                    <div className="flex justify-between items-start mb-8">
+                      <h3 className="text-2xl font-black text-gray-900 tracking-tight">Analysis Output</h3>
+                      <button onClick={() => setSelectedDocumentForAnalysis(null)} className="text-gray-400 hover:text-harx-500"><X size={24} /></button>
+                    </div>
+                    {analyzingDocument === item.id ? (
+                      <div className="text-center py-16"><Loader2 className="animate-spin text-harx-500 mx-auto" size={48} /><p className="mt-4 font-black text-gray-900 uppercase tracking-widest">Processing Intelligence...</p></div>
+                    ) : documentAnalysis[item.id] ? (
+                      renderAnalysisContent(documentAnalysis[item.id], item.id)
+                    ) : (
+                      <div className="text-center py-16"><button onClick={() => analyzeDocument(item.id)} className="px-8 py-4 bg-gradient-harx text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl">Analyze Now</button></div>
+                    )}
+                  </div>
+                )
               )}
             </React.Fragment>
           );
