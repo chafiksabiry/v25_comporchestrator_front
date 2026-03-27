@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, File, FileText, Plus, Trash2, Mic, Play, Clock, Pause, ChevronDown, X, ExternalLink, Eye, Brain, Loader2, RefreshCw, Languages, ChevronRight, Sparkles } from 'lucide-react';
+import { Upload, File, FileText, Plus, Trash2, Mic, Play, Clock, Pause, X, ExternalLink, Eye, Brain, Loader2, RefreshCw, Languages, ChevronRight, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types';
 import apiClient from '../api/knowledgeClient';
