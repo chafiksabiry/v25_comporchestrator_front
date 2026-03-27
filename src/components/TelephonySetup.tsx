@@ -1015,43 +1015,43 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
   };
 
   return (
-    <div className="max-w-[900px] mx-auto px-6 py-10 space-y-8 animate-in fade-in duration-500">
+    <div className="max-w-[900px] mx-auto px-1 py-4 space-y-6 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="space-y-1.5 px-1">
+      <div className="space-y-1 px-1">
         <div className="flex items-center space-x-3">
           <h1 className="text-4xl font-black text-gray-900 uppercase tracking-tighter">Telephony Setup</h1>
           {completedSteps.includes(5) && (
-            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-emerald-500 shadow-sm border-2 border-white">
-              <CheckCircle className="h-4 w-4 text-white" />
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500 shadow-sm border-2 border-white">
+              <CheckCircle className="h-5 w-5 text-white" />
             </div>
           )}
         </div>
-        <p className="text-[15px] font-medium text-gray-400">Manage and configure your global call infrastructure</p>
+        <p className="text-[16px] font-medium text-gray-400">Manage and configure your global call infrastructure</p>
       </div>
 
       {cookieError && (
         <div className="rounded-lg bg-red-50 border-[0.5px] border-red-100 p-4">
-          <div className="flex">
+          <div className="flex text-[14px]">
             <AlertCircle className="h-4 w-4 text-red-400" />
             <div className="ml-3">
-              <h3 className="text-[11px] font-bold text-red-800 uppercase tracking-widest">Configuration Error</h3>
-              <p className="mt-1 text-xs text-red-700 font-medium">{cookieError}</p>
+              <h3 className="font-bold text-red-800 uppercase tracking-widest">Configuration Error</h3>
+              <p className="mt-1 text-red-700 font-medium">{cookieError}</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Section: Select Gig */}
-      <div className="bg-white rounded-lg border-[0.5px] border-gray-200 p-5 shadow-sm">
+      <div className="bg-white rounded-lg border-[0.5px] border-gray-200 p-4 shadow-sm">
         <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center space-x-2">
-            <span className="text-[11px] font-medium text-gray-400 uppercase tracking-[0.08em]">Select Gig</span>
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded-[4px] bg-[#fff1f0] text-[#c0392b] text-[10px] font-medium uppercase tracking-wider">
+            <span className="text-[13px] font-medium text-gray-400 uppercase tracking-[0.08em]">Select Gig</span>
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-[4px] bg-[#fff1f0] text-[#c0392b] text-[11px] font-medium uppercase tracking-wider">
               Required
             </span>
           </div>
         </div>
-        <p className="text-[12px] text-gray-400 mb-4">Choose an active intelligence profile to associate with this telephony node</p>
+        <p className="text-[14px] text-gray-400 mb-4">Choose an active intelligence profile to associate with this telephony node</p>
 
         {isLoadingGigs ? (
           <div className="w-full h-12 bg-gray-50 rounded-lg flex items-center justify-center border-[0.5px] border-gray-100">
@@ -1062,30 +1062,30 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
           <div className="relative">
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className={`flex items-center justify-between w-full px-4 py-3 bg-gray-50 rounded-lg border-[0.5px] transition-all duration-200 ${
+              className={`flex items-center justify-between w-full px-4 py-3 bg-gray-50/50 rounded-lg border-[0.5px] transition-all duration-200 ${
                 isDropdownOpen ? 'border-gray-400 ring-4 ring-gray-900/5' : 'border-gray-200 hover:border-gray-300'
               }`}
             >
               <div className="flex items-center space-x-3">
-                <Briefcase className="h-4 w-4 text-gray-400" />
+                <Briefcase className="h-5 w-5 text-gray-400" />
                 {selectedGigId ? (
                    (() => {
                     const selectedGig = gigs.find((g: Gig) => g._id === selectedGigId);
                     return selectedGig ? (
                       <div className="flex items-center space-x-2">
-                        <span className="text-[13px] font-medium text-gray-900">{selectedGig.title}</span>
+                        <span className="text-[14px] font-bold text-gray-900">{selectedGig.title}</span>
                         <span className="text-gray-300">/</span>
-                        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+                        <span className="text-[12px] font-bold text-gray-400 uppercase tracking-widest">
                           {selectedGig.destination_zone.name.common}
                         </span>
                       </div>
-                    ) : <span className="text-[13px] text-gray-400 font-medium">Select a profile...</span>;
+                    ) : <span className="text-[14px] text-gray-400 font-medium">Select a profile...</span>;
                   })()
                 ) : (
-                  <span className="text-[13px] text-gray-400 font-medium italic">Choose an active gig profile...</span>
+                  <span className="text-[14px] text-gray-400 font-medium italic">Choose an active gig profile...</span>
                 )}
               </div>
-              <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isDropdownOpen && (
@@ -1121,13 +1121,12 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
       {!isLoadingGigs && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-150 fill-mode-both">
           {/* Section: Select Provider */}
-          <div className="bg-white rounded-lg border-[0.5px] border-gray-200 p-5 shadow-sm">
-            <span className="text-[11px] font-medium text-gray-400 uppercase tracking-[0.08em] block mb-1.5">Select Provider</span>
-            <p className="text-[12px] text-gray-400 mb-5">Choose a primary telephony provider for carrier-grade routing</p>
+          <div className="bg-white rounded-lg border-[0.5px] border-gray-200 p-4 shadow-sm">
+            <span className="text-[13px] font-medium text-gray-400 uppercase tracking-[0.08em] block mb-1.5">Select Provider</span>
+            <p className="text-[14px] text-gray-400 mb-5">Choose a primary telephony provider for carrier-grade routing</p>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {providers.map((p) => {
-                const Logo = p.logo;
                 const isSelected = provider === p.id;
                 const isDisabled = p.id === 'telnyx';
                 
@@ -1136,40 +1135,44 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                     key={p.id}
                     disabled={isDisabled}
                     onClick={() => setProvider(p.id)}
-                    className={`relative flex items-center justify-between p-4 rounded-xl border-[0.5px] transition-all duration-300 h-16 ${
+                    className={`relative flex items-center justify-between px-6 py-5 rounded-xl border-[0.5px] transition-all duration-300 h-20 ${
                       isDisabled 
                         ? 'opacity-45 bg-gray-50 border-gray-100 cursor-not-allowed' 
                         : isSelected
-                          ? 'bg-[#fff1f0] border-red-500'
-                          : 'bg-white border-gray-200 hover:border-gray-300'
+                          ? 'bg-[#fff1f0] border-red-500 shadow-sm'
+                          : 'bg-white border-gray-200 hover:border-gray-400'
                     }`}
                   >
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-6">
                       {p.id === 'twilio' ? (
-                        <svg className={`h-6 w-6 ${isSelected ? 'text-red-500' : 'text-gray-300'}`} viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
-                          <circle cx="9" cy="9" r="1.5" fill="white"/>
-                          <circle cx="15" cy="9" r="1.5" fill="white"/>
-                          <circle cx="9" cy="15" r="1.5" fill="white"/>
-                          <circle cx="15" cy="15" r="1.5" fill="white"/>
-                        </svg>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isSelected ? 'bg-white shadow-sm' : 'bg-gray-50'}`}>
+                          <svg className={`h-7 w-7 ${isSelected ? 'text-red-500' : 'text-gray-300'}`} viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                            <circle cx="9" cy="9" r="1.5" fill="white"/>
+                            <circle cx="15" cy="9" r="1.5" fill="white"/>
+                            <circle cx="9" cy="15" r="1.5" fill="white"/>
+                            <circle cx="15" cy="15" r="1.5" fill="white"/>
+                          </svg>
+                        </div>
                       ) : (
-                        <Logo className={`h-6 w-6 ${isSelected ? 'text-red-600' : 'text-gray-400'}`} />
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-gray-50`}>
+                          <Globe className={`h-7 w-7 text-gray-300`} />
+                        </div>
                       )}
                       <div className="flex flex-col items-start">
-                        <span className={`text-[12px] font-black uppercase tracking-[0.1em] ${isSelected ? 'text-gray-900' : 'text-gray-500'}`}>
+                        <span className={`text-[15px] font-black uppercase tracking-[0.1em] ${isSelected ? 'text-gray-900' : 'text-gray-500'}`}>
                           {p.name}
                         </span>
                         {isDisabled && (
-                          <span className="bg-gray-200 text-gray-500 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-[4px] tracking-widest mt-0.5">
+                          <span className="bg-gray-200 text-gray-600 text-[10px] font-black uppercase px-2 py-0.5 rounded-[4px] tracking-widest mt-0.5">
                             Beta
                           </span>
                         )}
                       </div>
                     </div>
                     {isSelected && !isDisabled && (
-                       <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center shadow-sm">
-                         <CheckCircle className="h-3 w-3 text-white" />
+                       <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center shadow-md">
+                         <CheckCircle className="h-4 w-4 text-white" />
                        </div>
                     )}
                   </button>
@@ -1179,19 +1182,19 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
           </div>
 
           {/* Section: Phone Nodes */}
-          <div className="bg-white rounded-lg border-[0.5px] border-gray-200 p-5 shadow-sm">
+          <div className="bg-white rounded-lg border-[0.5px] border-gray-200 p-4 shadow-sm">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] font-medium text-gray-400 uppercase tracking-[0.08em]">Phone Nodes</span>
+              <span className="text-[13px] font-medium text-gray-400 uppercase tracking-[0.08em]">Phone Nodes</span>
               {destinationZone && selectedGigId && (
-                <div className="flex items-center space-x-2 px-2 py-0.5 rounded-[4px] bg-gray-50 border-[0.5px] border-gray-100">
-                  <div className={`w-1.5 h-1.5 rounded-full ${isQuotaReached ? 'bg-emerald-500' : 'bg-harx-500'}`} />
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                <div className="flex items-center space-x-2 px-2.5 py-0.5 rounded-[4px] bg-gray-50 border-[0.5px] border-gray-200">
+                  <div className={`w-2 h-2 rounded-full ${isQuotaReached ? 'bg-emerald-500' : 'bg-red-500 pulse'}`} />
+                  <span className="text-[12px] font-black text-gray-600 uppercase tracking-widest">
                     {purchasedNumbersCount} / {teamSize}
                   </span>
                 </div>
               )}
             </div>
-            <p className="text-[12px] text-gray-400 mb-6 underline decoration-gray-100 underline-offset-4">Configure network entry points for your active intelligence nodes</p>
+            <p className="text-[14px] text-gray-400 mb-6">Configure network entry points for your active intelligence nodes</p>
 
             {/* Combined Active & Available List */}
             <div className="space-y-3">
