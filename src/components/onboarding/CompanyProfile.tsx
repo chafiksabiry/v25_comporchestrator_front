@@ -31,7 +31,6 @@ import {
   Twitter,
   Facebook,
   Instagram,
-  ChevronDown,
   ArrowRight,
 } from "lucide-react";
 
@@ -219,7 +218,7 @@ const EditableField = ({
   );
 };
 
-function CompanyProfile({ companyId: propCompanyId, onBack }: { companyId?: string | null; onBack?: () => void }) {
+function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | null }) {
   const [company, setCompany] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -272,7 +271,6 @@ function CompanyProfile({ companyId: propCompanyId, onBack }: { companyId?: stri
       checkStepStatus();
     }
   }, [company, isStepCompleted]);
-
 
   const hasBasicInfo = () => {
     const hasInfo = company.name && company.industry && company.contact?.email;
@@ -739,45 +737,87 @@ function CompanyProfile({ companyId: propCompanyId, onBack }: { companyId?: stri
 
               <div className="relative h-full flex flex-col justify-end p-12 space-y-6">
                 <div className="flex items-center gap-6">
-                  {onBack && (
-                    <button
-                      onClick={onBack}
-                      className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all shadow-xl group shrink-0 mb-auto"
+                  <div className="relative group">
+                    <div
+                      className={`w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center p-4 overflow-hidden ${editMode ? "cursor-pointer" : ""
+                        }`}
                     >
-                      <ChevronDown className="h-6 w-6 rotate-90 group-hover:-translate-x-1 transition-transform" />
-                    </button>
-                  )}
-                  <div className="flex items-center gap-6">
-                    <div className="relative group">
-                      <div
-                        className={`w-24 h-24 bg-white rounded-2xl shadow-xl flex items-center justify-center p-4 overflow-hidden ${editMode ? "cursor-pointer" : ""
-                          }`}
-                      >
-                        {logoUrl ? (
-                          <img
-                            src={logoUrl}
-                            alt={profile.name}
-                            className="w-full h-full object-contain"
-                            onError={(e) => {
-                              e.currentTarget.src = "";
-                              setLogoUrl("");
-                            }}
-                          />
-                        ) : (
-                          <Globe className="w-full h-full text-harx-500" />
-                        )}
-                        {editMode && (
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="text-white text-center">
-                              <Upload size={20} className="mx-auto mb-1" />
-                              <span className="text-xs">Edit Logo</span>
-                            </div>
+                      {logoUrl ? (
+                        <img
+                          src={logoUrl}
+                          alt={profile.name}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            e.currentTarget.src = "";
+                            setLogoUrl("");
+                          }}
+                        />
+                      ) : (
+                        <Globe className="w-full h-full text-harx-500" />
+
+                      )}
+                      {editMode && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="text-white text-center">
+                            <Upload size={20} className="mx-auto mb-1" />
+                            <span className="text-xs">Edit Logo</span>
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-3 mb-2">
+                    {editMode && editingField === "logo" && (
+                      <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg p-3 border border-gray-200">
+                        <div className="space-y-2">
+                          <label className="text-sm text-gray-600 block">
+                            Logo URL
+                          </label>
+                          <input
+                            type="text"
+                            value={logoUrl}
+                            onChange={handleLogoChange}
+                            placeholder="Enter logo URL..."
+                             className="w-full px-3 py-2 text-sm border-2 border-harx-100 rounded-xl focus:ring-4 focus:ring-harx-500/20 focus:border-harx-500 outline-none transition-all !text-black !bg-white"
+
+                          />
+                          <div className="flex justify-end gap-2 mt-2">
+                            <button
+                              onClick={() => setEditingField(null)}
+                              className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => {
+                                setCompany((prev) => ({
+                                  ...prev,
+                                  logo: logoUrl
+                                }));
+                                setEditingField(null);
+                                setHasChanges(true);
+                              }}
+                               className="px-4 py-2 text-sm bg-gradient-harx text-white rounded-xl font-bold shadow-lg shadow-harx-500/30 hover:scale-105 transition-all"
+
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {editMode && (
+                      <button
+                        onClick={() =>
+                          setEditingField(editingField === "logo" ? null : "logo")
+                        }
+                         className="absolute -right-2 -top-2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-harx-500 hover:text-harx-600 transition-all hover:scale-110"
+
+                      >
+                        <Edit2 size={12} />
+                      </button>
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
                       <EditableField
                         value={profile.name}
                         field="name"
@@ -813,7 +853,6 @@ function CompanyProfile({ companyId: propCompanyId, onBack }: { companyId?: stri
                   </div>
                 </div>
               </div>
-            </div>
               {/* Edit Mode Toggle */}
               <div className="absolute top-6 right-6 z-10">
                 <button

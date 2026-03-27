@@ -76,7 +76,7 @@ interface Gig {
   updatedAt: string;
 }
 
-const TelephonySetup = ({ companyId: propCompanyId, onBack }: { companyId?: string | null; onBack?: () => void }): JSX.Element => {
+const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | null }): JSX.Element => {
   const [provider, setProvider] = useState<'telnyx' | 'twilio'>('twilio');
   const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(propCompanyId || null);
@@ -1028,19 +1028,9 @@ const TelephonySetup = ({ companyId: propCompanyId, onBack }: { companyId?: stri
       {/* Header Area - Subtle Gradient Accent */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-8 mb-4 shadow-lg shadow-harx-500/20">
         <div className="relative z-10 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            {onBack && (
-              <button
-                onClick={onBack}
-                className="p-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all shadow-xl group"
-              >
-                <ChevronDown className="h-6 w-6 rotate-90 group-hover:-translate-x-1 transition-transform" />
-              </button>
-            )}
-            <div className="space-y-1.5">
-              <h1 className="text-4xl font-black text-white uppercase tracking-tighter">Telephony Setup</h1>
-              <p className="text-[16px] font-medium text-white/90">Manage and configure your global network entry points</p>
-            </div>
+          <div className="space-y-1.5">
+            <h1 className="text-4xl font-black text-white uppercase tracking-tighter">Telephony Setup</h1>
+            <p className="text-[16px] font-medium text-white/90">Manage and configure your global network entry points</p>
           </div>
           {completedSteps.includes(5) && (
             <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-xl self-start">
