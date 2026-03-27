@@ -183,6 +183,12 @@ const KnowledgeBase: React.FC = () => {
     return userId;
   };
 
+  const getGigTitle = (gigId?: string) => {
+    if (!gigId || gigId === 'all') return null;
+    const gig = gigs.find(g => (g._id || g.id) === gigId);
+    return gig ? gig.title : null;
+  };
+
   // Function to update onboarding progress
   const updateOnboardingProgress = async () => {
     try {
@@ -248,7 +254,8 @@ const KnowledgeBase: React.FC = () => {
         tags: doc.tags || '',
         usagePercentage: 0,
         isPublic: true,
-        analysis: doc.analysis
+        analysis: doc.analysis,
+        gigId: doc.gigId
       }));
 
       setKnowledgeItems(documents);
@@ -309,6 +316,7 @@ const KnowledgeBase: React.FC = () => {
         aiInsights: call.aiInsights || '',
         repId: call.repId || 'unknown-rep',
         companyId: call.companyId,
+        gigId: call.gigId,
         processingOptions: { transcription: true, sentiment: true, insights: true },
         audioState: {
           isPlaying: false,
@@ -757,7 +765,8 @@ const KnowledgeBase: React.FC = () => {
         ...item,
         itemType: 'document' as const,
         date: item.uploadedAt,
-        isCallRecording: false
+        isCallRecording: false,
+        gigId: item.gigId
       }));
 
     const callItems = callRecords
@@ -771,7 +780,8 @@ const KnowledgeBase: React.FC = () => {
         date: call.date,
         fileUrl: call.recordingUrl, // Use recordingUrl as fileUrl for consistent UI 
         isCallRecording: true,
-        callData: call
+        callData: call,
+        gigId: call.gigId
       }));
 
     return [...documentItems, ...callItems].sort((a, b) =>
@@ -940,6 +950,12 @@ const KnowledgeBase: React.FC = () => {
                       <div className="flex items-center text-sm text-gray-500 mb-3">
                         <Clock size={14} className="mr-1" />
                         {formatDate(call.date)} • {callDurations[call.id] !== undefined ? formatTime(callDurations[call.id]) : '...'}
+                        {item.gigId && (
+                          <span className="ml-3 px-2 py-0.5 bg-harx-50 text-harx-600 text-[10px] font-black uppercase rounded-full border border-harx-100 flex items-center gap-1">
+                            <Sparkles size={8} />
+                            {getGigTitle(item.gigId)}
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-gray-700 mb-3">{call.summary}</p>
                     </div>
@@ -994,7 +1010,15 @@ const KnowledgeBase: React.FC = () => {
                     </div>
                     <p className="text-xs text-gray-500 mb-4 font-medium italic leading-relaxed line-clamp-2">{item.description}</p>
                     <div className="flex items-center justify-between border-t border-gray-50 pt-4">
-                      <span className="text-[10px] font-black text-gray-300 uppercase">{formatDate(item.date)}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-black text-gray-300 uppercase">{formatDate(item.date)}</span>
+                        {item.gigId && (
+                          <span className="px-2 py-0.5 bg-harx-50 text-harx-600 text-[10px] font-black uppercase rounded-full border border-harx-100 flex items-center gap-1">
+                            <Sparkles size={8} />
+                            {getGigTitle(item.gigId)}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-4">
                         <button onClick={() => openInNewTab(item.fileUrl)} className="text-[10px] font-black text-harx-500 uppercase hover:underline">View File</button>
                         <div className="w-1 h-1 bg-gray-200 rounded-full" />

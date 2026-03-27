@@ -33,6 +33,7 @@ export interface KnowledgeItem {
   tags: string[];
   usagePercentage: number;
   companyId?: string; // Company this knowledge item belongs to
+  gigId?: string; // Associated Gig
   isPublic: boolean; // Whether this item is shared across companies
 }
 
@@ -49,6 +50,7 @@ export interface CallRecord {
   aiInsights: string[];
   repId: string; // ID of the rep who made the call
   companyId: string; // Company this call belongs to
+  gigId?: string; // Associated Gig
   processingOptions: {
     transcription: boolean;
     sentiment: boolean;
