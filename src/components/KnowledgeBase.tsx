@@ -617,10 +617,6 @@ const KnowledgeBase: React.FC = () => {
     }
   };
 
-  // Add function to open document/recording in new tab
-  const openInNewTab = (url: string) => {
-    window.open(url, '_blank');
-  };
 
   // Handle upload modal close
   const handleUploadModalClose = () => {
@@ -960,7 +956,15 @@ const KnowledgeBase: React.FC = () => {
                     <div className="flex justify-between items-start mb-2">
                        <h3 className="text-lg font-black text-gray-900 truncate tracking-tight uppercase">{item.name}</h3>
                         <div className="flex space-x-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                          <button onClick={() => openInNewTab(item.fileUrl)} className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg" title="View File"><Eye size={18} /></button>
+                          <a 
+                            href={item.fileUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg" 
+                            title="View File"
+                          >
+                            <Eye size={18} />
+                          </a>
                           <button onClick={() => handleView(item)} className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg" title="AI Analysis"><Brain size={18} /></button>
                           <button onClick={() => handleDelete(item.id)} className="text-red-400 hover:bg-red-50 p-2 rounded-lg" title="Delete"><Trash2 size={18} /></button>
                         </div>
@@ -988,7 +992,14 @@ const KnowledgeBase: React.FC = () => {
                         )}
                       </div>
                       <div className="flex items-center gap-4 text-[10px] font-black text-harx-500 uppercase">
-                        <button onClick={() => openInNewTab(item.fileUrl)} className="hover:underline">View File</button>
+                        <a 
+                          href={item.fileUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="hover:underline"
+                        >
+                          View File
+                        </a>
                         <div className="w-1 h-1 bg-gray-200 rounded-full" />
                         <button onClick={() => handleView(item)} className="hover:underline">AI Analysis</button>
                       </div>
@@ -1014,13 +1025,15 @@ const KnowledgeBase: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <button 
-                          onClick={() => openInNewTab(item.fileUrl)}
+                        <a 
+                          href={item.fileUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
                           className="flex items-center gap-2 px-4 py-2 bg-white text-harx-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-harx-50 border border-harx-100 transition-all shadow-sm"
                         >
                           <Eye size={14} />
                           View File
-                        </button>
+                        </a>
                         <button onClick={() => setSelectedItem(null)} className="p-2 hover:bg-white rounded-xl transition-colors text-gray-400 hover:text-harx-500"><X size={24} /></button>
                       </div>
                     </div>
@@ -1063,13 +1076,15 @@ const KnowledgeBase: React.FC = () => {
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                         <button 
-                            onClick={() => openInNewTab(item.fileUrl)}
+                         <a 
+                            href={item.fileUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
                             className="flex items-center gap-2 px-4 py-2 bg-harx-50 text-harx-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-harx-100 transition-all"
                           >
                             <Eye size={14} />
                             View Source File
-                          </button>
+                          </a>
                         <button onClick={() => setSelectedDocumentForAnalysis(null)} className="text-gray-400 hover:text-harx-500 transition-colors"><X size={24} /></button>
                       </div>
                     </div>
