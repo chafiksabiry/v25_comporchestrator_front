@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Check, CreditCard, Sparkles, ChevronDown } from 'lucide-react';
+import { Check, CreditCard, Sparkles } from 'lucide-react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import React from 'react';
@@ -17,7 +17,7 @@ interface Plan {
 }
 
 // Les plans seront récupérés dynamiquement depuis le backend
-const SubscriptionPlan = ({ onBack }: { onBack?: () => void }) => {
+const SubscriptionPlan = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isStepCompleted, setIsStepCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -165,22 +165,12 @@ const SubscriptionPlan = ({ onBack }: { onBack?: () => void }) => {
     <div className="min-h-full bg-transparent p-2">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-          <div className="flex items-center gap-6">
-            {onBack && (
-              <button
-                onClick={onBack}
-                className="p-3 rounded-2xl bg-white/50 backdrop-blur-sm border border-white/20 text-harx-600 hover:bg-white transition-all shadow-xl group shrink-0"
-              >
-                <ChevronDown className="h-6 w-6 rotate-90 group-hover:-translate-x-1 transition-transform" />
-              </button>
-            )}
-            <div>
-              <div className="flex items-center gap-2 mb-2 text-harx-500">
-                <span className="text-xs font-black uppercase tracking-[0.2em]">Premium Access</span>
-              </div>
-              <h1 className="text-3xl font-black text-gray-900 tracking-tight">Select Your Plan</h1>
-              <p className="text-gray-500 mt-1 font-medium text-sm">Choose the perfect scale for your AI-powered orchestration engine.</p>
+          <div>
+            <div className="flex items-center gap-2 mb-2 text-harx-500">
+              <span className="text-xs font-black uppercase tracking-[0.2em]">Premium Access</span>
             </div>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Select Your Plan</h1>
+            <p className="text-gray-500 mt-1 font-medium text-sm">Choose the perfect scale for your AI-powered orchestration engine.</p>
           </div>
           
           <div className="bg-white/50 backdrop-blur-sm p-3 rounded-2xl border border-gray-100 flex items-center gap-4 shadow-sm">

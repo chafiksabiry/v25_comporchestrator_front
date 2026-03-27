@@ -260,6 +260,42 @@ const CompanyOnboarding = () => {
     }
   }, [showUploadContacts]);
 
+  // Sync global back button with App.tsx header
+  useEffect(() => {
+    const isAnyFocusedViewActive = showGigDetails || showTelephonySetup || showKnowledgeBase || showUploadContacts || activeStep !== null;
+
+    if (isAnyFocusedViewActive) {
+      let label = 'Back to overview';
+      let action = () => { };
+
+      if (showGigDetails) {
+        action = () => setShowGigDetails(false);
+      } else if (showTelephonySetup) {
+        action = () => setShowTelephonySetup(false);
+      } else if (showKnowledgeBase) {
+        action = () => setShowKnowledgeBase(false);
+      } else if (showUploadContacts) {
+        action = () => setShowUploadContacts(false);
+      } else if (activeStep !== null) {
+        action = () => setActiveStep(null);
+      }
+
+      window.dispatchEvent(new CustomEvent('setGlobalBack', {
+        detail: { label, action }
+      }));
+    } else {
+      window.dispatchEvent(new CustomEvent('setGlobalBack', {
+        detail: { action: null }
+      }));
+    }
+
+    // Cleanup on unmount
+    return () => {
+      window.dispatchEvent(new CustomEvent('setGlobalBack', {
+        detail: { action: null }
+      }));
+    };
+  }, [showGigDetails, showTelephonySetup, showKnowledgeBase, showUploadContacts, activeStep]);
 
   // Single useEffect to handle UploadContacts state and parsed leads cleanup
   useEffect(() => {
@@ -1357,18 +1393,17 @@ const CompanyOnboarding = () => {
   // Déterminer quel composant afficher
   let activeComponent = null;
   if (showGigDetails) {
-    activeComponent = <GigDetails onBack={() => setShowGigDetails(false)} />;
+    activeComponent = <GigDetails />;
   } else if (showTelephonySetup) {
     activeComponent = (
-      <TelephonySetup companyId={companyId} onBack={() => setShowTelephonySetup(false)} />
+      <TelephonySetup companyId={companyId} />
     );
   } else if (showKnowledgeBase) {
-    activeComponent = <KnowledgeBase onBack={() => setShowKnowledgeBase(false)} />;
+    activeComponent = <KnowledgeBase />;
   } else if (showUploadContacts) {
     activeComponent = (
       <UploadContacts
         companyId={companyId}
-        onBack={() => setShowUploadContacts(false)}
         onCancelProcessing={() => setShowUploadContacts(false)}
       />
     );
