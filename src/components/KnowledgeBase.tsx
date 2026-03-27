@@ -107,6 +107,7 @@ const KnowledgeBase: React.FC = () => {
   const [gigs, setGigs] = useState<any[]>([]);
   const [selectedGigId, setSelectedGigId] = useState<string>('all');
   const [isGigDropdownOpen, setIsGigDropdownOpen] = useState(false);
+  const [transcriptionShowCount, setTranscriptionShowCount] = useState<{ [key: string]: number }>({});
   const TRANSCRIPTION_PAGE_SIZE = 5;
 
   // Load items from localStorage on mount
@@ -249,7 +250,8 @@ const KnowledgeBase: React.FC = () => {
         usagePercentage: 0,
         isPublic: true,
         analysis: doc.analysis,
-        gigId: doc.gigId
+        gigId: doc.gigId,
+        fileType: doc.fileType
       }));
 
       setKnowledgeItems(documents);
@@ -770,7 +772,8 @@ const KnowledgeBase: React.FC = () => {
         date: call.date,
         fileUrl: call.recordingUrl, // Use recordingUrl as fileUrl for consistent UI 
         isCallRecording: true,
-        gigId: call.gigId
+        gigId: call.gigId,
+        callData: call
       }));
 
     const videoItems = knowledgeItems
@@ -907,7 +910,7 @@ const KnowledgeBase: React.FC = () => {
   };
 
   const renderContent = () => {
-    const unifiedItems = getUnifiedItems();
+    const unifiedItems: any[] = getUnifiedItems();
     if (unifiedItems.length === 0) {
       return (
         <div className="bg-white/50 backdrop-blur-sm p-16 rounded-[3rem] border border-gray-100 text-center shadow-sm">
@@ -1108,7 +1111,13 @@ const KnowledgeBase: React.FC = () => {
   };
 
   return (
-    <div className="p-8 bg-transparent min-h-full font-inter">
+    <div className="relative min-h-screen font-inter overflow-hidden">
+      {/* Premium Background Elements */}
+      <div className="fixed inset-0 bg-slate-50/50 -z-10" />
+      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-harx-500/10 blur-[120px] rounded-full -z-10 animate-float" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-harx-alt-500/10 blur-[120px] rounded-full -z-10 animate-float" style={{ animationDelay: '-3s' }} />
+      
+      <div className="relative z-10 p-8">
       <button
         onClick={handleBackToOrchestrator}
         className="mb-8 flex items-center transition-all text-gray-400 hover:text-harx-500 group"
@@ -1124,7 +1133,7 @@ const KnowledgeBase: React.FC = () => {
           <div className="h-px w-8 bg-harx-500" />
           <span className="text-[10px] font-black text-harx-500 uppercase tracking-[0.3em]">Knowledge System</span>
         </div>
-        <h1 className="text-4xl font-black text-gray-900 mb-3 tracking-tight uppercase">Knowledge Base</h1>
+        <h1 className="text-4xl font-black bg-gradient-harx bg-clip-text text-transparent mb-3 tracking-tight uppercase">Knowledge Base</h1>
         <p className="text-gray-500 max-w-2xl font-medium leading-relaxed italic">
           Power your AI with enterprise intelligence. Synchronize documents and call recordings 
           to build a high-fidelity knowledge graph for your HARX REPS.
@@ -1138,12 +1147,12 @@ const KnowledgeBase: React.FC = () => {
               <div className="relative">
                 <button
                   onClick={() => setIsGigDropdownOpen(!isGigDropdownOpen)}
-                  className="flex items-center gap-2 p-1.5 bg-white/50 backdrop-blur-sm rounded-2xl border border-harx-100 shadow-sm hover:border-harx-300 transition-all group/gig"
+                  className="flex items-center gap-2 p-1.5 bg-white/80 backdrop-blur-xl rounded-2xl border border-harx-100 shadow-sm hover:border-harx-300 transition-all group/gig"
                 >
                   <div className="p-2 bg-harx-50 rounded-xl group-hover/gig:scale-110 transition-transform">
                     <Sparkles size={18} className="text-harx-500" />
                   </div>
-                  <span className="text-xs font-black text-gray-900 uppercase tracking-widest pl-1 pr-2">
+                  <span className="text-xs font-black text-gray-900 uppercase tracking-widest pl-1 pr-2 max-w-[150px] md:max-w-[250px] truncate">
                     {selectedGigId === 'all' 
                       ? 'Select a Gig' 
                       : `Gig: ${gigs.find(g => (g._id || g.id) === selectedGigId)?.title || 'Selected Gig'}`}
@@ -1157,7 +1166,7 @@ const KnowledgeBase: React.FC = () => {
                       className="fixed inset-0 z-20" 
                       onClick={() => setIsGigDropdownOpen(false)} 
                     />
-                    <div className="absolute top-full left-0 mt-2 w-max min-w-[280px] max-w-[400px] bg-white/70 backdrop-blur-2xl border border-white/40 rounded-[2rem] shadow-[0_25px_70px_-15px_rgba(0,0,0,0.15)] p-2 z-30 animate-in fade-in slide-in-from-top-2 zoom-in duration-300 origin-top-left">
+                    <div className="absolute top-full left-0 mt-2 w-max min-w-[280px] max-w-[400px] bg-white/90 backdrop-blur-2xl border border-white/40 rounded-[2rem] shadow-[0_25px_70px_-15px_rgba(0,0,0,0.15)] p-2 z-50 animate-in fade-in slide-in-from-top-2 zoom-in duration-300 origin-top-left">
                       <div className="max-h-80 overflow-y-auto custom-scrollbar px-1">
                         <button
                           onClick={() => {
@@ -1228,6 +1237,7 @@ const KnowledgeBase: React.FC = () => {
       {renderContent()}
       {renderUploadModal()}
       <style>{dropdownStyles}</style>
+      </div>
     </div>
   );
 };

@@ -28,6 +28,7 @@ export interface KnowledgeItem {
   description: string;
   type: 'document' | 'video' | 'link' | 'audio';
   fileUrl: string;
+  fileType?: string; // Type of the file (e.g., application/pdf)
   uploadedAt: string;
   uploadedBy: string;
   tags: string[];
