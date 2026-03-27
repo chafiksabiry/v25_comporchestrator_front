@@ -1146,13 +1146,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                     <div className="flex items-center space-x-6">
                       {p.id === 'twilio' ? (
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isSelected ? 'bg-white shadow-sm' : 'bg-gray-50'}`}>
-                          <svg className={`h-7 w-7 ${isSelected ? 'text-red-500' : 'text-gray-300'}`} viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
-                            <circle cx="9" cy="9" r="1.5" fill="white"/>
-                            <circle cx="15" cy="9" r="1.5" fill="white"/>
-                            <circle cx="9" cy="15" r="1.5" fill="white"/>
-                            <circle cx="15" cy="15" r="1.5" fill="white"/>
-                          </svg>
+                          <img src="/twilio-icon.svg" className={`h-7 w-7 ${isSelected ? '' : 'opacity-40 grayscale'}`} alt="Twilio" />
                         </div>
                       ) : (
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-gray-50`}>
