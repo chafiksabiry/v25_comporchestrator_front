@@ -8,7 +8,6 @@ import {
   FolderPlus,
   FileText,
   ChevronDown,
-  ChevronUp,
   CheckCircle,
   AlertCircle,
   MessageSquare,
@@ -18,7 +17,7 @@ import {
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const KnowledgeBase = () => {
+const KnowledgeBase = ({ onBack }: { onBack?: () => void }) => {
   const [expandedSection, setExpandedSection] = useState<string | null>('product');
   const [searchQuery, setSearchQuery] = useState('');
   const [isStepCompleted, setIsStepCompleted] = useState(false);
@@ -259,45 +258,56 @@ const KnowledgeBase = () => {
   };
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto">
-      <div className="bg-white rounded-[2rem] p-8 border border-harx-100 shadow-xl overflow-hidden relative group">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-harx-50/50 rounded-full blur-3xl group-hover:bg-harx-100 transition-colors duration-700"></div>
+    <div className="w-full py-4 space-y-6 animate-in fade-in duration-500">
+      {/* Header Area - Branded Gradient */}
+      <div className="relative overflow-hidden rounded-xl bg-gradient-harx p-8 mb-4 shadow-lg shadow-harx-500/20">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 mb-6 group transition-all duration-300"
+          >
+            <div className="p-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white group-hover:bg-white/20 transition-all">
+              <ChevronDown className="h-5 w-5 rotate-90" />
+            </div>
+            <span className="text-white/80 group-hover:text-white font-black text-sm uppercase tracking-widest">Back to overview</span>
+          </button>
+        )}
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex-1">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-harx flex items-center justify-center shadow-lg shadow-harx-500/20">
+              <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20">
                 <BookOpen className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h2 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                <h2 className="text-4xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
                   Knowledge Base
                   {isStepCompleted && (
-                    <span className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-4 py-1.5 rounded-2xl text-xs font-black uppercase tracking-widest border border-emerald-100 italic">
+                    <span className="flex items-center gap-1.5 bg-emerald-500/20 text-emerald-100 px-4 py-1.5 rounded-2xl text-xs font-black uppercase tracking-widest border border-emerald-500/30 backdrop-blur-md italic">
                       <CheckCircle2 className="w-4 h-4" />
                       Ready to Scale
                     </span>
                   )}
                 </h2>
-                <p className="text-lg text-gray-500 font-medium">Equip your REPS with essential product wisdom and objection handlers.</p>
+                <p className="text-[16px] font-medium text-white/90">Equip your REPS with essential product wisdom and objection handlers.</p>
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-4">
-            <button className="flex items-center rounded-2xl bg-white px-6 py-3 text-sm font-black text-gray-700 shadow-sm border border-gray-200 hover:border-harx-300 hover:text-harx-600 transition-all">
+          <div className="flex flex-wrap gap-4 relative z-10">
+            <button className="flex items-center rounded-2xl bg-white/10 backdrop-blur-md px-6 py-3 text-sm font-black text-white shadow-sm border border-white/20 hover:bg-white/20 transition-all">
               <FolderPlus className="mr-2 h-4 w-4" />
               New Section
             </button>
             {!isStepCompleted ? (
               <button
                 onClick={handleCompleteKnowledgeBase}
-                className={`flex items-center rounded-2xl px-6 py-3 text-sm font-black text-white shadow-lg transition-all transform active:scale-95 ${hasBasicInfo() ? 'bg-gradient-harx hover:brightness-110 shadow-harx-500/30' : 'bg-gray-200 cursor-not-allowed shadow-none'}`}
+                className={`flex items-center rounded-2xl px-6 py-3 text-sm font-black text-white shadow-lg transition-all transform active:scale-95 ${hasBasicInfo() ? 'bg-white text-harx-600 hover:scale-105' : 'bg-white/10 text-white/50 cursor-not-allowed shadow-none border border-white/10'}`}
                 disabled={!hasBasicInfo()}
               >
                 <CheckCircle className="mr-2 h-4 w-4" />
                 Finalize Setup
               </button>
             ) : (
-              <button className="flex items-center rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-emerald-500/20 cursor-default opacity-80 italic">
+              <button className="flex items-center rounded-2xl bg-emerald-500/20 text-emerald-100 px-6 py-3 text-sm font-black border border-emerald-500/30 backdrop-blur-md shadow-lg shadow-emerald-500/20 cursor-default opacity-80 italic">
                 <CheckCircle2 className="mr-2 h-4 w-4" />
                 Validated
               </button>
@@ -308,6 +318,9 @@ const KnowledgeBase = () => {
             </button>
           </div>
         </div>
+        {/* Abstract background pattern */}
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-black/10 rounded-full blur-2xl" />
       </div>
 
       {/* Search and Filters */}
@@ -458,7 +471,6 @@ const KnowledgeBase = () => {
         </div>
       </div>
     </div>
-
   );
 };
 

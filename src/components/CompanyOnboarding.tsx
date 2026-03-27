@@ -42,7 +42,7 @@ interface BaseStep {
 }
 
 interface ComponentStep extends BaseStep {
-  component: React.ComponentType;
+  component: React.ComponentType<any>;
 }
 
 interface NonComponentStep extends BaseStep {
@@ -246,6 +246,7 @@ const CompanyOnboarding = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showTelephonySetup, setShowTelephonySetup] = useState(false);
   const [showUploadContacts, setShowUploadContacts] = useState(false);
+  const [showKnowledgeBase, setShowKnowledgeBase] = useState(false);
 
 
   // Single useEffect to handle UploadContacts state and parsed leads cleanup
@@ -918,6 +919,10 @@ const CompanyOnboarding = () => {
       if (step?.component) {
         if (stepId === 4) {
           setShowTelephonySetup(true);
+        } else if (stepId === 8) {
+          setShowKnowledgeBase(true);
+        } else if (stepId === 5) {
+          setShowUploadContacts(true);
         } else {
           setActiveStep(stepId);
         }
@@ -1340,56 +1345,39 @@ const CompanyOnboarding = () => {
 
 
 
-  // Don't skip rendering - allow component to render normally
-  // Navigation will be handled directly by the child components
-
   // Déterminer quel composant afficher
   let activeComponent = null;
-  let onBack: () => void = () => { };
-
   if (showGigDetails) {
-    activeComponent = <GigDetails />;
-    onBack = () => {
-      setShowGigDetails(false);
-    };
+    activeComponent = <GigDetails onBack={() => setShowGigDetails(false)} />;
   } else if (showTelephonySetup) {
     activeComponent = (
-      <TelephonySetup companyId={companyId} />
+      <TelephonySetup companyId={companyId} onBack={async () => {
+        setShowTelephonySetup(false);
+        await handleBackToOnboarding();
+      }} />
     );
-    onBack = async () => {
-      setShowTelephonySetup(false);
-      await handleBackToOnboarding();
-    };
+  } else if (showKnowledgeBase) {
+    activeComponent = <KnowledgeBase onBack={() => setShowKnowledgeBase(false)} />;
   } else if (showUploadContacts) {
-    activeComponent = <UploadContacts companyId={companyId} />;
-    onBack = handleBackToOnboarding;
+    activeComponent = (
+      <UploadContacts
+        companyId={companyId}
+        onBack={() => setShowUploadContacts(false)}
+        onCancelProcessing={() => setShowUploadContacts(false)}
+      />
+    );
   } else if (ActiveStepComponent) {
-    // Pass companyId as a prop to all step components
     const DynamicStepComponent = ActiveStepComponent as React.FC<any>;
-    activeComponent = <DynamicStepComponent companyId={companyId} />;
+    activeComponent = <DynamicStepComponent companyId={companyId} onBack={handleBackToOnboarding} />;
 
     if (activeStep === 12) {
-      activeComponent = <DynamicStepComponent companyId={companyId} onBackToOnboarding={handleBackToOnboarding} />;
+      activeComponent = <DynamicStepComponent companyId={companyId} onBackToOnboarding={handleBackToOnboarding} onBack={handleBackToOnboarding} />;
     }
-    onBack = handleBackToOnboarding;
   }
 
   if (activeComponent) {
     return (
       <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => {
-              onBack();
-            }}
-            className="flex items-center gap-2 transition-all duration-300 text-gray-500 hover:text-harx-600 font-bold group"
-          >
-            <div className="p-2 rounded-xl bg-gray-100 group-hover:bg-harx-50 transition-colors">
-              <ChevronRight className="h-5 w-5 rotate-180" />
-            </div>
-            <span>Back to Onboarding overview</span>
-          </button>
-        </div>
         <div className="bg-white/40 backdrop-blur-xl rounded-3xl p-1 border border-white/20 shadow-2xl">
           {activeComponent}
         </div>
