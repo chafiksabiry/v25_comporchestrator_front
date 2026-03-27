@@ -1062,7 +1062,16 @@ const KnowledgeBase: React.FC = () => {
                           </div>
                         </div>
                     </div>
-                    {renderAnalysisContent(documentAnalysis[item.id], item.id)}
+                    {documentAnalysis[item.id] ? (
+                      renderAnalysisContent(documentAnalysis[item.id], item.id)
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-12 bg-white/40 rounded-3xl border border-white shadow-inner">
+                        <Loader2 className="animate-spin text-harx-500 mb-4" size={32} />
+                        <p className="text-xs font-black text-gray-500 uppercase tracking-widest animate-pulse">
+                          Generating Strategic Insights...
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )
               ) : (
