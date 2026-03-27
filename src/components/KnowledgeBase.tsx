@@ -1143,7 +1143,7 @@ const KnowledgeBase: React.FC = () => {
                   </div>
                   <span className="text-xs font-black text-gray-900 uppercase tracking-widest pl-1 pr-2">
                     {selectedGigId === 'all' 
-                      ? 'Gig: All Intelligence' 
+                      ? 'Select a Gig' 
                       : `Gig: ${gigs.find(g => (g._id || g.id) === selectedGigId)?.title || 'Selected Gig'}`}
                   </span>
                   <ChevronRight size={16} className={`text-gray-400 mr-2 transition-transform duration-300 ${isGigDropdownOpen ? 'rotate-90' : ''}`} />
@@ -1172,7 +1172,7 @@ const KnowledgeBase: React.FC = () => {
                             <div className={`p-1.5 rounded-lg transition-colors ${selectedGigId === 'all' ? 'bg-white/20' : 'bg-harx-50 group-hover:bg-harx-100'}`}>
                               <Sparkles size={14} className={selectedGigId === 'all' ? 'text-white' : 'text-harx-500'} />
                             </div>
-                            <span>All Intelligence</span>
+                            <span>All Gigs</span>
                           </div>
                           {selectedGigId === 'all' && <CheckCircle size={14} className="text-white animate-in zoom-in" />}
                         </button>
