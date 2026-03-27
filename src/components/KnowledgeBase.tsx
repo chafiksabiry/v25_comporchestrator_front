@@ -1131,30 +1131,30 @@ const KnowledgeBase: React.FC = () => {
                       className="fixed inset-0 z-20" 
                       onClick={() => setIsGigDropdownOpen(false)} 
                     />
-                    <div className="absolute top-full left-0 mt-2 w-72 bg-white/80 backdrop-blur-xl border border-white/40 rounded-[2rem] shadow-2xl p-2 z-30 animate-in fade-in zoom-in duration-200 origin-top-left overflow-hidden">
-                      <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                    <div className="absolute top-full left-0 mt-3 w-80 bg-white/70 backdrop-blur-2xl border border-white/40 rounded-[2.5rem] shadow-[0_25px_70px_-15px_rgba(0,0,0,0.15)] p-3 z-30 animate-in fade-in slide-in-from-top-2 zoom-in duration-300 origin-top-left overflow-hidden">
+                      <div className="max-h-80 overflow-y-auto custom-scrollbar px-1">
                         <button
                           onClick={() => {
                             setSelectedGigId('all');
                             setIsGigDropdownOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between p-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all mb-1 ${
+                          className={`w-full flex items-center justify-between p-4 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.15em] transition-all mb-2 ${
                             selectedGigId === 'all' 
-                              ? 'bg-gradient-harx text-white shadow-lg' 
-                              : 'text-gray-700 hover:bg-harx-50/50'
+                              ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' 
+                              : 'text-gray-600 hover:bg-harx-50 hover:text-harx-600'
                           }`}
                         >
-                          <div className="flex items-center gap-3">
-                            <div className={`p-1.5 rounded-lg ${selectedGigId === 'all' ? 'bg-white/20' : 'bg-harx-50'}`}>
-                              <Sparkles size={14} className={selectedGigId === 'all' ? 'text-white' : 'text-harx-500'} />
+                          <div className="flex items-center gap-4">
+                            <div className={`p-2 rounded-xl transition-colors ${selectedGigId === 'all' ? 'bg-white/20' : 'bg-harx-50 group-hover:bg-harx-100'}`}>
+                              <Sparkles size={16} className={selectedGigId === 'all' ? 'text-white' : 'text-harx-500'} />
                             </div>
-                            All Intelligence
+                            <span>All Intelligence</span>
                           </div>
-                          {selectedGigId === 'all' && <CheckCircle size={14} className="text-white" />}
+                          {selectedGigId === 'all' && <CheckCircle size={16} className="text-white animate-in zoom-in" />}
                         </button>
 
-                        <div className="px-3 py-2">
-                          <div className="h-px bg-harx-100/50 w-full" />
+                        <div className="px-4 py-3">
+                          <div className="h-px bg-harx-100/30 w-full" />
                         </div>
 
                         {gigs.map(gig => {
@@ -1167,19 +1167,19 @@ const KnowledgeBase: React.FC = () => {
                                 setSelectedGigId(id);
                                 setIsGigDropdownOpen(false);
                               }}
-                              className={`w-full flex items-center justify-between p-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all mb-1 ${
+                              className={`w-full flex items-center justify-between p-4 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.15em] transition-all mb-2 group/item ${
                                 isSelected 
-                                  ? 'bg-gradient-harx text-white shadow-lg' 
-                                  : 'text-gray-700 hover:bg-harx-50/50'
+                                  ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' 
+                                  : 'text-gray-600 hover:bg-harx-50 hover:text-harx-600'
                               }`}
                             >
-                              <div className="flex items-center gap-3">
-                                <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-harx-50'}`}>
-                                  <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white ripple-ping' : 'bg-harx-500'}`} />
+                              <div className="flex items-center gap-4">
+                                <div className={`p-2 rounded-xl transition-colors ${isSelected ? 'bg-white/20' : 'bg-harx-50 group-hover/item:bg-harx-100'}`}>
+                                  <div className={`w-2 h-2 rounded-full ${isSelected ? 'bg-white ripple-ping' : 'bg-harx-500'}`} />
                                 </div>
-                                <span className="truncate max-w-[160px]">{gig.title}</span>
+                                <span className="truncate max-w-[180px]">{gig.title}</span>
                               </div>
-                              {isSelected && <CheckCircle size={14} className="text-white" />}
+                              {isSelected && <CheckCircle size={16} className="text-white animate-in zoom-in" />}
                             </button>
                           );
                         })}
