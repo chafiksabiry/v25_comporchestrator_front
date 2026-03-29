@@ -99,6 +99,7 @@ const dropdownStyles = `
 
 const KnowledgeBase: React.FC = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadGigId, setUploadGigId] = useState<string>('all');
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploadTags, setUploadTags] = useState<string>('');
   const [knowledgeItems, setKnowledgeItems] = useState<KnowledgeItem[]>([]);
@@ -414,8 +415,8 @@ const KnowledgeBase: React.FC = () => {
           formData.append('tags', uploadTags);
           formData.append('uploadedBy', 'Current User');
           formData.append('userId', userId);
-          if (selectedGigId && selectedGigId !== 'all') {
-            formData.append('gigId', selectedGigId);
+          if (uploadGigId && uploadGigId !== 'all') {
+            formData.append('gigId', uploadGigId);
           }
 
           await apiClient.post('/documents/upload', formData);
@@ -433,8 +434,8 @@ const KnowledgeBase: React.FC = () => {
           formData.append('aiInsights', '');
           formData.append('repId', 'current-user');
           formData.append('userId', userId);
-          if (selectedGigId && selectedGigId !== 'all') {
-            formData.append('gigId', selectedGigId);
+          if (uploadGigId && uploadGigId !== 'all') {
+            formData.append('gigId', uploadGigId);
           }
 
           await apiClient.post('/call-recordings/upload', formData);
@@ -450,6 +451,7 @@ const KnowledgeBase: React.FC = () => {
 
       setUploadFiles([]);
       setUploadTags('');
+      setUploadGigId('all');
       setShowUploadModal(false);
     } catch (error: any) {
       console.error('Error in handleSubmit:', error);
@@ -644,6 +646,7 @@ const KnowledgeBase: React.FC = () => {
       setShowUploadModal(false);
       setUploadFiles([]);
       setUploadTags('');
+      setUploadGigId('all');
     }
   };
 
@@ -1265,7 +1268,55 @@ const KnowledgeBase: React.FC = () => {
             <button onClick={handleUploadModalClose} className="text-gray-400 hover:text-gray-600 focus:outline-none text-2xl font-bold">×</button>
           </div>
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
-            {/* Removed Title and Brief fields per user request */}
+            {/* Gig Selection inside Modal */}
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                <Sparkles size={12} className="text-harx-500" />
+                Select Target Gig
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setUploadGigId('all')}
+                  className={`p-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all text-left flex items-center justify-between ${
+                    uploadGigId === 'all' 
+                      ? 'bg-gradient-harx text-white border-transparent shadow-lg shadow-harx-500/20' 
+                      : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-harx-200'
+                  }`}
+                >
+                  General Resource
+                  {uploadGigId === 'all' && <CheckCircle size={14} />}
+                </button>
+                {gigs.slice(0, 3).map(gig => ( // Show first 3 gigs as quick select
+                  <button
+                    key={gig._id || gig.id}
+                    type="button"
+                    onClick={() => setUploadGigId(gig._id || gig.id)}
+                    className={`p-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all text-left flex items-center justify-between truncate ${
+                      uploadGigId === (gig._id || gig.id)
+                        ? 'bg-gradient-harx text-white border-transparent shadow-lg shadow-harx-500/20' 
+                        : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-harx-200'
+                    }`}
+                  >
+                    <span className="truncate mr-2">{gig.title}</span>
+                    {uploadGigId === (gig._id || gig.id) && <CheckCircle size={14} className="flex-shrink-0" />}
+                  </button>
+                ))}
+              </div>
+              {gigs.length > 3 && (
+                <select 
+                  value={uploadGigId} 
+                  onChange={(e) => setUploadGigId(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-100 p-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-600 focus:ring-1 focus:ring-harx-500 outline-none"
+                >
+                  <option value="all">More Gigs...</option>
+                  {gigs.slice(3).map(gig => (
+                    <option key={gig._id || gig.id} value={gig._id || gig.id}>{gig.title}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+
             <div className="border-2 border-dashed border-gray-100 rounded-2xl p-6 text-center hover:border-harx-200 transition-colors cursor-pointer group relative bg-gray-50/30">
               <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleFileChange} multiple accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,audio/*,video/*" />
               <div className="flex flex-col items-center">
@@ -1417,7 +1468,10 @@ const KnowledgeBase: React.FC = () => {
             </div>
           <button
             className="w-full md:w-auto bg-gradient-harx hover:scale-105 active:scale-95 text-white px-8 py-4 rounded-xl flex items-center justify-center font-black text-xs uppercase tracking-widest shadow-xl shadow-harx-500/30 transition-all group"
-            onClick={() => setShowUploadModal(true)}
+            onClick={() => {
+              setUploadGigId(selectedGigId);
+              setShowUploadModal(true);
+            }}
           >
             <Plus size={18} className="mr-3 group-hover:rotate-90 transition-transform" />
             Integrate Resource
