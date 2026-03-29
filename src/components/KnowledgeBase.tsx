@@ -100,6 +100,7 @@ const dropdownStyles = `
 const KnowledgeBase: React.FC = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadGigId, setUploadGigId] = useState<string>('all');
+  const [isUploadGigDropdownOpen, setIsUploadGigDropdownOpen] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploadTags, setUploadTags] = useState<string>('');
   const [knowledgeItems, setKnowledgeItems] = useState<KnowledgeItem[]>([]);
@@ -871,44 +872,94 @@ const KnowledgeBase: React.FC = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div className="space-y-8">
-              <div className="group/item">
-                <h3 className="text-xs font-black text-harx-500 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-harx-500 rounded-full" />
-                  Executive Summary
-                </h3>
-                <p className="text-gray-700 leading-relaxed font-medium bg-harx-50/30 p-4 rounded-2xl border border-harx-50/50 group-hover/item:border-harx-100 transition-colors">
+          <div className="space-y-8 text-left">
+            {/* Executive Summary Section */}
+            <div className="group/item">
+              <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight flex items-center gap-2 mb-4">
+                <Sparkles size={20} className="text-harx-500" />
+                Executive Intelligence Summary
+              </h3>
+              <div className="bg-white p-6 rounded-[2rem] border border-harx-100 shadow-sm hover:shadow-md transition-all">
+                <p className="text-sm text-gray-700 leading-relaxed font-medium">
                   {displayAnalysis.summary}
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-[10px] font-black text-harx-400 uppercase tracking-widest mb-2">Domain</h3>
-                  <div className="bg-white p-3 rounded-xl border border-gray-100 font-bold text-sm text-gray-800 shadow-sm">{displayAnalysis.domain}</div>
-                </div>
-                <div>
-                  <h3 className="text-[10px] font-black text-harx-400 uppercase tracking-widest mb-2">Audience</h3>
-                  <div className="bg-white p-3 rounded-xl border border-gray-100 font-bold text-sm text-gray-800 shadow-sm">{displayAnalysis.targetAudience}</div>
-                </div>
+            </div>
+
+            {/* Document Context Overview */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-harx-50/30 p-4 rounded-2xl border border-harx-100/50">
+                <h4 className="text-[9px] font-black text-harx-400 uppercase tracking-widest mb-1">Domain</h4>
+                <p className="text-[10px] font-black text-gray-900 uppercase truncate">{displayAnalysis.domain}</p>
+              </div>
+              <div className="bg-harx-50/30 p-4 rounded-2xl border border-harx-100/50">
+                <h4 className="text-[9px] font-black text-harx-400 uppercase tracking-widest mb-1">Core Theme</h4>
+                <p className="text-[10px] font-black text-gray-900 uppercase truncate">{displayAnalysis.theme}</p>
+              </div>
+              <div className="bg-harx-50/30 p-4 rounded-2xl border border-harx-100/50">
+                <h4 className="text-[9px] font-black text-harx-400 uppercase tracking-widest mb-1">Technical Level</h4>
+                <p className="text-[10px] font-black text-gray-900 uppercase truncate">{displayAnalysis.technicalLevel}</p>
+              </div>
+              <div className="bg-harx-50/30 p-4 rounded-2xl border border-harx-100/50">
+                <h4 className="text-[9px] font-black text-harx-400 uppercase tracking-widest mb-1">Target Audience</h4>
+                <p className="text-[10px] font-black text-gray-900 uppercase truncate">{displayAnalysis.targetAudience}</p>
               </div>
             </div>
-            <div className="space-y-8">
-              <div className="group/item bg-gradient-to-br from-white to-harx-50/30 p-6 rounded-3xl border border-harx-100 shadow-inner">
-                <h3 className="text-xs font-black text-gray-900 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-harx-500 rounded-full" />
-                  Key Strategic Points
+
+            {/* Key Strategic Points Section */}
+            <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-harx-100 shadow-sm">
+              <h3 className="text-xs font-black text-gray-900 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                <div className="w-2 h-2 bg-gradient-harx rounded-full" />
+                Strategic Insights & Key Takeaways
+              </h3>
+              <div className="grid grid-cols-1 gap-4">
+                {displayAnalysis.mainPoints.map((point: string, idx: number) => (
+                  <div key={idx} className="flex items-start gap-4 p-4 bg-gray-50/50 rounded-2xl border border-gray-100/50 hover:border-harx-100 transition-colors group/point">
+                    <div className="mt-1 w-5 h-5 rounded-full bg-white border border-harx-100 flex items-center justify-center text-[10px] font-black text-harx-500 shadow-sm group-hover/point:scale-110 transition-transform">
+                      {idx + 1}
+                    </div>
+                    <span className="text-sm text-gray-700 font-medium leading-relaxed">{point}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Key Terminology Section */}
+            {displayAnalysis.keyTerms && displayAnalysis.keyTerms.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] px-2 flex items-center gap-2">
+                  <Brain size={14} className="text-harx-400" />
+                  Technical Lexicon & Key Terms
                 </h3>
-                <ul className="space-y-3">
-                  {displayAnalysis.mainPoints.map((point: string, idx: number) => (
-                    <li key={idx} className="flex items-start gap-3">
-                      <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-harx-500 flex-shrink-0" />
-                      <span className="text-sm text-gray-700 font-medium leading-relaxed">{point}</span>
-                    </li>
+                <div className="flex flex-wrap gap-2">
+                  {displayAnalysis.keyTerms.map((term: string, idx: number) => (
+                    <span key={idx} className="px-4 py-2 bg-white text-gray-700 text-[10px] font-black uppercase rounded-xl border border-gray-200 shadow-sm hover:border-harx-300 transition-colors">
+                      {term}
+                    </span>
                   ))}
-                </ul>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Recommendations Section */}
+            {displayAnalysis.recommendations && displayAnalysis.recommendations.length > 0 && (
+              <div className="space-y-4 pt-4">
+                <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
+                  <CheckCircle size={20} className="text-harx-500" />
+                  Strategic Guidance
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {displayAnalysis.recommendations.map((rec: string, idx: number) => (
+                    <div key={idx} className="bg-gradient-to-br from-harx-50 to-white p-5 rounded-2xl border border-harx-100 shadow-sm flex items-start gap-4">
+                      <div className="p-2 bg-white rounded-xl shadow-sm">
+                        <Plus size={16} className="text-harx-500" />
+                      </div>
+                      <p className="text-[11px] text-gray-700 font-bold leading-relaxed">{rec}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       );
@@ -1268,53 +1319,85 @@ const KnowledgeBase: React.FC = () => {
             <button onClick={handleUploadModalClose} className="text-gray-400 hover:text-gray-600 focus:outline-none text-2xl font-bold">×</button>
           </div>
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
-            {/* Gig Selection inside Modal */}
-            <div className="space-y-3">
+            {/* Custom Gig Dropdown inside Modal */}
+            <div className="space-y-3 relative z-[100]">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                 <Sparkles size={12} className="text-harx-500" />
                 Select Target Gig
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              
+              <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setUploadGigId('all')}
-                  className={`p-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all text-left flex items-center justify-between ${
-                    uploadGigId === 'all' 
-                      ? 'bg-gradient-harx text-white border-transparent shadow-lg shadow-harx-500/20' 
-                      : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-harx-200'
-                  }`}
+                  onClick={() => setIsUploadGigDropdownOpen(!isUploadGigDropdownOpen)}
+                  className="w-full flex items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-2xl hover:border-harx-200 transition-all group/modal-gig"
                 >
-                  General Resource
-                  {uploadGigId === 'all' && <CheckCircle size={14} />}
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white rounded-xl shadow-sm text-harx-500 group-hover/modal-gig:scale-110 transition-transform">
+                      <Sparkles size={16} />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-[9px] font-black text-harx-400 uppercase tracking-widest leading-none mb-1">Target Gig</p>
+                      <p className="text-xs font-black text-gray-900 uppercase tracking-tight">
+                        {uploadGigId === 'all' 
+                          ? 'General Resource' 
+                          : gigs.find(g => (g._id || g.id) === uploadGigId)?.title || 'Selected Gig'}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} className={`text-gray-400 transition-transform duration-300 ${isUploadGigDropdownOpen ? 'rotate-90' : ''}`} />
                 </button>
-                {gigs.slice(0, 3).map(gig => ( // Show first 3 gigs as quick select
-                  <button
-                    key={gig._id || gig.id}
-                    type="button"
-                    onClick={() => setUploadGigId(gig._id || gig.id)}
-                    className={`p-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all text-left flex items-center justify-between truncate ${
-                      uploadGigId === (gig._id || gig.id)
-                        ? 'bg-gradient-harx text-white border-transparent shadow-lg shadow-harx-500/20' 
-                        : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-harx-200'
-                    }`}
-                  >
-                    <span className="truncate mr-2">{gig.title}</span>
-                    {uploadGigId === (gig._id || gig.id) && <CheckCircle size={14} className="flex-shrink-0" />}
-                  </button>
-                ))}
+
+                {isUploadGigDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setIsUploadGigDropdownOpen(false)} />
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl border border-white/20 rounded-3xl shadow-[0_25px_70px_-15px_rgba(0,0,0,0.2)] p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="max-h-60 overflow-y-auto custom-scrollbar px-1 space-y-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUploadGigId('all');
+                            setIsUploadGigDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between p-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                            uploadGigId === 'all' 
+                              ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' 
+                              : 'text-gray-600 hover:bg-harx-50 hover:text-harx-600'
+                          }`}
+                        >
+                          <span>General Resource</span>
+                          {uploadGigId === 'all' && <CheckCircle size={14} className="text-white" />}
+                        </button>
+                        
+                        <div className="h-px bg-harx-100/30 mx-2 my-1" />
+
+                        {gigs.map(gig => {
+                          const id = gig._id || gig.id;
+                          const isSelected = uploadGigId === id;
+                          return (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() => {
+                                setUploadGigId(id);
+                                setIsUploadGigDropdownOpen(false);
+                              }}
+                              className={`w-full flex items-center justify-between p-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.05em] transition-all truncate ${
+                                isSelected 
+                                  ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20' 
+                                  : 'text-gray-600 hover:bg-harx-50 hover:text-harx-600'
+                              }`}
+                            >
+                              <span className="truncate mr-2">{gig.title}</span>
+                              {isSelected && <CheckCircle size={14} className="text-white flex-shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
-              {gigs.length > 3 && (
-                <select 
-                  value={uploadGigId} 
-                  onChange={(e) => setUploadGigId(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-100 p-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-600 focus:ring-1 focus:ring-harx-500 outline-none"
-                >
-                  <option value="all">More Gigs...</option>
-                  {gigs.slice(3).map(gig => (
-                    <option key={gig._id || gig.id} value={gig._id || gig.id}>{gig.title}</option>
-                  ))}
-                </select>
-              )}
             </div>
 
             <div className="border-2 border-dashed border-gray-100 rounded-2xl p-6 text-center hover:border-harx-200 transition-colors cursor-pointer group relative bg-gray-50/30">
