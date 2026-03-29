@@ -139,8 +139,10 @@ const KnowledgeBase: React.FC = () => {
     window.dispatchEvent(new CustomEvent('setGlobalBack', {
       detail: {
         label: 'Back to Onboarding',
-        onClick: () => {
-          window.dispatchEvent(new CustomEvent('switchTab', { detail: 'company-onboarding' }));
+        action: () => {
+          window.dispatchEvent(new CustomEvent('tabChange', {
+            detail: { tab: 'company-onboarding' }
+          }));
         }
       }
     }));
