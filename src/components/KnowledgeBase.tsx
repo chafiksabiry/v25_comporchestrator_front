@@ -29,8 +29,8 @@ interface CallSummary {
 }
 
 interface TranscriptionSegment {
-  start: number;
-  end: number;
+  start: string | number;
+  end: string | number;
   speaker: string;
   text: string;
 }
@@ -42,9 +42,24 @@ interface Transcription {
   error: string | null;
 }
 
+interface ScoringMetric {
+  score: number;
+  feedback: string;
+}
+
+interface Scoring {
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  result: {
+    [key: string]: ScoringMetric;
+  } | null;
+  lastUpdated: string;
+  error: string | null;
+}
+
 interface CallAnalysis {
   summary: CallSummary;
   transcription?: Transcription;
+  scoring?: Scoring;
 }
 
 type AnalysisResult = DocumentAnalysis | CallAnalysis;
@@ -903,10 +918,36 @@ const KnowledgeBase: React.FC = () => {
               </div>
             ))}
           </div>
+          {/* Scoring Section */}
+          {callAnalysis.scoring && callAnalysis.scoring.result && (
+            <div className="mt-8 space-y-4">
+              <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
+                <CheckCircle size={20} className="text-green-500" />
+                Performance Intelligence
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {Object.entries(callAnalysis.scoring.result).map(([key, metric]) => (
+                  <div key={key} className={`p-4 rounded-2xl border transition-all duration-300 hover:scale-[1.02] ${key === 'overall' ? 'bg-gradient-harx text-white border-transparent shadow-lg shadow-harx-500/20' : 'bg-white border-harx-100 hover:border-harx-200 shadow-sm'}`}>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className={`text-[9px] font-black uppercase tracking-[0.15em] ${key === 'overall' ? 'opacity-80' : 'text-gray-400'}`}>
+                        {key}
+                      </span>
+                      <span className={`text-xl font-black ${key === 'overall' ? 'text-white' : 'text-harx-600'}`}>
+                        {metric.score}%
+                      </span>
+                    </div>
+                    <p className={`text-[10px] font-medium leading-relaxed ${key === 'overall' ? 'text-white/90' : 'text-gray-500'}`}>
+                      {metric.feedback}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Transcription Toggle */}
           {callAnalysis.transcription && callAnalysis.transcription.segments && callAnalysis.transcription.segments.length > 0 && (
-            <div className="mt-10 pt-10 border-t border-harx-100 flex flex-col items-center">
+            <div className="mt-12 pt-10 border-t border-harx-100 flex flex-col items-center">
               <button 
                 onClick={() => setShowTranscription(prev => ({ ...prev, [documentId || '']: !prev[documentId || ''] }))}
                 className="flex items-center gap-3 px-8 py-4 bg-white text-harx-500 rounded-[2rem] border border-harx-100 shadow-sm hover:shadow-md hover:border-harx-200 transition-all group/toggle"
@@ -923,23 +964,23 @@ const KnowledgeBase: React.FC = () => {
               {/* Transcription Content */}
               {showTranscription[documentId || ''] && (
                 <div className="w-full mt-10 space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                   <div className="bg-harx-50/50 p-8 rounded-[2.5rem] border border-harx-100/50 max-h-[600px] overflow-y-auto custom-scrollbar">
-                     {callAnalysis.transcription.segments.map((segment, sIdx) => (
-                       <div key={sIdx} className="group/segment py-4 border-b border-harx-100/30 last:border-0 hover:bg-white/40 px-4 rounded-2xl transition-all">
-                         <div className="flex items-center gap-4 mb-2">
-                           <div className="px-3 py-1 bg-white text-harx-500 rounded-full text-[10px] font-black shadow-sm border border-harx-50">
-                             {segment.start}
-                           </div>
-                           {segment.speaker && (
-                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">{segment.speaker}</span>
-                           )}
-                         </div>
-                         <p className="text-gray-700 leading-relaxed font-medium">
-                           {segment.text}
-                         </p>
-                       </div>
-                     ))}
-                   </div>
+                    <div className="bg-harx-50/50 p-8 rounded-[2.5rem] border border-harx-100/50 max-h-[600px] overflow-y-auto custom-scrollbar">
+                      {callAnalysis.transcription.segments.map((segment: TranscriptionSegment, sIdx: number) => (
+                        <div key={sIdx} className="group/segment py-4 border-b border-harx-100/30 last:border-0 hover:bg-white/40 px-4 rounded-2xl transition-all">
+                          <div className="flex items-center gap-4 mb-2">
+                            <div className="px-3 py-1 bg-white text-harx-500 rounded-full text-[10px] font-black shadow-sm border border-harx-50">
+                              {segment.start}
+                            </div>
+                            {segment.speaker && (
+                              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">{segment.speaker}</span>
+                            )}
+                          </div>
+                          <p className="text-gray-700 leading-relaxed font-medium text-sm">
+                            {segment.text}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                 </div>
               )}
             </div>
