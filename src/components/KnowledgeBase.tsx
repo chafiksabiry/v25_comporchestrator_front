@@ -965,7 +965,7 @@ const KnowledgeBase: React.FC = () => {
               {showTranscription[documentId || ''] && (
                 <div className="w-full mt-10 space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
                     <div className="bg-harx-50/50 p-8 rounded-[2.5rem] border border-harx-100/50 max-h-[600px] overflow-y-auto custom-scrollbar">
-                      {callAnalysis.transcription.segments.map((segment: TranscriptionSegment, sIdx: number) => (
+                      {callAnalysis.transcription.segments.slice(0, transcriptionShowCount[documentId || ''] || TRANSCRIPTION_PAGE_SIZE).map((segment: TranscriptionSegment, sIdx: number) => (
                         <div key={sIdx} className="group/segment py-4 border-b border-harx-100/30 last:border-0 hover:bg-white/40 px-4 rounded-2xl transition-all">
                           <div className="flex items-center gap-4 mb-2">
                             <div className="px-3 py-1 bg-white text-harx-500 rounded-full text-[10px] font-black shadow-sm border border-harx-50">
@@ -980,6 +980,32 @@ const KnowledgeBase: React.FC = () => {
                           </p>
                         </div>
                       ))}
+                    </div>
+
+                    <div className="flex justify-center gap-4 mt-6">
+                      {(transcriptionShowCount[documentId || ''] || TRANSCRIPTION_PAGE_SIZE) < callAnalysis.transcription.segments.length && (
+                        <button
+                          onClick={() => setTranscriptionShowCount(prev => ({ 
+                            ...prev, 
+                            [documentId || '']: (prev[documentId || ''] || TRANSCRIPTION_PAGE_SIZE) + TRANSCRIPTION_PAGE_SIZE 
+                          }))}
+                          className="px-6 py-2 bg-white text-harx-500 rounded-full border border-harx-100 text-[10px] font-black uppercase tracking-widest hover:bg-harx-50 transition-all shadow-sm group/more px-8"
+                        >
+                          Load More Insights
+                        </button>
+                      )}
+                      
+                      {(transcriptionShowCount[documentId || ''] || TRANSCRIPTION_PAGE_SIZE) > TRANSCRIPTION_PAGE_SIZE && (
+                        <button
+                          onClick={() => setTranscriptionShowCount(prev => ({ 
+                            ...prev, 
+                            [documentId || '']: TRANSCRIPTION_PAGE_SIZE 
+                          }))}
+                          className="px-6 py-2 bg-white text-gray-400 rounded-full border border-gray-100 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all shadow-sm"
+                        >
+                          Show Less
+                        </button>
+                      )}
                     </div>
                 </div>
               )}
