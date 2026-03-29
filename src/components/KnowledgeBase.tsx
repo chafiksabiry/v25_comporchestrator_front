@@ -804,7 +804,14 @@ const KnowledgeBase: React.FC = () => {
     // Filter out videos from documentItems if they are already in videoItems
     const filteredDocumentItems = documentItems.filter(item => !item.fileType || !item.fileType.startsWith('video/'));
 
-    return [...filteredDocumentItems, ...callItems, ...videoItems].sort((a, b) =>
+    const allItems = [...filteredDocumentItems, ...callItems, ...videoItems];
+    
+    // Filter by selected Gig if not 'all'
+    const filteredByGig = selectedGigId === 'all' 
+      ? allItems 
+      : allItems.filter(item => item.gigId === selectedGigId);
+
+    return filteredByGig.sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime()
     );
   };
