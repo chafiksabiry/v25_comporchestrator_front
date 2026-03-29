@@ -910,7 +910,7 @@ const KnowledgeBase: React.FC = () => {
             <Sparkles size={20} className="text-harx-500" />
             Executive Call Summary
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-4">
             {callAnalysis.summary.keyIdeas.map((idea, idx) => (
               <div key={idx} className="bg-white p-5 rounded-2xl border border-harx-100 shadow-sm hover:shadow-md transition-all">
                 <h4 className="font-bold text-harx-600 mb-2 truncate">{idea.title}</h4>
@@ -925,7 +925,7 @@ const KnowledgeBase: React.FC = () => {
                 <CheckCircle size={20} className="text-green-500" />
                 Performance Intelligence
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 {Object.entries(callAnalysis.scoring.result).map(([key, metric]) => (
                   <div key={key} className={`p-4 rounded-2xl border transition-all duration-300 hover:scale-[1.02] ${key === 'overall' ? 'bg-gradient-harx text-white border-transparent shadow-lg shadow-harx-500/20' : 'bg-white border-harx-100 hover:border-harx-200 shadow-sm'}`}>
                     <div className="flex justify-between items-start mb-2">
