@@ -1294,10 +1294,29 @@ const KnowledgeBase: React.FC = () => {
                     </div>
                     {analyzingDocument === item.id ? (
                       <div className="text-center py-16"><Loader2 className="animate-spin text-harx-500 mx-auto" size={48} /><p className="mt-4 font-black text-gray-900 uppercase tracking-widest">Processing Intelligence...</p></div>
-                    ) : documentAnalysis[item.id] ? (
-                      renderAnalysisContent(documentAnalysis[item.id], item.id)
                     ) : (
-                      <div className="text-center py-16"><button onClick={() => analyzeDocument(item.id)} className="px-8 py-4 bg-gradient-harx text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl">Analyze Now</button></div>
+                      <>
+                        {item.type === 'video' && (
+                          <div className="mb-10 group/video relative rounded-[2rem] overflow-hidden border border-white/50 shadow-2xl bg-black/5 aspect-video">
+                            <video 
+                              src={item.fileUrl} 
+                              controls 
+                              className="w-full h-full object-contain"
+                            />
+                            <div className="absolute top-4 left-4 pointer-events-none transition-opacity duration-300">
+                               <div className="bg-harx-500/90 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-2 border border-white/20 shadow-lg">
+                                 <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                                 <span className="text-[10px] font-black text-white uppercase tracking-widest">Raw Video Intelligence</span>
+                               </div>
+                            </div>
+                          </div>
+                        )}
+                        {documentAnalysis[item.id] ? (
+                          renderAnalysisContent(documentAnalysis[item.id], item.id)
+                        ) : (
+                          <div className="text-center py-16"><button onClick={() => analyzeDocument(item.id)} className="px-8 py-4 bg-gradient-harx text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl">Analyze Now</button></div>
+                        )}
+                      </>
                     )}
                   </div>
                 )
