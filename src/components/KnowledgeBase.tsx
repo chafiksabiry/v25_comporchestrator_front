@@ -956,7 +956,7 @@ const KnowledgeBase: React.FC = () => {
                   {showTranscription[documentId || ''] ? <X size={18} /> : <FileText size={18} />}
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-widest">
-                  {showTranscription[documentId || ''] ? 'Hide Intelligence Log' : 'View Full Transcription'}
+                  {showTranscription[documentId || ''] ? 'Hide Full Transcription' : 'View Full Transcription'}
                 </span>
                 <ChevronRight size={18} className={`transition-transform duration-300 ${showTranscription[documentId || ''] ? 'rotate-90' : 'group-hover/toggle:translate-x-1'}`}  />
               </button>
