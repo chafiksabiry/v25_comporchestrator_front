@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   Phone,
@@ -247,8 +247,8 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
   /* New state for Twilio SIDs */
   const [twilioRegulatorySids, setTwilioRegulatorySids] = useState<{ bundleSid?: string; addressSid?: string }>({
-    addressSid: 'AD65247a1256f8912e8a7b49e860f02a0d', // Provided by user
-    bundleSid: 'BU083636020c1069ece776ca7d93c17ba5'  // Provided by user for FR national
+    addressSid: 'ADfa022505e9b0433a23c8b4f6e56cf15a', // From Screenshot
+    bundleSid: 'BUF007aeefc1a71ad9ac096a4d205563b0'  // From Screenshot for FR
   });
 
   const checkGigPhoneNumber = async (zoneOverride?: string) => {
@@ -904,8 +904,8 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
         // 2. Create Bundle
         const bundle = await phoneNumberService.createTwilioBundle({
-          friendlyName: `Bundle for ${destinationZone}`,
-          email: 'admin@example.com', // Should be dynamic
+          friendlyName: `France: Local - Business`,
+          email: 'chafik.sabiry@aiagentsco.tech',
           regulationSid: regulationSid,
           isoCountry: destinationZone
         });
@@ -1303,7 +1303,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                                 : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20 active:scale-95'
                             }`}
                           >
-                            Deploy Node
+                            Purchase
                           </button>
                         </div>
                       );
