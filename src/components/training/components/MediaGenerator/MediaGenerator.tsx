@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Video, Volume2, Image, BarChart3, Zap, Play, Pause, Download, Settings, Wand2, Sparkles, Eye, CreditCard as Edit3 } from 'lucide-react';
+import { Video, Volume2, BarChart3, Edit3, Settings, Sparkles, Wand2, Eye, Download } from 'lucide-react';
+import { AIService } from '../../infrastructure/services/AIService';
 
 interface MediaGeneratorProps {
   content: string;
@@ -14,29 +15,38 @@ export default function MediaGenerator({ content, onGenerate }: MediaGeneratorPr
 
   const mediaTypes = [
     {
-      id: 'video',
-      title: 'AI Video Generation',
-      icon: Video,
-      description: 'Convert text to engaging animated videos with AI narration',
-      features: ['Animated scenes', 'AI voice-over', 'Custom branding', 'Multiple styles'],
+      id: 'podcast',
+      title: 'AI Podcast (Vertex AI)',
+      icon: Volume2,
+      description: 'Générez un podcast professionnel de haute qualité à partir de vos ressources.',
+      features: ['Voix Journey Premium', 'Dialogue dynamique', 'Format de 2-3 minutes', 'Son haute fidélité'],
       settings: {
-        style: ['animated', 'whiteboard', 'corporate', 'creative'],
-        voice: ['professional-male', 'professional-female', 'casual-male', 'casual-female'],
-        duration: ['short', 'medium', 'long'],
-        quality: ['720p', '1080p', '4K']
+        voice: ['Journey-F', 'Journey-M', 'Studio-A', 'Studio-B'],
+        language: ['Français', 'Anglais'],
+        style: ['Informatif', 'Dynamique', 'Sérieux']
       }
     },
     {
-      id: 'audio',
-      title: 'AI Audio Narration',
-      icon: Volume2,
-      description: 'Generate professional voice-overs and audio content',
-      features: ['Natural voices', 'Multiple languages', 'Emotion control', 'Background music'],
+      id: 'veo',
+      title: 'Veo Video Generation',
+      icon: Video,
+      description: 'Créez des vidéos cinématiques haute fidélité avec le nouveau modèle Veo de Google.',
+      features: ['Qualité 4K', 'Storytelling IA', 'Cinématique', 'Mouvement fluide'],
       settings: {
-        voice: ['professional', 'conversational', 'energetic', 'calm'],
-        speed: ['slow', 'normal', 'fast'],
-        language: ['english', 'spanish', 'french', 'german'],
-        music: ['none', 'corporate', 'upbeat', 'ambient']
+        style: ['Cinematic', 'Realistic', '3D Animation', 'Documentary'],
+        aspectRatio: ['16:9', '9:16', '1:1'],
+        duration: ['10s', '30s', '60s']
+      }
+    },
+    {
+      id: 'video',
+      title: 'AI Video Script',
+      icon: Edit3,
+      description: 'Generate structured video scripts and storyboards from your training content',
+      features: ['Scene-by-scene script', 'Narration text', 'Visual descriptions', 'On-screen text'],
+      settings: {
+        style: ['animated', 'whiteboard', 'corporate', 'creative'],
+        duration: ['short', 'medium', 'long']
       }
     },
     {
@@ -48,21 +58,7 @@ export default function MediaGenerator({ content, onGenerate }: MediaGeneratorPr
       settings: {
         style: ['modern', 'corporate', 'creative', 'minimal'],
         layout: ['vertical', 'horizontal', 'grid', 'timeline'],
-        colors: ['blue', 'green', 'purple', 'orange'],
         format: ['png', 'svg', 'pdf', 'jpg']
-      }
-    },
-    {
-      id: 'interactive',
-      title: 'Interactive Elements',
-      icon: Zap,
-      description: 'Build engaging interactive content and simulations',
-      features: ['Drag & drop', 'Scenarios', 'Quizzes', 'Simulations'],
-      settings: {
-        type: ['quiz', 'scenario', 'simulation', 'drag-drop'],
-        difficulty: ['easy', 'medium', 'hard'],
-        feedback: ['immediate', 'delayed', 'summary'],
-        scoring: ['points', 'percentage', 'pass-fail']
       }
     }
   ];
@@ -71,44 +67,49 @@ export default function MediaGenerator({ content, onGenerate }: MediaGeneratorPr
     setIsGenerating(true);
     setActiveGenerator(mediaType);
 
-    // Simulate AI generation process
-    await new Promise(resolve => setTimeout(resolve, 5190));
+    try {
+      let result = null;
+      const title = "Training Media - " + (content.substring(0, 30) || "Resourse");
 
-    const mockGeneratedContent = {
-      video: {
-        url: 'https://example.com/generated-video.mp4',
-        thumbnail: 'https://example.com/thumbnail.jpg',
-        duration: 180,
-        scenes: ['Introduction', 'Main Content', 'Summary'],
-        quality: '1080p'
-      },
-      audio: {
-        url: 'https://example.com/generated-audio.mp3',
-        duration: 120,
-        voice: 'professional-female',
-        transcript: content.substring(0, 200) + '...'
-      },
-      infographic: {
-        url: 'https://example.com/infographic.png',
-        style: 'modern',
-        elements: ['Title', 'Key Points', 'Statistics', 'Call to Action'],
-        dimensions: '1920x1080'
-      },
-      interactive: {
-        type: 'quiz',
-        questions: 5,
-        difficulty: 'medium',
-        estimatedTime: '10 minutes'
+      if (mediaType === 'podcast') {
+        const audioUrl = await AIService.generatePodcast(title, content);
+        result = {
+          audioUrl,
+          title,
+          type: 'podcast',
+          duration: 180,
+          status: 'ready'
+        };
+      } else if (mediaType === 'veo') {
+        const videoUrl = await AIService.generateVeoVideo(title, content);
+        result = {
+          videoUrl,
+          title,
+          type: 'veo',
+          quality: '4K',
+          status: 'ready'
+        };
+      } else {
+        // Fallback for other types (simulated)
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        result = {
+          url: 'https://example.com/mock-result',
+          status: 'ready'
+        };
       }
-    };
 
-    setGeneratedMedia(prev => ({
-      ...prev,
-      [mediaType]: mockGeneratedContent[mediaType as keyof typeof mockGeneratedContent]
-    }));
+      setGeneratedMedia(prev => ({
+        ...prev,
+        [mediaType]: result
+      }));
 
-    setIsGenerating(false);
-    onGenerate(mediaType, generationSettings[mediaType] || {});
+      onGenerate(mediaType, { ...generationSettings[mediaType], result });
+    } catch (error) {
+      console.error('❌ Generation failed:', error);
+      // Handle error in UI if needed
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const renderMediaTypeCard = (mediaType: any) => {
@@ -120,12 +121,12 @@ export default function MediaGenerator({ content, onGenerate }: MediaGeneratorPr
       <div key={mediaType.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-sm transition-shadow">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <Icon className="h-6 w-6 text-blue-500" />
+            <Icon className="h-6 w-6 text-pink-500" />
             <h3 className="text-lg font-semibold text-gray-900">{mediaType.title}</h3>
           </div>
           {hasGenerated && (
             <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-              Generated
+              Prêt
             </span>
           )}
         </div>
@@ -133,10 +134,10 @@ export default function MediaGenerator({ content, onGenerate }: MediaGeneratorPr
         <p className="text-gray-600 mb-4">{mediaType.description}</p>
 
         <div className="mb-4">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Features:</h4>
+          <h4 className="text-sm font-medium text-gray-900 mb-2">Caractéristiques:</h4>
           <div className="flex flex-wrap gap-2">
             {mediaType.features.map((feature: string, index: number) => (
-              <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+              <span key={index} className="px-2 py-1 bg-red-50 text-red-600 border border-red-100 text-xs rounded transition-all hover:bg-red-100">
                 {feature}
               </span>
             ))}
