@@ -188,19 +188,23 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
   ];
 
   // Logic for multi-number support
-  const selectedGig = gigs.find(g => g._id === selectedGigId);
+  const selectedGig = Array.isArray(gigs) ? gigs.find(g => g._id === selectedGigId) : null;
   const teamSize = selectedGig ? parseInt(selectedGig.team?.size?.toString() || '1') : 1;
-  const purchasedNumbersCount = phoneNumbers.length;
+  const purchasedNumbersCount = Array.isArray(phoneNumbers) ? phoneNumbers.length : 0;
   const isQuotaReached = purchasedNumbersCount >= teamSize;
   
   // Helper to convert country names to flag emojis
   const getFlagEmoji = (countryName: string) => {
     if (!countryName) return '';
-    const codePoints = countryName
-      .toUpperCase()
-      .split('')
-      .map(char => 127397 + char.charCodeAt(0));
-    return String.fromCodePoint(...codePoints);
+    try {
+      const codePoints = countryName
+        .toUpperCase()
+        .split('')
+        .map(char => 127397 + char.charCodeAt(0));
+      return String.fromCodePoint(...codePoints);
+    } catch (e) {
+      return '';
+    }
   };
 
   useEffect(() => {
@@ -224,9 +228,9 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
   // Mettre à jour la destination zone quand un gig est sélectionné
   useEffect(() => {
-    if (selectedGigId && gigs.length > 0) {
+    if (selectedGigId && Array.isArray(gigs) && gigs.length > 0) {
       const selectedGig = gigs.find((gig: Gig) => gig._id === selectedGigId);
-      if (selectedGig && selectedGig.destination_zone && selectedGig.destination_zone.cca2) {
+      if (selectedGig?.destination_zone?.cca2) {
         console.log('🌍 Setting destination zone from selected gig:', selectedGig.destination_zone.cca2);
         setDestinationZone(selectedGig.destination_zone.cca2);
       }
