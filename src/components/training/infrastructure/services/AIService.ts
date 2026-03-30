@@ -383,5 +383,37 @@ export class AIService {
 
     return await response.blob();
   }
+
+  /**
+   * Génère un podcast audio de haute qualité avec Vertex AI
+   */
+  static async generatePodcast(title: string, content: string): Promise<string> {
+    try {
+      const response = await ApiClient.post('/api/ai/generate-podcast', { title, content });
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Podcast generation failed');
+      }
+      return response.data.audioUrl;
+    } catch (error: any) {
+      console.error('❌ Error in generatePodcast:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Génère une vidéo cinématique avec Google Veo
+   */
+  static async generateVeoVideo(title: string, content: string): Promise<string> {
+    try {
+      const response = await ApiClient.post('/api/ai/generate-veo-video', { title, content });
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Veo video generation failed');
+      }
+      return response.data.videoUrl;
+    } catch (error: any) {
+      console.error('❌ Error in generateVeoVideo:', error);
+      throw error;
+    }
+  }
 }
 
