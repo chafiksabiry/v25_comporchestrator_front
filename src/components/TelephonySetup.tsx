@@ -254,7 +254,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
   /* New state for Twilio SIDs */
   const [twilioRegulatorySids, setTwilioRegulatorySids] = useState<{ bundleSid?: string; addressSid?: string }>({
     addressSid: 'ADfa022505e9b0433a23c8b4f6e56cf15a', // From Screenshot
-    bundleSid: 'BUF007aeefc1a71ad9ac096a4d205563b0'  // From Screenshot for FR
+    bundleSid: 'BUf007aeefc1a71ad9ac096a4d205563b0'  // From Screenshot for FR
   });
 
   const checkGigPhoneNumber = async (zoneOverride?: string) => {
