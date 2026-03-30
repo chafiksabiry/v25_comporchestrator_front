@@ -1507,13 +1507,13 @@ export default function CurriculumDesigner({ uploads, methodology, onComplete, o
 
               <div className="bg-white rounded-lg p-6 border border-green-200">
                 <h4 className="font-semibold text-gray-900 mb-4">Exemples de Questions :</h4>
-                {finalExam.questions.slice(0, 3).map((q: any, idx: number) => (
+                {(finalExam.questions || []).slice(0, 3).map((q: any, idx: number) => (
                   <div key={idx} className="mb-4 pb-4 border-b border-gray-200 last:border-0">
                     <p className="font-medium text-gray-900 mb-2">
                       <span className="text-green-600 font-bold">Q{idx + 1}.</span> {q.text}
                     </p>
                     <div className="text-sm text-gray-600 space-y-1">
-                      {q.options.map((opt: string, i: number) => (
+                      {(q.options || []).map((opt: string, i: number) => (
                         <div key={i} className={i === q.correctAnswer ? 'text-green-700 font-medium' : ''}>
                           {String.fromCharCode(65 + i)}. {opt} {i === q.correctAnswer && '✓'}
                         </div>
