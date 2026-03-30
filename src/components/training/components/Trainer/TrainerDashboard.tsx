@@ -14,6 +14,7 @@ interface TrainerDashboardProps {
 
 export default function TrainerDashboard({ dashboard: propDashboard, onTraineeSelect, companyId, gigId }: TrainerDashboardProps) {
   const [selectedTab, setSelectedTab] = useState('overview');
+  const [selectedGigFilter, setSelectedGigFilter] = useState('all');
   const [dashboard, setDashboard] = useState<TrainerDashboardType | null>(null);
   const [journeys, setJourneys] = useState<any[]>([]);
   const [gigMap, setGigMap] = useState<Map<string, string>>(new Map()); // Map gigId -> gigTitle
@@ -200,6 +201,10 @@ export default function TrainerDashboard({ dashboard: propDashboard, onTraineeSe
       </div>
     );
   }
+
+  const filteredJourneys = selectedGigFilter === 'all' 
+    ? journeys 
+    : journeys.filter(j => j.gigId === selectedGigFilter || String(j.gigId) === String(selectedGigFilter));
 
   return (
     <div className="space-y-6">
@@ -400,21 +405,33 @@ export default function TrainerDashboard({ dashboard: propDashboard, onTraineeSe
 
           {selectedTab === 'journeys' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <h3 className="text-lg font-semibold text-gray-900">Training Journeys</h3>
-                <span className="text-sm text-gray-600">
-                  {journeys.length} {journeys.length === 1 ? 'journey' : 'journeys'} found
-                  {gigId && ` for this gig`}
-                </span>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <select 
+                    value={selectedGigFilter}
+                    onChange={(e) => setSelectedGigFilter(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                  >
+                    <option value="all">All Gigs</option>
+                    {Array.from(gigMap.entries()).map(([id, title]) => (
+                      <option key={id} value={id}>{title}</option>
+                    ))}
+                  </select>
+                  <span className="text-sm text-gray-600 whitespace-nowrap">
+                    {filteredJourneys.length} {filteredJourneys.length === 1 ? 'journey' : 'journeys'}
+                    {gigId && ` for this gig`}
+                  </span>
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {journeys.length === 0 ? (
+                {filteredJourneys.length === 0 ? (
                   <div className="col-span-full text-center py-8 text-gray-500">
                     No training journeys found
-                    {gigId ? ' for this gig' : ' for this company'}
+                    {gigId ? ' for this gig' : ' for this filter'}
                   </div>
                 ) : (
-                  journeys.map((journey: any) => (
+                  filteredJourneys.map((journey: any) => (
                     <div
                       key={journey.id || journey._id}
                       className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
