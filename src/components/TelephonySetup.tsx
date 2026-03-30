@@ -195,6 +195,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
   
   // Helper to convert country names to flag emojis
   const getFlagEmoji = (countryName: string) => {
+    if (!countryName) return '';
     const codePoints = countryName
       .toUpperCase()
       .split('')
@@ -1093,7 +1094,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                         <span className="text-[16px] font-black text-gray-900 leading-none tracking-tight">{selectedGig.title}</span>
                         <span className="text-gray-300 font-light">|</span>
                         <span className="text-[12px] font-black text-blue-600 uppercase tracking-[0.15em] leading-none">
-                          {selectedGig.destination_zone.name.common}
+                          {selectedGig.destination_zone?.name?.common || 'Global Zone'}
                         </span>
                       </div>
                     ) : <span className="text-[15px] text-gray-400 font-black uppercase tracking-widest">Select Intelligence Profile</span>;
@@ -1131,12 +1132,12 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
                         </span>
                         <div className="flex items-center space-x-2 mt-1.5">
                           <span className="text-[11px] font-black text-blue-500 uppercase tracking-[0.2em] bg-blue-50 px-2 py-0.5 rounded">
-                            {g.destination_zone.name.common}
+                            {g.destination_zone?.name?.common || 'Unknown Region'}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center space-x-5">
-                        {getFlagEmoji(g.destination_zone.name.common) && (
+                        {g.destination_zone?.name?.common && getFlagEmoji(g.destination_zone.name.common) && (
                           <span className="text-2xl drop-shadow-sm transition-all group-hover:scale-125 duration-500">
                             {getFlagEmoji(g.destination_zone.name.common)}
                           </span>
