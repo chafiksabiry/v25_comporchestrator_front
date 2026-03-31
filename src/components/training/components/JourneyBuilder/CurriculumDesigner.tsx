@@ -9,11 +9,12 @@ import PowerPointViewer from '../Export/PowerPointViewer';
 interface CurriculumDesignerProps {
   uploads: ContentUpload[];
   methodology?: TrainingMethodology;
+  selectedFormat?: 'presentation' | 'video';
   onComplete: (modules: TrainingModule[]) => void;
   onBack: () => void;
 }
 
-export default function CurriculumDesigner({ uploads, methodology, onComplete, onBack }: CurriculumDesignerProps) {
+export default function CurriculumDesigner({ uploads, methodology, selectedFormat = 'presentation', onComplete, onBack }: CurriculumDesignerProps) {
   const [modules, setModules] = React.useState<TrainingModule[]>([]);
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [editingModuleId, setEditingModuleId] = React.useState<string | null>(null);
