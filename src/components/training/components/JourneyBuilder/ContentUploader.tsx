@@ -17,7 +17,6 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
 
   const [urlInput, setUrlInput] = useState('');
 
-  const isProcessingItem = (id: string) => currentProcessing === id;
 
   // Scroll to top when component mounts
   useEffect(() => {

@@ -357,7 +357,76 @@ export class AIService {
       examData.questions = normalizedQuestions;
     }
 
-    return examData;
+  }
+
+  /**
+   * Génère un module de formation complet basé sur la base de connaissances (Gig) en utilisant la méthodologie 360°
+   */
+  static async generateGigTrainingModule(
+    knowledgeBaseContent: string,
+    format: 'presentation' | 'video' = 'presentation'
+  ): Promise<any> {
+    const prompt = `You are an AI instructional designer integrated into an LMS platform.
+
+Your task is to generate a complete training module.
+
+Context:
+- The training must be based ONLY on the provided knowledge base documents (Gig knowledge base).
+- You must follow the 360° learning methodology (analysis, design, development, implementation, evaluation).
+- The user can choose the output format: Presentation or Video. (Selected Format: ${format})
+
+Knowledge Base Content:
+${knowledgeBaseContent.substring(0, 15000)}
+
+Instructions:
+1. Analyze the provided documents: Extract key concepts, processes, and important insights. Identify learning objectives.
+2. Structure the training using the 360° methodology:
+   - Introduction (context + objectives)
+   - Core content (well-structured modules/sections)
+   - Practical examples or use cases
+   - Summary
+   - Evaluation (quiz or questions)
+3. Generate output based on user choice:
+   IF format = "presentation":
+   - Create a slide-by-slide structure
+   - Each slide must include: Title, Bullet points (clear and concise), Optional speaker notes
+   IF format = "video":
+   - Generate a detailed video script (10 minutes)
+   - Include: Narration text, Scene descriptions, Timing suggestions, Visual recommendations
+4. Ensure:
+   - Clear pedagogy (simple explanations)
+   - Logical flow
+   - Professional tone
+   - No hallucination: ONLY use knowledge base content
+   - Adapt the difficulty level to beginner/intermediate learners
+5. Output format must be structured JSON EXACTLY as below, do not add markdown backticks:
+
+{
+  "title": "",
+  "objectives": [],
+  "format": "${format}",
+  "content": [],
+  "evaluation": []
+}`;
+
+    try {
+      // Use the generic chat endpoint to process this prompt
+      const response = await ApiClient.post('/api/ai/chat', { 
+        message: prompt, 
+        context: 'Gig Knowledge Base Training Module Generation' 
+      });
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Gig training module generation failed');
+      }
+
+      // Try parsing the response directly, removing markdown if generated
+      const jsonText = response.data.response.replace(/```json|```/gi, '').trim();
+      return JSON.parse(jsonText);
+    } catch (error: any) {
+      console.error('Failed to generate Gig Training Module:', error);
+      throw new Error(error.message || 'Error generating module from knowledge base');
+    }
   }
 
   /**
