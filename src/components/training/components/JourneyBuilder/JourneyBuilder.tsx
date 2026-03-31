@@ -26,7 +26,6 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
   const [showLaunchApproval, setShowLaunchApproval] = useState(false);
   const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
   const [isRestoringDraft, setIsRestoringDraft] = useState(false);
-  const [selectedFormat, setSelectedFormat] = useState<'presentation' | 'video'>('presentation');
 
   // Restaurer le brouillon au chargement
   useEffect(() => {
@@ -148,9 +147,8 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
     });
   };
 
-  const handleUploadComplete = async (newUploads: ContentUpload[], format: 'presentation' | 'video' = 'presentation') => {
+  const handleUploadComplete = async (newUploads: ContentUpload[]) => {
     setUploads(newUploads);
-    setSelectedFormat(format);
     setCurrentStep(2); // Go directly to Curriculum Design
 
     // Sauvegarder immédiatement après l'upload
@@ -225,8 +223,8 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
         return (
           <CurriculumDesigner
             uploads={uploads}
-            methodology={methodology}
-            selectedFormat={selectedFormat}
+            methodology={methodology || undefined}
+            gigId={selectedGigId}
             onComplete={handleCurriculumComplete}
             onBack={() => setCurrentStep(1)}
           />

@@ -9,12 +9,12 @@ import PowerPointViewer from '../Export/PowerPointViewer';
 interface CurriculumDesignerProps {
   uploads: ContentUpload[];
   methodology?: TrainingMethodology;
-  selectedFormat?: 'presentation' | 'video';
+  gigId?: string | null;
   onComplete: (modules: TrainingModule[]) => void;
   onBack: () => void;
 }
 
-export default function CurriculumDesigner({ uploads, methodology, selectedFormat = 'presentation', onComplete, onBack }: CurriculumDesignerProps) {
+export default function CurriculumDesigner({ uploads, methodology, gigId, onComplete, onBack }: CurriculumDesignerProps) {
   const [modules, setModules] = React.useState<TrainingModule[]>([]);
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [editingModuleId, setEditingModuleId] = React.useState<string | null>(null);
@@ -89,10 +89,10 @@ export default function CurriculumDesigner({ uploads, methodology, selectedForma
 
         setEnhancementProgress({ 'generating': 30 } as any);
 
-        // ✅ APPEL API RÉEL pour générer le curriculum avec l'analyse combinée
+        // ✅ APPEL API RÉEL pour générer le curriculum avec l'analyse combinée et le contexte de Gig
         let curriculum;
         try {
-          curriculum = await AIService.generateCurriculum(combinedAnalysis, industry);
+          curriculum = await AIService.generateCurriculum(combinedAnalysis, industry, gigId || undefined);
         } catch (apiError) {
           console.warn('⚠️ API generateCurriculum failed, using fallback modules:', apiError);
           // Créer des modules fallback basés sur les uploads

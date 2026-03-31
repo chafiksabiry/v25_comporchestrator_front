@@ -244,11 +244,13 @@ export class AIService {
    */
   static async generateCurriculum(
     analysis: DocumentAnalysis,
-    industry: string = 'General'
+    industry: string = 'General',
+    gig?: string
   ): Promise<Curriculum> {
     const response = await ApiClient.post('/api/ai/generate-curriculum', {
       analysis,
-      industry
+      industry,
+      gig
     });
 
     // Check if response indicates failure

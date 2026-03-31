@@ -5,15 +5,12 @@ import { AIService } from '../../infrastructure/services/AIService';
 import { cloudinaryService } from '../../lib/cloudinaryService';
 
 interface ContentUploaderProps {
-  onComplete: (uploads: ContentUpload[], format: 'presentation' | 'video') => void;
+  onComplete: (uploads: ContentUpload[]) => void;
   onBack: () => void;
 }
 
 export default function ContentUploader({ onComplete, onBack }: ContentUploaderProps) {
   const [uploads, setUploads] = useState<ContentUpload[]>([]);
-  const [selectedFormat, setSelectedFormat] = useState<'presentation' | 'video'>('presentation');
-  const [generatedModule, setGeneratedModule] = useState<any>(null);
-  const [isGeneratingModule, setIsGeneratingModule] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentProcessing, setCurrentProcessing] = useState<string | null>(null);
@@ -264,35 +261,6 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
   const canProceed = uploads.length > 0 && uploads.every(u => u.status === 'analyzed');
   const totalAnalyzed = uploads.filter(u => u.status === 'analyzed').length;
 
-  const handleGeneratePreview = async () => {
-    setIsGeneratingModule(true);
-    setGeneratedModule(null);
-    try {
-      const combinedContext = uploads.map(u => {
-        let text = `Filename: ${u.name}\n`;
-        if (u.aiAnalysis) {
-          text += `Key Topics: ${u.aiAnalysis.keyTopics?.join(', ')}\n`;
-          text += `Learning Objectives: ${u.aiAnalysis.learningObjectives?.join(', ')}\n`;
-          if (u.aiAnalysis.suggestedModules) {
-            text += `Suggested Modules: ${u.aiAnalysis.suggestedModules.join(', ')}\n`;
-          }
-        }
-        return text;
-      }).join('\n\n');
-
-      const result = await AIService.generateGigTrainingModule(
-        combinedContext || 'Basic induction and presentation to the company standards.', 
-        selectedFormat
-      );
-      setGeneratedModule(result);
-    } catch (error: any) {
-      console.error('Error generating module preview:', error);
-      alert('Fail to generate preview: ' + (error.message || 'Unknown error'));
-    } finally {
-      setIsGeneratingModule(false);
-    }
-  };
-
   return (
     <div className="min-h-full bg-gradient-to-br from-blue-50 to-indigo-50">
       <div className="container mx-auto px-4 py-8">
@@ -527,169 +495,69 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
             </div>
           )}
 
-          {/* AI Enhancement Format Selection */}
+          {/* AI Enhancement Preview */}
           {totalAnalyzed > 0 && (
             <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 p-6 mb-6">
               <div className="text-center">
                 <Zap className="h-10 w-10 text-purple-500 mx-auto mb-3" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-1.5">Choose Your Training Format!</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-1.5">Ready for AI Enhancement!</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  Select how you want the AI to structure your generated training module based on exactly these documents.
+                  Your content has been analyzed. Next, we'll transform it into engaging multimedia training materials.
                 </p>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
-                  <button
-                    onClick={() => setSelectedFormat('presentation')}
-                    className={`text-center p-6 rounded-xl border-2 transition-all duration-300 ${
-                      selectedFormat === 'presentation' 
-                      ? 'border-purple-500 bg-purple-100 shadow-md transform scale-105' 
-                      : 'border-transparent bg-white shadow-sm hover:border-purple-300'
-                    }`}
-                  >
-                    <BarChart3 className={`h-10 w-10 mx-auto mb-3 ${selectedFormat === 'presentation' ? 'text-purple-600' : 'text-purple-400'}`} />
-                    <div className="font-bold text-gray-900 text-lg">Presentation</div>
-                    <div className="text-sm text-gray-600 mt-1">Slide-by-slide structure with bullet points and speaker notes</div>
-                  </button>
-                  
-                  <button
-                    onClick={() => setSelectedFormat('video')}
-                    className={`text-center p-6 rounded-xl border-2 transition-all duration-300 ${
-                      selectedFormat === 'video' 
-                      ? 'border-red-500 bg-red-100 shadow-md transform scale-105' 
-                      : 'border-transparent bg-white shadow-sm hover:border-red-300'
-                    }`}
-                  >
-                    <Video className={`h-10 w-10 mx-auto mb-3 ${selectedFormat === 'video' ? 'text-red-600' : 'text-red-400'}`} />
-                    <div className="font-bold text-gray-900 text-lg">Video Script</div>
-                    <div className="text-sm text-gray-600 mt-1">10-minute professional script with narration and visual cues</div>
-                  </button>
-                </div>
-
-                <div className="mt-8">
-                  <button
-                    onClick={handleGeneratePreview}
-                    disabled={isGeneratingModule}
-                    className="px-6 py-3 bg-white text-purple-600 font-semibold rounded-xl border-2 border-purple-200 hover:border-purple-500 hover:bg-purple-50 transition-all flex items-center justify-center mx-auto shadow-sm disabled:opacity-50"
-                  >
-                    {isGeneratingModule ? (
-                      <><Wand2 className="h-5 w-5 mr-2 animate-spin" /> Generating Preview...</>
-                    ) : (
-                      <><Sparkles className="h-5 w-5 mr-2" /> Show Preview</>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Generated Module Preview UI */}
-              {generatedModule && (
-                <div className="mt-8 pt-8 border-t border-purple-200 text-left">
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-xl font-bold text-gray-900">{generatedModule.title || 'Generated Training'}</h4>
-                      <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full uppercase tracking-wider">
-                        {generatedModule.format || selectedFormat}
-                      </span>
-                    </div>
-
-                    {generatedModule.objectives && generatedModule.objectives.length > 0 && (
-                      <div className="mb-6 bg-blue-50 p-4 rounded-lg">
-                        <h5 className="font-semibold text-blue-900 mb-2">Learning Objectives</h5>
-                        <ul className="list-disc pl-5 text-blue-800 text-sm space-y-1">
-                          {generatedModule.objectives.map((obj: string, i: number) => (
-                            <li key={i}>{obj}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    <div className="space-y-4">
-                      {generatedModule.content && generatedModule.content.map((item: any, i: number) => (
-                        <div key={i} className="border border-gray-200 rounded-lg p-5">
-                          <h5 className="font-bold text-gray-900 mb-3 text-lg">
-                            {selectedFormat === 'presentation' 
-                              ? `Slide ${item.slide || i + 1}: ${item.title}` 
-                              : `Scene ${item.scene || i + 1}`}
-                          </h5>
-                          
-                          {selectedFormat === 'presentation' ? (
-                            <>
-                              <ul className="list-disc pl-5 text-gray-700 mb-4 space-y-1">
-                                {item.bullets?.map((bullet: string, j: number) => (
-                                  <li key={j}>{bullet}</li>
-                                ))}
-                              </ul>
-                              {item.speakerNotes && (
-                                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm text-gray-800">
-                                  <strong>Speaker Notes:</strong> {item.speakerNotes}
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <div className="space-y-3">
-                              {item.narrationText && (
-                                <div className="bg-blue-50 border-l-4 border-blue-400 p-3 text-sm text-gray-800">
-                                  <strong>Narration:</strong> "{item.narrationText}"
-                                </div>
-                              )}
-                              {item.sceneDescription && <p className="text-sm text-gray-600"><strong>Visual/Scene:</strong> {item.sceneDescription}</p>}
-                              {item.timingSuggestions && <p className="text-sm text-gray-500"><strong>Timing:</strong> {item.timingSuggestions}</p>}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    {generatedModule.evaluation && generatedModule.evaluation.length > 0 && (
-                      <div className="mt-8 pt-6 border-t border-gray-200">
-                        <h5 className="font-bold text-gray-900 mb-4 text-lg">Knowledge Check</h5>
-                        <div className="space-y-4">
-                          {generatedModule.evaluation.map((q: any, i: number) => (
-                            <div key={i} className="bg-gray-50 rounded-lg p-4">
-                              <p className="font-medium text-gray-900 mb-2">{i + 1}. {q.question}</p>
-                              <div className="space-y-2 pl-4">
-                                {q.options?.map((opt: string, j: number) => (
-                                  <div key={j} className="flex items-center">
-                                    <div className={`w-4 h-4 rounded-full border mr-2 flex-shrink-0 ${opt === q.correctAnswer ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}></div>
-                                    <span className={`text-sm ${opt === q.correctAnswer ? 'text-green-700 font-medium' : 'text-gray-600'}`}>{opt}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 bg-white rounded-xl shadow-sm">
+                    <Video className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                    <div className="font-semibold text-gray-900">AI Videos</div>
+                    <div className="text-sm text-gray-600">Animated explanations</div>
+                  </div>
+                  <div className="text-center p-4 bg-white rounded-xl shadow-sm">
+                    <Music className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                    <div className="font-semibold text-gray-900">Voice-overs</div>
+                    <div className="text-sm text-gray-600">Professional narration</div>
+                  </div>
+                  <div className="text-center p-4 bg-white rounded-xl shadow-sm">
+                    <BarChart3 className="h-8 w-8 text-blue-500 mx-auto mb-2" />
+                    <div className="font-semibold text-gray-900">Infographics</div>
+                    <div className="text-sm text-gray-600">Visual summaries</div>
+                  </div>
+                  <div className="text-center p-4 bg-white rounded-xl shadow-sm">
+                    <Zap className="h-8 w-8 text-purple-500 mx-auto mb-2" />
+                    <div className="font-semibold text-gray-900">Interactive</div>
+                    <div className="text-sm text-gray-600">Quizzes & scenarios</div>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           )}
 
           {/* Navigation */}
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
             <button
               onClick={onBack}
-              className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium"
+              className="px-6 py-2 bg-white text-gray-700 font-medium rounded-xl border border-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
             >
               Back to Setup
             </button>
 
-            <div className="text-center">
-              <div className="text-sm text-gray-500 mb-2">
-                {totalAnalyzed} of {uploads.length} files analyzed
-              </div>
+            <div className="flex-1 flex justify-center">
               {uploads.length > 0 && (
-                <div className="w-48 bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${uploads.length > 0 ? (totalAnalyzed / uploads.length) * 100 : 0}%` }}
-                  />
+                <div className="text-center">
+                  <div className="text-sm text-gray-500 mb-2">
+                    {totalAnalyzed} of {uploads.length} files analyzed
+                  </div>
+                  <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden mx-auto">
+                    <div
+                      className="h-full bg-green-500 transition-all duration-500"
+                      style={{ width: `${(totalAnalyzed / uploads.length) * 100}%` }}
+                    />
+                  </div>
                 </div>
               )}
             </div>
 
             <button
-              onClick={() => onComplete(uploads, selectedFormat)}
+              onClick={() => onComplete(uploads)}
               disabled={!canProceed}
               className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg flex items-center space-x-2"
             >
