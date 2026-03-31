@@ -5,12 +5,13 @@ import { AIService } from '../../infrastructure/services/AIService';
 import { cloudinaryService } from '../../lib/cloudinaryService';
 
 interface ContentUploaderProps {
-  onComplete: (uploads: ContentUpload[]) => void;
+  onComplete: (uploads: ContentUpload[], format: 'presentation' | 'video') => void;
   onBack: () => void;
 }
 
 export default function ContentUploader({ onComplete, onBack }: ContentUploaderProps) {
   const [uploads, setUploads] = useState<ContentUpload[]>([]);
+  const [selectedFormat, setSelectedFormat] = useState<'presentation' | 'video'>('presentation');
   const [dragOver, setDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentProcessing, setCurrentProcessing] = useState<string | null>(null);
@@ -495,37 +496,42 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
             </div>
           )}
 
-          {/* AI Enhancement Preview */}
+          {/* AI Enhancement Format Selection */}
           {totalAnalyzed > 0 && (
             <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 p-6 mb-6">
               <div className="text-center">
                 <Zap className="h-10 w-10 text-purple-500 mx-auto mb-3" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-1.5">Ready for AI Enhancement!</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-1.5">Choose Your Training Format!</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  Your content has been analyzed. Next, we'll transform it into engaging multimedia training materials.
+                  Select how you want the AI to structure your generated training module based on exactly these documents.
                 </p>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-white rounded-xl shadow-sm">
-                    <Video className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                    <div className="font-semibold text-gray-900">AI Videos</div>
-                    <div className="text-sm text-gray-600">Animated explanations</div>
-                  </div>
-                  <div className="text-center p-4 bg-white rounded-xl shadow-sm">
-                    <Music className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                    <div className="font-semibold text-gray-900">Voice-overs</div>
-                    <div className="text-sm text-gray-600">Professional narration</div>
-                  </div>
-                  <div className="text-center p-4 bg-white rounded-xl shadow-sm">
-                    <BarChart3 className="h-8 w-8 text-blue-500 mx-auto mb-2" />
-                    <div className="font-semibold text-gray-900">Infographics</div>
-                    <div className="text-sm text-gray-600">Visual summaries</div>
-                  </div>
-                  <div className="text-center p-4 bg-white rounded-xl shadow-sm">
-                    <Zap className="h-8 w-8 text-purple-500 mx-auto mb-2" />
-                    <div className="font-semibold text-gray-900">Interactive</div>
-                    <div className="text-sm text-gray-600">Quizzes & scenarios</div>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                  <button
+                    onClick={() => setSelectedFormat('presentation')}
+                    className={`text-center p-6 rounded-xl border-2 transition-all duration-300 ${
+                      selectedFormat === 'presentation' 
+                      ? 'border-purple-500 bg-purple-100 shadow-md transform scale-105' 
+                      : 'border-transparent bg-white shadow-sm hover:border-purple-300'
+                    }`}
+                  >
+                    <BarChart3 className={`h-10 w-10 mx-auto mb-3 ${selectedFormat === 'presentation' ? 'text-purple-600' : 'text-purple-400'}`} />
+                    <div className="font-bold text-gray-900 text-lg">Presentation</div>
+                    <div className="text-sm text-gray-600 mt-1">Slide-by-slide structure with bullet points and speaker notes</div>
+                  </button>
+                  
+                  <button
+                    onClick={() => setSelectedFormat('video')}
+                    className={`text-center p-6 rounded-xl border-2 transition-all duration-300 ${
+                      selectedFormat === 'video' 
+                      ? 'border-red-500 bg-red-100 shadow-md transform scale-105' 
+                      : 'border-transparent bg-white shadow-sm hover:border-red-300'
+                    }`}
+                  >
+                    <Video className={`h-10 w-10 mx-auto mb-3 ${selectedFormat === 'video' ? 'text-red-600' : 'text-red-400'}`} />
+                    <div className="font-bold text-gray-900 text-lg">Video Script</div>
+                    <div className="text-sm text-gray-600 mt-1">10-minute professional script with narration and visual cues</div>
+                  </button>
                 </div>
               </div>
             </div>
@@ -555,7 +561,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
             </div>
 
             <button
-              onClick={() => onComplete(uploads)}
+              onClick={() => onComplete(uploads, selectedFormat)}
               disabled={!canProceed}
               className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg flex items-center space-x-2"
             >
