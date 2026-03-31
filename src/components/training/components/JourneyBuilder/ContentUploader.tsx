@@ -12,6 +12,8 @@ interface ContentUploaderProps {
 export default function ContentUploader({ onComplete, onBack }: ContentUploaderProps) {
   const [uploads, setUploads] = useState<ContentUpload[]>([]);
   const [selectedFormat, setSelectedFormat] = useState<'presentation' | 'video'>('presentation');
+  const [generatedModule, setGeneratedModule] = useState<any>(null);
+  const [isGeneratingModule, setIsGeneratingModule] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentProcessing, setCurrentProcessing] = useState<string | null>(null);
@@ -261,6 +263,35 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
 
   const canProceed = uploads.length > 0 && uploads.every(u => u.status === 'analyzed');
   const totalAnalyzed = uploads.filter(u => u.status === 'analyzed').length;
+
+  const handleGeneratePreview = async () => {
+    setIsGeneratingModule(true);
+    setGeneratedModule(null);
+    try {
+      const combinedContext = uploads.map(u => {
+        let text = `Filename: ${u.name}\n`;
+        if (u.aiAnalysis) {
+          text += `Key Topics: ${u.aiAnalysis.keyTopics?.join(', ')}\n`;
+          text += `Learning Objectives: ${u.aiAnalysis.learningObjectives?.join(', ')}\n`;
+          if (u.aiAnalysis.suggestedModules) {
+            text += `Suggested Modules: ${u.aiAnalysis.suggestedModules.join(', ')}\n`;
+          }
+        }
+        return text;
+      }).join('\n\n');
+
+      const result = await AIService.generateGigTrainingModule(
+        combinedContext || 'Basic induction and presentation to the company standards.', 
+        selectedFormat
+      );
+      setGeneratedModule(result);
+    } catch (error: any) {
+      console.error('Error generating module preview:', error);
+      alert('Fail to generate preview: ' + (error.message || 'Unknown error'));
+    } finally {
+      setIsGeneratingModule(false);
+    }
+  };
 
   return (
     <div className="min-h-full bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -533,7 +564,104 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
                     <div className="text-sm text-gray-600 mt-1">10-minute professional script with narration and visual cues</div>
                   </button>
                 </div>
+
+                <div className="mt-8">
+                  <button
+                    onClick={handleGeneratePreview}
+                    disabled={isGeneratingModule}
+                    className="px-6 py-3 bg-white text-purple-600 font-semibold rounded-xl border-2 border-purple-200 hover:border-purple-500 hover:bg-purple-50 transition-all flex items-center justify-center mx-auto shadow-sm disabled:opacity-50"
+                  >
+                    {isGeneratingModule ? (
+                      <><Wand2 className="h-5 w-5 mr-2 animate-spin" /> Generating Preview...</>
+                    ) : (
+                      <><Sparkles className="h-5 w-5 mr-2" /> Show Preview</>
+                    )}
+                  </button>
+                </div>
               </div>
+
+              {/* Generated Module Preview UI */}
+              {generatedModule && (
+                <div className="mt-8 pt-8 border-t border-purple-200 text-left">
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-xl font-bold text-gray-900">{generatedModule.title || 'Generated Training'}</h4>
+                      <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full uppercase tracking-wider">
+                        {generatedModule.format || selectedFormat}
+                      </span>
+                    </div>
+
+                    {generatedModule.objectives && generatedModule.objectives.length > 0 && (
+                      <div className="mb-6 bg-blue-50 p-4 rounded-lg">
+                        <h5 className="font-semibold text-blue-900 mb-2">Learning Objectives</h5>
+                        <ul className="list-disc pl-5 text-blue-800 text-sm space-y-1">
+                          {generatedModule.objectives.map((obj: string, i: number) => (
+                            <li key={i}>{obj}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                      {generatedModule.content && generatedModule.content.map((item: any, i: number) => (
+                        <div key={i} className="border border-gray-200 rounded-lg p-5">
+                          <h5 className="font-bold text-gray-900 mb-3 text-lg">
+                            {selectedFormat === 'presentation' 
+                              ? `Slide ${item.slide || i + 1}: ${item.title}` 
+                              : `Scene ${item.scene || i + 1}`}
+                          </h5>
+                          
+                          {selectedFormat === 'presentation' ? (
+                            <>
+                              <ul className="list-disc pl-5 text-gray-700 mb-4 space-y-1">
+                                {item.bullets?.map((bullet: string, j: number) => (
+                                  <li key={j}>{bullet}</li>
+                                ))}
+                              </ul>
+                              {item.speakerNotes && (
+                                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 text-sm text-gray-800">
+                                  <strong>Speaker Notes:</strong> {item.speakerNotes}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="space-y-3">
+                              {item.narrationText && (
+                                <div className="bg-blue-50 border-l-4 border-blue-400 p-3 text-sm text-gray-800">
+                                  <strong>Narration:</strong> "{item.narrationText}"
+                                </div>
+                              )}
+                              {item.sceneDescription && <p className="text-sm text-gray-600"><strong>Visual/Scene:</strong> {item.sceneDescription}</p>}
+                              {item.timingSuggestions && <p className="text-sm text-gray-500"><strong>Timing:</strong> {item.timingSuggestions}</p>}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {generatedModule.evaluation && generatedModule.evaluation.length > 0 && (
+                      <div className="mt-8 pt-6 border-t border-gray-200">
+                        <h5 className="font-bold text-gray-900 mb-4 text-lg">Knowledge Check</h5>
+                        <div className="space-y-4">
+                          {generatedModule.evaluation.map((q: any, i: number) => (
+                            <div key={i} className="bg-gray-50 rounded-lg p-4">
+                              <p className="font-medium text-gray-900 mb-2">{i + 1}. {q.question}</p>
+                              <div className="space-y-2 pl-4">
+                                {q.options?.map((opt: string, j: number) => (
+                                  <div key={j} className="flex items-center">
+                                    <div className={`w-4 h-4 rounded-full border mr-2 flex-shrink-0 ${opt === q.correctAnswer ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}></div>
+                                    <span className={`text-sm ${opt === q.correctAnswer ? 'text-green-700 font-medium' : 'text-gray-600'}`}>{opt}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
