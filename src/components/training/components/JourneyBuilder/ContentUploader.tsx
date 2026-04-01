@@ -556,14 +556,25 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
               )}
             </div>
 
-            <button
-              onClick={() => onComplete(uploads)}
-              disabled={!canProceed}
-              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg flex items-center space-x-2"
-            >
-              <span>Continue to AI Enhancement</span>
-              <Wand2 className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => onComplete(uploads)}
+                disabled={!canProceed}
+                className="px-6 py-3 bg-white text-blue-700 rounded-xl border border-blue-200 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-sm flex items-center space-x-2"
+              >
+                <Sparkles className="h-5 w-5" />
+                <span>Generer un programme</span>
+              </button>
+
+              <button
+                onClick={() => onComplete(uploads)}
+                disabled={!canProceed}
+                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg flex items-center space-x-2"
+              >
+                <span>Continue to AI Enhancement</span>
+                <Wand2 className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
