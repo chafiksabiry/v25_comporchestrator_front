@@ -532,7 +532,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
           )}
 
           {/* Navigation */}
-          <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+          <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mt-8 pt-6 border-t border-gray-200">
             <button
               onClick={onBack}
               className="px-6 py-2 bg-white text-gray-700 font-medium rounded-xl border border-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
@@ -540,7 +540,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
               Back to Setup
             </button>
 
-            <div className="flex-1 flex justify-center">
+            <div className="flex-1 flex justify-center order-3 md:order-none">
               {uploads.length > 0 && (
                 <div className="text-center">
                   <div className="text-sm text-gray-500 mb-2">
@@ -556,11 +556,11 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
               )}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
               <button
                 onClick={() => onComplete(uploads)}
                 disabled={!canProceed}
-                className="px-6 py-3 bg-white text-blue-700 rounded-xl border border-blue-200 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-sm flex items-center space-x-2"
+                className="px-6 py-3 bg-white text-blue-700 rounded-xl border border-blue-200 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-sm flex items-center justify-center space-x-2"
               >
                 <Sparkles className="h-5 w-5" />
                 <span>Generer un programme</span>
@@ -569,7 +569,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
               <button
                 onClick={() => onComplete(uploads)}
                 disabled={!canProceed}
-                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg flex items-center space-x-2"
+                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg flex items-center justify-center space-x-2"
               >
                 <span>Continue to AI Enhancement</span>
                 <Wand2 className="h-5 w-5" />
