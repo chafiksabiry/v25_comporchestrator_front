@@ -89,10 +89,23 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
 
         setEnhancementProgress({ 'generating': 30 } as any);
 
-        // ✅ APPEL API RÉEL pour générer le curriculum avec l'analyse combinée et le contexte de Gig
+        // Build upload context so OpenAI can ground curriculum generation on uploaded files.
+        const uploadContext = uploads.map((upload) => ({
+          fileName: upload.name,
+          fileType: upload.type,
+          keyTopics: upload.aiAnalysis?.keyTopics || [],
+          learningObjectives: upload.aiAnalysis?.learningObjectives || []
+        }));
+
+        // ✅ APPEL API RÉEL pour générer le curriculum avec l'analyse combinée, le contexte de Gig et les uploads
         let curriculum;
         try {
-          curriculum = await AIService.generateCurriculum(combinedAnalysis, industry, gigId || undefined);
+          curriculum = await AIService.generateCurriculum(
+            combinedAnalysis,
+            industry,
+            gigId || undefined,
+            uploadContext
+          );
         } catch (apiError) {
           console.warn('⚠️ API generateCurriculum failed, using fallback modules:', apiError);
           // Créer des modules fallback basés sur les uploads
