@@ -53,6 +53,14 @@ export interface VideoScript {
   scenes: VideoScene[];
 }
 
+export interface UploadCurriculumContext {
+  fileName: string;
+  fileType: string;
+  keyTopics: string[];
+  learningObjectives: string[];
+  extractedText?: string;
+}
+
 export class AIService {
   /**
    * Analyse un document avec l'IA (OpenAI GPT-4)
@@ -245,12 +253,14 @@ export class AIService {
   static async generateCurriculum(
     analysis: DocumentAnalysis,
     industry: string = 'General',
-    gig?: string
+    gig?: string,
+    uploadContext: UploadCurriculumContext[] = []
   ): Promise<Curriculum> {
     const response = await ApiClient.post('/api/ai/generate-curriculum', {
       analysis,
       industry,
-      gig
+      gig,
+      uploadContext
     });
 
     // Check if response indicates failure
@@ -446,5 +456,6 @@ export class AIService {
   }
 }
 
-/ /   t r i g g e r   r e b u i l d  
+/ /   t r i g g e r   r e b u i l d 
+ 
  
