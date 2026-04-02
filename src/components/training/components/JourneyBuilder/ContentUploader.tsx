@@ -101,7 +101,16 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
           publicId = uploadResult.publicId;
           console.log(`✅ File uploaded to Cloudinary: ${upload.name}`, cloudinaryUrl);
         } catch (uploadError) {
-          console.warn('⚠️ Cloudinary upload failed, continuing with local file:', uploadError);
+          console.warn('⚠️ Cloudinary upload failed, attempting fallback to backend storage:', uploadError);
+          try {
+            if (!upload.file) throw new Error('File content is missing');
+            const backendResult = await AIService.uploadDocumentViaBackend(upload.file);
+            cloudinaryUrl = backendResult.url;
+            publicId = backendResult.publicId;
+            console.log(`✅ File uploaded via fallback to backend: ${upload.name}`, cloudinaryUrl);
+          } catch (fallbackError) {
+            console.error('❌ Both Cloudinary and backend fallback failed:', fallbackError);
+          }
         }
 
         // ✅ Vraie analyse avec AI
