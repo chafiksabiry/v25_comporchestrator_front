@@ -14,8 +14,10 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
   const [dragOver, setDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGeneratingPPT, setIsGeneratingPPT] = useState(false);
-
   const [urlInput, setUrlInput] = useState('');
+  const [viewMode, setViewMode] = useState<'upload' | 'curriculum' | 'ppt'>('upload');
+  const [generatedCurriculum, setGeneratedCurriculum] = useState<any>(null);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
 
   // Scroll to top when component mounts
@@ -243,6 +245,38 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
       setIsProcessing(false);
     }
   };
+
+  const handleGenerateCurriculum = async () => {
+    if (uploads.length === 0) return;
+    
+    setIsProcessing(true);
+    try {
+      const mainAnalysis = uploads[0].aiAnalysis;
+      if (!mainAnalysis) throw new Error('No analysis found');
+      
+      const uploadContext = uploads.map(u => ({
+        fileName: u.name,
+        fileType: u.type,
+        keyTopics: u.aiAnalysis?.keyTopics || [],
+        learningObjectives: u.aiAnalysis?.learningObjectives || []
+      }));
+      
+      const curriculum = await AIService.generateCurriculum(
+        mainAnalysis,
+        'General',
+        undefined,
+        uploadContext as any
+      );
+      
+      setGeneratedCurriculum(curriculum);
+      setViewMode('curriculum');
+    } catch (error: any) {
+      console.error('Failed to generate curriculum:', error);
+      alert('Erreur: ' + error.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
   
   const handleGeneratePPT = async () => {
     if (uploads.length === 0) return;
@@ -268,6 +302,10 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
         undefined,
         uploadContext as any
       );
+      
+      setGeneratedCurriculum(curriculum);
+      setViewMode('ppt');
+      setCurrentSlideIndex(0);
       
       console.log('📊 Exporting to PowerPoint...');
       const pptBlob = await AIService.exportToPowerPoint(curriculum);
@@ -310,6 +348,268 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
 
   const canProceed = uploads.length > 0 && uploads.every(u => u.status === 'analyzed');
   const totalAnalyzed = uploads.filter(u => u.status === 'analyzed').length;
+
+  if (viewMode === 'curriculum' && generatedCurriculum) {
+    return (
+      <div className="min-h-full bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
+        <div className="max-w-5xl mx-auto">
+          <button 
+            onClick={() => setViewMode('upload')}
+            className="flex items-center text-blue-600 font-medium mb-6 hover:text-blue-800 transition-colors"
+          >
+            <X className="h-5 w-5 mr-1" /> Retour aux fichiers
+          </button>
+          
+          <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-white">
+              <div className="flex items-center space-x-3 mb-4">
+                <Sparkles className="h-8 w-8 text-yellow-300" />
+                <h2 className="text-3xl font-extrabold">{generatedCurriculum.title}</h2>
+              </div>
+              <p className="text-blue-100 text-lg max-w-3xl">{generatedCurriculum.description}</p>
+              <div className="mt-6 flex items-center space-x-6 text-sm font-medium">
+                <div className="flex items-center">
+                  <Clock className="h-5 w-5 mr-2 opacity-80" />
+                  {generatedCurriculum.totalDuration / 60} heures total
+                </div>
+                <div className="flex items-center">
+                  <BarChart3 className="h-5 w-5 mr-2 opacity-80" />
+                  {generatedCurriculum.modules?.length} Modules
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-8">
+              <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                <FileText className="h-6 w-6 mr-2 text-blue-500" /> Structure du Programme
+              </h3>
+              
+              <div className="space-y-6">
+                {generatedCurriculum.modules?.map((module: any, idx: number) => (
+                  <div key={idx} className="group relative bg-gray-50 rounded-2xl p-6 border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center mb-2">
+                          <span className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-600 text-white text-sm font-bold mr-3">
+                            {idx + 1}
+                          </span>
+                          <h4 className="text-lg font-bold text-gray-900">{module.title}</h4>
+                        </div>
+                        <p className="text-gray-600 mb-4 ml-11">{module.description}</p>
+                        
+                        <div className="ml-11 flex flex-wrap gap-4 text-sm">
+                          <div className="flex items-center text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200">
+                            <Clock className="h-4 w-4 mr-1.5 text-blue-500" /> {module.duration} min
+                          </div>
+                          <div className="flex items-center text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200">
+                            <Zap className="h-4 w-4 mr-1.5 text-orange-500" /> {module.difficulty}
+                          </div>
+                        </div>
+                        
+                        {module.learningObjectives?.length > 0 && (
+                          <div className="mt-4 ml-11">
+                            <h5 className="text-sm font-semibold text-gray-700 mb-2">Objectifs d'apprentissage :</h5>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {module.learningObjectives.map((obj: string, i: number) => (
+                                <div key={i} className="flex items-start text-sm text-gray-600">
+                                  <CheckCircle className="h-4 w-4 mr-2 text-green-500 mt-0.5" />
+                                  {obj}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-10 flex justify-center">
+                <button 
+                  onClick={() => onComplete(uploads)}
+                  className="px-10 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all"
+                >
+                  Approuver et Continuer vers l'Amélioration AI
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (viewMode === 'ppt' && generatedCurriculum) {
+    const modules = generatedCurriculum.modules || [];
+    const totalSlides = 3 + (modules.length * 3); // Title, Overview, (Intro+Goals+Content)*Modules, Conclusion
+    
+    // Simulate slides content
+    const getSlideContent = (index: number) => {
+      // 0: Title
+      if (index === 0) return {
+        type: 'title',
+        bg: 'bg-[#1e293b]',
+        title: generatedCurriculum.title,
+        subtitle: generatedCurriculum.description,
+        method: generatedCurriculum.methodology || '360° Methodology'
+      };
+      // 1: Overview
+      if (index === 1) return {
+        type: 'overview',
+        bg: 'bg-white',
+        title: '📋 Vue d\'Ensemble',
+        duration: generatedCurriculum.totalDuration / 60,
+        items: modules.map((m: any) => `${m.title} (${m.duration} min)`)
+      };
+      
+      // Module slides
+      const moduleIdx = Math.floor((index - 2) / 3);
+      const subIdx = (index - 2) % 3;
+      
+      if (moduleIdx < modules.length) {
+        const module = modules[moduleIdx];
+        if (subIdx === 0) return {
+          type: 'module-intro',
+          bg: 'bg-blue-600',
+          number: moduleIdx + 1,
+          title: module.title,
+          desc: module.description
+        };
+        if (subIdx === 1) return {
+          type: 'objectives',
+          bg: 'bg-white',
+          title: '🎯 Objectifs d\'Apprentissage',
+          items: module.learningObjectives
+        };
+        return {
+          type: 'content',
+          bg: 'bg-white',
+          title: '📚 ' + module.title,
+          elements: ['Concept 1', 'Détails techniques', 'Cas pratique'],
+          duration: module.duration,
+          difficulty: module.difficulty
+        };
+      }
+      
+      // Last slide: Conclusion
+      return {
+        type: 'conclusion',
+        bg: 'bg-[#10b981]',
+        title: '🎉 Félicitations !',
+        message: 'Vous avez complété la formation\nContinuez à apprendre !'
+      };
+    };
+
+    const slide = getSlideContent(currentSlideIndex);
+
+    return (
+      <div className="min-h-full bg-[#f1f5f9] p-8 flex flex-col items-center">
+        <div className="w-full max-w-6xl flex items-center justify-between mb-6">
+          <button 
+            onClick={() => setViewMode('upload')}
+            className="flex items-center text-slate-600 font-semibold hover:text-slate-900 transition-colors"
+          >
+            <X className="h-5 w-5 mr-1" /> Retour
+          </button>
+          
+          <div className="flex items-center space-x-4">
+            <span className="text-sm font-bold text-slate-500">DIAPOSITIVE {currentSlideIndex + 1} / {totalSlides}</span>
+            <div className="flex bg-white rounded-lg shadow-sm border border-slate-200 p-1">
+              <button 
+                disabled={currentSlideIndex === 0}
+                onClick={() => setCurrentSlideIndex(prev => prev - 1)}
+                className="p-2 hover:bg-slate-100 rounded-md disabled:opacity-30"
+              >
+                ←
+              </button>
+              <button 
+                disabled={currentSlideIndex === totalSlides - 1}
+                onClick={() => setCurrentSlideIndex(prev => prev + 1)}
+                className="p-2 hover:bg-slate-100 rounded-md disabled:opacity-30"
+              >
+                →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="w-full max-w-5xl aspect-[16/9] shadow-2xl rounded-lg overflow-hidden border-8 border-white bg-white relative">
+          <div className={`w-full h-full ${slide.bg} transition-all duration-500 flex flex-col p-16`}>
+            {slide.type === 'title' && (
+              <div className="flex-1 flex flex-col items-center justify-center text-center">
+                <h1 className="text-6xl font-extrabold text-white mb-8 tracking-tight">{slide.title}</h1>
+                <p className="text-2xl text-blue-100 max-w-3xl mb-12">{slide.subtitle}</p>
+                <div className="px-6 py-2 bg-blue-500/20 rounded-full border border-blue-400/30 text-blue-300 font-bold">
+                  📚 {slide.method}
+                </div>
+              </div>
+            )}
+            
+            {(slide.type === 'overview' || slide.type === 'objectives' || slide.type === 'content') && (
+              <div className="h-full flex flex-col">
+                <h2 className="text-4xl font-bold text-slate-800 mb-12 flex items-center">
+                  <span className="mr-4">{slide.title}</span>
+                  <div className="flex-1 h-1 bg-slate-100 ml-4 rounded-full"></div>
+                </h2>
+                
+                <div className="flex-1 space-y-6">
+                  {(slide.items || slide.elements)?.map((item: string, i: number) => (
+                    <div key={i} className="flex items-center text-2xl text-slate-700 animate-in slide-in-from-left duration-300" style={{animationDelay: `${i*100}ms`}}>
+                      <span className="h-3 w-3 rounded-full bg-blue-500 mr-6"></span>
+                      {item}
+                    </div>
+                  ))}
+                </div>
+                
+                {slide.duration && (
+                  <div className="mt-8 pt-8 border-t border-slate-100 text-slate-400 font-bold flex items-center justify-center space-x-8">
+                    <span>⏱️ {slide.duration} minutes</span>
+                    <span>📊 Niveau: {slide.difficulty}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {slide.type === 'module-intro' && (
+              <div className="flex-1 flex flex-col justify-center">
+                <div className="text-4xl font-bold text-white mb-4 opacity-70">Module {slide.number}</div>
+                <h2 className="text-6xl font-black text-white mb-8">{slide.title}</h2>
+                <div className="h-2 w-32 bg-white/30 rounded-full mb-8"></div>
+                <p className="text-2xl text-blue-50 max-w-2xl">{slide.desc}</p>
+              </div>
+            )}
+
+            {slide.type === 'conclusion' && (
+              <div className="flex-1 flex flex-col items-center justify-center text-center">
+                <div className="h-32 w-32 rounded-full bg-white/20 flex items-center justify-center mb-10">
+                  <Sparkles className="h-16 w-16 text-white" />
+                </div>
+                <h1 className="text-7xl font-black text-white mb-8">{slide.title}</h1>
+                <p className="text-3xl text-green-50 font-medium whitespace-pre-line">{slide.message}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-10 flex space-x-4">
+           <button 
+             onClick={handleGeneratePPT}
+             disabled={isGeneratingPPT}
+             className="px-8 py-4 bg-white text-slate-800 rounded-2xl font-bold shadow-lg border border-slate-200 hover:bg-slate-50 transition-all flex items-center"
+           >
+             <File className="h-5 w-5 mr-2 text-red-500" /> Télécharger le fichier .pptx
+           </button>
+           <button 
+             onClick={() => onComplete(uploads)}
+             className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg hover:bg-blue-700 transition-all flex items-center"
+           >
+             <Sparkles className="h-5 w-5 mr-2" /> Valider le programme
+           </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -612,21 +912,27 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
                 disabled={!canProceed || isGeneratingPPT}
                 className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl hover:from-orange-600 hover:to-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg flex items-center justify-center space-x-2"
               >
-                {isGeneratingPPT ? (
-                  <Wand2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <File className="h-5 w-5" />
-                )}
-                <span>Générer une présentation PPT</span>
+                <div className="flex items-center space-x-2">
+                  {isGeneratingPPT ? (
+                    <Wand2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <File className="h-5 w-5" />
+                  )}
+                  <span>Aperçu de la présentation PPT</span>
+                </div>
               </button>
 
               <button
-                onClick={() => onComplete(uploads)}
-                disabled={!canProceed}
+                onClick={handleGenerateCurriculum}
+                disabled={!canProceed || isProcessing}
                 className="px-6 py-3 bg-white text-blue-700 rounded-xl border border-blue-200 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-sm flex items-center justify-center space-x-2"
               >
-                <Sparkles className="h-5 w-5" />
-                <span>Generer un programme</span>
+                {isProcessing ? (
+                  <Wand2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-5 w-5" />
+                )}
+                <span>Aperçu du programme</span>
               </button>
 
               <button
