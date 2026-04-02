@@ -13,6 +13,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
   const [uploads, setUploads] = useState<ContentUpload[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isGeneratingPPT, setIsGeneratingPPT] = useState(false);
   const [currentProcessing, setCurrentProcessing] = useState<string | null>(null);
 
   const [urlInput, setUrlInput] = useState('');
@@ -240,6 +241,55 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
     } finally {
       setCurrentProcessing(null);
       setIsProcessing(false);
+    }
+  };
+  
+  const handleGeneratePPT = async () => {
+    if (uploads.length === 0) return;
+    
+    setIsGeneratingPPT(true);
+    try {
+      // 1. Prepare context from all analyzed files
+      const mainAnalysis = uploads[0].aiAnalysis;
+      if (!mainAnalysis) throw new Error('No analysis found for main file');
+      
+      const uploadContext = uploads.map(u => ({
+        fileName: u.name,
+        fileType: u.type,
+        keyTopics: u.aiAnalysis?.keyTopics || [],
+        learningObjectives: u.aiAnalysis?.learningObjectives || [],
+        extractedText: u.aiAnalysis?.learningObjectives?.join('\n') // Fallback content
+      }));
+      
+      console.log('🚀 Generating curriculum for PPT...');
+      const curriculum = await AIService.generateCurriculum(
+        mainAnalysis,
+        'General',
+        undefined,
+        uploadContext as any
+      );
+      
+      console.log('📊 Exporting to PowerPoint...');
+      const pptBlob = await AIService.exportToPowerPoint(curriculum);
+      
+      // 2. Trigger download
+      const url = window.URL.createObjectURL(pptBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      const fileName = `${curriculum.title || 'Training_Program'}.pptx`.replace(/\s+/g, '_');
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+    } catch (error: any) {
+      console.error('Failed to generate PPT:', error);
+      alert('Erreur lors de la génération du PPT: ' + (error.message || 'Erreur inconnue'));
+    } finally {
+      setIsGeneratingPPT(false);
     }
   };
 
@@ -557,6 +607,19 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+              <button
+                onClick={handleGeneratePPT}
+                disabled={!canProceed || isGeneratingPPT}
+                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl hover:from-orange-600 hover:to-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg flex items-center justify-center space-x-2"
+              >
+                {isGeneratingPPT ? (
+                  <Wand2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <File className="h-5 w-5" />
+                )}
+                <span>Générer une présentation PPT</span>
+              </button>
+
               <button
                 onClick={() => onComplete(uploads)}
                 disabled={!canProceed}
