@@ -406,8 +406,9 @@ export class AIService {
   static async exportToPowerPoint(curriculum: Curriculum): Promise<Blob> {
     const token = ApiClient.getToken();
     const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://v25platformtrainingbackend-production.up.railway.app';
+    const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
 
-    const response = await fetch(`${apiUrl}/ai/export-powerpoint`, {
+    const response = await fetch(`${baseUrl}/api/ai/export-powerpoint`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
