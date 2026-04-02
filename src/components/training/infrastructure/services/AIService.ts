@@ -82,6 +82,20 @@ export interface AiResponse<T> extends AiBaseResponse {
 
 export class AIService {
   /**
+   * Uploads a document to the backend (GCS with local fallback)
+   */
+  static async uploadDocumentViaBackend(file: File): Promise<{ url: string, publicId: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await ApiClient.upload<any>('/api/upload/document', formData);
+    return {
+      url: response.data.url,
+      publicId: response.data.publicId
+    };
+  }
+
+  /**
    * Analyse un document avec l'IA (OpenAI GPT-4)
    */
   static async analyzeDocument(file: File): Promise<DocumentAnalysis> {
