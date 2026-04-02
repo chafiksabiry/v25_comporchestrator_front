@@ -14,7 +14,6 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
   const [dragOver, setDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGeneratingPPT, setIsGeneratingPPT] = useState(false);
-  const [currentProcessing, setCurrentProcessing] = useState<string | null>(null);
 
   const [urlInput, setUrlInput] = useState('');
 
@@ -71,8 +70,6 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
 
     // Process each file sequentially for better UX
     for (const upload of newUploads) {
-      setCurrentProcessing(upload.id);
-
       // Simulate upload phase
       await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -105,10 +102,9 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
           console.log(`✅ File uploaded to Cloudinary: ${upload.name}`, cloudinaryUrl);
         } catch (uploadError) {
           console.warn('⚠️ Cloudinary upload failed, continuing with local file:', uploadError);
-          // Continue even if upload fails - we'll use blob URL as fallback
         }
 
-        // ✅ Vraie analyse avec OpenAI au lieu de simulation
+        // ✅ Vraie analyse avec AI
         if (!upload.file) throw new Error('File content is missing for analysis');
         const analysis = await AIService.analyzeDocument(upload.file);
 
@@ -118,8 +114,8 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
               ...u,
               status: 'analyzed',
               aiAnalysis: analysis,
-              cloudinaryUrl: cloudinaryUrl, // Store Cloudinary URL
-              publicId: publicId // Store public ID
+              cloudinaryUrl: cloudinaryUrl,
+              publicId: publicId
             }
             : u
         ));
@@ -136,7 +132,6 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
       }
     }
 
-    setCurrentProcessing(null);
     setIsProcessing(false);
   }, []);
 
@@ -155,7 +150,6 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
 
     setUploads(prev => [...prev, urlUpload]);
     setIsProcessing(true);
-    setCurrentProcessing(urlUpload.id);
 
     try {
       setUploads(prev => prev.map(u =>
@@ -178,7 +172,6 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
       ));
     }
 
-    setCurrentProcessing(null);
     setIsProcessing(false);
   }, [urlInput]);
 
@@ -212,7 +205,6 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
     setUploads(prev => prev.map(u =>
       u.id === upload.id ? { ...u, status: 'processing', error: undefined } : u
     ));
-    setCurrentProcessing(upload.id);
     setIsProcessing(true);
 
     try {
@@ -239,7 +231,6 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
         } : u
       ));
     } finally {
-      setCurrentProcessing(null);
       setIsProcessing(false);
     }
   };

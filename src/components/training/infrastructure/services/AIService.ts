@@ -61,6 +61,25 @@ export interface UploadCurriculumContext {
   extractedText?: string;
 }
 
+export interface AiBaseResponse {
+  success: boolean;
+  error?: string;
+  message?: string;
+  fallbackMode?: boolean;
+}
+
+export interface AiResponse<T> extends AiBaseResponse {
+  analysis?: T;
+  data?: T;
+  questions?: T;
+  sections?: T;
+  content?: any;
+  enhancedContent?: string;
+  response?: string;
+  audioUrl?: string;
+  videoUrl?: string;
+}
+
 export class AIService {
   /**
    * Analyse un document avec l'IA (OpenAI GPT-4)
@@ -72,7 +91,7 @@ export class AIService {
 
       console.log('📄 Analyzing document:', file.name, 'Size:', file.size, 'Type:', file.type);
 
-      const response = await ApiClient.upload('/api/ai/analyze-document', formData);
+      const response = await ApiClient.upload<AiResponse<any>>('/api/ai/analyze-document', formData);
 
       if (!response.data.success) {
         const errorMsg = response.data.error || response.data.message || 'Analysis failed';
@@ -81,7 +100,9 @@ export class AIService {
       }
 
       console.log('✅ Document analyzed successfully');
-      return response.data.analysis || response.data.data?.analysis;
+      const analysis = response.data.analysis || (response.data.data as any)?.analysis;
+      if (!analysis) throw new Error('No analysis data received');
+      return analysis;
     } catch (error: any) {
       console.error('❌ Error in analyzeDocument:', error);
 
@@ -115,10 +136,14 @@ export class AIService {
    * Analyse a URL (YouTube or HTML page) with AI
    */
   static async analyzeUrl(url: string): Promise<DocumentAnalysis> {
-    const response = await ApiClient.post('/api/ai/analyze-url', { url });
+    const response = await ApiClient.post<AiResponse<DocumentAnalysis>>('/api/ai/analyze-url', { url });
 
     if (!response.data.success) {
       throw new Error(response.data.error || 'URL analysis failed');
+    }
+
+    if (!response.data.analysis) {
+      throw new Error('Analysis data is missing in URL analysis response');
     }
 
     return response.data.analysis;
@@ -128,13 +153,13 @@ export class AIService {
    * Améliore du contenu texte avec l'IA
    */
   static async enhanceContent(content: string): Promise<string> {
-    const response = await ApiClient.post('/api/ai/enhance-content', { content });
+    const response = await ApiClient.post<AiResponse<any>>('/api/ai/enhance-content', { content });
 
     if (!response.data.success) {
       throw new Error(response.data.error || 'Enhancement failed');
     }
 
-    return response.data.enhancedContent;
+    return response.data.enhancedContent || '';
   }
 
   /**
@@ -187,7 +212,7 @@ export class AIService {
       };
     }
 
-    const response = await ApiClient.post('/api/ai/generate-quiz', requestBody);
+    const response = await ApiClient.post<AiResponse<any>>('/api/ai/generate-quiz', requestBody);
 
     // Log the response to verify number of questions returned
     const questions = response.data.data?.questions || response.data.questions || [];
@@ -238,13 +263,13 @@ export class AIService {
    * Chat avec l'AI Tutor
    */
   static async chat(message: string, context: string = ''): Promise<string> {
-    const response = await ApiClient.post('/api/ai/chat', { message, context });
+    const response = await ApiClient.post<AiResponse<any>>('/api/ai/chat', { message, context });
 
     if (!response.data.success) {
       throw new Error(response.data.error || 'Chat failed');
     }
 
-    return response.data.response;
+    return response.data.response || '';
   }
 
   /**
@@ -256,7 +281,7 @@ export class AIService {
     gig?: string,
     uploadContext: UploadCurriculumContext[] = []
   ): Promise<Curriculum> {
-    const response = await ApiClient.post('/api/ai/generate-curriculum', {
+    const response = await ApiClient.post<Curriculum & AiBaseResponse>('/api/ai/generate-curriculum', {
       analysis,
       industry,
       gig,
@@ -285,7 +310,7 @@ export class AIService {
     description: string,
     learningObjectives: string[]
   ): Promise<VideoScript> {
-    const response = await ApiClient.post('/api/ai/generate-video-script', {
+    const response = await ApiClient.post<VideoScript & AiBaseResponse>('/api/ai/generate-video-script', {
       title,
       description,
       learningObjectives
@@ -308,7 +333,7 @@ export class AIService {
     fullTranscription: string,
     learningObjectives: string[]
   ): Promise<any[]> {
-    const response = await ApiClient.post('/api/ai/generate-module-content', {
+    const response = await ApiClient.post<AiResponse<any[]>>('/api/ai/generate-module-content', {
       moduleTitle,
       moduleDescription,
       fullTranscription,
@@ -319,7 +344,7 @@ export class AIService {
       throw new Error(response.data.error || 'Module content generation failed');
     }
 
-    return response.data.sections || response.data.content;
+    return response.data.sections || (response.data as any).content || [];
   }
 
   /**
@@ -327,7 +352,7 @@ export class AIService {
    * Couvre tous les modules avec 20-30 questions
    */
   static async generateFinalExam(modules: any[], formationTitle: string = 'Training Program'): Promise<any> {
-    const response = await ApiClient.post('/api/ai/generate-final-exam', {
+    const response = await ApiClient.post<AiResponse<any>>('/api/ai/generate-final-exam', {
       modules,
       formationTitle
     });
@@ -339,7 +364,7 @@ export class AIService {
     const data = response.data;
 
     // Extraction robuste des données (supporte {data: {exam: ...}} ou {exam: ...} ou direct payload)
-    const examData = data.exam || data.data?.exam || data.data || data;
+    const examData = (data as any).exam || (data as any).data?.exam || (data as any).data || data;
 
     // Normalisation proactive des clés (snake_case -> camelCase)
     if (examData && typeof examData === 'object') {
@@ -369,6 +394,7 @@ export class AIService {
       examData.questions = normalizedQuestions;
     }
 
+    return examData;
   }
 
   /**
@@ -427,9 +453,9 @@ export class AIService {
   /**
    * Génère un podcast audio de haute qualité avec Vertex AI
    */
-  static async generatePodcast(title: string, content: string): Promise<string> {
+  static async generatePodcast(title: string, content: string): Promise<string | undefined> {
     try {
-      const response = await ApiClient.post('/api/ai/generate-podcast', { title, content });
+      const response = await ApiClient.post<AiResponse<any>>('/api/ai/generate-podcast', { title, content });
       if (!response.data.success) {
         throw new Error(response.data.error || 'Podcast generation failed');
       }
@@ -443,9 +469,9 @@ export class AIService {
   /**
    * Génère une vidéo cinématique avec Google Veo
    */
-  static async generateVeoVideo(title: string, content: string): Promise<string> {
+  static async generateVeoVideo(title: string, content: string): Promise<string | undefined> {
     try {
-      const response = await ApiClient.post('/api/ai/generate-veo-video', { title, content });
+      const response = await ApiClient.post<AiResponse<any>>('/api/ai/generate-veo-video', { title, content });
       if (!response.data.success) {
         throw new Error(response.data.error || 'Veo video generation failed');
       }
@@ -456,7 +482,3 @@ export class AIService {
     }
   }
 }
-
-/ /   t r i g g e r   r e b u i l d 
- 
- 
