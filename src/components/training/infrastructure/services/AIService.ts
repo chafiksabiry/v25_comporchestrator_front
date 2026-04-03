@@ -440,21 +440,10 @@ export class AIService {
   }
 
   /**
-   * Génère une présentation riche depuis un curriculum (3 batches parallèles Claude)
+   * Exporte une présentation riche en PowerPoint (.pptx)
+   * Génère un fichier PowerPoint avec les slides complètes
    */
-  static async generatePresentation(curriculum: Curriculum): Promise<any> {
-    const response = await ApiClient.post<any>('/api/ai/generate-presentation', { curriculum });
-    if (!response.data.success) {
-      throw new Error(response.data.error || 'Presentation generation failed');
-    }
-    return response.data.presentation;
-  }
-
-  /**
-   * Exporte un curriculum en PowerPoint (.pptx)
-   * Génère un fichier PowerPoint professionnel avec slides animées
-   */
-  static async exportToPowerPoint(curriculum: Curriculum): Promise<Blob> {
+  static async exportToPowerPoint(presentation: any): Promise<Blob> {
     const token = ApiClient.getToken();
     const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://v25platformtrainingbackend-production.up.railway.app';
     const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
@@ -465,7 +454,9 @@ export class AIService {
         'Content-Type': 'application/json',
         ...(token && { 'Authorization': `Bearer ${token}` })
       },
-      body: JSON.stringify({ curriculum })
+      // Note: we're passing it as curriculum so the backend endpoint wrapper (which expects it) works fine,
+      // but actually it's a presentation format
+      body: JSON.stringify({ curriculum: presentation })
     });
 
     if (!response.ok) {
@@ -473,6 +464,19 @@ export class AIService {
     }
 
     return await response.blob();
+  }
+
+  /**
+   * Generate a rich presentation from the curriculum
+   */
+  static async generatePresentation(curriculum: any): Promise<any> {
+    const response = await ApiClient.post<AiResponse<any>>('/api/ai/generate-presentation', { curriculum });
+    
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Presentation generation failed');
+    }
+    
+    return (response.data as any).presentation || response.data;
   }
 
   /**
