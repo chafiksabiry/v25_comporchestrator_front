@@ -17,6 +17,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
   const [urlInput, setUrlInput] = useState('');
   const [viewMode, setViewMode] = useState<'upload' | 'curriculum' | 'ppt'>('upload');
   const [generatedCurriculum, setGeneratedCurriculum] = useState<any>(null);
+  const [generatedPresentation, setGeneratedPresentation] = useState<any>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
 
@@ -279,55 +280,48 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
   };
   
   const handleGeneratePPT = async () => {
-    if (uploads.length === 0) return;
+    if (!generatedCurriculum) {
+      alert("Veuillez d'abord générer le programme (Curriculum).");
+      return;
+    }
     
     setIsGeneratingPPT(true);
     try {
-      // 1. Prepare context from all analyzed files
-      const mainAnalysis = uploads[0].aiAnalysis;
-      if (!mainAnalysis) throw new Error('No analysis found for main file');
+      console.log('🚀 Generating actual presentation slides...');
+      // 1. Generate real presentation slides
+      const presentation = await AIService.generatePresentation(generatedCurriculum);
       
-      const uploadContext = uploads.map(u => ({
-        fileName: u.name,
-        fileType: u.type,
-        keyTopics: u.aiAnalysis?.keyTopics || [],
-        learningObjectives: u.aiAnalysis?.learningObjectives || [],
-        extractedText: u.aiAnalysis?.learningObjectives?.join('\n') // Fallback content
-      }));
-      
-      console.log('🚀 Generating curriculum for PPT...');
-      const curriculum = await AIService.generateCurriculum(
-        mainAnalysis,
-        'General',
-        undefined,
-        uploadContext as any
-      );
-      
-      setGeneratedCurriculum(curriculum);
+      setGeneratedPresentation(presentation);
       setViewMode('ppt');
       setCurrentSlideIndex(0);
       
+    } catch (error: any) {
+      console.error('Failed to generate Presentation:', error);
+      alert('Erreur lors de la génération du PPT: ' + (error.message || 'Erreur inconnue'));
+    } finally {
+      setIsGeneratingPPT(false);
+    }
+  };
+
+  const downloadPPTX = async () => {
+    if (!generatedPresentation) return;
+    try {
       console.log('📊 Exporting to PowerPoint...');
-      const pptBlob = await AIService.exportToPowerPoint(curriculum);
+      const pptBlob = await AIService.exportToPowerPoint(generatedPresentation);
       
-      // 2. Trigger download
       const url = window.URL.createObjectURL(pptBlob);
       const link = document.createElement('a');
       link.href = url;
-      const fileName = `${curriculum.title || 'Training_Program'}.pptx`.replace(/\s+/g, '_');
+      const fileName = `${generatedPresentation.title || 'Training_Program'}.pptx`.replace(/\s+/g, '_');
       link.setAttribute('download', fileName);
       document.body.appendChild(link);
       link.click();
       
-      // Cleanup
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
     } catch (error: any) {
-      console.error('Failed to generate PPT:', error);
-      alert('Erreur lors de la génération du PPT: ' + (error.message || 'Erreur inconnue'));
-    } finally {
-      setIsGeneratingPPT(false);
+      console.error('Failed to export PPT:', error);
+      alert('Erreur lors de l\'export: ' + error.message);
     }
   };
 
@@ -440,68 +434,17 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
     );
   }
 
-  if (viewMode === 'ppt' && generatedCurriculum) {
-    const modules = generatedCurriculum.modules || [];
-    const totalSlides = 3 + (modules.length * 3); // Title, Overview, (Intro+Goals+Content)*Modules, Conclusion
+  if (viewMode === 'ppt' && generatedPresentation) {
+    const slides = generatedPresentation.slides || [];
+    const totalSlides = slides.length;
     
-    // Simulate slides content
-    const getSlideContent = (index: number) => {
-      // 0: Title
-      if (index === 0) return {
-        type: 'title',
-        bg: 'bg-[#1e293b]',
-        title: generatedCurriculum.title,
-        subtitle: generatedCurriculum.description,
-        method: generatedCurriculum.methodology || '360° Methodology'
-      };
-      // 1: Overview
-      if (index === 1) return {
-        type: 'overview',
-        bg: 'bg-white',
-        title: '📋 Vue d\'Ensemble',
-        duration: generatedCurriculum.totalDuration / 60,
-        items: modules.map((m: any) => `${m.title} (${m.duration} min)`)
-      };
-      
-      // Module slides
-      const moduleIdx = Math.floor((index - 2) / 3);
-      const subIdx = (index - 2) % 3;
-      
-      if (moduleIdx < modules.length) {
-        const module = modules[moduleIdx];
-        if (subIdx === 0) return {
-          type: 'module-intro',
-          bg: 'bg-blue-600',
-          number: moduleIdx + 1,
-          title: module.title,
-          desc: module.description
-        };
-        if (subIdx === 1) return {
-          type: 'objectives',
-          bg: 'bg-white',
-          title: '🎯 Objectifs d\'Apprentissage',
-          items: module.learningObjectives
-        };
-        return {
-          type: 'content',
-          bg: 'bg-white',
-          title: '📚 ' + module.title,
-          elements: ['Concept 1', 'Détails techniques', 'Cas pratique'],
-          duration: module.duration,
-          difficulty: module.difficulty
-        };
-      }
-      
-      // Last slide: Conclusion
-      return {
-        type: 'conclusion',
-        bg: 'bg-[#10b981]',
-        title: '🎉 Félicitations !',
-        message: 'Vous avez complété la formation\nContinuez à apprendre !'
-      };
-    };
+    const slide = slides[currentSlideIndex] || {};
 
-    const slide = getSlideContent(currentSlideIndex);
+    const isCover = slide.type?.toLowerCase() === 'cover';
+    const isConclusion = slide.type?.toLowerCase() === 'conclusion';
+    let bgClasses = 'bg-white text-slate-800';
+    if (isCover) bgClasses = 'bg-[#1e293b] text-white';
+    if (isConclusion) bgClasses = 'bg-[#10b981] text-white';
 
     return (
       <div className="min-h-full bg-[#f1f5f9] p-8 flex flex-col items-center">
@@ -535,58 +478,62 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
         </div>
 
         <div className="w-full max-w-5xl aspect-[16/9] shadow-2xl rounded-lg overflow-hidden border-8 border-white bg-white relative">
-          <div className={`w-full h-full ${slide.bg} transition-all duration-500 flex flex-col p-16`}>
-            {slide.type === 'title' && (
+          <div className={`w-full h-full ${bgClasses} transition-all duration-500 flex flex-col p-16`}>
+            
+            {/* Title / Cover Slide */}
+            {isCover && (
               <div className="flex-1 flex flex-col items-center justify-center text-center">
-                <h1 className="text-6xl font-extrabold text-white mb-8 tracking-tight">{slide.title}</h1>
-                <p className="text-2xl text-blue-100 max-w-3xl mb-12">{slide.subtitle}</p>
-                <div className="px-6 py-2 bg-blue-500/20 rounded-full border border-blue-400/30 text-blue-300 font-bold">
-                  📚 {slide.method}
-                </div>
+                <h1 className="text-6xl font-extrabold mb-8 tracking-tight">{slide.title}</h1>
+                <p className="text-2xl text-blue-100 max-w-3xl mb-12">{slide.subtitle || slide.highlight}</p>
               </div>
             )}
             
-            {(slide.type === 'overview' || slide.type === 'objectives' || slide.type === 'content') && (
-              <div className="h-full flex flex-col">
-                <h2 className="text-4xl font-bold text-slate-800 mb-12 flex items-center">
-                  <span className="mr-4">{slide.title}</span>
-                  <div className="flex-1 h-1 bg-slate-100 ml-4 rounded-full"></div>
-                </h2>
-                
-                <div className="flex-1 space-y-6">
-                  {(slide.items || slide.elements)?.map((item: string, i: number) => (
-                    <div key={i} className="flex items-center text-2xl text-slate-700 animate-in slide-in-from-left duration-300" style={{animationDelay: `${i*100}ms`}}>
-                      <span className="h-3 w-3 rounded-full bg-blue-500 mr-6"></span>
-                      {item}
-                    </div>
-                  ))}
-                </div>
-                
-                {slide.duration && (
-                  <div className="mt-8 pt-8 border-t border-slate-100 text-slate-400 font-bold flex items-center justify-center space-x-8">
-                    <span>⏱️ {slide.duration} minutes</span>
-                    <span>📊 Niveau: {slide.difficulty}</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {slide.type === 'module-intro' && (
-              <div className="flex-1 flex flex-col justify-center">
-                <div className="text-4xl font-bold text-white mb-4 opacity-70">Module {slide.number}</div>
-                <h2 className="text-6xl font-black text-white mb-8">{slide.title}</h2>
-                <div className="h-2 w-32 bg-white/30 rounded-full mb-8"></div>
-                <p className="text-2xl text-blue-50 max-w-2xl">{slide.desc}</p>
-              </div>
-            )}
-
-            {slide.type === 'conclusion' && (
+            {/* Conclusion Slide */}
+            {isConclusion && (
               <div className="flex-1 flex flex-col items-center justify-center text-center">
                 <div className="h-32 w-32 rounded-full bg-white/20 flex items-center justify-center mb-10">
                   <Sparkles className="h-16 w-16 text-white" />
                 </div>
-                <h1 className="text-7xl font-black text-white mb-8">{slide.title}</h1>
-                <p className="text-3xl text-green-50 font-medium whitespace-pre-line">{slide.message}</p>
+                <h1 className="text-7xl font-black mb-8">{slide.title}</h1>
+                <p className="text-3xl text-green-50 font-medium whitespace-pre-line">{slide.content || slide.subtitle}</p>
+              </div>
+            )}
+
+            {/* Standard / Content Slides */}
+            {!isCover && !isConclusion && (
+              <div className="h-full flex flex-col">
+                <div className="flex justify-between items-center mb-12">
+                  <h2 className="text-4xl font-bold flex items-center w-full">
+                    <span className="mr-4">{slide.icon || ''} {slide.title}</span>
+                    <div className="flex-1 h-1 bg-slate-100 ml-4 rounded-full"></div>
+                  </h2>
+                  {slide.highlight && (
+                    <div className="ml-4 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg text-lg font-bold border border-yellow-200">
+                      💡 {slide.highlight}
+                    </div>
+                  )}
+                </div>
+                
+                {slide.content && (
+                  <p className="text-2xl text-slate-600 mb-8 leading-relaxed">
+                    {slide.content}
+                  </p>
+                )}
+
+                <div className="flex-1 space-y-6">
+                  {slide.bullets?.map((item: string, i: number) => (
+                    <div key={i} className="flex items-start text-xl text-slate-700 animate-in slide-in-from-left duration-300" style={{animationDelay: `${i*100}ms`}}>
+                      <span className="h-3 w-3 rounded-full bg-blue-500 mr-4 mt-2.5 flex-shrink-0"></span>
+                      <span className="leading-relaxed">{item}</span>
+                    </div>
+                  ))}
+                </div>
+                
+                {slide.note && (
+                  <div className="mt-8 pt-6 border-t border-slate-100 text-slate-400 font-medium">
+                    <span className="font-bold">🎤 Note:</span> {slide.note}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -594,11 +541,11 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
 
         <div className="mt-10 flex space-x-4">
            <button 
-             onClick={handleGeneratePPT}
-             disabled={isGeneratingPPT}
+             onClick={downloadPPTX}
              className="px-8 py-4 bg-white text-slate-800 rounded-2xl font-bold shadow-lg border border-slate-200 hover:bg-slate-50 transition-all flex items-center"
            >
-             <File className="h-5 w-5 mr-2 text-red-500" /> Télécharger le fichier .pptx
+             <FileText className="mr-2 h-5 w-5 text-blue-600" />
+             Télécharger le fichier .pptx
            </button>
            <button 
              onClick={() => onComplete(uploads)}
