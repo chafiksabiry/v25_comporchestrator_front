@@ -440,6 +440,17 @@ export class AIService {
   }
 
   /**
+   * Génère une présentation riche depuis un curriculum (3 batches parallèles Claude)
+   */
+  static async generatePresentation(curriculum: Curriculum): Promise<any> {
+    const response = await ApiClient.post<any>('/api/ai/generate-presentation', { curriculum });
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Presentation generation failed');
+    }
+    return response.data.presentation;
+  }
+
+  /**
    * Exporte un curriculum en PowerPoint (.pptx)
    * Génère un fichier PowerPoint professionnel avec slides animées
    */
