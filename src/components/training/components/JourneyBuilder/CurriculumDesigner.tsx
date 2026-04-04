@@ -406,11 +406,6 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
 
         setCurrentStep('content'); // ✅ Directement à l'étape "content"
         setEnhancementProgress({ 'complete': 100 });
-
-        // ✅ Auto-generate the presentation so the user doesn't see the modules list
-        setTimeout(() => {
-          handleGenerateInteractivePPT(fullModules);
-        }, 500);
       } else {
         // Fallback: générer des modules basiques avec sections basées sur les documents
         const fallbackModules = createModulesFromUploads(uploads);
@@ -1369,16 +1364,71 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
                               </div>
                             </div>
 
-                            {/* ✅ SECTIONS CONTENT STRUCTURE STRIPPED (PRESENTATION TARGETED) */}
+                            {/* ✅ SLIDE CONTENT PREVIEW */}
                             <div className="mb-4">
                               <h5 className="font-semibold text-gray-900 mb-3 flex items-center">
                                 <FileText className="h-5 w-5 mr-2 text-indigo-600" />
-                                Format Présentation
+                                Module Content ({(module as any).sections?.length || module.content.length} Slides)
                               </h5>
-                              <div className="space-y-3 bg-indigo-50/50 rounded-lg p-4 border border-indigo-100">
-                                <p className="text-sm text-indigo-700 italic">
-                                  Les documents uploadés ont été combinés et transformés en présentation interactive globale. Cliquez sur le bouton "Générer Présentation PPT" ci-dessous pour l'afficher ou la recharger.
-                                </p>
+                              <div className="space-y-3">
+                                {((module as any).sections && (module as any).sections.length > 0) ? (
+                                  (module as any).sections.map((section: any, idx: number) => (
+                                    <div key={idx} className="bg-white rounded-lg border-2 border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                      <div className="px-4 py-3 bg-indigo-50/50 border-b border-indigo-100/50 flex justify-between items-center">
+                                        <div className="flex items-center space-x-2">
+                                          <Sparkles className="h-4 w-4 text-indigo-600" />
+                                          <span className="font-semibold text-indigo-900">Slide {idx + 1}: {section.title}</span>
+                                        </div>
+                                        <span className="text-xs text-indigo-500 font-medium px-2 py-1 bg-white rounded-md shadow-sm border border-indigo-50">
+                                          {section.estimatedDuration || 10} min
+                                        </span>
+                                      </div>
+                                      <div className="p-4 space-y-3">
+                                        <div className="flex bg-slate-50/80 p-3 rounded-lg border border-slate-100 mb-3">
+                                          <p className="text-sm text-slate-700 italic flex-1">
+                                            {typeof section.content?.text === 'string' 
+                                              ? section.content.text.substring(0, 150) + (section.content.text.length > 150 ? '...' : '') 
+                                              : 'Contenu de la slide basé sur le document...'}
+                                          </p>
+                                        </div>
+                                        {section.content?.keyPoints && section.content.keyPoints.length > 0 && (
+                                          <div className="space-y-2">
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Key Points</p>
+                                            <ul className="space-y-2">
+                                              {section.content.keyPoints.slice(0, 3).map((kp: string, kpIdx: number) => (
+                                                <li key={kpIdx} className="text-sm text-slate-700 flex items-start">
+                                                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 mt-1.5 mr-3 flex-shrink-0"></span>
+                                                  <span className="leading-snug">{kp}</span>
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))
+                                ) : (
+                                  module.content.map((section, idx) => (
+                                    <div key={idx} className="bg-white rounded-lg border-2 border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                      <div className="px-4 py-3 bg-indigo-50/50 border-b border-indigo-100/50 flex justify-between items-center">
+                                        <div className="flex items-center space-x-2">
+                                          <Sparkles className="h-4 w-4 text-indigo-600" />
+                                          <span className="font-semibold text-indigo-900">Slide {idx + 1}: {section.title}</span>
+                                        </div>
+                                        <span className="text-xs text-indigo-500 font-medium px-2 py-1 bg-white rounded-md shadow-sm border border-indigo-50">
+                                          {section.duration || 10} min
+                                        </span>
+                                      </div>
+                                      <div className="p-4">
+                                        <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg whitespace-pre-line leading-relaxed border border-slate-100">
+                                          {typeof section.content === 'string' 
+                                            ? section.content.substring(0, 200) + (section.content.length > 200 ? '...' : '') 
+                                            : 'Content ready for presentation'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  ))
+                                )}
                               </div>
                             </div>
 
