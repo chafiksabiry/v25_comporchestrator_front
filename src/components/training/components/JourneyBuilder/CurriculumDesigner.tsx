@@ -1366,65 +1366,78 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
 
                             {/* ✅ SLIDE CONTENT PREVIEW */}
                             <div className="mb-4">
-                              <h5 className="font-semibold text-gray-900 mb-3 flex items-center">
-                                <FileText className="h-5 w-5 mr-2 text-indigo-600" />
-                                Module Content ({(module as any).sections?.length || module.content.length} Slides)
+                              <h5 className="font-semibold text-gray-900 mb-4 flex items-center">
+                                <Sparkles className="h-5 w-5 mr-2 text-indigo-600" />
+                                Aperçu des Slides ({ (module as any).sections?.length || module.content.length })
                               </h5>
-                              <div className="space-y-3">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-xl border border-slate-200">
                                 {((module as any).sections && (module as any).sections.length > 0) ? (
                                   (module as any).sections.map((section: any, idx: number) => (
-                                    <div key={idx} className="bg-white rounded-lg border-2 border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                                      <div className="px-4 py-3 bg-indigo-50/50 border-b border-indigo-100/50 flex justify-between items-center">
-                                        <div className="flex items-center space-x-2">
-                                          <Sparkles className="h-4 w-4 text-indigo-600" />
-                                          <span className="font-semibold text-indigo-900">Slide {idx + 1}: {section.title}</span>
+                                    <div key={idx} className="group relative">
+                                      {/* Conteneur 16:9 pour simuler une vraie diapo */}
+                                      <div className="aspect-[16/9] bg-white rounded-lg shadow-md border border-slate-200 overflow-hidden flex flex-col p-5 hover:shadow-xl transition-all hover:-translate-y-1 relative">
+                                        
+                                        {/* Header de la slide */}
+                                        <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-3">
+                                          <h3 className="text-lg font-extrabold text-slate-800 flex items-center leading-tight">
+                                            <span className="text-indigo-600 text-xl mr-2">✦</span>
+                                            {section.title}
+                                          </h3>
                                         </div>
-                                        <span className="text-xs text-indigo-500 font-medium px-2 py-1 bg-white rounded-md shadow-sm border border-indigo-50">
-                                          {section.estimatedDuration || 10} min
-                                        </span>
-                                      </div>
-                                      <div className="p-4 space-y-3">
-                                        <div className="flex bg-slate-50/80 p-3 rounded-lg border border-slate-100 mb-3">
-                                          <p className="text-sm text-slate-700 italic flex-1">
-                                            {typeof section.content?.text === 'string' 
-                                              ? section.content.text.substring(0, 150) + (section.content.text.length > 150 ? '...' : '') 
-                                              : 'Contenu de la slide basé sur le document...'}
-                                          </p>
-                                        </div>
-                                        {section.content?.keyPoints && section.content.keyPoints.length > 0 && (
-                                          <div className="space-y-2">
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Key Points</p>
-                                            <ul className="space-y-2">
-                                              {section.content.keyPoints.slice(0, 3).map((kp: string, kpIdx: number) => (
-                                                <li key={kpIdx} className="text-sm text-slate-700 flex items-start">
-                                                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 mt-1.5 mr-3 flex-shrink-0"></span>
+
+                                        {/* Contenu principal de la slide */}
+                                        <div className="flex-1 flex flex-col justify-center">
+                                          {(section.content?.keyPoints && section.content.keyPoints.length > 0) ? (
+                                            <div className="space-y-3">
+                                              {section.content.keyPoints.slice(0, 4).map((kp: string, kpIdx: number) => (
+                                                <div key={kpIdx} className="flex items-start text-[13px] text-slate-700 font-medium">
+                                                  <span className="h-1.5 w-1.5 rounded-full bg-blue-500 mt-1.5 mr-3 flex-shrink-0 shadow-sm"></span>
                                                   <span className="leading-snug">{kp}</span>
-                                                </li>
+                                                </div>
                                               ))}
-                                            </ul>
-                                          </div>
-                                        )}
+                                            </div>
+                                          ) : (
+                                            <p className="text-[13px] text-slate-600 leading-relaxed font-medium italic text-center px-4">
+                                              {typeof section.content?.text === 'string' 
+                                                ? section.content.text
+                                                    .replace(/from\s+[^.]+\.(pdf|txt|docx?)/gi, "from the core resources")
+                                                    .replace(/Document:\s+[^.]+\.(pdf|txt|docx?)/gi, "Interactive Module Content")
+                                                    .substring(0, 180) + '...'
+                                                : 'Contenu interactif généré par l\'IA...'}
+                                            </p>
+                                          )}
+                                        </div>
+
+                                        {/* Footer de la slide */}
+                                        <div className="mt-auto pt-3 flex justify-between items-center text-[10px] text-slate-400 font-bold tracking-wider border-t border-slate-50 uppercase">
+                                          <span>HARX Platform</span>
+                                          <span className="bg-slate-100 px-2 py-1 rounded text-slate-500">Slide {idx + 1}</span>
+                                        </div>
                                       </div>
                                     </div>
                                   ))
                                 ) : (
-                                  module.content.map((section, idx) => (
-                                    <div key={idx} className="bg-white rounded-lg border-2 border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                                      <div className="px-4 py-3 bg-indigo-50/50 border-b border-indigo-100/50 flex justify-between items-center">
-                                        <div className="flex items-center space-x-2">
-                                          <Sparkles className="h-4 w-4 text-indigo-600" />
-                                          <span className="font-semibold text-indigo-900">Slide {idx + 1}: {section.title}</span>
+                                  module.content.map((section: any, idx: number) => (
+                                    <div key={idx} className="group relative">
+                                      {/* Conteneur 16:9 */}
+                                      <div className="aspect-[16/9] bg-white rounded-lg shadow-md border border-slate-200 overflow-hidden flex flex-col p-5 hover:shadow-xl transition-all hover:-translate-y-1 relative">
+                                        <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-3">
+                                          <h3 className="text-lg font-extrabold text-slate-800 flex items-center leading-tight">
+                                            <span className="text-indigo-600 text-xl mr-2">✦</span>
+                                            {section.title}
+                                          </h3>
                                         </div>
-                                        <span className="text-xs text-indigo-500 font-medium px-2 py-1 bg-white rounded-md shadow-sm border border-indigo-50">
-                                          {section.duration || 10} min
-                                        </span>
-                                      </div>
-                                      <div className="p-4">
-                                        <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg whitespace-pre-line leading-relaxed border border-slate-100">
-                                          {typeof section.content === 'string' 
-                                            ? section.content.substring(0, 200) + (section.content.length > 200 ? '...' : '') 
-                                            : 'Content ready for presentation'}
-                                        </p>
+                                        <div className="flex-1 flex flex-col justify-center">
+                                          <p className="text-[13px] text-slate-600 px-4 text-center leading-relaxed font-medium italic">
+                                            {typeof section.content === 'string' 
+                                              ? section.content.substring(0, 150) + '...'
+                                              : 'Contenu visuel de la présentation...'}
+                                          </p>
+                                        </div>
+                                        <div className="mt-auto pt-3 flex justify-between items-center text-[10px] text-slate-400 font-bold tracking-wider border-t border-slate-50 uppercase">
+                                          <span>HARX Platform</span>
+                                          <span className="bg-slate-100 px-2 py-1 rounded text-slate-500">Slide {idx + 1}</span>
+                                        </div>
                                       </div>
                                     </div>
                                   ))
