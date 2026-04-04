@@ -5,6 +5,7 @@ import { TrainingMethodology } from '../../types/methodology';
 import { TrainingSection } from '../../types/manualTraining';
 import { AIService } from '../../infrastructure/services/AIService';
 import PowerPointViewer from '../Export/PowerPointViewer';
+import InteractivePresentationViewer from './InteractivePresentationViewer';
 
 interface CurriculumDesignerProps {
   uploads: ContentUpload[];
@@ -23,6 +24,9 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
   const [isExportingPPT, setIsExportingPPT] = React.useState(false);
   const [pptBlob, setPptBlob] = React.useState<Blob | null>(null);
   const [showPPTViewer, setShowPPTViewer] = React.useState(false);
+  const [viewMode, setViewMode] = React.useState<'modules' | 'ppt'>('modules');
+  const [generatedPresentation, setGeneratedPresentation] = React.useState<any>(null);
+  const [isGeneratingInteractivePPT, setIsGeneratingInteractivePPT] = React.useState(false);
   const [currentStep, setCurrentStep] = React.useState<'plan' | 'content'>('plan');
   const [isGeneratingContent, setIsGeneratingContent] = React.useState(false);
   const [finalExam, setFinalExam] = React.useState<any>(null);
@@ -808,6 +812,47 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
     }
   };
 
+  const handleGenerateInteractivePPT = async () => {
+    if (modules.length === 0) {
+      console.warn('⚠️ No modules to export. Generate modules first.');
+      return;
+    }
+
+    setIsGeneratingInteractivePPT(true);
+
+    try {
+      const curriculum = {
+        title: methodology?.name || 'Formation Professionnelle',
+        description: `Formation complète générée avec ${modules.length} modules`,
+        totalDuration: modules.reduce((sum, m) => sum + m.duration, 0),
+        methodology: methodology?.name || '360° Methodology',
+        modules: modules.map(m => ({
+          title: m.title,
+          description: m.description,
+          duration: m.duration,
+          difficulty: m.difficulty,
+          contentItems: m.content.length,
+          assessments: m.assessments.length,
+          enhancedElements: ['Video Introduction', 'Interactive Exercises', 'Knowledge Check'],
+          learningObjectives: m.learningObjectives
+        }))
+      };
+
+      console.log('📊 Generating Interactive PowerPoint:', curriculum);
+      const presentation = await AIService.generatePresentation(curriculum);
+
+      setGeneratedPresentation(presentation);
+      setViewMode('ppt');
+      console.log('✅ Interactive PowerPoint généré avec succès !');
+
+    } catch (error: any) {
+      console.error('❌ Erreur lors de la génération de la présentation:', error);
+      alert('❌ Erreur lors de la génération de la présentation: ' + (error.message || 'Erreur inconnue'));
+    } finally {
+      setIsGeneratingInteractivePPT(false);
+    }
+  };
+
   const exportToPowerPoint = async () => {
     if (modules.length === 0) {
       console.warn('⚠️ No modules to export. Generate modules first.');
@@ -1114,6 +1159,17 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
           <p className="text-sm text-gray-500 mt-2">This may take a few moments...</p>
         </div>
       </div>
+    );
+  }
+
+  if (viewMode === 'ppt' && generatedPresentation) {
+    return (
+      <InteractivePresentationViewer
+        presentation={generatedPresentation}
+        onClose={() => setViewMode('modules')}
+        onDownload={exportToPowerPoint}
+        onApprove={() => onComplete(modules)}
+      />
     );
   }
 
@@ -1634,14 +1690,28 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
               </div>
             </div>
 
-            <button
-              onClick={() => onComplete(modules)}
-              disabled={modules.length === 0}
-              className="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg flex items-center space-x-2"
-            >
-              <Rocket className="h-5 w-5" />
-              <span>🚀 LAUNCH TRAINING</span>
-            </button>
+            <div className="flex space-x-4">
+              <button
+                onClick={handleGenerateInteractivePPT}
+                disabled={modules.length === 0 || isGeneratingInteractivePPT}
+                className="px-8 py-3 bg-white text-indigo-700 border-2 border-indigo-200 rounded-xl hover:bg-indigo-50 disabled:opacity-50 transition-all font-medium shadow-lg flex items-center space-x-2"
+              >
+                {isGeneratingInteractivePPT ? (
+                  <Wand2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <FileText className="h-5 w-5" />
+                )}
+                <span>Générer Présentation PPT</span>
+              </button>
+              <button
+                onClick={() => onComplete(modules)}
+                disabled={modules.length === 0}
+                className="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg flex items-center space-x-2"
+              >
+                <Rocket className="h-5 w-5" />
+                <span>🚀 LAUNCH TRAINING</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
