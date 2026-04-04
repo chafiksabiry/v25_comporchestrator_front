@@ -406,6 +406,11 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
 
         setCurrentStep('content'); // ✅ Directement à l'étape "content"
         setEnhancementProgress({ 'complete': 100 });
+
+        // ✅ Auto-generate the presentation so the user doesn't see the modules list
+        setTimeout(() => {
+          handleGenerateInteractivePPT(fullModules);
+        }, 500);
       } else {
         // Fallback: générer des modules basiques avec sections basées sur les documents
         const fallbackModules = createModulesFromUploads(uploads);
@@ -812,8 +817,10 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
     }
   };
 
-  const handleGenerateInteractivePPT = async () => {
-    if (modules.length === 0) {
+  const handleGenerateInteractivePPT = async (modulesArg?: TrainingModule[]) => {
+    const modulesToUse = modulesArg && modulesArg.length > 0 ? modulesArg : modules;
+    
+    if (modulesToUse.length === 0) {
       console.warn('⚠️ No modules to export. Generate modules first.');
       return;
     }
@@ -823,10 +830,10 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
     try {
       const curriculum = {
         title: methodology?.name || 'Formation Professionnelle',
-        description: `Formation complète générée avec ${modules.length} modules`,
-        totalDuration: modules.reduce((sum, m) => sum + m.duration, 0),
+        description: `Formation complète générée avec ${modulesToUse.length} modules`,
+        totalDuration: modulesToUse.reduce((sum, m) => sum + m.duration, 0),
         methodology: methodology?.name || '360° Methodology',
-        modules: modules.map(m => ({
+        modules: modulesToUse.map(m => ({
           title: m.title,
           description: m.description,
           duration: m.duration,
@@ -1362,79 +1369,16 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
                               </div>
                             </div>
 
-                            {/* ✅ SECTIONS CONTENT STRUCTURE */}
+                            {/* ✅ SECTIONS CONTENT STRUCTURE STRIPPED (PRESENTATION TARGETED) */}
                             <div className="mb-4">
                               <h5 className="font-semibold text-gray-900 mb-3 flex items-center">
                                 <FileText className="h-5 w-5 mr-2 text-indigo-600" />
-                                Module Content ({(module as any).sections?.length || module.content.length} Sections)
+                                Format Présentation
                               </h5>
-                              <div className="space-y-3 bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                {/* Afficher les sections réelles si disponibles */}
-                                {((module as any).sections && (module as any).sections.length > 0) ? (
-                                  (module as any).sections.map((section: any, idx: number) => (
-                                    <details key={section.id || idx} className="group bg-white rounded-lg border border-gray-300 overflow-hidden hover:shadow-md transition-shadow">
-                                      <summary className="cursor-pointer px-4 py-3 font-medium text-gray-900 hover:bg-indigo-50 transition-colors flex items-center justify-between">
-                                        <div className="flex items-center space-x-2">
-                                          <FileText className="h-4 w-4 text-indigo-600" />
-                                          <span>{section.title}</span>
-                                          <span className="text-xs text-gray-500">({section.estimatedDuration || section.duration || 0} min)</span>
-                                        </div>
-                                        <ChevronRight className="h-4 w-4 text-gray-400 group-open:rotate-90 transition-transform" />
-                                      </summary>
-                                      <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
-                                        {/* Afficher uniquement le document */}
-                                        {section.content?.file && (
-                                          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                            <div className="flex items-center space-x-2">
-                                              <FileText className="h-5 w-5 text-blue-600" />
-                                              <span className="text-sm font-medium text-blue-900">{section.content.file.name}</span>
-                                              {section.estimatedDuration && (
-                                                <span className="text-xs text-gray-500 ml-auto">({section.estimatedDuration} min)</span>
-                                              )}
-                                            </div>
-                                            {section.content.file.url && (
-                                              <a
-                                                href={section.content.file.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-xs text-blue-600 hover:text-blue-800 underline mt-2 inline-block"
-                                              >
-                                                Ouvrir le document
-                                              </a>
-                                            )}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </details>
-                                  ))
-                                ) : (
-                                  // Fallback sur content si pas de sections
-                                  module.content.map((section, idx) => (
-                                    <details key={idx} className="group bg-white rounded-lg border border-gray-300 overflow-hidden hover:shadow-md transition-shadow">
-                                      <summary className="cursor-pointer px-4 py-3 font-medium text-gray-900 hover:bg-indigo-50 transition-colors flex items-center justify-between">
-                                        <div className="flex items-center space-x-2">
-                                          <BookOpen className="h-4 w-4 text-indigo-600" />
-                                          <span>{section.title}</span>
-                                          <span className="text-xs text-gray-500">({section.duration} min)</span>
-                                        </div>
-                                        <ChevronRight className="h-4 w-4 text-gray-400 group-open:rotate-90 transition-transform" />
-                                      </summary>
-                                      <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
-                                        <div className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
-                                          {typeof section.content === 'string'
-                                            ? section.content.substring(0, 300) + (section.content.length > 300 ? '...' : '')
-                                            : JSON.stringify(section.content, null, 2).substring(0, 200)
-                                          }
-                                        </div>
-                                        {typeof section.content === 'string' && section.content.length > 300 && (
-                                          <div className="mt-2 text-xs text-indigo-600 font-medium">
-                                            + {section.content.length - 300} more characters
-                                          </div>
-                                        )}
-                                      </div>
-                                    </details>
-                                  ))
-                                )}
+                              <div className="space-y-3 bg-indigo-50/50 rounded-lg p-4 border border-indigo-100">
+                                <p className="text-sm text-indigo-700 italic">
+                                  Les documents uploadés ont été combinés et transformés en présentation interactive globale. Cliquez sur le bouton "Générer Présentation PPT" ci-dessous pour l'afficher ou la recharger.
+                                </p>
                               </div>
                             </div>
 
@@ -1692,7 +1636,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
 
             <div className="flex space-x-4">
               <button
-                onClick={handleGenerateInteractivePPT}
+                onClick={() => handleGenerateInteractivePPT()}
                 disabled={modules.length === 0 || isGeneratingInteractivePPT}
                 className="px-8 py-3 bg-white text-indigo-700 border-2 border-indigo-200 rounded-xl hover:bg-indigo-50 disabled:opacity-50 transition-all font-medium shadow-lg flex items-center space-x-2"
               >
