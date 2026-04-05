@@ -531,8 +531,8 @@ export default function ContentUploader({ onComplete, onFinishEarly, onBack }: C
           </div>
         </div>
 
-        <div className="w-full max-w-5xl aspect-[16/9] shadow-2xl rounded-2xl overflow-hidden border-8 border-white bg-white relative group">
-          <div className={`w-full h-full ${bgClasses} transition-all duration-500 relative overflow-hidden`}>
+        <div className="w-full max-w-5xl shadow-2xl rounded-2xl overflow-hidden border-8 border-white bg-white relative group">
+          <div className={`w-full min-h-[600px] md:aspect-[16/9] ${bgClasses} transition-all duration-500 relative flex flex-col`}>
             
             {/* Ambient Background Effects for Cover */}
             {isCover && (
@@ -550,7 +550,7 @@ export default function ContentUploader({ onComplete, onFinishEarly, onBack }: C
               </div>
             )}
 
-            <div className="relative z-10 w-full h-full p-16 flex flex-col">
+            <div className="relative z-10 w-full h-full p-8 md:p-12 flex flex-col overflow-y-auto">
               
               {/* Cover Slide Content */}
               {isCover && (
@@ -587,57 +587,57 @@ export default function ContentUploader({ onComplete, onFinishEarly, onBack }: C
                   <div className="absolute left-[-4rem] top-[-4rem] bottom-[-4rem] w-16 bg-gradient-to-b from-purple-600 to-rose-500 opacity-90 rounded-r-3xl shadow-lg"></div>
                   
                   <div className="h-full flex flex-col pl-4 w-full">
-                    <div className="flex justify-between items-start mb-8">
-                      <h2 className="text-4xl font-bold flex items-center w-full text-slate-800">
-                        <span className="mr-5 p-3 bg-purple-100 rounded-xl text-purple-600 shadow-inner">
-                          <span className="text-3xl">{slide.icon || '📄'}</span>
+                    <div className="flex justify-between items-start mb-6">
+                      <h2 className="text-3xl md:text-4xl font-bold flex items-center w-full text-slate-800">
+                        <span className="mr-4 p-2 bg-purple-100 rounded-xl text-purple-600 shadow-inner">
+                          <span className="text-2xl md:text-3xl">{slide.icon || '📄'}</span>
                         </span> 
                         <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-600">
                           {slide.title}
                         </span>
                       </h2>
                       {slide.highlight && (
-                        <div className="ml-6 px-5 py-3 bg-gradient-to-r from-yellow-50 to-amber-50 text-amber-800 rounded-xl text-lg font-bold border border-yellow-200 shadow-sm flex-shrink-0 flex items-center">
-                          <span className="mr-2 text-2xl">💡</span> {slide.highlight}
+                        <div className="ml-4 px-4 py-2 bg-gradient-to-r from-yellow-50 to-amber-50 text-amber-800 rounded-xl text-base md:text-lg font-bold border border-yellow-200 shadow-sm flex-shrink-0 flex items-center">
+                          <span className="mr-2 text-xl md:text-2xl">💡</span> {slide.highlight}
                         </div>
                       )}
                     </div>
                     
-                    <div className="flex-1 flex gap-12">
+                    <div className="flex-1 flex gap-8">
                       <div className="flex-1 flex flex-col">
                         {slide.content && (
-                          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8 border-l-4 border-l-purple-400">
-                            <p className="text-2xl text-slate-600 leading-relaxed">
+                          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-6 border-l-4 border-l-purple-400">
+                            <p className="text-lg md:text-xl text-slate-600 leading-relaxed">
                               {slide.content}
                             </p>
                           </div>
                         )}
 
-                        <div className="flex-1 space-y-4">
+                        <div className="flex-1 space-y-3">
                           {slide.bullets?.map((item: string, i: number) => (
-                            <div key={i} className="flex items-start bg-white p-4 rounded-xl shadow-sm border border-slate-50 hover:shadow-md transition-shadow hover:scale-[1.01]">
-                              <div className="bg-gradient-to-br from-purple-500 to-rose-400 h-8 w-8 rounded-full flex flex-shrink-0 items-center justify-center text-white font-bold text-sm mr-4 shadow-sm">
+                            <div key={i} className="flex items-start bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-50 hover:shadow-md transition-shadow hover:scale-[1.01]">
+                              <div className="bg-gradient-to-br from-purple-500 to-rose-400 h-6 w-6 md:h-8 md:w-8 rounded-full flex flex-shrink-0 items-center justify-center text-white font-bold text-sm mr-3 shadow-sm">
                                 {i + 1}
                               </div>
-                              <span className="text-xl text-slate-700 leading-relaxed pt-0.5">{item}</span>
+                              <span className="text-base md:text-lg text-slate-700 leading-relaxed pt-0.5">{item}</span>
                             </div>
                           ))}
                         </div>
                       </div>
                       
                       {/* Multimedia Placeholder / AI Image */}
-                      <div className="hidden lg:flex w-2/5 flex-col justify-center items-center opacity-90 p-4">
+                      <div className="hidden lg:flex w-1/3 flex-col justify-center items-center opacity-90 p-2">
                         {slide.imageUrl ? (
-                           <div className="w-full aspect-square rounded-3xl bg-slate-100 flex items-center justify-center flex-col shadow-inner overflow-hidden relative border-4 border-white">
+                           <div className="w-full aspect-[4/3] rounded-2xl bg-slate-100 flex items-center justify-center flex-col shadow-inner overflow-hidden relative border-4 border-white">
                               <img src={slide.imageUrl} alt={slide.title} className="w-full h-full object-cover animate-in fade-in duration-700" />
                            </div>
                         ) : (
-                           <div className="w-full aspect-square rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-dashed border-slate-300 flex items-center justify-center flex-col shadow-inner overflow-hidden relative">
+                           <div className="w-full aspect-[4/3] rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-dashed border-slate-300 flex items-center justify-center flex-col shadow-inner overflow-hidden relative">
                               <div className="absolute inset-0 bg-white/40"></div>
                               <div className="relative z-10 flex flex-col items-center">
-                                 <Image className="h-16 w-16 text-slate-400 mb-4 drop-shadow-sm" />
-                                 <span className="text-slate-500 font-medium text-lg">Espace Média AI</span>
-                                 <span className="text-slate-400 text-sm mt-2 text-center px-6">Image ou vidéo sera générée ici</span>
+                                 <Image className="h-12 w-12 text-slate-400 mb-2 drop-shadow-sm" />
+                                 <span className="text-slate-500 font-medium text-base">Espace Média AI</span>
+                                 <span className="text-slate-400 text-xs mt-1 text-center px-4">Image sera générée ici</span>
                               </div>
                            </div>
                         )}
