@@ -174,9 +174,6 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                             {DAYS.map((day, idx) => (
                                 <th key={day} className="p-1 text-center border-b border-gray-100 min-w-[70px]">
                                     <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{day.slice(0, 3)}</div>
-                                    <div className={`text-sm font-black ${weekDates[idx] instanceof Date && !isNaN(weekDates[idx].getTime()) && isSameDay(weekDates[idx], new Date()) ? 'text-harx-600' : 'text-gray-900'}`}>
-                                        {weekDates[idx] instanceof Date && !isNaN(weekDates[idx].getTime()) ? format(weekDates[idx], 'dd') : '--'}
-                                    </div>
                                 </th>
                             ))}
                         </tr>
@@ -210,7 +207,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                                                 type="number"
                                                 min="0"
                                                 value={value === 0 ? '' : value}
-                                                placeholder="0"
+                                                placeholder=""
                                                 onChange={(e) => handleCellChange(dateStr, hour, e.target.value)}
                                                 className={`w-11 h-8 text-center rounded-lg font-black text-sm transition-all border-2 
                                                     ${value > 0
