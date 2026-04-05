@@ -1,11 +1,26 @@
 import React from 'react';
-import { Brain, BookOpen, CheckSquare, Trash2, Plus, ArrowRight, Sparkles, Video, Music, BarChart3, Zap, Eye, Wand2, FileDown, ChevronRight, FileText, Rocket, RotateCcw, Edit2 } from 'lucide-react';
+import {
+  Brain,
+  Video,
+  Music,
+  BarChart3,
+  Zap,
+  CheckSquare,
+  BookOpen,
+  Plus,
+  Edit2,
+  Trash2,
+  Rocket,
+  ArrowRight,
+  RotateCcw,
+  Wand2,
+  ChevronRight,
+  FileText
+} from 'lucide-react';
 import { ContentUpload, TrainingModule, ModuleContent, Assessment, Question } from '../../types/core';
 import { TrainingMethodology } from '../../types/methodology';
 import { TrainingSection } from '../../types/manualTraining';
 import { AIService } from '../../infrastructure/services/AIService';
-import PowerPointViewer from '../Export/PowerPointViewer';
-import InteractivePresentationViewer from './InteractivePresentationViewer';
 
 interface CurriculumDesignerProps {
   uploads: ContentUpload[];
@@ -21,12 +36,6 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
   const [editingModuleId, setEditingModuleId] = React.useState<string | null>(null);
   const [enhancementProgress, setEnhancementProgress] = React.useState<Record<string, any>>({});
   const [activeTab, setActiveTab] = React.useState('modules');
-  const [isExportingPPT, setIsExportingPPT] = React.useState(false);
-  const [pptBlob, setPptBlob] = React.useState<Blob | null>(null);
-  const [showPPTViewer, setShowPPTViewer] = React.useState(false);
-  const [viewMode, setViewMode] = React.useState<'modules' | 'ppt'>('modules');
-  const [generatedPresentation, setGeneratedPresentation] = React.useState<any>(null);
-  const [isGeneratingInteractivePPT, setIsGeneratingInteractivePPT] = React.useState(false);
   const [currentStep, setCurrentStep] = React.useState<'plan' | 'content'>('plan');
   const [isGeneratingContent, setIsGeneratingContent] = React.useState(false);
   const [finalExam, setFinalExam] = React.useState<any>(null);
@@ -44,34 +53,19 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
     setEnhancementProgress({ 'plan': 10 });
 
     try {
-      // ✅ SUPPORT DE PLUSIEURS FICHIERS : Combiner les analyses de tous les uploads
       const analyzedUploads = uploads.filter(u => u.aiAnalysis);
 
-      // Si on a des uploads, créer des modules même si l'API échoue
       if (uploads.length > 0) {
-        // Combiner toutes les analyses en une seule
         const combinedAnalysis = analyzedUploads.length === 1
           ? analyzedUploads[0].aiAnalysis!
           : {
-            // Fusionner les key topics de tous les fichiers
             keyTopics: [...new Set(analyzedUploads.flatMap(u => u.aiAnalysis?.keyTopics || []))],
-
-            // Prendre la difficulté moyenne
             difficulty: Math.round(
               analyzedUploads.reduce((sum, u) => sum + (u.aiAnalysis?.difficulty || 5), 0) / analyzedUploads.length
             ),
-
-            // Additionner les temps de lecture
             estimatedReadTime: analyzedUploads.reduce((sum, u) => sum + (u.aiAnalysis?.estimatedReadTime || 0), 0),
-
-            // Combiner tous les objectifs d'apprentissage
             learningObjectives: [...new Set(analyzedUploads.flatMap(u => u.aiAnalysis?.learningObjectives || []))],
-
-            // Combiner les prérequis
             prerequisites: [...new Set(analyzedUploads.flatMap(u => u.aiAnalysis?.prerequisites || []))],
-
-            // ✅ CORRECTION : Limiter à 6 modules suggérés maximum
-            // Ne pas fusionner tous les modules de tous les uploads !
             suggestedModules: [
               'Module 1: Introduction and Foundations',
               'Module 2: Core Concepts and Theory',
@@ -82,18 +76,9 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
             ]
           };
 
-        console.log('📊 Combined Analysis:', {
-          uploads: analyzedUploads.length,
-          suggestedModules: combinedAnalysis.suggestedModules,
-          keyTopics: combinedAnalysis.keyTopics,
-          learningObjectives: combinedAnalysis.learningObjectives
-        });
-
         const industry = methodology?.name || 'General';
-
         setEnhancementProgress({ 'generating': 30 } as any);
 
-        // Build upload context so OpenAI can ground curriculum generation on uploaded files.
         const uploadContext = uploads.map((upload) => ({
           fileName: upload.name,
           fileType: upload.type,
@@ -101,7 +86,6 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
           learningObjectives: upload.aiAnalysis?.learningObjectives || []
         }));
 
-        // ✅ APPEL API RÉEL pour générer le curriculum avec l'analyse combinée, le contexte de Gig et les uploads
         let curriculum;
         try {
           curriculum = await AIService.generateCurriculum(
@@ -112,7 +96,6 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
           );
         } catch (apiError) {
           console.warn('⚠️ API generateCurriculum failed, using fallback modules:', apiError);
-          // Créer des modules fallback basés sur les uploads
           const fallbackModules = createModulesFromUploads(uploads, combinedAnalysis);
           setModules(fallbackModules);
           setCurrentStep('content');
@@ -121,28 +104,16 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
           return;
         }
 
-        console.log('📚 Curriculum API Response:', {
-          modulesCount: curriculum?.modules?.length || 0,
-          suggestedCount: combinedAnalysis?.suggestedModules?.length || 0,
-          modules: curriculum?.modules
-        });
-
         setEnhancementProgress({ 'transforming': 60 } as any);
 
-        // ✅ CORRECTION : MAXIMUM 6 modules (pas plus !)
-        // Si l'API retourne plus de 6 modules, on garde seulement les 6 premiers
         let modulesToUse = (curriculum?.modules || []).slice(0, 6);
-        const targetModuleCount = 6; // TOUJOURS 6 modules
+        const targetModuleCount = 6;
 
         if (modulesToUse.length > 6) {
-          console.warn(`⚠️ API returned ${curriculum?.modules?.length || 0} modules. Limiting to 6.`);
           modulesToUse = modulesToUse.slice(0, 6);
         }
 
         if ((curriculum?.modules?.length || 0) < targetModuleCount) {
-          console.warn(`⚠️ API returned ${curriculum?.modules?.length || 0} modules, but ${targetModuleCount} were expected. Generating missing modules...`);
-
-          // Si on a des suggestions, les utiliser
           const availableSuggestions = combinedAnalysis?.suggestedModules || [];
           const missingCount = targetModuleCount - (curriculum?.modules?.length || 0);
 
@@ -166,26 +137,11 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
           }
 
           modulesToUse = [...(curriculum?.modules || []), ...missingModules];
-          console.log('✅ Generated missing modules:', missingModules.length, 'Total modules:', modulesToUse.length);
         }
 
-        // ✅ GÉNÉRER LE PLAN AVEC CONTENU COMPLET ET PERSONNALISÉ
-        console.log('🚀 Starting AI-powered content generation for all modules...');
-        setEnhancementProgress({ 'ai-content': 40 } as any);
-
-        // Récupérer toutes les transcriptions
-        const allTranscriptions = uploads
-          .filter(u => (u as any).transcription || (u as any).content)
-          .map(u => (u as any).transcription || (u as any).content || '')
-          .join('\n\n---\n\n');
-
-        // ✅ ORGANISER LES DOCUMENTS EN MODULES ET SECTIONS
-        // Si 1 document → 1 module avec 1 section
-        // Si plusieurs documents → organiser intelligemment par l'IA
         let fullModules: TrainingModule[] = [];
 
         if (uploads.length === 1) {
-          // UN SEUL DOCUMENT : 1 module avec 1 section
           const upload = uploads[0];
           const aiModule = modulesToUse[0] || {
             title: upload.aiAnalysis?.keyTopics?.[0] || upload.name.replace(/\.[^/.]+$/, ''),
@@ -201,11 +157,11 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
 
           fullModules = [{
             id: `module-1`,
-            title: aiModule.title, // ✅ Titre généré par l'IA
+            title: aiModule.title,
             description: aiModule.description,
             order: 1,
             content: [],
-            sections: [section], // ✅ 1 section = 1 document
+            sections: [section],
             duration: upload.aiAnalysis?.estimatedReadTime || aiModule.duration,
             difficulty: aiModule.difficulty,
             prerequisites: upload.aiAnalysis?.prerequisites || combinedAnalysis.prerequisites,
@@ -214,27 +170,15 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
             assessments: []
           }];
         } else {
-          // PLUSIEURS DOCUMENTS : Organiser intelligemment par l'IA
-          // Analyser les documents pour regrouper ceux qui ont des topics similaires
-          console.log('📊 Analyzing documents to organize them intelligently...');
-
-          // Créer un mapping des documents vers les modules basé sur la similarité des topics
           const documentModuleMapping: number[] = [];
-          const moduleDocumentCounts: number[] = new Array(modulesToUse.length).fill(0);
-
-          // Pour chaque document, trouver le module le plus approprié basé sur les key topics
           uploads.forEach((upload, uploadIndex) => {
             if (upload.aiAnalysis?.keyTopics && upload.aiAnalysis.keyTopics.length > 0) {
-              // Trouver le module avec les topics les plus similaires
               let bestModuleIndex = 0;
               let maxSimilarity = 0;
 
               modulesToUse.forEach((aiModule, moduleIdx) => {
-                // Calculer la similarité basée sur les topics communs
                 const moduleTopics = (aiModule.learningObjectives || []).join(' ').toLowerCase();
                 const uploadTopics = upload.aiAnalysis.keyTopics.join(' ').toLowerCase();
-
-                // Compter les mots communs
                 const moduleWords = new Set(moduleTopics.split(/\s+/));
                 const uploadWords = new Set(uploadTopics.split(/\s+/));
                 const commonWords = [...moduleWords].filter(w => uploadWords.has(w));
@@ -247,35 +191,20 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
               });
 
               documentModuleMapping[uploadIndex] = bestModuleIndex;
-              moduleDocumentCounts[bestModuleIndex]++;
             } else {
-              // Si pas d'analyse, distribuer équitablement
-              const moduleIndex = uploadIndex % modulesToUse.length;
-              documentModuleMapping[uploadIndex] = moduleIndex;
-              moduleDocumentCounts[moduleIndex]++;
+              documentModuleMapping[uploadIndex] = uploadIndex % modulesToUse.length;
             }
           });
 
-          console.log('📊 Document organization:', {
-            mapping: documentModuleMapping,
-            counts: moduleDocumentCounts
-          });
-
-          // Créer les modules avec leurs documents assignés
           fullModules = await Promise.all(modulesToUse.map(async (aiModule, moduleIndex) => {
-            console.log(`📚 Module ${moduleIndex + 1}/${modulesToUse.length}: "${aiModule.title}"`);
-
-            // Récupérer les documents assignés à ce module
             const moduleUploads = uploads.filter((_, uploadIndex) =>
               documentModuleMapping[uploadIndex] === moduleIndex
             );
 
-            // Créer les sections pour ce module
             const moduleSections: TrainingSection[] = moduleUploads.map((upload, uploadIdx) => {
               return createSectionFromUpload(upload, moduleIndex, uploadIdx, aiModule);
             });
 
-            // Générer les QCM
             let assessments = [];
             try {
               assessments = await generateEnhancedAssessments(
@@ -284,20 +213,18 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
                 aiModule.learningObjectives
               );
             } catch (error) {
-              console.warn(`  ⚠️ Using fallback QCM for "${aiModule.title}"`);
               assessments = [];
             }
 
-            // Calculer la durée totale du module basée sur les sections
             const totalDuration = moduleSections.reduce((sum, section) => sum + (section.estimatedDuration || 10), 0);
 
             return {
               id: `ai-module-${moduleIndex + 1}`,
-              title: aiModule.title, // ✅ Titre généré par l'IA
+              title: aiModule.title,
               description: aiModule.description,
               order: moduleIndex + 1,
               content: [],
-              sections: moduleSections, // ✅ Sections basées sur les documents
+              sections: moduleSections,
               duration: totalDuration || aiModule.duration,
               difficulty: aiModule.difficulty,
               prerequisites: combinedAnalysis.prerequisites,
@@ -313,9 +240,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
           }));
         }
 
-        // Fonction helper pour créer une section à partir d'un upload
         function createSectionFromUpload(upload: ContentUpload, moduleIndex: number, uploadIdx: number, aiModule?: any): TrainingSection {
-          // Déterminer le type de section
           let sectionType: TrainingSection['type'] = 'document';
           if (upload.type === 'video') {
             sectionType = 'video';
@@ -323,24 +248,18 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
             sectionType = 'document';
           }
 
-          // Générer un titre de section intelligent basé uniquement sur l'analyse AI du document
           let sectionTitle = upload.name.replace(/\.[^/.]+$/, '');
           if (upload.aiAnalysis?.keyTopics && upload.aiAnalysis.keyTopics.length > 0) {
-            // Utiliser le premier key topic comme titre de section (basé uniquement sur l'analyse du document)
             sectionTitle = upload.aiAnalysis.keyTopics[0];
           }
-          // Ne pas ajouter de préfixe du module - utiliser uniquement l'analyse du document
 
-          // Créer l'URL du fichier - utiliser Cloudinary URL si disponible, sinon blob URL
           let fileUrl = '';
           let filePublicId = upload.id;
 
           if (upload.cloudinaryUrl) {
-            // Use Cloudinary URL (persistent)
             fileUrl = upload.cloudinaryUrl;
             filePublicId = upload.publicId || upload.id;
           } else if (upload.file) {
-            // Fallback to blob URL (temporary, but works for now)
             try {
               fileUrl = URL.createObjectURL(upload.file);
             } catch (e) {
@@ -351,7 +270,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
           return {
             id: `section-${moduleIndex}-${uploadIdx}`,
             type: sectionType,
-            title: sectionTitle, // ✅ Titre intelligent basé sur l'analyse AI
+            title: sectionTitle,
             content: {
               text: upload.aiAnalysis
                 ? `This section covers the key concepts and topics from ${upload.name}.\n\nEstimated duration: ${upload.aiAnalysis.estimatedReadTime || 0} minutes.`
@@ -362,8 +281,8 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
                 type: upload.type === 'video' ? 'video' :
                   upload.type === 'presentation' ? 'pdf' :
                     upload.type === 'document' ? 'pdf' : 'pdf',
-                url: fileUrl, // Cloudinary URL or blob URL
-                publicId: filePublicId, // Cloudinary public ID or upload ID
+                url: fileUrl,
+                publicId: filePublicId,
                 size: upload.size || 0,
                 mimeType: upload.type === 'video' ? 'video/mp4' :
                   upload.type === 'document' ? 'application/pdf' :
@@ -376,16 +295,9 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
           };
         }
 
-        console.log('✅ Modules created with document-based sections!');
-        console.log(`📊 ${fullModules.length} modules created`);
-        console.log(`📚 Total sections (one per document): ${fullModules.reduce((sum, m) => sum + (m.sections?.length || 0), 0)}`);
-        console.log(`📝 Total QCM: ${fullModules.reduce((sum, m) => sum + (m.assessments[0]?.questions?.length || 0), 0)} questions`);
-
         setEnhancementProgress({ 'content-complete': 90 } as any);
         setModules(fullModules);
 
-        // ✅ Générer automatiquement l'examen final
-        console.log('🚀 Generating final exam automatically...');
         try {
           const examData = await AIService.generateFinalExam(
             fullModules.map(m => ({
@@ -396,25 +308,18 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
           );
 
           setFinalExam(examData);
-          console.log('📦 FULL EXAM DATA RECEIVED:', examData);
-          console.log(`✅ Examen final généré : ${examData?.questionCount || 0} questions (${examData?.totalPoints || 0} points)`);
-          console.log(`⏱️ Temps: ${examData?.duration || 0} minutes | Score passage: ${examData?.passingScore || 0}%`);
         } catch (error) {
           console.warn('⚠️ Using fallback final exam');
-          // Fallback simple si l'API échoue
         }
 
-        setCurrentStep('content'); // ✅ Directement à l'étape "content"
+        setCurrentStep('content');
         setEnhancementProgress({ 'complete': 100 });
       } else {
-        // Fallback: générer des modules basiques avec sections basées sur les documents
         const fallbackModules = createModulesFromUploads(uploads);
         setModules(fallbackModules);
       }
     } catch (error) {
       console.error('Failed to generate curriculum with AI:', error);
-
-      // En cas d'erreur, créer des modules fallback avec sections basées sur les documents
       const fallbackModules = createModulesFromUploads(uploads);
       setModules(fallbackModules);
     } finally {
@@ -422,21 +327,19 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
     }
   };
 
-  // Fonction helper pour créer des modules à partir des uploads
   const createModulesFromUploads = (uploads: ContentUpload[], combinedAnalysis?: any): TrainingModule[] => {
-    // Si 1 document → 1 module avec 1 section
     if (uploads.length === 1) {
       const upload = uploads[0];
       const section = createSectionFromUploadHelper(upload, 0, 0);
 
       return [{
         id: `module-1`,
-        title: upload.aiAnalysis?.keyTopics?.[0] || upload.name.replace(/\.[^/.]+$/, ''), // ✅ Titre basé sur l'analyse AI
+        title: upload.aiAnalysis?.keyTopics?.[0] || upload.name.replace(/\.[^/.]+$/, ''),
         description: upload.aiAnalysis
           ? `Training module covering: ${upload.aiAnalysis.keyTopics?.join(', ') || 'core concepts'}`
           : `Training module based on: ${upload.name}`,
         content: [],
-        sections: [section], // ✅ 1 section = 1 document
+        sections: [section],
         duration: upload.aiAnalysis?.estimatedReadTime || 60,
         difficulty: 'intermediate',
         prerequisites: upload.aiAnalysis?.prerequisites || combinedAnalysis?.prerequisites || [],
@@ -446,13 +349,12 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
       }];
     }
 
-    // Plusieurs documents : créer un module par document (ou organiser intelligemment)
     return uploads.map((upload, i) => {
       const section = createSectionFromUploadHelper(upload, i, 0);
 
       return {
         id: `module-${i + 1}`,
-        title: upload.aiAnalysis?.keyTopics?.[0] || upload.name.replace(/\.[^/.]+$/, ''), // ✅ Titre basé sur l'analyse AI
+        title: upload.aiAnalysis?.keyTopics?.[0] || upload.name.replace(/\.[^/.]+$/, ''),
         description: upload.aiAnalysis
           ? `Training module covering: ${upload.aiAnalysis.keyTopics?.join(', ') || 'core concepts'}`
           : `Training module based on uploaded content: ${upload.name}`,
@@ -468,9 +370,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
     });
   };
 
-  // Fonction helper pour créer une section à partir d'un upload
   function createSectionFromUploadHelper(upload: ContentUpload, moduleIndex: number, uploadIdx: number): TrainingSection {
-    // Déterminer le type de section
     let sectionType: TrainingSection['type'] = 'document';
     if (upload.type === 'video') {
       sectionType = 'video';
@@ -478,23 +378,18 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
       sectionType = 'document';
     }
 
-    // Générer un titre de section intelligent basé sur l'analyse AI
     let sectionTitle = upload.name.replace(/\.[^/.]+$/, '');
     if (upload.aiAnalysis?.keyTopics && upload.aiAnalysis.keyTopics.length > 0) {
-      // Utiliser le premier key topic comme titre de section
       sectionTitle = upload.aiAnalysis.keyTopics[0];
     }
 
-    // Créer l'URL du fichier - utiliser Cloudinary URL si disponible, sinon blob URL
     let fileUrl = '';
     let filePublicId = upload.id;
 
     if (upload.cloudinaryUrl) {
-      // Use Cloudinary URL (persistent)
       fileUrl = upload.cloudinaryUrl;
       filePublicId = upload.publicId || upload.id;
     } else if (upload.file) {
-      // Fallback to blob URL (temporary, but works for now)
       try {
         fileUrl = URL.createObjectURL(upload.file);
       } catch (e) {
@@ -505,7 +400,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
     return {
       id: `section-${moduleIndex}-${uploadIdx}`,
       type: sectionType,
-      title: sectionTitle, // ✅ Titre intelligent basé sur l'analyse AI
+      title: sectionTitle,
       content: {
         text: upload.aiAnalysis
           ? `This section covers the key concepts and topics from ${upload.name}.\n\nEstimated duration: ${upload.aiAnalysis.estimatedReadTime || 0} minutes.`
@@ -516,8 +411,8 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
           type: upload.type === 'video' ? 'video' :
             upload.type === 'presentation' ? 'pdf' :
               upload.type === 'document' ? 'pdf' : 'pdf',
-          url: fileUrl, // Cloudinary URL or blob URL
-          publicId: filePublicId, // Cloudinary public ID or upload ID
+          url: fileUrl,
+          publicId: filePublicId,
           size: upload.size || 0,
           mimeType: upload.type === 'video' ? 'video/mp4' :
             upload.type === 'document' ? 'application/pdf' :
@@ -530,29 +425,22 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
     };
   }
 
-  // ✅ ÉTAPE 2: Générer le contenu détaillé et PERSONNALISÉ pour les modules
   const generateDetailedContent = async () => {
     if (modules.length === 0) {
-      console.warn('⚠️ No training plan available. Generate modules first.');
       return;
     }
 
     setIsGeneratingContent(true);
-    console.log('🚀 Generating AI-powered personalized content for', modules.length, 'modules...');
 
     try {
-      // Récupérer toutes les transcriptions des uploads
       const allTranscriptions = uploads
-        .filter(u => u.transcription || u.content)
-        .map(u => u.transcription || u.content || '')
+        .filter(u => (u as any).transcription || (u as any).content)
+        .map(u => (u as any).transcription || (u as any).content || '')
         .join('\n\n---\n\n');
 
       const updatedModules = await Promise.all(
-        modules.map(async (module, index) => {
-          console.log(`📚 Generating AI-personalized content for Module ${index + 1}: ${module.title}`);
-
+        modules.map(async (module) => {
           try {
-            // ✅ APPEL API pour générer des sections PERSONNALISÉES
             const aiSections = await AIService.generateModuleContent(
               module.title,
               module.description,
@@ -560,9 +448,6 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
               module.learningObjectives
             );
 
-            console.log(`✅ AI generated ${aiSections.length} personalized sections for "${module.title}"`);
-
-            // Convertir les sections AI en ModuleContent
             const detailedContent: ModuleContent[] = aiSections.map((section: any, idx: number) => ({
               id: section.id || `section-${idx + 1}`,
               type: section.type || 'text',
@@ -571,7 +456,6 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
               duration: section.duration || 10
             }));
 
-            // ✅ Générer les QCM professionnels de manière asynchrone
             const assessments = await generateEnhancedAssessments(
               module.title,
               module.description,
@@ -588,9 +472,6 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
               }
             };
           } catch (error) {
-            console.error(`❌ Failed to generate AI content for "${module.title}", using fallback:`, error);
-
-            // Fallback: utiliser le contenu générique
             const detailedContent = generateModuleContentFromAI({
               title: module.title,
               description: module.description,
@@ -599,7 +480,6 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
               learningObjectives: module.learningObjectives
             });
 
-            // Générer les QCM aussi pour le fallback
             const assessments = await generateEnhancedAssessments(
               module.title,
               module.description,
@@ -615,29 +495,20 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
         })
       );
 
-      console.log('✅ AI-powered personalized content generated for all modules!');
       setModules(updatedModules);
       setCurrentStep('content');
-      // ✅ Pas de popup - juste les logs console
     } catch (error) {
       console.error('❌ Error generating detailed content:', error);
-      alert('Failed to generate content. Please try again.');
     } finally {
       setIsGeneratingContent(false);
     }
   };
 
-  // ✅ Generate structured TEXT CONTENT organized in SECTIONS with AI-powered personalization
   const generateModuleContentFromAI = (aiModule: any): ModuleContent[] => {
-    // ✅ FALLBACK : Si on n'a pas de transcription, générer un contenu de base
-    // Le contenu personnalisé sera généré de manière asynchrone via generateDetailedContentForModule
     const content: ModuleContent[] = [];
-
-    // ✅ NOMBRE VARIABLE de sections (3 à 7)
     const hash = aiModule.title.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
-    const sectionCount = 3 + (hash % 5); // 3 à 7 sections
+    const sectionCount = 3 + (hash % 5);
 
-    // ✅ Pool de titres variés
     const titleTemplates = [
       `What is ${aiModule.title.replace('Module', '').replace(/\d+:/g, '')}?`,
       `Understanding ${aiModule.title.split(' ').pop()}`,
@@ -651,7 +522,6 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
       `Real-World ${aiModule.title.split(' ').pop()} Examples`
     ];
 
-    // Mélanger et sélectionner
     const selectedTitles = titleTemplates
       .sort(() => (hash % 3) - 1)
       .slice(0, sectionCount);
@@ -663,196 +533,14 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
         id: `section-${index + 1}`,
         type: 'text',
         title: title,
-        content: `${aiModule.description}\n\nThis section covers important aspects of the topic. Content will be enhanced with AI-generated, topic-specific information.\n\nLearning Objectives:\n${aiModule.learningObjectives?.slice(0, 3).map((obj: string) => `• ${obj}`).join('\n') || '• Master key concepts\n• Apply knowledge in practice\n• Develop practical skills'}`,
+        content: `${aiModule.description}\n\nThis section covers important aspects of the topic.`,
         duration: baseDurations[index % baseDurations.length]
       });
     });
 
-    console.log(`✅ Generated ${content.length} varied fallback sections for: ${aiModule.title}`);
     return content;
   };
 
-  const generateMethodologyModuleContent = (component: any): ModuleContent[] => {
-    return [
-      {
-        id: 'methodology-intro',
-        type: 'text',
-        title: `${component.title} Introduction`,
-        content: `Welcome to ${component.title}. This module covers ${component.description.toLowerCase()} and is essential for achieving ${component.competencyLevel} level competency.`,
-        duration: 5
-      },
-      {
-        id: 'methodology-content',
-        type: 'interactive',
-        title: 'Core Learning Content',
-        content: {
-          modules: component.modules,
-          interactiveElements: ['scenario-practice', 'knowledge-checks', 'real-world-applications'],
-          assessmentIntegration: true
-        },
-        duration: Math.floor(component.estimatedDuration * 60 * 0.7) // 70% of total time
-      },
-      {
-        id: 'methodology-assessment',
-        type: 'quiz',
-        title: 'Competency Assessment',
-        content: {
-          questions: Math.max(5, Math.floor(component.estimatedDuration * 2)),
-          competencyLevel: component.competencyLevel,
-          mandatoryForCertification: component.mandatoryForCertification
-        },
-        duration: Math.floor(component.estimatedDuration * 60 * 0.3) // 30% of total time
-      }
-    ];
-  };
-
-  const generateMethodologyAssessments = (component: any): Assessment[] => {
-    return [{
-      id: `methodology-assessment-${component.id}`,
-      title: `${component.title} Competency Assessment`,
-      type: 'quiz',
-      questions: component.modules.map((module: string, index: number) => ({
-        id: `q${index + 1}`,
-        text: `Regarding ${module.toLowerCase()}, what is the most critical factor for success?`,
-        type: 'multiple-choice' as const,
-        options: [
-          'Following established procedures exactly',
-          'Understanding underlying principles and adapting to situations',
-          'Memorizing all possible scenarios',
-          'Relying on supervisor guidance for all decisions'
-        ],
-        correctAnswer: 1,
-        explanation: `Success in ${module.toLowerCase()} requires understanding principles and adapting to unique situations while maintaining compliance.`,
-        points: 20
-      })),
-      passingScore: component.mandatoryForCertification ? 85 : 75,
-      timeLimit: Math.max(20, component.estimatedDuration * 10) // 10 minutes per hour of content
-    }];
-  };
-
-  const generateAIEnhancedContent = async (upload: ContentUpload) => {
-    // Simulate AI enhancement process
-    const enhancements = [
-      'Creating AI-generated videos with animations',
-      'Generating professional voice narration',
-      'Building interactive infographics',
-      'Designing scenario-based exercises',
-      'Creating adaptive quizzes',
-      'Adding gamification elements'
-    ];
-
-    for (let i = 0; i < enhancements.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setEnhancementProgress(prev => ({
-        ...prev,
-        [upload.id]: {
-          step: i + 1,
-          total: enhancements.length,
-          description: enhancements[i]
-        }
-      }));
-    }
-  };
-
-  const toggleEditMode = (moduleId: string) => {
-    setEditingModuleId(editingModuleId === moduleId ? null : moduleId);
-  };
-
-  const exportCurriculum = () => {
-    const curriculumData = {
-      modules,
-      methodology: methodology?.name,
-      totalDuration: modules.reduce((sum, m) => sum + m.duration, 0),
-      totalAssessments: modules.reduce((sum, m) => sum + m.assessments.length, 0),
-      generatedAt: new Date().toISOString()
-    };
-
-    const blob = new Blob([JSON.stringify(curriculumData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'training-curriculum.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  // ✅ Générer l'examen final global
-  const generateFinalExamGlobal = async () => {
-    if (modules.length === 0) {
-      console.warn('⚠️ No modules available. Generate modules first.');
-      return;
-    }
-
-    setIsGeneratingExam(true);
-
-    try {
-      console.log('📝 Generating FINAL EXAM for entire training...');
-
-      const formationTitle = methodology?.name || 'Formation Professionnelle';
-      const modulesData = modules.map(m => ({
-        title: m.title,
-        description: m.description,
-        learningObjectives: m.learningObjectives
-      }));
-
-      const examData = await AIService.generateFinalExam(modulesData, formationTitle);
-
-      setFinalExam(examData);
-
-      console.log('📦 FULL EXAM DATA RECEIVED:', examData);
-      console.log(`✅ Examen final généré : ${examData?.questionCount || 0} questions (${examData?.totalPoints || 0} points)`);
-      console.log(`⏱️ Temps: ${examData?.duration || 0} minutes | Score passage: ${examData?.passingScore || 0}%`);
-      console.log('✅ Final exam data:', examData);
-
-    } catch (error) {
-      console.error('❌ Error generating final exam:', error);
-      alert('❌ Erreur lors de la génération de l\'examen final.');
-    } finally {
-      setIsGeneratingExam(false);
-    }
-  };
-
-  const handleGenerateInteractivePPT = async (modulesArg?: TrainingModule[]) => {
-    const modulesToUse = modulesArg && modulesArg.length > 0 ? modulesArg : modules;
-    
-    if (modulesToUse.length === 0) {
-      console.warn('⚠️ No modules to export. Generate modules first.');
-      return;
-    }
-
-    setIsGeneratingInteractivePPT(true);
-
-    try {
-      const curriculum = {
-        title: methodology?.name || 'Formation Professionnelle',
-        description: `Formation complète générée avec ${modulesToUse.length} modules`,
-        totalDuration: modulesToUse.reduce((sum, m) => sum + m.duration, 0),
-        methodology: methodology?.name || '360° Methodology',
-        modules: modulesToUse.map(m => ({
-          title: m.title,
-          description: m.description,
-          duration: m.duration,
-          difficulty: m.difficulty,
-          contentItems: m.content.length,
-          assessments: m.assessments.length,
-          enhancedElements: ['Video Introduction', 'Interactive Exercises', 'Knowledge Check'],
-          learningObjectives: m.learningObjectives
-        }))
-      };
-
-      console.log('📊 Generating Interactive PowerPoint:', curriculum);
-      const presentation = await AIService.generatePresentation(curriculum);
-
-      setGeneratedPresentation(presentation);
-      setViewMode('ppt');
-      console.log('✅ Interactive PowerPoint généré avec succès !');
-
-    } catch (error: any) {
-      console.error('❌ Erreur lors de la génération de la présentation:', error);
-      alert('❌ Erreur lors de la génération de la présentation: ' + (error.message || 'Erreur inconnue'));
-    } finally {
-      setIsGeneratingInteractivePPT(false);
-    }
   };
 
   const exportToPowerPoint = async () => {
@@ -1161,17 +849,6 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
           <p className="text-sm text-gray-500 mt-2">This may take a few moments...</p>
         </div>
       </div>
-    );
-  }
-
-  if (viewMode === 'ppt' && generatedPresentation) {
-    return (
-      <InteractivePresentationViewer
-        presentation={generatedPresentation}
-        onClose={() => setViewMode('modules')}
-        onDownload={exportToPowerPoint}
-        onApprove={() => onComplete(modules)}
-      />
     );
   }
 
@@ -1699,18 +1376,6 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
 
             <div className="flex space-x-4">
               <button
-                onClick={() => handleGenerateInteractivePPT()}
-                disabled={modules.length === 0 || isGeneratingInteractivePPT}
-                className="px-8 py-3 bg-white text-indigo-700 border-2 border-indigo-200 rounded-xl hover:bg-indigo-50 disabled:opacity-50 transition-all font-medium shadow-lg flex items-center space-x-2"
-              >
-                {isGeneratingInteractivePPT ? (
-                  <Wand2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <FileText className="h-5 w-5" />
-                )}
-                <span>Générer Présentation PPT</span>
-              </button>
-              <button
                 onClick={() => onComplete(modules)}
                 disabled={modules.length === 0}
                 className="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg flex items-center space-x-2"
@@ -1723,16 +1388,6 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
         </div>
       </div>
 
-      {/* PowerPoint Viewer Modal */}
-      {showPPTViewer && pptBlob && (
-        <PowerPointViewer
-          pptBlob={pptBlob}
-          onClose={() => {
-            setShowPPTViewer(false);
-            setPptBlob(null);
-          }}
-        />
-      )}
     </div>
   );
 }

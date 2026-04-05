@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Loader2, Target, Users, Sparkles } from 'lucide-react';
+import { Building2, Loader2, Target, Users, Sparkles, Briefcase, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
 import { Company, TrainingJourney } from '../../types/core';
 import { Industry, GigFromApi } from '../../types';
 import { TrainingMethodology } from '../../types/methodology';
