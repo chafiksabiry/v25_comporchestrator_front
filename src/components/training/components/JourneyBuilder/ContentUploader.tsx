@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Cloud } from 'lucide-react';
 import { ContentUpload } from '../../types/core';
 import { AIService } from '../../infrastructure/services/AIService';
+import { JourneyService } from '../../infrastructure/services/JourneyService';
 import { TrainingService } from '../../infrastructure/services/TrainingService';
 import { cloudinaryService } from '../../lib/cloudinaryService';
 
@@ -372,29 +373,45 @@ export default function ContentUploader({ onComplete, onFinishEarly, onBack, com
   };
 
   const handleSavePresentation = async () => {
-    if (!generatedPresentation) return;
+    if (!generatedCurriculum) return;
     try {
       setIsSavingCloud(true);
-      console.log('💾 Sauvegarde de la présentation interactive...');
+      console.log('💾 Sauvegarde du parcours de formation généré par IA...');
       
-      const presentationToSave = {
-        title: generatedPresentation.title || 'Présentation Sans Titre',
-        description: generatedPresentation.description || 'Générée par IA',
-        companyId: company?.id || '',
-        gigId: gigId || '',
-        slides: generatedPresentation.slides,
-        totalSlides: generatedPresentation.slides.length,
-        estimatedTime: generatedPresentation.estimatedTime || '30 min',
+      const journeyToSave: any = {
+        title: generatedCurriculum.title || 'Formation Générée par IA',
+        description: generatedCurriculum.description || 'Description générée par IA',
+        status: 'active',
+        industry: company?.industry || 'General',
+        company: company?.name || 'My Company',
       };
 
-      await TrainingService.createPresentation(presentationToSave);
+      const modulesToSave: any[] = (generatedCurriculum.modules || []).map((m: any, idx: number) => ({
+        title: m.title || `Module ${idx + 1}`,
+        description: m.description || '',
+        duration: m.duration || 30,
+        difficulty: m.difficulty || 'beginner',
+        learningObjectives: m.learningObjectives || [],
+        content: m.sections || m.content || [],
+        sections: m.sections || [],
+        order: idx
+      }));
+
+      await JourneyService.saveJourney(
+        journeyToSave,
+        modulesToSave,
+        company?.id || '',
+        gigId || ''
+      );
       
-      alert('La présentation interactive a été enregistrée avec succès !');
-      // On revient à l'onboarding (simulé par le retour aux fichiers ou onBack)
-      onBack();
+      alert('La formation a été enregistrée avec succès !');
+      // On revient à la liste des formations
+      if (onBack) {
+        onBack();
+      }
     } catch (error: any) {
-      console.error('Failed to save presentation:', error);
-      alert('Erreur lors de l\'enregistrement: ' + error.message);
+      console.error('Failed to save journey:', error);
+      alert('Erreur lors de l\'enregistrement: ' + (error.message || 'Erreur inconnue'));
     } finally {
       setIsSavingCloud(false);
     }

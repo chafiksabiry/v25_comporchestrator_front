@@ -23,7 +23,7 @@ export interface JourneyStep {
   id: string;
   title: string;
   description: string;
-  type: 'content-upload' | 'ai-analysis' | 'curriculum-design' | 'review' | 'launch';
+  type: 'content-upload' | 'ai-analysis' | 'curriculum-design' | 'review' | 'launch' | 'live-setup';
   status: 'pending' | 'in-progress' | 'completed' | 'skipped';
   order: number;
   estimatedTime: string;

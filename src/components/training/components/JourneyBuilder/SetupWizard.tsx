@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Building2, Users, Target, ArrowRight, CheckCircle, Sparkles, Zap, Video, FileText, Loader2, Briefcase, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Building2, Loader2, Target, Users, Sparkles } from 'lucide-react';
 import { Company, TrainingJourney } from '../../types/core';
 import { Industry, GigFromApi } from '../../types';
 import { TrainingMethodology } from '../../types/methodology';
@@ -27,7 +27,6 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const [loadingIndustries, setLoadingIndustries] = useState(true);
   const [loadingCompany, setLoadingCompany] = useState(true);
   const [selectedGig, setSelectedGig] = useState<GigFromApi | null>(null);
-  const [showGigSelector, setShowGigSelector] = useState(false);
   const [trainingDetails, setTrainingDetails] = useState<{ trainingName: string; trainingDescription: string; estimatedDuration: string } | null>(null);
   const [showAllComponents, setShowAllComponents] = useState(false);
 
@@ -248,11 +247,6 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       />
     );
   }
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
 
   const renderStepContent = () => {
     switch (currentStep) {

@@ -1,35 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { BrowserRouter } from 'react-router-dom';
 import {
-  Users,
   BookOpen,
   CheckCircle,
-  AlertCircle,
   FileText,
   Video,
   MessageSquare,
-  Award,
   Clock,
-  Calendar,
-  Settings,
   Download,
-  Upload,
-  Star,
-  Phone,
-  Mail,
-  Globe,
-  ChevronDown,
-  ChevronUp,
   Play,
-  Pause,
   RefreshCw,
-  ThumbsUp,
-  X,
-  Plus,
-  Edit,
-  Save
+  Plus
 } from 'lucide-react';
 
 import { AppContent } from '../training/App';
@@ -38,40 +20,11 @@ import '../training/index.css';
 interface RepOnboardingProps { }
 
 const RepOnboarding: React.FC<RepOnboardingProps> = () => {
-  const [activeStep, setActiveStep] = useState(1);
   const [expandedSection, setExpandedSection] = useState<number | null>(1);
-  const [selectedTraining, setSelectedTraining] = useState<string[]>([]);
   const [trainings, setTrainings] = useState<any[]>([]);
   const [loadingTrainings, setLoadingTrainings] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string, newJourney?: boolean }>({ isOpen: false });
-
-  const onboardingSteps = [
-    {
-      id: 1,
-      title: 'Profile Setup',
-      description: 'Complete REP profile and documentation',
-      status: 'completed'
-    },
-    {
-      id: 2,
-      title: 'Training & Certification',
-      description: 'Complete required training modules',
-      status: 'current'
-    },
-    {
-      id: 3,
-      title: 'Channel Setup',
-      description: 'Configure communication channels',
-      status: 'pending'
-    },
-    {
-      id: 4,
-      title: 'Skills Assessment',
-      description: 'Validate skills and expertise',
-      status: 'pending'
-    }
-  ];
 
   // Helper function to format training journey data for display
   const formatTrainingJourney = (journey: any) => {
@@ -99,153 +52,31 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     return {
       id: journey._id || journey.id,
       title: journey.title || journey.name || 'Untitled Training',
-      description: journey.description || '',
+      description: journey.description || 'No description provided',
       duration: duration,
-      type: journey.type || 'course',
-      required: journey.required !== false, // Default to required
+      modulesCount: journey.modules ? journey.modules.length : 0,
       status: status,
-      progress: journey.progress || (status === 'completed' ? 100 : status === 'in_progress' ? 50 : 0),
-      modules: journey.modules || []
+      progress: journey.progress || 0
     };
-  };
-
-  // Extract all documents from training modules sections
-  const extractDocumentsFromTrainings = (): Array<{
-    id: string;
-    title: string;
-    type: string;
-    size: string;
-    url?: string;
-  }> => {
-    const documents: Array<{
-      id: string;
-      title: string;
-      type: string;
-      size: string;
-      url?: string;
-    }> = [];
-
-    trainings.forEach((journey: any) => {
-      if (journey.modules && Array.isArray(journey.modules)) {
-        journey.modules.forEach((module: any) => {
-          if (module.sections && Array.isArray(module.sections)) {
-            module.sections.forEach((section: any) => {
-              // Check if section has a file in content
-              if (section.content && section.content.file) {
-                const file = section.content.file;
-                const fileName = file.name || section.title || 'Untitled Document';
-                const fileType = file.type || file.mimeType?.split('/')[1]?.toUpperCase() || 'FILE';
-                const fileSize = file.size
-                  ? file.size > 1024 * 1024
-                    ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
-                    : `${(file.size / 1024).toFixed(1)} KB`
-                  : 'Unknown size';
-
-                documents.push({
-                  id: file.id || file.publicId || `${journey.id}-${module._id}-${section._id}`,
-                  title: fileName,
-                  type: fileType,
-                  size: fileSize,
-                  url: file.url
-                });
-              }
-            });
-          }
-        });
-      }
-    });
-
-    // Remove duplicates based on URL or ID
-    const uniqueDocuments = documents.filter((doc, index, self) =>
-      index === self.findIndex((d) => d.id === doc.id || d.url === doc.url)
-    );
-
-    return uniqueDocuments;
-  };
-
-  // Get documents from trainings
-  const trainingDocuments = extractDocumentsFromTrainings();
-
-  // Format file type for display
-  const formatFileType = (type: string): string => {
-    const typeMap: Record<string, string> = {
-      'pdf': 'PDF',
-      'doc': 'DOC',
-      'docx': 'DOCX',
-      'xls': 'XLS',
-      'xlsx': 'XLSX',
-      'ppt': 'PPT',
-      'pptx': 'PPTX',
-      'mp4': 'VIDEO',
-      'mov': 'VIDEO',
-      'avi': 'VIDEO',
-      'zip': 'ZIP',
-      'rar': 'RAR',
-      'jpg': 'IMAGE',
-      'jpeg': 'IMAGE',
-      'png': 'IMAGE',
-      'gif': 'IMAGE'
-    };
-
-    const normalizedType = type.toLowerCase();
-    return typeMap[normalizedType] || type.toUpperCase();
-  };
-
-  const assessments = [
-    {
-      id: 1,
-      title: 'Communication Skills',
-      type: 'practical',
-      status: 'pending',
-      score: null
-    },
-    {
-      id: 2,
-      title: 'Technical Knowledge',
-      type: 'written',
-      status: 'completed',
-      score: 92
-    },
-    {
-      id: 3,
-      title: 'Platform Proficiency',
-      type: 'practical',
-      status: 'in_progress',
-      score: null
-    }
-  ];
-
-  const toggleSection = (sectionId: number) => {
-    setExpandedSection(expandedSection === sectionId ? null : sectionId);
   };
 
   // Function to get training backend URL
   const getTrainingBackendUrl = (): string => {
     const customUrl = import.meta.env.VITE_TRAINING_BACKEND_URL;
-    if (customUrl) {
-      return customUrl;
-    }
-    // Check if running locally
-    const isLocal = typeof window !== 'undefined' &&
-      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    if (isLocal) {
-      return 'http://localhost:5010';
-    }
-    // Default to sandbox API
-    return 'https://v25platformtrainingbackend-production.up.railway.app';
+    if (customUrl) return customUrl;
+    return 'https://v25-platform-training-backend.onrender.com/api';
   };
 
-  // Function to update onboarding progress for Step 9 (REP Onboarding)
+  // Function to update onboarding progress in the main company platform
   const updateOnboardingProgress = async () => {
-    try {
-      const companyId = Cookies.get('companyId');
-      if (!companyId) return;
+    if (!companyId) return;
 
-      const apiUrl = import.meta.env.VITE_API_URL_ONBOARDING;
+    try {
+      const apiUrl = import.meta.env.VITE_COMPANY_API_URL || 'https://v25-platform-company-backend.onrender.com/api';
       const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/9`;
 
       console.log('[RepOnboarding] Marking Step 9 as completed:', endpoint);
-      const response = await axios.put(endpoint, { status: "completed" });
+      const response = (await axios.put(endpoint, { status: "completed" })) as any;
 
       if (response.data) {
         // Update the cookie to keep frontend in sync
@@ -280,15 +111,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       const apiUrl = `${trainingBackendUrl}/training_journeys/trainer/companyId/${companyId}`;
 
       console.log('[RepOnboarding] Fetching trainings from:', apiUrl);
-      console.log('[RepOnboarding] Company ID:', companyId);
-      console.log('[RepOnboarding] Training Backend URL:', trainingBackendUrl);
-
-      const response = await axios.get(apiUrl);
+      const response = (await axios.get(apiUrl)) as any;
 
       console.log('[RepOnboarding] Training API Response:', response.data);
 
-      if (response.data && response.data.success && response.data.data) {
-        const trainingsData = Array.isArray(response.data.data) ? response.data.data : [];
+      const backendData = response.data as any;
+      if (backendData && backendData.success && backendData.data) {
+        const trainingsData = Array.isArray(backendData.data) ? backendData.data : [];
         console.log('[RepOnboarding] Found', trainingsData.length, 'trainings');
         setTrainings(trainingsData);
 
@@ -299,65 +128,30 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       } else if (Array.isArray(response.data)) {
         console.log('[RepOnboarding] Response is array, found', response.data.length, 'trainings');
         setTrainings(response.data);
-
-        // Auto-complete step 9 if trainings exist
         if (response.data.length > 0) {
           updateOnboardingProgress();
         }
-      } else {
-        console.log('[RepOnboarding] No trainings found in response');
-        setTrainings([]);
       }
-    } catch (error: any) {
-      console.error('[RepOnboarding] Error fetching company trainings:', error);
-      if (error.response) {
-        console.error('[RepOnboarding] Error response status:', error.response.status);
-        console.error('[RepOnboarding] Error response data:', error.response.data);
-        console.error('[RepOnboarding] Requested URL:', error.config?.url);
-      }
-      setTrainings([]);
+    } catch (error) {
+      console.error('[RepOnboarding] Error fetching trainings:', error);
     } finally {
       setLoadingTrainings(false);
     }
   }, [companyId]);
 
-  // Navigate to training URL or inline component
-  const navigateToUrl = (url: string) => {
-    if (url.startsWith('/training/')) {
-      const id = url.split('/training/')[1];
-      setShowTraining({ isOpen: true, journeyId: id });
-    } else if (url === '/training') {
-      setShowTraining({ isOpen: true });
-    } else {
-      window.location.href = url;
-    }
-  };
-
-  // Get company ID from cookie or fetch it
+  // Load company ID on mount
   useEffect(() => {
-    const storedCompanyId = Cookies.get('companyId');
-    if (storedCompanyId) {
-      setCompanyId(storedCompanyId);
+    const id = Cookies.get('companyId');
+    if (id) {
+      setCompanyId(id);
     } else {
-      // Try to fetch company ID from user ID
-      const userId = Cookies.get('userId');
-      if (userId) {
-        axios.get(`${import.meta.env.VITE_COMPANY_API_URL}/user/${userId}`)
-          .then((response) => {
-            if (response.data.success && response.data.data) {
-              const companyId = response.data.data._id;
-              setCompanyId(companyId);
-              Cookies.set('companyId', companyId);
-            }
-          })
-          .catch((error) => {
-            console.error('Error fetching company ID:', error);
-          });
-      }
+      console.warn('[RepOnboarding] No companyId found in cookies');
+      // For testing, use a default company ID if needed
+      // setCompanyId('65bcc8e6f1a2b3c4d5e6f7a8'); 
     }
   }, []);
 
-  // Fetch trainings when company ID is available
+  // Fetch trainings once companyId is available
   useEffect(() => {
     if (companyId) {
       fetchCompanyTrainings();
@@ -366,376 +160,173 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   if (showTraining.isOpen) {
     return (
-      <div className="w-full h-full flex flex-col">
-        <div className="w-full flex-1">
-          <BrowserRouter>
-            <AppContent
-              initialJourneyId={showTraining.journeyId}
-              isEmbedded={true}
-              startWithJourneyBuilder={showTraining.newJourney}
-              onJourneyLaunch={() => {
-                setShowTraining({ isOpen: false });
-                setTimeout(() => {
-                  fetchCompanyTrainings();
-                  if (typeof updateOnboardingProgress === 'function') {
-                    updateOnboardingProgress();
-                  }
-                }, 100);
-              }}
-            />
-          </BrowserRouter>
-        </div>
-      </div>
+      <AppContent
+        initialJourneyId={showTraining.journeyId}
+        isEmbedded={true}
+        startWithJourneyBuilder={showTraining.newJourney}
+      />
     );
   }
 
   return (
-    <div className="space-y-8 p-8 bg-white/60 backdrop-blur-xl rounded-3xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] m-2 md:m-4">
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-purple-500 to-indigo-500 tracking-tight mb-2">REP Onboarding</h2>
-          <p className="text-base text-gray-600 font-medium">Guide new REPS through the onboarding process</p>
-        </div>
-        {/* 
-        <div className="flex space-x-3">
-          <button className="flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-          </button>
-          <button className="flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
-            <Plus className="mr-2 h-4 w-4" />
-            New REP
-          </button>
-        </div>
-        */}
-      </div>
-
-      {/* Progress Steps 
-      <div className="rounded-lg bg-white p-6 shadow">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium text-gray-900">Onboarding Progress</h3>
-          <span className="text-sm text-gray-500">Step {activeStep} of 4</span>
-        </div>
-        <div className="mt-4">
-          <div className="relative">
-            <div className="absolute left-0 top-2 h-0.5 w-full bg-gray-200">
-              <div
-                className="absolute h-0.5 bg-indigo-600 transition-all duration-500"
-                style={{ width: `${((activeStep - 1) / 3) * 100}%` }}
-              />
-            </div>
-            <div className="relative flex justify-between">
-              {onboardingSteps.map((step, index) => (
-                <div key={index} className="flex flex-col items-center">
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${step.status === 'completed' ? 'border-indigo-600 bg-indigo-600' :
-                    step.status === 'current' ? 'border-indigo-600 bg-white' :
-                      'border-gray-300 bg-white'
-                    }`}>
-                    {step.status === 'completed' ? (
-                      <CheckCircle className="h-5 w-5 text-white" />
-                    ) : (
-                      <span className={`text-sm font-medium ${step.status === 'current' ? 'text-indigo-600' : 'text-gray-500'
-                        }`}>
-                        {index + 1}
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-2 text-center">
-                    <p className={`text-sm font-medium ${step.status === 'completed' ? 'text-indigo-600' :
-                      step.status === 'current' ? 'text-gray-900' :
-                        'text-gray-500'
-                      }`}>
-                      {step.title}
-                    </p>
-                    <p className="mt-1 text-xs text-gray-500">{step.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="mx-auto max-w-5xl">
+        <header className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">REP Onboarding</h1>
+            <p className="mt-1 text-gray-500">Complete your setup and start your journey</p>
           </div>
-        </div>
-      </div>
-      */}
-
-      {/* Company Trainings */}
-      <div className="transition-all duration-500">
-        <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
-          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-3">
-            <div className="p-2 bg-purple-50 rounded-lg text-purple-500 shadow-inner">
-              <BookOpen className="h-5 w-5" />
-            </div>
-            Company Trainings & Certification
-          </h3>
-          <div className="flex space-x-3">
-            <button
-              onClick={() => setShowTraining({ isOpen: true, newJourney: true })}
-              className="flex items-center rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/20 hover:shadow-xl hover:shadow-rose-500/40 hover:-translate-y-0.5 transition-all duration-300"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              New Journey Training
+          <div className="hidden space-x-2 md:flex">
+            <button className="flex items-center space-x-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50">
+              <Download className="h-4 w-4" />
+              <span>Guide PDF</span>
             </button>
           </div>
-        </div>
-        <div className="space-y-4">
-          {loadingTrainings ? (
-            <div className="text-center py-8">
-              <p className="text-sm text-gray-500">Loading trainings...</p>
-            </div>
-          ) : trainings.length > 0 ? (
-            trainings.map((journey) => {
-              const module = formatTrainingJourney(journey);
-              return (
-                <div
-                  key={module.id}
-                  className="rounded-2xl border border-gray-100/50 bg-white/40 p-2 hover:border-purple-200 hover:bg-white/80 hover:shadow-md transition-all duration-300 group"
-                >
-                  <div className="flex items-center justify-between p-4">
-                    <div className="flex items-center space-x-5">
-                      <div className={`rounded-xl p-3 shadow-inner ${module.status === 'completed' ? 'bg-emerald-50 text-emerald-500' :
-                        module.status === 'in_progress' ? 'bg-amber-50 text-amber-500' :
-                          'bg-gray-50 text-gray-500'
-                        }`}>
-                        {module.type === 'video' ? (
-                          <Video className="h-5 w-5" />
-                        ) : module.type === 'interactive' ? (
-                          <MessageSquare className="h-5 w-5" />
-                        ) : (
-                          <BookOpen className="h-5 w-5" />
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900">{module.title}</h4>
-                        <div className="mt-1.5 flex items-center space-x-3 text-sm text-gray-500 font-medium">
-                          <div className="flex items-center">
-                            <Clock className="h-4 w-4 mr-1.5 text-gray-400" />
-                            <span>{module.duration}</span>
-                          </div>
-                          {module.required && (
-                            <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-600 border border-rose-100">
-                              Required
-                            </span>
-                          )}
-                        </div>
-                        {module.description && (
-                          <p className="mt-2 text-sm text-gray-500 line-clamp-1 max-w-xl">{module.description}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      {module.status === 'completed' ? (
-                        <div className="flex flex-col items-end space-y-1">
-                          <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                            <CheckCircle className="mr-1 h-3.5 w-3.5" />
-                            Completed
-                          </span>
-                          <button
-                            onClick={() => navigateToUrl(`/training/${module.id}`)}
-                            className="flex items-center text-xs font-medium text-purple-600 hover:text-purple-500"
-                          >
-                            <RefreshCw className="mr-1 h-3 w-3" />
-                            Revoir
-                          </button>
-                        </div>
-                      ) : module.status === 'in_progress' ? (
-                        <div className="flex flex-col items-end space-y-2">
-                          <div className="flex items-center space-x-2">
-                            <div className="h-2 w-24 rounded-full bg-gray-200 shadow-inner">
-                              <div
-                                className="h-2 rounded-full bg-gradient-to-r from-rose-500 to-purple-500"
-                                style={{ width: `${module.progress}%` }}
-                              />
-                            </div>
-                            <span className="text-xs text-gray-500 font-medium">{module.progress}%</span>
-                          </div>
-                          <button
-                            onClick={() => navigateToUrl(`/training/${module.id}`)}
-                            className="flex items-center rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-rose-500/20 hover:from-rose-600 hover:to-purple-700 hover:shadow-lg hover:shadow-rose-500/40 hover:-translate-y-0.5 transition-all duration-300"
-                          >
-                            <Play className="mr-1.5 h-4 w-4" />
-                            Lire
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => navigateToUrl(`/training/${module.id}`)}
-                          className="flex items-center rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-rose-500/20 hover:from-rose-600 hover:to-purple-700 hover:shadow-lg hover:shadow-rose-500/40 hover:-translate-y-0.5 transition-all duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100"
-                        >
-                          <Play className="mr-2 h-4 w-4" />
-                          Lire
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="text-center py-8">
-              <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-              <p className="mt-4 text-sm text-gray-500">
-                No trainings available yet.
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
+        </header>
 
-      {/* Skills Assessment 
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h3 className="text-lg font-medium text-gray-900">Skills Assessment</h3>
-        <div className="mt-4 space-y-4">
-          {assessments.map((assessment) => (
-            <div
-              key={assessment.id}
-              className="rounded-lg border border-gray-200 bg-white p-4"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className={`rounded-lg p-2 ${assessment.status === 'completed' ? 'bg-green-100 text-green-600' :
-                    assessment.status === 'in_progress' ? 'bg-yellow-100 text-yellow-600' :
-                      'bg-gray-100 text-gray-600'
-                    }`}>
-                    <Award className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900">{assessment.title}</h4>
-                    <p className="text-sm text-gray-500">
-                      {assessment.type === 'practical' ? 'Practical Assessment' : 'Written Test'}
-                    </p>
-                  </div>
-                </div>
-                <div>
-                  {assessment.status === 'completed' ? (
-                    <div className="text-right">
-                      <span className="text-2xl font-bold text-green-600">{assessment.score}%</span>
-                      <p className="text-sm text-gray-500">Score</p>
-                    </div>
-                  ) : assessment.status === 'in_progress' ? (
-                    <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-sm font-medium text-yellow-800">
-                      <Clock className="mr-1 h-4 w-4" />
-                      In Progress
-                    </span>
-                  ) : (
-                    <button className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
-                      Start Assessment
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      */}
-
-      {/* Channel Setup 
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h3 className="text-lg font-medium text-gray-900">Channel Configuration</h3>
-        <div className="mt-4 space-y-4">
-          {[
-            { id: 'voice', name: 'Voice Channel', icon: Phone, status: 'configured' },
-            { id: 'email', name: 'Email Integration', icon: Mail, status: 'pending' },
-            { id: 'chat', name: 'Live Chat', icon: MessageSquare, status: 'configured' },
-            { id: 'social', name: 'Social Media', icon: Globe, status: 'not_started' }
-          ].map((channel) => {
-            const Icon = channel.icon;
-            return (
-              <div
-                key={channel.id}
-                className="rounded-lg border border-gray-200 bg-white p-4"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className={`rounded-lg p-2 ${channel.status === 'configured' ? 'bg-green-100 text-green-600' :
-                      channel.status === 'pending' ? 'bg-yellow-100 text-yellow-600' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>
-                      <Icon className="h-5 w-5" />
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Training Section */}
+            <section className="overflow-hidden rounded-xl bg-white shadow-sm border border-gray-100">
+              <div className="p-6">
+                <div className="mb-6 flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
+                      <BookOpen className="h-5 w-5" />
                     </div>
                     <div>
-                      <h4 className="font-medium text-gray-900">{channel.name}</h4>
-                      <p className="text-sm text-gray-500">
-                        {channel.status === 'configured' ? 'Ready to use' :
-                          channel.status === 'pending' ? 'Configuration pending' :
-                            'Not configured'}
-                      </p>
+                      <h2 className="text-lg font-bold text-gray-900">Training & Certification</h2>
+                      <p className="text-sm text-gray-500">Skills development and validation</p>
                     </div>
                   </div>
-                  <button className={`rounded-md px-3 py-1.5 text-sm font-medium shadow-sm ${channel.status === 'configured'
-                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                    }`}>
-                    {channel.status === 'configured' ? 'Reconfigure' : 'Configure'}
-                  </button>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      */}
 
-      {/* Documentation */}
-      <div className="transition-all duration-500 mt-12 pt-8 border-t border-gray-100/50">
-        <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
-          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-3">
-            <div className="p-2 bg-purple-50 rounded-lg text-purple-500 shadow-inner">
-              <FileText className="h-5 w-5" />
-            </div>
-            Documentation & Resources
-          </h3>
-          {trainingDocuments.length > 0 && (
-            <button
-              onClick={() => {
-                // Download all documents
-                trainingDocuments.forEach((doc) => {
-                  if (doc.url) {
-                    window.open(doc.url, '_blank');
-                  }
-                });
-              }}
-              className="flex items-center px-4 py-2 text-sm font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-xl transition-colors"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Download All
-            </button>
-          )}
-        </div>
-        <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {trainingDocuments.length > 0 ? (
-            trainingDocuments.map((doc) => (
-              <div
-                key={doc.id}
-                className="flex items-center justify-between rounded-2xl border border-gray-100/50 bg-white/40 p-5 hover:border-purple-200 hover:bg-white/80 hover:shadow-md transition-all duration-300 group"
-              >
-                <div className="flex items-center flex-1 min-w-0">
-                  <div className="p-2.5 bg-gray-50 rounded-xl text-gray-400 group-hover:text-purple-500 group-hover:bg-purple-50 transition-colors">
-                    <FileText className="h-6 w-6 flex-shrink-0" />
+                {loadingTrainings ? (
+                  <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-100 py-12 rounded-xl">
+                    <RefreshCw className="h-8 w-8 animate-spin text-indigo-400" />
+                    <p className="mt-4 text-gray-500">Loading available trainings...</p>
                   </div>
-                  <div className="ml-4 min-w-0 flex-1">
-                    <p className="text-sm font-bold text-gray-800 truncate">{doc.title}</p>
-                    <p className="text-xs font-medium text-gray-500 mt-0.5">{formatFileType(doc.type)} • {doc.size}</p>
+                ) : trainings.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center rounded-xl bg-gray-50 py-12 text-center border border-dashed border-gray-200 p-8">
+                    <div className="mb-4 rounded-full bg-white p-3 shadow-sm">
+                      <Plus className="h-6 w-6 text-indigo-600" />
+                    </div>
+                    <h3 className="text-base font-semibold text-gray-900">No training journeys yet</h3>
+                    <p className="mx-auto mt-2 max-w-xs text-sm text-gray-500">
+                      Add your first training journey to start onboarding your REPs.
+                    </p>
+                    <button
+                      onClick={() => setShowTraining({ isOpen: true, newJourney: true })}
+                      className="mt-6 inline-flex items-center space-x-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition-all"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Create First Journey</span>
+                    </button>
                   </div>
-                </div>
-                {doc.url && (
-                  <button
-                    onClick={() => window.open(doc.url, '_blank')}
-                    className="rounded-xl p-2 text-gray-400 hover:bg-purple-50 hover:text-purple-600 flex-shrink-0 ml-3 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-                    title="Download"
-                  >
-                    <Download className="h-5 w-5" />
-                  </button>
+                ) : (
+                  <div className="space-y-4">
+                    {trainings.map((journey) => {
+                      const formatted = formatTrainingJourney(journey);
+                      return (
+                        <div
+                          key={formatted.id}
+                          className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-5 transition-all hover:border-indigo-300 hover:shadow-md"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start space-x-4">
+                              <div className={`mt-1 flex h-10 w-10 items-center justify-center rounded-lg ${formatted.status === 'completed' ? 'bg-green-50 text-green-600' :
+                                formatted.status === 'in_progress' ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-600'
+                                }`}>
+                                {formatted.status === 'completed' ? <CheckCircle className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                              </div>
+                              <div>
+                                <h3 className="text-base font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                                  {formatted.title}
+                                </h3>
+                                <p className="mt-1 line-clamp-1 text-sm text-gray-500">
+                                  {formatted.description}
+                                </p>
+                                <div className="mt-3 flex items-center space-x-4">
+                                  <div className="flex items-center text-xs text-gray-400">
+                                    <Clock className="mr-1.5 h-3.5 w-3.5" />
+                                    {formatted.duration}
+                                  </div>
+                                  <div className="flex items-center text-xs text-gray-400">
+                                    <FileText className="mr-1.5 h-3.5 w-3.5" />
+                                    {formatted.modulesCount} modules
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => setShowTraining({ isOpen: true, journeyId: formatted.id })}
+                              className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all ${formatted.status === 'completed' ? 'bg-green-50 text-green-700 hover:bg-green-100' :
+                                'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
+                                }`}
+                            >
+                              {formatted.status === 'completed' ? 'Review' : formatted.status === 'in_progress' ? 'Continue' : 'Start'}
+                            </button>
+                          </div>
+                          {formatted.status === 'in_progress' && (
+                            <div className="mt-4">
+                              <div className="flex items-center justify-between text-xs mb-1.5">
+                                <span className="text-gray-500">Progress</span>
+                                <span className="font-medium text-indigo-600">{formatted.progress}%</span>
+                              </div>
+                              <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                                <div
+                                  className="h-full bg-indigo-600 transition-all duration-500"
+                                  style={{ width: `${formatted.progress}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    <button
+                      onClick={() => setShowTraining({ isOpen: true, newJourney: true })}
+                      className="flex w-full items-center justify-center space-x-2 rounded-xl border-2 border-dashed border-gray-200 py-4 text-sm font-medium text-gray-500 transition-all hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Create New Training Journey</span>
+                    </button>
+                  </div>
                 )}
               </div>
-            ))
-          ) : (
-            <div className="col-span-2 text-center py-8">
-              <FileText className="mx-auto h-12 w-12 text-gray-400" />
-              <p className="mt-4 text-sm text-gray-500">
-                No documents available in training modules yet.
-              </p>
+            </section>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Summary</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Assigned</span>
+                  <span className="font-bold text-gray-900">{trainings.length}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">Completed</span>
+                  <span className="font-bold text-green-600">
+                    {trainings.filter(t => t.status === 'completed' || t.journeyStatus === 'completed').length}
+                  </span>
+                </div>
+                <div className="pt-4 border-t border-gray-50">
+                  <div className="flex items-center justify-between text-sm font-bold">
+                    <span className="text-gray-900">Overall Progress</span>
+                    <span className="text-indigo-600">
+                      {trainings.length > 0
+                        ? Math.round((trainings.filter(t => t.status === 'completed' || t.journeyStatus === 'completed').length / trainings.length) * 100)
+                        : 0}%
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
