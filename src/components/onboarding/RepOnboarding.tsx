@@ -530,7 +530,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                           </span>
                           <button
                             onClick={() => navigateToUrl(`/training/${module.id}`)}
-                            className="flex items-center text-xs font-medium text-indigo-600 hover:text-indigo-500"
+                            className="flex items-center text-xs font-medium text-purple-600 hover:text-purple-500"
                           >
                             <RefreshCw className="mr-1 h-3 w-3" />
                             Revoir
@@ -539,9 +539,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                       ) : module.status === 'in_progress' ? (
                         <div className="flex flex-col items-end space-y-2">
                           <div className="flex items-center space-x-2">
-                            <div className="h-2 w-24 rounded-full bg-gray-200">
+                            <div className="h-2 w-24 rounded-full bg-gray-200 shadow-inner">
                               <div
-                                className="h-2 rounded-full bg-indigo-600"
+                                className="h-2 rounded-full bg-gradient-to-r from-rose-500 to-purple-500"
                                 style={{ width: `${module.progress}%` }}
                               />
                             </div>
@@ -549,7 +549,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                           </div>
                           <button
                             onClick={() => navigateToUrl(`/training/${module.id}`)}
-                            className="flex items-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-indigo-500/20 hover:bg-indigo-700 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+                            className="flex items-center rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-rose-500/20 hover:from-rose-600 hover:to-purple-700 hover:shadow-lg hover:shadow-rose-500/40 hover:-translate-y-0.5 transition-all duration-300"
                           >
                             <Play className="mr-1.5 h-4 w-4" />
                             Lire
@@ -558,7 +558,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                       ) : (
                         <button
                           onClick={() => navigateToUrl(`/training/${module.id}`)}
-                          className="flex items-center rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-500/20 hover:bg-indigo-700 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                          className="flex items-center rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-rose-500/20 hover:from-rose-600 hover:to-purple-700 hover:shadow-lg hover:shadow-rose-500/40 hover:-translate-y-0.5 transition-all duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100"
                         >
                           <Play className="mr-2 h-4 w-4" />
                           Lire
@@ -679,7 +679,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       <div className="rounded-3xl bg-white/70 backdrop-blur-xl p-8 border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)] transition-all duration-500 mt-8">
         <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
           <h3 className="text-xl font-bold text-gray-800 flex items-center gap-3">
-            <div className="p-2 bg-blue-50 rounded-lg text-blue-500 shadow-inner">
+            <div className="p-2 bg-purple-50 rounded-lg text-purple-500 shadow-inner">
               <FileText className="h-5 w-5" />
             </div>
             Documentation & Resources
@@ -694,7 +694,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   }
                 });
               }}
-              className="flex items-center px-4 py-2 text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors"
+              className="flex items-center px-4 py-2 text-sm font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-xl transition-colors"
             >
               <Download className="mr-2 h-4 w-4" />
               Download All
@@ -706,10 +706,10 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
             trainingDocuments.map((doc) => (
               <div
                 key={doc.id}
-                className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-5 hover:border-indigo-200 hover:shadow-lg transition-all duration-300 group"
+                className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-5 hover:border-purple-200 hover:shadow-lg transition-all duration-300 group"
               >
                 <div className="flex items-center flex-1 min-w-0">
-                  <div className="p-2.5 bg-gray-50 rounded-xl text-gray-400 group-hover:text-indigo-500 group-hover:bg-indigo-50 transition-colors">
+                  <div className="p-2.5 bg-gray-50 rounded-xl text-gray-400 group-hover:text-purple-500 group-hover:bg-purple-50 transition-colors">
                     <FileText className="h-6 w-6 flex-shrink-0" />
                   </div>
                   <div className="ml-4 min-w-0 flex-1">
@@ -720,7 +720,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 {doc.url && (
                   <button
                     onClick={() => window.open(doc.url, '_blank')}
-                    className="rounded-xl p-2 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 flex-shrink-0 ml-3 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    className="rounded-xl p-2 text-gray-400 hover:bg-purple-50 hover:text-purple-600 flex-shrink-0 ml-3 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                     title="Download"
                   >
                     <Download className="h-5 w-5" />
