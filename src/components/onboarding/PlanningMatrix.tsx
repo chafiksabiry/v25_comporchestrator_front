@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { TimeSlot, Rep } from '../../types/scheduler';
 import { Clock, Calendar, Save } from 'lucide-react';
 import { schedulerApi } from '../../services/schedulerService';
@@ -16,7 +15,7 @@ interface PlanningMatrixProps {
 const HOURS = Array.from({ length: 11 }, (_, i) => i + 9); // 9:00 to 19:00
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: PlanningMatrixProps) {
+export function PlanningMatrix({ gigId, slots, onRefresh }: PlanningMatrixProps) {
     const [localMatrix, setLocalMatrix] = useState<Record<string, Record<number, number>>>({});
     const [isSaving, setIsSaving] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
@@ -31,34 +30,17 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
         return () => window.removeEventListener('pointerup', handlePointerUp);
     }, []);
 
-    // Get the start of the week (Monday) based on selectedDate
-    const weekStart = useMemo(() => {
-        try {
-            const date = selectedDate instanceof Date ? selectedDate : new Date(selectedDate);
-            const start = startOfWeek(date, { weekStartsOn: 1 });
-            return start;
-        } catch (e) {
-            console.error('Error calculating weekStart:', e);
-            return new Date();
-        }
-    }, [selectedDate]);
-
-    const weekDates = useMemo(() => {
-        return DAYS.map((_, i) => addDays(weekStart, i));
-    }, [weekStart]);
-
     // Initialize/Sync local matrix with existing slots
     useEffect(() => {
         const matrix: Record<string, Record<number, number>> = {};
 
-        weekDates.forEach(date => {
-            const dateStr = format(date, 'yyyy-MM-dd');
-            matrix[dateStr] = {};
+        DAYS.forEach(dayName => {
+            matrix[dayName] = {};
             HOURS.forEach(hour => {
                 const timeStr = `${hour.toString().padStart(2, '0')}:00`;
-                const slot = slots.find(s => s.date === dateStr && s.startTime === timeStr && s.gigId === gigId);
+                const slot = slots.find(s => s.date === dayName && s.startTime === timeStr && s.gigId === gigId);
                 // Important: Use + here to ensure it's a number
-                matrix[dateStr][hour] = slot ? (Number(slot.capacity) || 0) : 0;
+                matrix[dayName][hour] = slot ? (Number(slot.capacity) || 0) : 0;
             });
         });
 
@@ -72,7 +54,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
             });
             return next;
         });
-    }, [slots, weekDates, gigId]);
+    }, [slots, gigId]);
     // Removed old sync logic
 
     const handleCellChange = (dateStr: string, hour: number, value: string) => {
@@ -91,14 +73,14 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
         try {
             const slotsToUpdate: Partial<TimeSlot>[] = [];
 
-            for (const dateStr of Object.keys(localMatrix)) {
+            for (const dayName of Object.keys(localMatrix)) {
                 for (const hour of HOURS) {
-                    const capacity = localMatrix[dateStr][hour];
+                    const capacity = localMatrix[dayName][hour];
                     const timeStr = `${hour.toString().padStart(2, '0')}:00`;
                     const endTimeStr = `${(hour + 1).toString().padStart(2, '0')}:00`;
 
                     slotsToUpdate.push({
-                        date: dateStr,
+                        date: dayName,
                         startTime: timeStr,
                         endTime: endTimeStr,
                         capacity: capacity,
@@ -124,16 +106,15 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
 
     // Calculate totals with explicit casting and memoization
     const dayTotals = useMemo(() => {
-        return weekDates.map(date => {
-            const dateStr = format(date, 'yyyy-MM-dd');
-            const dayData = localMatrix[dateStr] || {};
+        return DAYS.map(dayName => {
+            const dayData = localMatrix[dayName] || {};
             // Sum all hours for this day
             return HOURS.reduce((sum, hour) => {
                 const val = Number(dayData[hour]) || 0;
                 return sum + val;
             }, 0);
         });
-    }, [localMatrix, weekDates]);
+    }, [localMatrix]);
 
     return (
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
@@ -146,7 +127,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                     <div>
                         <h2 className="text-base font-bold">Session Planning</h2>
                         <p className="text-harx-100 text-sm opacity-90">
-                            Week of {weekStart instanceof Date && !isNaN(weekStart.getTime()) ? format(weekStart, 'MMMM d, yyyy') : 'Loading...'}
+                            General Weekly Schedule
                         </p>
                     </div>
                 </div>
@@ -187,11 +168,10 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                                         {hour}:00
                                     </div>
                                 </td>
-                                {weekDates.map(date => {
-                                    const dateStr = format(date, 'yyyy-MM-dd');
-                                    const value = Number(localMatrix[dateStr]?.[hour]) || 0;
+                                {DAYS.map(dayName => {
+                                    const value = Number(localMatrix[dayName]?.[hour]) || 0;
                                     return (
-                                        <td key={dateStr} 
+                                        <td key={dayName} 
                                             className="p-0.5 border-b border-gray-50 text-center select-none"
                                             onPointerDown={() => {
                                                 setIsDragging(true);
@@ -199,7 +179,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                                             }}
                                             onPointerEnter={() => {
                                                 if (isDragging && dragValue !== null && value !== dragValue) {
-                                                    handleCellChange(dateStr, hour, dragValue.toString());
+                                                    handleCellChange(dayName, hour, dragValue.toString());
                                                 }
                                             }}
                                         >
@@ -208,7 +188,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                                                 min="0"
                                                 value={value === 0 ? '' : value}
                                                 placeholder=""
-                                                onChange={(e) => handleCellChange(dateStr, hour, e.target.value)}
+                                                onChange={(e) => handleCellChange(dayName, hour, e.target.value)}
                                                 className={`w-11 h-8 text-center rounded-lg font-black text-sm transition-all border-2 
                                                     ${value > 0
                                                         ? 'bg-harx-50 border-harx-200 text-harx-700 focus:ring-2 focus:ring-harx-100'
