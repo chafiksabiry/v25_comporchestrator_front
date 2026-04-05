@@ -5,8 +5,6 @@ import {
   BookOpen,
   CheckCircle,
   FileText,
-  Video,
-  MessageSquare,
   Clock,
   Download,
   Play,
@@ -50,7 +48,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     }
 
     return {
-      id: journey._id || journey.id,
+      id: String(journey._id || journey.id || ''),
       title: journey.title || journey.name || 'Untitled Training',
       description: journey.description || 'No description provided',
       duration: duration,
