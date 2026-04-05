@@ -97,7 +97,7 @@ export const OnboardingService = {
 
             // 3. Keyword match (significant words > 3 chars)
             if (searchTerms.length > 0) {
-              const targetKeywords = industryName.split(/\s+/).filter(t => t.length > 3);
+              const targetKeywords = industryName.split(/\s+/).filter((t: string) => t.length > 3);
               return searchTerms.some(term => targetKeywords.includes(term));
             }
 
