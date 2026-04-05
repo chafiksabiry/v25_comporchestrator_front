@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { MemoryRouter } from 'react-router-dom';
 import {
   BookOpen,
   CheckCircle,
@@ -158,11 +159,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   if (showTraining.isOpen) {
     return (
-      <AppContent
-        initialJourneyId={showTraining.journeyId}
-        isEmbedded={true}
-        startWithJourneyBuilder={showTraining.newJourney}
-      />
+      <MemoryRouter>
+        <AppContent
+          initialJourneyId={showTraining.journeyId}
+          isEmbedded={true}
+          startWithJourneyBuilder={showTraining.newJourney}
+        />
+      </MemoryRouter>
     );
   }
 
