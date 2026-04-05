@@ -1,6 +1,6 @@
 // src/infrastructure/services/JourneyService.ts
 import { ApiClient } from '../../lib/api';
-import { TrainingJourney, TrainingModule, Rep } from '../../types';
+import { TrainingJourney, TrainingModule } from '../../types';
 import { extractObjectId, isValidMongoId } from '../../lib/mongoUtils';
 
 export interface LaunchJourneyRequest {
@@ -31,17 +31,13 @@ export interface LaunchJourneyResponse {
   enrolledCount: number;
 }
 
-// Helper function to validate MongoDB ObjectId format (24 hex characters)
-const isValidMongoId = (id: string | undefined): boolean => {
-  return !!(id && /^[0-9a-fA-F]{24}$/.test(id));
-};
 
 export class JourneyService {
   /**
    * Get all training journeys
    */
   static async getAllJourneys(): Promise<any[]> {
-    const response = await ApiClient.get('/training_journeys');
+    const response = await ApiClient.get('/training_journeys') as any;
     return response.data;
   }
 
@@ -49,7 +45,7 @@ export class JourneyService {
    * Get a specific journey by ID
    */
   static async getJourneyById(id: string): Promise<any> {
-    const response = await ApiClient.get(`/training_journeys/${id}`);
+    const response = await ApiClient.get(`/training_journeys/${id}`) as any;
     return response.data;
   }
 
@@ -57,125 +53,16 @@ export class JourneyService {
    * Get journeys by status
    */
   static async getJourneysByStatus(status: string): Promise<any[]> {
-    const response = await ApiClient.get(`/training_journeys/status/${status}`);
+    const response = await ApiClient.get(`/training_journeys/status/${status}`) as any;
     return response.data;
   }
 
-  // Methods createQuizzesForModule and createFinalExam removed - using embedded structure
-  // These methods are no longer needed since modules/quizzes are embedded in the journey document
-  
-  /**
-   * @deprecated - No longer used, quizzes are embedded in modules
-   */
-  static async createQuizzesForModule(moduleId: string, trainingId: string, assessments: any[]): Promise<string[]> {
-    const quizIds: string[] = [];
-    
-    if (!assessments || assessments.length === 0) {
-      return quizIds;
-    }
-
-    for (const assessment of assessments) {
-      if (!assessment.questions || assessment.questions.length === 0) {
-        continue;
-      }
-
-      try {
-        const quizPayload = {
-          title: assessment.title || `${moduleId} - Quiz`,
-          description: assessment.description || 'Module quiz',
-          moduleId: moduleId,
-          trainingId: trainingId,
-          passingScore: assessment.passingScore || 70,
-          timeLimit: assessment.timeLimit || 15,
-          maxAttempts: assessment.maxAttempts || 3,
-          questions: assessment.questions.map((q: any, idx: number) => ({
-            _id: q._id || q.id || `q-${idx}`,
-            id: q._id || q.id || `q-${idx}`,
-            question: q.question || q.text || '',
-            type: q.type || 'multiple-choice',
-            options: q.options || [],
-            correctAnswer: q.correctAnswer,
-            explanation: q.explanation || '',
-            points: q.points || 10,
-            orderIndex: idx
-          })),
-          settings: {
-            shuffleQuestions: assessment.settings?.shuffleQuestions || false,
-            shuffleOptions: assessment.settings?.shuffleOptions || false,
-            showCorrectAnswers: assessment.settings?.showCorrectAnswers !== false,
-            allowReview: assessment.settings?.allowReview !== false,
-            showExplanations: assessment.settings?.showExplanations !== false
-          }
-        };
-
-        // Use endpoint for module_quizzes collection
-        const response = await ApiClient.post(`/training_journeys/modules/${moduleId}/quizzes`, quizPayload);
-        // ApiClient already normalizes Extended JSON ObjectIds to strings, but use extractObjectId for safety
-        const quizId = extractObjectId(response.data.data?._id || response.data.data?.id);
-        if (quizId) {
-          quizIds.push(quizId);
-        }
-      } catch (error) {
-        console.error(`[JourneyService] Error creating quiz for module ${moduleId}:`, error);
-      }
-    }
-
-    return quizIds;
-  }
+  // Helper methods createQuizzesForModule and createFinalExam removed 
+  // Partitioning is now handled by the backend service layer
 
   /**
-   * @deprecated - No longer used, final exam is embedded in journey
-   */
-  static async createFinalExam(trainingId: string, finalExamData: any): Promise<string | null> {
-    if (!finalExamData || !finalExamData.questions || finalExamData.questions.length === 0) {
-      return null;
-    }
-
-    try {
-      const quizPayload = {
-        title: finalExamData.title || 'Final Exam',
-        description: finalExamData.description || 'Final examination for the training journey',
-        trainingId: trainingId,
-        passingScore: finalExamData.passingScore || 70,
-        timeLimit: finalExamData.timeLimit || 60,
-        maxAttempts: finalExamData.maxAttempts || 1,
-        questions: finalExamData.questions.map((q: any, idx: number) => ({
-          _id: q._id || q.id || `q-${idx}`,
-          id: q._id || q.id || `q-${idx}`,
-          question: q.question || q.text || '',
-          type: q.type || 'multiple-choice',
-          options: q.options || [],
-          correctAnswer: q.correctAnswer,
-          explanation: q.explanation || '',
-          points: q.points || 10,
-          orderIndex: idx
-        })),
-        settings: {
-          shuffleQuestions: finalExamData.settings?.shuffleQuestions || true,
-          shuffleOptions: finalExamData.settings?.shuffleOptions || true,
-          showCorrectAnswers: finalExamData.settings?.showCorrectAnswers !== false,
-          allowReview: finalExamData.settings?.allowReview !== false,
-          showExplanations: finalExamData.settings?.showExplanations !== false
-        }
-      };
-
-      // Use endpoint for exam_final_quizzes collection
-      const response = await ApiClient.post(`/training_journeys/${trainingId}/final-exam`, quizPayload);
-      // ApiClient already normalizes Extended JSON ObjectIds to strings, but use extractObjectId for safety
-      const finalExamId = extractObjectId(response.data.data?._id || response.data.data?.id);
-      if (finalExamId) {
-        return finalExamId;
-      }
-    } catch (error) {
-      console.error('[JourneyService] Error creating final exam:', error);
-    }
-
-    return null;
-  }
-
-  /**
-   * Create or save a journey with embedded modules, sections, and quizzes
-   * All data is stored in a single collection: training_journeys
+   * Create or save a journey with nested modules, sections, and quizzes
+   * The backend will automatically partition this data into separate collections.
    * @param journeyId Optional: if provided, updates existing journey instead of creating new one
    */
   static async saveJourney(journey: TrainingJourney, modules: TrainingModule[], companyId?: string, gigId?: string, finalExam?: any, journeyId?: string): Promise<any> {
@@ -230,10 +117,10 @@ export class JourneyService {
       return {
         title: m.title || `Module ${index + 1}`,
         description: m.description || '',
-        duration: m.duration ? Math.round(m.duration * 60) : 0, // Convert hours to minutes
+        duration: m.duration ? Math.round((m.duration as any) * 60) : 0, // Convert hours to minutes
         difficulty: m.difficulty || 'beginner',
         learningObjectives: Array.isArray(m.learningObjectives) ? m.learningObjectives : [],
-        prerequisites: Array.isArray(m.prerequisites) ? m.prerequisites : [],
+        prerequisites: Array.isArray((m as any).prerequisites) ? (m as any).prerequisites : [],
         topics: Array.isArray(m.topics) ? m.topics : [],
         sections: embeddedSections,
         quizzes: embeddedQuizzes,
@@ -270,12 +157,12 @@ export class JourneyService {
     }
     
     const journeyPayload: any = {
-      title: journey.title,
-      description: journey.description,
-      industry: journey.industry,
-      status: journey.status || 'draft',
-      company: journey.company,
-      vision: journey.vision,
+      title: (journey as any).title,
+      description: (journey as any).description,
+      industry: (journey as any).industry,
+      status: (journey as any).status || 'draft',
+      company: (journey as any).company,
+      vision: (journey as any).vision,
       companyId: companyId,
       gigId: gigId,
       modules: embeddedModules,
@@ -288,23 +175,23 @@ export class JourneyService {
       journeyPayload._id = journeyId;
     }
 
-    console.log('[JourneyService] Saving journey with embedded modules:', {
+    console.log('[JourneyService] Saving journey with nested components (Backend will partition):', {
       journeyId: journeyId || 'NEW',
       modulesCount: embeddedModules.length,
       hasFinalExam: !!embeddedFinalExam
     });
 
-    let response;
+    let response: any;
     if (journeyId && isValidMongoId(journeyId)) {
       // Update existing journey
-      response = await ApiClient.put(`/training_journeys/${journeyId}`, journeyPayload);
+      response = await ApiClient.put(`/training_journeys/${journeyId}`, journeyPayload) as any;
       if (!response.data.success) {
         throw new Error('Failed to update journey');
       }
       console.log('[JourneyService] Updated journey:', journeyId);
     } else {
       // Create new journey
-      response = await ApiClient.post('/training_journeys', journeyPayload);
+      response = await ApiClient.post('/training_journeys', journeyPayload) as any;
       
       if (!response.data.success) {
         console.error('[JourneyService] Create journey failed:', response.data);
@@ -340,8 +227,8 @@ export class JourneyService {
   }
 
   /**
-   * Launch a training journey with embedded modules, sections, and quizzes
-   * All data is stored in a single collection: training_journeys
+   * Launch a training journey with nested segments
+   * The backend will automatically partition this data into separate collections.
    * @param journeyId Optional: if provided, updates existing journey instead of creating new one
    */
   static async launchJourney(request: LaunchJourneyRequest, finalExam?: any, journeyId?: string): Promise<LaunchJourneyResponse> {
@@ -396,10 +283,10 @@ export class JourneyService {
       return {
         title: m.title || `Module ${index + 1}`,
         description: m.description || '',
-        duration: m.duration ? Math.round(m.duration * 60) : 0, // Convert hours to minutes
+        duration: m.duration ? Math.round((m.duration as any) * 60) : 0, // Convert hours to minutes
         difficulty: m.difficulty || 'beginner',
         learningObjectives: Array.isArray(m.learningObjectives) ? m.learningObjectives : [],
-        prerequisites: Array.isArray(m.prerequisites) ? m.prerequisites : [],
+        prerequisites: Array.isArray((m as any).prerequisites) ? (m as any).prerequisites : [],
         topics: Array.isArray(m.topics) ? m.topics : [],
         sections: embeddedSections,
         quizzes: embeddedQuizzes,
@@ -473,10 +360,10 @@ export class JourneyService {
 
     const launchPayload = {
       journey: journeyPayload,
-      enrolledRepIds: request.enrolledRepIds
+      enrolledRepIds: (request as any).enrolledRepIds
     };
 
-    const launchResponse = await ApiClient.post('/training_journeys/launch', launchPayload);
+    const launchResponse = await ApiClient.post('/training_journeys/launch', launchPayload) as any;
     
     if (!launchResponse.data.success) {
       throw new Error(launchResponse.data.error || 'Failed to launch journey');
@@ -515,7 +402,7 @@ export class JourneyService {
     const endpoint = `/training_journeys/trainer/companyId/${companyId}`;
     console.log('[JourneyService] Fetching journeys by company from:', endpoint);
     try {
-      const response = await ApiClient.get(endpoint);
+      const response = await ApiClient.get(endpoint) as any;
       console.log('[JourneyService] Response:', response);
       // ApiClient.get returns {data: {...}, status: 200}
       // The backend returns {data: [...], success: true, count: N}
@@ -534,7 +421,7 @@ export class JourneyService {
     const endpoint = `/training_journeys/trainer/companyId/${companyId}/gigId/${gigId}`;
     console.log('[JourneyService] Fetching journeys by company and gig from:', endpoint);
     try {
-      const response = await ApiClient.get(endpoint);
+      const response = await ApiClient.get(endpoint) as any;
       console.log('[JourneyService] Response:', response);
       return response.data;
     } catch (error: any) {
@@ -550,7 +437,7 @@ export class JourneyService {
     const endpoint = `/training_journeys/rep/${repId}`;
     console.log('[JourneyService] Fetching journeys for rep from:', endpoint);
     try {
-      const response = await ApiClient.get(endpoint);
+      const response = await ApiClient.get(endpoint) as any;
       console.log('[JourneyService] Response:', response);
       // The backend returns a List<TrainingJourneyEntity> directly
       // ApiClient wraps it in response.data, so we have response.data = [...]
@@ -576,7 +463,7 @@ export class JourneyService {
     const endpoint = `/training_journeys/trainee/available`;
     console.log('[JourneyService] Fetching all available journeys for trainees from:', endpoint);
     try {
-      const response = await ApiClient.get(endpoint);
+      const response = await ApiClient.get(endpoint) as any;
       console.log('[JourneyService] Response for available journeys:', response);
       // The backend returns {success: true, data: [...], count: N}
       // ApiClient wraps it in response.data, so we have response.data = {success: true, data: [...], count: N}
@@ -598,7 +485,7 @@ export class JourneyService {
     const endpoint = `/training_journeys/trainer/dashboard?${params.toString()}`;
     console.log('[JourneyService] Fetching trainer dashboard from:', endpoint);
     try {
-      const response = await ApiClient.get(endpoint);
+      const response = await ApiClient.get(endpoint) as any;
       console.log('[JourneyService] Response:', response);
       // The backend returns {success: true, data: {...}}
       // ApiClient wraps it in response.data, so we have response.data = {success: true, data: {...}}

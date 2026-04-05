@@ -8,6 +8,13 @@ export interface MongoObjectId {
 }
 
 /**
+ * Check if a string is a valid MongoDB ObjectId (24 hex characters)
+ */
+export function isValidMongoId(id: string | null | undefined): boolean {
+  return !!(id && typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id));
+}
+
+/**
  * Check if a value is a MongoDB ObjectId in Extended JSON format
  */
 export function isMongoObjectId(value: any): value is MongoObjectId {
