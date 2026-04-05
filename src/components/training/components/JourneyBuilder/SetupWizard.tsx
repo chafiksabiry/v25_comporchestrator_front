@@ -277,7 +277,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
             {loadingCompany ? (
               <div className="flex flex-col items-center justify-center py-4">
-                <Loader2 className="h-6 w-6 text-indigo-500 animate-spin mb-2" />
+                <Loader2 className="h-6 w-6 text-purple-500 animate-spin mb-2" />
                 <p className="text-xs text-gray-600">Loading company information...</p>
               </div>
             ) : companyData ? (
@@ -321,8 +321,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               {/* Gig Selection */}
               <div className="pt-8 border-t border-gray-100">
                 <h3 className="text-lg font-bold text-gray-800 mb-5 flex items-center">
-                  <div className="p-2 bg-blue-50 rounded-lg mr-3 shadow-inner">
-                    <Briefcase className="h-5 w-5 text-blue-500" />
+                  <div className="p-2 bg-purple-50 rounded-lg mr-3 shadow-inner">
+                    <Briefcase className="h-5 w-5 text-purple-500" />
                   </div>
                   Select Your Gig <span className="text-rose-500 ml-1">*</span>
                 </h3>
@@ -350,13 +350,13 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         return (
           <div className="space-y-3">
             <div className="flex items-center justify-center mb-2">
-              <Users className="h-5 w-5 text-indigo-500 mr-2" />
+              <Users className="h-5 w-5 text-purple-500 mr-2" />
               <h3 className="text-lg font-semibold text-gray-900">Identify Your Learners</h3>
             </div>
 
             <div className="flex flex-wrap justify-center gap-2 mb-3">
               {steps[2].features.map((feature, index) => (
-                <div key={index} className="flex items-center space-x-1 px-2 py-1 bg-indigo-50 rounded text-xs text-indigo-700 font-medium">
+                <div key={index} className="flex items-center space-x-1 px-2 py-1 bg-purple-50 rounded text-xs text-purple-700 font-medium">
                   <Users className="h-3 w-3" />
                   <span>{feature}</span>
                 </div>
@@ -379,7 +379,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                     { role: 'Team Leaders', dept: 'Management', icon: '👥' },
                     { role: 'All Employees', dept: 'Company-wide', icon: '🏢' },
                   ].map((item) => (
-                    <label key={item.role} className="flex items-center p-2 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 cursor-pointer transition-all">
+                    <label key={item.role} className="flex items-center p-2 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 cursor-pointer transition-all">
                       <input
                         type="checkbox"
                         checked={journey.targetRoles?.includes(item.role) || false}
@@ -391,7 +391,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                             setJourney({ ...journey, targetRoles: currentRoles.filter(r => r !== item.role) });
                           }
                         }}
-                        className="mr-2 h-3.5 w-3.5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        className="mr-2 h-3.5 w-3.5 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                       />
                       <div className="flex items-center space-x-1.5">
                         <span className="text-sm">{item.icon}</span>
@@ -430,7 +430,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               {/* Industry & Gigs Summary */}
               <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
                 <h5 className="font-semibold text-xs text-gray-900 mb-2 flex items-center">
-                  <Building2 className="h-4 w-4 mr-1.5 text-indigo-500" />
+                  <Building2 className="h-4 w-4 mr-1.5 text-purple-500" />
                   Industry & gigs infos
                 </h5>
                 <ul className="space-y-1 text-[11px] text-gray-600">
@@ -448,7 +448,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               {/* Training Program Summary */}
               <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
                 <h5 className="font-semibold text-xs text-gray-900 mb-2 flex items-center">
-                  <Target className="h-4 w-4 mr-1.5 text-indigo-500" />
+                  <Target className="h-4 w-4 mr-1.5 text-purple-500" />
                   Training Program
                 </h5>
                 <ul className="space-y-1 text-[11px] text-gray-600">
@@ -468,7 +468,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
             {/* Methodology Components */}
             {selectedMethodology && (
-              <div className="bg-white border border-indigo-100 rounded-lg p-3 shadow-sm">
+              <div className="bg-white border border-purple-100 rounded-lg p-3 shadow-sm">
                 <h5 className="font-semibold text-xs text-gray-900 mb-2 flex items-center">
                   <Sparkles className="h-4 w-4 mr-1.5 text-orange-500" />
                   360° Methodology Components
@@ -484,7 +484,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 {selectedMethodology.components && selectedMethodology.components.length > 6 && (
                   <button
                     onClick={() => setShowAllComponents(!showAllComponents)}
-                    className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium mt-1 flex items-center"
+                    className="text-[10px] text-purple-600 hover:text-purple-700 font-medium mt-1 flex items-center"
                   >
                     {showAllComponents ? 'Show less' : `+${selectedMethodology.components.length - 6} more components`}
                   </button>
@@ -492,8 +492,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               </div>
             )}
 
-            <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-2 mt-2">
-              <p className="text-indigo-900 font-medium text-xs text-center flex items-center justify-center gap-1.5">
+            <div className="bg-purple-50 border border-purple-100 rounded-lg p-2 mt-2">
+              <p className="text-purple-900 font-medium text-xs text-center flex items-center justify-center gap-1.5">
                 <ArrowRight className="h-3 w-3" />
                 Upload your content next!
               </p>
@@ -528,7 +528,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       <div className="w-full flex-1 flex flex-col p-6 md:p-10 opacity-100 transition-opacity duration-500 relative">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-purple-500 to-indigo-500 mb-3 flex justify-center items-center gap-3 drop-shadow-sm leading-tight pb-2">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-purple-500 to-pink-500 mb-3 flex justify-center items-center gap-3 drop-shadow-sm leading-tight pb-2">
             <Sparkles className="h-8 w-8 text-rose-500 animate-pulse" />
             Create Amazing Training in Minutes
           </h1>
@@ -596,7 +596,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         {/* Step Content */}
         {currentStep !== 4 && (
           <div className="flex-1 bg-white/70 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white p-8 md:p-12 mb-8 overflow-hidden relative transition-all duration-500 hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)]">
-            <div className="absolute inset-0 bg-gradient-to-br from-rose-50/40 via-purple-50/30 to-indigo-50/40 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-br from-rose-50/40 via-purple-50/30 to-pink-50/40 pointer-events-none" />
             <div className="h-full overflow-y-auto relative z-10 custom-scrollbar pr-4">
               <div className="max-w-4xl mx-auto pb-6">
                 {renderStepContent()}
