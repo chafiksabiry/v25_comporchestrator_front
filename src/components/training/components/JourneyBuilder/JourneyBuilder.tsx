@@ -158,6 +158,40 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
     });
   };
 
+  const handleFinishEarly = async (finalUploads: ContentUpload[], curriculum: any) => {
+    setUploads(finalUploads);
+    
+    let parsedModules: TrainingModule[] = [];
+    if (curriculum && curriculum.modules) {
+      parsedModules = curriculum.modules.map((m: any, index: number) => ({
+        id: Date.now().toString() + index,
+        title: m.title,
+        description: m.description,
+        duration: m.duration || 30,
+        difficulty: m.difficulty === 'beginner' ? 'beginner' : (m.difficulty === 'advanced' ? 'advanced' : 'intermediate'),
+        prerequisites: m.prerequisites || [],
+        learningObjectives: m.learningObjectives || [],
+        content: [],
+        assessments: []
+      }));
+      setModules(parsedModules);
+    }
+    
+    // Save draft immediately to ensure database has it
+    if (journey) {
+      const activeJourney = { ...journey, status: 'active' as const };
+      await DraftService.saveDraftImmediately({
+        uploads: finalUploads,
+        modules: parsedModules,
+        journey: activeJourney
+      });
+      
+      // Clear draft since it's fully finished and call onComplete to return to onboarding main page
+      DraftService.clearDraft();
+      onComplete(activeJourney, parsedModules, []);
+    }
+  };
+
   const handleCurriculumComplete = async (newModules: TrainingModule[]) => {
     // If methodology is selected, enhance modules with methodology-specific content
     let finalModules = newModules;
@@ -216,6 +250,7 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
         return (
           <ContentUploader
             onComplete={handleUploadComplete}
+            onFinishEarly={handleFinishEarly}
             onBack={() => setCurrentStep(0)}
           />
         );
