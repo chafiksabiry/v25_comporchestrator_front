@@ -15,7 +15,7 @@ export default function SlideViewer({ modules, onComplete }: SlideViewerProps) {
   // Generate slides from modules
   const generateSlides = () => {
     const slides: any[] = [];
-    
+
     // Title slide
     slides.push({
       type: 'title',
@@ -50,7 +50,7 @@ export default function SlideViewer({ modules, onComplete }: SlideViewerProps) {
       module.content.slice(0, 3).forEach((content) => {
         if (typeof content.content === 'string') {
           const contentText = content.content;
-          
+
           // Only create one slide per content item, no chunking
           slides.push({
             type: 'content',
@@ -167,7 +167,7 @@ export default function SlideViewer({ modules, onComplete }: SlideViewerProps) {
             <div className="space-y-6 text-white/95 text-2xl leading-relaxed">
               {paragraphs.map((para: string, idx: number) => {
                 const lines = para.split('\n');
-                
+
                 return (
                   <div key={idx} className="animate-slide-in-left" style={{ animationDelay: `${idx * 0.1}s` }}>
                     {lines.map((line: string, lineIdx: number) => {
@@ -262,7 +262,7 @@ export default function SlideViewer({ modules, onComplete }: SlideViewerProps) {
   };
 
   return (
-    <div 
+    <div
       className="relative w-full h-screen bg-gray-900 overflow-hidden"
       onKeyDown={handleKeyPress}
       tabIndex={0}
@@ -339,13 +339,12 @@ export default function SlideViewer({ modules, onComplete }: SlideViewerProps) {
           <button
             key={idx}
             onClick={() => setCurrentSlideIndex(idx)}
-            className={`transition-all duration-300 rounded-full cursor-pointer ${
-              idx === currentSlideIndex
+            className={`transition-all duration-300 rounded-full cursor-pointer ${idx === currentSlideIndex
                 ? 'w-8 h-3 bg-white'
                 : completedSlides.has(idx)
-                ? 'w-3 h-3 bg-green-400'
-                : 'w-3 h-3 bg-white/30 hover:bg-white/50'
-            }`}
+                  ? 'w-3 h-3 bg-green-400'
+                  : 'w-3 h-3 bg-white/30 hover:bg-white/50'
+              }`}
           />
         ))}
         {slides.length > 20 && (
