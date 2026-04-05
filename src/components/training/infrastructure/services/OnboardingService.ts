@@ -63,95 +63,61 @@ export const OnboardingService = {
       // First fetch all gigs for the company
       const response = await this.fetchGigsByCompany(companyId);
 
-      console.log('[OnboardingService] Total gigs fetched:', response.data.length);
-      if (response.data.length > 0) {
-        console.log('[OnboardingService] First gig industries:', response.data[0]?.industries || 'No industries');
-        console.log('[OnboardingService] First gig industry IDs:', response.data[0]?.industries?.map((ind: any) => ind._id || ind.id) || 'No IDs');
-        console.log('[OnboardingService] First gig industry names:', response.data[0]?.industries?.map((ind: any) => ind.name) || 'No names');
+      if (!response.data || response.data.length === 0) {
+        console.log('[OnboardingService] No gigs found for this company at all');
+        return response;
       }
+
+      console.log('[OnboardingService] Total gigs fetched:', response.data.length);
 
       // Check if industryIdentifier is an ID (ObjectId format: 24 hex characters) or a name
       const isObjectId = /^[0-9a-fA-F]{24}$/.test(industryIdentifier);
-      console.log('[OnboardingService] Industry identifier is ObjectId:', isObjectId);
+      const searchTerms = isObjectId ? [] : industryIdentifier.toLowerCase().trim().split(/\s+/).filter((t: string) => t.length > 3);
 
       // Filter gigs by industry (by ID or by name)
-      const filteredGigs = response.data.filter((gig: GigFromApi) => {
+      let filteredGigs = response.data.filter((gig: GigFromApi) => {
         if (!gig.industries || gig.industries.length === 0) {
           return false;
         }
 
-        const hasMatchingIndustry = gig.industries.some((industry: any) => {
+        return gig.industries.some((industry: any) => {
+          const industryId = industry._id || industry.id;
+          const industryName = (industry.name || '').toLowerCase().trim();
+          const targetIdentifier = industryIdentifier.toLowerCase().trim();
+
           if (isObjectId) {
             // Compare by ID
-            const industryId = industry._id || industry.id;
-            const match = industryId === industryIdentifier;
-            if (match) {
-              console.log('[OnboardingService] Match found by ID:', industryId, '=', industryIdentifier);
-            }
-            return match;
+            return industryId === industryIdentifier;
           } else {
-            // Compare by name - Enhanced with flexible matching
-            const name = (industry.name || '').toLowerCase().trim();
-            const target = (industryIdentifier || '').toLowerCase().trim();
-            
             // 1. Exact match
-            if (name === target) {
-              console.log('[OnboardingService] Match found by name:', name);
-              return true;
-            }
-            
+            if (industryName === targetIdentifier) return true;
+
             // 2. Substring match
-            if (name.includes(target) || target.includes(name)) {
-              console.log(`[OnboardingService] Match found by substring: "${name}" vs "${target}"`);
-              return true;
-            }
-            
-            // 3. Keyword match (split by spaces and match significant words)
-            const nameKeywords = name.split(/\s+/).filter((k: string) => k.length > 3);
-            const targetKeywords = target.split(/\s+/).filter((k: string) => k.length > 3);
-            
-            const hasCommonKeyword = targetKeywords.some((tk: string) => 
-              nameKeywords.some((nk: string) => nk.includes(tk) || tk.includes(nk))
-            );
-            
-            if (hasCommonKeyword) {
-              console.log(`[OnboardingService] Match found by keywords: "${name}" vs "${target}"`);
-              return true;
+            if (industryName.includes(targetIdentifier) || targetIdentifier.includes(industryName)) return true;
+
+            // 3. Keyword match (significant words > 3 chars)
+            if (searchTerms.length > 0) {
+              const targetKeywords = industryName.split(/\s+/).filter(t => t.length > 3);
+              return searchTerms.some(term => targetKeywords.includes(term));
             }
 
             return false;
           }
         });
-
-        return hasMatchingIndustry;
       });
 
-      console.log('[OnboardingService] Filtered gigs count:', filteredGigs.length);
-
-      if (filteredGigs.length > 0) {
-        console.log('[OnboardingService] Filtered gig titles:', filteredGigs.map(g => g.title));
-        return {
-          ...response,
-          data: filteredGigs
-        };
-      } else {
-        console.log('[OnboardingService] ⚠️ No industry match found. Debug info:');
-        console.log('[OnboardingService] - Looking for:', industryIdentifier);
-        
-        // GLOBAL FALLBACK: If no match found, return all gigs for this company 
-        // This ensures the user can proceed even if industry alignment is poor.
-        if (response.data.length > 0) {
-          console.log(`[OnboardingService] 🔄 Falling back to all company gigs (${response.data.length}) to prevent onboarding blockage.`);
-          return {
-            ...response,
-            data: response.data
-          };
-        }
+      // GLOBAL FALLBACK: If no match found by industry, but company HAS gigs, return them all
+      // This prevents the user from being stuck with "No matching gigs found"
+      if (filteredGigs.length === 0 && response.data.length > 0) {
+        console.warn(`[OnboardingService] No exact industry match for "${industryIdentifier}". Falling back to all company gigs (${response.data.length}).`);
+        filteredGigs = response.data;
       }
+
+      console.log('[OnboardingService] Final gigs count:', filteredGigs.length);
 
       return {
         ...response,
-        data: []
+        data: filteredGigs
       };
     } catch (error) {
       console.error(`Error fetching gigs for industry ${industryIdentifier}:`, error);
