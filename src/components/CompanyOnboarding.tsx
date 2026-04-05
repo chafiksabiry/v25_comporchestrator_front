@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Building2,
   Shield,
@@ -497,39 +497,32 @@ const CompanyOnboarding = () => {
     }
   }, [companyId]);
 
-  const checkCompanyGigs = async () => {
+  const checkCompanyGigs = useCallback(async () => {
     try {
-      // Vérifier que companyId est disponible
       if (!companyId) {
         console.error("❌ Company ID not available for checking gigs");
         return;
       }
-
       const response = await axios.get<HasGigsResponse>(
         `${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}/has-gigs`
       );
       const hasGigs = response.data.data.hasGigs;
       setHasGigs(hasGigs);
-      // Note: step 3 completion is handled by checkActiveGigs - do not duplicate here
     } catch (error) {
       console.error("Error checking company gigs:", error);
     }
-  };
+  }, [companyId]);
 
-  const checkCompanyLeads = async () => {
+  const checkCompanyLeads = useCallback(async () => {
     try {
-      // Vérifier que companyId est disponible
       if (!companyId) {
         console.error("❌ Company ID not available for checking leads");
         return;
       }
-
       const response = await axios.get<HasLeadsResponse>(
         `${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads`
       );
       const leadsCheck = response.data.hasLeads;
-
-      // Auto-complete step 5 if company has leads
       if (leadsCheck) {
         console.log("✅ Company has leads - auto-completing step 5");
         try {
@@ -537,62 +530,36 @@ const CompanyOnboarding = () => {
             `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
             { status: "completed" }
           );
-          // Update local state to reflect the completed step
           setCompletedSteps((prev: number[]) => {
-            if (!prev.includes(5)) {
-              return [...prev, 5];
-            }
+            if (!prev.includes(5)) return [...prev, 5];
             return prev;
           });
           console.log("✅ Step 5 auto-completed successfully");
         } catch (error) {
           console.error("Error auto-completing step 5:", error);
         }
-      } else {
-        console.log("⚠️ Company has no leads - step 5 needs manual completion");
       }
     } catch (error) {
       console.error("Error checking company leads:", error);
-      // Ne pas faire échouer toute la fonction si cette vérification échoue
     }
-  };
+  }, [companyId]);
 
 
-  const checkActiveGigs = async () => {
+  const checkActiveGigs = useCallback(async () => {
     try {
-      console.log("🔍 Checking for active gigs...");
-
-      // Vérifier que companyId est disponible
       if (!companyId) {
         console.error("❌ Company ID not available for checking active gigs");
         return;
       }
-
       const response = await axios.get<GigResponse>(
         `${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}?populate=companyId`
       );
-
       if (response.data && response.data.data) {
         const gigs = response.data.data;
-        const hasActiveGig = gigs.some(
-          (gig: any) =>
-            gig.status === "active" ||
-            gig.status === "approved" ||
-            gig.status === "published"
-        );
+        const hasActiveGig = gigs.some((gig: any) => ["active", "approved", "published"].includes(gig.status));
         const hasAnyGig = gigs.length > 0;
-
-        console.log("🔍 Active gigs check:", {
-          totalGigs: gigs.length,
-          hasActiveGig,
-          hasAnyGig,
-          gigStatuses: gigs.map((g: any) => g.status),
-        });
-
-        // Auto-complete Step 3 (Create Gigs) if the company has ANY gig
         if (hasAnyGig && !completedSteps.includes(3)) {
           try {
-            console.log("✅ Company has gigs - auto-completing Step 3 (Create Gigs)");
             await axios.put(
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/3`,
               { status: "completed" }
@@ -602,99 +569,32 @@ const CompanyOnboarding = () => {
               if (!next.includes(3)) next.push(3);
               return next;
             });
-            console.log("✅ Step 3 marked as completed - gig exists");
-          } catch (error) {
-            console.error("Error auto-completing step 3:", error);
-          }
+          } catch (error) { console.error("Error auto-completing step 3:", error); }
         }
-
-        // If at least one gig is active, complete step 12 (Gig Activation)
         if (hasActiveGig) {
           try {
-            console.log("✅ Found active gig - completing Step 12 (Gig Activation)");
-            const completeResponse = await axios.put(
+            await axios.put(
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/12`,
               { status: "completed" }
             );
-
-            if (completeResponse.data) {
-              console.log(
-                "✅ Step 12 (Gig Activation) completed successfully:",
-                completeResponse.data
-              );
-              // Update local state
-              setCompletedSteps((prev: any) => {
-                const newSteps = [...prev];
-                if (!newSteps.includes(12)) {
-                  newSteps.push(12);
-                }
-                return newSteps;
-              });
-
-              // Mettre à jour les cookies avec le nouveau progrès
-              const currentProgress = {
-                currentPhase: 4,
-                completedSteps: [...completedSteps, 12],
-              };
-              Cookies.set(
-                "companyOnboardingProgress",
-                JSON.stringify(currentProgress)
-              );
-
-              console.log("✅ Step 12 marked as completed - active gig found");
-            }
-          } catch (error) {
-            console.error("Error completing step 12 (Gig Activation):", error);
-            // Ne pas faire échouer toute la fonction si cette mise à jour échoue
-          }
-        }
-
-        // If no gigs are active and step 12 was previously completed, mark it as in_progress
-        else {
+            setCompletedSteps((prev: any) => {
+              const newSteps = [...prev];
+              if (!newSteps.includes(12)) newSteps.push(12);
+              return newSteps;
+            });
+          } catch (error) { console.error("Error completing step 12:", error); }
+        } else if (currentPhase >= 4) {
           try {
-            console.log("⚠️ No active gigs found - updating step 12 status");
-
-            // Mark step 12 as in_progress - seulement si on est en phase 4
-            if (currentPhase >= 4) {
-              await axios.put(
-                `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/12`,
-                { status: "in_progress" }
-              );
-            }
-
-            // Update local state to remove the completed step
+            await axios.put(
+              `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/12`,
+              { status: "in_progress" }
+            );
             setCompletedSteps((prev: any[]) => prev.filter((step: number) => step !== 12));
-            console.log(
-              "⚠️ Step 12 removed from completed steps and marked as in_progress"
-            );
-
-            // Mettre à jour les cookies avec le nouveau progrès
-            const currentProgress = {
-              currentPhase: 3, // Retour à la phase 3 car step 12 n'est plus complété
-              completedSteps: completedSteps.filter((step: number) => step !== 12),
-            };
-            Cookies.set(
-              "companyOnboardingProgress",
-              JSON.stringify(currentProgress)
-            );
-
-            console.log(
-              "⚠️ Step 12 marked as in_progress - no active gigs found"
-            );
-          } catch (error) {
-            console.error(
-              "Error updating onboarding progress for step 12:",
-              error
-            );
-            // Ne pas faire échouer toute la fonction si cette mise à jour échoue
-          }
+          } catch (error) { console.error("Error updating step 12:", error); }
         }
       }
-    } catch (error) {
-      console.error("Error checking active gigs:", error);
-      // Ne pas rediriger vers /auth pour cette erreur, juste la logger
-    }
-  };
+    } catch (error) { console.error("Error checking active gigs:", error); }
+  }, [companyId, completedSteps, currentPhase]);
 
   // Initial check: run auto-completions first, then load progress so state is consistent
   useEffect(() => {
@@ -716,46 +616,67 @@ const CompanyOnboarding = () => {
     initOnboarding();
   }, [companyId]);
 
-  const loadCompanyProgress = async () => {
+  const loadCompanyProgress = useCallback(async () => {
     try {
-      // Vérifier que companyId est disponible
       if (!companyId) {
         console.error("❌ Company ID not available for loading progress");
         return;
       }
 
+      console.log("🔄 Fetching onboarding progress for company:", companyId);
       const response = await axios.get<OnboardingProgressResponse>(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
       );
+      
       const progress = response.data;
-      console.log("🔄 API Response:", response.data);
-      console.log("🔄 currentPhase from API:", progress.currentPhase);
-      console.log("🔄 completedSteps from API:", progress.completedSteps);
+      console.log("🔄 Progress loaded from API:", {
+        currentPhase: progress.currentPhase,
+        completedSteps: progress.completedSteps.length
+      });
 
       // Store the progress in cookies
       Cookies.set("companyOnboardingProgress", JSON.stringify(progress));
 
-      // 🛠️ AUTO-FIX: Check if Phase 1 status is mismatching (it should be 'completed' if step 1 is done)
-      // This fixes the 400 Bad Request error when trying to access Phase 2
-      if (progress.phases && progress.phases[0]) {
-        const phase1 = progress.phases[0];
+      // Auto-fix Phase 1 status if Step 1 is done
+      if (progress.phases?.[0]) {
         const step1Completed = progress.completedSteps.includes(1);
-
-        if (step1Completed && phase1.status !== 'completed') {
-          console.log("🔧 Phase 1 status mismatch detected: Step 1 is done but Phase 1 is not 'completed'. Attempting auto-fix...");
+        if (step1Completed && progress.phases[0].status !== 'completed') {
+          console.log("🔧 Auto-fixing Phase 1 status...");
           try {
-            // Re-complete Step 1 to trigger backend logic to update Phase 1 status
             await axios.put(
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/1`,
               { status: "completed" }
             );
-            console.log("✅ Phase 1 auto-fix request sent successfully");
-            // Optionally reload to reflect changes, but maybe not needed immediately
           } catch (fixError) {
-            console.error("❌ Failed to auto-fix Phase 1 status:", fixError);
+            console.error("❌ Failed to auto-fix Phase 1:", fixError);
           }
         }
       }
+
+      // Logic to determine valid phase based on completed steps
+      let validPhase = progress.currentPhase;
+      const completed = progress.completedSteps;
+
+      if (completed.includes(1) && validPhase === 1) validPhase = 2;
+      if (completed.includes(3) && completed.includes(5) && validPhase === 2) validPhase = 3;
+      if (completed.includes(9) && validPhase === 3) validPhase = 4;
+      
+      // Additional check for step 13 (Launch)
+      if (completed.includes(13)) validPhase = 4;
+
+      setCurrentPhase(validPhase);
+      setDisplayedPhase(validPhase);
+      setCompletedSteps(completed);
+
+    } catch (error) {
+      console.error("❌ Error loading company progress:", error);
+      setCurrentPhase(1);
+      setDisplayedPhase(1);
+      setCompletedSteps([]);
+    } finally {
+      setIsInitialLoad(false);
+    }
+  }, [companyId]);
 
       // Fonction pour vérifier si toutes les étapes non-désactivées d'une phase sont complétées
       const isPhaseFullyCompleted = (phaseId: number) => {
