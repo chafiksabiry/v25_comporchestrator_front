@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { TrainingModule, Quiz } from '../../types';
 import DocumentViewer from '../DocumentViewer/DocumentViewer';
