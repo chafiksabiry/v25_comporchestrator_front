@@ -285,7 +285,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 {/* removed company info display */}
 
                 {/* Industry Selector */}
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+                <div className="pt-2">
                   <label className="block text-sm font-bold text-gray-800 mb-3 ml-1">
                     Select Training Industry <span className="text-rose-500">*</span>
                   </label>
@@ -524,8 +524,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   };
 
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="w-full flex-1 flex flex-col p-6 md:p-10 opacity-100 transition-opacity duration-500 relative">
+    <div className="w-full h-full flex flex-col p-2 md:p-4">
+      <div className="w-full flex-1 flex flex-col p-6 md:p-10 opacity-100 transition-opacity duration-500 relative bg-white/60 backdrop-blur-xl rounded-3xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-purple-500 to-pink-500 mb-3 flex justify-center items-center gap-3 drop-shadow-sm leading-tight pb-2">
@@ -595,8 +595,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
         {/* Step Content */}
         {currentStep !== 4 && (
-          <div className="flex-1 bg-white/70 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white p-8 md:p-12 mb-8 overflow-hidden relative transition-all duration-500 hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)]">
-            <div className="absolute inset-0 bg-gradient-to-br from-rose-50/40 via-purple-50/30 to-pink-50/40 pointer-events-none" />
+          <div className="flex-1 overflow-hidden relative transition-all duration-500 mt-4">
             <div className="h-full overflow-y-auto relative z-10 custom-scrollbar pr-4">
               <div className="max-w-4xl mx-auto pb-6">
                 {renderStepContent()}
@@ -607,7 +606,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
         {/* Navigation Buttons */}
         {currentStep !== 2 && currentStep !== 4 && (
-          <div className="sticky bottom-0 bg-white/90 backdrop-blur-lg p-6 rounded-2xl border border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] flex items-center justify-between z-20 transition-all duration-300 mt-auto">
+          <div className="sticky bottom-0 pt-6 mt-auto border-t border-gray-100/50 flex items-center justify-between z-20 transition-all duration-300">
             <button
               onClick={() => {
                 if (currentStep === 5) {

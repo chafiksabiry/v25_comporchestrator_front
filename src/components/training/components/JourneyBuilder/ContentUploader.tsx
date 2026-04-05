@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Upload, FileText, Video, Music, Image, File, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2 } from 'lucide-react';
+import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Cloud } from 'lucide-react';
 import { ContentUpload } from '../../types/core';
 import { AIService } from '../../infrastructure/services/AIService';
 import { cloudinaryService } from '../../lib/cloudinaryService';
@@ -19,6 +19,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
   const [generatedCurriculum, setGeneratedCurriculum] = useState<any>(null);
   const [generatedPresentation, setGeneratedPresentation] = useState<any>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [isSavingCloud, setIsSavingCloud] = useState(false);
 
 
   // Scroll to top when component mounts
@@ -29,7 +30,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
   const getFileIcon = (type: ContentUpload['type']) => {
     switch (type) {
       case 'document':
-        return <FileText className="h-8 w-8 text-blue-500" />;
+        return <FileText className="h-8 w-8 text-purple-500" />;
       case 'video':
         return <Video className="h-8 w-8 text-red-500" />;
       case 'audio':
@@ -37,9 +38,9 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
       case 'image':
         return <Image className="h-8 w-8 text-purple-500" />;
       case 'presentation':
-        return <File className="h-8 w-8 text-orange-500" />;
+        return <FileIcon className="h-8 w-8 text-orange-500" />;
       default:
-        return <File className="h-8 w-8 text-gray-500" />;
+        return <FileIcon className="h-8 w-8 text-gray-500" />;
     }
   };
 
@@ -325,6 +326,47 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
     }
   };
 
+  const handleSaveToCloud = async () => {
+    if (!generatedPresentation) return;
+    try {
+      setIsSavingCloud(true);
+      console.log('☁️ Sauvegarde dans le cloud...');
+      
+      // 1. Generate PPTX blob
+      const pptBlob = await AIService.exportToPowerPoint(generatedPresentation);
+      
+      // 2. Convert to File
+      const fileName = `${generatedPresentation.title || 'Training_Program'}.pptx`.replace(/\s+/g, '_');
+      const file = new File([pptBlob], fileName, { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
+      
+      // 3. Upload to Cloudinary via Backend
+      const { url, publicId } = await AIService.uploadDocumentViaBackend(file);
+      
+      // 4. Update uploads list to include this generated presentation
+      const newUpload: ContentUpload = {
+        id: Date.now().toString(),
+        name: fileName,
+        type: 'presentation',
+        size: file.size,
+        uploadedAt: new Date().toISOString(),
+        status: 'analyzed',
+        file: file,
+        cloudinaryUrl: url,
+        publicId: publicId,
+      };
+      
+      const finalUploads = [...uploads, newUpload];
+      setUploads(finalUploads);
+      
+      alert('La présentation a été sauvegardée avec succès dans le cloud ! Elle sera ajoutée au programme lors de la validation.');
+    } catch (error: any) {
+      console.error('Failed to save presentation to cloud:', error);
+      alert('Erreur lors de la sauvegarde: ' + error.message);
+    } finally {
+      setIsSavingCloud(false);
+    }
+  };
+
   const getStatusIcon = (status: ContentUpload['status']) => {
     switch (status) {
       case 'analyzed':
@@ -345,22 +387,22 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
 
   if (viewMode === 'curriculum' && generatedCurriculum) {
     return (
-      <div className="min-h-full bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
-        <div className="max-w-5xl mx-auto">
+      <div className="min-h-full p-2 md:p-4">
+        <div className="max-w-5xl mx-auto bg-white/60 backdrop-blur-xl rounded-3xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-10">
           <button 
             onClick={() => setViewMode('upload')}
-            className="flex items-center text-blue-600 font-medium mb-6 hover:text-blue-800 transition-colors"
+            className="flex items-center text-purple-600 font-medium mb-6 hover:text-purple-800 transition-colors"
           >
             <X className="h-5 w-5 mr-1" /> Retour aux fichiers
           </button>
           
           <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-white">
+            <div className="bg-gradient-to-r from-rose-500 to-purple-600 p-8 text-white rounded-t-2xl">
               <div className="flex items-center space-x-3 mb-4">
                 <Sparkles className="h-8 w-8 text-yellow-300" />
                 <h2 className="text-3xl font-extrabold">{generatedCurriculum.title}</h2>
               </div>
-              <p className="text-blue-100 text-lg max-w-3xl">{generatedCurriculum.description}</p>
+              <p className="text-pink-100 text-lg max-w-3xl">{generatedCurriculum.description}</p>
               <div className="mt-6 flex items-center space-x-6 text-sm font-medium">
                 <div className="flex items-center">
                   <Clock className="h-5 w-5 mr-2 opacity-80" />
@@ -375,16 +417,16 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
             
             <div className="p-8">
               <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-                <FileText className="h-6 w-6 mr-2 text-blue-500" /> Structure du Programme
+                <FileText className="h-6 w-6 mr-2 text-purple-500" /> Structure du Programme
               </h3>
               
               <div className="space-y-6">
                 {generatedCurriculum.modules?.map((module: any, idx: number) => (
-                  <div key={idx} className="group relative bg-gray-50 rounded-2xl p-6 border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all">
+                  <div key={idx} className="group relative bg-white/40 rounded-2xl p-6 border border-gray-100/50 hover:border-purple-300 hover:shadow-md transition-all">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center mb-2">
-                          <span className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-600 text-white text-sm font-bold mr-3">
+                          <span className="flex items-center justify-center h-8 w-8 rounded-full bg-purple-600 text-white text-sm font-bold mr-3">
                             {idx + 1}
                           </span>
                           <h4 className="text-lg font-bold text-gray-900">{module.title}</h4>
@@ -393,7 +435,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
                         
                         <div className="ml-11 flex flex-wrap gap-4 text-sm">
                           <div className="flex items-center text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200">
-                            <Clock className="h-4 w-4 mr-1.5 text-blue-500" /> {module.duration} min
+                            <Clock className="h-4 w-4 mr-1.5 text-purple-500" /> {module.duration} min
                           </div>
                           <div className="flex items-center text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200">
                             <Zap className="h-4 w-4 mr-1.5 text-orange-500" /> {module.difficulty}
@@ -422,7 +464,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
               <div className="mt-10 flex justify-center">
                 <button 
                   onClick={() => onComplete(uploads)}
-                  className="px-10 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all"
+                  className="px-10 py-4 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all"
                 >
                   Approuver et Continuer vers l'Amélioration AI
                 </button>
@@ -484,7 +526,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
             {isCover && (
               <div className="flex-1 flex flex-col items-center justify-center text-center">
                 <h1 className="text-6xl font-extrabold mb-8 tracking-tight">{slide.title}</h1>
-                <p className="text-2xl text-blue-100 max-w-3xl mb-12">{slide.subtitle || slide.highlight}</p>
+                <p className="text-2xl text-purple-100 max-w-3xl mb-12">{slide.subtitle || slide.highlight}</p>
               </div>
             )}
             
@@ -523,7 +565,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
                 <div className="flex-1 space-y-6">
                   {slide.bullets?.map((item: string, i: number) => (
                     <div key={i} className="flex items-start text-xl text-slate-700 animate-in slide-in-from-left duration-300" style={{animationDelay: `${i*100}ms`}}>
-                      <span className="h-3 w-3 rounded-full bg-blue-500 mr-4 mt-2.5 flex-shrink-0"></span>
+                      <span className="h-3 w-3 rounded-full bg-purple-500 mr-4 mt-2.5 flex-shrink-0"></span>
                       <span className="leading-relaxed">{item}</span>
                     </div>
                   ))}
@@ -544,12 +586,24 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
              onClick={downloadPPTX}
              className="px-8 py-4 bg-white text-slate-800 rounded-2xl font-bold shadow-lg border border-slate-200 hover:bg-slate-50 transition-all flex items-center"
            >
-             <FileText className="mr-2 h-5 w-5 text-blue-600" />
+             <FileText className="mr-2 h-5 w-5 text-purple-600" />
              Télécharger le fichier .pptx
            </button>
            <button 
+             onClick={handleSaveToCloud}
+             disabled={isSavingCloud}
+             className="px-8 py-4 bg-white text-slate-800 rounded-2xl font-bold shadow-lg border border-slate-200 hover:bg-slate-50 transition-all flex items-center"
+           >
+             {isSavingCloud ? (
+               <Loader2 className="mr-2 h-5 w-5 text-purple-600 animate-spin" />
+             ) : (
+               <Save className="mr-2 h-5 w-5 text-purple-600" />
+             )}
+             {isSavingCloud ? 'Sauvegarde...' : 'Sauvegarder dans le Cloud'}
+           </button>
+           <button 
              onClick={() => onComplete(uploads)}
-             className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg hover:bg-blue-700 transition-all flex items-center"
+             className="px-8 py-4 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-bold shadow-lg hover:from-rose-600 hover:to-purple-700 transition-all flex items-center"
            >
              <Sparkles className="h-5 w-5 mr-2" /> Valider le programme
            </button>
@@ -559,27 +613,27 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
   }
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-blue-50 to-indigo-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
+    <div className="min-h-full p-2 md:p-4">
+      <div className="container mx-auto max-w-6xl">
+        <div className="w-full flex-1 flex flex-col p-6 md:p-10 bg-white/60 backdrop-blur-xl rounded-3xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
           {/* Header */}
-          <div className="text-center mb-4">
-            <div className="inline-flex items-center space-x-2 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-200 mb-3">
-              <Upload className="h-4 w-4 text-blue-500" />
-              <span className="text-xs font-medium text-gray-700">Step 1: Content Upload & AI Analysis</span>
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center space-x-2 bg-purple-50 px-3 py-1.5 rounded-full shadow-inner border border-purple-100 mb-3">
+              <Upload className="h-4 w-4 text-purple-500" />
+              <span className="text-xs font-medium text-purple-700">Step 1: Content Upload & AI Analysis</span>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-1.5">Upload Your Training Materials</h2>
-            <p className="text-base text-gray-600 max-w-3xl mx-auto">
+            <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-purple-500 to-pink-500 mb-2">Upload Your Training Materials</h2>
+            <p className="text-base text-gray-600 font-medium max-w-3xl mx-auto">
               Upload your existing documents, videos, presentations, and media. Our AI will analyze and transform them into engaging training content.
             </p>
           </div>
 
           {/* Upload Area */}
-          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-4">
+          <div className="mb-4">
             <div
-              className={`border-[3px] border-dashed rounded-xl p-8 text-center transition-all duration-300 ${dragOver
-                ? 'border-blue-500 bg-blue-50 scale-105'
-                : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+              className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 ${dragOver
+                ? 'border-purple-500 bg-purple-50 scale-105'
+                : 'border-gray-200 hover:border-purple-400 hover:bg-white/50'
                 }`}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
@@ -588,7 +642,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
               <div className="flex justify-center mb-4">
                 <div className="relative">
                   <Upload className="h-12 w-12 text-gray-400" />
-                  <Sparkles className="h-5 w-5 text-blue-500 absolute -top-2 -right-2 animate-pulse" />
+                  <Sparkles className="h-5 w-5 text-purple-500 absolute -top-2 -right-2 animate-pulse" />
                 </div>
               </div>
 
@@ -609,30 +663,30 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
               />
               <label
                 htmlFor="file-upload"
-                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 cursor-pointer transition-all shadow-lg hover:shadow-xl font-medium text-lg"
+                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-xl hover:from-rose-600 hover:to-purple-700 cursor-pointer transition-all shadow-lg hover:-translate-y-0.5 font-medium text-lg"
               >
                 <Upload className="h-5 w-5 mr-3" />
                 Choose Files
               </label>
 
               <div className="mt-6 flex flex-wrap justify-center gap-2">
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">PDF</span>
-                <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">Word</span>
-                <span className="px-3 py-1 bg-orange-100 text-orange-800 text-sm rounded-full">PowerPoint</span>
-                <span className="px-3 py-1 bg-red-100 text-red-800 text-sm rounded-full">Videos</span>
-                <span className="px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full">Audio</span>
-                <span className="px-3 py-1 bg-pink-100 text-pink-800 text-sm rounded-full">Images</span>
+                <span className="px-3 py-1 bg-purple-50 text-purple-600 border border-purple-100 text-sm rounded-full font-medium">PDF</span>
+                <span className="px-3 py-1 bg-purple-50 text-purple-600 border border-purple-100 text-sm rounded-full font-medium">Word</span>
+                <span className="px-3 py-1 bg-purple-50 text-purple-600 border border-purple-100 text-sm rounded-full font-medium">PowerPoint</span>
+                <span className="px-3 py-1 bg-purple-50 text-purple-600 border border-purple-100 text-sm rounded-full font-medium">Videos</span>
+                <span className="px-3 py-1 bg-purple-50 text-purple-600 border border-purple-100 text-sm rounded-full font-medium">Audio</span>
+                <span className="px-3 py-1 bg-purple-50 text-purple-600 border border-purple-100 text-sm rounded-full font-medium">Images</span>
               </div>
             </div>
           </div>
 
           {/* URL Input Section */}
-          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-4">
+          <div className="pt-6 border-t border-gray-100/50 mb-4">
             <div className="flex items-center mb-3">
-              <Sparkles className="h-5 w-5 text-blue-500 mr-2" />
-              <h3 className="text-lg font-semibold text-gray-900">Or Add Content from URL</h3>
+              <Sparkles className="h-5 w-5 text-purple-500 mr-2" />
+              <h3 className="text-lg font-bold text-gray-800">Or Add Content from URL</h3>
             </div>
-            <p className="text-sm text-gray-600 mb-3">
+            <p className="text-sm text-gray-500 font-medium mb-3">
               Enter a YouTube video URL or a web page URL to analyze and extract content
             </p>
             <div className="flex gap-2">
@@ -642,32 +696,32 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
                 onChange={(e) => setUrlInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleUrlSubmit()}
                 placeholder="https://www.youtube.com/watch?v=... or https://example.com/article"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 text-sm"
+                className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-gray-800 text-sm transition-all shadow-sm"
                 disabled={isProcessing}
               />
               <button
                 onClick={handleUrlSubmit}
                 disabled={!urlInput.trim() || isProcessing}
-                className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg hover:shadow-xl"
+                className="px-6 py-3 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-xl hover:from-rose-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg hover:-translate-y-0.5"
               >
                 <Zap className="h-5 w-5 inline mr-2" />
                 Analyze URL
               </button>
             </div>
-            <div className="mt-3 flex gap-2 text-sm text-gray-500">
-              <Video className="h-4 w-4 text-red-500" />
+            <div className="mt-3 flex gap-2 text-sm text-gray-400 font-medium font-medium">
+              <Video className="h-4 w-4 text-purple-400" />
               <span>YouTube videos</span>
               <span className="mx-2">•</span>
-              <FileText className="h-4 w-4 text-blue-500" />
+              <FileText className="h-4 w-4 text-purple-400" />
               <span>Web pages & articles</span>
             </div>
           </div>
 
           {/* Processing Status */}
           {isProcessing && (
-            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4 mb-4">
+            <div className="bg-white/40 backdrop-blur-sm rounded-xl border border-purple-100 p-4 mb-4">
               <div className="flex items-center justify-center space-x-3">
-                <Wand2 className="h-6 w-6 text-blue-500 animate-spin" />
+                <Wand2 className="h-6 w-6 text-purple-500 animate-spin" />
                 <div>
                   <h3 className="text-base font-semibold text-gray-900">AI is Analyzing Your Content</h3>
                   <p className="text-sm text-gray-600">Extracting key concepts, learning objectives, and structure...</p>
@@ -678,25 +732,25 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
 
           {/* Uploaded Files */}
           {uploads.length > 0 && (
-            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-4">
+            <div className="pt-6 border-t border-gray-100/50 mb-4">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-gray-900">
+                <h3 className="text-xl font-bold text-gray-800">
                   Uploaded Files ({uploads.length})
                 </h3>
                 {totalAnalyzed > 0 && (
-                  <div className="flex items-center space-x-2 bg-green-50 px-4 py-2 rounded-full">
+                  <div className="flex items-center space-x-2 bg-green-50 px-4 py-2 rounded-full border border-green-100">
                     <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span className="text-green-700 font-medium">{totalAnalyzed} files analyzed</span>
+                    <span className="text-green-700 font-bold text-sm">{totalAnalyzed} files analyzed</span>
                   </div>
                 )}
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {uploads.map((upload) => (
-                  <div key={upload.id} className={`border-2 rounded-xl p-6 transition-all duration-300 ${upload.status === 'analyzed' ? 'border-green-200 bg-green-50' :
-                    upload.status === 'processing' ? 'border-blue-200 bg-blue-50' :
-                      upload.status === 'error' ? 'border-red-200 bg-red-50' :
-                        'border-gray-200 bg-white'
+                  <div key={upload.id} className={`border border-gray-100/50 rounded-2xl p-5 hover:border-purple-200 transition-all duration-300 group ${upload.status === 'analyzed' ? 'bg-white/60' :
+                    upload.status === 'processing' ? 'bg-purple-50/50' :
+                      upload.status === 'error' ? 'bg-red-50/50' :
+                        'bg-white/40'
                     }`}>
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-start space-x-4">
@@ -757,7 +811,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
                           <h5 className="font-medium text-gray-900 mb-2">Key Topics Identified:</h5>
                           <div className="flex flex-wrap gap-2">
                             {upload.aiAnalysis.keyTopics.map((topic, index) => (
-                              <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                              <span key={index} className="px-3 py-1 bg-purple-50 text-purple-600 text-sm font-medium rounded-full border border-purple-100">
                                 {topic}
                               </span>
                             ))}
@@ -774,13 +828,13 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
                     )}
 
                     {(upload.status === 'uploading' || upload.status === 'processing') && (
-                      <div className="flex items-center justify-center space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200 mt-4">
-                        <Wand2 className="h-6 w-6 text-blue-500 animate-spin" />
+                      <div className="flex items-center justify-center space-x-3 p-3 bg-purple-50/70 rounded-xl border border-purple-100 mt-4">
+                        <Wand2 className="h-5 w-5 text-purple-500 animate-spin" />
                         <div className="flex-1">
-                          <span className="text-sm text-blue-700 font-medium block">
+                          <span className="text-sm text-purple-700 font-medium block">
                             {upload.status === 'uploading' ? 'Uploading document...' : 'AI is analyzing this file...'}
                           </span>
-                          <span className="text-xs text-blue-600 block mt-1">
+                          <span className="text-xs text-purple-500 block mt-0.5">
                             {upload.status === 'uploading' ? 'Please wait while we upload your file' : 'Extracting key concepts and structure...'}
                           </span>
                         </div>
@@ -803,23 +857,23 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
                 </p>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-white rounded-xl shadow-sm">
+                  <div className="text-center p-4 bg-white/40 border border-gray-100/50 rounded-xl">
                     <Video className="h-8 w-8 text-red-500 mx-auto mb-2" />
                     <div className="font-semibold text-gray-900">AI Videos</div>
                     <div className="text-sm text-gray-600">Animated explanations</div>
                   </div>
-                  <div className="text-center p-4 bg-white rounded-xl shadow-sm">
+                  <div className="text-center p-4 bg-white/40 border border-gray-100/50 rounded-xl">
                     <Music className="h-8 w-8 text-green-500 mx-auto mb-2" />
                     <div className="font-semibold text-gray-900">Voice-overs</div>
                     <div className="text-sm text-gray-600">Professional narration</div>
                   </div>
-                  <div className="text-center p-4 bg-white rounded-xl shadow-sm">
-                    <BarChart3 className="h-8 w-8 text-blue-500 mx-auto mb-2" />
+                  <div className="text-center p-4 bg-white/40 border border-gray-100/50 rounded-xl">
+                    <BarChart3 className="h-8 w-8 text-purple-500 mx-auto mb-2" />
                     <div className="font-semibold text-gray-900">Infographics</div>
                     <div className="text-sm text-gray-600">Visual summaries</div>
                   </div>
-                  <div className="text-center p-4 bg-white rounded-xl shadow-sm">
-                    <Zap className="h-8 w-8 text-purple-500 mx-auto mb-2" />
+                  <div className="text-center p-4 bg-white/40 border border-gray-100/50 rounded-xl">
+                    <Zap className="h-8 w-8 text-rose-500 mx-auto mb-2" />
                     <div className="font-semibold text-gray-900">Interactive</div>
                     <div className="text-sm text-gray-600">Quizzes & scenarios</div>
                   </div>
@@ -872,7 +926,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
               <button
                 onClick={handleGenerateCurriculum}
                 disabled={!canProceed || isProcessing}
-                className="px-6 py-3 bg-white text-blue-700 rounded-xl border border-blue-200 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-sm flex items-center justify-center space-x-2"
+                className="px-6 py-3 bg-white text-purple-700 rounded-xl border border-purple-200 hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-sm flex items-center justify-center space-x-2"
               >
                 {isProcessing ? (
                   <Wand2 className="h-5 w-5 animate-spin" />
@@ -885,7 +939,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
               <button
                 onClick={() => onComplete(uploads)}
                 disabled={!canProceed}
-                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg flex items-center justify-center space-x-2"
+                className="px-8 py-3 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-xl hover:from-rose-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg flex items-center justify-center space-x-2"
               >
                 <span>Continue to AI Enhancement</span>
                 <Wand2 className="h-5 w-5" />
