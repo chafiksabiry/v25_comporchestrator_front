@@ -11,13 +11,9 @@ import {
   Edit2,
   Trash2,
   Rocket,
-  ArrowRight,
-  RotateCcw,
-  Wand2,
-  ChevronRight,
   Sparkles
 } from 'lucide-react';
-import { ContentUpload, TrainingModule, ModuleContent, Assessment, Question } from '../../types/core';
+import { ContentUpload, TrainingModule, Assessment } from '../../types/core';
 import { TrainingMethodology } from '../../types/methodology';
 import { TrainingSection } from '../../types/manualTraining';
 import { AIService } from '../../infrastructure/services/AIService';
@@ -30,16 +26,11 @@ interface CurriculumDesignerProps {
   onBack: () => void;
 }
 
-export default function CurriculumDesigner({ uploads, methodology, gigId, onComplete, onBack }: CurriculumDesignerProps) {
+export default function CurriculumDesigner({ uploads, methodology, gigId, onComplete }: CurriculumDesignerProps) {
   const [modules, setModules] = React.useState<TrainingModule[]>([]);
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [editingModuleId, setEditingModuleId] = React.useState<string | null>(null);
-  const [enhancementProgress, setEnhancementProgress] = React.useState<Record<string, any>>({});
-  const [activeTab, setActiveTab] = React.useState('modules');
   const [currentStep, setCurrentStep] = React.useState<'plan' | 'content'>('plan');
-  const [isGeneratingContent, setIsGeneratingContent] = React.useState(false);
-  const [finalExam, setFinalExam] = React.useState<any>(null);
-  const [isGeneratingExam, setIsGeneratingExam] = React.useState(false);
 
   React.useEffect(() => {
     if (currentStep === 'plan' && uploads.length > 0) {
@@ -50,7 +41,6 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
   // ÉTAPE 1 : Générer le plan de formation (structure seulement)
   const generateTrainingPlan = async () => {
     setIsGenerating(true);
-    setEnhancementProgress({ 'plan': 10 });
 
     try {
       const analyzedUploads = uploads.filter(u => u.aiAnalysis);
@@ -77,7 +67,6 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
           };
 
         const industry = methodology?.name || 'General';
-        setEnhancementProgress({ 'generating': 30 } as any);
 
         const uploadContext = uploads.map((upload) => ({
           fileName: upload.name,
@@ -99,12 +88,9 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
           const fallbackModules = createModulesFromUploadsCustom(uploads, combinedAnalysis);
           setModules(fallbackModules);
           setCurrentStep('content');
-          setEnhancementProgress({ 'complete': 100 });
           setIsGenerating(false);
           return;
         }
-
-        setEnhancementProgress({ 'transforming': 60 } as any);
 
         let modulesToUse = (curriculum?.modules || []).slice(0, 6);
         const targetModuleCount = 6;
@@ -143,7 +129,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
 
         if (uploads.length === 1) {
           const upload = uploads[0];
-          const aiModule = modulesToUse[0] || {
+          const aiModule: any = modulesToUse[0] || {
             title: upload.aiAnalysis?.keyTopics?.[0] || upload.name.replace(/\.[^/.]+$/, ''),
             description: upload.aiAnalysis
               ? `Training module covering: ${upload.aiAnalysis.keyTopics?.join(', ') || 'core concepts'}`
@@ -178,7 +164,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
 
               modulesToUse.forEach((aiModule, moduleIdx) => {
                 const moduleTopics = (aiModule.learningObjectives || []).join(' ').toLowerCase();
-                const uploadTopics = upload.aiAnalysis.keyTopics.join(' ').toLowerCase();
+                const uploadTopics = upload.aiAnalysis?.keyTopics?.join(' ').toLowerCase() || '';
                 const moduleWords = new Set(moduleTopics.split(/\s+/));
                 const uploadWords = new Set(uploadTopics.split(/\s+/));
                 const commonWords = [...moduleWords].filter(w => uploadWords.has(w));
@@ -196,7 +182,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
             }
           });
 
-          fullModules = await Promise.all(modulesToUse.map(async (aiModule, moduleIndex) => {
+          fullModules = await Promise.all(modulesToUse.map(async (aiModule: any, moduleIndex) => {
             const moduleUploads = uploads.filter((_, uploadIndex) =>
               documentModuleMapping[uploadIndex] === moduleIndex
             );
@@ -205,16 +191,8 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
               return createSectionFromUploadInner(upload, moduleIndex, uploadIdx, aiModule);
             });
 
-            let assessments: Assessment[] = [];
-            try {
-              assessments = await generateEnhancedAssessments(
-                aiModule.title,
-                aiModule.description,
-                aiModule.learningObjectives
-              );
-            } catch (error) {
-              assessments = [];
-            }
+            // Skip assessment generation
+            const assessments: Assessment[] = [];
 
             const totalDuration = moduleSections.reduce((sum, section) => sum + (section.estimatedDuration || 10), 0);
 
@@ -227,38 +205,21 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
               sections: moduleSections,
               duration: totalDuration || aiModule.duration,
               difficulty: aiModule.difficulty,
-              prerequisites: combinedAnalysis.prerequisites,
-              learningObjectives: aiModule.learningObjectives,
+              prerequisites: combinedAnalysis.prerequisites || [],
+              learningObjectives: aiModule.learningObjectives || [],
               topics: combinedAnalysis.keyTopics || [],
               assessments: assessments,
               completionCriteria: {
                 minimumScore: 70,
-                requiredActivities: ['video', 'quiz'],
+                requiredActivities: ['video'],
                 timeRequirement: totalDuration || (aiModule.duration as number)
               }
             };
           }));
         }
 
-        setEnhancementProgress({ 'content-complete': 90 } as any);
         setModules(fullModules);
-
-        try {
-          const examData = await AIService.generateFinalExam(
-            fullModules.map(m => ({
-              title: m.title,
-              description: m.description,
-              learningObjectives: m.learningObjectives
-            }))
-          );
-
-          setFinalExam(examData);
-        } catch (error) {
-          console.warn('⚠️ Using fallback final exam');
-        }
-
         setCurrentStep('content');
-        setEnhancementProgress({ 'complete': 100 });
       } else {
         const fallbackModules = createModulesFromUploadsCustom(uploads);
         setModules(fallbackModules);
@@ -306,7 +267,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
         content: [],
         sections: [section],
         duration: upload.aiAnalysis?.estimatedReadTime || 60,
-        difficulty: 'intermediate',
+        difficulty: 'intermediate' as const,
         prerequisites: upload.aiAnalysis?.prerequisites || combinedAnalysis?.prerequisites || [],
         learningObjectives: upload.aiAnalysis?.learningObjectives || combinedAnalysis?.learningObjectives || ['Understand core concepts', 'Apply knowledge in practice'],
         topics: upload.aiAnalysis?.keyTopics || combinedAnalysis?.keyTopics || [],
@@ -374,61 +335,6 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
     return createSectionFromUploadInner(upload, moduleIndex, uploadIdx);
   }
 
-  const generateEnhancedAssessments = async (moduleTitle: string, moduleDescription: string, learningObjectives: string[]): Promise<Assessment[]> => {
-    try {
-      console.log(`📝 Generating QCM for module: ${moduleTitle}`);
-      const moduleContent = `${moduleTitle}\n\n${moduleDescription}\n\nObjectifs:\n${learningObjectives.join('\n')}`;
-      const result = await AIService.generateQuiz(moduleContent, 12);
-      const questions = Array.isArray(result) ? result : [];
-
-      const assessmentQuestions: Question[] = questions.map((q: any, index: number) => ({
-        id: `q${index + 1}`,
-        text: q.text || 'Question text missing',
-        type: 'multiple-choice',
-        options: Array.isArray(q.options) ? q.options : ['Option A', 'Option B', 'Option C', 'Option D'],
-        correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0,
-        explanation: q.explanation || '',
-        points: q.points || 10
-      }));
-
-      const totalPoints = assessmentQuestions.reduce((sum, q) => sum + (q.points || 10), 0);
-
-      return [{
-        id: `assessment-${moduleTitle.replace(/[^a-zA-Z0-9]/g, '-')}`,
-        title: `QCM : ${moduleTitle}`,
-        type: 'quiz',
-        questions: assessmentQuestions,
-        passingScore: Math.floor(totalPoints * 0.7),
-        timeLimit: assessmentQuestions.length * 2
-      }];
-    } catch (error) {
-      console.error(`❌ Failed to generate QCM for ${moduleTitle}, using fallback:`, error);
-      const fallbackQuestions: Question[] = learningObjectives.slice(0, 8).map((obj, index) => ({
-        id: `q${index + 1}`,
-        text: `Concernant "${obj}", quelle est la meilleure approche?`,
-        type: 'multiple-choice',
-        options: [
-          'Appliquer les principes théoriques uniquement',
-          'Combiner théorie et pratique de manière adaptée',
-          'Suivre strictement une procédure fixe',
-          'Improviser selon les situations'
-        ],
-        correctAnswer: 1,
-        explanation: `La meilleure approche combine théorie et pratique, en s'adaptant au contexte pour atteindre: ${obj}`,
-        points: 10
-      }));
-
-      return [{
-        id: `assessment-${moduleTitle}`,
-        title: `QCM : ${moduleTitle}`,
-        type: 'quiz',
-        questions: fallbackQuestions,
-        passingScore: 70,
-        timeLimit: 16
-      }];
-    }
-  };
-
   const updateModule = (moduleId: string, updates: Partial<TrainingModule>) => {
     setModules(prev => prev.map(m =>
       m.id === moduleId ? { ...m, ...updates } : m
@@ -444,15 +350,15 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
       id: `module-${modules.length + 1}`,
       title: 'New Enhanced Module',
       description: 'AI-powered training module with multimedia content',
-      content: [
-        {
-          id: 'intro',
-          type: 'text',
-          title: 'Introduction',
-          content: 'Module introduction content...',
-          duration: 5
-        }
-      ],
+      content: [],
+      sections: [{
+        id: `section-new-${modules.length}`,
+        type: 'document',
+        title: 'Introduction',
+        content: { text: 'Module introduction content...' },
+        orderIndex: 1,
+        estimatedDuration: 5
+      }],
       duration: 30,
       difficulty: 'intermediate',
       prerequisites: [],
@@ -490,6 +396,10 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
     }
   };
 
+  function toggleEditMode(moduleId: string) {
+    setEditingModuleId(editingModuleId === moduleId ? null : moduleId);
+  }
+
   if (isGenerating) {
     return (
       <div className="min-h-full bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
@@ -522,7 +432,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
             </div>
             <div className="flex items-center justify-center space-x-3 text-purple-700">
               <Zap className="h-5 w-5" />
-              <span>Adding interactive scenarios and quizzes</span>
+              <span>Adding interactive scenarios and elements</span>
             </div>
             {methodology && (
               <div className="flex items-center justify-center space-x-3 text-purple-700">
@@ -553,7 +463,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-1.5">Your Enhanced Training Curriculum</h2>
             <p className="text-base text-gray-600 max-w-3xl mx-auto">
-              AI has transformed your content into engaging, multimedia training modules with interactive elements and assessments
+              AI has transformed your content into engaging, multimedia training modules with interactive elements
               {methodology && ` following the ${methodology.name} methodology`}.
             </p>
           </div>
@@ -810,8 +720,4 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
       </div>
     </div>
   );
-
-  function toggleEditMode(moduleId: string) {
-    setEditingModuleId(editingModuleId === moduleId ? null : moduleId);
-  }
 }
