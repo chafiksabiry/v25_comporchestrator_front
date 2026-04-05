@@ -15,7 +15,7 @@ import {
   RotateCcw,
   Wand2,
   ChevronRight,
-  FileText
+  Sparkles
 } from 'lucide-react';
 import { ContentUpload, TrainingModule, ModuleContent, Assessment, Question } from '../../types/core';
 import { TrainingMethodology } from '../../types/methodology';
@@ -42,7 +42,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
   const [isGeneratingExam, setIsGeneratingExam] = React.useState(false);
 
   React.useEffect(() => {
-    if (currentStep === 'plan') {
+    if (currentStep === 'plan' && uploads.length > 0) {
       generateTrainingPlan();
     }
   }, [uploads]);
@@ -96,7 +96,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
           );
         } catch (apiError) {
           console.warn('⚠️ API generateCurriculum failed, using fallback modules:', apiError);
-          const fallbackModules = createModulesFromUploads(uploads, combinedAnalysis);
+          const fallbackModules = createModulesFromUploadsCustom(uploads, combinedAnalysis);
           setModules(fallbackModules);
           setCurrentStep('content');
           setEnhancementProgress({ 'complete': 100 });
@@ -153,7 +153,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
             learningObjectives: upload.aiAnalysis?.learningObjectives || []
           };
 
-          const section = createSectionFromUpload(upload, 0, 0);
+          const section = createSectionFromUploadInner(upload, 0, 0);
 
           fullModules = [{
             id: `module-1`,
@@ -202,10 +202,10 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
             );
 
             const moduleSections: TrainingSection[] = moduleUploads.map((upload, uploadIdx) => {
-              return createSectionFromUpload(upload, moduleIndex, uploadIdx, aiModule);
+              return createSectionFromUploadInner(upload, moduleIndex, uploadIdx, aiModule);
             });
 
-            let assessments = [];
+            let assessments: Assessment[] = [];
             try {
               assessments = await generateEnhancedAssessments(
                 aiModule.title,
@@ -240,61 +240,6 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
           }));
         }
 
-        function createSectionFromUpload(upload: ContentUpload, moduleIndex: number, uploadIdx: number, aiModule?: any): TrainingSection {
-          let sectionType: TrainingSection['type'] = 'document';
-          if (upload.type === 'video') {
-            sectionType = 'video';
-          } else if (upload.type === 'document' || upload.type === 'presentation') {
-            sectionType = 'document';
-          }
-
-          let sectionTitle = upload.name.replace(/\.[^/.]+$/, '');
-          if (upload.aiAnalysis?.keyTopics && upload.aiAnalysis.keyTopics.length > 0) {
-            sectionTitle = upload.aiAnalysis.keyTopics[0];
-          }
-
-          let fileUrl = '';
-          let filePublicId = upload.id;
-
-          if (upload.cloudinaryUrl) {
-            fileUrl = upload.cloudinaryUrl;
-            filePublicId = upload.publicId || upload.id;
-          } else if (upload.file) {
-            try {
-              fileUrl = URL.createObjectURL(upload.file);
-            } catch (e) {
-              console.warn('Could not create object URL for file:', upload.name, e);
-            }
-          }
-
-          return {
-            id: `section-${moduleIndex}-${uploadIdx}`,
-            type: sectionType,
-            title: sectionTitle,
-            content: {
-              text: upload.aiAnalysis
-                ? `This section covers the key concepts and topics from ${upload.name}.\n\nEstimated duration: ${upload.aiAnalysis.estimatedReadTime || 0} minutes.`
-                : `Document: ${upload.name}`,
-              file: {
-                id: upload.id,
-                name: upload.name,
-                type: upload.type === 'video' ? 'video' :
-                  upload.type === 'presentation' ? 'pdf' :
-                    upload.type === 'document' ? 'pdf' : 'pdf',
-                url: fileUrl,
-                publicId: filePublicId,
-                size: upload.size || 0,
-                mimeType: upload.type === 'video' ? 'video/mp4' :
-                  upload.type === 'document' ? 'application/pdf' :
-                    upload.type === 'presentation' ? 'application/pdf' : 'application/pdf'
-              },
-              keyPoints: upload.aiAnalysis?.keyTopics || []
-            },
-            orderIndex: uploadIdx + 1,
-            estimatedDuration: upload.aiAnalysis?.estimatedReadTime || 10
-          };
-        }
-
         setEnhancementProgress({ 'content-complete': 90 } as any);
         setModules(fullModules);
 
@@ -315,22 +260,22 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
         setCurrentStep('content');
         setEnhancementProgress({ 'complete': 100 });
       } else {
-        const fallbackModules = createModulesFromUploads(uploads);
+        const fallbackModules = createModulesFromUploadsCustom(uploads);
         setModules(fallbackModules);
       }
     } catch (error) {
       console.error('Failed to generate curriculum with AI:', error);
-      const fallbackModules = createModulesFromUploads(uploads);
+      const fallbackModules = createModulesFromUploadsCustom(uploads);
       setModules(fallbackModules);
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const createModulesFromUploads = (uploads: ContentUpload[], combinedAnalysis?: any): TrainingModule[] => {
+  const createModulesFromUploadsCustom = (uploads: ContentUpload[], combinedAnalysis?: any): TrainingModule[] => {
     if (uploads.length === 1) {
       const upload = uploads[0];
-      const section = createSectionFromUploadHelper(upload, 0, 0);
+      const section = createSectionFromUploadHelperInner(upload, 0, 0);
 
       return [{
         id: `module-1`,
@@ -350,7 +295,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
     }
 
     return uploads.map((upload, i) => {
-      const section = createSectionFromUploadHelper(upload, i, 0);
+      const section = createSectionFromUploadHelperInner(upload, i, 0);
 
       return {
         id: `module-${i + 1}`,
@@ -370,7 +315,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
     });
   };
 
-  function createSectionFromUploadHelper(upload: ContentUpload, moduleIndex: number, uploadIdx: number): TrainingSection {
+  function createSectionFromUploadInner(upload: ContentUpload, moduleIndex: number, uploadIdx: number, aiModule?: any): TrainingSection {
     let sectionType: TrainingSection['type'] = 'document';
     if (upload.type === 'video') {
       sectionType = 'video';
@@ -425,270 +370,17 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
     };
   }
 
-  const generateDetailedContent = async () => {
-    if (modules.length === 0) {
-      return;
-    }
+  function createSectionFromUploadHelperInner(upload: ContentUpload, moduleIndex: number, uploadIdx: number): TrainingSection {
+    return createSectionFromUploadInner(upload, moduleIndex, uploadIdx);
+  }
 
-    setIsGeneratingContent(true);
-
-    try {
-      const allTranscriptions = uploads
-        .filter(u => (u as any).transcription || (u as any).content)
-        .map(u => (u as any).transcription || (u as any).content || '')
-        .join('\n\n---\n\n');
-
-      const updatedModules = await Promise.all(
-        modules.map(async (module) => {
-          try {
-            const aiSections = await AIService.generateModuleContent(
-              module.title,
-              module.description,
-              allTranscriptions || `Training content for ${module.title}`,
-              module.learningObjectives
-            );
-
-            const detailedContent: ModuleContent[] = aiSections.map((section: any, idx: number) => ({
-              id: section.id || `section-${idx + 1}`,
-              type: section.type || 'text',
-              title: section.title,
-              content: section.content,
-              duration: section.duration || 10
-            }));
-
-            const assessments = await generateEnhancedAssessments(
-              module.title,
-              module.description,
-              module.learningObjectives
-            );
-
-            return {
-              ...module,
-              content: detailedContent,
-              assessments: assessments,
-              completionCriteria: {
-                ...module.completionCriteria,
-                requiredActivities: ['video', 'quiz']
-              }
-            };
-          } catch (error) {
-            const detailedContent = generateModuleContentFromAI({
-              title: module.title,
-              description: module.description,
-              duration: module.duration,
-              difficulty: module.difficulty,
-              learningObjectives: module.learningObjectives
-            });
-
-            const assessments = await generateEnhancedAssessments(
-              module.title,
-              module.description,
-              module.learningObjectives
-            );
-
-            return {
-              ...module,
-              content: detailedContent,
-              assessments: assessments
-            };
-          }
-        })
-      );
-
-      setModules(updatedModules);
-      setCurrentStep('content');
-    } catch (error) {
-      console.error('❌ Error generating detailed content:', error);
-    } finally {
-      setIsGeneratingContent(false);
-    }
-  };
-
-  const generateModuleContentFromAI = (aiModule: any): ModuleContent[] => {
-    const content: ModuleContent[] = [];
-    const hash = aiModule.title.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
-    const sectionCount = 3 + (hash % 5);
-
-    const titleTemplates = [
-      `What is ${aiModule.title.replace('Module', '').replace(/\d+:/g, '')}?`,
-      `Understanding ${aiModule.title.split(' ').pop()}`,
-      `${aiModule.title.split(' ').pop()} in Practice`,
-      `Step-by-Step ${aiModule.title.split(' ').pop()} Guide`,
-      `Key Concepts in ${aiModule.title.split(' ').pop()}`,
-      `Advanced ${aiModule.title.split(' ').pop()} Techniques`,
-      `Implementing ${aiModule.title.split(' ').pop()}`,
-      `Troubleshooting ${aiModule.title.split(' ').pop()}`,
-      `${aiModule.title.split(' ').pop()} Best Practices`,
-      `Real-World ${aiModule.title.split(' ').pop()} Examples`
-    ];
-
-    const selectedTitles = titleTemplates
-      .sort(() => (hash % 3) - 1)
-      .slice(0, sectionCount);
-
-    const baseDurations = [8, 10, 12, 14, 15, 18, 20];
-
-    selectedTitles.forEach((title, index) => {
-      content.push({
-        id: `section-${index + 1}`,
-        type: 'text',
-        title: title,
-        content: `${aiModule.description}\n\nThis section covers important aspects of the topic.`,
-        duration: baseDurations[index % baseDurations.length]
-      });
-    });
-
-    return content;
-  };
-
-  };
-
-  const exportToPowerPoint = async () => {
-    if (modules.length === 0) {
-      console.warn('⚠️ No modules to export. Generate modules first.');
-      return;
-    }
-
-    setIsExportingPPT(true);
-
-    try {
-      // Préparer le curriculum pour l'API
-      const curriculum = {
-        title: methodology?.name || 'Formation Professionnelle',
-        description: `Formation complète générée avec ${modules.length} modules`,
-        totalDuration: modules.reduce((sum, m) => sum + m.duration, 0),
-        methodology: methodology?.name || '360° Methodology',
-        modules: modules.map(m => ({
-          title: m.title,
-          description: m.description,
-          duration: m.duration,
-          difficulty: m.difficulty,
-          contentItems: m.content.length,
-          assessments: m.assessments.length,
-          enhancedElements: ['Video Introduction', 'Interactive Exercises', 'Knowledge Check'],
-          learningObjectives: m.learningObjectives
-        }))
-      };
-
-      console.log('📊 Generating PowerPoint for display:', curriculum);
-
-      // Appeler l'API pour générer le PPT
-      const blob = await AIService.exportToPowerPoint(curriculum as any);
-
-      // ✅ AFFICHER LE PPT AU LIEU DE LE TÉLÉCHARGER
-      setPptBlob(blob);
-      setShowPPTViewer(true);
-
-      console.log('✅ PowerPoint généré avec succès et prêt à être affiché!');
-
-    } catch (error) {
-      console.error('❌ Erreur lors de l\'export PowerPoint:', error);
-      alert('❌ Erreur lors de la génération du PowerPoint. Vérifiez que le backend est lancé.');
-    } finally {
-      setIsExportingPPT(false);
-    }
-  };
-  const generateEnhancedModuleContent = (upload: ContentUpload): ModuleContent[] => {
-    const baseContent: ModuleContent[] = [
-      {
-        id: 'welcome',
-        type: 'text',
-        title: 'Welcome & Overview',
-        content: `Welcome to this enhanced learning module based on "${upload.name}". This AI-transformed content includes multimedia elements and interactive components designed to maximize your learning experience.`,
-        duration: 3
-      },
-      {
-        id: 'ai-video',
-        type: 'video',
-        title: 'AI-Generated Explanation Video',
-        content: {
-          videoUrl: 'ai-generated-video.mp4',
-          transcript: 'AI-generated video explaining key concepts with animations and visual aids.',
-          aiGenerated: true,
-          style: 'animated',
-          duration: 8
-        },
-        duration: 8
-      },
-      {
-        id: 'main-content',
-        type: upload.type === 'video' ? 'video' : 'text',
-        title: 'Core Learning Content',
-        content: upload.type === 'video'
-          ? { videoUrl: 'original-content-enhanced.mp4', transcript: 'Enhanced version of original content...' }
-          : 'Enhanced and restructured content with improved readability and engagement...',
-        duration: upload.aiAnalysis?.estimatedReadTime || 15
-      },
-      {
-        id: 'infographic',
-        type: 'interactive',
-        title: 'Visual Summary Infographic',
-        content: {
-          type: 'infographic',
-          imageUrl: 'ai-generated-infographic.png',
-          interactiveElements: ['clickable-sections', 'hover-details', 'expandable-info'],
-          aiGenerated: true
-        },
-        duration: 5
-      },
-      {
-        id: 'audio-summary',
-        type: 'interactive',
-        title: 'Audio Summary & Key Takeaways',
-        content: {
-          type: 'audio',
-          audioUrl: 'ai-narrated-summary.mp3',
-          transcript: 'Professional AI narration summarizing key points and takeaways.',
-          voice: 'professional-female',
-          aiGenerated: true
-        },
-        duration: 4
-      },
-      {
-        id: 'interactive-scenario',
-        type: 'interactive',
-        title: 'Interactive Learning Scenario',
-        content: {
-          exerciseType: 'branching-scenario',
-          description: 'Apply what you\'ve learned in this realistic, interactive scenario with multiple decision points.',
-          branches: 3,
-          outcomes: ['excellent', 'good', 'needs-improvement']
-        },
-        duration: 12
-      },
-      {
-        id: 'knowledge-check',
-        type: 'quiz',
-        title: 'AI-Powered Knowledge Check',
-        content: {
-          questions: 5,
-          passingScore: 80,
-          adaptiveQuestions: true,
-          aiGenerated: true,
-          difficulty: 'adaptive'
-        },
-        duration: 8
-      }
-    ];
-
-    return baseContent;
-  };
-
-  // ✅ Générer des QCM professionnels pour chaque module (10-15 questions)
   const generateEnhancedAssessments = async (moduleTitle: string, moduleDescription: string, learningObjectives: string[]): Promise<Assessment[]> => {
     try {
       console.log(`📝 Generating QCM for module: ${moduleTitle}`);
-
-      // Créer un contenu riche pour le module
       const moduleContent = `${moduleTitle}\n\n${moduleDescription}\n\nObjectifs:\n${learningObjectives.join('\n')}`;
-
-      // Appeler l'API pour générer 12 questions de QCM
       const result = await AIService.generateQuiz(moduleContent, 12);
       const questions = Array.isArray(result) ? result : [];
 
-      console.log(`✅ Generated ${questions.length} QCM questions for: ${moduleTitle}`);
-
-      // Convertir en format Assessment
       const assessmentQuestions: Question[] = questions.map((q: any, index: number) => ({
         id: `q${index + 1}`,
         text: q.text || 'Question text missing',
@@ -699,7 +391,6 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
         points: q.points || 10
       }));
 
-      // Calculer le score de passage (70%)
       const totalPoints = assessmentQuestions.reduce((sum, q) => sum + (q.points || 10), 0);
 
       return [{
@@ -708,12 +399,10 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
         type: 'quiz',
         questions: assessmentQuestions,
         passingScore: Math.floor(totalPoints * 0.7),
-        timeLimit: assessmentQuestions.length * 2 // 2 minutes per question
+        timeLimit: assessmentQuestions.length * 2
       }];
     } catch (error) {
       console.error(`❌ Failed to generate QCM for ${moduleTitle}, using fallback:`, error);
-
-      // Fallback: questions génériques
       const fallbackQuestions: Question[] = learningObjectives.slice(0, 8).map((obj, index) => ({
         id: `q${index + 1}`,
         text: `Concernant "${obj}", quelle est la meilleure approche?`,
@@ -734,7 +423,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
         title: `QCM : ${moduleTitle}`,
         type: 'quiz',
         questions: fallbackQuestions,
-        passingScore: 70, // Always 70% (percentage)
+        passingScore: 70,
         timeLimit: 16
       }];
     }
@@ -902,6 +591,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
               </div>
             </div>
           )}
+
           {/* Success Banner */}
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 mb-4">
             <div className="flex items-center justify-center space-x-3">
@@ -1047,173 +737,48 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
                                 <Sparkles className="h-5 w-5 mr-2 text-indigo-600" />
                                 Aperçu des Slides ({ (module as any).sections?.length || module.content.length })
                               </h5>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-xl border border-slate-200">
-                                {((module as any).sections && (module as any).sections.length > 0) ? (
-                                  (module as any).sections.map((section: any, idx: number) => (
-                                    <div key={idx} className="group relative">
-                                      {/* Conteneur 16:9 pour simuler une vraie diapo */}
-                                      <div className="aspect-[16/9] bg-white rounded-lg shadow-md border border-slate-200 overflow-hidden flex flex-col p-5 hover:shadow-xl transition-all hover:-translate-y-1 relative">
-                                        
-                                        {/* Header de la slide */}
-                                        <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-3">
-                                          <h3 className="text-lg font-extrabold text-slate-800 flex items-center leading-tight">
-                                            <span className="text-indigo-600 text-xl mr-2">✦</span>
-                                            {section.title}
-                                          </h3>
-                                        </div>
 
-                                        {/* Contenu principal de la slide */}
-                                        <div className="flex-1 flex flex-col justify-center">
-                                          {(section.content?.keyPoints && section.content.keyPoints.length > 0) ? (
-                                            <div className="space-y-3">
-                                              {section.content.keyPoints.slice(0, 4).map((kp: string, kpIdx: number) => (
-                                                <div key={kpIdx} className="flex items-start text-[13px] text-slate-700 font-medium">
-                                                  <span className="h-1.5 w-1.5 rounded-full bg-blue-500 mt-1.5 mr-3 flex-shrink-0 shadow-sm"></span>
-                                                  <span className="leading-snug">{kp}</span>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          ) : (
-                                            <p className="text-[13px] text-slate-600 leading-relaxed font-medium italic text-center px-4">
-                                              {typeof section.content?.text === 'string' 
-                                                ? section.content.text
-                                                    .replace(/from\s+[^.]+\.(pdf|txt|docx?)/gi, "from the core resources")
-                                                    .replace(/Document:\s+[^.]+\.(pdf|txt|docx?)/gi, "Interactive Module Content")
-                                                    .substring(0, 180) + '...'
-                                                : 'Contenu interactif généré par l\'IA...'}
-                                            </p>
-                                          )}
-                                        </div>
-
-                                        {/* Footer de la slide */}
-                                        <div className="mt-auto pt-3 flex justify-between items-center text-[10px] text-slate-400 font-bold tracking-wider border-t border-slate-50 uppercase">
-                                          <span>HARX Platform</span>
-                                          <span className="bg-slate-100 px-2 py-1 rounded text-slate-500">Slide {idx + 1}</span>
-                                        </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {((module as any).sections || module.content).map((contentItem: any, contentIdx: number) => (
+                                  <div key={contentItem.id || contentIdx} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all group">
+                                    <div className="h-32 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center relative">
+                                      <div className="absolute top-2 left-2 px-2 py-0.5 bg-white/20 backdrop-blur-md rounded text-[10px] text-white font-bold">
+                                        SLIDE {contentIdx + 1}
+                                      </div>
+                                      <div className="bg-white/10 p-3 rounded-full group-hover:scale-110 transition-transform">
+                                        {getContentTypeIcon(contentItem.type)}
                                       </div>
                                     </div>
-                                  ))
-                                ) : (
-                                  module.content.map((section: any, idx: number) => (
-                                    <div key={idx} className="group relative">
-                                      {/* Conteneur 16:9 */}
-                                      <div className="aspect-[16/9] bg-white rounded-lg shadow-md border border-slate-200 overflow-hidden flex flex-col p-5 hover:shadow-xl transition-all hover:-translate-y-1 relative">
-                                        <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-3">
-                                          <h3 className="text-lg font-extrabold text-slate-800 flex items-center leading-tight">
-                                            <span className="text-indigo-600 text-xl mr-2">✦</span>
-                                            {section.title}
-                                          </h3>
-                                        </div>
-                                        <div className="flex-1 flex flex-col justify-center">
-                                          <p className="text-[13px] text-slate-600 px-4 text-center leading-relaxed font-medium italic">
-                                            {typeof section.content === 'string' 
-                                              ? section.content.substring(0, 150) + '...'
-                                              : 'Contenu visuel de la présentation...'}
-                                          </p>
-                                        </div>
-                                        <div className="mt-auto pt-3 flex justify-between items-center text-[10px] text-slate-400 font-bold tracking-wider border-t border-slate-50 uppercase">
-                                          <span>HARX Platform</span>
-                                          <span className="bg-slate-100 px-2 py-1 rounded text-slate-500">Slide {idx + 1}</span>
-                                        </div>
-                                      </div>
+                                    <div className="p-3">
+                                      <h6 className="text-xs font-bold text-gray-900 line-clamp-1 mb-1">{contentItem.title}</h6>
+                                      <p className="text-[10px] text-gray-600 line-clamp-2">
+                                        {typeof contentItem.content === 'string'
+                                          ? contentItem.content
+                                          : contentItem.content?.text || 'Multimedia learning element enhanced by AI.'}
+                                      </p>
                                     </div>
-                                  ))
-                                )}
-                              </div>
-                            </div>
-
-                            {/* ✅ QCM / ASSESSMENTS */}
-                            {module.assessments && module.assessments.length > 0 && (
-                              <div className="mb-4">
-                                <h5 className="font-semibold text-gray-900 mb-3 flex items-center">
-                                  <CheckSquare className="h-5 w-5 mr-2 text-green-600" />
-                                  QCM - Quiz ({module.assessments[0]?.questions?.length || 0} Questions)
-                                </h5>
-                                {module.assessments.map((assessment, aIdx) => (
-                                  <details key={aIdx} className="group bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border-2 border-green-200 overflow-hidden">
-                                    <summary className="cursor-pointer px-4 py-3 font-medium text-green-900 hover:bg-green-100 transition-colors flex items-center justify-between">
-                                      <div className="flex items-center space-x-2">
-                                        <CheckSquare className="h-4 w-4 text-green-600" />
-                                        <span>{assessment.title}</span>
-                                        <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full">
-                                          {assessment.questions?.length || 0} Q • {assessment.passingScore || 70}% min
-                                        </span>
-                                      </div>
-                                      <ChevronRight className="h-4 w-4 text-green-600 group-open:rotate-90 transition-transform" />
-                                    </summary>
-                                    <div className="px-4 py-3 bg-white border-t border-green-200">
-                                      <div className="space-y-3">
-                                        {assessment.questions?.slice(0, 3).map((q: any, qIdx: number) => (
-                                          <div key={qIdx} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                            <p className="font-medium text-gray-900 text-sm mb-2">
-                                              <span className="text-green-600">Q{qIdx + 1}.</span> {q.text}
-                                            </p>
-                                            <div className="text-xs text-gray-600 space-y-1">
-                                              {q.options?.map((opt: string, i: number) => (
-                                                <div key={i} className={i === q.correctAnswer ? 'text-green-700 font-medium' : ''}>
-                                                  {String.fromCharCode(65 + i)}. {opt} {i === q.correctAnswer && '✓'}
-                                                </div>
-                                              ))}
-                                            </div>
-                                            <div className="mt-2 text-xs text-gray-500">
-                                              Points: {q.points || 10} • {q.difficulty || 'medium'}
-                                            </div>
-                                          </div>
-                                        ))}
-                                        {assessment.questions && assessment.questions.length > 3 && (
-                                          <p className="text-xs text-center text-gray-600">
-                                            ... and {assessment.questions.length - 3} more questions
-                                          </p>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </details>
+                                  </div>
                                 ))}
                               </div>
-                            )}
+                            </div>
                           </div>
 
-                          <div className="flex items-center space-x-2">
+                          <div className="flex flex-col space-y-2 ml-4">
                             <button
                               onClick={() => toggleEditMode(module.id)}
-                              className={`px-4 py-2 rounded-lg transition-colors font-medium ${isEditing
-                                ? 'bg-green-500 text-white hover:bg-green-600'
-                                : 'bg-blue-500 text-white hover:bg-blue-600'
-                                }`}
-                              title={isEditing ? "Save Changes" : "Edit Module"}
+                              className={`p-2 rounded-lg transition-all ${isEditing ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600 hover:bg-indigo-100 hover:text-indigo-600'}`}
+                              title={isEditing ? 'Save Changes' : 'Edit Module'}
                             >
-                              {isEditing ? (
-                                <>
-                                  <CheckSquare className="h-4 w-4 inline mr-1" />
-                                  Save
-                                </>
-                              ) : (
-                                <>
-                                  <Edit2 className="h-4 w-4 inline mr-1" />
-                                  Edit
-                                </>
-                              )}
+                              {isEditing ? <CheckSquare className="h-5 w-5" /> : <Edit2 className="h-5 w-5" />}
                             </button>
                             <button
                               onClick={() => deleteModule(module.id)}
-                              className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                              className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-red-100 hover:text-red-600 transition-all"
                               title="Delete Module"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-5 w-5" />
                             </button>
                           </div>
-                        </div>
-
-                        <div className="border-t border-gray-200 pt-4">
-                          <h5 className="font-medium text-gray-900 mb-2">Learning Objectives:</h5>
-                          <ul className="space-y-1">
-                            {Array.isArray(module.learningObjectives) && module.learningObjectives.map((objective, objIndex) => (
-                              <li key={objIndex} className="flex items-start space-x-2 text-sm text-gray-600">
-                                <CheckSquare className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                                <span>{objective}</span>
-                              </li>
-                            ))}
-                          </ul>
                         </div>
                       </div>
                     );
@@ -1223,155 +788,11 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
             </div>
           </div>
 
-          {/* ✅ Final Exam Display */}
-          {finalExam && (
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl shadow-md border-2 border-green-500 p-6 mt-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-xl font-bold text-green-900 flex items-center">
-                    <CheckSquare className="h-6 w-6 mr-2 text-green-600" />
-                    📝 Examen Final de Certification
-                  </h3>
-                  <p className="text-green-700 mt-2">{finalExam.formationTitle}</p>
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold text-green-600">{finalExam.questionCount}</div>
-                  <div className="text-sm text-green-700">Questions</div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-gray-900">{finalExam.totalPoints}</div>
-                  <div className="text-sm text-gray-600">Points Total</div>
-                </div>
-                <div className="bg-white rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-green-600">{finalExam.passingScore}</div>
-                  <div className="text-sm text-gray-600">Score Passage (70%)</div>
-                </div>
-                <div className="bg-white rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-600">{finalExam.duration}</div>
-                  <div className="text-sm text-gray-600">Minutes</div>
-                </div>
-                <div className="bg-white rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-purple-600">{modules.length}</div>
-                  <div className="text-sm text-gray-600">Modules Couverts</div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg p-6 border border-green-200">
-                <h4 className="font-semibold text-gray-900 mb-4">Exemples de Questions :</h4>
-                {(finalExam.questions || []).slice(0, 3).map((q: any, idx: number) => (
-                  <div key={idx} className="mb-4 pb-4 border-b border-gray-200 last:border-0">
-                    <p className="font-medium text-gray-900 mb-2">
-                      <span className="text-green-600 font-bold">Q{idx + 1}.</span> {q.text}
-                    </p>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      {(q.options || []).map((opt: string, i: number) => (
-                        <div key={i} className={i === q.correctAnswer ? 'text-green-700 font-medium' : ''}>
-                          {String.fromCharCode(65 + i)}. {opt} {i === q.correctAnswer && '✓'}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-2 text-xs text-gray-500">
-                      Difficulté: {q.difficulty || 'medium'} • Points: {q.points || 10}
-                    </div>
-                  </div>
-                ))}
-                <p className="text-sm text-gray-600 mt-4 text-center">
-                  ... and {finalExam.questionCount - 3} more questions
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Enhancement Summary */}
-          <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mt-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">
-              AI Enhancement Summary {methodology && `- ${methodology.name}`}
-            </h3>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div className="text-center p-6 bg-gradient-to-br from-red-50 to-pink-50 rounded-xl">
-                <Video className="h-10 w-10 text-red-500 mx-auto mb-3" />
-                <div className="text-2xl font-bold text-red-600 mb-1">{modules.length}</div>
-                <div className="text-sm text-gray-600">AI Videos Created</div>
-              </div>
-              <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
-                <Music className="h-10 w-10 text-green-500 mx-auto mb-3" />
-                <div className="text-2xl font-bold text-green-600 mb-1">{modules.length}</div>
-                <div className="text-sm text-gray-600">Audio Narrations</div>
-              </div>
-              <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl">
-                <BarChart3 className="h-10 w-10 text-blue-500 mx-auto mb-3" />
-                <div className="text-2xl font-bold text-blue-600 mb-1">{modules.length}</div>
-                <div className="text-sm text-gray-600">Infographics</div>
-              </div>
-              <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl">
-                <Zap className="h-10 w-10 text-purple-500 mx-auto mb-3" />
-                <div className="text-2xl font-bold text-purple-600 mb-1">{modules.reduce((sum, m) => sum + m.content.filter(c => c.type === 'interactive').length, 0)}</div>
-                <div className="text-sm text-gray-600">Interactive Elements</div>
-              </div>
-            </div>
-
-            {methodology && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Methodology Components Integrated:</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {methodology.components.map((component, index) => (
-                    <div key={component.id} className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
-                      <h5 className="font-semibold text-blue-900 mb-1">{component.title}</h5>
-                      <div className="text-sm text-blue-700">
-                        {component.estimatedDuration}h • {component.weight}% weight • {component.competencyLevel} level
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Navigation */}
-          <div className="flex justify-between items-center mt-8">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={onBack}
-                className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium flex items-center space-x-2"
-              >
-                <ArrowRight className="h-5 w-5 rotate-180" />
-                <span>← Back to Upload</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  console.log('🔄 Regenerating training plan...');
-                  setModules([]);
-                  setCurrentStep('plan');
-                  setIsGenerating(true);
-                  // Regenerate the training plan
-                  setTimeout(() => {
-                    window.location.reload();
-                  }, 500);
-                }}
-                disabled={isGenerating}
-                className="px-6 py-3 border-2 border-blue-500 text-blue-600 rounded-xl hover:bg-blue-50 transition-all font-medium flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Regenerate entire training plan"
-              >
-                <RotateCcw className="h-5 w-5" />
-                <span>🔄 Regenerate</span>
-              </button>
-            </div>
-
-            <div className="text-center">
-              <div className="text-sm text-gray-500 mb-2">
-                {modules.length} modules with content and QCM
-              </div>
-              <div className="flex items-center space-x-2">
-                <Sparkles className="h-4 w-4 text-purple-500" />
-                <span className="text-sm text-purple-600 font-medium">
-                  {methodology ? '360° Methodology' : 'AI Enhancement'} Complete
-                </span>
-              </div>
+          {/* Action Footer */}
+          <div className="mt-8 flex items-center justify-between bg-white rounded-2xl shadow-xl p-6 border-2 border-indigo-100">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">Ready to start training?</h3>
+              <p className="text-sm text-gray-600">Your curriculum is complete and enhanced with AI content.</p>
             </div>
 
             <div className="flex space-x-4">
@@ -1387,7 +808,10 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
           </div>
         </div>
       </div>
-
     </div>
   );
+
+  function toggleEditMode(moduleId: string) {
+    setEditingModuleId(editingModuleId === moduleId ? null : moduleId);
+  }
 }
