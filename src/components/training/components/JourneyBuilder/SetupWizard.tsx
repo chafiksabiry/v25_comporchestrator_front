@@ -258,16 +258,18 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-3">
-            <div className="flex items-center justify-center mb-2">
-              <Building2 className="h-5 w-5 text-indigo-500 mr-2" />
-              <h3 className="text-lg font-semibold text-gray-900">Welcome to Your Training Journey</h3>
+          <div className="space-y-8">
+            <div className="flex items-center justify-center mb-6">
+              <div className="p-3 bg-rose-50 rounded-xl mr-4 text-rose-500 shadow-inner">
+                <Building2 className="h-7 w-7" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 tracking-tight">Welcome to Your Training Journey</h3>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-2 mb-3">
+            <div className="flex flex-wrap justify-center gap-3 mb-8">
               {steps[0].features.map((feature, index) => (
-                <div key={index} className="flex items-center space-x-1 px-2 py-1 bg-indigo-50 rounded text-xs text-indigo-700 font-medium">
-                  <Sparkles className="h-3 w-3 text-yellow-500" />
+                <div key={index} className="flex items-center space-x-2 px-4 py-2 bg-white/80 backdrop-blur border border-purple-100 rounded-full text-sm text-purple-700 font-medium shadow-sm hover:shadow-md transition-shadow">
+                  <Sparkles className="h-4 w-4 text-purple-500" />
                   <span>{feature}</span>
                 </div>
               ))}
@@ -283,20 +285,20 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 {/* removed company info display */}
 
                 {/* Industry Selector */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Select Training Industry *
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+                  <label className="block text-sm font-bold text-gray-800 mb-3 ml-1">
+                    Select Training Industry <span className="text-rose-500">*</span>
                   </label>
                   {loadingIndustries ? (
-                    <div className="w-full px-3 py-2 border border-gray-300 rounded-lg flex items-center justify-center">
-                      <Loader2 className="h-4 w-4 text-indigo-500 animate-spin mr-2" />
-                      <span className="text-xs text-gray-600">Loading industries...</span>
+                    <div className="w-full px-4 py-3 border border-gray-200 rounded-xl flex items-center justify-center bg-gray-50">
+                      <Loader2 className="h-5 w-5 text-purple-500 animate-spin mr-3" />
+                      <span className="text-sm text-gray-600 font-medium">Loading industries...</span>
                     </div>
                   ) : (
                     <select
                       value={company.industry || ''}
                       onChange={(e) => setCompany({ ...company, industry: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                      className="w-full px-4 py-3.5 border-2 border-gray-100 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 text-base font-medium text-gray-700 bg-white shadow-sm hover:border-purple-300 transition-colors cursor-pointer"
                     >
                       <option value="">Select the industry for training</option>
                       {industries.map((industry) => (
@@ -315,12 +317,14 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               </div>
             )}
 
-            <div className="space-y-3">
+            <div className="space-y-6 mt-8">
               {/* Gig Selection */}
-              <div className="pt-3 border-t border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-                  <Briefcase className="h-4 w-4 mr-1.5 text-blue-500" />
-                  Select Your Gig *
+              <div className="pt-8 border-t border-gray-100">
+                <h3 className="text-lg font-bold text-gray-800 mb-5 flex items-center">
+                  <div className="p-2 bg-blue-50 rounded-lg mr-3 shadow-inner">
+                    <Briefcase className="h-5 w-5 text-blue-500" />
+                  </div>
+                  Select Your Gig <span className="text-rose-500 ml-1">*</span>
                 </h3>
                 <GigSelector
                   industryFilter={company.industry}
@@ -521,21 +525,21 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="w-full flex-1 flex flex-col p-4 md:p-6 opacity-100 transition-opacity duration-500 relative">
+      <div className="w-full flex-1 flex flex-col p-6 md:p-10 opacity-100 transition-opacity duration-500 relative">
         {/* Header */}
-        <div className="text-center mb-2">
-          <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-1 flex justify-center items-center gap-2">
-            <Sparkles className="h-5 w-5 text-indigo-500" />
+        <div className="text-center mb-8">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-purple-500 to-indigo-500 mb-3 flex justify-center items-center gap-3 drop-shadow-sm leading-tight pb-2">
+            <Sparkles className="h-8 w-8 text-rose-500 animate-pulse" />
             Create Amazing Training in Minutes
           </h1>
-          <p className="text-xs text-gray-600 max-w-2xl mx-auto">
+          <p className="text-sm md:text-base text-gray-600 max-w-2xl mx-auto font-medium">
             Transform your existing content into engaging, interactive training programs with the power of AI
           </p>
         </div>
 
         {/* Progress Steps */}
-        <div className="flex items-center justify-center mb-2">
-          <div className="flex items-center space-x-2">
+        <div className="flex items-center justify-center mb-8">
+          <div className="flex items-center space-x-4">
             {steps.map((step, index) => {
               const Icon = step.icon;
               const isActive = currentStep === step.id;
@@ -544,27 +548,27 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               return (
                 <div key={step.id} className="flex items-center">
                   <div className="flex flex-col items-center">
-                    <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-300 ${isCompleted
-                      ? 'bg-green-500 border-green-500 text-white shadow-sm'
+                    <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-500 ${isCompleted
+                      ? 'bg-gradient-to-r from-emerald-400 to-emerald-500 border-transparent text-white shadow-lg shadow-emerald-200/50 scale-105'
                       : isActive
-                        ? 'bg-indigo-500 border-indigo-500 text-white shadow-md'
-                        : 'bg-white border-gray-300 text-gray-400'
+                        ? 'bg-gradient-to-r from-rose-500 to-purple-600 border-transparent text-white shadow-xl shadow-purple-300/50 scale-110 ring-4 ring-rose-100'
+                        : 'bg-white border-gray-200 text-gray-400 hover:border-purple-300 hover:text-purple-400'
                       }`}>
                       {isCompleted ? (
-                        <CheckCircle className="h-4 w-4" />
+                        <CheckCircle className="h-5 w-5" />
                       ) : (
-                        <Icon className="h-4 w-4" />
+                        <Icon className="h-5 w-5" />
                       )}
                     </div>
-                    <div className="mt-1 text-center">
-                      <div className={`text-[10px] font-semibold ${isActive ? 'text-indigo-600' : isCompleted ? 'text-green-600' : 'text-gray-400'
+                    <div className="mt-3 text-center">
+                      <div className={`text-[11px] font-bold uppercase tracking-wider ${isActive ? 'text-purple-600' : isCompleted ? 'text-emerald-600' : 'text-gray-400'
                         }`}>
                         {step.title}
                       </div>
                     </div>
                   </div>
                   {index < steps.length - 1 && (
-                    <div className={`w-8 h-0.5 mx-2 rounded-full transition-all duration-300 ${isCompleted ? 'bg-green-500' : 'bg-gray-200'
+                    <div className={`w-12 h-1 mx-3 rounded-full transition-all duration-500 ${isCompleted ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' : 'bg-gray-100'
                       }`} />
                   )}
                 </div>
@@ -591,10 +595,10 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
         {/* Step Content */}
         {currentStep !== 4 && (
-          <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-4 overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/30 to-purple-50/30 pointer-events-none" />
-            <div className="h-full overflow-y-auto relative z-10 custom-scrollbar pr-2">
-              <div className="max-w-4xl mx-auto pb-4">
+          <div className="flex-1 bg-white/70 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white p-8 md:p-12 mb-8 overflow-hidden relative transition-all duration-500 hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)]">
+            <div className="absolute inset-0 bg-gradient-to-br from-rose-50/40 via-purple-50/30 to-indigo-50/40 pointer-events-none" />
+            <div className="h-full overflow-y-auto relative z-10 custom-scrollbar pr-4">
+              <div className="max-w-4xl mx-auto pb-6">
                 {renderStepContent()}
               </div>
             </div>
@@ -603,7 +607,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
         {/* Navigation Buttons */}
         {currentStep !== 2 && currentStep !== 4 && (
-          <div className="sticky bottom-0 bg-white/80 backdrop-blur-md p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between z-20">
+          <div className="sticky bottom-0 bg-white/90 backdrop-blur-lg p-6 rounded-2xl border border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] flex items-center justify-between z-20 transition-all duration-300 mt-auto">
             <button
               onClick={() => {
                 if (currentStep === 5) {
@@ -612,22 +616,22 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                   setCurrentStep(currentStep - 1);
                 }
               }}
-              className={`px-4 py-2 rounded-lg transition-all text-sm font-medium flex items-center space-x-1 ${currentStep === 1
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+              className={`px-6 py-3 rounded-xl transition-all duration-300 text-sm font-semibold flex items-center space-x-2 ${currentStep === 1
+                ? 'bg-gray-50 text-gray-400 cursor-not-allowed opacity-70'
+                : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 border border-gray-200 hover:border-gray-300 hover:shadow-md'
                 }`}
               disabled={currentStep === 1}
             >
               <span>Back</span>
             </button>
 
-            <div className="flex flex-col items-center w-1/3">
-              <div className="text-xs text-gray-500 mb-1">
+            <div className="flex flex-col items-center w-5/12">
+              <div className="text-sm font-medium text-gray-500 mb-2">
                 Step {currentStep === 5 ? steps.length : currentStep} of {steps.length}
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+              <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden shadow-inner">
                 <div
-                  className="bg-indigo-500 h-1.5 rounded-full transition-all duration-500"
+                  className="bg-gradient-to-r from-rose-500 to-purple-600 h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(244,63,94,0.3)]"
                   style={{ width: `${(currentStep === 5 ? steps.length : currentStep) / steps.length * 100}%` }}
                 />
               </div>
@@ -636,10 +640,10 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             <button
               onClick={handleNext}
               disabled={!isStepValid()}
-              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium shadow-sm flex items-center space-x-1"
+              className="px-8 py-3 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-xl hover:from-rose-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 text-sm font-semibold shadow-lg shadow-rose-500/30 hover:shadow-xl hover:shadow-rose-500/40 hover:-translate-y-0.5 flex items-center space-x-2"
             >
               <span>{currentStep === 5 ? 'Start Building' : 'Continue'}</span>
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-5 w-5" />
             </button>
           </div>
         )}
