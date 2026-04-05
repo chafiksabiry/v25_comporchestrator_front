@@ -162,9 +162,7 @@ export function toExtendedJson<T>(data: any): T {
  * This function ensures we always use the MongoDB _id
  */
 export function getNormalizedModuleId(
-  module: any, 
-  journeyId: string, 
-  moduleIndex?: number
+  module: any
 ): string {
   // First try to get the real MongoDB _id
   const moduleId = extractObjectId(module._id) || extractObjectId(module.id);
@@ -182,7 +180,7 @@ export function getNormalizedModuleId(
 /**
  * Find module index in modules array by matching ID or order
  */
-export function findModuleIndex(module: any, modules: any[], journeyId: string): number {
+export function findModuleIndex(module: any, modules: any[]): number {
   const moduleId = extractObjectId(module._id) || extractObjectId(module.id);
   
   // Try to find by ID first
