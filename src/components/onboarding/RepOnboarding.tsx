@@ -390,11 +390,11 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 p-2">
+      <div className="flex items-center justify-between mb-2">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">REP Onboarding</h2>
-          <p className="text-sm text-gray-500">Guide new REPS through the onboarding process</p>
+          <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-purple-500 to-indigo-500 tracking-tight mb-2">REP Onboarding</h2>
+          <p className="text-base text-gray-600 font-medium">Guide new REPS through the onboarding process</p>
         </div>
         {/* 
         <div className="flex space-x-3">
@@ -458,13 +458,18 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       */}
 
       {/* Company Trainings */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900">Company Trainings & Certification</h3>
+      <div className="rounded-3xl bg-white/70 backdrop-blur-xl p-8 border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)] transition-all duration-500">
+        <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
+          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-3">
+            <div className="p-2 bg-purple-50 rounded-lg text-purple-500 shadow-inner">
+              <BookOpen className="h-5 w-5" />
+            </div>
+            Company Trainings & Certification
+          </h3>
           <div className="flex space-x-3">
             <button
               onClick={() => setShowTraining({ isOpen: true, newJourney: true })}
-              className="flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+              className="flex items-center rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-rose-500/20 hover:shadow-xl hover:shadow-rose-500/40 hover:-translate-y-0.5 transition-all duration-300"
             >
               <Plus className="mr-2 h-4 w-4" />
               New Journey Training
@@ -482,13 +487,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               return (
                 <div
                   key={module.id}
-                  className="rounded-lg border border-gray-200 bg-white"
+                  className="rounded-2xl border border-gray-100 bg-white p-2 hover:border-purple-200 hover:shadow-md transition-all duration-300 group"
                 >
                   <div className="flex items-center justify-between p-4">
-                    <div className="flex items-center space-x-4">
-                      <div className={`rounded-lg p-2 ${module.status === 'completed' ? 'bg-green-100 text-green-600' :
-                        module.status === 'in_progress' ? 'bg-yellow-100 text-yellow-600' :
-                          'bg-gray-100 text-gray-600'
+                    <div className="flex items-center space-x-5">
+                      <div className={`rounded-xl p-3 shadow-inner ${module.status === 'completed' ? 'bg-emerald-50 text-emerald-500' :
+                        module.status === 'in_progress' ? 'bg-amber-50 text-amber-500' :
+                          'bg-gray-50 text-gray-500'
                         }`}>
                         {module.type === 'video' ? (
                           <Video className="h-5 w-5" />
@@ -500,17 +505,19 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                       </div>
                       <div>
                         <h4 className="font-medium text-gray-900">{module.title}</h4>
-                        <div className="mt-1 flex items-center space-x-2 text-sm text-gray-500">
-                          <Clock className="h-4 w-4" />
-                          <span>{module.duration}</span>
+                        <div className="mt-1.5 flex items-center space-x-3 text-sm text-gray-500 font-medium">
+                          <div className="flex items-center">
+                            <Clock className="h-4 w-4 mr-1.5 text-gray-400" />
+                            <span>{module.duration}</span>
+                          </div>
                           {module.required && (
-                            <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
+                            <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-600 border border-rose-100">
                               Required
                             </span>
                           )}
                         </div>
                         {module.description && (
-                          <p className="mt-1 text-xs text-gray-400 line-clamp-1">{module.description}</p>
+                          <p className="mt-2 text-sm text-gray-500 line-clamp-1 max-w-xl">{module.description}</p>
                         )}
                       </div>
                     </div>
@@ -542,16 +549,16 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                           </div>
                           <button
                             onClick={() => navigateToUrl(`/training/${module.id}`)}
-                            className="flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+                            className="flex items-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-indigo-500/20 hover:bg-indigo-700 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
                           >
-                            <Play className="mr-1 h-4 w-4" />
+                            <Play className="mr-1.5 h-4 w-4" />
                             Lire
                           </button>
                         </div>
                       ) : (
                         <button
                           onClick={() => navigateToUrl(`/training/${module.id}`)}
-                          className="flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
+                          className="flex items-center rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-500/20 hover:bg-indigo-700 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 opacity-0 group-hover:opacity-100 focus:opacity-100"
                         >
                           <Play className="mr-2 h-4 w-4" />
                           Lire
@@ -669,9 +676,14 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       */}
 
       {/* Documentation */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium text-gray-900">Documentation & Resources</h3>
+      <div className="rounded-3xl bg-white/70 backdrop-blur-xl p-8 border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)] transition-all duration-500 mt-8">
+        <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
+          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-3">
+            <div className="p-2 bg-blue-50 rounded-lg text-blue-500 shadow-inner">
+              <FileText className="h-5 w-5" />
+            </div>
+            Documentation & Resources
+          </h3>
           {trainingDocuments.length > 0 && (
             <button
               onClick={() => {
@@ -682,34 +694,36 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   }
                 });
               }}
-              className="flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500"
+              className="flex items-center px-4 py-2 text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors"
             >
-              <Download className="mr-1 h-4 w-4" />
+              <Download className="mr-2 h-4 w-4" />
               Download All
             </button>
           )}
         </div>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {trainingDocuments.length > 0 ? (
             trainingDocuments.map((doc) => (
               <div
                 key={doc.id}
-                className="flex items-center justify-between rounded-lg border border-gray-200 p-4 hover:border-indigo-300 hover:shadow-md transition-all"
+                className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-5 hover:border-indigo-200 hover:shadow-lg transition-all duration-300 group"
               >
                 <div className="flex items-center flex-1 min-w-0">
-                  <FileText className="h-5 w-5 text-gray-400 flex-shrink-0" />
-                  <div className="ml-3 min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">{doc.title}</p>
-                    <p className="text-xs text-gray-500">{formatFileType(doc.type)} • {doc.size}</p>
+                  <div className="p-2.5 bg-gray-50 rounded-xl text-gray-400 group-hover:text-indigo-500 group-hover:bg-indigo-50 transition-colors">
+                    <FileText className="h-6 w-6 flex-shrink-0" />
+                  </div>
+                  <div className="ml-4 min-w-0 flex-1">
+                    <p className="text-sm font-bold text-gray-800 truncate">{doc.title}</p>
+                    <p className="text-xs font-medium text-gray-500 mt-0.5">{formatFileType(doc.type)} • {doc.size}</p>
                   </div>
                 </div>
                 {doc.url && (
                   <button
                     onClick={() => window.open(doc.url, '_blank')}
-                    className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-indigo-600 flex-shrink-0 ml-2"
+                    className="rounded-xl p-2 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 flex-shrink-0 ml-3 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                     title="Download"
                   >
-                    <Download className="h-4 w-4" />
+                    <Download className="h-5 w-5" />
                   </button>
                 )}
               </div>
