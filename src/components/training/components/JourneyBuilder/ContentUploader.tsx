@@ -625,16 +625,22 @@ export default function ContentUploader({ onComplete, onFinishEarly, onBack }: C
                         </div>
                       </div>
                       
-                      {/* Multimedia Placeholder */}
+                      {/* Multimedia Placeholder / AI Image */}
                       <div className="hidden lg:flex w-2/5 flex-col justify-center items-center opacity-90 p-4">
-                        <div className="w-full aspect-square rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-dashed border-slate-300 flex items-center justify-center flex-col shadow-inner overflow-hidden relative">
-                           <div className="absolute inset-0 bg-white/40"></div>
-                           <div className="relative z-10 flex flex-col items-center">
-                              <Image className="h-16 w-16 text-slate-400 mb-4 drop-shadow-sm" />
-                              <span className="text-slate-500 font-medium text-lg">Espace Média AI</span>
-                              <span className="text-slate-400 text-sm mt-2 text-center px-6">Image ou vidéo sera générée ici</span>
+                        {slide.imageUrl ? (
+                           <div className="w-full aspect-square rounded-3xl bg-slate-100 flex items-center justify-center flex-col shadow-inner overflow-hidden relative border-4 border-white">
+                              <img src={slide.imageUrl} alt={slide.title} className="w-full h-full object-cover animate-in fade-in duration-700" />
                            </div>
-                        </div>
+                        ) : (
+                           <div className="w-full aspect-square rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-dashed border-slate-300 flex items-center justify-center flex-col shadow-inner overflow-hidden relative">
+                              <div className="absolute inset-0 bg-white/40"></div>
+                              <div className="relative z-10 flex flex-col items-center">
+                                 <Image className="h-16 w-16 text-slate-400 mb-4 drop-shadow-sm" />
+                                 <span className="text-slate-500 font-medium text-lg">Espace Média AI</span>
+                                 <span className="text-slate-400 text-sm mt-2 text-center px-6">Image ou vidéo sera générée ici</span>
+                              </div>
+                           </div>
+                        )}
                       </div>
                     </div>
                     
