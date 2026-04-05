@@ -90,12 +90,36 @@ export const OnboardingService = {
             }
             return match;
           } else {
-            // Compare by name
-            const match = industry.name?.toLowerCase().trim() === industryIdentifier.toLowerCase().trim();
-            if (match) {
-              console.log('[OnboardingService] Match found by name:', industry.name, '=', industryIdentifier);
+            // Compare by name - Enhanced with flexible matching
+            const name = (industry.name || '').toLowerCase().trim();
+            const target = (industryIdentifier || '').toLowerCase().trim();
+            
+            // 1. Exact match
+            if (name === target) {
+              console.log('[OnboardingService] Match found by name:', name);
+              return true;
             }
-            return match;
+            
+            // 2. Substring match
+            if (name.includes(target) || target.includes(name)) {
+              console.log(`[OnboardingService] Match found by substring: "${name}" vs "${target}"`);
+              return true;
+            }
+            
+            // 3. Keyword match (split by spaces and match significant words)
+            const nameKeywords = name.split(/\s+/).filter((k: string) => k.length > 3);
+            const targetKeywords = target.split(/\s+/).filter((k: string) => k.length > 3);
+            
+            const hasCommonKeyword = targetKeywords.some((tk: string) => 
+              nameKeywords.some((nk: string) => nk.includes(tk) || tk.includes(nk))
+            );
+            
+            if (hasCommonKeyword) {
+              console.log(`[OnboardingService] Match found by keywords: "${name}" vs "${target}"`);
+              return true;
+            }
+
+            return false;
           }
         });
 
@@ -111,18 +135,17 @@ export const OnboardingService = {
           data: filteredGigs
         };
       } else {
-        console.log('[OnboardingService] No matching gigs found. Debug info:');
+        console.log('[OnboardingService] ⚠️ No industry match found. Debug info:');
         console.log('[OnboardingService] - Looking for:', industryIdentifier);
-        console.log('[OnboardingService] - Is ObjectId:', isObjectId);
+        
+        // GLOBAL FALLBACK: If no match found, return all gigs for this company 
+        // This ensures the user can proceed even if industry alignment is poor.
         if (response.data.length > 0) {
-          response.data.forEach((gig: GigFromApi, index: number) => {
-            console.log(`[OnboardingService] Gig ${index + 1} (${gig.title}):`, {
-              industries: gig.industries?.map((ind: any) => ({
-                id: ind._id || ind.id,
-                name: ind.name
-              }))
-            });
-          });
+          console.log(`[OnboardingService] 🔄 Falling back to all company gigs (${response.data.length}) to prevent onboarding blockage.`);
+          return {
+            ...response,
+            data: response.data
+          };
         }
       }
 

@@ -9,14 +9,17 @@ export interface Company {
 
 export interface TrainingJourney {
   id: string;
-  companyId: string;
+  companyId?: string; // Opted out for some views
   name: string;
   description: string;
-  status: 'draft' | 'active' | 'completed' | 'archived';
-  steps: JourneyStep[];
-  createdAt: string;
-  estimatedDuration: string;
-  targetRoles: string[];
+  industry?: string;
+  status: 'draft' | 'rehearsal' | 'active' | 'completed' | 'archived';
+  steps?: JourneyStep[];
+  createdAt?: string;
+  estimatedDuration?: string;
+  targetRoles?: string[];
+  vision?: string;
+  company?: Company;
 }
 
 export interface JourneyStep {
