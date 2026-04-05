@@ -252,6 +252,8 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
             onComplete={handleUploadComplete}
             onFinishEarly={handleFinishEarly}
             onBack={() => setCurrentStep(0)}
+            company={company}
+            gigId={selectedGigId}
           />
         );
       case 2:

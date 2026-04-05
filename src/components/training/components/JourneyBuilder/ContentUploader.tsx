@@ -2,15 +2,18 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Cloud } from 'lucide-react';
 import { ContentUpload } from '../../types/core';
 import { AIService } from '../../infrastructure/services/AIService';
+import { TrainingService } from '../../infrastructure/services/TrainingService';
 import { cloudinaryService } from '../../lib/cloudinaryService';
 
 interface ContentUploaderProps {
   onComplete: (uploads: ContentUpload[]) => void;
   onFinishEarly?: (uploads: ContentUpload[], curriculum: any) => void;
   onBack: () => void;
+  company?: any;
+  gigId?: string | null;
 }
 
-export default function ContentUploader({ onComplete, onFinishEarly, onBack }: ContentUploaderProps) {
+export default function ContentUploader({ onComplete, onFinishEarly, onBack, company, gigId }: ContentUploaderProps) {
   const [uploads, setUploads] = useState<ContentUpload[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -368,6 +371,35 @@ export default function ContentUploader({ onComplete, onFinishEarly, onBack }: C
     }
   };
 
+  const handleSavePresentation = async () => {
+    if (!generatedPresentation) return;
+    try {
+      setIsSavingCloud(true);
+      console.log('💾 Sauvegarde de la présentation interactive...');
+      
+      const presentationToSave = {
+        title: generatedPresentation.title || 'Présentation Sans Titre',
+        description: generatedPresentation.description || 'Générée par IA',
+        companyId: company?.id || '',
+        gigId: gigId || '',
+        slides: generatedPresentation.slides,
+        totalSlides: generatedPresentation.slides.length,
+        estimatedTime: generatedPresentation.estimatedTime || '30 min',
+      };
+
+      await TrainingService.createPresentation(presentationToSave);
+      
+      alert('La présentation interactive a été enregistrée avec succès !');
+      // On revient à l'onboarding (simulé par le retour aux fichiers ou onBack)
+      onBack();
+    } catch (error: any) {
+      console.error('Failed to save presentation:', error);
+      alert('Erreur lors de l\'enregistrement: ' + error.message);
+    } finally {
+      setIsSavingCloud(false);
+    }
+  };
+
   const getStatusIcon = (status: ContentUpload['status']) => {
     switch (status) {
       case 'analyzed':
@@ -663,37 +695,36 @@ export default function ContentUploader({ onComplete, onFinishEarly, onBack }: C
         </div>
 
         <div className="mt-10 flex space-x-4">
-           <button 
-             onClick={downloadPPTX}
-             className="px-8 py-4 bg-white text-slate-800 rounded-2xl font-bold shadow-lg border border-slate-200 hover:bg-slate-50 transition-all flex items-center"
-           >
-             <FileText className="mr-2 h-5 w-5 text-purple-600" />
-             Télécharger le fichier .pptx
-           </button>
-           <button 
-             onClick={handleSaveToCloud}
-             disabled={isSavingCloud}
-             className="px-8 py-4 bg-white text-slate-800 rounded-2xl font-bold shadow-lg border border-slate-200 hover:bg-slate-50 transition-all flex items-center"
-           >
-             {isSavingCloud ? (
-               <Loader2 className="mr-2 h-5 w-5 text-purple-600 animate-spin" />
-             ) : (
-               <Save className="mr-2 h-5 w-5 text-purple-600" />
-             )}
-             {isSavingCloud ? 'Sauvegarde...' : 'Sauvegarder dans le Cloud'}
-           </button>
-           <button 
-             onClick={() => {
-               if (onFinishEarly && generatedCurriculum) {
-                 onFinishEarly(uploads, generatedCurriculum);
-               } else {
-                 onComplete(uploads);
-               }
-             }}
-             className="px-8 py-4 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-bold shadow-lg hover:from-rose-600 hover:to-purple-700 transition-all flex items-center"
-           >
-             <Sparkles className="h-5 w-5 mr-2" /> Valider et Terminer
-           </button>
+          <button 
+            onClick={handleSaveToCloud}
+            disabled={isSavingCloud}
+            className="flex items-center space-x-2 px-6 py-3 bg-white/80 backdrop-blur-md border border-purple-200 text-purple-700 rounded-xl font-bold hover:bg-purple-50 transition-all shadow-sm"
+          >
+            {isSavingCloud ? <Loader2 className="h-5 w-5 animate-spin" /> : <Cloud className="h-5 w-5" />}
+            <span>Exporter en PPTX</span>
+          </button>
+
+          <button 
+            onClick={handleSavePresentation}
+            disabled={isSavingCloud}
+            className="flex items-center space-x-2 px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold hover:shadow-lg hover:scale-105 transition-all shadow-md"
+          >
+            {isSavingCloud ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+            <span>Valider et Enregistrer la Formation</span>
+          </button>
+          
+          <button 
+            onClick={() => {
+              if (onFinishEarly && generatedCurriculum) {
+                onFinishEarly(uploads, generatedCurriculum);
+              } else {
+                onComplete(uploads);
+              }
+            }}
+            className="px-8 py-3 bg-white text-slate-600 rounded-xl font-bold border border-slate-200 hover:bg-slate-50 transition-all shadow-sm"
+          >
+            <span>Passer à l'amélioration IA</span>
+          </button>
         </div>
       </div>
     );
