@@ -390,7 +390,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   }
 
   return (
-    <div className="space-y-8 p-2">
+    <div className="space-y-8 p-8 bg-white/60 backdrop-blur-xl rounded-3xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] m-2 md:m-4">
       <div className="flex items-center justify-between mb-2">
         <div>
           <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-purple-500 to-indigo-500 tracking-tight mb-2">REP Onboarding</h2>
@@ -458,7 +458,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       */}
 
       {/* Company Trainings */}
-      <div className="rounded-3xl bg-white/70 backdrop-blur-xl p-8 border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)] transition-all duration-500">
+      <div className="transition-all duration-500">
         <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
           <h3 className="text-xl font-bold text-gray-800 flex items-center gap-3">
             <div className="p-2 bg-purple-50 rounded-lg text-purple-500 shadow-inner">
@@ -487,7 +487,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               return (
                 <div
                   key={module.id}
-                  className="rounded-2xl border border-gray-100 bg-white p-2 hover:border-purple-200 hover:shadow-md transition-all duration-300 group"
+                  className="rounded-2xl border border-gray-100/50 bg-white/40 p-2 hover:border-purple-200 hover:bg-white/80 hover:shadow-md transition-all duration-300 group"
                 >
                   <div className="flex items-center justify-between p-4">
                     <div className="flex items-center space-x-5">
@@ -676,7 +676,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       */}
 
       {/* Documentation */}
-      <div className="rounded-3xl bg-white/70 backdrop-blur-xl p-8 border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)] transition-all duration-500 mt-8">
+      <div className="transition-all duration-500 mt-12 pt-8 border-t border-gray-100/50">
         <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
           <h3 className="text-xl font-bold text-gray-800 flex items-center gap-3">
             <div className="p-2 bg-purple-50 rounded-lg text-purple-500 shadow-inner">
@@ -706,7 +706,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
             trainingDocuments.map((doc) => (
               <div
                 key={doc.id}
-                className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-5 hover:border-purple-200 hover:shadow-lg transition-all duration-300 group"
+                className="flex items-center justify-between rounded-2xl border border-gray-100/50 bg-white/40 p-5 hover:border-purple-200 hover:bg-white/80 hover:shadow-md transition-all duration-300 group"
               >
                 <div className="flex items-center flex-1 min-w-0">
                   <div className="p-2.5 bg-gray-50 rounded-xl text-gray-400 group-hover:text-purple-500 group-hover:bg-purple-50 transition-colors">
