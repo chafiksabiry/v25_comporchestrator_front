@@ -2,7 +2,53 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { qiankunWindow } from 'vite-plugin-qiankun/dist/helper';
 import { useParams } from 'react-router-dom';
-import { User, Sparkles, Zap, Upload, Wand2, Rocket, Eye, BookOpen, Play, CheckCircle } from 'lucide-react';
+import { User,  CheckCircle,
+  Play,
+  PlayCircle,
+  Clock,
+  Sparkles,
+  Wand2,
+  Search,
+  Filter,
+  Eye,
+  Rocket,
+  BookOpen,
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Target,
+  Zap,
+  TrendingUp,
+  Award,
+  Calendar,
+  Shield,
+  Brain,
+  Video,
+  FileText,
+  Check,
+  MoreVertical,
+  Plus,
+  Upload,
+  Layout,
+  MessageSquare,
+  BarChart3,
+  Users,
+  Settings,
+  Bell,
+  LogOut,
+  HelpCircle,
+  Menu,
+  X,
+  ChevronDown,
+  ExternalLink,
+  Download,
+  Share2,
+  Trash2,
+  Edit,
+  Save,
+  RefreshCw,
+  MoreHorizontal
+} from 'lucide-react';
 // import { useAuth } from './hooks/useAuth';
 import JourneyBuilder from './components/JourneyBuilder/JourneyBuilder';
 import { ManualTrainingSetup, ManualTrainingBuilder } from './components/ManualTraining';
@@ -123,7 +169,9 @@ export function AppContent({
   const [manualTrainingSetupData, setManualTrainingSetupData] = useState<any>(null);
   const [realModules, setRealModules] = useState<TrainingModule[]>([]);
   const [realJourneys, setRealJourneys] = useState<any[]>([]);
+  const [realPresentations, setRealPresentations] = useState<any[]>([]);
   const [selectedJourney, setSelectedJourney] = useState<any | null>(null);
+  const [selectedPresentation, setSelectedPresentation] = useState<any | null>(null);
   const [selectedJourneyModules, setSelectedJourneyModules] = useState<TrainingModule[]>([]);
   const [loadingModules, setLoadingModules] = useState(false);
 
@@ -299,11 +347,7 @@ export function AppContent({
         }
 
         console.log('[App] Extracted journeys:', journeys.length, 'journeys');
-        if (journeys.length > 0) {
-          console.log('[App] Sample journey:', journeys[0]);
-          console.log('[App] Sample journey modules:', journeys[0]?.modules?.length || 0, 'modules');
-        }
-
+        
         // Filter out null journeys and filter by active/completed status
         const filteredJourneys = journeys
           .filter((journey: any) => journey != null)
@@ -311,14 +355,16 @@ export function AppContent({
             const status = journey.status || journey.journeyStatus;
             return !status || status === 'active' || status === 'completed';
           });
-
-        // Store journeys directly instead of transforming to modules
+          
         setRealJourneys(filteredJourneys);
-        console.log('[App] Loaded', filteredJourneys.length, 'journeys');
-        if (filteredJourneys.length > 0) {
-          console.log('[App] First journey sample:', filteredJourneys[0]);
-        } else {
-          console.warn('[App] No journeys found!');
+
+        // Fetch presentations
+        try {
+          const presentations = await TrainingService.getAvailablePresentations(companyId);
+          console.log('[App] Loaded presentations:', presentations.length);
+          setRealPresentations(presentations);
+        } catch (error) {
+          console.error('[App] Error loading presentations:', error);
         }
 
         // Also keep modules for backward compatibility (empty for now)
@@ -397,6 +443,14 @@ export function AppContent({
                 });
 
               setTraineeJourneys(activeJourneys);
+
+              // Fetch presentations for rep as well
+              try {
+                const presentations = await TrainingService.getAvailablePresentations();
+                setRealPresentations(presentations);
+              } catch (err) {
+                console.error('[App] Error loading presentations for rep:', err);
+              }
 
               // Load progress for all journeys
               if (activeJourneys.length > 0 && detectedAgentId) {
@@ -871,6 +925,71 @@ export function AppContent({
   }
 
   // ✨ NOUVEAU : Afficher le Setup puis le ManualTrainingBuilder
+  // ✨ NOUVEAU : Affichage de la présentation sélectionnée (DOIT ÊTRE AVANT LES AUTRES RENDERS)
+  if (selectedPresentation) {
+    // Transformer les slides de la présentation en sections de module pour réutiliser InteractiveModule
+    const mockModule: any = {
+      id: selectedPresentation.id || selectedPresentation._id,
+      title: selectedPresentation.title,
+      description: selectedPresentation.description,
+      sections: (selectedPresentation.slides || []).map((slide: any, index: number) => ({
+        id: `slide-${index}`,
+        type: 'presentation',
+        content: {
+          slideData: slide
+        }
+      })),
+      progress: 0,
+      completed: false,
+      duration: selectedPresentation.estimatedTime || '30',
+      difficulty: 'beginner',
+      type: 'interactive',
+      topics: [],
+      learningObjectives: [],
+      assessments: [],
+      quizzes: []
+    };
+
+    return (
+      <div className="fixed inset-0 z-[100] bg-white flex flex-col h-screen w-screen overflow-hidden">
+        <div className="bg-white border-b px-6 py-4 flex items-center justify-between shrink-0">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setSelectedPresentation(null)}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center"
+            >
+              <ArrowLeft className="h-6 w-6 text-gray-600" />
+            </button>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-xl font-bold text-gray-900">{selectedPresentation.title}</h1>
+                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full border border-purple-200">Présentation IA</span>
+              </div>
+              <p className="text-xs text-gray-500 italic">Mode Interactif • {selectedPresentation.slides?.length || 0} Slides</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setSelectedPresentation(null)}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <X className="h-6 w-6 text-gray-400 hover:text-gray-600" />
+          </button>
+        </div>
+        <div className="flex-1 min-h-0 bg-slate-50 relative">
+          <InteractiveModule
+            module={mockModule as any}
+            onProgress={(p) => console.log('[App] Presentation progress:', p)}
+            onComplete={() => {
+              // Optionnel: marquer comme terminé dans le backend ici si besoin
+              setSelectedPresentation(null);
+            }}
+            onBack={() => setSelectedPresentation(null)}
+          />
+        </div>
+      </div>
+    );
+  }
+
   // Prevent reps from accessing Manual Training
   if (showManualTraining) {
     if (userType === 'rep') {
@@ -901,6 +1020,71 @@ export function AppContent({
           setManualTrainingSetupData(null);
         }}
       />
+    );
+  }
+
+  // ✨ NOUVEAU : Affichage de la présentation sélectionnée
+  if (selectedPresentation) {
+    // Transformer les slides de la présentation en sections de module pour réutiliser InteractiveModule
+    const mockModule: any = {
+      id: selectedPresentation.id || selectedPresentation._id,
+      title: selectedPresentation.title,
+      description: selectedPresentation.description,
+      sections: (selectedPresentation.slides || []).map((slide: any, index: number) => ({
+        id: `slide-${index}`,
+        type: 'presentation',
+        content: {
+          slideData: slide
+        }
+      })),
+      progress: 0,
+      completed: false,
+      duration: selectedPresentation.estimatedTime || '30',
+      difficulty: 'beginner',
+      type: 'interactive',
+      topics: [],
+      learningObjectives: [],
+      assessments: [],
+      quizzes: []
+    };
+
+    return (
+      <div className="fixed inset-0 z-[60] bg-white flex flex-col h-screen w-screen">
+        <div className="bg-white border-b px-6 py-4 flex items-center justify-between shrink-0">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setSelectedPresentation(null)}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center"
+            >
+              <ArrowLeft className="h-6 w-6 text-gray-600" />
+            </button>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-xl font-bold text-gray-900">{selectedPresentation.title}</h1>
+                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full border border-purple-200">Présentation IA</span>
+              </div>
+              <p className="text-xs text-gray-500 italic">Mode Interactif • {selectedPresentation.slides?.length || 0} Slides</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setSelectedPresentation(null)}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <X className="h-6 w-6 text-gray-400 hover:text-gray-600" />
+          </button>
+        </div>
+        <div className="flex-1 min-h-0 bg-slate-50 relative">
+          <InteractiveModule
+            module={mockModule as any}
+            onProgress={(p) => console.log('[App] Presentation progress:', p)}
+            onComplete={() => {
+              // Optionnel: marquer comme terminé dans le backend ici si besoin
+              setSelectedPresentation(null);
+            }}
+            onBack={() => setSelectedPresentation(null)}
+          />
+        </div>
+      </div>
     );
   }
 
@@ -997,6 +1181,7 @@ export function AppContent({
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Render Journeys */}
                   {traineeJourneys.map((journey: any) => {
                     const journeyId = journey.id || journey._id;
                     const modulesCount = Array.isArray(journey.modules) ? journey.modules.length : 0;
@@ -1145,6 +1330,60 @@ export function AppContent({
                                   : 'Commencer'}
                             </span>
                           </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Render Presentations */}
+                  {realPresentations.map((presentation: any) => {
+                    const presentationId = presentation.id || presentation._id;
+                    return (
+                      <div
+                        key={presentationId}
+                        className="bg-white rounded-xl shadow-sm border-2 border-purple-200 overflow-hidden hover:shadow-lg hover:border-purple-400 transition-all duration-200 cursor-pointer"
+                        onClick={() => setSelectedPresentation(presentation)}
+                      >
+                        <div className="p-6">
+                           <div className="flex items-start justify-between mb-4">
+                             <div className="flex items-center space-x-3">
+                               <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
+                                 <Eye className="h-6 w-6 text-purple-600" />
+                               </div>
+                               <div className="text-xs font-semibold px-2 py-1 rounded-full bg-purple-100 text-purple-700">
+                                 Présentation IA
+                               </div>
+                             </div>
+                           </div>
+
+                           <h3 className="text-xl font-bold text-gray-900 mb-2">
+                             {presentation.title}
+                           </h3>
+                           <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                             {presentation.description}
+                           </p>
+
+                           <div className="flex items-center space-x-4 mb-6 text-sm text-gray-600">
+                             <div className="flex items-center space-x-1">
+                               <Sparkles className="h-4 w-4 text-purple-500" />
+                               <span>{presentation.totalSlides || presentation.slides?.length || 0} slides</span>
+                             </div>
+                             <div className="flex items-center space-x-1">
+                               <Clock className="h-4 w-4" />
+                               <span>{presentation.estimatedTime || '30 min'}</span>
+                             </div>
+                           </div>
+
+                           <button
+                             className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg font-semibold bg-gradient-to-r from-purple-600 to-indigo-700 text-white hover:from-purple-700 hover:to-indigo-800 transition-all"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               setSelectedPresentation(presentation);
+                             }}
+                           >
+                             <Play className="h-4 w-4" />
+                             <span>Lire la Présentation</span>
+                           </button>
                         </div>
                       </div>
                     );

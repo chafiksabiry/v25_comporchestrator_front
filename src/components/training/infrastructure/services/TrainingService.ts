@@ -42,6 +42,23 @@ export class TrainingService {
     await ApiClient.delete(`/training/journeys/${id}`);
   }
 
+  // AI Presentation Management
+  static async createPresentation(presentation: any): Promise<any> {
+    const response = await ApiClient.post('/presentations', presentation);
+    return response.data;
+  }
+
+  static async getAvailablePresentations(companyId?: string): Promise<any[]> {
+    const query = companyId ? `?companyId=${companyId}` : '';
+    const response = await ApiClient.get(`/presentations/available${query}`);
+    return response.data.data || [];
+  }
+
+  static async getPresentationById(id: string): Promise<any> {
+    const response = await ApiClient.get(`/presentations/${id}`);
+    return response.data.data;
+  }
+
   // Training Module Management
   static async createTrainingModule(module: Omit<TrainingModule, 'id'>): Promise<TrainingModule> {
     const response = await ApiClient.post('/training/modules', module);
