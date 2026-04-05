@@ -917,7 +917,7 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
                   {isGeneratingPPT ? (
                     <Wand2 className="h-5 w-5 animate-spin" />
                   ) : (
-                    <File className="h-5 w-5" />
+                    <FileIcon className="h-5 w-5" />
                   )}
                   <span>Aperçu de la présentation PPT</span>
                 </div>
