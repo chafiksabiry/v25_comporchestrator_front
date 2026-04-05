@@ -6,10 +6,11 @@ import { cloudinaryService } from '../../lib/cloudinaryService';
 
 interface ContentUploaderProps {
   onComplete: (uploads: ContentUpload[]) => void;
+  onFinishEarly?: (uploads: ContentUpload[], curriculum: any) => void;
   onBack: () => void;
 }
 
-export default function ContentUploader({ onComplete, onBack }: ContentUploaderProps) {
+export default function ContentUploader({ onComplete, onFinishEarly, onBack }: ContentUploaderProps) {
   const [uploads, setUploads] = useState<ContentUpload[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -463,10 +464,21 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
               
               <div className="mt-10 flex justify-center">
                 <button 
-                  onClick={() => onComplete(uploads)}
-                  className="px-10 py-4 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all"
+                  onClick={handleGeneratePPT}
+                  disabled={isGeneratingPPT}
+                  className="px-10 py-4 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all flex items-center"
                 >
-                  Approuver et Continuer vers l'Amélioration AI
+                  {isGeneratingPPT ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Génération en cours...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="mr-2 h-5 w-5" />
+                      Approuver et Générer la Présentation
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -484,9 +496,9 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
 
     const isCover = slide.type?.toLowerCase() === 'cover';
     const isConclusion = slide.type?.toLowerCase() === 'conclusion';
-    let bgClasses = 'bg-white text-slate-800';
-    if (isCover) bgClasses = 'bg-[#1e293b] text-white';
-    if (isConclusion) bgClasses = 'bg-[#10b981] text-white';
+    let bgClasses = 'bg-slate-50 text-slate-800';
+    if (isCover) bgClasses = 'bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 text-white';
+    if (isConclusion) bgClasses = 'bg-gradient-to-br from-emerald-600 to-teal-900 text-white';
 
     return (
       <div className="min-h-full bg-[#f1f5f9] p-8 flex flex-col items-center">
@@ -519,65 +531,128 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
           </div>
         </div>
 
-        <div className="w-full max-w-5xl aspect-[16/9] shadow-2xl rounded-lg overflow-hidden border-8 border-white bg-white relative">
-          <div className={`w-full h-full ${bgClasses} transition-all duration-500 flex flex-col p-16`}>
+        <div className="w-full max-w-5xl aspect-[16/9] shadow-2xl rounded-2xl overflow-hidden border-8 border-white bg-white relative group">
+          <div className={`w-full h-full ${bgClasses} transition-all duration-500 relative overflow-hidden`}>
             
-            {/* Title / Cover Slide */}
+            {/* Ambient Background Effects for Cover */}
             {isCover && (
-              <div className="flex-1 flex flex-col items-center justify-center text-center">
-                <h1 className="text-6xl font-extrabold mb-8 tracking-tight">{slide.title}</h1>
-                <p className="text-2xl text-purple-100 max-w-3xl mb-12">{slide.subtitle || slide.highlight}</p>
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-40 animate-pulse"></div>
+                <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-40 animate-pulse" style={{ animationDelay: '2s' }}></div>
+                <div className="absolute bottom-[-10%] left-[20%] w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-40 animate-pulse" style={{ animationDelay: '4s' }}></div>
               </div>
             )}
             
-            {/* Conclusion Slide */}
+            {/* Ambient Background Effects for Conclusion */}
             {isConclusion && (
-              <div className="flex-1 flex flex-col items-center justify-center text-center">
-                <div className="h-32 w-32 rounded-full bg-white/20 flex items-center justify-center mb-10">
-                  <Sparkles className="h-16 w-16 text-white" />
-                </div>
-                <h1 className="text-7xl font-black mb-8">{slide.title}</h1>
-                <p className="text-3xl text-green-50 font-medium whitespace-pre-line">{slide.content || slide.subtitle}</p>
+              <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
+                 <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+CjxjaXJjbGUgY3g9IjIiIGN5PSIyIiByPSIyIiBmaWxsPSJyZ2JhKDI1NSwgMjU1LCAyNTUsIDAuMSkiLz4KPC9zdmc+')]"></div>
               </div>
             )}
 
-            {/* Standard / Content Slides */}
-            {!isCover && !isConclusion && (
-              <div className="h-full flex flex-col">
-                <div className="flex justify-between items-center mb-12">
-                  <h2 className="text-4xl font-bold flex items-center w-full">
-                    <span className="mr-4">{slide.icon || ''} {slide.title}</span>
-                    <div className="flex-1 h-1 bg-slate-100 ml-4 rounded-full"></div>
-                  </h2>
-                  {slide.highlight && (
-                    <div className="ml-4 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg text-lg font-bold border border-yellow-200">
-                      💡 {slide.highlight}
-                    </div>
-                  )}
-                </div>
-                
-                {slide.content && (
-                  <p className="text-2xl text-slate-600 mb-8 leading-relaxed">
-                    {slide.content}
-                  </p>
-                )}
-
-                <div className="flex-1 space-y-6">
-                  {slide.bullets?.map((item: string, i: number) => (
-                    <div key={i} className="flex items-start text-xl text-slate-700 animate-in slide-in-from-left duration-300" style={{animationDelay: `${i*100}ms`}}>
-                      <span className="h-3 w-3 rounded-full bg-purple-500 mr-4 mt-2.5 flex-shrink-0"></span>
-                      <span className="leading-relaxed">{item}</span>
-                    </div>
-                  ))}
-                </div>
-                
-                {slide.note && (
-                  <div className="mt-8 pt-6 border-t border-slate-100 text-slate-400 font-medium">
-                    <span className="font-bold">🎤 Note:</span> {slide.note}
+            <div className="relative z-10 w-full h-full p-16 flex flex-col">
+              
+              {/* Cover Slide Content */}
+              {isCover && (
+                <div className="flex-1 flex flex-col items-center justify-center text-center">
+                  <div className="mb-8 p-6 bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl">
+                    <Sparkles className="h-20 w-20 text-pink-300 drop-shadow-lg" />
                   </div>
-                )}
-              </div>
-            )}
+                  <h1 className="text-6xl font-extrabold mb-8 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-pink-200 drop-shadow-sm">
+                    {slide.title}
+                  </h1>
+                  <p className="text-2xl text-purple-100 max-w-3xl mb-12 font-medium leading-relaxed drop-shadow-md">
+                    {slide.subtitle || slide.highlight}
+                  </p>
+                </div>
+              )}
+              
+              {/* Conclusion Slide Content */}
+              {isConclusion && (
+                <div className="flex-1 flex flex-col items-center justify-center text-center">
+                  <div className="mx-auto h-32 w-32 rounded-full bg-white/20 shadow-[0_0_40px_rgba(255,255,255,0.3)] backdrop-blur-md flex items-center justify-center mb-10 border border-white/30">
+                    <CheckCircle className="h-16 w-16 text-white drop-shadow-lg" />
+                  </div>
+                  <h1 className="text-7xl font-black mb-8 drop-shadow-lg">{slide.title}</h1>
+                  <p className="text-3xl text-emerald-50 font-medium whitespace-pre-line leading-relaxed max-w-4xl mx-auto drop-shadow-md">
+                    {slide.content || slide.subtitle}
+                  </p>
+                </div>
+              )}
+
+              {/* Standard / Content Slides Content */}
+              {!isCover && !isConclusion && (
+                <div className="h-full flex relative">
+                  {/* Decorative Left Sidebar */}
+                  <div className="absolute left-[-4rem] top-[-4rem] bottom-[-4rem] w-16 bg-gradient-to-b from-purple-600 to-rose-500 opacity-90 rounded-r-3xl shadow-lg"></div>
+                  
+                  <div className="h-full flex flex-col pl-4 w-full">
+                    <div className="flex justify-between items-start mb-8">
+                      <h2 className="text-4xl font-bold flex items-center w-full text-slate-800">
+                        <span className="mr-5 p-3 bg-purple-100 rounded-xl text-purple-600 shadow-inner">
+                          <span className="text-3xl">{slide.icon || '📄'}</span>
+                        </span> 
+                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-600">
+                          {slide.title}
+                        </span>
+                      </h2>
+                      {slide.highlight && (
+                        <div className="ml-6 px-5 py-3 bg-gradient-to-r from-yellow-50 to-amber-50 text-amber-800 rounded-xl text-lg font-bold border border-yellow-200 shadow-sm flex-shrink-0 flex items-center">
+                          <span className="mr-2 text-2xl">💡</span> {slide.highlight}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 flex gap-12">
+                      <div className="flex-1 flex flex-col">
+                        {slide.content && (
+                          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8 border-l-4 border-l-purple-400">
+                            <p className="text-2xl text-slate-600 leading-relaxed">
+                              {slide.content}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="flex-1 space-y-4">
+                          {slide.bullets?.map((item: string, i: number) => (
+                            <div key={i} className="flex items-start bg-white p-4 rounded-xl shadow-sm border border-slate-50 hover:shadow-md transition-shadow hover:scale-[1.01]">
+                              <div className="bg-gradient-to-br from-purple-500 to-rose-400 h-8 w-8 rounded-full flex flex-shrink-0 items-center justify-center text-white font-bold text-sm mr-4 shadow-sm">
+                                {i + 1}
+                              </div>
+                              <span className="text-xl text-slate-700 leading-relaxed pt-0.5">{item}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Multimedia Placeholder */}
+                      <div className="hidden lg:flex w-2/5 flex-col justify-center items-center opacity-90 p-4">
+                        <div className="w-full aspect-square rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-dashed border-slate-300 flex items-center justify-center flex-col shadow-inner overflow-hidden relative">
+                           <div className="absolute inset-0 bg-white/40"></div>
+                           <div className="relative z-10 flex flex-col items-center">
+                              <Image className="h-16 w-16 text-slate-400 mb-4 drop-shadow-sm" />
+                              <span className="text-slate-500 font-medium text-lg">Espace Média AI</span>
+                              <span className="text-slate-400 text-sm mt-2 text-center px-6">Image ou vidéo sera générée ici</span>
+                           </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {slide.note && (
+                      <div className="mt-8 p-5 bg-slate-50/80 rounded-xl border border-slate-200 text-slate-600 font-medium flex items-start shadow-sm mix-blend-multiply">
+                        <div className="bg-white p-2 rounded-lg mr-4 shadow-sm border border-slate-100">
+                          <span className="text-xl">🎤</span>
+                        </div>
+                        <div>
+                          <span className="font-bold text-slate-800 block mb-1 uppercase tracking-wider text-xs">Notes Orateur</span> 
+                          {slide.note}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -602,10 +677,16 @@ export default function ContentUploader({ onComplete, onBack }: ContentUploaderP
              {isSavingCloud ? 'Sauvegarde...' : 'Sauvegarder dans le Cloud'}
            </button>
            <button 
-             onClick={() => onComplete(uploads)}
+             onClick={() => {
+               if (onFinishEarly && generatedCurriculum) {
+                 onFinishEarly(uploads, generatedCurriculum);
+               } else {
+                 onComplete(uploads);
+               }
+             }}
              className="px-8 py-4 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-bold shadow-lg hover:from-rose-600 hover:to-purple-700 transition-all flex items-center"
            >
-             <Sparkles className="h-5 w-5 mr-2" /> Valider le programme
+             <Sparkles className="h-5 w-5 mr-2" /> Valider et Terminer
            </button>
         </div>
       </div>
