@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Building2,
   Shield,
@@ -515,42 +515,25 @@ const CompanyOnboarding = () => {
 
   const checkCompanyLeads = useCallback(async () => {
     try {
-      if (!companyId) {
-        console.error("❌ Company ID not available for checking leads");
-        return;
-      }
+      if (!companyId) return;
       const response = await axios.get<HasLeadsResponse>(
         `${import.meta.env.VITE_DASHBOARD_API}/leads/company/${companyId}/has-leads`
       );
-      const leadsCheck = response.data.hasLeads;
-      if (leadsCheck) {
-        console.log("✅ Company has leads - auto-completing step 5");
-        try {
-          await axios.put(
-            `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
-            { status: "completed" }
-          );
-          setCompletedSteps((prev: number[]) => {
-            if (!prev.includes(5)) return [...prev, 5];
-            return prev;
-          });
-          console.log("✅ Step 5 auto-completed successfully");
-        } catch (error) {
-          console.error("Error auto-completing step 5:", error);
-        }
+      if (response.data.hasLeads) {
+        await axios.put(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
+          { status: "completed" }
+        );
+        setCompletedSteps((prev: number[]) => prev.includes(5) ? prev : [...prev, 5]);
       }
     } catch (error) {
       console.error("Error checking company leads:", error);
     }
   }, [companyId]);
 
-
   const checkActiveGigs = useCallback(async () => {
     try {
-      if (!companyId) {
-        console.error("❌ Company ID not available for checking active gigs");
-        return;
-      }
+      if (!companyId) return;
       const response = await axios.get<GigResponse>(
         `${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}?populate=companyId`
       );
@@ -564,12 +547,8 @@ const CompanyOnboarding = () => {
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/3`,
               { status: "completed" }
             );
-            setCompletedSteps((prev: number[]) => {
-              const next = [...prev];
-              if (!next.includes(3)) next.push(3);
-              return next;
-            });
-          } catch (error) { console.error("Error auto-completing step 3:", error); }
+            setCompletedSteps((prev) => prev.includes(3) ? prev : [...prev, 3]);
+          } catch (e) { console.error(e); }
         }
         if (hasActiveGig) {
           try {
@@ -577,12 +556,8 @@ const CompanyOnboarding = () => {
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/12`,
               { status: "completed" }
             );
-            setCompletedSteps((prev: any) => {
-              const newSteps = [...prev];
-              if (!newSteps.includes(12)) newSteps.push(12);
-              return newSteps;
-            });
-          } catch (error) { console.error("Error completing step 12:", error); }
+            setCompletedSteps((prev: any) => prev.includes(12) ? prev : [...prev, 12]);
+          } catch (e) { console.error(e); }
         } else if (currentPhase >= 4) {
           try {
             await axios.put(
@@ -590,7 +565,7 @@ const CompanyOnboarding = () => {
               { status: "in_progress" }
             );
             setCompletedSteps((prev: any[]) => prev.filter((step: number) => step !== 12));
-          } catch (error) { console.error("Error updating step 12:", error); }
+          } catch (e) { console.error(e); }
         }
       }
     } catch (error) { console.error("Error checking active gigs:", error); }
@@ -623,25 +598,17 @@ const CompanyOnboarding = () => {
         return;
       }
 
-      console.log("🔄 Fetching onboarding progress for company:", companyId);
       const response = await axios.get<OnboardingProgressResponse>(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
       );
       
       const progress = response.data;
-      console.log("🔄 Progress loaded from API:", {
-        currentPhase: progress.currentPhase,
-        completedSteps: progress.completedSteps.length
-      });
-
-      // Store the progress in cookies
       Cookies.set("companyOnboardingProgress", JSON.stringify(progress));
 
       // Auto-fix Phase 1 status if Step 1 is done
       if (progress.phases?.[0]) {
         const step1Completed = progress.completedSteps.includes(1);
         if (step1Completed && progress.phases[0].status !== 'completed') {
-          console.log("🔧 Auto-fixing Phase 1 status...");
           try {
             await axios.put(
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/1`,
@@ -653,20 +620,37 @@ const CompanyOnboarding = () => {
         }
       }
 
-      // Logic to determine valid phase based on completed steps
-      let validPhase = progress.currentPhase;
-      const completed = progress.completedSteps;
+      // Helper function to check if a phase is completed
+      const isPhaseFullyCompleted = (phaseId: number) => {
+        const phase = phases[phaseId - 1];
+        if (!phase) return false;
+        const nonDisabledSteps = phase.steps.filter((step) => !step.disabled);
+        return nonDisabledSteps.every((step) => progress.completedSteps.includes(step.id));
+      };
 
-      if (completed.includes(1) && validPhase === 1) validPhase = 2;
-      if (completed.includes(3) && completed.includes(5) && validPhase === 2) validPhase = 3;
-      if (completed.includes(9) && validPhase === 3) validPhase = 4;
-      
-      // Additional check for step 13 (Launch)
-      if (completed.includes(13)) validPhase = 4;
+      // Determine valid phase based on dependencies
+      let validPhase = 1;
+      for (let pId = 1; pId <= 4; pId++) {
+        if (pId === 1) {
+          validPhase = 1;
+        } else {
+          if (isPhaseFullyCompleted(pId - 1)) {
+            validPhase = pId;
+          } else {
+            break;
+          }
+        }
+      }
+
+      // Manual overrides for step completions
+      if (progress.completedSteps.includes(6) && validPhase < 3 && isPhaseFullyCompleted(2)) validPhase = 3;
+      if (progress.completedSteps.includes(10) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
+      if (progress.completedSteps.includes(12) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
+      if (progress.completedSteps.includes(13) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
 
       setCurrentPhase(validPhase);
       setDisplayedPhase(validPhase);
-      setCompletedSteps(completed);
+      setCompletedSteps(progress.completedSteps);
 
     } catch (error) {
       console.error("❌ Error loading company progress:", error);
@@ -678,89 +662,6 @@ const CompanyOnboarding = () => {
     }
   }, [companyId]);
 
-      // Fonction pour vérifier si toutes les étapes non-désactivées d'une phase sont complétées
-      const isPhaseFullyCompleted = (phaseId: number) => {
-        const phase = phases[phaseId - 1];
-        if (!phase) return false;
-
-        const nonDisabledSteps = phase.steps.filter((step) => !step.disabled);
-        return nonDisabledSteps.every((step) =>
-          progress.completedSteps.includes(step.id)
-        );
-      };
-
-      // Déterminer la phase valide en vérifiant que toutes les phases précédentes sont complétées
-      let validPhase = 1;
-
-      // Vérifier chaque phase séquentiellement
-      for (let phaseId = 1; phaseId <= 4; phaseId++) {
-        if (phaseId === 1) {
-          // Phase 1 est toujours accessible
-          validPhase = 1;
-        } else {
-          // Pour les phases 2, 3, 4, vérifier que la phase précédente est complétée
-          const previousPhaseCompleted = isPhaseFullyCompleted(phaseId - 1);
-
-          if (previousPhaseCompleted) {
-            validPhase = phaseId;
-            console.log(`✅ Phase ${phaseId - 1} is fully completed, allowing access to phase ${phaseId}`);
-          } else {
-            console.log(`⚠️ Phase ${phaseId - 1} is not fully completed, stopping at phase ${validPhase}`);
-            break; // Arrêter ici, ne pas avancer plus loin
-          }
-        }
-      }
-
-      // Vérifications spéciales pour les cas particuliers (overrides)
-      if (progress.completedSteps.includes(6) && validPhase < 3) {
-        if (isPhaseFullyCompleted(2)) {
-          validPhase = 3;
-          console.log("🔄 Step 6 (Call Script) completed - unlocking phase 3");
-        }
-      }
-
-      if (progress.completedSteps.includes(10) && validPhase < 4) {
-        if (isPhaseFullyCompleted(3)) {
-          validPhase = 4;
-          console.log("🔄 Step 10 (Session Planning) completed - unlocking phase 4");
-        }
-      }
-
-      if (progress.completedSteps.includes(12) && validPhase < 4) {
-        if (isPhaseFullyCompleted(3)) {
-          validPhase = 4;
-          console.log("🔄 Step 12 (Gig Activation) completed - unlocking phase 4");
-        }
-      }
-
-      if (progress.completedSteps.includes(13) && validPhase < 4) {
-        if (isPhaseFullyCompleted(3)) {
-          validPhase = 4;
-          console.log("🔄 Step 13 (Match HARX REPS) completed - unlocking phase 4");
-        }
-      }
-
-      console.log(
-        "🔄 Final valid phase determined:",
-        validPhase,
-        "from API currentPhase:",
-        progress.currentPhase
-      );
-      console.log("🔄 Setting completed steps:", progress.completedSteps);
-      setCurrentPhase(validPhase);
-      setDisplayedPhase(validPhase);
-      setCompletedSteps(progress.completedSteps);
-
-    } catch (error) {
-      console.error("Error loading company progress:", error);
-      // En cas d'erreur, utiliser les valeurs par défaut
-      setCurrentPhase(1);
-      setDisplayedPhase(1);
-      setCompletedSteps([]);
-    } finally {
-      setIsInitialLoad(false);
-    }
-  };
 
   // Dispatch step guide to sidebar
   useEffect(() => {

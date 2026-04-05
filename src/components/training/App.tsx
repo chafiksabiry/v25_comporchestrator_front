@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { qiankunWindow } from 'vite-plugin-qiankun/dist/helper';
 import { useParams } from 'react-router-dom';

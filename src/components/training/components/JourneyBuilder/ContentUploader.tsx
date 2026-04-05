@@ -3,7 +3,6 @@ import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, C
 import { ContentUpload } from '../../types/core';
 import { AIService } from '../../infrastructure/services/AIService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
-import { TrainingService } from '../../infrastructure/services/TrainingService';
 import { cloudinaryService } from '../../lib/cloudinaryService';
 
 interface ContentUploaderProps {
@@ -60,8 +59,6 @@ export default function ContentUploader({ onComplete, onFinishEarly, onBack, com
 
     return 'document';
   };
-
-  // ❌ SUPPRIMÉ : simulateAIAnalysis - Remplacé par AIService.analyzeDocument()
 
   const handleFileUpload = useCallback(async (files: File[]) => {
     const newUploads: ContentUpload[] = files.map(file => ({
@@ -306,28 +303,6 @@ export default function ContentUploader({ onComplete, onFinishEarly, onBack, com
       alert('Erreur lors de la génération du PPT: ' + (error.message || 'Erreur inconnue'));
     } finally {
       setIsGeneratingPPT(false);
-    }
-  };
-
-  const downloadPPTX = async () => {
-    if (!generatedPresentation) return;
-    try {
-      console.log('📊 Exporting to PowerPoint...');
-      const pptBlob = await AIService.exportToPowerPoint(generatedPresentation);
-      
-      const url = window.URL.createObjectURL(pptBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      const fileName = `${generatedPresentation.title || 'Training_Program'}.pptx`.replace(/\s+/g, '_');
-      link.setAttribute('download', fileName);
-      document.body.appendChild(link);
-      link.click();
-      
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (error: any) {
-      console.error('Failed to export PPT:', error);
-      alert('Erreur lors de l\'export: ' + error.message);
     }
   };
 
