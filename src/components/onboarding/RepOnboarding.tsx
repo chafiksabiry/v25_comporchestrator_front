@@ -224,7 +224,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {trainings.map((journey) => {
+                    {trainings.filter(Boolean).map((journey) => {
                       const formatted = formatTrainingJourney(journey);
                       return (
                         <div
@@ -304,20 +304,20 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Assigned</span>
-                  <span className="font-bold text-gray-900">{trainings.length}</span>
+                  <span className="font-bold text-gray-900">{trainings.filter(Boolean).length}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-500">Completed</span>
                   <span className="font-bold text-green-600">
-                    {trainings.filter(t => t.status === 'completed' || t.journeyStatus === 'completed').length}
+                    {trainings.filter(Boolean).filter(t => t && (t.status === 'completed' || t.journeyStatus === 'completed')).length}
                   </span>
                 </div>
                 <div className="pt-4 border-t border-gray-50">
                   <div className="flex items-center justify-between text-sm font-bold">
                     <span className="text-gray-900">Overall Progress</span>
                     <span className="text-indigo-600">
-                      {trainings.length > 0
-                        ? Math.round((trainings.filter(t => t.status === 'completed' || t.journeyStatus === 'completed').length / trainings.length) * 100)
+                      {trainings.filter(Boolean).length > 0
+                        ? Math.round((trainings.filter(Boolean).filter(t => t && (t.status === 'completed' || t.journeyStatus === 'completed')).length / trainings.filter(Boolean).length) * 100)
                         : 0}%
                     </span>
                   </div>
