@@ -19,6 +19,17 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: PlanningMatrixProps) {
     const [localMatrix, setLocalMatrix] = useState<Record<string, Record<number, number>>>({});
     const [isSaving, setIsSaving] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragValue, setDragValue] = useState<number | null>(null);
+
+    useEffect(() => {
+        const handlePointerUp = () => {
+            setIsDragging(false);
+            setDragValue(null);
+        };
+        window.addEventListener('pointerup', handlePointerUp);
+        return () => window.removeEventListener('pointerup', handlePointerUp);
+    }, []);
 
     // Get the start of the week (Monday) based on selectedDate
     const weekStart = useMemo(() => {
@@ -183,7 +194,18 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                                     const dateStr = format(date, 'yyyy-MM-dd');
                                     const value = Number(localMatrix[dateStr]?.[hour]) || 0;
                                     return (
-                                        <td key={dateStr} className="p-0.5 border-b border-gray-50 text-center">
+                                        <td key={dateStr} 
+                                            className="p-0.5 border-b border-gray-50 text-center select-none"
+                                            onPointerDown={() => {
+                                                setIsDragging(true);
+                                                setDragValue(value);
+                                            }}
+                                            onPointerEnter={() => {
+                                                if (isDragging && dragValue !== null && value !== dragValue) {
+                                                    handleCellChange(dateStr, hour, dragValue.toString());
+                                                }
+                                            }}
+                                        >
                                             <input
                                                 type="number"
                                                 min="0"
@@ -195,7 +217,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh }: Planni
                                                         ? 'bg-harx-50 border-harx-200 text-harx-700 focus:ring-2 focus:ring-harx-100'
                                                         : 'bg-gray-50/50 border-transparent text-gray-400 hover:border-gray-200 focus:bg-white focus:border-harx-400'
                                                     }
-                                                    outline-none appearance-none`}
+                                                    outline-none appearance-none cursor-crosshair`}
                                             />
                                         </td>
                                     );
