@@ -63,7 +63,15 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const getTrainingBackendUrl = (): string => {
     const customUrl = import.meta.env.VITE_TRAINING_BACKEND_URL;
     if (customUrl) return customUrl;
-    return 'https://v25-platform-training-backend.onrender.com/api';
+    
+    // Check if we are in a local environment
+    const isLocal = typeof window !== 'undefined' && 
+                   (window.location.hostname === 'localhost' || 
+                    window.location.hostname === '127.0.0.1');
+                    
+    return isLocal 
+      ? 'http://localhost:5010' 
+      : 'https://v25platformtrainingbackend-production.up.railway.app';
   };
 
   // Function to update onboarding progress in the main company platform
@@ -71,7 +79,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     if (!companyId) return;
 
     try {
-      const apiUrl = import.meta.env.VITE_COMPANY_API_URL || 'https://v25-platform-company-backend.onrender.com/api';
+      const apiUrl = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
       const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/9`;
 
       console.log('[RepOnboarding] Marking Step 9 as completed:', endpoint);
@@ -107,12 +115,18 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     setLoadingTrainings(true);
     try {
       const trainingBackendUrl = getTrainingBackendUrl();
-      const apiUrl = `${trainingBackendUrl}/training_journeys/trainer/companyId/${companyId}`;
+      
+      // Ensure we handle both /api and non-/api base URLs
+      const baseUrl = trainingBackendUrl.endsWith('/api') 
+        ? trainingBackendUrl 
+        : `${trainingBackendUrl}/api`;
+        
+      const apiUrl = `${baseUrl}/training_journeys/trainer/companyId/${companyId}`;
 
       console.log('[RepOnboarding] Fetching trainings from:', apiUrl);
       const response = (await axios.get(apiUrl)) as any;
 
-      console.log('[RepOnboarding] Training API Response:', response.data);
+      console.log('[RepOnboarding] Training API Response Data:', response.data);
 
       const backendData = response.data as any;
       if (backendData && backendData.success && backendData.data) {
