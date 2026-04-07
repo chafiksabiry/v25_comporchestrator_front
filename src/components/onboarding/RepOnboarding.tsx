@@ -63,7 +63,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const getTrainingBackendUrl = (): string => {
     const customUrl = import.meta.env.VITE_TRAINING_BACKEND_URL;
     if (customUrl) return customUrl;
-    // Default to the working Railway URL
+    // Updated default to Railway production
     return 'https://v25platformtrainingbackend-production.up.railway.app';
   };
 
@@ -108,9 +108,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     setLoadingTrainings(true);
     try {
       const trainingBackendUrl = getTrainingBackendUrl();
-      // Ensure we don't have double /api/api
-      const baseUrl = trainingBackendUrl.endsWith('/api') ? trainingBackendUrl : `${trainingBackendUrl}/api`;
-      const apiUrl = `${baseUrl}/training_journeys/trainer/companyId/${companyId}`;
+      const apiUrl = `${trainingBackendUrl}/training_journeys/trainer/companyId/${companyId}`;
 
       console.log('[RepOnboarding] Fetching trainings from:', apiUrl);
       const response = (await axios.get(apiUrl)) as any;
@@ -119,29 +117,26 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
       const backendData = response.data as any;
       
-      // Handle the new Dashboard object format which contains .journeys array
+      // Handle different response formats
+      let trainingsData: any[] = [];
+      
       if (backendData && Array.isArray(backendData.journeys)) {
-        console.log('[RepOnboarding] Found', backendData.journeys.length, 'trainings in dashboard object');
-        setTrainings(backendData.journeys);
-        if (backendData.journeys.length > 0) {
-          updateOnboardingProgress();
-        }
-      } 
-      // Legacy or direct array response
-      else if (Array.isArray(backendData)) {
-        console.log('[RepOnboarding] Response is direct array, found', backendData.length, 'trainings');
-        setTrainings(backendData);
-        if (backendData.length > 0) {
-          updateOnboardingProgress();
-        }
+        // Case: New dashboard response with 'journeys' array
+        trainingsData = backendData.journeys;
+      } else if (backendData && backendData.success && backendData.data) {
+        // Case: Wrapped data object
+        trainingsData = Array.isArray(backendData.data) ? backendData.data : [];
+      } else if (Array.isArray(backendData)) {
+        // Case: Direct array response
+        trainingsData = backendData;
       }
-      // Check success/data wrapper
-      else if (backendData && backendData.success && Array.isArray(backendData.data)) {
-        console.log('[RepOnboarding] Found', backendData.data.length, 'trainings in success/data wrapper');
-        setTrainings(backendData.data);
-        if (backendData.data.length > 0) {
-          updateOnboardingProgress();
-        }
+
+      console.log('[RepOnboarding] Found', trainingsData.length, 'trainings');
+      setTrainings(trainingsData);
+
+      // Auto-complete step 9 if trainings exist
+      if (trainingsData.length > 0) {
+        updateOnboardingProgress();
       }
     } catch (error) {
       console.error('[RepOnboarding] Error fetching trainings:', error);
