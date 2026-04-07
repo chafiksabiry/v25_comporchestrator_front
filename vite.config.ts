@@ -26,7 +26,7 @@ export default defineConfig(() => {
         jsxRuntime: 'classic',
       }),
       qiankun('app11', {
-        useDevMode: true, // Needed for dev and to ensure lifecycle exports are correctly generated
+        useDevMode: true,
       }),
       removeReactRefreshScript(),
     ],
@@ -35,29 +35,16 @@ export default defineConfig(() => {
       port: 5183,
       cors: true,
       hmr: false,
-      watch: {
-        ignored: ['**/node_modules/**', '**/dist/**']
-      },
-      fs: {
-        strict: true, // Ensure static assets are correctly resolved
-      },
     },
     build: {
       target: 'esnext',
+      minify: false, // Easier to debug for now
       cssCodeSplit: false,
       rollupOptions: {
         output: {
-          format: 'umd',
-          name: 'app11',
-          entryFileNames: 'index.js', // Fixed name for the JS entry file
-          chunkFileNames: 'chunk-[name].js', // Fixed name for chunks
-          assetFileNames: (assetInfo: { name: string; }) => {
-            // Ensure CSS files are consistently named
-            if (assetInfo.name.endsWith('.css')) {
-              return 'index.css';
-            }
-            return '[name].[ext]'; // Default for other asset types
-          },
+          // Use ESM for better compatibility with modern qiankun + vite
+          format: 'es',
+          // Remove fixed names to allow Vite's default behavior which is more robust
         },
       },
     },
