@@ -158,7 +158,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
         } else {
           const documentModuleMapping: number[] = [];
           uploads.forEach((upload, uploadIndex) => {
-            if (upload.aiAnalysis?.keyTopics && upload.aiAnalysis.keyTopics.length > 0) {
+            if (upload.aiAnalysis?.keyTopics && (upload.aiAnalysis.keyTopics?.length || 0) > 0) {
               let bestModuleIndex = 0;
               let maxSimilarity = 0;
 

@@ -630,12 +630,12 @@ export default function ContentUploader({ onComplete, onBack, company, gigId }: 
                         <div className="grid grid-cols-2 gap-4">
                           <div className="text-center p-3 bg-white rounded-lg border border-green-200">
                             <BarChart3 className="h-6 w-6 text-green-600 mx-auto mb-1" />
-                            <div className="text-lg font-bold text-green-600">{upload.aiAnalysis.difficulty}/10</div>
+                            <div className="text-lg font-bold text-green-600">{(upload.aiAnalysis.difficulty as number) || 0}/10</div>
                             <div className="text-xs text-gray-600">Difficulty</div>
                           </div>
                           <div className="text-center p-3 bg-white rounded-lg border border-green-200">
                             <Clock className="h-6 w-6 text-green-600 mx-auto mb-1" />
-                            <div className="text-lg font-bold text-green-600">{upload.aiAnalysis.estimatedReadTime}m</div>
+                            <div className="text-lg font-bold text-green-600">{(upload.aiAnalysis.estimatedReadTime as number) || 0}m</div>
                             <div className="text-xs text-gray-600">Duration</div>
                           </div>
                         </div>
@@ -643,7 +643,7 @@ export default function ContentUploader({ onComplete, onBack, company, gigId }: 
                         <div>
                           <h5 className="font-medium text-gray-900 mb-2">Key Topics Identified:</h5>
                           <div className="flex flex-wrap gap-2">
-                            {upload.aiAnalysis.keyTopics.map((topic, index) => (
+                            {upload.aiAnalysis.keyTopics?.map((topic: any, index: number) => (
                               <span key={index} className="px-3 py-1 bg-purple-50 text-purple-600 text-sm font-medium rounded-full border border-purple-100">
                                 {topic}
                               </span>
@@ -652,9 +652,9 @@ export default function ContentUploader({ onComplete, onBack, company, gigId }: 
                         </div>
 
                         <div>
-                          <h5 className="font-medium text-gray-900 mb-2">AI will create {upload.aiAnalysis.suggestedModules.length} modules:</h5>
+                          <h5 className="font-medium text-gray-900 mb-2">AI will create {upload.aiAnalysis.suggestedModules?.length || 0} modules:</h5>
                           <div className="text-sm text-gray-600">
-                            {upload.aiAnalysis.suggestedModules.join(' → ')}
+                            {upload.aiAnalysis.suggestedModules?.join(' → ') || 'Modular structure pending'}
                           </div>
                         </div>
                       </div>
