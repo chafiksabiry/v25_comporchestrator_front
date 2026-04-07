@@ -71,7 +71,21 @@ export async function unmount(props: any) {
 // Standalone mode: If the app is running outside Qiankun, it will use this code
 if (!qiankunWindow.__POWERED_BY_QIANKUN__) {
   console.log('[app11] Running in standalone mode');
-  render({});
+  
+  // Wait for the DOM to be fully loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      render({});
+    });
+  } else {
+    try {
+      render({});
+    } catch (error) {
+      console.error('[app11] Error rendering app:', error);
+    }
+  }
 } else {
-  console.log('[app11] Running inside Qiankun - waiting for mount call');
+  console.log('[app11] Running inside Qiankun');
+  // Qiankun will control the lifecycle via mount, but we ensure initial render
+  render({});
 }
