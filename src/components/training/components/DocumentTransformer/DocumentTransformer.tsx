@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import axios from 'axios';
-import { Upload, FileText, Video, Image, Wand2, Sparkles, Eye, Download, CheckCircle, AlertCircle, Clock, Zap, Palette, Volume2, BarChart3, Target } from 'lucide-react';
+import { Upload, FileText, Video, Image, Wand2, Sparkles, Eye, Download, CheckCircle, AlertCircle, Clock, Zap, Palette, Volume2, BarChart3, Target, Key, ShieldCheck } from 'lucide-react';
 import { SourceDocument, ContentTransformation, EnhancedTrainingModule } from '../../types';
 import React from 'react';
 interface DocumentTransformerProps {
@@ -14,9 +14,13 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<SourceDocument | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [loadingMsg, setLoadingMsg] = useState('Transforming content...');
   const [generatedProgram, setGeneratedProgram] = useState<any>(null);
   const [presentation, setPresentation] = useState<any>(null);
   const [previewMode, setPreviewMode] = useState<'program' | 'slides'>('slides');
+
+  const [anthropicKey, setAnthropicKey] = useState(localStorage.getItem('anthropic_key') || '');
+  const [showKey, setShowKey] = useState(false);
 
   console.log('[DocumentTransformer] Current Program:', generatedProgram);
   console.log('[DocumentTransformer] onComplete available:', !!onComplete);
@@ -54,6 +58,7 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
 
       try {
         setIsProcessing(true);
+        setLoadingMsg("Analysing document structure...");
         const apiUrl = getApiUrl();
         const formData = new FormData();
         formData.append('file', file);
@@ -61,7 +66,11 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
         setDocuments(prev => prev.map(d => d.id === docId ? { ...d, status: 'processing' } : d));
 
         const response = await axios.post<any>(`${apiUrl}/ai/analyze-document`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
+          headers: { 
+            'Content-Type': 'multipart/form-data',
+            'X-Anthropic-Key': anthropicKey || undefined
+          },
+          timeout: 120000 // 120 seconds
         });
 
         if (response.data.success) {
@@ -83,9 +92,11 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
       } catch (error) {
         console.error('Error analyzing document:', error);
         setDocuments(prev => prev.map(d => d.id === docId ? { ...d, status: 'error' } : d));
+      } finally {
+        setIsProcessing(false);
       }
     }
-  }, [selectedDocument]);
+  }, [selectedDocument, anthropicKey]);
 
   const getFileType = (mimeType: string): SourceDocument['type'] => {
     if (mimeType.includes('pdf')) return 'pdf';
@@ -102,12 +113,16 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
 
     setIsProcessing(true);
     try {
+      setLoadingMsg("Generating curriculum and presentation...");
       // Step 1: Generate Program and Presentation from Analysis
       const response = await axios.post<any>(`${getApiUrl()}/ai/generate-program`, {
         analysis: {
           ...document.extractedContent,
           aiAnalysis: document.aiAnalysis
         }
+      }, {
+        headers: { 'X-Anthropic-Key': anthropicKey || undefined },
+        timeout: 120000 // 120 seconds
       });
 
       if (response.data.success) {
@@ -196,6 +211,48 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
           <Upload className="h-4 w-4 mr-2" />
           Choose Files
         </label>
+      </div>
+
+      {/* API Key Configuration */}
+      <div className="bg-blue-50 border border-blue-100 rounded-xl p-6">
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Key className="h-5 w-5 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">AI Configuration</h3>
+            <p className="text-xs text-gray-500">Use your own Anthropic account for better results</p>
+          </div>
+        </div>
+
+        <div className="relative group">
+          <input
+            type={showKey ? "text" : "password"}
+            value={anthropicKey}
+            onChange={(e) => {
+              setAnthropicKey(e.target.value);
+              localStorage.setItem('anthropic_key', e.target.value);
+            }}
+            placeholder="Enter your Anthropic API Key (sk-ant-...)"
+            className="w-full pl-4 pr-12 py-3 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+          />
+          <button
+            onClick={() => setShowKey(!showKey)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-blue-600 transition-colors"
+            title={showKey ? "Hide Key" : "Show Key"}
+          >
+            {showKey ? <Eye className="h-4 w-4" /> : <Eye className="h-4 w-4 opacity-50" />}
+          </button>
+          {anthropicKey && (
+            <div className="absolute -top-2 -right-2 bg-green-500 text-white p-1 rounded-full shadow-lg">
+              <ShieldCheck className="h-3 w-3" />
+            </div>
+          )}
+        </div>
+        <p className="mt-2 text-[10px] text-gray-400 flex items-center italic">
+          <AlertCircle className="h-3 w-3 mr-1" />
+          Your key is stored locally in your browser and never shared with 3rd parties other than Anthropic.
+        </p>
       </div>
 
       {documents.length > 0 && (
@@ -645,6 +702,20 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
           {activeTab === 'preview' && renderPreviewTab()}
         </div>
       </div>
+
+      {/* Loading Overlay */}
+      {isProcessing && (
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[100] flex flex-col items-center justify-center text-center p-8">
+          <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mb-6" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">AI is working its magic...</h2>
+          <p className="text-blue-600 font-medium animate-pulse">{loadingMsg}</p>
+          <div className="mt-8 flex space-x-2">
+            <div className="w-2 h-2 bg-blue-300 rounded-full animate-bounce [animation-delay:-0.3s]" />
+            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
