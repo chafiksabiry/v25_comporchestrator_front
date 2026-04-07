@@ -116,12 +116,14 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
       const backendData = response.data as any;
       if (backendData && backendData.success && backendData.data) {
-        const trainingsData = Array.isArray(backendData.data) ? backendData.data : [];
-        console.log('[RepOnboarding] Found', trainingsData.length, 'trainings');
-        setTrainings(trainingsData);
+        // If the data object has a 'journeys' property, use that (new dashboard format)
+        // Otherwise use the data object itself (if it was an array)
+        const journeysArray = backendData.data.journeys || (Array.isArray(backendData.data) ? backendData.data : []);
+        console.log('[RepOnboarding] Found', journeysArray.length, 'trainings');
+        setTrainings(journeysArray);
 
         // Auto-complete step 9 if trainings exist
-        if (trainingsData.length > 0) {
+        if (journeysArray.length > 0) {
           updateOnboardingProgress();
         }
       } else if (Array.isArray(response.data)) {
