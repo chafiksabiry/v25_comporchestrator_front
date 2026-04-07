@@ -1,6 +1,7 @@
-import React, { useState, useCallback } from 'react';
-import { Upload, FileText, Video, Image, Music, Wand2, Sparkles, Eye, Download, Play, Pause, RotateCcw, CheckCircle, AlertCircle, Clock, Zap, Palette, LayoutGrid as Layout, Volume2, Camera, BarChart3 } from 'lucide-react';
-import { SourceDocument, ContentTransformation, EnhancedTrainingModule, VisualDesign } from '../../types';
+import { useState, useCallback } from 'react';
+import axios from 'axios';
+import { Upload, FileText, Video, Image, Wand2, Sparkles, Eye, Download, CheckCircle, AlertCircle, Clock, Zap, Palette, Volume2, BarChart3 } from 'lucide-react';
+import { SourceDocument, ContentTransformation, EnhancedTrainingModule } from '../../types';
 
 interface DocumentTransformerProps {
   onComplete: (modules: EnhancedTrainingModule[]) => void;
@@ -13,6 +14,10 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<SourceDocument | null>(null);
   const [previewMode, setPreviewMode] = useState<'original' | 'enhanced'>('enhanced');
+  const [generatedProgram, setGeneratedProgram] = useState<any>(null);
+
+  console.log('[DocumentTransformer] Current Program:', generatedProgram);
+  console.log('[DocumentTransformer] onComplete available:', !!onComplete);
 
   const tabs = [
     { id: 'upload', label: 'Upload Documents', icon: Upload },
@@ -22,124 +27,61 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
     { id: 'preview', label: 'Preview & Export', icon: Eye },
   ];
 
-  const handleFileUpload = useCallback(async (files: File[]) => {
-    const newDocuments: SourceDocument[] = files.map(file => ({
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      name: file.name,
-      type: getFileType(file.type),
-      size: file.size,
-      uploadedAt: new Date().toISOString(),
-      status: 'uploading'
-    }));
-
-    setDocuments(prev => [...prev, ...newDocuments]);
-
-    // Process each document
-    for (const doc of newDocuments) {
-      await processDocument(doc);
-    }
-  }, []);
-
-  const processDocument = async (document: SourceDocument) => {
-    // Simulate document processing
-    setDocuments(prev => prev.map(d => 
-      d.id === document.id ? { ...d, status: 'processing' } : d
-    ));
-
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Simulate AI analysis
-    const analysis = await performAIAnalysis(document);
+  const getApiUrl = (): string => {
+    const customUrl = import.meta.env.VITE_TRAINING_BACKEND_URL;
+    const baseUrl = customUrl || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? 'http://localhost:5010'
+      : 'https://v25platformtrainingbackend-production.up.railway.app');
     
-    setDocuments(prev => prev.map(d => 
-      d.id === document.id 
-        ? { 
-            ...d, 
-            status: 'processed',
-            processedAt: new Date().toISOString(),
-            extractedContent: analysis.extractedContent,
-            aiAnalysis: analysis.aiAnalysis
-          }
-        : d
-    ));
+    return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
   };
 
-  const performAIAnalysis = async (document: SourceDocument) => {
-    // Simulate comprehensive AI analysis
-    return {
-      extractedContent: {
-        text: `Extracted content from ${document.name}`,
-        images: ['image1.jpg', 'image2.jpg'],
-        metadata: { pages: Math.floor(Math.random() * 50) + 1 },
-        keyTopics: ['Customer Service', 'Product Knowledge', 'Communication'],
-        complexity: Math.floor(Math.random() * 10) + 1,
-        structure: {
-          headings: [
-            { level: 1, text: 'Introduction', position: 0 },
-            { level: 2, text: 'Key Concepts', position: 100 },
-            { level: 2, text: 'Best Practices', position: 200 }
-          ],
-          paragraphs: [
-            { text: 'Sample paragraph content...', position: 50, importance: 8, concepts: ['concept1'] }
-          ],
-          lists: [
-            { type: 'unordered' as const, items: ['Item 1', 'Item 2'], position: 150 }
-          ],
-          tables: [],
-          images: [
-            { src: 'image1.jpg', alt: 'Sample image', position: 75 }
-          ],
-          codeBlocks: []
-        },
-        mediaElements: []
-      },
-      aiAnalysis: {
-        readabilityScore: Math.floor(Math.random() * 40) + 60,
-        keyConceptsExtracted: ['Customer Success', 'Communication', 'Problem Solving'],
-        suggestedLearningObjectives: [
-          'Understand customer service principles',
-          'Master effective communication techniques'
-        ],
-        recommendedModuleStructure: ['Introduction', 'Core Content', 'Practice', 'Assessment'],
-        contentGaps: ['Practical examples needed', 'More visual content required'],
-        engagementScore: Math.floor(Math.random() * 30) + 40,
-        improvementSuggestions: [
-          {
-            type: 'media' as const,
-            priority: 'high' as const,
-            suggestion: 'Add explanatory videos for complex concepts',
-            implementation: 'Convert text sections to animated videos',
-            expectedImpact: 'Increase engagement by 40%'
-          },
-          {
-            type: 'interactivity' as const,
-            priority: 'medium' as const,
-            suggestion: 'Include interactive scenarios',
-            implementation: 'Create branching scenario exercises',
-            expectedImpact: 'Improve retention by 25%'
-          }
-        ],
-        mediaRecommendations: [
-          {
-            type: 'video' as const,
-            position: 100,
-            purpose: 'Explain key concepts visually',
-            description: 'Create animated explanation video',
-            aiGenerated: true,
-            priority: 9
-          },
-          {
-            type: 'infographic' as const,
-            position: 200,
-            purpose: 'Summarize best practices',
-            description: 'Visual summary of key points',
-            aiGenerated: true,
-            priority: 7
-          }
-        ]
+  const handleFileUpload = useCallback(async (files: File[]) => {
+    for (const file of files) {
+      const docId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+      const newDoc: SourceDocument = {
+        id: docId,
+        name: file.name,
+        type: getFileType(file.type),
+        size: file.size,
+        uploadedAt: new Date().toISOString(),
+        status: 'uploading'
+      };
+
+      setDocuments(prev => [...prev, newDoc]);
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        setDocuments(prev => prev.map(d => d.id === docId ? { ...d, status: 'processing' } : d));
+
+        const response = await axios.post<any>(`${getApiUrl()}/ai/analyze-document`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        if (response.data.success) {
+          const analysis = response.data.data;
+          setDocuments(prev => prev.map(d => 
+            d.id === docId 
+              ? { 
+                  ...d, 
+                  status: 'processed',
+                  processedAt: new Date().toISOString(),
+                  extractedContent: analysis.extractedContent,
+                  aiAnalysis: analysis.aiAnalysis
+                }
+              : d
+          ));
+          // Auto-select the first processed document
+          if (!selectedDocument) setSelectedDocument(newDoc);
+        }
+      } catch (error) {
+        console.error('Error analyzing document:', error);
+        setDocuments(prev => prev.map(d => d.id === docId ? { ...d, status: 'error' } : d));
       }
-    };
-  };
+    }
+  }, [selectedDocument]);
 
   const getFileType = (mimeType: string): SourceDocument['type'] => {
     if (mimeType.includes('pdf')) return 'pdf';
@@ -152,69 +94,72 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
   };
 
   const startTransformation = async (document: SourceDocument) => {
+    if (!document.aiAnalysis) return;
+    
     setIsProcessing(true);
-    
-    const transformationTypes = ['text-to-video', 'text-to-audio', 'text-to-infographic', 'text-to-interactive'];
-    
-    for (const type of transformationTypes) {
-      const transformation: ContentTransformation = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        type: type as ContentTransformation['type'],
-        originalContent: document.extractedContent?.text || '',
-        transformedContent: null,
-        aiGenerated: true,
-        status: 'processing',
-        quality: 0
-      };
-      
-      setTransformations(prev => [...prev, transformation]);
-      
-      // Simulate transformation process
-      await new Promise(resolve => setTimeout(resolve, 5190));
-      
-      setTransformations(prev => prev.map(t => 
-        t.id === transformation.id 
-          ? { 
-              ...t, 
-              status: 'completed',
-              quality: Math.floor(Math.random() * 30) + 70,
-              transformedContent: generateTransformedContent(type)
-            }
-          : t
-      ));
+    try {
+      // Step 1: Generate Program and Presentation from Analysis
+      const response = await axios.post<any>(`${getApiUrl()}/ai/generate-program`, {
+        analysis: {
+          ...document.extractedContent,
+          aiAnalysis: document.aiAnalysis
+        }
+      });
+
+      if (response.data.success) {
+        const { program, presentation } = response.data.data;
+        setGeneratedProgram({ program, presentation });
+
+        // Populate transformations display
+        const transformationTypes: ContentTransformation['type'][] = ['text-to-video', 'text-to-audio', 'text-to-infographic', 'text-to-interactive'];
+        
+        const newTransformations = transformationTypes.map(type => ({
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          type,
+          originalContent: document.extractedContent?.text || '',
+          transformedContent: generateTransformedContent(type, program, presentation),
+          aiGenerated: true,
+          status: 'completed' as const,
+          quality: 92
+        }));
+
+        setTransformations(newTransformations);
+      }
+    } catch (error) {
+      console.error('Transformation error:', error);
+    } finally {
+      setIsProcessing(false);
     }
-    
-    setIsProcessing(false);
   };
 
-  const generateTransformedContent = (type: string) => {
+  const generateTransformedContent = (type: string, program: any, presentation: any) => {
     switch (type) {
       case 'text-to-video':
         return {
           videoUrl: 'https://example.com/generated-video.mp4',
           duration: 180,
           thumbnail: 'https://example.com/thumbnail.jpg',
-          script: 'AI-generated video script...',
-          scenes: ['Introduction', 'Main Content', 'Summary']
+          script: presentation.slides.map((s: any) => s.speakerNotes).join('\n'),
+          scenes: presentation.slides.map((s: any) => s.title)
         };
       case 'text-to-audio':
         return {
           audioUrl: 'https://example.com/generated-audio.mp3',
           duration: 120,
-          transcript: 'AI-generated audio transcript...',
+          transcript: program.description,
           voice: 'professional-female'
         };
       case 'text-to-infographic':
         return {
           imageUrl: 'https://example.com/infographic.png',
-          elements: ['Title', 'Key Points', 'Statistics', 'Call to Action'],
+          elements: program.modules.map((m: any) => m.title),
           style: 'modern-corporate'
         };
       case 'text-to-interactive':
         return {
           type: 'scenario',
-          title: 'Interactive Learning Scenario',
-          steps: ['Situation', 'Decision Points', 'Outcomes'],
+          title: 'Knowledge Check Scenario',
+          steps: program.modules[0]?.quizzes[0]?.questions.map((q: any) => q.question) || [],
           branches: 3
         };
       default:
