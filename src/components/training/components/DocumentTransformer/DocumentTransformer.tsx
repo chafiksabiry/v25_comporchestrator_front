@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import axios from 'axios';
-import { Upload, FileText, Video, Image, Wand2, Sparkles, Eye, Download, CheckCircle, AlertCircle, Clock, Zap, Palette, Volume2, BarChart3 } from 'lucide-react';
+import { Upload, FileText, Video, Image, Wand2, Sparkles, Eye, Download, CheckCircle, AlertCircle, Clock, Zap, Palette, Volume2, BarChart3, Target } from 'lucide-react';
 import { SourceDocument, ContentTransformation, EnhancedTrainingModule } from '../../types';
 import React from 'react';
 interface DocumentTransformerProps {
@@ -13,8 +13,10 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
   const [transformations, setTransformations] = useState<ContentTransformation[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<SourceDocument | null>(null);
-  const [previewMode, setPreviewMode] = useState<'original' | 'enhanced'>('enhanced');
+  const [activeSlide, setActiveSlide] = useState(0);
   const [generatedProgram, setGeneratedProgram] = useState<any>(null);
+  const [presentation, setPresentation] = useState<any>(null);
+  const [previewMode, setPreviewMode] = useState<'program' | 'slides'>('slides');
 
   console.log('[DocumentTransformer] Current Program:', generatedProgram);
   console.log('[DocumentTransformer] onComplete available:', !!onComplete);
@@ -51,12 +53,14 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
       setDocuments(prev => [...prev, newDoc]);
 
       try {
+        setIsProcessing(true);
+        const apiUrl = getApiUrl();
         const formData = new FormData();
         formData.append('file', file);
 
         setDocuments(prev => prev.map(d => d.id === docId ? { ...d, status: 'processing' } : d));
 
-        const response = await axios.post<any>(`${getApiUrl()}/ai/analyze-document`, formData, {
+        const response = await axios.post<any>(`${apiUrl}/ai/analyze-document`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
 
@@ -108,7 +112,8 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
 
       if (response.data.success) {
         const { program, presentation } = response.data.data;
-        setGeneratedProgram({ program, presentation });
+        setGeneratedProgram(program);
+        setPresentation(presentation);
 
         // Populate transformations display
         const transformationTypes: ContentTransformation['type'][] = ['text-to-video', 'text-to-audio', 'text-to-infographic', 'text-to-interactive'];
@@ -428,54 +433,173 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
   const renderPreviewTab = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Preview & Export</h3>
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
+          <h3 className="text-xl font-bold text-gray-900">Preview & Export</h3>
+          <div className="flex bg-gray-100 p-1 rounded-lg">
             <button
-              onClick={() => setPreviewMode('original')}
-              className={`px-3 py-1 rounded-lg text-sm ${previewMode === 'original' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
-                }`}
+              onClick={() => setPreviewMode('program')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                previewMode === 'program' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'
+              }`}
             >
-              Original
+              Training Program
             </button>
             <button
-              onClick={() => setPreviewMode('enhanced')}
-              className={`px-3 py-1 rounded-lg text-sm ${previewMode === 'enhanced' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
-                }`}
+              onClick={() => setPreviewMode('slides')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                previewMode === 'slides' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'
+              }`}
             >
-              Enhanced
+              Presentation Slides
             </button>
           </div>
-          <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+        </div>
+        <div className="flex items-center space-x-3">
+          <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-medium">
             <Download className="h-4 w-4" />
-            <span>Export Training Module</span>
+            <span>Export .pptx</span>
           </button>
         </div>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-          <div className="text-center">
-            <Eye className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-600">
-              {previewMode === 'enhanced' ? 'Enhanced Training Module Preview' : 'Original Document Preview'}
-            </p>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Slide Navigation Side Bar */}
+        <div className="lg:col-span-1 space-y-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+          {presentation?.slides?.map((slide: any, idx: number) => (
+            <button
+              key={idx}
+              onClick={() => setActiveSlide(idx)}
+              className={`w-full text-left p-3 rounded-lg border transition-all ${
+                activeSlide === idx 
+                  ? 'bg-blue-50 border-blue-400 ring-1 ring-blue-400' 
+                  : 'bg-white border-gray-200 hover:border-blue-300'
+              }`}
+            >
+              <div className="text-[10px] uppercase tracking-wider font-bold text-gray-400 mb-1">
+                Slide {idx + 1} • {slide.type}
+              </div>
+              <div className="text-sm font-semibold text-gray-800 line-clamp-1">{slide.title}</div>
+            </button>
+          ))}
         </div>
 
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div className="p-3 bg-blue-50 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">85%</div>
-            <div className="text-sm text-gray-600">Engagement Score</div>
-          </div>
-          <div className="p-3 bg-green-50 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">12</div>
-            <div className="text-sm text-gray-600">Media Elements</div>
-          </div>
-          <div className="p-3 bg-purple-50 rounded-lg">
-            <div className="text-2xl font-bold text-purple-600">8</div>
-            <div className="text-sm text-gray-600">Interactive Elements</div>
-          </div>
+        {/* Content Display based on previewMode */}
+        <div className="lg:col-span-3 space-y-4">
+          {previewMode === 'slides' ? (
+            presentation?.slides?.[activeSlide] ? (() => {
+              const slide = presentation.slides[activeSlide];
+              const isDark = ['cover', 'conclusion', 'agenda'].includes(slide.type);
+              
+              return (
+                <div className="space-y-4">
+                  <div className={`aspect-video rounded-xl shadow-2xl overflow-hidden border border-gray-200 relative flex flex-col justify-center p-12 transition-all duration-300 ${
+                    isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'
+                  }`}>
+                    {/* Decorative Elements */}
+                    <div className="absolute top-0 right-0 p-8">
+                      <Sparkles className={`h-8 w-8 ${isDark ? 'text-blue-400' : 'text-blue-100'}`} />
+                    </div>
+                    
+                    {slide.icon && (
+                      <div className="text-5xl mb-6">{slide.icon}</div>
+                    )}
+
+                    {slide.highlight && (
+                      <div className="text-6xl font-black text-blue-500 mb-4 tracking-tight">
+                        {slide.highlight}
+                      </div>
+                    )}
+
+                    <h2 className="text-4xl font-extrabold mb-4 leading-tight">
+                      {slide.title}
+                    </h2>
+
+                    {slide.subtitle && (
+                      <p className={`text-xl mb-6 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {slide.subtitle}
+                      </p>
+                    )}
+
+                    {slide.content && (
+                      <p className={`text-lg leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                        {slide.content}
+                      </p>
+                    )}
+
+                    {slide.bullets && slide.bullets.length > 0 && (
+                      <ul className="mt-6 space-y-3">
+                        {slide.bullets.map((bullet: string, i: number) => (
+                          <li key={i} className="flex items-start space-x-3">
+                            <CheckCircle className="h-5 w-5 text-blue-500 flex-shrink-0 mt-1" />
+                            <span className={`${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{bullet}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    <div className="absolute bottom-8 right-8 text-sm font-bold opacity-50">
+                      {activeSlide + 1} / {presentation.slides.length}
+                    </div>
+                  </div>
+
+                  {/* Speaker Notes Area */}
+                  {slide.note && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 shadow-sm">
+                      <div className="flex items-center space-x-2 text-amber-800 font-bold text-sm mb-2 uppercase tracking-widest">
+                        <FileText className="h-4 w-4" />
+                        <span>Presenter Notes</span>
+                      </div>
+                      <p className="text-amber-900 leading-relaxed italic">{slide.note}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })() : (
+              <div className="aspect-video bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400">
+                <Eye className="h-12 w-12 mb-2 opacity-50" />
+                <p>Generate presentation to see preview</p>
+              </div>
+            )
+          ) : (
+            /* Program Overview View */
+            <div className="space-y-6">
+              <div className="bg-slate-900 text-white rounded-xl p-8 shadow-lg">
+                <h2 className="text-3xl font-bold mb-2">{generatedProgram?.title}</h2>
+                <p className="text-blue-400 font-medium mb-4">{generatedProgram?.subtitle}</p>
+                <p className="text-slate-400 leading-relaxed max-w-2xl">{generatedProgram?.description}</p>
+                
+                <div className="flex gap-6 mt-8">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="h-4 w-4 text-blue-400" />
+                    <span>{generatedProgram?.duration}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <BarChart3 className="h-4 w-4 text-blue-400" />
+                    <span>{generatedProgram?.level}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Zap className="h-4 w-4 text-blue-400" />
+                    <span>{generatedProgram?.modules?.length} Modules</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-bold text-gray-900 flex items-center gap-2">
+                  <Target className="h-5 w-5 text-blue-600" />
+                  Learning Objectives
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {generatedProgram?.objectives?.map((obj: string, i: number) => (
+                    <div key={i} className="flex gap-3 bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                      <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">{obj}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
