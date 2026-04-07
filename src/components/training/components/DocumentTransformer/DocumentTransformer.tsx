@@ -219,25 +219,25 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
                 <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div className="text-center p-3 bg-blue-50 rounded-lg">
                     <div className="text-2xl font-bold text-blue-600">
-                      {doc.aiAnalysis.readabilityScore}%
+                      {(doc.aiAnalysis.readabilityScore as number) || 0}%
                     </div>
                     <div className="text-gray-600">Readability</div>
                   </div>
                   <div className="text-center p-3 bg-yellow-50 rounded-lg">
                     <div className="text-2xl font-bold text-yellow-600">
-                      {doc.aiAnalysis.engagementScore}%
+                      {(doc.aiAnalysis.engagementScore as number) || 0}%
                     </div>
                     <div className="text-gray-600">Engagement</div>
                   </div>
                   <div className="text-center p-3 bg-green-50 rounded-lg">
                     <div className="text-2xl font-bold text-green-600">
-                      {doc.aiAnalysis.keyConceptsExtracted.length}
+                      {doc.aiAnalysis.keyConceptsExtracted?.length || 0}
                     </div>
                     <div className="text-gray-600">Key Concepts</div>
                   </div>
                   <div className="text-center p-3 bg-purple-50 rounded-lg">
                     <div className="text-2xl font-bold text-purple-600">
-                      {doc.aiAnalysis.improvementSuggestions.length}
+                      {doc.aiAnalysis.improvementSuggestions?.length || 0}
                     </div>
                     <div className="text-gray-600">Improvements</div>
                   </div>
@@ -269,7 +269,7 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
               <div>
                 <h5 className="font-medium text-gray-900 mb-3">Improvement Suggestions</h5>
                 <div className="space-y-3">
-                  {doc.aiAnalysis.improvementSuggestions.map((suggestion, index) => (
+                  {doc.aiAnalysis.improvementSuggestions?.map((suggestion: any, index: number) => (
                     <div key={index} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-start justify-between mb-2">
                         <h6 className="font-medium text-gray-900">{suggestion.suggestion}</h6>
@@ -292,7 +292,7 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
               <div>
                 <h5 className="font-medium text-gray-900 mb-3">Media Recommendations</h5>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {doc.aiAnalysis.mediaRecommendations.map((rec, index) => (
+                  {doc.aiAnalysis.mediaRecommendations?.map((rec: any, index: number) => (
                     <div key={index} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center space-x-2 mb-2">
                         {rec.type === 'video' && <Video className="h-4 w-4 text-red-500" />}
