@@ -329,18 +329,56 @@ export default function ContentUploader({ onComplete, onBack, company, gigId }: 
   const [generatedPresentation, setGeneratedPresentation] = useState<any>(null);
 
   const handleGeneratePresentation = async () => {
-    if (!generatedCurriculum) return;
+    if (uploads.length === 0) return;
+    
     try {
       setIsGeneratingPresentation(true);
-      console.log('🤖 Génération de la présentation analytique en cours...');
+      console.log('🤖 Génération de la présentation en cours...');
       
-      const presentation = await AIService.generatePresentation(generatedCurriculum);
+      let curriculum = generatedCurriculum;
+      
+      // If we don't have the curriculum yet, we generate it first (which generates both in backend)
+      if (!curriculum) {
+        setIsProcessing(true); // show the global spin state too
+        const mainAnalysis = uploads[0].aiAnalysis;
+        if (!mainAnalysis) throw new Error('No analysis found');
+        
+        const uploadContext = uploads.map(u => ({
+          fileName: u.name,
+          fileType: u.type,
+          keyTopics: u.aiAnalysis?.keyTopics || [],
+          learningObjectives: u.aiAnalysis?.learningObjectives || []
+        }));
+        
+        curriculum = await AIService.generateCurriculum(
+          mainAnalysis,
+          'General',
+          undefined,
+          uploadContext as any
+        );
+        
+        setGeneratedCurriculum(curriculum);
+        setIsProcessing(false);
+      }
+      
+      // Look for the presentation directly in the curriculum payload (if backend already generated it)
+      let presentation = curriculum?.data?.presentation;
+      
+      // If not bundled, fetch it specifically
+      if (!presentation) {
+        presentation = await AIService.generatePresentation(curriculum);
+      }
+      
       setGeneratedPresentation(presentation);
+      
+      // Automatically switch to the preview mode so they can see the button state updated
+      setViewMode('curriculum');
       
       alert('La présentation a été générée avec succès ! Vous pouvez y accéder dans le module.');
     } catch (error: any) {
       console.error('Failed to generate presentation:', error);
       alert('Erreur lors de la génération: ' + (error.message || 'Erreur inconnue'));
+      setIsProcessing(false);
     } finally {
       setIsGeneratingPresentation(false);
     }
@@ -808,6 +846,19 @@ export default function ContentUploader({ onComplete, onBack, company, gigId }: 
                   <Sparkles className="h-5 w-5" />
                 )}
                 <span>Aperçu du programme</span>
+              </button>
+
+              <button
+                onClick={handleGeneratePresentation}
+                disabled={!canProceed || isProcessing}
+                className="px-6 py-3 bg-white text-rose-600 rounded-xl border border-rose-200 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-sm flex items-center justify-center space-x-2"
+              >
+                {isGeneratingPresentation ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <FileIcon className="h-5 w-5" />
+                )}
+                <span>Générer la présentation</span>
               </button>
 
               <button
