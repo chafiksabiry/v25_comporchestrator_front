@@ -324,6 +324,28 @@ export default function ContentUploader({ onComplete, onBack, company, gigId }: 
     }
   };
 
+  // Generate Presentation State
+  const [isGeneratingPresentation, setIsGeneratingPresentation] = useState(false);
+  const [generatedPresentation, setGeneratedPresentation] = useState<any>(null);
+
+  const handleGeneratePresentation = async () => {
+    if (!generatedCurriculum) return;
+    try {
+      setIsGeneratingPresentation(true);
+      console.log('🤖 Génération de la présentation analytique en cours...');
+      
+      const presentation = await AIService.generatePresentation(generatedCurriculum);
+      setGeneratedPresentation(presentation);
+      
+      alert('La présentation a été générée avec succès ! Vous pouvez y accéder dans le module.');
+    } catch (error: any) {
+      console.error('Failed to generate presentation:', error);
+      alert('Erreur lors de la génération: ' + (error.message || 'Erreur inconnue'));
+    } finally {
+      setIsGeneratingPresentation(false);
+    }
+  };
+
   const getStatusIcon = (status: ContentUpload['status']) => {
     switch (status) {
       case 'analyzed':
@@ -369,6 +391,12 @@ export default function ContentUploader({ onComplete, onBack, company, gigId }: 
                   <BarChart3 className="h-5 w-5 mr-2 opacity-80" />
                   {generatedCurriculum.modules?.length} Modules
                 </div>
+                {generatedPresentation && (
+                  <div className="flex items-center text-yellow-300">
+                    <FileIcon className="h-5 w-5 mr-2" />
+                    Présentation Disponible
+                  </div>
+                )}
               </div>
             </div>
             
@@ -395,7 +423,7 @@ export default function ContentUploader({ onComplete, onBack, company, gigId }: 
                             <Clock className="h-4 w-4 mr-1.5 text-purple-500" /> {module.duration} min
                           </div>
                           <div className="flex items-center text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200">
-                            <Zap className="h-4 w-4 mr-1.5 text-orange-500" /> {module.difficulty}
+                            <Zap className="h-4 w-4 mr-1.5 text-orange-500" /> {module.difficulty || 'Moyen'}
                           </div>
                         </div>
                         
@@ -418,21 +446,48 @@ export default function ContentUploader({ onComplete, onBack, company, gigId }: 
                 ))}
               </div>
               
-              <div className="mt-10 flex justify-center">
+              <div className="mt-10 flex flex-col md:flex-row justify-center gap-4">
+                <button 
+                  onClick={handleGeneratePresentation}
+                  disabled={isGeneratingPresentation || generatedPresentation}
+                  className={`px-8 py-4 rounded-2xl font-bold text-lg shadow-md transition-all flex items-center justify-center ${
+                    generatedPresentation 
+                      ? 'bg-green-100 text-green-700 border border-green-300'
+                      : 'bg-white text-purple-700 border border-purple-200 hover:bg-purple-50 hover:shadow-lg'
+                  }`}
+                >
+                  {isGeneratingPresentation ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Génération en cours...
+                    </>
+                  ) : generatedPresentation ? (
+                    <>
+                      <CheckCircle className="mr-2 h-5 w-5" />
+                      Présentation Générée
+                    </>
+                  ) : (
+                    <>
+                      <FileIcon className="mr-2 h-5 w-5" />
+                      Générer une Présentation
+                    </>
+                  )}
+                </button>
+
                 <button 
                   onClick={handleSavePresentation}
                   disabled={isSavingCloud}
-                  className="px-10 py-4 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all flex items-center"
+                  className="px-10 py-4 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center"
                 >
                   {isSavingCloud ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Enregistrement en cours...
+                      Enregistrement...
                     </>
                   ) : (
                     <>
                       <Save className="mr-2 h-5 w-5" />
-                      Approuver et Enregistrer la Formation
+                      Approuver le Programme
                     </>
                   )}
                 </button>
