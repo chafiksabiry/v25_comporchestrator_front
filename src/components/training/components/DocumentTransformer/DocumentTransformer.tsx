@@ -139,27 +139,27 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
           videoUrl: 'https://example.com/generated-video.mp4',
           duration: 180,
           thumbnail: 'https://example.com/thumbnail.jpg',
-          script: presentation.slides.map((s: any) => s.speakerNotes).join('\n'),
-          scenes: presentation.slides.map((s: any) => s.title)
+          script: (presentation?.slides || []).map((s: any) => s.speakerNotes).join('\n'),
+          scenes: (presentation?.slides || []).map((s: any) => s.title)
         };
       case 'text-to-audio':
         return {
           audioUrl: 'https://example.com/generated-audio.mp3',
           duration: 120,
-          transcript: program.description,
+          transcript: program?.description || '',
           voice: 'professional-female'
         };
       case 'text-to-infographic':
         return {
           imageUrl: 'https://example.com/infographic.png',
-          elements: program.modules.map((m: any) => m.title),
+          elements: (program?.modules || []).map((m: any) => m.title),
           style: 'modern-corporate'
         };
       case 'text-to-interactive':
         return {
           type: 'scenario',
           title: 'Knowledge Check Scenario',
-          steps: program.modules[0]?.quizzes[0]?.questions.map((q: any) => q.question) || [],
+          steps: program?.modules?.[0]?.quizzes?.[0]?.questions?.map((q: any) => q.question) || [],
           branches: 3
         };
       default:
