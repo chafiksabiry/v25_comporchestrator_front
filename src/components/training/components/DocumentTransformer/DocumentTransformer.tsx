@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import axios from 'axios';
 import { Upload, FileText, Video, Image, Wand2, Sparkles, Eye, Download, CheckCircle, AlertCircle, Clock, Zap, Palette, Volume2, BarChart3 } from 'lucide-react';
 import { SourceDocument, ContentTransformation, EnhancedTrainingModule } from '../../types';
-
+import React from 'react';
 interface DocumentTransformerProps {
   onComplete: (modules: EnhancedTrainingModule[]) => void;
 }
@@ -32,7 +32,7 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
     const baseUrl = customUrl || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
       ? 'http://localhost:5010'
       : 'https://v25platformtrainingbackend-production.up.railway.app');
-    
+
     return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
   };
 
@@ -62,15 +62,15 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
 
         if (response.data.success) {
           const analysis = response.data.data;
-          setDocuments(prev => prev.map(d => 
-            d.id === docId 
-              ? { 
-                  ...d, 
-                  status: 'processed',
-                  processedAt: new Date().toISOString(),
-                  extractedContent: analysis.extractedContent,
-                  aiAnalysis: analysis.aiAnalysis
-                }
+          setDocuments(prev => prev.map(d =>
+            d.id === docId
+              ? {
+                ...d,
+                status: 'processed',
+                processedAt: new Date().toISOString(),
+                extractedContent: analysis.extractedContent,
+                aiAnalysis: analysis.aiAnalysis
+              }
               : d
           ));
           // Auto-select the first processed document
@@ -95,7 +95,7 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
 
   const startTransformation = async (document: SourceDocument) => {
     if (!document.aiAnalysis) return;
-    
+
     setIsProcessing(true);
     try {
       // Step 1: Generate Program and Presentation from Analysis
@@ -112,7 +112,7 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
 
         // Populate transformations display
         const transformationTypes: ContentTransformation['type'][] = ['text-to-video', 'text-to-audio', 'text-to-infographic', 'text-to-interactive'];
-        
+
         const newTransformations = transformationTypes.map(type => ({
           id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
           type,
@@ -214,7 +214,7 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
                   {doc.status === 'error' && <AlertCircle className="h-5 w-5 text-red-500" />}
                 </div>
               </div>
-              
+
               {doc.status === 'processed' && doc.aiAnalysis && (
                 <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div className="text-center p-3 bg-blue-50 rounded-lg">
@@ -263,7 +263,7 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
       {documents.filter(d => d.status === 'processed').map((doc) => (
         <div key={doc.id} className="bg-white border border-gray-200 rounded-lg p-6">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">{doc.name}</h4>
-          
+
           {doc.aiAnalysis && (
             <div className="space-y-6">
               <div>
@@ -273,12 +273,11 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
                     <div key={index} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-start justify-between mb-2">
                         <h6 className="font-medium text-gray-900">{suggestion.suggestion}</h6>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          suggestion.priority === 'critical' ? 'bg-red-100 text-red-800' :
-                          suggestion.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                          suggestion.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-blue-100 text-blue-800'
-                        }`}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${suggestion.priority === 'critical' ? 'bg-red-100 text-red-800' :
+                            suggestion.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                              suggestion.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-blue-100 text-blue-800'
+                          }`}>
                           {suggestion.priority}
                         </span>
                       </div>
@@ -341,7 +340,7 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
         ].map((transform) => {
           const Icon = transform.icon;
           const transformation = transformations.find(t => t.type === transform.type);
-          
+
           return (
             <div key={transform.type} className="bg-white border border-gray-200 rounded-lg p-6">
               <div className="flex items-center space-x-3 mb-4">
@@ -349,27 +348,26 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
                 <h4 className="font-semibold text-gray-900">{transform.title}</h4>
               </div>
               <p className="text-gray-600 mb-4">{transform.desc}</p>
-              
+
               {transformation && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">Status:</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      transformation.status === 'completed' ? 'bg-green-100 text-green-800' :
-                      transformation.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${transformation.status === 'completed' ? 'bg-green-100 text-green-800' :
+                        transformation.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                          'bg-gray-100 text-gray-800'
+                      }`}>
                       {transformation.status}
                     </span>
                   </div>
-                  
+
                   {transformation.status === 'completed' && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Quality:</span>
                       <span className="text-sm font-medium text-green-600">{transformation.quality}%</span>
                     </div>
                   )}
-                  
+
                   {transformation.status === 'processing' && (
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div className="bg-blue-500 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
@@ -387,7 +385,7 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
   const renderDesignTab = () => (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold text-gray-900">Visual Design & Branding</h3>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h4 className="font-semibold text-gray-900 mb-4">Theme Selection</h4>
@@ -435,17 +433,15 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setPreviewMode('original')}
-              className={`px-3 py-1 rounded-lg text-sm ${
-                previewMode === 'original' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
-              }`}
+              className={`px-3 py-1 rounded-lg text-sm ${previewMode === 'original' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+                }`}
             >
               Original
             </button>
             <button
               onClick={() => setPreviewMode('enhanced')}
-              className={`px-3 py-1 rounded-lg text-sm ${
-                previewMode === 'enhanced' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
-              }`}
+              className={`px-3 py-1 rounded-lg text-sm ${previewMode === 'enhanced' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+                }`}
             >
               Enhanced
             </button>
@@ -466,7 +462,7 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
             </p>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-3 gap-4 text-center">
           <div className="p-3 bg-blue-50 rounded-lg">
             <div className="text-2xl font-bold text-blue-600">85%</div>
@@ -504,11 +500,10 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 py-4 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === tab.id
+                  className={`flex items-center space-x-2 py-4 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
                       ? 'border-blue-500 text-blue-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
+                    }`}
                 >
                   <Icon className="h-4 w-4" />
                   <span>{tab.label}</span>
