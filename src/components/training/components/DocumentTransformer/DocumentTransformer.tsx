@@ -130,9 +130,8 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
         setGeneratedProgram(program);
         setPresentation(presentation);
 
-        // Populate transformations display
+        // Populate transformations display (simplified for preview)
         const transformationTypes: ContentTransformation['type'][] = ['text-to-video', 'text-to-audio', 'text-to-infographic', 'text-to-interactive'];
-
         const newTransformations = transformationTypes.map(type => ({
           id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
           type,
@@ -142,11 +141,41 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
           status: 'completed' as const,
           quality: 92
         }));
-
         setTransformations(newTransformations);
       }
     } catch (error) {
       console.error('Transformation error:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const startMultiSynthesis = async () => {
+    const processedDocs = documents.filter(d => d.status === 'processed');
+    if (processedDocs.length < 2) return;
+
+    setIsProcessing(true);
+    setLoadingMsg("Synthesizing multiple documents into one unified journey...");
+    try {
+      const response = await axios.post<any>(`${getApiUrl()}/ai/synthesize-programs`, {
+        analyses: processedDocs.map(d => ({
+          extractedContent: d.extractedContent,
+          aiAnalysis: d.aiAnalysis
+        }))
+      }, {
+        headers: { 'X-Anthropic-Key': anthropicKey || undefined },
+        timeout: 180000 // 180 seconds for synthesis
+      });
+
+      if (response.data.success) {
+        const { program, presentation } = response.data.data;
+        setGeneratedProgram(program);
+        setPresentation(presentation);
+        
+        setActiveTab('preview');
+      }
+    } catch (error) {
+      console.error('Synthesis error:', error);
     } finally {
       setIsProcessing(false);
     }
@@ -380,17 +409,29 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900">Content Transformation</h3>
-        <button
-          onClick={() => {
-            const processedDoc = documents.find(d => d.status === 'processed');
-            if (processedDoc) startTransformation(processedDoc);
-          }}
-          disabled={isProcessing || !documents.some(d => d.status === 'processed')}
-          className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
-        >
-          <Wand2 className="h-4 w-4" />
-          <span>{isProcessing ? 'Transforming...' : 'Start AI Transformation'}</span>
-        </button>
+        <div className="flex space-x-3">
+          {documents.filter(d => d.status === 'processed').length > 1 && (
+            <button
+              onClick={startMultiSynthesis}
+              disabled={isProcessing}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-lg shadow-blue-200"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span>Synthesize All into One Journey</span>
+            </button>
+          )}
+          <button
+            onClick={() => {
+              const processedDoc = documents.find(d => d.status === 'processed');
+              if (processedDoc) startTransformation(processedDoc);
+            }}
+            disabled={isProcessing || !documents.some(d => d.status === 'processed')}
+            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+          >
+            <Wand2 className="h-4 w-4" />
+            <span>{isProcessing ? 'Transforming...' : 'Start Individual AI Transformation'}</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
