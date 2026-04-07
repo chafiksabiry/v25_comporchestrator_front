@@ -118,7 +118,19 @@ export class AIService {
       // Support both structured analysis and nested data analysis
       const analysis = response.data.analysis || (response.data.data as any)?.aiAnalysis || response.data.data;
       if (!analysis) throw new Error('No analysis data received');
-      return analysis;
+
+      // Defensive defaults to prevent frontend crashes (.map of undefined)
+      const safeAnalysis = {
+        ...analysis,
+        keyTopics: analysis.keyTopics || [],
+        learningObjectives: analysis.learningObjectives || [],
+        prerequisites: analysis.prerequisites || [],
+        suggestedModules: analysis.suggestedModules || [],
+        improvementSuggestions: analysis.improvementSuggestions || [],
+        mediaRecommendations: analysis.mediaRecommendations || []
+      };
+
+      return safeAnalysis;
     } catch (error: any) {
       console.error('❌ Error in analyzeDocument:', error);
 
