@@ -84,19 +84,20 @@ export class AIService {
   /**
    * Uploads a document to the backend (GCS with local fallback)
    */
-  static async uploadDocumentViaBackend(file: File): Promise<{ url: string, publicId: string }> {
+  static async uploadDocumentViaBackend(file: File): Promise<{ url: string, publicId: string, analysis?: any }> {
     const formData = new FormData();
     formData.append('file', file);
     
-    const response = await ApiClient.upload<any>('/api/upload/document', formData);
+    const response = await ApiClient.upload<any>('/api/ai/analyze-document', formData);
     return {
-      url: response.data.url,
-      publicId: response.data.publicId
+      url: response.data.data?.fileUrl || response.data.url,
+      publicId: response.data.data?.publicId || response.data.publicId,
+      analysis: response.data.data
     };
   }
 
   /**
-   * Analyse un document avec l'IA (OpenAI GPT-4)
+   * Analyse un document avec l'IA (OpenAI GPT-4 ou Claude)
    */
   static async analyzeDocument(file: File): Promise<DocumentAnalysis> {
     try {
@@ -114,7 +115,8 @@ export class AIService {
       }
 
       console.log('✅ Document analyzed successfully');
-      const analysis = response.data.analysis || (response.data.data as any)?.analysis;
+      // Support both structured analysis and nested data analysis
+      const analysis = response.data.analysis || (response.data.data as any)?.aiAnalysis || response.data.data;
       if (!analysis) throw new Error('No analysis data received');
       return analysis;
     } catch (error: any) {
