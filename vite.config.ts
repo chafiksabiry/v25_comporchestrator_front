@@ -18,15 +18,17 @@ const removeReactRefreshScript = () => {
 
 export default defineConfig(() => {
   return {
-    base: 'https://harxv25comporchestratorfront.netlify.app/',
+    base: process.env.NODE_ENV === 'production' 
+      ? 'https://harxv25comporchestratorfront.netlify.app/' 
+      : '/',
     plugins: [
       react({
         jsxRuntime: 'classic',
       }),
       qiankun('app11', {
-        useDevMode: true,
+        useDevMode: true, // Needed for dev and to ensure lifecycle exports are correctly generated
       }),
-      removeReactRefreshScript(), // Add the script removal plugin
+      removeReactRefreshScript(),
     ],
 
     server: {

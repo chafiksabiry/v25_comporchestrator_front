@@ -63,7 +63,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const getTrainingBackendUrl = (): string => {
     const customUrl = import.meta.env.VITE_TRAINING_BACKEND_URL;
     if (customUrl) return customUrl;
-    return 'https://v25-platform-training-backend.onrender.com/api';
+    // Default to the working Railway URL
+    return 'https://v25platformtrainingbackend-production.up.railway.app';
   };
 
   // Function to update onboarding progress in the main company platform
@@ -107,7 +108,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     setLoadingTrainings(true);
     try {
       const trainingBackendUrl = getTrainingBackendUrl();
-      const apiUrl = `${trainingBackendUrl}/training_journeys/trainer/companyId/${companyId}`;
+      // Ensure we don't have double /api/api
+      const baseUrl = trainingBackendUrl.endsWith('/api') ? trainingBackendUrl : `${trainingBackendUrl}/api`;
+      const apiUrl = `${baseUrl}/training_journeys/trainer/companyId/${companyId}`;
 
       console.log('[RepOnboarding] Fetching trainings from:', apiUrl);
       const response = (await axios.get(apiUrl)) as any;
@@ -115,19 +118,28 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       console.log('[RepOnboarding] Training API Response:', response.data);
 
       const backendData = response.data as any;
-      if (backendData && backendData.success && backendData.data) {
-        const trainingsData = Array.isArray(backendData.data) ? backendData.data : [];
-        console.log('[RepOnboarding] Found', trainingsData.length, 'trainings');
-        setTrainings(trainingsData);
-
-        // Auto-complete step 9 if trainings exist
-        if (trainingsData.length > 0) {
+      
+      // Handle the new Dashboard object format which contains .journeys array
+      if (backendData && Array.isArray(backendData.journeys)) {
+        console.log('[RepOnboarding] Found', backendData.journeys.length, 'trainings in dashboard object');
+        setTrainings(backendData.journeys);
+        if (backendData.journeys.length > 0) {
           updateOnboardingProgress();
         }
-      } else if (Array.isArray(response.data)) {
-        console.log('[RepOnboarding] Response is array, found', response.data.length, 'trainings');
-        setTrainings(response.data);
-        if (response.data.length > 0) {
+      } 
+      // Legacy or direct array response
+      else if (Array.isArray(backendData)) {
+        console.log('[RepOnboarding] Response is direct array, found', backendData.length, 'trainings');
+        setTrainings(backendData);
+        if (backendData.length > 0) {
+          updateOnboardingProgress();
+        }
+      }
+      // Check success/data wrapper
+      else if (backendData && backendData.success && Array.isArray(backendData.data)) {
+        console.log('[RepOnboarding] Found', backendData.data.length, 'trainings in success/data wrapper');
+        setTrainings(backendData.data);
+        if (backendData.data.length > 0) {
           updateOnboardingProgress();
         }
       }
