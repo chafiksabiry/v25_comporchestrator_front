@@ -16,6 +16,7 @@ import {
 import { AppContent } from '../training/App';
 import { getGigsByCompanyId } from '../../api/matching';
 import { DraftService } from '../training/infrastructure/services/DraftService';
+import { OnboardingService } from '../training/infrastructure/services/OnboardingService';
 import '../training/index.css';
 
 interface RepOnboardingProps { }
@@ -25,6 +26,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [trainings, setTrainings] = useState<any[]>([]);
   const [loadingTrainings, setLoadingTrainings] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const [legacyCompanyId, setLegacyCompanyId] = useState<string | null>(null);
   const [companyGigs, setCompanyGigs] = useState<any[]>([]);
   const [filterGigId, setFilterGigId] = useState<string>('all');
   const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string, newJourney?: boolean }>({ isOpen: false });
@@ -120,17 +122,18 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     try {
       const trainingBackendUrl = getTrainingBackendUrl();
       
-      // Ensure we handle both /api and non-/api base URLs
-      const baseUrl = trainingBackendUrl.endsWith('/api') 
-        ? trainingBackendUrl 
-        : `${trainingBackendUrl}/api`;
-        
-      // Pass gigId as query parameter if specified
-      const gigParam = filterGigId && filterGigId !== 'all' ? `?gigId=${filterGigId}` : '';
-      const apiUrl = `${baseUrl}/training_journeys/trainer/companyId/${companyId}${gigParam}`;
+        const effectiveId = legacyCompanyId || companyId;
+        if (!effectiveId) return;
 
-      console.log('[RepOnboarding] Fetching trainings from:', apiUrl);
-      const response = (await axios.get(apiUrl)) as any;
+        const baseUrl = trainingBackendUrl.endsWith('/api') 
+          ? trainingBackendUrl 
+          : `${trainingBackendUrl}/api`;
+          
+        const gigParam = filterGigId && filterGigId !== 'all' ? `?gigId=${filterGigId}` : '';
+        const apiUrl = `${baseUrl}/training_journeys/trainer/companyId/${effectiveId}${gigParam}`;
+
+        console.log('[RepOnboarding] Fetching trainings using effectiveId:', effectiveId, 'from URL:', apiUrl);
+        const response = (await axios.get(apiUrl)) as any;
 
       console.log('[RepOnboarding] Training API Response Data:', response.data);
 
@@ -191,12 +194,41 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     }
   }, []);
 
-  // Fetch trainings once companyId is available
+  // Fetch trainings once companyId or legacyCompanyId is available
   useEffect(() => {
-    if (companyId) {
+    if (companyId || legacyCompanyId) {
       fetchCompanyTrainings();
     }
-  }, [companyId, fetchCompanyTrainings]);
+  }, [companyId, legacyCompanyId, fetchCompanyTrainings]);
+
+  // Fetch legacy ID for training backend compatibility
+  useEffect(() => {
+    const fetchLegacyId = async () => {
+      if (!companyId) return;
+      try {
+        console.log('[RepOnboarding] Fetching legacy ID for MongoDB ID:', companyId);
+        const data = await OnboardingService.fetchCompanyData(companyId);
+        
+        // Extract legacy/internal companyId if it exists (e.g. 1775669981637)
+        const idFromApi = data?._id || data?.id || data?.data?._id || data?.data?.id;
+        const legacyId = data?.companyId || data?.data?.companyId;
+
+        if (legacyId && legacyId !== companyId) {
+          console.log('[RepOnboarding] Found distinct legacy ID:', legacyId);
+          setLegacyCompanyId(legacyId);
+        } else {
+          console.log('[RepOnboarding] No distinct legacy ID found, using standard ID.');
+          // Even if no distinct legacy ID, using the one from API might be safer
+          if (idFromApi && idFromApi !== companyId) {
+             setLegacyCompanyId(idFromApi);
+          }
+        }
+      } catch (error) {
+        console.error('[RepOnboarding] Error fetching legacy ID:', error);
+      }
+    };
+    fetchLegacyId();
+  }, [companyId]);
 
   // Fetch all company Gigs to populate the filter dropdown
   useEffect(() => {
