@@ -11,9 +11,11 @@ import {
   Edit2,
   Trash2,
   Rocket,
-  Sparkles
+  Sparkles,
+  Presentation
 } from 'lucide-react';
-import { ContentUpload, TrainingModule, Assessment } from '../../types/core';
+import { ContentUpload, TrainingModule, Assessment, IPresentation } from '../../types/core';
+import PresentationPreview from '../Training/PresentationPreview';
 import { TrainingMethodology } from '../../types/methodology';
 import { TrainingSection } from '../../types/manualTraining';
 import { AIService } from '../../infrastructure/services/AIService';
@@ -31,6 +33,9 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [editingModuleId, setEditingModuleId] = React.useState<string | null>(null);
   const [currentStep, setCurrentStep] = React.useState<'plan' | 'content'>('plan');
+  const [presentation, setPresentation] = React.useState<IPresentation | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
+  const [isGeneratingPresentation, setIsGeneratingPresentation] = React.useState(false);
 
   React.useEffect(() => {
     if (currentStep === 'plan' && uploads.length > 0) {
@@ -400,6 +405,31 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
     setEditingModuleId(editingModuleId === moduleId ? null : moduleId);
   }
 
+  const handleGeneratePresentation = async () => {
+    setIsGeneratingPresentation(true);
+    try {
+      // Simplifier le curriculum pour l'IA
+      const curriculumSummary = {
+        title: methodology?.name || 'Formation Personnalisée',
+        description: methodology?.description || 'Formation générée à partir de documents.',
+        modules: modules.map(m => ({
+          title: m.title,
+          description: m.description,
+          learningObjectives: m.learningObjectives
+        }))
+      };
+
+      const generatedPresentation = await AIService.generatePresentation(curriculumSummary);
+      setPresentation(generatedPresentation);
+      setIsPreviewOpen(true);
+    } catch (error) {
+      console.error('Failed to generate presentation:', error);
+      alert('Erreur lors de la génération de la présentation.');
+    } finally {
+      setIsGeneratingPresentation(false);
+    }
+  };
+
   if (isGenerating) {
     return (
       <div className="min-h-full bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
@@ -707,6 +737,19 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
 
             <div className="flex space-x-4">
               <button
+                onClick={handleGeneratePresentation}
+                disabled={modules.length === 0 || isGeneratingPresentation}
+                className="px-6 py-3 bg-white border-2 border-indigo-600 text-indigo-600 rounded-xl hover:bg-indigo-50 disabled:opacity-50 transition-all font-bold flex items-center space-x-2"
+              >
+                {isGeneratingPresentation ? (
+                  <div className="w-5 h-5 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
+                ) : (
+                  <Presentation className="h-5 w-5" />
+                )}
+                <span>Visualiser la Présentation</span>
+              </button>
+
+              <button
                 onClick={() => onComplete(modules)}
                 disabled={modules.length === 0}
                 className="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg flex items-center space-x-2"
@@ -718,6 +761,13 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
           </div>
         </div>
       </div>
+
+      {isPreviewOpen && presentation && (
+        <PresentationPreview 
+          presentation={presentation} 
+          onClose={() => setIsPreviewOpen(false)} 
+        />
+      )}
     </div>
   );
 }

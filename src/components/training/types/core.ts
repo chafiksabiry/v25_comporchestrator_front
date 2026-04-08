@@ -119,3 +119,17 @@ export interface RepProgress {
   timeSpent: number;
   lastAccessed: string;
 }
+
+export interface ISlide {
+  id: string;
+  type: 'cover' | 'agenda' | 'content' | 'module' | 'exercise' | 'quote' | 'conclusion';
+  title: string;
+  content: string[];
+  notes?: string;
+  visualDescription?: string;
+}
+
+export interface IPresentation {
+  title: string;
+  slides: ISlide[];
+}
