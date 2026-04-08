@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   X, ChevronLeft, ChevronRight,
   Download as DownloadIcon, Key, Sparkles,
-  CheckCircle, FileDown
+  CheckCircle, FileDown, Printer
 } from 'lucide-react';
 import { IPresentation } from '../../types/core';
 import { AIService } from '../../infrastructure/services/AIService';
@@ -14,6 +14,26 @@ interface PresentationPreviewProps {
   onSave?: () => void;
   isSaving?: boolean;
 }
+
+const parseMarkdown = (text: string) => {
+  if (!text) return '';
+  
+  // Basic Markdown replacement
+  let html = text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/__(.*?)__/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/_(.*?)_/g, '<em>$1</em>')
+    .replace(/`(.*?)`/g, '<code class="bg-slate-100 text-rose-600 px-1.5 py-0.5 rounded-md text-[0.9em] font-mono border border-slate-200">$1</code>');
+
+  // Handle multi-line lists if the input is a single string
+  if (html.includes('\n- ') || html.startsWith('- ')) {
+    html = html.replace(/^\s*-\s+(.*)/gm, '<li class="ml-4 mb-2 flex items-start gap-2"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-current shrink-0 opacity-50"></span><span>$1</span></li>');
+    // Wrap groups of <li> in <ul> if needed, though simple replacement might suffice for most slide contents
+  }
+
+  return html.replace(/\n/g, '<br />');
+};
 
 export default function PresentationPreview({
   presentation,
@@ -53,10 +73,136 @@ export default function PresentationPreview({
   // Helper for slide types that use the dark theme
   const isDarkType = (type: string) => ['cover', 'agenda', 'conclusion'].includes(type);
 
+  const handleDownloadPDF = () => {
+    // We add a tiny delay to ensure browser paints the hidden print elements before print dialog
+    setTimeout(() => {
+      window.print();
+    }, 100);
+  };
+
+  const renderSlideContent = (slide: any) => {
+    const vc = slide.visualConfig || {};
+    const isDark = vc.theme === 'dark' || isDarkType(slide.type);
+    const accentGradient = vc.accent === 'rose' ? 'from-rose-500 to-rose-600' : (vc.accent === 'purple' ? 'from-purple-500 to-purple-600' : 'from-rose-500 to-purple-600');
+    const layout = vc.layout || 'content';
+
+    return (
+      <div 
+        className={`w-full max-w-5xl aspect-[16/9] rounded-[2.5rem] print:rounded-none print:shadow-none shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-white/10 overflow-hidden flex relative animate-in fade-in duration-500 ${isDark ? 'bg-[#1a1a2e] text-white' : 'bg-white text-gray-900'} page-break-inside-avoid print:w-full print:h-full print:max-w-none print:border-none print:m-0 print:flex print:items-center print:justify-center`}
+        style={{ pageBreakAfter: 'always' }}
+      >
+        {/* Background Accents decided by Claude */}
+        {layout === 'gradient' && (
+          <div className={`absolute inset-0 bg-gradient-to-br ${accentGradient} opacity-10 print:opacity-20 pointer-events-none`} />
+        )}
+        
+        {layout === 'split' && (
+          <div className={`w-1/3 h-full bg-gradient-to-b ${accentGradient} flex flex-col items-center justify-center p-8 text-white print:text-black relative overflow-hidden shrink-0`}>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-16 -mt-16 print:hidden" />
+            <h1 className="text-3xl font-black text-center relative z-10 leading-tight">
+              {slide.title}
+            </h1>
+          </div>
+        )}
+
+        {/* Content Area */}
+        <div className={`flex-1 p-10 md:p-16 flex flex-col justify-center relative z-10 ${layout === 'split' ? '' : 'w-full'}`}>
+          {layout !== 'split' && (
+            <h1 className={`${isDark ? 'text-transparent bg-clip-text bg-gradient-to-r from-rose-300 to-purple-300' : 'text-gray-900'} text-4xl md:text-6xl font-black mb-8 leading-[1.1] tracking-tight`}>
+              {slide.title}
+            </h1>
+          )}
+
+          {slide.content && (
+            <div className="mb-6 opacity-90 text-lg md:text-xl leading-relaxed max-w-3xl">
+              {Array.isArray(slide.content) ? (
+                <ul className="space-y-4">
+                  {slide.content.map((bullet: string, i: number) => (
+                    <li key={i} className="flex items-start gap-4">
+                      <span className={`w-2.5 h-2.5 rounded-full bg-gradient-to-br ${accentGradient} mt-2.5 shrink-0 shadow-sm`} />
+                      <span className="font-medium" dangerouslySetInnerHTML={{ __html: parseMarkdown(bullet) }} />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p dangerouslySetInnerHTML={{ __html: parseMarkdown(slide.content) }} />
+              )}
+            </div>
+          )}
+
+          {/* Support for bullets field */}
+          {Array.isArray(slide.bullets) && slide.bullets.length > 0 && (
+            <ul className="space-y-4 max-w-3xl">
+              {slide.bullets.map((bullet: string, i: number) => (
+                <li key={i} className="flex items-start gap-4 text-lg">
+                  <span className={`w-2.5 h-2.5 rounded-full bg-gradient-to-br ${accentGradient} mt-2.5 shrink-0 shadow-sm`} />
+                  <span className="opacity-90" dangerouslySetInnerHTML={{ __html: parseMarkdown(bullet) }} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Ornament for dark mode */}
+        {isDark && (
+          <>
+            <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/20 blur-[100px] rounded-full -mr-48 -mt-48 pointer-events-none print:hidden" />
+            <div className="absolute bottom-0 left-0 w-96 h-96 bg-rose-500/10 blur-[100px] rounded-full -ml-48 -mb-48 pointer-events-none print:hidden" />
+          </>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/90 z-[100] flex flex-col md:flex-row border-none animate-in fade-in duration-300 overflow-hidden text-gray-900">
+    <div className="fixed inset-0 bg-black/90 z-[100] flex flex-col md:flex-row border-none animate-in fade-in duration-300 overflow-hidden text-gray-900 print:bg-white print:static print:h-auto print:overflow-visible print:block">
+      
+      {/* Premium Print Styles */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          @page {
+            size: landscape;
+            margin: 0;
+          }
+          body {
+            margin: 0;
+            padding: 0;
+            background: white !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .print-slide {
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            page-break-after: always;
+            overflow: hidden;
+            background: white !important;
+          }
+          /* Force colors to show in PDF */
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+        }
+      `}} />
+
+      {/* Hidden Print Container: renders all slides directly for PDF generation */}
+      <div className="hidden print:block w-full">
+        {presentation.slides.map((s, idx) => (
+          <div key={`print-${idx}`} className="print-slide">
+            {renderSlideContent(s)}
+          </div>
+        ))}
+      </div>
+
       {/* Sidebar - thumbnails */}
-      <div className="w-full md:w-64 lg:w-72 bg-white border-r border-purple-100 flex flex-col h-1/4 md:h-full overflow-hidden">
+      <div className="w-full md:w-64 lg:w-72 bg-white border-r border-purple-100 flex flex-col h-1/4 md:h-full overflow-hidden print:hidden">
         <div className="p-4 border-b border-purple-100 flex items-center gap-3 bg-white sticky top-0 z-10">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-purple-600 flex items-center justify-center shadow-lg transform rotate-3">
             <Sparkles size={16} className="text-white" />
@@ -86,7 +232,7 @@ export default function PresentationPreview({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col bg-slate-50 overflow-hidden">
+      <div className="flex-1 flex flex-col bg-slate-50 overflow-hidden print:hidden">
         {/* Header */}
         <header className="h-16 border-b border-purple-100 flex items-center justify-between px-6 bg-white/80 backdrop-blur-md shrink-0 z-20">
           <div className="flex items-center gap-4">
@@ -96,6 +242,15 @@ export default function PresentationPreview({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownloadPDF}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm transition-all shadow-sm active:scale-95"
+              title="Télécharger en PDF"
+            >
+              <Printer size={18} className="text-rose-500" />
+              <span className="hidden sm:inline">Télécharger PDF</span>
+            </button>
+
             <button
               onClick={handleExportPPTX}
               disabled={isExporting}
@@ -132,79 +287,9 @@ export default function PresentationPreview({
 
         {/* Slide Canvas */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 flex flex-col items-center justify-center bg-slate-100/50 relative">
-          {(() => {
-            const vc = (currentSlide as any).visualConfig || {};
-            const isDark = vc.theme === 'dark' || isDarkType(currentSlide.type);
-            const accentGradient = vc.accent === 'rose' ? 'from-rose-500 to-rose-600' : (vc.accent === 'purple' ? 'from-purple-500 to-purple-600' : 'from-rose-500 to-purple-600');
-            const layout = vc.layout || 'content';
-
-            return (
-              <div 
-                key={activeSlide} 
-                className={`w-full max-w-5xl aspect-[16/9] rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-white overflow-hidden flex relative animate-in fade-in duration-500 ${isDark ? 'bg-[#1a1a2e] text-white' : 'bg-white text-gray-900'}`}
-              >
-                {/* Background Accents decided by Claude */}
-                {layout === 'gradient' && (
-                  <div className={`absolute inset-0 bg-gradient-to-br ${accentGradient} opacity-10 pointer-events-none`} />
-                )}
-                
-                {layout === 'split' && (
-                  <div className={`w-1/3 h-full bg-gradient-to-b ${accentGradient} flex flex-col items-center justify-center p-8 text-white relative overflow-hidden shrink-0`}>
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-16 -mt-16" />
-                    <h1 className="text-3xl font-black text-center relative z-10 leading-tight">
-                      {currentSlide.title}
-                    </h1>
-                  </div>
-                )}
-
-                {/* Content Area */}
-                <div className={`flex-1 p-10 md:p-16 flex flex-col justify-center relative z-10 ${layout === 'split' ? '' : 'w-full'}`}>
-                  {layout !== 'split' && (
-                    <h1 className={`${isDark ? 'text-transparent bg-clip-text bg-gradient-to-r from-rose-300 to-purple-300' : 'text-gray-900'} text-4xl md:text-6xl font-black mb-8 leading-[1.1] tracking-tight`}>
-                      {currentSlide.title}
-                    </h1>
-                  )}
-
-                  {currentSlide.content && (
-                    <div className="mb-6 opacity-90 text-lg md:text-xl leading-relaxed max-w-3xl">
-                      {Array.isArray(currentSlide.content) ? (
-                        <ul className="space-y-4">
-                          {currentSlide.content.map((bullet, i) => (
-                            <li key={i} className="flex items-start gap-4">
-                              <span className={`w-2.5 h-2.5 rounded-full bg-gradient-to-br ${accentGradient} mt-2.5 shrink-0 shadow-sm`} />
-                              <span className="font-medium">{bullet}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p>{currentSlide.content}</p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Support for bullets field */}
-                  {Array.isArray((currentSlide as any).bullets) && (currentSlide as any).bullets.length > 0 && (
-                    <ul className="space-y-4 max-w-3xl">
-                      {(currentSlide as any).bullets.map((bullet: string, i: number) => (
-                        <li key={i} className="flex items-start gap-4 text-lg">
-                          <span className={`w-2.5 h-2.5 rounded-full bg-gradient-to-br ${accentGradient} mt-2.5 shrink-0 shadow-sm`} />
-                          <span className="opacity-90">{bullet}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                {/* Ornament for dark mode */}
-                {isDark && (
-                  <>
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/20 blur-[100px] rounded-full -mr-48 -mt-48 pointer-events-none" />
-                    <div className="absolute bottom-0 left-0 w-96 h-96 bg-rose-500/10 blur-[100px] rounded-full -ml-48 -mb-48 pointer-events-none" />
-                  </>
-                )}
-              </div>
-            );
-          })()}
+          <div key={activeSlide} className="w-full flex items-center justify-center">
+             {renderSlideContent(currentSlide)}
+          </div>
 
           {/* Presenter Notes */}
           {currentSlide.note && (
