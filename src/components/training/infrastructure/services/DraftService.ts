@@ -17,11 +17,13 @@ export interface JourneyDraft {
   selectedGigId: string | null;
   lastSaved: string;
   draftId?: string; // ID du brouillon sauvegardé dans le backend
+  presentation?: any; // Données de la présentation générée
 }
 
 export class DraftService {
   private static saveTimeout: NodeJS.Timeout | null = null;
   private static isCleaning: boolean = false; // Flag to prevent infinite recursion during cleanup
+  private static isSaving: boolean = false; // Flag to indicate a save operation is in progress
 
   /**
    * Sauvegarder le brouillon localement (localStorage)
@@ -325,7 +327,8 @@ export class DraftService {
               companyId,
               gigId,
               undefined, // finalExam
-              existingJourneyId // Pass existing journeyId to update instead of create
+              existingJourneyId, // Pass existing journeyId to update instead of create
+              updatedDraft.presentation // Pass presentation data
             );
 
             // Spring Data MongoDB uses 'id' (not '_id') in Java entities
@@ -457,7 +460,8 @@ export class DraftService {
             companyId,
             gigId,
             undefined, // finalExam
-            existingJourneyId // Pass existing journeyId to update instead of create
+            existingJourneyId, // Pass existing journeyId to update instead of create
+            updatedDraft.presentation // Pass presentation data
           );
 
           // Spring Data MongoDB uses 'id' (not '_id') in Java entities

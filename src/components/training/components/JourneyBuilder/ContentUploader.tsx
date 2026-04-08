@@ -308,7 +308,10 @@ export default function ContentUploader({ onComplete, onBack, company, gigId }: 
         journeyToSave,
         modulesToSave,
         company?.id || '',
-        gigId || ''
+        gigId || '',
+        undefined, // finalExam
+        undefined, // journeyId
+        generatedPresentation // Pass presentation data to be saved in Cloudinary/DB
       );
       
       alert('La formation a été enregistrée avec succès !');
