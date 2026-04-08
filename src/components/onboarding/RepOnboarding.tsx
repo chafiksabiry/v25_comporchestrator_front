@@ -10,10 +10,12 @@ import {
   Download,
   Play,
   RefreshCw,
-  Plus
+  Plus,
+  Monitor
 } from 'lucide-react';
 
 import { AppContent } from '../training/App';
+import PresentationPreview from '../training/components/Training/PresentationPreview';
 import { getGigsByCompanyId } from '../../api/matching';
 import { DraftService } from '../training/infrastructure/services/DraftService';
 import { OnboardingService } from '../training/infrastructure/services/OnboardingService';
@@ -30,9 +32,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [companyGigs, setCompanyGigs] = useState<any[]>([]);
   const [filterGigId, setFilterGigId] = useState<string>('all');
   const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string, newJourney?: boolean }>({ isOpen: false });
+  const [selectedPresentation, setSelectedPresentation] = useState<any | null>(null);
+  const [loadingPresentation, setLoadingPresentation] = useState(false);
 
   // Helper function to format training journey data for display
   const formatTrainingJourney = (journey: any) => {
+    // Map presentation fields
+    const presentationUrl = journey.presentationUrl || journey.presentation?.url;
     // Calculate total duration from modules if available
     let duration = 'N/A';
     if (journey.modules && Array.isArray(journey.modules)) {
@@ -61,8 +67,26 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       duration: duration,
       modulesCount: journey.modules ? journey.modules.length : 0,
       status: status,
-      progress: journey.progress || 0
+      progress: journey.progress || 0,
+      presentationUrl
     };
+  };
+
+  const handleViewPresentation = async (url: string) => {
+    if (!url) return;
+    setLoadingPresentation(true);
+    try {
+      console.log('[RepOnboarding] Fetching presentation JSON from:', url);
+      const response = await axios.get(url);
+      if (response.data) {
+        setSelectedPresentation(response.data);
+      }
+    } catch (error) {
+      console.error('[RepOnboarding] Error fetching presentation:', error);
+      alert('Impossible de charger les slides. Veuillez réessayer.');
+    } finally {
+      setLoadingPresentation(false);
+    }
   };
 
   // Function to get training backend URL
@@ -386,14 +410,31 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                 </div>
                               </div>
                             </div>
-                            <button
-                              onClick={() => setShowTraining({ isOpen: true, journeyId: formatted.id })}
-                              className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all ${formatted.status === 'completed' ? 'bg-green-50 text-green-700 hover:bg-green-100' :
-                                'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
-                                }`}
-                            >
-                              {formatted.status === 'completed' ? 'Review' : formatted.status === 'in_progress' ? 'Continue' : 'Start'}
-                            </button>
+                            <div className="flex items-center space-x-2">
+                              {formatted.presentationUrl && (
+                                <button
+                                  onClick={() => handleViewPresentation(formatted.presentationUrl)}
+                                  disabled={loadingPresentation}
+                                  className="flex items-center space-x-1.5 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm font-semibold text-indigo-600 transition-all hover:bg-indigo-50 hover:border-indigo-300 shadow-sm"
+                                  title="Voir les slides"
+                                >
+                                  {loadingPresentation ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Monitor className="h-4 w-4" />
+                                  )}
+                                  <span className="hidden sm:inline">Voir les Slides</span>
+                                </button>
+                              )}
+                              <button
+                                onClick={() => setShowTraining({ isOpen: true, journeyId: formatted.id })}
+                                className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all ${formatted.status === 'completed' ? 'bg-green-50 text-green-700 hover:bg-green-100' :
+                                  'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
+                                  }`}
+                              >
+                                {formatted.status === 'completed' ? 'Review' : formatted.status === 'in_progress' ? 'Continue' : 'Start'}
+                              </button>
+                            </div>
                           </div>
                           {formatted.status === 'in_progress' && (
                             <div className="mt-4">
@@ -456,6 +497,12 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           </div>
         </div>
       </div>
+      {selectedPresentation && (
+        <PresentationPreview 
+          presentation={selectedPresentation} 
+          onClose={() => setSelectedPresentation(null)} 
+        />
+      )}
     </div>
   );
 };
