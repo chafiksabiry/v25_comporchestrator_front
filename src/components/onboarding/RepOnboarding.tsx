@@ -23,6 +23,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [trainings, setTrainings] = useState<any[]>([]);
   const [loadingTrainings, setLoadingTrainings] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const [filterGigId, setFilterGigId] = useState<string>('all');
   const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string, newJourney?: boolean }>({ isOpen: false });
 
   // Helper function to format training journey data for display
@@ -121,7 +122,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         ? trainingBackendUrl 
         : `${trainingBackendUrl}/api`;
         
-      const apiUrl = `${baseUrl}/training_journeys/trainer/companyId/${companyId}`;
+      // Pass gigId as query parameter if specified
+      const gigParam = filterGigId && filterGigId !== 'all' ? `?gigId=${filterGigId}` : '';
+      const apiUrl = `${baseUrl}/training_journeys/trainer/companyId/${companyId}${gigParam}`;
 
       console.log('[RepOnboarding] Fetching trainings from:', apiUrl);
       const response = (await axios.get(apiUrl)) as any;
@@ -152,7 +155,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     } finally {
       setLoadingTrainings(false);
     }
-  }, [companyId]);
+  }, [companyId, filterGigId]);
 
   // Load company ID on mount
   useEffect(() => {
@@ -207,17 +210,38 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
             {/* Training Section */}
             <section className="overflow-hidden rounded-xl bg-white shadow-sm border border-gray-100">
               <div className="p-6">
-                <div className="mb-6 flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
-                      <BookOpen className="h-5 w-5" />
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
+                        <BookOpen className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-gray-900">Training & Certification</h2>
+                        <p className="text-sm text-gray-500">Skills development and validation</p>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-gray-900">Training & Certification</h2>
-                      <p className="text-sm text-gray-500">Skills development and validation</p>
+
+                    {/* Gig Filter Dropdown */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Gig:</span>
+                      <select
+                        id="gig-filter-dropdown"
+                        value={filterGigId}
+                        onChange={(e) => setFilterGigId(e.target.value)}
+                        className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer transition-all"
+                      >
+                        <option value="all">Tous les Gigs</option>
+                        {Array.from(new Set(
+                          trainings
+                            .filter(t => t && t.gigId && (t.gigTitle || t.gigName))
+                            .map(t => JSON.stringify({ id: t.gigId, title: t.gigTitle || t.gigName }))
+                        )).map(s => {
+                          const gig = JSON.parse(s as string);
+                          return <option key={gig.id} value={gig.id}>{gig.title}</option>;
+                        })}
+                      </select>
                     </div>
                   </div>
-                </div>
 
                 {loadingTrainings ? (
                   <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-100 py-12 rounded-xl">
