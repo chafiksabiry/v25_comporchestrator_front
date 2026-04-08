@@ -1,5 +1,5 @@
 import pptxgen from 'pptxgenjs';
-
+import React from 'react';
 export interface SlideData {
   title: string;
   content: string;
@@ -65,7 +65,7 @@ export class PowerPointService {
       const contentLines = slideData.content.split('\n').filter(line => line.trim());
       const isBulletList = slideData.content.includes('•');
       const isLongText = slideData.content.length > 100;
-      
+
       if (isBulletList) {
         // Format as bullet points
         slide.addText(
@@ -200,14 +200,14 @@ export class PowerPointService {
       .replace(/'/g, ' ')
       .substring(0, 60)
       .trim();
-    
+
     const contentLines = slideData.content.split('\n').filter(line => line.trim());
     const isBulletList = slideData.content.includes('•');
     const isLongText = slideData.content.length > 100;
-    
+
     // Generate content text elements
     let contentSVG = '';
-    
+
     if (isBulletList) {
       // Bullet list
       contentLines.slice(0, 5).forEach((line, i) => {
@@ -217,7 +217,7 @@ export class PowerPointService {
           .replace(/•/g, '>')
           .substring(0, 60)
           .trim();
-        
+
         contentSVG += `<text x="150" y="${330 + i * 35}" font-family="Arial" font-size="18" fill="${slideData.textColor}" text-anchor="start" opacity="0.9">${cleanLine}</text>`;
       });
     } else if (isLongText) {
@@ -227,7 +227,7 @@ export class PowerPointService {
       let lineCount = 0;
       const maxLines = 6;
       const maxCharsPerLine = 70;
-      
+
       for (let i = 0; i < words.length && lineCount < maxLines; i++) {
         if ((currentLine + ' ' + words[i]).length > maxCharsPerLine) {
           contentSVG += `<text x="150" y="${320 + lineCount * 30}" font-family="Arial" font-size="16" fill="${slideData.textColor}" text-anchor="start" opacity="0.9">${currentLine.trim()}</text>`;
@@ -237,7 +237,7 @@ export class PowerPointService {
           currentLine += ' ' + words[i];
         }
       }
-      
+
       // Add remaining text
       if (currentLine.trim() && lineCount < maxLines) {
         contentSVG += `<text x="150" y="${320 + lineCount * 30}" font-family="Arial" font-size="16" fill="${slideData.textColor}" text-anchor="start" opacity="0.9">${currentLine.trim()}</text>`;
@@ -250,7 +250,7 @@ export class PowerPointService {
           .replace(/'/g, ' ')
           .substring(0, 65)
           .trim();
-        
+
         contentSVG += `<text x="600" y="${340 + i * 35}" font-family="Arial" font-size="20" fill="${slideData.textColor}" text-anchor="middle" opacity="0.9">${cleanLine}</text>`;
       });
     } else {
@@ -262,7 +262,7 @@ export class PowerPointService {
         .trim();
       contentSVG = `<text x="600" y="400" font-family="Arial" font-size="24" fill="${slideData.textColor}" text-anchor="middle" dominant-baseline="middle" opacity="0.9">${cleanContent}</text>`;
     }
-    
+
     const uniqueId = Date.now() + Math.random();
     const svg = `<svg width="1200" height="675" xmlns="http://www.w3.org/2000/svg">
   <defs>

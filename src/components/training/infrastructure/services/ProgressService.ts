@@ -1,6 +1,6 @@
 // src/infrastructure/services/ProgressService.ts
 import { ApiClient } from '../../lib/api';
-
+import React from 'react';
 export interface QuizResult {
   quizId: string;
   score?: number; // Score obtained (0-100)
@@ -112,12 +112,12 @@ export class ProgressService {
    */
   static async getRepProgress(repId: string, journeyId?: string): Promise<RepProgress | null> {
     try {
-      const params = journeyId 
+      const params = journeyId
         ? `?repId=${repId}&journeyId=${journeyId}`
         : `?repId=${repId}`;
-      
+
       const response = await ApiClient.get(`${this.BASE_URL}/rep-progress${params}`);
-      
+
       if (response.data.success) {
         // New structure returns a single object or array with one element
         const data = response.data.data;
@@ -139,7 +139,7 @@ export class ProgressService {
   static async getRepProgressOverview(repId: string): Promise<RepProgressOverview | null> {
     try {
       const response = await ApiClient.get(`${this.BASE_URL}/rep/${repId}/progress/overview`);
-      
+
       if (response.data.success && response.data.data) {
         return response.data.data;
       }
@@ -156,7 +156,7 @@ export class ProgressService {
   static async getRepProgressByGig(repId: string, gigId: string): Promise<GigProgress | null> {
     try {
       const response = await ApiClient.get(`${this.BASE_URL}/rep/${repId}/progress/gig/${gigId}`);
-      
+
       if (response.data.success && response.data.data) {
         return response.data.data;
       }
@@ -173,7 +173,7 @@ export class ProgressService {
   static async updateProgress(request: UpdateProgressRequest): Promise<RepProgress | null> {
     try {
       const response = await ApiClient.post(`${this.BASE_URL}/rep-progress/update`, request);
-      
+
       if (response.data.success && response.data.data) {
         return response.data.data;
       }
@@ -193,7 +193,7 @@ export class ProgressService {
         repId,
         journeyId
       });
-      
+
       if (response.data.success && response.data.data) {
         return response.data.data;
       }

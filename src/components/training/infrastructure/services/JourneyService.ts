@@ -2,7 +2,7 @@
 import { ApiClient } from '../../lib/api';
 import { TrainingJourney, TrainingModule } from '../../types';
 import { extractObjectId, isValidMongoId } from '../../lib/mongoUtils';
-
+import React from 'react';
 export interface LaunchJourneyRequest {
   journey: TrainingJourney;
   modules: TrainingModule[];
