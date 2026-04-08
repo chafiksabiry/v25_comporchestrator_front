@@ -2,8 +2,7 @@ import { useState } from 'react';
 import {
   X, ChevronLeft, ChevronRight,
   Sparkles,
-  CheckCircle, FileDown, Printer,
-  Download as DownloadIcon
+  CheckCircle, FileDown, Printer
 } from 'lucide-react';
 import { IPresentation } from '../../types/core';
 import { AIService } from '../../infrastructure/services/AIService';

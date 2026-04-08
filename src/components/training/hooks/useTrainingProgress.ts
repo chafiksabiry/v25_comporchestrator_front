@@ -51,8 +51,20 @@ export const useTrainingProgress = (initialData: {
   }, [initialData.modules]);
 
   const calculateOverallProgress = useCallback((modules: TrainingModule[], steps: OnboardingStep[]) => {
-    const moduleProgress = modules.reduce((sum, module) => sum + module.progress, 0) / modules.length;
-    const stepProgress = steps.reduce((sum, step) => sum + step.progress, 0) / steps.length;
+    // Prevent division by zero which results in NaN and triggers infinite render loops
+    const moduleProgress = modules.length > 0 
+      ? modules.reduce((sum, module) => sum + (module.progress || 0), 0) / modules.length 
+      : 0;
+      
+    const stepProgress = steps.length > 0 
+      ? steps.reduce((sum, step) => sum + (step.progress || 0), 0) / steps.length 
+      : 0;
+
+    // Return 0 if no modules or steps, otherwise return the average
+    if (modules.length === 0 && steps.length === 0) return 0;
+    if (modules.length === 0) return Math.round(stepProgress);
+    if (steps.length === 0) return Math.round(moduleProgress);
+    
     return Math.round((moduleProgress + stepProgress) / 2);
   }, []);
 
