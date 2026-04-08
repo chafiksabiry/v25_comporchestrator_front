@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X, ChevronLeft, ChevronRight,
   Sparkles,
@@ -81,24 +82,36 @@ export default function PresentationPreview({
 
   const renderSlideContent = (slide: any) => {
     const vc = slide.visualConfig || {};
-    const isDark = vc.theme === 'dark' || isDarkType(slide.type);
-    const accentGradient = vc.accent === 'rose' ? 'from-rose-500 to-rose-600' : (vc.accent === 'purple' ? 'from-purple-500 to-purple-600' : 'from-rose-500 to-purple-600');
+    const themeParams = (presentation as any).visualTheme || {};
+    
+    // Use generated colors or smart fallbacks
+    const isDarkFallback = vc.theme === 'dark' || isDarkType(slide.type);
+    
+    const bgColor = vc.backgroundHex || (isDarkFallback ? '#1a1a2e' : '#ffffff');
+    const textColor = vc.textHex || (isDarkFallback ? '#ffffff' : '#111827');
+    const accentColor = vc.accentHex || themeParams.primaryColor || '#F43F5E';
+    const secondaryColor = themeParams.secondaryColor || '#6D28D9';
+    
     const layout = vc.layout || (slide.type === 'cover' ? 'split' : 'content');
 
     return (
       <div 
-        className={`w-full max-w-5xl aspect-[16/9] rounded-[2.5rem] print:rounded-none print:shadow-none shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-white/10 overflow-hidden flex relative animate-in fade-in duration-500 ${isDark ? 'bg-[#1a1a2e] text-white' : 'bg-white text-gray-900'} page-break-inside-avoid print:w-full print:h-full print:max-w-none print:border-none print:m-0 print:flex print:items-center print:justify-center`}
-        style={{ pageBreakAfter: 'always' }}
+        className={`w-full max-w-5xl aspect-[16/9] rounded-[2.5rem] print:rounded-none print:shadow-none shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-white/10 overflow-hidden flex relative animate-in fade-in duration-500 page-break-inside-avoid print:w-full print:h-full print:max-w-none print:border-none print:m-0 print:flex print:items-center print:justify-center`}
+        style={{ 
+          pageBreakAfter: 'always',
+          backgroundColor: bgColor,
+          color: textColor
+        }}
       >
         {/* Background Accents */}
         {layout === 'gradient' && (
-          <div className={`absolute inset-0 bg-gradient-to-br ${accentGradient} opacity-10 print:opacity-20 pointer-events-none`} />
+          <div className="absolute inset-0 opacity-10 print:opacity-20 pointer-events-none" style={{ background: `linear-gradient(135deg, ${accentColor}, ${secondaryColor})` }} />
         )}
         
         {layout === 'split' && (
-          <div className={`w-1/3 h-full bg-gradient-to-b ${accentGradient} flex flex-col items-center justify-center p-8 text-white print:text-black relative overflow-hidden shrink-0`}>
+          <div className="w-1/3 h-full flex flex-col items-center justify-center p-8 text-white relative overflow-hidden shrink-0" style={{ background: `linear-gradient(180deg, ${accentColor}, ${secondaryColor})`, color: '#ffffff' }}>
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-16 -mt-16 print:hidden" />
-            <h1 className="text-3xl font-black text-center relative z-10 leading-tight">
+            <h1 className="text-3xl font-black text-center relative z-10 leading-tight drop-shadow-md">
               {slide.title}
             </h1>
           </div>
@@ -107,24 +120,30 @@ export default function PresentationPreview({
         {/* Content Area */}
         <div className={`flex-1 p-10 md:p-16 flex flex-col justify-center relative z-10 ${layout === 'split' ? '' : 'w-full'}`}>
           {layout !== 'split' && (
-            <h1 className={`${isDark ? 'text-transparent bg-clip-text bg-gradient-to-r from-rose-300 to-purple-300' : 'text-gray-900'} text-4xl md:text-6xl font-black mb-8 leading-[1.1] tracking-tight`}>
+            <h1 className="text-4xl md:text-6xl font-black mb-8 leading-[1.1] tracking-tight"
+                style={{ 
+                   background: `linear-gradient(90deg, ${accentColor}, ${secondaryColor})`,
+                   WebkitBackgroundClip: 'text',
+                   WebkitTextFillColor: 'transparent',
+                   color: accentColor
+                }}>
               {slide.title}
             </h1>
           )}
 
           {slide.subtitle && (
-            <h2 className={`${isDark ? 'text-purple-300' : 'text-purple-600'} text-xl md:text-2xl font-bold mb-6 opacity-90`}>
+            <h2 className="text-xl md:text-2xl font-bold mb-6 opacity-90" style={{ color: accentColor }}>
               {slide.subtitle}
             </h2>
           )}
 
           {slide.content && (
-            <div className={`mb-6 opacity-90 text-lg md:text-xl leading-relaxed max-w-3xl ${isDark ? 'text-slate-100' : 'text-gray-700'}`}>
+            <div className="mb-6 opacity-90 text-lg md:text-xl leading-relaxed max-w-3xl" style={{ color: 'inherit' }}>
               {Array.isArray(slide.content) ? (
                 <ul className="space-y-4">
                   {slide.content.map((bullet: string, i: number) => (
                     <li key={i} className="flex items-start gap-4">
-                      <span className={`w-2.5 h-2.5 rounded-full bg-gradient-to-br ${accentGradient} mt-2.5 shrink-0 shadow-sm`} />
+                      <span className="w-2.5 h-2.5 rounded-full mt-2.5 shrink-0 shadow-sm" style={{ background: accentColor }} />
                       <span className="font-medium" dangerouslySetInnerHTML={{ __html: parseMarkdown(bullet) }} />
                     </li>
                   ))}
@@ -137,10 +156,10 @@ export default function PresentationPreview({
 
           {/* Support for bullets field */}
           {Array.isArray(slide.bullets) && slide.bullets.length > 0 && (
-            <ul className="space-y-4 max-w-3xl">
+            <ul className="space-y-4 max-w-3xl border-t border-current/10 pt-6 mt-6">
               {slide.bullets.map((bullet: string, i: number) => (
                 <li key={i} className="flex items-start gap-4 text-lg">
-                  <span className={`w-2.5 h-2.5 rounded-full bg-gradient-to-br ${accentGradient} mt-2.5 shrink-0 shadow-sm`} />
+                  <span className="w-2.5 h-2.5 rounded-full mt-2.5 shrink-0 shadow-sm" style={{ background: accentColor }} />
                   <span className="opacity-90" dangerouslySetInnerHTML={{ __html: parseMarkdown(bullet) }} />
                 </li>
               ))}
@@ -148,19 +167,19 @@ export default function PresentationPreview({
           )}
         </div>
 
-        {/* Ornament for dark mode */}
-        {isDark && (
+        {/* Dynamic Ornaments for dark themes based on background brightness */}
+        {vc.theme === 'dark' && (
           <>
-            <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/20 blur-[100px] rounded-full -mr-48 -mt-48 pointer-events-none print:hidden" />
-            <div className="absolute bottom-0 left-0 w-96 h-96 bg-rose-500/10 blur-[100px] rounded-full -ml-48 -mb-48 pointer-events-none print:hidden" />
+            <div className="absolute top-0 right-0 w-96 h-96 blur-[100px] rounded-full -mr-48 -mt-48 pointer-events-none print:hidden" style={{ background: secondaryColor, opacity: 0.15 }} />
+            <div className="absolute bottom-0 left-0 w-96 h-96 blur-[100px] rounded-full -ml-48 -mb-48 pointer-events-none print:hidden" style={{ background: accentColor, opacity: 0.15 }} />
           </>
         )}
       </div>
     );
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/90 z-[100] flex flex-col md:flex-row border-none animate-in fade-in duration-300 overflow-hidden text-gray-900 print:bg-white print:static print:h-auto print:overflow-visible print:block">
+  const content = (
+    <div className="fixed top-0 left-0 w-screen h-[100dvh] bg-black/90 z-[99999] flex flex-col md:flex-row border-none animate-in fade-in duration-300 overflow-hidden text-gray-900 print:bg-white print:static print:h-auto print:overflow-visible print:block">
       
       {/* Premium Print Styles */}
       <style dangerouslySetInnerHTML={{ __html: `
@@ -276,6 +295,12 @@ export default function PresentationPreview({
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined') {
+    return createPortal(content, document.body);
+  }
+
+  return content;
 }
 
 import { RefreshCw } from 'lucide-react';
