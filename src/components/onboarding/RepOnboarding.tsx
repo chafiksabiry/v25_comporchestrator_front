@@ -121,66 +121,86 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     setLoadingTrainings(true);
     try {
       const trainingBackendUrl = getTrainingBackendUrl();
-      
-        const effectiveId = legacyCompanyId || companyId;
-        if (!effectiveId) return;
+      const baseUrl = trainingBackendUrl.endsWith('/api') 
+        ? trainingBackendUrl 
+        : `${trainingBackendUrl}/api`;
+        
+      const effectiveId = legacyCompanyId || companyId;
+      if (!effectiveId) return;
 
-        const baseUrl = trainingBackendUrl.endsWith('/api') 
-          ? trainingBackendUrl 
-          : `${trainingBackendUrl}/api`;
-          
-        const gigParam = filterGigId && filterGigId !== 'all' ? `?gigId=${filterGigId}` : '';
-        const apiUrl = `${baseUrl}/training_journeys/trainer/companyId/${effectiveId}${gigParam}`;
+      const gigParam = filterGigId && filterGigId !== 'all' ? `?gigId=${filterGigId}` : '';
+      const apiUrl = `${baseUrl}/training_journeys/trainer/companyId/${effectiveId}${gigParam}`;
 
-        console.log('[RepOnboarding] Fetching trainings using effectiveId:', effectiveId, 'from URL:', apiUrl);
-        const response = (await axios.get(apiUrl)) as any;
+      console.log('[RepOnboarding] Fetching trainings using effectiveId:', effectiveId, 'from URL:', apiUrl);
+      let response = (await axios.get(apiUrl)) as any;
+      console.log('[RepOnboarding] Primary API Response Data:', response.data);
 
-      console.log('[RepOnboarding] Training API Response Data:', response.data);
+      let backendData = response.data as any;
+      let journeysArray: any[] = [];
 
-      const backendData = response.data as any;
       if (backendData && backendData.success && backendData.data) {
-        // If the data object has a 'journeys' property, use that (new dashboard format)
-        // Otherwise use the data object itself (if it was an array)
-        const journeysArray = backendData.data.journeys || (Array.isArray(backendData.data) ? backendData.data : []);
-        console.log('[RepOnboarding] Found', journeysArray.length, 'trainings');
-        setTrainings(journeysArray);
-
-        // --- DIAGNOSTIC: Log first journey if exists to see structure ---
-        if (journeysArray.length > 0) {
-          console.log('[RepOnboarding] Sample journey from backend:', {
-            id: journeysArray[0]._id || journeysArray[0].id,
-            companyId: journeysArray[0].companyId,
-            trainingName: journeysArray[0].name || journeysArray[0].title
-          });
-        }
-
-        // --- DIAGNOSTIC: Check for local drafts ---
-        if (DraftService.hasDraft()) {
-          const draft = DraftService.getDraft();
-          console.log('[RepOnboarding] Local draft found in storage:', {
-            draftCompanyId: draft.company?.id,
-            currentCompanyId: companyId,
-            journeyName: draft.journey?.name
-          });
-        }
-
-        // Auto-complete step 9 if trainings exist
-        if (journeysArray.length > 0) {
-          updateOnboardingProgress();
-        }
+        journeysArray = backendData.data.journeys || (Array.isArray(backendData.data) ? backendData.data : []);
       } else if (Array.isArray(response.data)) {
-        console.log('[RepOnboarding] Response is array, found', response.data.length, 'trainings');
-        setTrainings(response.data);
-        if (response.data.length > 0) {
-          updateOnboardingProgress();
+        journeysArray = response.data;
+      }
+
+      // --- EMERGENCY BRIDGE: If still 0 and we have a local draft with a DIFFERENT id, try that too ---
+      if (journeysArray.length === 0 && DraftService.hasDraft()) {
+        const draft = DraftService.getDraft();
+        const draftCompId = draft.company?.id;
+        
+        if (draftCompId && draftCompId !== effectiveId) {
+          console.log('[RepOnboarding] ⚠️ 0 results, attempting fallback search with draftCompanyId:', draftCompId);
+          const fallbackUrl = `${baseUrl}/training_journeys/trainer/companyId/${draftCompId}${gigParam}`;
+          try {
+            const fallbackResponse = await axios.get(fallbackUrl) as any;
+            console.log('[RepOnboarding] Fallback API Response Data:', fallbackResponse.data);
+            
+            const fallbackData = fallbackResponse.data as any;
+            const fallbackJourneys = (fallbackData && fallbackData.success && fallbackData.data && fallbackData.data.journeys)
+              ? fallbackData.data.journeys
+              : (fallbackData && fallbackData.data && Array.isArray(fallbackData.data) ? fallbackData.data : []);
+              
+            if (fallbackJourneys.length > 0) {
+              console.log('[RepOnboarding] ✅ Fallback found', fallbackJourneys.length, 'trainings! Merging results.');
+              journeysArray = [...journeysArray, ...fallbackJourneys];
+            }
+          } catch (fallbackErr) {
+            console.error('[RepOnboarding] Fallback fetch failed:', fallbackErr);
+          }
         }
+      }
+
+      console.log('[RepOnboarding] Total trainings found:', journeysArray.length);
+      setTrainings(journeysArray);
+
+      // Auto-complete step 9 if trainings exist
+      if (journeysArray.length > 0) {
+        updateOnboardingProgress();
+        
+        // --- DIAGNOSTIC: Log first journey structure ---
+        console.log('[RepOnboarding] Sample journey from backend:', {
+          id: journeysArray[0]._id || journeysArray[0].id,
+          companyId: journeysArray[0].companyId,
+          trainingName: journeysArray[0].name || journeysArray[0].title
+        });
+      }
+
+      // --- DIAGNOSTIC: Check for local drafts ---
+      if (DraftService.hasDraft()) {
+        const draft = DraftService.getDraft();
+        console.log('[RepOnboarding] Local draft found in storage:', {
+          draftCompanyId: draft.company?.id,
+          currentCompanyId: companyId,
+          journeyName: draft.journey?.name
+        });
       }
     } catch (error) {
       console.error('[RepOnboarding] Error fetching trainings:', error);
     } finally {
       setLoadingTrainings(false);
     }
-  }, [companyId, filterGigId]);
+  }, [companyId, legacyCompanyId, filterGigId]);
 
   // Load company ID on mount
   useEffect(() => {
