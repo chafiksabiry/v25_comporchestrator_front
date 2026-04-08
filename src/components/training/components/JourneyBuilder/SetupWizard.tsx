@@ -107,9 +107,19 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const handleNext = () => {
     if (currentStep === 5) {
       // Complete setup and move to content upload
+      // Robust ID extraction: check all possible locations for the MongoDB ID
+      const realCompanyId = 
+        companyData?._id || 
+        companyData?.id || 
+        companyData?.data?._id || 
+        companyData?.data?.id || 
+        Date.now().toString();
+
+      console.log('[SetupWizard] Using company ID for journey creation:', realCompanyId);
+
       const completeCompany: Company = {
-        id: companyData?._id || companyData?.id || Date.now().toString(),
-        name: companyData?.name || company.name || '',
+        id: realCompanyId,
+        name: companyData?.name || companyData?.data?.name || company.name || '',
         industry: company.industry || '',
         size: company.size || 'medium',
         setupComplete: true,
