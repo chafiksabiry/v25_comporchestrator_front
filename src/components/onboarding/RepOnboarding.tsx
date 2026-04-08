@@ -198,36 +198,60 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         ? trainingBackendUrl 
         : `${trainingBackendUrl}/api`;
         
-      const effectiveId = legacyCompanyId || companyId;
-      if (!effectiveId) return;
-
       const gigParam = filterGigId && filterGigId !== 'all' ? `?gigId=${filterGigId}` : '';
-      const apiUrl = `${baseUrl}/training_journeys/trainer/companyId/${effectiveId}${gigParam}`;
-
-      console.log('[RepOnboarding] Fetching trainings using effectiveId:', effectiveId, 'from URL:', apiUrl);
-      let response = (await axios.get(apiUrl)) as any;
-      console.log('[RepOnboarding] Primary API Response Data:', response.data);
-
-      let backendData = response.data as any;
-      let journeysArray: any[] = [];
-
-      if (backendData && backendData.success && backendData.data) {
-        journeysArray = backendData.data.journeys || (Array.isArray(backendData.data) ? backendData.data : []);
-      } else if (Array.isArray(response.data)) {
-        journeysArray = response.data;
+      
+      // Determine which IDs to fetch
+      const idsToFetch = [companyId];
+      if (legacyCompanyId && legacyCompanyId !== companyId) {
+        idsToFetch.push(legacyCompanyId);
       }
 
-      // --- EMERGENCY BRIDGE: If still 0 and we have a local draft with a DIFFERENT id, try that too ---
+      console.log('[RepOnboarding] Fetching trainings for IDs:', idsToFetch, 'from URL:', baseUrl);
+      
+      // Fetch from all identified IDs in parallel
+      const fetchPromises = idsToFetch.map(async (id) => {
+        try {
+          const apiUrl = `${baseUrl}/training_journeys/trainer/companyId/${id}${gigParam}`;
+          const response = (await axios.get(apiUrl)) as any;
+          console.log(`[RepOnboarding] API Response for ID ${id}:`, response.data);
+
+          let backendData = response.data as any;
+          if (backendData && backendData.success && backendData.data) {
+            return backendData.data.journeys || (Array.isArray(backendData.data) ? backendData.data : []);
+          } else if (Array.isArray(response.data)) {
+            return response.data;
+          }
+          return [];
+        } catch (error) {
+          console.error(`[RepOnboarding] Error fetching for ID ${id}:`, error);
+          return [];
+        }
+      });
+
+      const results = await Promise.all(fetchPromises);
+      
+      // Merge and deduplicate
+      let journeysArray = results.flat().filter(Boolean);
+      
+      // Deduplicate by ID
+      const seenIds = new Set();
+      journeysArray = journeysArray.filter(journey => {
+        const id = String(journey._id || journey.id || '');
+        if (!id || seenIds.has(id)) return false;
+        seenIds.add(id);
+        return true;
+      });
+
+      // --- EMERGENCY BRIDGE: If still 0 and we have a local draft, try that too ---
       if (journeysArray.length === 0 && DraftService.hasDraft()) {
         const draft = DraftService.getDraft();
         const draftCompId = draft.company?.id;
         
-        if (draftCompId && draftCompId !== effectiveId) {
+        if (draftCompId && !idsToFetch.includes(draftCompId)) {
           console.log('[RepOnboarding] ⚠️ 0 results, attempting fallback search with draftCompanyId:', draftCompId);
-          const fallbackUrl = `${baseUrl}/training_journeys/trainer/companyId/${draftCompId}${gigParam}`;
           try {
+            const fallbackUrl = `${baseUrl}/training_journeys/trainer/companyId/${draftCompId}${gigParam}`;
             const fallbackResponse = await axios.get(fallbackUrl) as any;
-            console.log('[RepOnboarding] Fallback API Response Data:', fallbackResponse.data);
             
             const fallbackData = fallbackResponse.data as any;
             const fallbackJourneys = (fallbackData && fallbackData.success && fallbackData.data && fallbackData.data.journeys)
@@ -235,8 +259,17 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               : (fallbackData && fallbackData.data && Array.isArray(fallbackData.data) ? fallbackData.data : []);
               
             if (fallbackJourneys.length > 0) {
-              console.log('[RepOnboarding] ✅ Fallback found', fallbackJourneys.length, 'trainings! Merging results.');
+              console.log('[RepOnboarding] ✅ Fallback found', fallbackJourneys.length, 'trainings! Merging.');
               journeysArray = [...journeysArray, ...fallbackJourneys];
+              
+              // Second deduplication
+              const secondSeenIds = new Set();
+              journeysArray = journeysArray.filter(journey => {
+                const id = String(journey._id || journey.id || '');
+                if (!id || secondSeenIds.has(id)) return false;
+                secondSeenIds.add(id);
+                return true;
+              });
             }
           } catch (fallbackErr) {
             console.error('[RepOnboarding] Fallback fetch failed:', fallbackErr);
@@ -244,7 +277,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         }
       }
 
-      console.log('[RepOnboarding] Total trainings found:', journeysArray.length);
+      console.log('[RepOnboarding] Total unique trainings found:', journeysArray.length);
       setTrainings(journeysArray);
 
       // Auto-complete step 9 if trainings exist
