@@ -7,6 +7,7 @@ import {
 import { IPresentation } from '../../types/core';
 import { AIService } from '../../infrastructure/services/AIService';
 import React from 'react';
+
 interface PresentationPreviewProps {
   presentation: IPresentation;
   onClose: () => void;
@@ -53,7 +54,7 @@ export default function PresentationPreview({
   const isDarkType = (type: string) => ['cover', 'agenda', 'conclusion'].includes(type);
 
   return (
-    <div className="fixed inset-0 bg-black/90 z-[100] flex flex-col md:flex-row border-none animate-in fade-in duration-300 overflow-hidden">
+    <div className="fixed inset-0 bg-black/90 z-[100] flex flex-col md:flex-row border-none animate-in fade-in duration-300 overflow-hidden text-gray-900">
       {/* Sidebar - thumbnails */}
       <div className="w-full md:w-64 lg:w-72 bg-white border-r border-purple-100 flex flex-col h-1/4 md:h-full overflow-hidden">
         <div className="p-4 border-b border-purple-100 flex items-center gap-3 bg-white sticky top-0 z-10">
@@ -131,63 +132,90 @@ export default function PresentationPreview({
 
         {/* Slide Canvas */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 flex flex-col items-center justify-center bg-slate-100/50 relative">
-          <div className={`w-full max-w-5xl aspect-[16/9] rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-white overflow-hidden flex flex-col relative animate-in fade-in slide-in-from-bottom-8 duration-700 ${isDarkType(currentSlide.type) ? 'bg-[#1a1a2e] text-white' : 'bg-white text-gray-900'
-            }`}>
-            {/* Slide Layouts */}
-            <div className="flex-1 p-10 md:p-16 flex flex-col justify-center relative z-10">
-              <h1 className={`${isDarkType(currentSlide.type) ? 'text-transparent bg-clip-text bg-gradient-to-r from-rose-300 to-purple-300' : 'text-gray-900'} text-4xl md:text-6xl font-black mb-8 leading-[1.1] tracking-tight`}>
-                {currentSlide.title}
-              </h1>
+          {(() => {
+            const vc = (currentSlide as any).visualConfig || {};
+            const isDark = vc.theme === 'dark' || isDarkType(currentSlide.type);
+            const accentGradient = vc.accent === 'rose' ? 'from-rose-500 to-rose-600' : (vc.accent === 'purple' ? 'from-purple-500 to-purple-600' : 'from-rose-500 to-purple-600');
+            const layout = vc.layout || 'content';
 
-              {currentSlide.content && (
-                <div className="mb-6 opacity-90 text-lg md:text-xl leading-relaxed">
-                  {Array.isArray(currentSlide.content) ? (
-                    <ul className="space-y-5">
-                      {currentSlide.content.map((bullet, i) => (
-                        <li key={i} className="flex items-start gap-4">
-                          <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-rose-500 to-purple-600 mt-2.5 shrink-0 shadow-sm" />
-                          <span className="font-medium">{bullet}</span>
+            return (
+              <div 
+                key={activeSlide} 
+                className={`w-full max-w-5xl aspect-[16/9] rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-white overflow-hidden flex relative animate-in fade-in duration-500 ${isDark ? 'bg-[#1a1a2e] text-white' : 'bg-white text-gray-900'}`}
+              >
+                {/* Background Accents decided by Claude */}
+                {layout === 'gradient' && (
+                  <div className={`absolute inset-0 bg-gradient-to-br ${accentGradient} opacity-10 pointer-events-none`} />
+                )}
+                
+                {layout === 'split' && (
+                  <div className={`w-1/3 h-full bg-gradient-to-b ${accentGradient} flex flex-col items-center justify-center p-8 text-white relative overflow-hidden shrink-0`}>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-16 -mt-16" />
+                    <h1 className="text-3xl font-black text-center relative z-10 leading-tight">
+                      {currentSlide.title}
+                    </h1>
+                  </div>
+                )}
+
+                {/* Content Area */}
+                <div className={`flex-1 p-10 md:p-16 flex flex-col justify-center relative z-10 ${layout === 'split' ? '' : 'w-full'}`}>
+                  {layout !== 'split' && (
+                    <h1 className={`${isDark ? 'text-transparent bg-clip-text bg-gradient-to-r from-rose-300 to-purple-300' : 'text-gray-900'} text-4xl md:text-6xl font-black mb-8 leading-[1.1] tracking-tight`}>
+                      {currentSlide.title}
+                    </h1>
+                  )}
+
+                  {currentSlide.content && (
+                    <div className="mb-6 opacity-90 text-lg md:text-xl leading-relaxed max-w-3xl">
+                      {Array.isArray(currentSlide.content) ? (
+                        <ul className="space-y-4">
+                          {currentSlide.content.map((bullet, i) => (
+                            <li key={i} className="flex items-start gap-4">
+                              <span className={`w-2.5 h-2.5 rounded-full bg-gradient-to-br ${accentGradient} mt-2.5 shrink-0 shadow-sm`} />
+                              <span className="font-medium">{bullet}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p>{currentSlide.content}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Support for bullets field */}
+                  {Array.isArray((currentSlide as any).bullets) && (currentSlide as any).bullets.length > 0 && (
+                    <ul className="space-y-4 max-w-3xl">
+                      {(currentSlide as any).bullets.map((bullet: string, i: number) => (
+                        <li key={i} className="flex items-start gap-4 text-lg">
+                          <span className={`w-2.5 h-2.5 rounded-full bg-gradient-to-br ${accentGradient} mt-2.5 shrink-0 shadow-sm`} />
+                          <span className="opacity-90">{bullet}</span>
                         </li>
                       ))}
                     </ul>
-                  ) : (
-                    <p>{currentSlide.content}</p>
                   )}
                 </div>
-              )}
 
-              {/* Support for bullets if provided in a separate field by the AI */}
-              {Array.isArray((currentSlide as any).bullets) && (currentSlide as any).bullets.length > 0 && (
-                <ul className="space-y-4">
-                  {(currentSlide as any).bullets.map((bullet: string, i: number) => (
-                    <li key={i} className="flex items-start gap-3 text-lg md:text-xl">
-                      <span className="text-[#c8860a] mt-1.5 shrink-0">›</span>
-                      <span className="opacity-90">{bullet}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            {/* Accent gradients for cover styles */}
-            {isDarkType(currentSlide.type) && (
-              <>
-                <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/20 blur-[100px] rounded-full -mr-48 -mt-48 pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-96 h-96 bg-rose-500/10 blur-[100px] rounded-full -ml-48 -mb-48 pointer-events-none" />
-              </>
-            )}
-          </div>
+                {/* Ornament for dark mode */}
+                {isDark && (
+                  <>
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/20 blur-[100px] rounded-full -mr-48 -mt-48 pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-96 h-96 bg-rose-500/10 blur-[100px] rounded-full -ml-48 -mb-48 pointer-events-none" />
+                  </>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Presenter Notes */}
-          {currentSlide.notes && (
-            <div className="w-full max-w-4xl mt-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
-              <div className="bg-[#fffbf0] border border-[#f0dca0] rounded-xl p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-3 text-[#8b5e07]">
+          {currentSlide.note && (
+            <div className="w-full max-w-4xl mt-8 animate-in fade-in duration-700">
+              <div className="bg-white/80 backdrop-blur border border-purple-100 rounded-2xl p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-3 text-purple-600">
                   <Key size={16} />
                   <span className="text-xs font-bold uppercase tracking-wider">Notes du présentateur</span>
                 </div>
-                <p className="text-[#7a7060] text-sm leading-relaxed italic">
-                  {currentSlide.notes}
+                <p className="text-gray-600 text-sm leading-relaxed italic">
+                  {currentSlide.note}
                 </p>
               </div>
             </div>
