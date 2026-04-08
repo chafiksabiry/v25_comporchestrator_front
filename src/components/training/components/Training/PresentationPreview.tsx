@@ -118,9 +118,9 @@ export default function PresentationPreview({
         )}
 
         {/* Content Area */}
-        <div className={`flex-1 p-10 md:p-16 flex flex-col justify-center relative z-10 ${layout === 'split' ? '' : 'w-full'}`}>
+        <div className={`flex-1 p-8 md:p-12 lg:p-14 flex flex-col justify-center relative z-10 overflow-y-auto custom-scrollbar ${layout === 'split' ? '' : 'w-full'}`}>
           {layout !== 'split' && (
-            <h1 className="text-4xl md:text-6xl font-black mb-8 leading-[1.1] tracking-tight"
+            <h1 className="text-3xl md:text-5xl font-black mb-6 leading-[1.2] tracking-tight"
                 style={{ 
                    background: `linear-gradient(90deg, ${accentColor}, ${secondaryColor})`,
                    WebkitBackgroundClip: 'text',
@@ -132,13 +132,13 @@ export default function PresentationPreview({
           )}
 
           {slide.subtitle && (
-            <h2 className="text-xl md:text-2xl font-bold mb-6 opacity-90" style={{ color: accentColor }}>
+            <h2 className="text-lg md:text-xl font-bold mb-6 opacity-90" style={{ color: accentColor }}>
               {slide.subtitle}
             </h2>
           )}
 
           {slide.content && (
-            <div className="mb-6 opacity-90 text-lg md:text-xl leading-relaxed max-w-3xl" style={{ color: 'inherit' }}>
+            <div className="mb-4 opacity-90 text-base md:text-lg leading-relaxed max-w-3xl" style={{ color: 'inherit' }}>
               {Array.isArray(slide.content) ? (
                 <ul className="space-y-4">
                   {slide.content.map((bullet: string, i: number) => (
@@ -156,10 +156,10 @@ export default function PresentationPreview({
 
           {/* Support for bullets field */}
           {Array.isArray(slide.bullets) && slide.bullets.length > 0 && (
-            <ul className="space-y-4 max-w-3xl border-t border-current/10 pt-6 mt-6">
+            <ul className={`space-y-3 max-w-3xl ${slide.content ? 'border-t border-current/10 pt-5 mt-5' : ''}`}>
               {slide.bullets.map((bullet: string, i: number) => (
-                <li key={i} className="flex items-start gap-4 text-lg">
-                  <span className="w-2.5 h-2.5 rounded-full mt-2.5 shrink-0 shadow-sm" style={{ background: accentColor }} />
+                <li key={i} className="flex items-start gap-4 text-base md:text-lg">
+                  <span className="w-2.5 h-2.5 rounded-full mt-2 shrink-0 shadow-sm" style={{ background: accentColor }} />
                   <span className="opacity-90" dangerouslySetInnerHTML={{ __html: parseMarkdown(bullet) }} />
                 </li>
               ))}
