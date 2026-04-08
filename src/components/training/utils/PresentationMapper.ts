@@ -79,3 +79,93 @@ export const mapModuleToPresentation = (module: TrainingModule): IPresentation =
     estimatedTime: `${module.duration} min`
   };
 };
+
+/**
+ * Utility to map a whole Training Journey to a Presentation format.
+ * This is useful for providing a slide view even if AI slides weren't generated.
+ */
+export const mapJourneyToPresentation = (journey: any): IPresentation => {
+  const title = journey.title || journey.name || 'Formation';
+  const description = journey.description || '';
+  const modules = journey.modules || [];
+  
+  let allSlides: ISlide[] = [];
+  
+  // Add Journey Cover
+  allSlides.push({
+    id: 0,
+    type: 'cover',
+    title: title,
+    subtitle: description,
+    visualConfig: {
+      layout: 'split',
+      theme: 'dark',
+      accent: 'rose'
+    }
+  });
+
+  // Process each module
+  modules.forEach((module: any, mIdx: number) => {
+    // Module Title Slide
+    allSlides.push({
+      id: allSlides.length,
+      type: 'agenda',
+      title: `Module ${mIdx + 1}: ${module.title || 'Sans titre'}`,
+      content: module.description || '',
+      visualConfig: {
+        layout: 'gradient',
+        theme: 'dark',
+        accent: 'purple'
+      }
+    });
+
+    const sections = module.sections || module.content || [];
+    sections.forEach((section: any, sIdx: number) => {
+      let content = '';
+      let bullets: string[] = [];
+      
+      if (typeof section.content === 'string') {
+        content = section.content;
+      } else if (section.content) {
+        content = section.content.text || section.content.description || section.content.content || '';
+        if (Array.isArray(section.content.bullets)) {
+          bullets = section.content.bullets;
+        }
+      }
+
+      allSlides.push({
+        id: allSlides.length,
+        type: section.type === 'video' ? 'video' : 'content',
+        title: section.title || `Section ${sIdx + 1}`,
+        content: content,
+        bullets: bullets,
+        visualConfig: {
+          layout: 'content',
+          theme: 'light',
+          accent: mIdx % 2 === 0 ? 'rose' : 'purple'
+        }
+      });
+    });
+  });
+
+  // Conclusion Slide
+  allSlides.push({
+    id: allSlides.length,
+    type: 'conclusion',
+    title: 'Fin de la Formation',
+    subtitle: 'Vous avez parcouru tout le contenu.',
+    content: 'Félicitations pour votre assiduité !',
+    visualConfig: {
+      layout: 'split',
+      theme: 'dark',
+      accent: 'rose'
+    }
+  });
+
+  return {
+    title: title,
+    totalSlides: allSlides.length,
+    slides: allSlides,
+    estimatedTime: 'N/A'
+  };
+};
