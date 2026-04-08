@@ -90,7 +90,8 @@ export default function PresentationPreview({
     const bgColor = vc.backgroundHex || (isDarkFallback ? '#1a1a2e' : '#ffffff');
     const textColor = vc.textHex || (isDarkFallback ? '#ffffff' : '#111827');
     const accentColor = vc.accentHex || themeParams.primaryColor || '#F43F5E';
-    const secondaryColor = themeParams.secondaryColor || '#6D28D9';
+    // If AI explicitly chose an accent color, don't force a purple gradient fallback
+    const secondaryColor = (vc.accentHex && vc.accentHex.length > 0) ? vc.accentHex : (themeParams.secondaryColor || '#6D28D9');
     
     const layout = vc.layout || (slide.type === 'cover' ? 'split' : 'content');
 
