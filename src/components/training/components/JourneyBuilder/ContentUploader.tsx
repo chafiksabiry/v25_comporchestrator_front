@@ -888,6 +888,8 @@ export default function ContentUploader({ onComplete, onBack, company, gigId }: 
       {isPreviewOpen && generatedPresentation && (
         <PresentationPreview 
           presentation={generatedPresentation} 
+          onSave={handleSavePresentation}
+          isSaving={isSavingCloud}
           onClose={() => setIsPreviewOpen(false)} 
         />
       )}
