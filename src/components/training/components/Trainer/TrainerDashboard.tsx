@@ -30,7 +30,13 @@ export default function TrainerDashboard({ dashboard: propDashboard, onTraineeSe
         setLoading(true);
         setError(null);
 
-        const effectiveCompanyId = companyId || Cookies.get('companyId');
+        const idFromCookie = Cookies.get('companyId');
+        const idFromLocalStorage = localStorage.getItem('companyId');
+        const effectiveCompanyId = companyId || idFromCookie || idFromLocalStorage;
+        
+        if (idFromCookie && !idFromLocalStorage) {
+          localStorage.setItem('companyId', idFromCookie);
+        }
         console.log('[TrainerDashboard] Fetching dashboard with:', {
           companyId: effectiveCompanyId,
           gigId
