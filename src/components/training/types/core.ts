@@ -121,15 +121,26 @@ export interface RepProgress {
 }
 
 export interface ISlide {
-  id: string;
-  type: 'cover' | 'agenda' | 'content' | 'module' | 'exercise' | 'quote' | 'conclusion';
+  id: number;
+  type: string;
   title: string;
-  content: string[];
+  subtitle?: string;
+  content?: string;
+  bullets?: string[];
+  note?: string;
   notes?: string;
-  visualDescription?: string;
+  visualConfig?: {
+    layout?: string;
+    theme?: string;
+    accent?: string;
+    icon?: string;
+  };
+  imageDescription?: string;
 }
 
 export interface IPresentation {
   title: string;
+  totalSlides: number;
   slides: ISlide[];
-}
+  estimatedTime?: string;
+}
