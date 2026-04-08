@@ -64,6 +64,9 @@ import Cookies from 'js-cookie';
 import { extractObjectId } from './lib/mongoUtils';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 
+// Stable constant for empty arrays to prevent infinite re-renders
+const EMPTY_ARRAY: any[] = [];
+
 export function AppContent({
   initialJourneyId,
   isEmbedded = false,
@@ -469,10 +472,10 @@ export function AppContent({
 
   // Use real modules if available, otherwise use empty array (no mock fallback)
   // Only use real data from backend - no mock fallback
-  const modulesToUse = realModules.length > 0 ? realModules : [];
+  // Use stable EMPTY_ARRAY to prevent infinite re-renders in useTrainingProgress
+  const modulesToUse = realModules.length > 0 ? realModules : EMPTY_ARRAY;
 
-  console.log('[App] Using', modulesToUse.length, 'modules (real:', realModules.length, ', mock:', mockTrainingModules.length, ')');
-  console.log('[App] modulesToUse array:', modulesToUse.length === 0 ? 'EMPTY' : `has ${modulesToUse.length} modules`);
+  // Debug logs removed for production
 
   // Use empty arrays if no real data - don't use mock data
   const { progress, updateModuleProgress, updateStepProgress, updateAssessmentResult } = useTrainingProgress({
@@ -481,9 +484,7 @@ export function AppContent({
     assessments: [], // Empty assessments - no mock data
   });
 
-  console.log('[App] Progress modules count:', progress.modules.length, '(should be', modulesToUse.length, ')');
-  console.log('[App] Real journeys count:', realJourneys.length);
-  console.log('[App] Real modules count:', realModules.length);
+  // Debug logs removed for production
 
   // Calculate progress stats from real journeys data, not mock data
   // For trainees: calculate from their actual progress in realJourneys
@@ -958,7 +959,7 @@ export function AppContent({
               <div className="mb-8">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Mes Formations</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Mes Formations (V2)</h1>
                     <p className="text-gray-600">Sélectionnez une formation pour commencer votre apprentissage</p>
                   </div>
                   {traineeJourneys.length > 0 && (
@@ -2085,7 +2086,7 @@ export function AppContent({
     }
   };
 
-  console.log('[App] Rendering main app layout, activeTab:', activeTab, 'userType:', userType);
+  // Debug logs removed for production
   return (
     <div className={`h-full bg-gray-50 relative min-h-[500px] ${isEmbedded ? '' : ''}`}>
       {/* Sidebar - Always rendered first */}
