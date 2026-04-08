@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2 } from 'lucide-react';
+import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation } from 'lucide-react';
 import { ContentUpload } from '../../types/core';
 import { AIService } from '../../infrastructure/services/AIService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
 import { cloudinaryService } from '../../lib/cloudinaryService';
+import PresentationPreview from '../Training/PresentationPreview';
 
 interface ContentUploaderProps {
   onComplete: (uploads: ContentUpload[]) => void;
@@ -20,6 +21,7 @@ export default function ContentUploader({ onComplete, onBack, company, gigId }: 
   const [viewMode, setViewMode] = useState<'upload' | 'curriculum'>('upload');
   const [generatedCurriculum, setGeneratedCurriculum] = useState<any>(null);
   const [isSavingCloud, setIsSavingCloud] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
 
   // Scroll to top when component mounts
@@ -334,6 +336,12 @@ export default function ContentUploader({ onComplete, onBack, company, gigId }: 
   const handleGeneratePresentation = async () => {
     if (uploads.length === 0) return;
     
+    // Si la présentation est déjà générée, on l'ouvre directement
+    if (generatedPresentation) {
+      setIsPreviewOpen(true);
+      return;
+    }
+
     try {
       setIsGeneratingPresentation(true);
       console.log('🤖 Génération de la présentation en cours...');
@@ -374,10 +382,10 @@ export default function ContentUploader({ onComplete, onBack, company, gigId }: 
       
       setGeneratedPresentation(presentation);
       
-      // Automatically switch to the preview mode so they can see the button state updated
-      setViewMode('curriculum');
+      // Automatically switch to the preview mode so they can see it
+      setIsPreviewOpen(true);
       
-      alert('La présentation a été générée avec succès ! Vous pouvez y accéder dans le module.');
+      console.log('✅ Présentation générée avec succès !');
     } catch (error: any) {
       console.error('Failed to generate presentation:', error);
       alert('Erreur lors de la génération: ' + (error.message || 'Erreur inconnue'));
@@ -490,10 +498,10 @@ export default function ContentUploader({ onComplete, onBack, company, gigId }: 
               <div className="mt-10 flex flex-col md:flex-row justify-center gap-4">
                 <button 
                   onClick={handleGeneratePresentation}
-                  disabled={isGeneratingPresentation || generatedPresentation}
+                  disabled={isGeneratingPresentation}
                   className={`px-8 py-4 rounded-2xl font-bold text-lg shadow-md transition-all flex items-center justify-center ${
                     generatedPresentation 
-                      ? 'bg-green-100 text-green-700 border border-green-300'
+                      ? 'bg-amber-100 text-amber-700 border border-amber-300 hover:bg-amber-200'
                       : 'bg-white text-purple-700 border border-purple-200 hover:bg-purple-50 hover:shadow-lg'
                   }`}
                 >
@@ -504,8 +512,8 @@ export default function ContentUploader({ onComplete, onBack, company, gigId }: 
                     </>
                   ) : generatedPresentation ? (
                     <>
-                      <CheckCircle className="mr-2 h-5 w-5" />
-                      Présentation Générée
+                      <Presentation className="mr-2 h-5 w-5" />
+                      Visualiser la Présentation
                     </>
                   ) : (
                     <>
@@ -876,6 +884,13 @@ export default function ContentUploader({ onComplete, onBack, company, gigId }: 
           </div>
         </div>
       </div>
+
+      {isPreviewOpen && generatedPresentation && (
+        <PresentationPreview 
+          presentation={generatedPresentation} 
+          onClose={() => setIsPreviewOpen(false)} 
+        />
+      )}
     </div>
   );
 }
