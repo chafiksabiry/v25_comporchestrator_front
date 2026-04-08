@@ -1,3 +1,5 @@
+import { ReactNode } from 'react';
+
 export interface Rep {
   id: string;
   name: string;
@@ -102,6 +104,48 @@ export interface GigApiResponse {
   data: GigFromApi[];
 }
 
+export interface JourneyStep {
+  id: string;
+  title: string;
+  description: string;
+  type: 'content-upload' | 'ai-analysis' | 'curriculum-design' | 'review' | 'launch' | 'live-setup' | string;
+  status: 'pending' | 'in-progress' | 'completed' | 'skipped' | string;
+  order: number;
+  estimatedTime: string;
+  requirements?: string[];
+  outputs?: string[];
+}
+
+export interface Company {
+  id: string;
+  name: string;
+  industry: string;
+  size?: string;
+  setupComplete?: boolean;
+}
+
+export interface TrainingMethodology {
+  id: string;
+  name: string;
+  description: string;
+  principles: string[];
+  engagementStrategies: string[];
+}
+
+export interface ContentUpload {
+  id: string;
+  name: string;
+  type: 'document' | 'video' | 'audio' | 'presentation' | 'image' | string;
+  size: number;
+  uploadedAt: string;
+  status: 'uploading' | 'processing' | 'analyzed' | 'error' | string;
+  file?: File;
+  aiAnalysis?: any;
+  error?: string;
+  cloudinaryUrl?: string;
+  publicId?: string;
+}
+
 export interface OnboardingStep {
   id: string;
   title: string;
@@ -121,12 +165,6 @@ export interface OnboardingStep {
 }
 
 export interface TrainingModule {
-  content: any;
-  sections: any;
-  assessments: any;
-  learningObjectives: any;
-  difficulty: ReactNode;
-  difficulty: ReactNode;
   id: string;
   title: string;
   description: string;
@@ -140,6 +178,12 @@ export interface TrainingModule {
   comprehensionScore: number;
   practicalExercises: Exercise[];
   aiGeneratedQuizzes: Quiz[];
+  learningObjectives?: string[];
+  sections?: any[];
+  assessments?: any[];
+  content?: any;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced' | ReactNode;
+  order?: number;
 }
 
 export interface Exercise {
@@ -629,7 +673,9 @@ export interface TrainingJourney {
   id: string;
   companyId: string;
   name: string;
+  title: string;
   description: string;
+  presentationUrl?: string;
   status: 'draft' | 'rehearsal' | 'active' | 'completed' | 'archived';
   steps: JourneyStep[];
   createdAt: string;

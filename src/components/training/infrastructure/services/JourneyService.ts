@@ -65,7 +65,7 @@ export class JourneyService {
    * The backend will automatically partition this data into separate collections.
    * @param journeyId Optional: if provided, updates existing journey instead of creating new one
    */
-  static async saveJourney(journey: TrainingJourney, modules: TrainingModule[], companyId?: string, gigId?: string, finalExam?: any, journeyId?: string): Promise<any> {
+  static async saveJourney(journey: TrainingJourney, modules: TrainingModule[], companyId?: string, gigId?: string, finalExam?: any, journeyId?: string, presentationData?: any): Promise<any> {
     // Convert modules to embedded structure with sections and quizzes
     const embeddedModules = modules.map((m, index) => {
       // Convert sections
@@ -79,7 +79,7 @@ export class JourneyService {
           sections = [m.content];
         }
       }
-      
+
       // Convert sections to embedded format
       const embeddedSections = sections.map((section: any, sectionIndex: number) => ({
         title: section.title || section.content?.title || `Section ${sectionIndex + 1}`,
@@ -88,7 +88,7 @@ export class JourneyService {
         content: section.content || section,
         duration: section.duration || section.estimatedDuration || 0
       }));
-      
+
       // Convert assessments to quizzes
       const embeddedQuizzes = (m.assessments || []).map((assessment: any) => ({
         title: assessment.title || `Quiz - ${m.title}`,
@@ -113,7 +113,7 @@ export class JourneyService {
           showExplanations: true
         }
       }));
-      
+
       return {
         title: m.title || `Module ${index + 1}`,
         description: m.description || '',
@@ -127,7 +127,7 @@ export class JourneyService {
         order: index
       };
     });
-    
+
     // Convert final exam to embedded format
     let embeddedFinalExam: any = null;
     if (finalExam) {
@@ -155,7 +155,7 @@ export class JourneyService {
         }
       };
     }
-    
+
     const titleValue = (journey as any).title || (journey as any).name || 'Untitled Journey';
     const journeyPayload: any = {
       title: titleValue,
@@ -168,9 +168,10 @@ export class JourneyService {
       companyId: companyId,
       gigId: gigId,
       modules: embeddedModules,
-      finalExam: embeddedFinalExam
+      finalExam: embeddedFinalExam,
+      presentationData: presentationData // Send presentation data to backend
     };
-    
+
     // If journeyId is provided, include it for update
     if (journeyId && isValidMongoId(journeyId)) {
       journeyPayload.id = journeyId;
@@ -194,27 +195,27 @@ export class JourneyService {
     } else {
       // Create new journey
       response = await ApiClient.post('/training_journeys', journeyPayload) as any;
-      
+
       if (!response.data.success) {
         console.error('[JourneyService] Create journey failed:', response.data);
         throw new Error(`Failed to create journey: ${response.data.error || 'Unknown error'}`);
       }
-      
+
       const createdJourney = response.data.journey || response.data;
       const returnedJourneyId = extractObjectId(createdJourney?.id || createdJourney?._id);
-      
+
       if (!returnedJourneyId || !isValidMongoId(returnedJourneyId)) {
         console.error('[JourneyService] ⚠️ Invalid journeyId returned from backend:', returnedJourneyId);
         throw new Error('Invalid journeyId returned from backend');
       }
-      
+
       journeyId = returnedJourneyId;
       console.log('[JourneyService] Created new journey:', journeyId);
     }
-    
+
     const savedJourney = response.data.journey || response.data;
     const savedJourneyId = extractObjectId(savedJourney?.id || savedJourney?._id) || journeyId;
-    
+
     return {
       ...response.data,
       success: true,
@@ -247,7 +248,7 @@ export class JourneyService {
           sections = [m.content];
         }
       }
-      
+
       // Convert sections to embedded format
       const embeddedSections = sections.map((section: any, sectionIndex: number) => ({
         title: section.title || section.content?.title || `Section ${sectionIndex + 1}`,
@@ -256,7 +257,7 @@ export class JourneyService {
         content: section.content || section,
         duration: section.duration || section.estimatedDuration || 0
       }));
-      
+
       // Convert assessments to quizzes
       const embeddedQuizzes = (m.assessments || []).map((assessment: any) => ({
         title: assessment.title || `Quiz - ${m.title}`,
@@ -281,7 +282,7 @@ export class JourneyService {
           showExplanations: true
         }
       }));
-      
+
       return {
         title: m.title || `Module ${index + 1}`,
         description: m.description || '',
@@ -295,7 +296,7 @@ export class JourneyService {
         order: index
       };
     });
-    
+
     // Convert final exam to embedded format
     let embeddedFinalExam: any = null;
     if (finalExam) {
@@ -323,16 +324,16 @@ export class JourneyService {
         }
       };
     }
-    
+
     // Priority: journeyId parameter > journey._id (never use journey.id as it might be a timestamp)
     let journeyIdToUse = journeyId || (request.journey as any)._id;
-    
+
     // Validate that it's a MongoDB ObjectId
     if (journeyIdToUse && !isValidMongoId(journeyIdToUse)) {
       console.warn('[JourneyService] Invalid journeyId format (launch, not MongoDB ObjectId):', journeyIdToUse, '- will create new journey');
       journeyIdToUse = null;
     }
-    
+
     const titleValue = (request.journey as any).title || request.journey.name || 'Untitled Journey';
     const journeyPayload: any = {
       title: titleValue,
@@ -349,7 +350,7 @@ export class JourneyService {
       launchSettings: request.launchSettings,
       rehearsalData: request.rehearsalData
     };
-    
+
     // If journeyId is provided, include it for update
     if (journeyIdToUse && isValidMongoId(journeyIdToUse)) {
       journeyPayload.id = journeyIdToUse;
@@ -368,7 +369,7 @@ export class JourneyService {
     };
 
     const launchResponse = await ApiClient.post('/training_journeys/launch', launchPayload) as any;
-    
+
     if (!launchResponse.data.success) {
       throw new Error(launchResponse.data.error || 'Failed to launch journey');
     }
