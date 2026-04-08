@@ -30,7 +30,7 @@ const CreateGig = () => {
   const [jobDescription, setJobDescription] = useState('');
   const [technicalRequirements, setTechnicalRequirements] = useState('');
 
-  const companyId = Cookies.get('companyid') || Cookies.get('companyId');
+  const companyId = Cookies.get('companyId');
 
   // Vérifier l'état de l'étape au chargement
   useEffect(() => {

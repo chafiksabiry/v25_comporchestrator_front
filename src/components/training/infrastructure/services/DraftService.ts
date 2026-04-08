@@ -1,6 +1,7 @@
 // Service pour gérer la sauvegarde automatique des brouillons de formation
 import { Company, TrainingJourney, ContentUpload, TrainingModule, TrainingMethodology } from '../../types';
 import { JourneyService } from './JourneyService';
+import { OnboardingService } from './OnboardingService';
 import Cookies from 'js-cookie';
 import { extractObjectId, normalizeObjectIds, toExtendedJson } from '../../lib/mongoUtils';
 
@@ -276,7 +277,7 @@ export class DraftService {
 
         // Si on a un journey et des modules, sauvegarder dans le backend
         if (updatedDraft.journey && updatedDraft.modules.length > 0) {
-          const companyId = Cookies.get('companyId');
+          const companyId = OnboardingService.getCompanyId();
           const gigId = updatedDraft.selectedGigId || null;
 
           // Préparer le journey avec status="draft"
@@ -406,7 +407,7 @@ export class DraftService {
       // Sauvegarder dans le backend si possible
       // IMPORTANT: Only save if we have both journey AND modules (to avoid creating empty journeys)
       if (updatedDraft.journey && updatedDraft.modules.length > 0) {
-        const companyId = Cookies.get('companyId');
+        const companyId = OnboardingService.getCompanyId();
         const gigId = updatedDraft.selectedGigId || null;
 
         const journeyToSave: TrainingJourney = {

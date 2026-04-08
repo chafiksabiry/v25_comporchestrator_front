@@ -30,7 +30,7 @@ const KYCVerification = () => {
   const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
   const [isStepCompleted, setIsStepCompleted] = useState(false);
 
-  const companyId = Cookies.get('companyid') || Cookies.get('companyId');
+  const companyId = Cookies.get('companyId');
 
   // Vérifier l'état de l'étape au chargement
   useEffect(() => {

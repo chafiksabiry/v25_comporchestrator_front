@@ -30,13 +30,8 @@ export default function TrainerDashboard({ dashboard: propDashboard, onTraineeSe
         setLoading(true);
         setError(null);
 
-        const idFromCookie = Cookies.get('companyid') || Cookies.get('companyId');
-        const idFromLocalStorage = localStorage.getItem('companyid') || localStorage.getItem('companyId');
-        const effectiveCompanyId = companyId || idFromCookie || idFromLocalStorage;
+        const effectiveCompanyId = companyId || OnboardingService.getCompanyId();
         
-        if (idFromCookie && !idFromLocalStorage) {
-          localStorage.setItem('companyid', idFromCookie);
-        }
         console.log('[TrainerDashboard] Fetching dashboard with:', {
           companyId: effectiveCompanyId,
           gigId
