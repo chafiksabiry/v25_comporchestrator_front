@@ -69,8 +69,8 @@ export default function PresentationPreview({
               key={idx}
               onClick={() => setActiveSlide(idx)}
               className={`w-full text-left p-3 rounded-lg border-2 transition-all duration-200 ${activeSlide === idx
-                  ? 'border-[#c8860a] bg-[#fff5e6] shadow-sm'
-                  : 'border-[#d5cfc0] bg-[#f5f0e8] hover:border-[#7a7060]'
+                ? 'border-[#c8860a] bg-[#fff5e6] shadow-sm'
+                : 'border-[#d5cfc0] bg-[#f5f0e8] hover:border-[#7a7060]'
                 }`}
             >
               <div className="text-[10px] uppercase tracking-wider text-[#7a7060] mb-1">
@@ -99,8 +99,8 @@ export default function PresentationPreview({
               onClick={handleExportPPTX}
               disabled={isExporting}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-sm transition-all ${isExporting
-                  ? 'bg-[#d5cfc0] text-[#7a7060] cursor-not-allowed'
-                  : 'bg-[#c8860a] text-white hover:bg-[#b57a09] shadow-sm'
+                ? 'bg-[#d5cfc0] text-[#7a7060] cursor-not-allowed'
+                : 'bg-[#c8860a] text-white hover:bg-[#b57a09] shadow-sm'
                 }`}
               title="Exporter en PowerPoint (.pptx)"
             >
@@ -139,9 +139,27 @@ export default function PresentationPreview({
                 {currentSlide.title}
               </h1>
 
-              {currentSlide.content && currentSlide.content.length > 0 && (
+              {currentSlide.content && (
+                <div className="mb-6 opacity-90 text-lg md:text-xl leading-relaxed">
+                  {Array.isArray(currentSlide.content) ? (
+                    <ul className="space-y-4">
+                      {currentSlide.content.map((bullet, i) => (
+                        <li key={i} className="flex items-start gap-3">
+                          <span className="text-[#c8860a] mt-1.5 shrink-0">›</span>
+                          <span>{bullet}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>{currentSlide.content}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Support for bullets if provided in a separate field by the AI */}
+              {Array.isArray((currentSlide as any).bullets) && (currentSlide as any).bullets.length > 0 && (
                 <ul className="space-y-4">
-                  {currentSlide.content.map((bullet, i) => (
+                  {(currentSlide as any).bullets.map((bullet: string, i: number) => (
                     <li key={i} className="flex items-start gap-3 text-lg md:text-xl">
                       <span className="text-[#c8860a] mt-1.5 shrink-0">›</span>
                       <span className="opacity-90">{bullet}</span>
