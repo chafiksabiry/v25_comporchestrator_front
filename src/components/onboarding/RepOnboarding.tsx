@@ -18,6 +18,7 @@ import PresentationPreview from '../training/components/Training/PresentationPre
 import { getGigsByCompanyId } from '../../api/matching';
 import { DraftService } from '../training/infrastructure/services/DraftService';
 import { OnboardingService } from '../training/infrastructure/services/OnboardingService';
+import { mapJourneyToPresentation } from '../training/utils/PresentationMapper';
 import '../training/index.css';
 
 interface RepOnboardingProps { }
@@ -73,22 +74,31 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     };
   };
 
-  const handleViewPresentation = async (url: string, journeyId: string) => {
-    if (!url) return;
-    setLoadingPresentation(true);
+  const handleViewPresentation = async (url: string | null, journeyId: string, journey: any) => {
     setActiveJourneyId(journeyId);
-    try {
-      console.log('[RepOnboarding] Fetching presentation JSON from:', url);
-      const response = await axios.get(url);
-      if (response.data) {
-        setSelectedPresentation(response.data);
+    
+    if (url) {
+      setLoadingPresentation(true);
+      try {
+        console.log('[RepOnboarding] Fetching presentation JSON from:', url);
+        const response = await axios.get(url);
+        if (response.data) {
+          setSelectedPresentation(response.data);
+          setLoadingPresentation(false);
+          return;
+        }
+      } catch (error) {
+        console.error('[RepOnboarding] Error fetching presentation JSON:', error);
+        // Fallback to local mapping if fetch fails
+      } finally {
+        setLoadingPresentation(false);
       }
-    } catch (error) {
-      console.error('[RepOnboarding] Error fetching presentation:', error);
-      alert('Impossible de charger les slides. Veuillez réessayer.');
-    } finally {
-      setLoadingPresentation(false);
     }
+
+    // Fallback or Direct local mapping if no URL or fetch failed
+    console.log('[RepOnboarding] Using local mapping for presentation');
+    const localPresentation = mapJourneyToPresentation(journey);
+    setSelectedPresentation(localPresentation);
   };
 
   const handleJourneyComplete = async () => {
@@ -451,13 +461,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                             </div>
                             <div className="flex items-center space-x-2">
                               <button
-                                onClick={() => {
-                                  if (formatted.presentationUrl) {
-                                    handleViewPresentation(formatted.presentationUrl, formatted.id);
-                                  } else {
-                                    console.log('[RepOnboarding] No presentation URL, clicking ignored as per user request to avoid dashboard.');
-                                  }
-                                }}
+                                onClick={() => handleViewPresentation(formatted.presentationUrl, formatted.id, journey)}
                                 disabled={loadingPresentation}
                                 className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all flex items-center space-x-2 ${formatted.status === 'completed'
                                   ? 'bg-green-50 text-green-700 hover:bg-green-100'
