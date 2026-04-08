@@ -59,6 +59,7 @@ import { TrainingJourney, TrainingModule, Rep, LiveStreamSession, ChatMessage } 
 import { getCurrentUserName, getAgentId, getCurrentUserEmail, getUserType } from './utils/userUtils';
 import { JourneyService } from './infrastructure/services/JourneyService';
 import { TrainingService } from './infrastructure/services/TrainingService';
+import { OnboardingService } from './infrastructure/services/OnboardingService';
 // TrainingModuleService no longer needed - using embedded structure
 import Cookies from 'js-cookie';
 import { extractObjectId } from './lib/mongoUtils';
@@ -243,7 +244,7 @@ export function AppContent({
     const loadTrainingJourneys = async () => {
       try {
         setLoadingModules(true);
-        const companyId = Cookies.get('companyid') || Cookies.get('companyId') || localStorage.getItem('companyid') || localStorage.getItem('companyId');
+        const companyId = OnboardingService.getCompanyId();
         const detectedAgentId = getAgentId();
 
         let journeys: any[] = [];
@@ -440,7 +441,7 @@ export function AppContent({
         } else {
           // No type or unknown: check fallback (companyId for trainer, agentId for trainee)
           console.log('[App] No user type found, checking fallback');
-          const companyId = Cookies.get('companyid') || Cookies.get('companyId') || localStorage.getItem('companyid') || localStorage.getItem('companyId');
+          const companyId = OnboardingService.getCompanyId();
           const detectedAgentId = getAgentId();
 
           if (companyId) {
@@ -453,7 +454,7 @@ export function AppContent({
       } catch (error) {
         console.error('[App] Error checking user type:', error);
         // Fallback logic
-        const companyId = Cookies.get('companyid') || Cookies.get('companyId') || localStorage.getItem('companyid') || localStorage.getItem('companyId');
+        const companyId = OnboardingService.getCompanyId();
         const detectedAgentId = getAgentId();
 
         if (companyId) {

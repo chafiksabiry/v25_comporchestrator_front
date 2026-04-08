@@ -9,6 +9,7 @@ import App from './App';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import './index.css';
 import Cookies from 'js-cookie';
+import { OnboardingService } from './infrastructure/services/OnboardingService';
 
 // Function to decode JWT token
 const decodeToken = (token: string) => {
@@ -32,7 +33,7 @@ const userId = Cookies.get('userId');
 const token = localStorage.getItem('token');
 
 // Set default companyId if not present (for testing)
-let companyId = Cookies.get('companyId');
+let companyId = OnboardingService.getCompanyId();
 if (!companyId) {
   companyId = '68cab073cfa9381f0ed56393'; // Default company ID
   Cookies.set('companyId', companyId, { expires: 365 });

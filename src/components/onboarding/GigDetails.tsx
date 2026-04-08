@@ -124,7 +124,7 @@ const GigDetails = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
-  const companyId = Cookies.get('companyid') || Cookies.get('companyId');
+  const companyId = Cookies.get('companyId');
 
   console.log('GigDetails render - selectedGig:', selectedGig);
 

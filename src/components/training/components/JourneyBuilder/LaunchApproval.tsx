@@ -6,6 +6,7 @@ import { JourneyService } from '../../infrastructure/services/JourneyService';
 import { DraftService } from '../../infrastructure/services/DraftService';
 import { AIService } from '../../infrastructure/services/AIService';
 import axios from 'axios';
+import { OnboardingService } from '../../infrastructure/services/OnboardingService';
 import Cookies from 'js-cookie';
 
 interface LaunchApprovalProps {
@@ -377,8 +378,8 @@ export default function LaunchApproval({
         steps: journey.steps.map(step => ({ ...step, status: 'completed' }))
       };
 
-      // Get companyId from cookies
-      const companyId = Cookies.get('companyId');
+      // Get companyId from centralized service
+      const companyId = OnboardingService.getCompanyId();
 
       // ✅ Sauvegarder dans MongoDB with companyId and gigId
       // Add industry to journey if available from company

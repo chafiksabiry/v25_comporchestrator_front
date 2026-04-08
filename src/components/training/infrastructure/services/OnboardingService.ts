@@ -22,14 +22,10 @@ export const OnboardingService = {
   },
 
   /**
-   * Get company ID from cookies or localStorage (supports both 'companyid' and 'companyId' cases)
+   * Get company ID from cookies or localStorage
    */
   getCompanyId(): string | undefined {
-    return Cookies.get('companyid') || 
-           Cookies.get('companyId') || 
-           localStorage.getItem('companyid') || 
-           localStorage.getItem('companyId') || 
-           undefined;
+    return Cookies.get('companyId') || localStorage.getItem('companyId') || undefined;
   },
 
   /**

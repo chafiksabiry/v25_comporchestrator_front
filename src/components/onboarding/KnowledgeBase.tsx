@@ -23,7 +23,7 @@ const KnowledgeBase = () => {
   const [isStepCompleted, setIsStepCompleted] = useState(false);
   const [articles, setArticles] = useState<any[]>([]);
 
-  const companyId = Cookies.get('companyid') || Cookies.get('companyId');
+  const companyId = Cookies.get('companyId');
 
   // Define API URL with fallback
   const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL;

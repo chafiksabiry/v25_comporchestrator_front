@@ -107,13 +107,14 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const handleNext = () => {
     if (currentStep === 5) {
       // Complete setup and move to content upload
-      // Robust ID extraction: check all possible locations for the MongoDB ID
-      const realCompanyId =
-        companyData?._id ||
-        companyData?.id ||
-        companyData?.data?._id ||
-        companyData?.data?.id ||
-        Date.now().toString();
+      // Robust ID extraction: fetch from centralized service
+      const realCompanyId = OnboardingService.getCompanyId();
+      
+      if (!realCompanyId) {
+        console.error('[SetupWizard] No company ID found! Cannot create journey.');
+        alert('Internal Error: Company ID not found. Please refresh the page.');
+        return;
+      }
 
       console.log('[SetupWizard] Using company ID for journey creation:', realCompanyId);
 

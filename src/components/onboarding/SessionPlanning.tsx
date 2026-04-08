@@ -176,7 +176,7 @@ const sampleCompanies: Company[] = [
 // Function to update onboarding progress for Step 10 (Session Planning)
 const updateOnboardingProgress = async () => {
   try {
-    const companyId = Cookies.get('companyid') || Cookies.get('companyId');
+    const companyId = Cookies.get('companyId');
     if (!companyId) return;
 
     const apiUrl = import.meta.env.VITE_API_URL_ONBOARDING || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
@@ -227,7 +227,7 @@ export default function SessionPlanning() {
 
   useEffect(() => {
     const fetchGigs = async () => {
-      const companyId = Cookies.get('companyid') || Cookies.get('companyId');
+      const companyId = Cookies.get('companyId');
       if (!companyId) {
         setNotification({ message: 'Company ID not found. Gigs cannot be loaded.', type: 'error' });
         return;
