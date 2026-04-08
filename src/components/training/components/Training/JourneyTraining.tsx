@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Play, Clock, CheckCircle, BookOpen, Users, Award } from 'lucide-react';
 
 interface JourneyTrainingProps {
@@ -7,10 +7,24 @@ interface JourneyTrainingProps {
 }
 
 export default function JourneyTraining({ journeys, onJourneySelect }: JourneyTrainingProps) {
-  const activeJourneys = journeys.filter(j => j.status === 'active');
-  const completedJourneys = journeys.filter(j => j.status === 'completed');
+  const [filterGigId, setFilterGigId] = useState<string>('all');
+
+  // Extract unique gigs from journeys data
+  const availableGigs = Array.from(new Set(
+    journeys
+      .filter(j => j && j.gigId && (j.gigTitle || j.gigName))
+      .map(j => JSON.stringify({ id: j.gigId, title: j.gigTitle || j.gigName }))
+  )).map(s => JSON.parse(s as string));
+
+  // Filter journeys list based on selected Gig
+  const filteredJourneys = filterGigId === 'all'
+    ? journeys
+    : journeys.filter(j => j && j.gigId === filterGigId);
+
+  const activeJourneys = filteredJourneys.filter(j => j && j.status === 'active');
+  const completedJourneys = filteredJourneys.filter(j => j && j.status === 'completed');
   const completedCount = completedJourneys.length;
-  const totalCount = journeys.length;
+  const totalCount = filteredJourneys.length;
 
   console.log('[JourneyTraining] Received', journeys.length, 'journeys');
 
@@ -64,16 +78,38 @@ export default function JourneyTraining({ journeys, onJourneySelect }: JourneyTr
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Journey Training</h1>
-        <div className="text-sm text-gray-600 font-medium">
-          {completedCount} of {totalCount} completed
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Journey Training</h1>
+          <div className="text-sm text-gray-600 font-medium">
+            {completedCount} of {totalCount} completed
+          </div>
+        </div>
+
+        {/* Gig Filter Dropdown */}
+        <div className="flex items-center gap-3">
+          <label htmlFor="gig-filter" className="text-sm font-semibold text-gray-500 whitespace-nowrap">
+            Filtrer par Gig:
+          </label>
+          <select
+            id="gig-filter"
+            value={filterGigId}
+            onChange={(e) => setFilterGigId(e.target.value)}
+            className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all cursor-pointer min-w-[200px]"
+          >
+            <option value="all">Toutes les formations</option>
+            {availableGigs.map((gig: any) => (
+              <option key={gig.id} value={gig.id}>
+                {gig.title}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
       {/* Journeys Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {journeys.map((journey) => {
+        {filteredJourneys.map((journey) => {
           if (!journey) return null;
           const isCompleted = journey.status === 'completed';
           const isActive = journey.status === 'active';
@@ -214,7 +250,7 @@ export default function JourneyTraining({ journeys, onJourneySelect }: JourneyTr
       </div>
 
       {/* Empty State */}
-      {journeys.length === 0 && (
+      {filteredJourneys.length === 0 && (
         <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
           <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600">No journey training available yet.</p>
