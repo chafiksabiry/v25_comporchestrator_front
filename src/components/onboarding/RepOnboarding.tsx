@@ -310,9 +310,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   // Load company ID on mount
   useEffect(() => {
-    // Try Cookies first, then localStorage as fallback
-    const idFromCookie = Cookies.get('companyId');
-    const idFromLocalStorage = localStorage.getItem('companyId');
+    // Try Cookies first (both cases), then localStorage as fallback
+    const idFromCookie = Cookies.get('companyid') || Cookies.get('companyId');
+    const idFromLocalStorage = localStorage.getItem('companyid') || localStorage.getItem('companyId');
     const id = idFromCookie || idFromLocalStorage;
     
     if (id) {
@@ -320,9 +320,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         console.log('[RepOnboarding] companyId found in localStorage but not in cookies');
       }
       
-      // Sync to localStorage if only found in cookies
+      // Sync to localStorage if found in cookies or under different case
       if (idFromCookie && !idFromLocalStorage) {
-        localStorage.setItem('companyId', idFromCookie);
+        localStorage.setItem('companyid', idFromCookie);
       }
       
       setCompanyId(id);
