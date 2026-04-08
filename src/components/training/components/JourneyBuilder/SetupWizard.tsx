@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Building2, Loader2, Target, Users, Sparkles, Briefcase, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
 import { Company, TrainingJourney } from '../../types/core';
 import { Industry, GigFromApi } from '../../types';
@@ -108,7 +108,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     if (currentStep === 5) {
       // Complete setup and move to content upload
       const completeCompany: Company = {
-        id: Date.now().toString(),
+        id: companyData?._id || companyData?.id || Date.now().toString(),
         name: companyData?.name || company.name || '',
         industry: company.industry || '',
         size: company.size || 'medium',
