@@ -288,13 +288,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     fetchGigs();
   }, [companyId]);
 
-  if (showTraining.isOpen) {
+  if (showTraining.isOpen && showTraining.newJourney) {
     return (
       <MemoryRouter>
         <AppContent
           initialJourneyId={showTraining.journeyId}
           isEmbedded={true}
-          startWithJourneyBuilder={showTraining.newJourney}
+          startWithJourneyBuilder={true}
         />
       </MemoryRouter>
     );
@@ -415,7 +415,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                   if (formatted.presentationUrl) {
                                     handleViewPresentation(formatted.presentationUrl);
                                   } else {
-                                    setShowTraining({ isOpen: true, journeyId: formatted.id });
+                                    console.log('[RepOnboarding] No presentation URL, clicking ignored as per user request to avoid dashboard.');
                                   }
                                 }}
                                 disabled={loadingPresentation}
