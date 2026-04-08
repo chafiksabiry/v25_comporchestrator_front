@@ -45,6 +45,13 @@ interface TraineeModulePlayerProps {
   onNextModule?: () => void; // Callback to navigate to next module
   totalModules?: number; // Total number of modules in the journey
   onQuizComplete?: () => void; // Callback to reload progress after quiz is saved
+  visualTheme?: {
+    primaryColor?: string;
+    secondaryColor?: string;
+    accentColor?: string;
+    fontFamily?: string;
+    layoutStyle?: 'modern' | 'corporate' | 'creative';
+  };
 }
 
 export default function TraineeModulePlayer({ 
@@ -57,7 +64,8 @@ export default function TraineeModulePlayer({
   onBack,
   onNextModule,
   totalModules,
-  onQuizComplete
+  onQuizComplete,
+  visualTheme
 }: TraineeModulePlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -80,6 +88,26 @@ export default function TraineeModulePlayer({
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const [allQuizzesPassed, setAllQuizzesPassed] = useState(false);
+  const [activeImage, setActiveImage] = useState<string | null>(null);
+
+  // Apply visual theme via CSS variables
+  useEffect(() => {
+    if (visualTheme) {
+      const root = document.documentElement;
+      if (visualTheme.primaryColor) root.style.setProperty('--primary-color', visualTheme.primaryColor);
+      if (visualTheme.secondaryColor) root.style.setProperty('--secondary-color', visualTheme.secondaryColor);
+      if (visualTheme.accentColor) root.style.setProperty('--accent-color', visualTheme.accentColor);
+      if (visualTheme.fontFamily) root.style.setProperty('--font-family', visualTheme.fontFamily);
+      
+      return () => {
+        // Reset to defaults on unmount
+        root.style.removeProperty('--primary-color');
+        root.style.removeProperty('--secondary-color');
+        root.style.removeProperty('--accent-color');
+        root.style.removeProperty('--font-family');
+      };
+    }
+  }, [visualTheme]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
@@ -375,7 +403,8 @@ export default function TraineeModulePlayer({
             options: firstQuestion.options || [],
             correctAnswer: firstQuestion.correctAnswer || firstQuestion.correct_answer || 0,
             explanation: firstQuestion.explanation || 'Good job!',
-            difficulty: firstQuestion.difficulty === 'easy' ? 3 : firstQuestion.difficulty === 'medium' ? 5 : 8
+            difficulty: firstQuestion.difficulty === 'easy' ? 3 : firstQuestion.difficulty === 'medium' ? 5 : 8,
+            aiGenerated: true
           };
           console.log('[TraineeModulePlayer] Setting quiz data:', quizData);
           
@@ -410,7 +439,8 @@ export default function TraineeModulePlayer({
                 ? firstQuestion.correctAnswer[0] 
                 : (firstQuestion.correctAnswer !== undefined ? firstQuestion.correctAnswer : 0),
               explanation: firstQuestion.explanation || 'Good job!',
-              difficulty: firstQuestion.difficulty === 'easy' ? 3 : firstQuestion.difficulty === 'medium' ? 5 : 8
+              difficulty: firstQuestion.difficulty === 'easy' ? 3 : firstQuestion.difficulty === 'medium' ? 5 : 8,
+              aiGenerated: true
             };
             console.log('[TraineeModulePlayer] Setting quiz data from quizzes array:', quizData);
             
@@ -608,7 +638,8 @@ export default function TraineeModulePlayer({
             ? nextQuestion.correctAnswer[0] 
             : (nextQuestion.correctAnswer !== undefined ? nextQuestion.correctAnswer : 0),
           explanation: nextQuestion.explanation || 'Good job!',
-          difficulty: nextQuestion.difficulty === 'easy' ? 3 : nextQuestion.difficulty === 'medium' ? 5 : 8
+          difficulty: nextQuestion.difficulty === 'easy' ? 3 : nextQuestion.difficulty === 'medium' ? 5 : 8,
+          aiGenerated: true
         });
       }
     } else {
@@ -884,6 +915,22 @@ export default function TraineeModulePlayer({
 
                     {/* Section Content */}
                     <div className="flex-1 min-h-0 overflow-hidden" style={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                      {/* Section Image */}
+                      {currentSectionData.imageUrl && (
+                        <div className="px-6 pt-6">
+                          <div className="rounded-xl overflow-hidden shadow-lg border border-gray-100 max-h-80 flex items-center justify-center bg-gray-50">
+                            <img 
+                              src={currentSectionData.imageUrl} 
+                              alt={currentSectionData.imageDescription || 'Section visual'} 
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                          {currentSectionData.imageDescription && (
+                            <p className="text-xs text-gray-500 mt-2 text-center italic">{currentSectionData.imageDescription}</p>
+                          )}
+                        </div>
+                      )}
+
                       {currentSectionData.content?.file?.url ? (
                         <DocumentViewer
                           fileUrl={currentSectionData.content.file.url}
@@ -1117,7 +1164,8 @@ export default function TraineeModulePlayer({
                                 options: question.options,
                                 correctAnswer: question.correctAnswer,
                                 explanation: question.explanation || 'Good job!',
-                                difficulty: question.difficulty === 'easy' ? 3 : question.difficulty === 'medium' ? 5 : 8
+                                difficulty: question.difficulty === 'easy' ? 3 : question.difficulty === 'medium' ? 5 : 8,
+                                aiGenerated: true
                               })}
                               className="w-full text-left p-4 bg-white border border-purple-200 rounded-lg hover:bg-purple-50 transition-colors"
                             >
@@ -1177,7 +1225,8 @@ export default function TraineeModulePlayer({
                           options: question.options,
                           correctAnswer: question.correctAnswer,
                           explanation: question.explanation || 'Good job!',
-                          difficulty: question.difficulty === 'easy' ? 3 : question.difficulty === 'medium' ? 5 : 8
+                          difficulty: question.difficulty === 'easy' ? 3 : question.difficulty === 'medium' ? 5 : 8,
+                          aiGenerated: true
                         })}
                         className="group bg-white border-2 border-green-200 rounded-lg p-5 hover:border-green-400 hover:shadow-lg transition-all text-left"
                       >
@@ -1625,7 +1674,8 @@ export default function TraineeModulePlayer({
                                         ? firstQuestion.correctAnswer[0] 
                                         : (firstQuestion.correctAnswer !== undefined ? firstQuestion.correctAnswer : 0),
                                       explanation: firstQuestion.explanation || 'Please retry the quiz.',
-                                      difficulty: firstQuestion.difficulty === 'easy' ? 3 : firstQuestion.difficulty === 'medium' ? 5 : 8
+                                      difficulty: firstQuestion.difficulty === 'easy' ? 3 : firstQuestion.difficulty === 'medium' ? 5 : 8,
+                                      aiGenerated: true
                                     });
                                   }
                                   setQuizAnswers({});
@@ -1657,28 +1707,32 @@ export default function TraineeModulePlayer({
                 </div>
                 
                 <div className="p-6">
-                  <p className="text-gray-700 mb-4">{currentQuiz.question}</p>
+                  {currentQuiz && (
+                    <>
+                      <p className="text-gray-700 mb-4">{currentQuiz.question}</p>
+                      
+                      <div className="space-y-2 mb-4">
+                        {currentQuiz.options.map((option, index) => (
+                          <button
+                            key={index}
+                            onClick={() => {
+                              handleInteraction();
+                              setQuizAnswer(index);
+                            }}
+                            className={`w-full text-left p-3 border rounded-lg transition-colors ${
+                              quizAnswer === index
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-200 hover:bg-gray-50'
+                            }`}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
                   
-                  <div className="space-y-2 mb-4">
-                    {currentQuiz.options.map((option, index) => (
-                      <button
-                        key={index}
-                        onClick={() => {
-                          handleInteraction();
-                          setQuizAnswer(index);
-                        }}
-                        className={`w-full text-left p-3 border rounded-lg transition-colors ${
-                          quizAnswer === index
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:bg-gray-50'
-                        }`}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-
-                  {showQuizResult && (
+                  {showQuizResult && currentQuiz && (
                     <div className={`p-3 rounded-lg mb-4 ${
                       quizAnswer === currentQuiz.correctAnswer
                         ? 'bg-green-50 border border-green-200'

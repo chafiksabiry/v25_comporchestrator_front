@@ -888,6 +888,7 @@ export default function TraineePortal({
         onNextModule={handleNextModule}
         totalModules={modules.length}
         onBack={handleBackToDashboard}
+        visualTheme={journey.visualTheme}
       />
     );
   };

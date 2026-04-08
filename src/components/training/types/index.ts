@@ -184,6 +184,8 @@ export interface TrainingModule {
   content?: any;
   difficulty?: 'beginner' | 'intermediate' | 'advanced' | ReactNode;
   order?: number;
+  imageDescription?: string;
+  imageUrl?: string;
 }
 
 export interface Exercise {
@@ -687,6 +689,13 @@ export interface TrainingJourney {
     feedback: RehearsalFeedback[];
     overallRating: number;
     readyForLaunch: boolean;
+  };
+  visualTheme?: {
+    primaryColor?: string;
+    secondaryColor?: string;
+    accentColor?: string;
+    fontFamily?: string;
+    layoutStyle?: 'modern' | 'corporate' | 'creative';
   };
 }
 
