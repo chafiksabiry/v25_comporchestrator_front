@@ -22,10 +22,10 @@ export const OnboardingService = {
   },
 
   /**
-   * Get company ID from cookies
+   * Get company ID from cookies or localStorage
    */
-  getCompanyIdFromCookie(): string | undefined {
-    return Cookies.get('companyId');
+  getCompanyId(): string | undefined {
+    return Cookies.get('companyId') || localStorage.getItem('companyId') || undefined;
   },
 
   /**
@@ -35,7 +35,7 @@ export const OnboardingService = {
   async fetchGigsByCompany(companyId?: string): Promise<GigApiResponse> {
     try {
       // Use provided companyId or get from cookie
-      const effectiveCompanyId = companyId || this.getCompanyIdFromCookie();
+      const effectiveCompanyId = companyId || this.getCompanyId();
 
       if (!effectiveCompanyId) {
         throw new Error('No company ID provided or found in cookies');
@@ -56,7 +56,7 @@ export const OnboardingService = {
    */
   async fetchGigsByIndustry(industryIdentifier: string, companyId?: string): Promise<GigApiResponse> {
     try {
-      const effectiveCompanyId = companyId || this.getCompanyIdFromCookie();
+      const effectiveCompanyId = companyId || this.getCompanyId();
       console.log('[OnboardingService] Fetching gigs for companyId:', effectiveCompanyId);
       console.log('[OnboardingService] Filtering by industry:', industryIdentifier);
 
@@ -132,7 +132,7 @@ export const OnboardingService = {
   async fetchCompanyData(companyId?: string): Promise<any> {
     try {
       // Use provided companyId or get from cookie
-      const effectiveCompanyId = companyId || this.getCompanyIdFromCookie();
+      const effectiveCompanyId = companyId || this.getCompanyId();
 
       if (!effectiveCompanyId) {
         throw new Error('No company ID provided or found in cookies');

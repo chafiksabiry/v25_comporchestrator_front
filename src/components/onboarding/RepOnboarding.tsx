@@ -310,13 +310,24 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   // Load company ID on mount
   useEffect(() => {
-    const id = Cookies.get('companyId');
+    // Try Cookies first, then localStorage as fallback
+    const idFromCookie = Cookies.get('companyId');
+    const idFromLocalStorage = localStorage.getItem('companyId');
+    const id = idFromCookie || idFromLocalStorage;
+    
     if (id) {
+      if (!idFromCookie) {
+        console.log('[RepOnboarding] companyId found in localStorage but not in cookies');
+      }
+      
+      // Sync to localStorage if only found in cookies
+      if (idFromCookie && !idFromLocalStorage) {
+        localStorage.setItem('companyId', idFromCookie);
+      }
+      
       setCompanyId(id);
     } else {
-      console.warn('[RepOnboarding] No companyId found in cookies');
-      // For testing, use a default company ID if needed
-      // setCompanyId('65bcc8e6f1a2b3c4d5e6f7a8'); 
+      console.warn('[RepOnboarding] No companyId found in cookies or localStorage');
     }
   }, []);
 
