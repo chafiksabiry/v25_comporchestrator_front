@@ -1,5 +1,5 @@
 import { useSocket } from '../../components/Providers/SocketProvider';
-
+import React from 'react';
 export class RealTimeService {
   private static socket: any = null;
 
@@ -9,10 +9,10 @@ export class RealTimeService {
 
   // Subscribe to progress updates
   static subscribeToProgress(
-    journeyId: string, 
+    journeyId: string,
     callback: (payload: any) => void
   ): () => void {
-    if (!this.socket) return () => {};
+    if (!this.socket) return () => { };
 
     const eventName = `progress-${journeyId}`;
     this.socket.on(eventName, callback);
@@ -27,7 +27,7 @@ export class RealTimeService {
     sessionId: string,
     callback: (payload: any) => void
   ): () => void {
-    if (!this.socket) return () => {};
+    if (!this.socket) return () => { };
 
     const eventName = `session-${sessionId}`;
     this.socket.on(eventName, callback);

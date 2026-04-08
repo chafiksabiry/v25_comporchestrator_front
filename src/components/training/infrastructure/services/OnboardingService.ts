@@ -1,7 +1,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { IndustryApiResponse, GigApiResponse, GigFromApi } from '../../types';
-
+import React from 'react';
 const REPS_WIZARD_API_URL = 'https://v25repscreationwizardbackend-production.up.railway.app';
 const INDUSTRIES_API_URL = `${REPS_WIZARD_API_URL}/api/industries`;
 const GIGS_API_URL = 'https://v25gigsmanualcreationbackend-production.up.railway.app/api/gigs/company';

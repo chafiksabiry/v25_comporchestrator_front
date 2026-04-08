@@ -1,6 +1,6 @@
 import { ApiClient } from '../../lib/api';
 import { TrainingJourney, TrainingModule, Rep, Company } from '../../types';
-
+import React from 'react';
 export class TrainingService {
   // Company Management
   static async createCompany(company: Omit<Company, 'id'>): Promise<Company> {

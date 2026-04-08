@@ -1,5 +1,5 @@
 import { ApiClient } from '../../lib/api';
-
+import React from 'react';
 export interface TrainingModule {
   _id?: string;
   id?: string;
