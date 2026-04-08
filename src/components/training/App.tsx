@@ -62,6 +62,7 @@ import { TrainingService } from './infrastructure/services/TrainingService';
 // TrainingModuleService no longer needed - using embedded structure
 import Cookies from 'js-cookie';
 import { extractObjectId } from './lib/mongoUtils';
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 
 export function AppContent({
   initialJourneyId,
@@ -96,14 +97,7 @@ export function AppContent({
 
   const finalJourneyId = journeyIdFromUrl || journeyIdFromPathname || initialJourneyId;
 
-  console.log('[App] AppContent rendering:', {
-    journeyIdFromUrl,
-    journeyIdFromPathname,
-    finalJourneyId,
-    pathname,
-    params: { idjourneytraining },
-    allParams: useParams()
-  });
+  // Debug logs removed as requested
   // const { user, signOut } = useAuth();
   const user = { name: 'User', email: 'user@example.com' }; // Mock user - no auth required
   const [activeTab, setActiveTab] = useState(isEmbedded ? 'training' : 'dashboard');
@@ -1241,6 +1235,7 @@ export function AppContent({
     const traineeJourney: TrainingJourney = {
       id: selectedTraineeJourney.id || selectedTraineeJourney._id,
       name: selectedTraineeJourney.title || selectedTraineeJourney.name || 'Untitled Journey',
+      title: selectedTraineeJourney.title || selectedTraineeJourney.name || 'Untitled Journey',
       description: selectedTraineeJourney.description || '',
       status: (selectedTraineeJourney.status || 'active') as 'draft' | 'rehearsal' | 'active' | 'completed' | 'archived',
       companyId: selectedTraineeJourney.companyId || '',
@@ -1254,6 +1249,7 @@ export function AppContent({
     const availableJourneysForSelector: TrainingJourney[] = traineeJourneys.map((j: any) => ({
       id: j.id || j._id,
       name: j.title || j.name || 'Untitled Journey',
+      title: j.title || j.name || 'Untitled Journey',
       description: j.description || '',
       status: (j.status || 'active') as 'draft' | 'rehearsal' | 'active' | 'completed' | 'archived',
       companyId: j.companyId || '',
@@ -2116,25 +2112,7 @@ export function AppContent({
         <div className="bg-white border-b border-gray-200 flex-shrink-0 z-10">
           <div className="flex items-center justify-between px-6 py-2">
             <div className="flex items-center space-x-4">
-              {!isEmbedded && (
-                <>
-                  <span className="text-sm text-gray-600">View as:</span>
-                  <div className="flex items-center space-x-2">
-                    {(['trainee', 'trainer', 'admin'] as const).map((role) => (
-                      <button
-                        key={role}
-                        onClick={() => handleRoleSwitch(role)}
-                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${userRole === role
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                          }`}
-                      >
-                        {role ? role.charAt(0).toUpperCase() + role.slice(1) : ''}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
+              {/* Role switcher hidden as requested */}
             </div>
             <div className="flex items-center space-x-2">
               {!isEmbedded && (
@@ -2237,19 +2215,21 @@ function App() {
   });
 
   return (
-    <Router basename={basename}>
-      <Routes>
-        {/* Routes with parameters should come before routes without */}
-        <Route path="/repdashboard/:idjourneytraining" element={<AppContent />} />
-        <Route path="/:idjourneytraining" element={<AppContent />} />
-        {/* Routes without parameters */}
-        <Route path="/companydashboard" element={<AppContent />} />
-        <Route path="/repdashboard" element={<AppContent />} />
-        <Route path="/" element={<AppContent />} />
-        {/* Catch-all route should be last */}
-        <Route path="/*" element={<AppContent />} />
-      </Routes>
-    </Router>
+    <ErrorBoundary>
+      <Router basename={basename}>
+        <Routes>
+          {/* Routes with parameters should come before routes without */}
+          <Route path="/repdashboard/:idjourneytraining" element={<AppContent />} />
+          <Route path="/:idjourneytraining" element={<AppContent />} />
+          {/* Routes without parameters */}
+          <Route path="/companydashboard" element={<AppContent />} />
+          <Route path="/repdashboard" element={<AppContent />} />
+          <Route path="/" element={<AppContent />} />
+          {/* Catch-all route should be last */}
+          <Route path="/*" element={<AppContent />} />
+        </Routes>
+      </Router>
+    </ErrorBoundary>
   );
 }
 
