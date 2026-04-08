@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Play, Clock, CheckCircle, BookOpen, Users, Award } from 'lucide-react';
 
 interface JourneyTrainingProps {
@@ -21,9 +21,7 @@ export default function JourneyTraining({ journeys, onJourneySelect }: JourneyTr
     ? journeys
     : journeys.filter(j => j && j.gigId === filterGigId);
 
-  const activeJourneys = filteredJourneys.filter(j => j && j.status === 'active');
-  const completedJourneys = filteredJourneys.filter(j => j && j.status === 'completed');
-  const completedCount = completedJourneys.length;
+  const completedCount = filteredJourneys.filter(j => j && j.status === 'completed').length;
   const totalCount = filteredJourneys.length;
 
   console.log('[JourneyTraining] Received', journeys.length, 'journeys');
