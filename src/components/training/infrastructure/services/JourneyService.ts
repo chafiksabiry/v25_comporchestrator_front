@@ -156,8 +156,10 @@ export class JourneyService {
       };
     }
     
+    const titleValue = (journey as any).title || (journey as any).name || 'Untitled Journey';
     const journeyPayload: any = {
-      title: (journey as any).title,
+      title: titleValue,
+      name: titleValue, // Fix: Express validator requires 'name'
       description: (journey as any).description,
       industry: (journey as any).industry,
       status: (journey as any).status || 'draft',
@@ -331,8 +333,10 @@ export class JourneyService {
       journeyIdToUse = null;
     }
     
+    const titleValue = (request.journey as any).title || request.journey.name || 'Untitled Journey';
     const journeyPayload: any = {
-      title: (request.journey as any).title || request.journey.name || 'Untitled Journey',
+      title: titleValue,
+      name: titleValue, // Fix: Express validator requires 'name'
       description: request.journey.description,
       industry: (request.journey as any).industry || (request.journey as any).company?.industry || null,
       status: 'active',
