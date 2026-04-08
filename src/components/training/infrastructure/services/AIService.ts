@@ -426,6 +426,48 @@ export class AIService {
   }
 
   /**
+   * Exporte une présentation riche en PowerPoint (.pptx)
+   * Génère un fichier PowerPoint avec les slides complètes
+   */
+  static async exportPresentationToPPTX(presentation: any): Promise<void> {
+    try {
+      const token = ApiClient.getToken();
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://v25platformtrainingbackend-production.up.railway.app';
+      const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
+
+      console.log('📤 Exporting presentation to PPTX...');
+
+      const response = await fetch(`${baseUrl}/api/ai/export-pptx`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify({ presentation })
+      });
+
+      if (!response.ok) {
+        throw new Error('PPTX export failed');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${presentation.title || 'training_presentation'}.pptx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      console.log('✅ PPTX export successful');
+    } catch (error) {
+      console.error('❌ Error exporting PPTX:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Génère un module de formation complet basé sur la base de connaissances (Gig) en utilisant la méthodologie 360°
    */
   static async generateGigTrainingModule(
@@ -454,23 +496,20 @@ export class AIService {
   }
 
   /**
-   * Exporte une présentation riche en PowerPoint (.pptx)
-   * Génère un fichier PowerPoint avec les slides complètes
+   * Exporte une présentation riche en PowerPoint (.pptx) - Legacy compatible method
    */
   static async exportToPowerPoint(presentation: any): Promise<Blob> {
     const token = ApiClient.getToken();
-    const apiUrl = import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://v25platformtrainingbackend-production.up.railway.app';
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://v25platformtrainingbackend-production.up.railway.app';
     const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
 
-    const response = await fetch(`${baseUrl}/api/ai/export-powerpoint`, {
+    const response = await fetch(`${baseUrl}/api/ai/export-pptx`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...(token && { 'Authorization': `Bearer ${token}` })
       },
-      // Note: we're passing it as curriculum so the backend endpoint wrapper (which expects it) works fine,
-      // but actually it's a presentation format
-      body: JSON.stringify({ curriculum: presentation })
+      body: JSON.stringify({ presentation })
     });
 
     if (!response.ok) {
