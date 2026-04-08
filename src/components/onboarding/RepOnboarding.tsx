@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 
 import { AppContent } from '../training/App';
+import { getGigsByCompanyId } from '../../api/matching';
 import '../training/index.css';
 
 interface RepOnboardingProps { }
@@ -23,6 +24,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [trainings, setTrainings] = useState<any[]>([]);
   const [loadingTrainings, setLoadingTrainings] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const [companyGigs, setCompanyGigs] = useState<any[]>([]);
   const [filterGigId, setFilterGigId] = useState<string>('all');
   const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string, newJourney?: boolean }>({ isOpen: false });
 
@@ -176,6 +178,21 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     }
   }, [companyId, fetchCompanyTrainings]);
 
+  // Fetch all company Gigs to populate the filter dropdown
+  useEffect(() => {
+    const fetchGigs = async () => {
+      if (!companyId) return;
+      try {
+        const gigs = await getGigsByCompanyId(companyId);
+        setCompanyGigs(gigs || []);
+        console.log('[RepOnboarding] Gigs loaded for dropdown:', gigs.length);
+      } catch (error) {
+        console.error('[RepOnboarding] Error fetching gigs:', error);
+      }
+    };
+    fetchGigs();
+  }, [companyId]);
+
   if (showTraining.isOpen) {
     return (
       <MemoryRouter>
@@ -231,14 +248,11 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer transition-all"
                       >
                         <option value="all">Tous les Gigs</option>
-                        {Array.from(new Set(
-                          trainings
-                            .filter(t => t && t.gigId && (t.gigTitle || t.gigName))
-                            .map(t => JSON.stringify({ id: t.gigId, title: t.gigTitle || t.gigName }))
-                        )).map(s => {
-                          const gig = JSON.parse(s as string);
-                          return <option key={gig.id} value={gig.id}>{gig.title}</option>;
-                        })}
+                        {companyGigs.map((gig: any) => (
+                          <option key={gig._id || gig.id} value={gig._id || gig.id}>
+                            {gig.title}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
