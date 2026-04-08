@@ -350,7 +350,7 @@ export default function PresentationPreview({
               ) : (
                 <>
                   <CheckCircle size={18} />
-                  Valider et Enregistrer
+                  Terminer la Formation
                 </>
               )}
             </button>
