@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { 
-  X, ChevronLeft, ChevronRight, 
-  Download as DownloadIcon, Key, Sparkles, 
+import {
+  X, ChevronLeft, ChevronRight,
+  Download as DownloadIcon, Key, Sparkles,
   CheckCircle, FileDown
 } from 'lucide-react';
 import { IPresentation } from '../../types/core';
 import { AIService } from '../../infrastructure/services/AIService';
-
+import React from 'react';
 interface PresentationPreviewProps {
   presentation: IPresentation;
   onClose: () => void;
@@ -14,11 +14,11 @@ interface PresentationPreviewProps {
   isSaving?: boolean;
 }
 
-export default function PresentationPreview({ 
-  presentation, 
-  onClose, 
-  onSave, 
-  isSaving = false 
+export default function PresentationPreview({
+  presentation,
+  onClose,
+  onSave,
+  isSaving = false
 }: PresentationPreviewProps) {
   const [activeSlide, setActiveSlide] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
@@ -62,17 +62,16 @@ export default function PresentationPreview({
           </div>
           <span className="font-bold text-[#0e0e0e]">Slides</span>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           {presentation.slides.map((slide, idx) => (
             <button
               key={idx}
               onClick={() => setActiveSlide(idx)}
-              className={`w-full text-left p-3 rounded-lg border-2 transition-all duration-200 ${
-                activeSlide === idx 
-                  ? 'border-[#c8860a] bg-[#fff5e6] shadow-sm' 
+              className={`w-full text-left p-3 rounded-lg border-2 transition-all duration-200 ${activeSlide === idx
+                  ? 'border-[#c8860a] bg-[#fff5e6] shadow-sm'
                   : 'border-[#d5cfc0] bg-[#f5f0e8] hover:border-[#7a7060]'
-              }`}
+                }`}
             >
               <div className="text-[10px] uppercase tracking-wider text-[#7a7060] mb-1">
                 Slide {idx + 1} • {slide.type}
@@ -96,14 +95,13 @@ export default function PresentationPreview({
           </div>
 
           <div className="flex items-center gap-2">
-            <button 
+            <button
               onClick={handleExportPPTX}
               disabled={isExporting}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-sm transition-all ${
-                isExporting 
-                  ? 'bg-[#d5cfc0] text-[#7a7060] cursor-not-allowed' 
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-sm transition-all ${isExporting
+                  ? 'bg-[#d5cfc0] text-[#7a7060] cursor-not-allowed'
                   : 'bg-[#c8860a] text-white hover:bg-[#b57a09] shadow-sm'
-              }`}
+                }`}
               title="Exporter en PowerPoint (.pptx)"
             >
               {isExporting ? (
@@ -114,14 +112,14 @@ export default function PresentationPreview({
               <span className="hidden sm:inline">Exporter .pptx</span>
             </button>
 
-            <button 
+            <button
               onClick={handleDownloadJSON}
               className="p-2 text-[#7a7060] hover:text-[#0e0e0e] transition-colors"
               title="Télécharger JSON"
             >
               <DownloadIcon size={20} />
             </button>
-            <button 
+            <button
               onClick={onClose}
               className="p-2 text-[#7a7060] hover:text-[#0e0e0e] transition-colors"
               title="Fermer"
@@ -133,9 +131,8 @@ export default function PresentationPreview({
 
         {/* Slide Canvas */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col items-center justify-center bg-[#f5f0e8] relative">
-          <div className={`w-full max-w-4xl aspect-[16/9] rounded-2xl shadow-2xl border border-[#d5cfc0] overflow-hidden flex flex-col relative animate-in fade-in slide-in-from-bottom-4 duration-500 ${
-            isDarkType(currentSlide.type) ? 'bg-[#0e0e0e] text-white' : 'bg-[#ede8da] text-[#0e0e0e]'
-          }`}>
+          <div className={`w-full max-w-4xl aspect-[16/9] rounded-2xl shadow-2xl border border-[#d5cfc0] overflow-hidden flex flex-col relative animate-in fade-in slide-in-from-bottom-4 duration-500 ${isDarkType(currentSlide.type) ? 'bg-[#0e0e0e] text-white' : 'bg-[#ede8da] text-[#0e0e0e]'
+            }`}>
             {/* Slide Layouts */}
             <div className="flex-1 p-8 md:p-12 flex flex-col justify-center relative z-10">
               <h1 className={`${isDarkType(currentSlide.type) ? 'text-[#f0a832]' : 'text-[#0e0e0e]'} text-3xl md:text-5xl font-bold mb-8 leading-tight`}>
@@ -179,7 +176,7 @@ export default function PresentationPreview({
         {/* Navigation / Save Footer */}
         <footer className="h-20 bg-[#ede8da] border-t border-[#d5cfc0] flex items-center justify-between px-8 shrink-0">
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => setActiveSlide(prev => Math.max(0, prev - 1))}
               disabled={activeSlide === 0}
               className="p-2 rounded-full hover:bg-[#d5cfc0] disabled:opacity-30 transition-all text-[#0e0e0e]"
@@ -189,7 +186,7 @@ export default function PresentationPreview({
             <span className="text-sm font-bold text-[#0e0e0e]">
               {activeSlide + 1} / {presentation.slides.length}
             </span>
-            <button 
+            <button
               onClick={() => setActiveSlide(prev => Math.min(presentation.slides.length - 1, prev + 1))}
               disabled={activeSlide === presentation.slides.length - 1}
               className="p-2 rounded-full hover:bg-[#d5cfc0] disabled:opacity-30 transition-all text-[#0e0e0e]"
@@ -199,7 +196,7 @@ export default function PresentationPreview({
           </div>
 
           {onSave && (
-            <button 
+            <button
               onClick={onSave}
               disabled={isSaving}
               className="px-6 py-3 bg-[#0e0e0e] text-white rounded-xl font-bold flex items-center gap-2 hover:bg-[#222] transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50"
