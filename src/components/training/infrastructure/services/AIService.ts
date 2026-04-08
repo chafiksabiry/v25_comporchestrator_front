@@ -435,9 +435,10 @@ export class AIService {
       const apiUrl = import.meta.env.VITE_API_URL || 'https://v25platformtrainingbackend-production.up.railway.app';
       const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
 
-      console.log('📤 Exporting presentation to PPTX...');
+      console.log('📤 Exporting presentation to PPTX (Python Premium Mode)...');
 
-      const response = await fetch(`${baseUrl}/api/ai/export-pptx`, {
+      // Call the new Python-based premium export endpoint
+      const response = await fetch(`${baseUrl}/api/ai/export-pptx-python`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
