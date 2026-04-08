@@ -33,6 +33,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string, newJourney?: boolean }>({ isOpen: false });
   const [selectedPresentation, setSelectedPresentation] = useState<any | null>(null);
   const [loadingPresentation, setLoadingPresentation] = useState(false);
+  const [activeJourneyId, setActiveJourneyId] = useState<string | null>(null);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   // Helper function to format training journey data for display
   const formatTrainingJourney = (journey: any) => {
@@ -71,9 +73,10 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     };
   };
 
-  const handleViewPresentation = async (url: string) => {
+  const handleViewPresentation = async (url: string, journeyId: string) => {
     if (!url) return;
     setLoadingPresentation(true);
+    setActiveJourneyId(journeyId);
     try {
       console.log('[RepOnboarding] Fetching presentation JSON from:', url);
       const response = await axios.get(url);
@@ -85,6 +88,43 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       alert('Impossible de charger les slides. Veuillez réessayer.');
     } finally {
       setLoadingPresentation(false);
+    }
+  };
+
+  const handleJourneyComplete = async () => {
+    if (!activeJourneyId) return;
+    
+    setIsCompleting(true);
+    try {
+      const backendUrl = getTrainingBackendUrl();
+      const endpoint = `${backendUrl}/api/training_journeys/${activeJourneyId}`;
+      
+      console.log('[RepOnboarding] Marking journey as completed:', endpoint);
+      await axios.put(endpoint, {
+        status: 'completed',
+        journeyStatus: 'completed',
+        progress: 100
+      });
+
+      // Update local state to show green badge immediately
+      setTrainings(prev => prev.map(t => 
+        (t._id === activeJourneyId || t.id === activeJourneyId) 
+          ? { ...t, status: 'completed', journeyStatus: 'completed', progress: 100 } 
+          : t
+      ));
+
+      // Close modal
+      setSelectedPresentation(null);
+      setActiveJourneyId(null);
+      
+      // Update main platform progress (Phase 3 Step 9)
+      updateOnboardingProgress();
+      
+    } catch (error) {
+      console.error('[RepOnboarding] Error completing journey:', error);
+      alert('Erreur lors de la validation de la formation.');
+    } finally {
+      setIsCompleting(false);
     }
   };
 
@@ -413,7 +453,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               <button
                                 onClick={() => {
                                   if (formatted.presentationUrl) {
-                                    handleViewPresentation(formatted.presentationUrl);
+                                    handleViewPresentation(formatted.presentationUrl, formatted.id);
                                   } else {
                                     console.log('[RepOnboarding] No presentation URL, clicking ignored as per user request to avoid dashboard.');
                                   }
@@ -499,7 +539,12 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       {selectedPresentation && (
         <PresentationPreview 
           presentation={selectedPresentation} 
-          onClose={() => setSelectedPresentation(null)} 
+          onClose={() => {
+            setSelectedPresentation(null);
+            setActiveJourneyId(null);
+          }} 
+          onSave={handleJourneyComplete}
+          isSaving={isCompleting}
         />
       )}
     </div>
