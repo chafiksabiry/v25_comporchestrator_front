@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, ChevronLeft, ChevronRight, Presentation as PresentationIcon, BookOpen } from 'lucide-react';
 import { TrainingModule, Quiz } from '../../types';
 import DocumentViewer from '../DocumentViewer/DocumentViewer';
+import PresentationPreview from './PresentationPreview';
+import { mapModuleToPresentation } from '../../utils/PresentationMapper';
 
 interface InteractiveModuleProps {
   module: TrainingModule;
@@ -20,6 +22,7 @@ export default function InteractiveModule({ module, onProgress, onComplete, onBa
   const [showQuizResult, setShowQuizResult] = useState(false);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loadingQuizzes, setLoadingQuizzes] = useState(false);
+  const [viewMode, setViewMode] = useState<'reading' | 'slides'>('reading');
 
   // Get sections from module.content or module.sections
   const moduleAny = module as any;
@@ -206,9 +209,42 @@ export default function InteractiveModule({ module, onProgress, onComplete, onBa
 
   return (
     <div className="bg-white flex flex-col w-full h-full" style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-      {/* Content Area - Only Document */}
+      {/* View Mode Toggle Header */}
+      {!showQuizzes && (
+        <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 bg-gray-50/50">
+          <div className="flex items-center space-x-2">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Mode de visualisation:</h2>
+          </div>
+          <div className="flex bg-white rounded-lg p-1 shadow-sm border border-gray-200">
+            <button
+              onClick={() => setViewMode('reading')}
+              className={`flex items-center space-x-2 px-4 py-1.5 rounded-md transition-all ${
+                viewMode === 'reading'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              <span className="text-sm font-medium">Lecture</span>
+            </button>
+            <button
+              onClick={() => setViewMode('slides')}
+              className={`flex items-center space-x-2 px-4 py-1.5 rounded-md transition-all ${
+                viewMode === 'slides'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <PresentationIcon className="w-4 h-4" />
+              <span className="text-sm font-medium">Slides</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Content Area */}
       <div className="flex-1 flex flex-col w-full min-h-0 overflow-hidden" style={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        {/* Show Quizzes or Sections */}
+        {/* Show Quizzes, Slides or Sections */}
         {showQuizzes && currentQuiz ? (
           <div className="p-6 flex-1 overflow-y-auto" style={{ overflowY: 'auto', height: '100%' }}>
             <div className="mb-6">
@@ -336,9 +372,17 @@ export default function InteractiveModule({ module, onProgress, onComplete, onBa
               </div>
             </div>
           </div>
-        ) : (
-          /* Current Section - Only Document */
-          sections.length > 0 && currentSectionData ? (
+          ) : viewMode === 'slides' ? (
+            /* Slide View Mode */
+            <div className="flex-1 overflow-hidden h-full flex flex-col">
+              <PresentationPreview 
+                presentation={mapModuleToPresentation(module as any)}
+                onClose={() => setViewMode('reading')}
+              />
+            </div>
+          ) : (
+            /* Current Section - Reading Mode */
+            sections.length > 0 && currentSectionData ? (
             // Check for file URL in multiple possible locations
             (() => {
               const fileUrl = currentSectionData.content?.file?.url
