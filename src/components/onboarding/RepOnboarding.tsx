@@ -15,6 +15,7 @@ import {
 
 import { AppContent } from '../training/App';
 import { getGigsByCompanyId } from '../../api/matching';
+import { DraftService } from '../training/infrastructure/services/DraftService';
 import '../training/index.css';
 
 interface RepOnboardingProps { }
@@ -140,6 +141,25 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         const journeysArray = backendData.data.journeys || (Array.isArray(backendData.data) ? backendData.data : []);
         console.log('[RepOnboarding] Found', journeysArray.length, 'trainings');
         setTrainings(journeysArray);
+
+        // --- DIAGNOSTIC: Log first journey if exists to see structure ---
+        if (journeysArray.length > 0) {
+          console.log('[RepOnboarding] Sample journey from backend:', {
+            id: journeysArray[0]._id || journeysArray[0].id,
+            companyId: journeysArray[0].companyId,
+            trainingName: journeysArray[0].name || journeysArray[0].title
+          });
+        }
+
+        // --- DIAGNOSTIC: Check for local drafts ---
+        if (DraftService.hasDraft()) {
+          const draft = DraftService.getDraft();
+          console.log('[RepOnboarding] Local draft found in storage:', {
+            draftCompanyId: draft.company?.id,
+            currentCompanyId: companyId,
+            journeyName: draft.journey?.name
+          });
+        }
 
         // Auto-complete step 9 if trainings exist
         if (journeysArray.length > 0) {
