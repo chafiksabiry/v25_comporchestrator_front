@@ -8,7 +8,7 @@ import MethodologyBuilder from '../Methodology/MethodologyBuilder';
 import { OnboardingService } from '../../infrastructure/services/OnboardingService';
 import GigSelector from '../Dashboard/GigSelector';
 import TrainingDetailsForm from './TrainingDetailsForm';
-
+import React from 'react';
 interface SetupWizardProps {
   onComplete: (company: Company, journey: TrainingJourney, methodology?: TrainingMethodology, gigId?: string) => void;
 }
@@ -108,11 +108,11 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     if (currentStep === 5) {
       // Complete setup and move to content upload
       // Robust ID extraction: check all possible locations for the MongoDB ID
-      const realCompanyId = 
-        companyData?._id || 
-        companyData?.id || 
-        companyData?.data?._id || 
-        companyData?.data?.id || 
+      const realCompanyId =
+        companyData?._id ||
+        companyData?.id ||
+        companyData?.data?._id ||
+        companyData?.data?.id ||
         Date.now().toString();
 
       console.log('[SetupWizard] Using company ID for journey creation:', realCompanyId);
