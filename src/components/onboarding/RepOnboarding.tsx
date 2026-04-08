@@ -10,8 +10,7 @@ import {
   Download,
   Play,
   RefreshCw,
-  Plus,
-  Monitor
+  Plus
 } from 'lucide-react';
 
 import { AppContent } from '../training/App';
@@ -411,28 +410,28 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               </div>
                             </div>
                             <div className="flex items-center space-x-2">
-                              {formatted.presentationUrl && (
-                                <button
-                                  onClick={() => handleViewPresentation(formatted.presentationUrl)}
-                                  disabled={loadingPresentation}
-                                  className="flex items-center space-x-1.5 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm font-semibold text-indigo-600 transition-all hover:bg-indigo-50 hover:border-indigo-300 shadow-sm"
-                                  title="Voir les slides"
-                                >
-                                  {loadingPresentation ? (
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Monitor className="h-4 w-4" />
-                                  )}
-                                  <span className="hidden sm:inline">Voir les Slides</span>
-                                </button>
-                              )}
                               <button
-                                onClick={() => setShowTraining({ isOpen: true, journeyId: formatted.id })}
-                                className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all ${formatted.status === 'completed' ? 'bg-green-50 text-green-700 hover:bg-green-100' :
-                                  'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
+                                onClick={() => {
+                                  if (formatted.presentationUrl) {
+                                    handleViewPresentation(formatted.presentationUrl);
+                                  } else {
+                                    setShowTraining({ isOpen: true, journeyId: formatted.id });
+                                  }
+                                }}
+                                disabled={loadingPresentation}
+                                className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all flex items-center space-x-2 ${formatted.status === 'completed'
+                                  ? 'bg-green-50 text-green-700 hover:bg-green-100'
+                                  : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
                                   }`}
                               >
-                                {formatted.status === 'completed' ? 'Review' : formatted.status === 'in_progress' ? 'Continue' : 'Start'}
+                                {loadingPresentation ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Play className="h-4 w-4" />
+                                )}
+                                <span>
+                                  {formatted.status === 'completed' ? 'Review' : formatted.status === 'in_progress' ? 'Continue' : 'Start'}
+                                </span>
                               </button>
                             </div>
                           </div>
