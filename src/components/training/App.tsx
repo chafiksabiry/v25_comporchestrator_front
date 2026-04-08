@@ -243,7 +243,7 @@ export function AppContent({
     const loadTrainingJourneys = async () => {
       try {
         setLoadingModules(true);
-        const companyId = Cookies.get('companyId') || localStorage.getItem('companyId');
+        const companyId = Cookies.get('companyid') || Cookies.get('companyId') || localStorage.getItem('companyid') || localStorage.getItem('companyId');
         const detectedAgentId = getAgentId();
 
         let journeys: any[] = [];
@@ -440,7 +440,7 @@ export function AppContent({
         } else {
           // No type or unknown: check fallback (companyId for trainer, agentId for trainee)
           console.log('[App] No user type found, checking fallback');
-          const companyId = Cookies.get('companyId') || localStorage.getItem('companyId');
+          const companyId = Cookies.get('companyid') || Cookies.get('companyId') || localStorage.getItem('companyid') || localStorage.getItem('companyId');
           const detectedAgentId = getAgentId();
 
           if (companyId) {
@@ -453,7 +453,7 @@ export function AppContent({
       } catch (error) {
         console.error('[App] Error checking user type:', error);
         // Fallback logic
-        const companyId = Cookies.get('companyId') || localStorage.getItem('companyId');
+        const companyId = Cookies.get('companyid') || Cookies.get('companyId') || localStorage.getItem('companyid') || localStorage.getItem('companyId');
         const detectedAgentId = getAgentId();
 
         if (companyId) {

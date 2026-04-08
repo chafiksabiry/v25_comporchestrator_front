@@ -206,7 +206,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     clientId: '',
     clientSecret: '',
     refreshToken: '',
-    companyId: propCompanyId || Cookies.get('companyId') || ''
+    companyId: propCompanyId || Cookies.get('companyid') || Cookies.get('companyId') || ''
   });
   const [isImportingZoho, setIsImportingZoho] = useState(false);
   const [isDisconnectingZoho, setIsDisconnectingZoho] = useState(false);
@@ -560,7 +560,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
       const userId = Cookies.get('userId');
       const gigId = selectedGigId;
-      const companyId = Cookies.get('companyId');
+      const companyId = Cookies.get('companyid') || Cookies.get('companyId');
 
       if (!gigId) {
         throw new Error('Please select a gig first');
@@ -789,7 +789,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       // Convert leads to API format
       const currentUserId = Cookies.get('userId');
       const currentGigId = selectedGigId;
-      const currentCompanyId = Cookies.get('companyId');
+      const currentCompanyId = Cookies.get('companyid') || Cookies.get('companyId');
 
       // Debug: Log the IDs being used for lead saving
       console.log('💾 Saving leads with IDs:');
@@ -878,7 +878,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
         // Mettre à jour l'onboarding
         try {
-          const companyId = Cookies.get('companyId');
+          const companyId = Cookies.get('companyid') || Cookies.get('companyId');
           if (companyId) {
             await axios.put(
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,

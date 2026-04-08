@@ -29,7 +29,7 @@ const CallScript = () => {
   const [isStepCompleted, setIsStepCompleted] = useState(false);
   const [scripts, setScripts] = useState<any[]>([]);
 
-  const companyId = Cookies.get('companyId');
+  const companyId = Cookies.get('companyid') || Cookies.get('companyId');
 
   // Vérifier l'état de l'étape au chargement
   useEffect(() => {
