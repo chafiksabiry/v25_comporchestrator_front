@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import {
   X, ChevronLeft, ChevronRight,
-  Download as DownloadIcon, Key, Sparkles,
-  CheckCircle, FileDown, Printer
+  Sparkles,
+  CheckCircle, FileDown, Printer,
+  Download as DownloadIcon
 } from 'lucide-react';
 import { IPresentation } from '../../types/core';
 import { AIService } from '../../infrastructure/services/AIService';
@@ -29,7 +30,6 @@ const parseMarkdown = (text: string) => {
   // Handle multi-line lists if the input is a single string
   if (html.includes('\n- ') || html.startsWith('- ')) {
     html = html.replace(/^\s*-\s+(.*)/gm, '<li class="ml-4 mb-2 flex items-start gap-2"><span class="mt-2 w-1.5 h-1.5 rounded-full bg-current shrink-0 opacity-50"></span><span>$1</span></li>');
-    // Wrap groups of <li> in <ul> if needed, though simple replacement might suffice for most slide contents
   }
 
   return html.replace(/\n/g, '<br />');
@@ -57,7 +57,8 @@ export default function PresentationPreview({
   const handleExportPPTX = async () => {
     setIsExporting(true);
     try {
-      console.log('📦 Exporting to PPTX...');
+      console.log('📦 Exporting to PPTX (Python Method)...');
+      // We will update AIService for this later
       await AIService.exportPresentationToPPTX(presentation);
       console.log('✅ PPTX exported successfully');
     } catch (error) {
@@ -74,7 +75,6 @@ export default function PresentationPreview({
   const isDarkType = (type: string) => ['cover', 'agenda', 'conclusion'].includes(type);
 
   const handleDownloadPDF = () => {
-    // We add a tiny delay to ensure browser paints the hidden print elements before print dialog
     setTimeout(() => {
       window.print();
     }, 100);
@@ -84,14 +84,14 @@ export default function PresentationPreview({
     const vc = slide.visualConfig || {};
     const isDark = vc.theme === 'dark' || isDarkType(slide.type);
     const accentGradient = vc.accent === 'rose' ? 'from-rose-500 to-rose-600' : (vc.accent === 'purple' ? 'from-purple-500 to-purple-600' : 'from-rose-500 to-purple-600');
-    const layout = vc.layout || 'content';
+    const layout = vc.layout || (slide.type === 'cover' ? 'split' : 'content');
 
     return (
       <div 
         className={`w-full max-w-5xl aspect-[16/9] rounded-[2.5rem] print:rounded-none print:shadow-none shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-white/10 overflow-hidden flex relative animate-in fade-in duration-500 ${isDark ? 'bg-[#1a1a2e] text-white' : 'bg-white text-gray-900'} page-break-inside-avoid print:w-full print:h-full print:max-w-none print:border-none print:m-0 print:flex print:items-center print:justify-center`}
         style={{ pageBreakAfter: 'always' }}
       >
-        {/* Background Accents decided by Claude */}
+        {/* Background Accents */}
         {layout === 'gradient' && (
           <div className={`absolute inset-0 bg-gradient-to-br ${accentGradient} opacity-10 print:opacity-20 pointer-events-none`} />
         )}
@@ -113,8 +113,14 @@ export default function PresentationPreview({
             </h1>
           )}
 
+          {slide.subtitle && (
+            <h2 className={`${isDark ? 'text-purple-300' : 'text-purple-600'} text-xl md:text-2xl font-bold mb-6 opacity-90`}>
+              {slide.subtitle}
+            </h2>
+          )}
+
           {slide.content && (
-            <div className="mb-6 opacity-90 text-lg md:text-xl leading-relaxed max-w-3xl">
+            <div className={`mb-6 opacity-90 text-lg md:text-xl leading-relaxed max-w-3xl ${isDark ? 'text-slate-100' : 'text-gray-700'}`}>
               {Array.isArray(slide.content) ? (
                 <ul className="space-y-4">
                   {slide.content.map((bullet: string, i: number) => (
@@ -160,39 +166,15 @@ export default function PresentationPreview({
       {/* Premium Print Styles */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          @page {
-            size: landscape;
-            margin: 0;
-          }
-          body {
-            margin: 0;
-            padding: 0;
-            background: white !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          .print-slide {
-            height: 100vh;
-            width: 100vw;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            page-break-after: always;
-            overflow: hidden;
-            background: white !important;
-          }
-          /* Force colors to show in PDF */
-          * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          .no-print {
-            display: none !important;
-          }
+          @page { size: landscape; margin: 0; }
+          body { margin: 0; padding: 0; background: white !important; -webkit-print-color-adjust: exact !important; }
+          .print-slide { height: 100vh; width: 100vw; display: flex; align-items: center; justify-content: center; page-break-after: always; overflow: hidden; background: white !important; }
+          * { -webkit-print-color-adjust: exact !important; }
+          .no-print { display: none !important; }
         }
       `}} />
 
-      {/* Hidden Print Container: renders all slides directly for PDF generation */}
+      {/* Hidden Print Container */}
       <div className="hidden print:block w-full">
         {presentation.slides.map((s, idx) => (
           <div key={`print-${idx}`} className="print-slide">
@@ -201,7 +183,7 @@ export default function PresentationPreview({
         ))}
       </div>
 
-      {/* Sidebar - thumbnails */}
+      {/* Sidebar */}
       <div className="w-full md:w-64 lg:w-72 bg-white border-r border-purple-100 flex flex-col h-1/4 md:h-full overflow-hidden print:hidden">
         <div className="p-4 border-b border-purple-100 flex items-center gap-3 bg-white sticky top-0 z-10">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-purple-600 flex items-center justify-center shadow-lg transform rotate-3">
@@ -210,14 +192,14 @@ export default function PresentationPreview({
           <span className="font-bold text-gray-900 tracking-tight">Slides</span>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin scrollbar-thumb-purple-200 scrollbar-track-transparent">
+        <div className="flex-1 overflow-y-auto p-3 space-y-2">
           {presentation.slides.map((slide, idx) => (
             <button
               key={idx}
               onClick={() => setActiveSlide(idx)}
-              className={`w-full text-left p-3 rounded-xl border-2 transition-all duration-300 transform ${activeSlide === idx
+              className={`w-full text-left p-3 rounded-xl border-2 transition-all transform ${activeSlide === idx
                 ? 'border-purple-500 bg-purple-50 shadow-md translate-x-1'
-                : 'border-transparent bg-gray-50 hover:bg-white hover:border-purple-200 hover:shadow-sm'
+                : 'border-transparent bg-gray-50 hover:bg-white hover:border-purple-200'
                 }`}
             >
               <div className={`text-[10px] uppercase tracking-widest mb-1 font-bold ${activeSlide === idx ? 'text-purple-600' : 'text-gray-400'}`}>
@@ -244,8 +226,7 @@ export default function PresentationPreview({
           <div className="flex items-center gap-2">
             <button
               onClick={handleDownloadPDF}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm transition-all shadow-sm active:scale-95"
-              title="Télécharger en PDF"
+              className="px-4 py-2 rounded-xl font-bold text-sm bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 flex items-center gap-2"
             >
               <Printer size={18} className="text-rose-500" />
               <span className="hidden sm:inline">Télécharger PDF</span>
@@ -254,105 +235,42 @@ export default function PresentationPreview({
             <button
               onClick={handleExportPPTX}
               disabled={isExporting}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all transform hover:scale-105 active:scale-95 ${isExporting
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-rose-500 to-purple-600 text-white shadow-lg hover:shadow-purple-200'
-                }`}
-              title="Exporter en PowerPoint (.pptx)"
+              className={`px-4 py-2 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-rose-500 to-purple-600 flex items-center gap-2 ${isExporting ? 'opacity-50' : ''}`}
             >
-              {isExporting ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <FileDown size={18} />
-              )}
+              {isExporting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <FileDown size={18} />}
               <span className="hidden sm:inline">Exporter .pptx</span>
             </button>
 
-            <button
-              onClick={handleDownloadJSON}
-              className="p-2 text-[#7a7060] hover:text-[#0e0e0e] transition-colors"
-              title="Télécharger JSON"
-            >
-              <DownloadIcon size={20} />
-            </button>
-            <button
-              onClick={onClose}
-              className="p-2 text-[#7a7060] hover:text-[#0e0e0e] transition-colors"
-              title="Fermer"
-            >
+            <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600">
               <X size={24} />
             </button>
           </div>
         </header>
 
         {/* Slide Canvas */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 flex flex-col items-center justify-center bg-slate-100/50 relative">
-          <div key={activeSlide} className="w-full flex items-center justify-center">
-             {renderSlideContent(currentSlide)}
-          </div>
-
-          {/* Presenter Notes */}
-          {currentSlide.note && (
-            <div className="w-full max-w-4xl mt-8 animate-in fade-in duration-700">
-              <div className="bg-white/80 backdrop-blur border border-purple-100 rounded-2xl p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-3 text-purple-600">
-                  <Key size={16} />
-                  <span className="text-xs font-bold uppercase tracking-wider">Notes du présentateur</span>
-                </div>
-                <p className="text-gray-600 text-sm leading-relaxed italic">
-                  {currentSlide.note}
-                </p>
-              </div>
-            </div>
-          )}
+        <div className="flex-1 overflow-y-auto p-4 md:p-12 flex flex-col items-center justify-center bg-slate-100/50">
+           {renderSlideContent(currentSlide)}
         </div>
 
-        {/* Navigation / Save Footer */}
-        <footer className="h-20 bg-white border-t border-purple-100 flex items-center justify-between px-8 shrink-0 z-20">
+        {/* Footer */}
+        <footer className="h-20 bg-white border-t border-purple-100 flex items-center justify-between px-8">
           <div className="flex items-center gap-6">
-            <button
-              onClick={() => setActiveSlide(prev => Math.max(0, prev - 1))}
-              disabled={activeSlide === 0}
-              className="p-3 rounded-full hover:bg-purple-50 disabled:opacity-20 transition-all text-purple-600 border border-purple-100"
-            >
+            <button onClick={() => setActiveSlide(prev => Math.max(0, prev - 1))} disabled={activeSlide === 0} className="p-3 rounded-full hover:bg-purple-50 disabled:opacity-20 text-purple-600 border border-purple-100">
               <ChevronLeft size={24} />
             </button>
             <div className="flex flex-col items-center">
               <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Progress</span>
-              <span className="text-sm font-black text-gray-900">
-                {activeSlide + 1} <span className="text-gray-300 mx-1">/</span> {presentation.slides.length}
-              </span>
+              <span className="text-sm font-black text-gray-900">{activeSlide + 1} / {presentation.slides.length}</span>
             </div>
-            <button
-              onClick={() => setActiveSlide(prev => Math.min(presentation.slides.length - 1, prev + 1))}
-              disabled={activeSlide === presentation.slides.length - 1}
-              className="p-3 rounded-full hover:bg-purple-50 disabled:opacity-20 transition-all text-purple-600 border border-purple-100"
-            >
+            <button onClick={() => setActiveSlide(prev => Math.min(presentation.slides.length - 1, prev + 1))} disabled={activeSlide === presentation.slides.length - 1} className="p-3 rounded-full hover:bg-purple-50 disabled:opacity-20 text-purple-600 border border-purple-100">
               <ChevronRight size={24} />
             </button>
           </div>
 
           {onSave && (
-            <button
-              onClick={onSave}
-              disabled={isSaving}
-              className="px-8 py-3 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-black text-sm shadow-xl hover:shadow-purple-200 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center gap-3 uppercase tracking-wider"
-            >
-              {isSaving ? (
-                <>
-                  <div className="flex gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                    <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse delay-75" />
-                    <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse delay-150" />
-                  </div>
-                  Sauvegarde...
-                </>
-              ) : (
-                <>
-                  <CheckCircle size={18} />
-                  Terminer la Formation
-                </>
-              )}
+            <button onClick={onSave} disabled={isSaving} className="px-8 py-3 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-black text-sm flex items-center gap-3">
+              {isSaving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle size={18} />}
+              Terminer la Formation
             </button>
           )}
         </footer>
@@ -360,3 +278,5 @@ export default function PresentationPreview({
     </div>
   );
 }
+
+import { RefreshCw } from 'lucide-react';

@@ -124,13 +124,23 @@ export const mapJourneyToPresentation = (journey: any): IPresentation => {
       let content = '';
       let bullets: string[] = [];
       
+      // Robust content extraction
       if (typeof section.content === 'string') {
         content = section.content;
-      } else if (section.content) {
-        content = section.content.text || section.content.description || section.content.content || '';
+      } else if (section.content && typeof section.content === 'object') {
+        content = section.content.text || section.content.description || section.content.content || section.content.value || '';
         if (Array.isArray(section.content.bullets)) {
           bullets = section.content.bullets;
         }
+      }
+
+      // Fallback to top-level fields if content object is missing or empty
+      if (!content) {
+        content = section.text || section.description || section.value || '';
+      }
+      
+      if (bullets.length === 0 && Array.isArray(section.bullets)) {
+        bullets = section.bullets;
       }
 
       allSlides.push({
@@ -147,6 +157,9 @@ export const mapJourneyToPresentation = (journey: any): IPresentation => {
       });
     });
   });
+
+  // Journey Cover updated to include description as content for the right-side split area
+  allSlides[0].content = description;
 
   // Conclusion Slide
   allSlides.push({
