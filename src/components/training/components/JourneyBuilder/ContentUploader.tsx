@@ -298,6 +298,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           const file = new File([pptxBlob], `${generatedCurriculum.title || 'Formation'}.pptx`, { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
           const uploadResult = await cloudinaryService.uploadDocument(file, 'trainings/pptx');
           fileTrainingUrl = uploadResult.secureUrl || uploadResult.url;
+          setFileTrainingUrl(fileTrainingUrl);
           console.log('✅ PPTX enregistré dans Cloudinary:', fileTrainingUrl);
         } catch (e: any) {
           // Cloudinary may be disabled or credentials invalid — log warning but don't block save
@@ -352,6 +353,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   // Generate Presentation State
   const [isGeneratingPresentation, setIsGeneratingPresentation] = useState(false);
   const [generatedPresentation, setGeneratedPresentation] = useState<any>(null);
+  const [fileTrainingUrl, setFileTrainingUrl] = useState<string | undefined>(undefined);
 
   const handleGeneratePresentation = async () => {
     if (uploads.length === 0) return;
@@ -911,6 +913,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           onSave={handleSavePresentation}
           isSaving={isSavingCloud}
           onClose={() => setIsPreviewOpen(false)} 
+          fileTrainingUrl={fileTrainingUrl}
         />
       )}
     </div>

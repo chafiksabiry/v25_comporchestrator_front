@@ -672,6 +672,7 @@ export interface AITutor {
 }
 
 export interface TrainingJourney {
+  filetraining: string | undefined;
   id: string;
   companyId: string;
   name: string;
