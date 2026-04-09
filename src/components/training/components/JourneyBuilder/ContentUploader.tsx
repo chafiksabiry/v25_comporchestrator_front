@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation } from 'lucide-react';
+import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen } from 'lucide-react';
 import { ContentUpload } from '../../types/core';
 import { AIService } from '../../infrastructure/services/AIService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
@@ -29,7 +29,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [generatedCurriculum, setGeneratedCurriculum] = useState<any>(null);
   const [isSavingCloud, setIsSavingCloud] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-
+  /** When a presentation exists: split workspace — program preview vs upload sources */
+  const [workspaceTab, setWorkspaceTab] = useState<'artifact' | 'sources'>('artifact');
+  const [isExportingPptx, setIsExportingPptx] = useState(false);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -382,24 +384,26 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [generatedPresentation, setGeneratedPresentation] = useState<any>(null);
   const [fileTrainingUrl, setFileTrainingUrl] = useState<string | undefined>(undefined);
 
-  const handleGeneratePresentation = async () => {
+  const generatePresentationFromState = async (regenerate: boolean) => {
     if (uploads.length === 0 && !gigId) return;
 
-    // Si la présentation est déjà générée, on l'ouvre directement
-    if (generatedPresentation) {
-      setIsPreviewOpen(true);
+    if (!regenerate && generatedPresentation) {
+      setIsPreviewOpen(false);
+      setWorkspaceTab('artifact');
       return;
     }
 
     try {
       setIsGeneratingPresentation(true);
+      if (regenerate) {
+        setGeneratedPresentation(null);
+      }
       console.log('🤖 Génération de la présentation en cours...');
 
       let curriculum = generatedCurriculum;
 
-      // If we don't have the curriculum yet, we generate it first (which generates both in backend)
       if (!curriculum) {
-        setIsProcessing(true); // show the global spin state too
+        setIsProcessing(true);
 
         if (uploads.length > 0) {
           const mainAnalysis = uploads[0].aiAnalysis;
@@ -426,18 +430,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
         setIsProcessing(false);
       }
 
-      // Look for the presentation directly in the curriculum payload (if backend already generated it)
       let presentation = curriculum?.data?.presentation;
 
-      // If not bundled, fetch it specifically
       if (!presentation) {
         presentation = await AIService.generatePresentation(curriculum);
       }
 
       setGeneratedPresentation(presentation);
-
-      // Automatically switch to the preview mode so they can see it
-      setIsPreviewOpen(true);
+      setIsPreviewOpen(false);
+      setWorkspaceTab('artifact');
 
       console.log('✅ Présentation générée avec succès !');
     } catch (error: any) {
@@ -448,6 +449,31 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setIsGeneratingPresentation(false);
     }
   };
+
+  const handleGeneratePresentation = () => generatePresentationFromState(false);
+
+  const handleRegeneratePresentation = () => generatePresentationFromState(true);
+
+  const handleDownloadPptx = async () => {
+    if (!generatedPresentation) return;
+    try {
+      setIsExportingPptx(true);
+      const blob = await AIService.exportToPowerPoint(generatedPresentation);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${generatedCurriculum?.title || 'Training'}.pptx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      console.error(e);
+      alert(e?.message || 'PowerPoint export failed');
+    } finally {
+      setIsExportingPptx(false);
+    }
+  };
+
+  const handleOpenFullscreenPreview = () => setIsPreviewOpen(true);
 
   /**
    * Helper to fetch curriculum from Gig KB if no uploads are present
@@ -486,6 +512,131 @@ export default function ContentUploader(props: ContentUploaderProps) {
         onClose={() => setIsPreviewOpen(false)}
         fileTrainingUrl={fileTrainingUrl}
       />
+    );
+  }
+
+  if (generatedPresentation && !isPreviewOpen) {
+    return (
+      <div className="flex min-h-[85dvh] flex-col bg-gradient-to-b from-slate-50 to-white">
+        <div className="flex shrink-0 flex-wrap gap-2 border-b border-gray-200 bg-white px-3 py-2 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setWorkspaceTab('artifact')}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-all ${
+              workspaceTab === 'artifact'
+                ? 'bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600 text-white shadow-md'
+                : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <LayoutGrid className="h-4 w-4" />
+            Program & slide preview
+          </button>
+          <button
+            type="button"
+            onClick={() => setWorkspaceTab('sources')}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-all ${
+              workspaceTab === 'sources'
+                ? 'bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600 text-white shadow-md'
+                : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <FolderOpen className="h-4 w-4" />
+            Source files
+          </button>
+        </div>
+
+        {workspaceTab === 'artifact' ? (
+          <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 p-3 lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)] lg:gap-5 lg:p-4">
+            <aside className="flex max-h-[85dvh] flex-col overflow-y-auto rounded-2xl border border-rose-100/80 bg-white p-4 shadow-sm lg:max-h-[calc(100dvh-8rem)]">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-fuchsia-600">Training program</p>
+              <h2 className="mt-1 text-lg font-bold leading-snug text-gray-900">
+                {generatedCurriculum?.title || generatedPresentation?.title || 'Generated training'}
+              </h2>
+              {generatedCurriculum?.description && (
+                <p className="mt-2 line-clamp-4 text-sm text-gray-600">{generatedCurriculum.description}</p>
+              )}
+              <ol className="mt-4 space-y-2 border-t border-gray-100 pt-4">
+                {(generatedCurriculum?.modules || []).length === 0 ? (
+                  <li className="text-sm text-gray-500">
+                    Module list will appear here when the curriculum includes modules. Use the slide preview on the right to review content.
+                  </li>
+                ) : (
+                  (generatedCurriculum?.modules || []).slice(0, 12).map((mod: any, idx: number) => (
+                    <li key={idx} className="flex gap-2 text-sm text-gray-800">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-fuchsia-100 text-xs font-bold text-fuchsia-800">
+                        {idx + 1}
+                      </span>
+                      <span className="line-clamp-2 font-medium">{mod.title || `Module ${idx + 1}`}</span>
+                    </li>
+                  ))
+                )}
+              </ol>
+              {generatedCurriculum?.modules && generatedCurriculum.modules.length > 12 && (
+                <p className="mt-2 text-xs text-gray-500">+{generatedCurriculum.modules.length - 12} more modules</p>
+              )}
+
+              <div className="mt-6 flex flex-col gap-2 border-t border-gray-100 pt-4">
+                <button
+                  type="button"
+                  onClick={handleRegeneratePresentation}
+                  disabled={isGeneratingPresentation}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-rose-200 px-3 py-2.5 text-sm font-bold text-rose-700 transition-colors hover:bg-rose-50 disabled:opacity-50"
+                >
+                  {isGeneratingPresentation ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  Regenerate presentation
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadPptx}
+                  disabled={isExportingPptx}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-fuchsia-200 bg-fuchsia-50/80 px-3 py-2.5 text-sm font-bold text-fuchsia-900 transition-colors hover:bg-fuchsia-100 disabled:opacity-50"
+                >
+                  {isExportingPptx ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                  Download .pptx
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenFullscreenPreview}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-bold text-gray-800 hover:bg-gray-50"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                  Open fullscreen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onComplete(uploads, fileTrainingUrl)}
+                  disabled={!canProceed}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600 px-3 py-3 text-sm font-bold text-white shadow-md hover:shadow-lg disabled:opacity-50"
+                >
+                  Continue to AI enhancement
+                  <Wand2 className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="text-center text-sm font-semibold text-gray-500 hover:text-gray-800"
+                >
+                  Back to setup
+                </button>
+              </div>
+            </aside>
+
+            <section className="flex min-h-[420px] flex-col overflow-hidden rounded-2xl border border-rose-100/80 bg-slate-100 shadow-inner lg:min-h-[calc(100dvh-8rem)]">
+              <PresentationPreview
+                presentation={generatedPresentation}
+                onSave={handleSavePresentation}
+                isSaving={isSavingCloud}
+                onClose={() => setWorkspaceTab('sources')}
+                fileTrainingUrl={fileTrainingUrl}
+                isEmbedded={true}
+                showPagination={true}
+              />
+            </section>
+          </div>
+        ) : (
+          renderSourcesUploadUI()
+        )}
+      </div>
     );
   }
 
@@ -623,8 +774,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
     );
   }
 
-
-  return (
+  function renderSourcesUploadUI() {
+    return (
     <div className="min-h-full p-2 md:p-4">
       <div className="container mx-auto max-w-6xl">
         <div className="w-full flex-1 flex flex-col p-6 md:p-10 bg-white/60 backdrop-blur-xl rounded-3xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
@@ -947,5 +1098,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
         </div>
       </div>
     </div>
-  );
+    );
+  }
+
+  return renderSourcesUploadUI();
 }
