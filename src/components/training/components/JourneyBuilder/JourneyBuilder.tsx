@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CheckCircle, Clock, ArrowRight, Sparkles, Upload, Wand2, Rocket } from 'lucide-react';
 import SetupWizard from './SetupWizard';
 import ContentUploader from './ContentUploader';
@@ -27,6 +27,11 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
   const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
   const [isRestoringDraft, setIsRestoringDraft] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+  const mainScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    mainScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+  }, [currentStep]);
 
   // Restaurer le brouillon au chargement
   useEffect(() => {
@@ -325,100 +330,99 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
     }
   };
 
-  // Show setup wizard without progress for first step
-  if (currentStep === 0) {
-    return renderCurrentStep();
-  }
-
   return (
-    <div className="min-h-full bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Progress Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm z-10 relative">
-        <div className="w-full px-4 py-4">
-          <div className="w-full">
-            {/* Company Info */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-                  <span className="text-white font-bold text-base">
-                    {company?.name?.charAt(0) || 'T'}
-                  </span>
+    <div
+      className={`flex h-[100dvh] max-h-[100dvh] w-full flex-col overflow-hidden ${currentStep === 0 ? 'bg-white' : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}
+    >
+      {currentStep > 0 && (
+        <div className="relative z-10 shrink-0 border-b border-gray-200 bg-white shadow-sm">
+          <div className="w-full px-4 py-3">
+            <div className="w-full">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-blue-500 to-purple-500">
+                    <span className="text-base font-bold text-white">
+                      {company?.name?.charAt(0) || 'T'}
+                    </span>
+                  </div>
+                  <div>
+                    <h1 className="text-lg font-bold text-gray-900 md:text-xl">
+                      {journey?.name || 'Training Journey Builder'}
+                    </h1>
+                    <p className="text-xs text-gray-600 md:text-sm">
+                      {company?.name} • Step {currentStep + 1} of {steps.length}
+                      {methodology && ` • ${methodology.name}`}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900">
-                    {journey?.name || 'Training Journey Builder'}
-                  </h1>
-                  <p className="text-sm text-gray-600">
-                    {company?.name} • {company?.industry} • Step {currentStep + 1} of {steps.length}
-                    {methodology && ` • ${methodology.name}`}
-                  </p>
+
+                <div className="text-right">
+                  <div className="mb-0.5 text-[10px] text-gray-500 md:text-xs">Progress</div>
+                  <div className="text-lg font-bold text-gray-900 md:text-xl">
+                    {Math.round(((currentStep + 1) / steps.length) * 100)}%
+                  </div>
                 </div>
               </div>
 
-              <div className="text-right">
-                <div className="text-xs text-gray-500 mb-1">Overall Progress</div>
-                <div className="text-xl font-bold text-gray-900">
-                  {Math.round(((currentStep + 1) / steps.length) * 100)}%
-                </div>
-              </div>
-            </div>
+              <div className="relative">
+                <div className="flex items-center justify-between">
+                  {steps.map((step, index) => {
+                    const Icon = step.icon;
+                    const isActive = currentStep === index;
+                    const isCompleted = currentStep > index;
 
-            {/* Progress Steps */}
-            <div className="relative">
-              <div className="flex items-center justify-between">
-                {steps.map((step, index) => {
-                  const Icon = step.icon;
-                  const isActive = currentStep === index;
-                  const isCompleted = currentStep > index;
-                  const isPending = currentStep < index;
-
-                  return (
-                    <div key={index} className="flex flex-col items-center relative z-10">
-                      <div className={`flex items-center justify-center w-12 h-12 rounded-xl border-[3px] transition-all duration-500 ${isCompleted
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-500 border-green-500 text-white shadow-md scale-105'
-                        : isActive
-                          ? `bg-gradient-to-r ${step.color} border-transparent text-white shadow-lg scale-110`
-                          : 'bg-white border-gray-300 text-gray-400'
-                        }`}>
-                        {isCompleted ? (
-                          <CheckCircle className="h-6 w-6" />
-                        ) : isActive ? (
-                          <Icon className="h-6 w-6 animate-pulse" />
-                        ) : (
-                          <Icon className="h-6 w-6" />
-                        )}
-                      </div>
-
-                      <div className="mt-3 text-center max-w-28">
-                        <div className={`text-xs font-bold transition-colors ${isActive ? 'text-purple-600' :
-                          isCompleted ? 'text-green-600' :
-                            'text-gray-400'
-                          }`}>
-                          {step.title}
+                    return (
+                      <div key={index} className="relative z-10 flex flex-col items-center">
+                        <div
+                          className={`flex h-10 w-10 items-center justify-center rounded-xl border-[3px] transition-all duration-500 md:h-12 md:w-12 ${
+                            isCompleted
+                              ? 'scale-105 border-green-500 bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md'
+                              : isActive
+                                ? `scale-105 border-transparent bg-gradient-to-r ${step.color} text-white shadow-lg`
+                                : 'border-gray-300 bg-white text-gray-400'
+                          }`}
+                        >
+                          {isCompleted ? (
+                            <CheckCircle className="h-5 w-5 md:h-6 md:w-6" />
+                          ) : isActive ? (
+                            <Icon className="h-5 w-5 md:h-6 md:w-6" />
+                          ) : (
+                            <Icon className="h-5 w-5 md:h-6 md:w-6" />
+                          )}
                         </div>
-                        <div className="text-[10px] text-gray-500 mt-0.5">
-                          {step.description}
+
+                        <div className="mt-2 max-w-24 text-center md:max-w-28">
+                          <div
+                            className={`text-[10px] font-bold transition-colors md:text-xs ${
+                              isActive ? 'text-purple-600' : isCompleted ? 'text-green-600' : 'text-gray-400'
+                            }`}
+                          >
+                            {step.title}
+                          </div>
+                          <div className="mt-0.5 hidden text-[9px] text-gray-500 sm:block">{step.description}</div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
 
-              {/* Progress Line */}
-              <div className="absolute top-8 left-8 right-8 h-1 bg-gray-200 rounded-full -z-0">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-1000 ease-out"
-                  style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
-                />
+                <div className="absolute left-6 right-6 top-5 -z-0 h-1 rounded-full bg-gray-200 md:left-8 md:right-8 md:top-6">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-1000 ease-out"
+                    style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
+                  />
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Step Content */}
-      <div className="flex-1 w-full h-full relative z-0">
+      <div
+        ref={mainScrollRef}
+        data-journey-main-scroll
+        className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain"
+      >
         {renderCurrentStep()}
       </div>
     </div>
