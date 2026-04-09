@@ -906,5 +906,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
           </div>
         </div>
       </div>
-    );
+    </div>
+  );
 }
