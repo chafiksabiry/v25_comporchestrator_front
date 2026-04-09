@@ -11,7 +11,8 @@ import {
   ArrowLeft,
   Wand2,
   Send,
-  Loader2
+  Loader2,
+  Image as ImageIcon
 } from 'lucide-react';
 import { IPresentation } from '../../types/core';
 import { AIService } from '../../infrastructure/services/AIService';
@@ -54,6 +55,137 @@ const parseMarkdown = (text: string) => {
 
   return html.replace(/\n/g, '<br />');
 };
+
+function normalizeHexColor(c: string | undefined, fallback: string) {
+  if (!c?.trim()) return fallback;
+  const s = c.trim();
+  return s.startsWith('#') ? s : `#${s}`;
+}
+
+function SlideVisualElementsSvg({
+  elements,
+  accentFallback,
+  markerId
+}: {
+  elements: any[];
+  accentFallback: string;
+  markerId: string;
+}) {
+  if (!Array.isArray(elements) || elements.length === 0) return null;
+  const fallback = normalizeHexColor(accentFallback, '#94a3b8');
+
+  return (
+    <svg
+      className="pointer-events-none absolute inset-0 z-[1] h-full w-full"
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      aria-hidden
+    >
+      <defs>
+        <marker id={markerId} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill={fallback} />
+        </marker>
+      </defs>
+      {elements.map((el, idx) => {
+        if (!el?.type) return null;
+        const x = Number(el.x) || 0;
+        const y = Number(el.y) || 0;
+        const w = Math.max(0.5, Number(el.w) || 12);
+        const h = Math.max(0.5, Number(el.h) || 10);
+        const fill = normalizeHexColor(el.fill, fallback);
+        const stroke = el.stroke ? normalizeHexColor(el.stroke, fallback) : undefined;
+        const sw = el.strokeWidth != null ? Number(el.strokeWidth) : 0;
+        const op = el.opacity != null ? Math.min(1, Math.max(0, Number(el.opacity))) : 0.4;
+        const rot = Number(el.rotation) || 0;
+        const cx = x + w / 2;
+        const cy = y + h / 2;
+        const gTransform = rot ? `rotate(${rot} ${cx} ${cy})` : undefined;
+
+        switch (el.type) {
+          case 'rectangle':
+            return (
+              <g key={`ve-${idx}`} transform={gTransform} opacity={op}>
+                <rect
+                  x={x}
+                  y={y}
+                  width={w}
+                  height={h}
+                  fill={fill}
+                  stroke={stroke}
+                  strokeWidth={sw || undefined}
+                />
+              </g>
+            );
+          case 'rounded-rectangle': {
+            const r = Math.min(w, h) * 0.08;
+            return (
+              <g key={`ve-${idx}`} transform={gTransform} opacity={op}>
+                <rect
+                  x={x}
+                  y={y}
+                  width={w}
+                  height={h}
+                  rx={r}
+                  ry={r}
+                  fill={fill}
+                  stroke={stroke}
+                  strokeWidth={sw || undefined}
+                />
+              </g>
+            );
+          }
+          case 'circle': {
+            const d = Math.min(w, h);
+            return (
+              <g key={`ve-${idx}`} transform={gTransform} opacity={op}>
+                <ellipse cx={x + w / 2} cy={y + h / 2} rx={d / 2} ry={d / 2} fill={fill} stroke={stroke} strokeWidth={sw || undefined} />
+              </g>
+            );
+          }
+          case 'ellipse':
+            return (
+              <g key={`ve-${idx}`} transform={gTransform} opacity={op}>
+                <ellipse cx={x + w / 2} cy={y + h / 2} rx={w / 2} ry={h / 2} fill={fill} stroke={stroke} strokeWidth={sw || undefined} />
+              </g>
+            );
+          case 'triangle': {
+            const tx = x + w / 2;
+            const ty = y;
+            const brx = x + w;
+            const bry = y + h;
+            const blx = x;
+            return (
+              <g key={`ve-${idx}`} transform={gTransform} opacity={op}>
+                <polygon points={`${tx},${ty} ${brx},${bry} ${blx},${bry}`} fill={fill} stroke={stroke} strokeWidth={sw || undefined} />
+              </g>
+            );
+          }
+          case 'line':
+          case 'arrow': {
+            const x2 = x + w;
+            const y2 = y + h;
+            const lc = stroke || fill;
+            return (
+              <g key={`ve-${idx}`} transform={gTransform} opacity={op}>
+                <line
+                  x1={x}
+                  y1={y}
+                  x2={x2}
+                  y2={y2}
+                  stroke={lc}
+                  strokeWidth={Math.max(0.8, sw || 1.5)}
+                  markerEnd={el.type === 'arrow' ? `url(#${markerId})` : undefined}
+                />
+              </g>
+            );
+          }
+          default:
+            return null;
+        }
+      })}
+    </svg>
+  );
+}
 
 export default function PresentationPreview({
   presentation,
@@ -179,6 +311,14 @@ export default function PresentationPreview({
           color: textColor
         }}
       >
+        {Array.isArray(slide.visualElements) && slide.visualElements.length > 0 && (
+          <SlideVisualElementsSvg
+            elements={slide.visualElements}
+            accentFallback={accentColor}
+            markerId={`harx-ve-${slide.id}`}
+          />
+        )}
+
         {/* Background Accents */}
         {layout === 'gradient' && (
           <div className="absolute inset-0 opacity-10 print:opacity-20 pointer-events-none" style={{ background: `linear-gradient(135deg, ${accentColor}, ${secondaryColor})` }} />
@@ -240,6 +380,26 @@ export default function PresentationPreview({
                 </li>
               ))}
             </ul>
+          )}
+
+          {(slide.illustrationUrl || slide.imageDescription) && (
+            <div className="mt-4 w-full max-w-3xl shrink-0 overflow-hidden rounded-2xl border border-current/10 bg-black/[0.04]">
+              {slide.illustrationUrl ? (
+                <img
+                  src={slide.illustrationUrl}
+                  alt={typeof slide.imageDescription === 'string' ? slide.imageDescription : 'Illustration'}
+                  className="max-h-52 w-full object-contain"
+                />
+              ) : (
+                <div className="flex items-start gap-3 p-4">
+                  <ImageIcon className="mt-0.5 h-7 w-7 shrink-0 opacity-50" aria-hidden />
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-wider opacity-50">Image / illustration</p>
+                    <p className="mt-1 text-sm leading-snug opacity-90">{slide.imageDescription}</p>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -371,7 +531,7 @@ export default function PresentationPreview({
                   <textarea
                     value={editPrompt}
                     onChange={(e) => setEditPrompt(e.target.value)}
-                    placeholder="e.g. Add more depth on…"
+                    placeholder="Ex. Ajouter un schéma avec flèches, 3 cercles d’accent, ou une image (décris le visuel)…"
                     className="w-full h-20 p-2.5 text-xs bg-white border border-purple-100 rounded-xl focus:ring-2 focus:ring-purple-200 focus:border-purple-300 outline-none resize-none transition-all placeholder:text-slate-400 custom-scrollbar"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -455,7 +615,7 @@ export default function PresentationPreview({
                         autoFocus
                         value={editPrompt}
                         onChange={(e) => setEditPrompt(e.target.value)}
-                        placeholder="e.g. Switch to a darker style and make the title more impactful"
+                        placeholder="Ex. Mode sombre + rectangle rose en bas ; ou génère une illustration : « … » (imageDescription + formes si besoin)"
                         className="w-full h-24 p-3 text-sm bg-slate-50 border border-purple-100 rounded-xl focus:ring-2 focus:ring-purple-200 focus:border-purple-300 outline-none resize-none transition-all mb-3 text-gray-700 custom-scrollbar"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
