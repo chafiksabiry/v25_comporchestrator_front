@@ -1,13 +1,17 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  X, ChevronLeft, ChevronRight,
+  X,
+  ChevronLeft,
+  ChevronRight,
   Sparkles,
-  CheckCircle, FileDown, Printer
+  CheckCircle,
+  FileDown,
+  Printer,
+  RefreshCw
 } from 'lucide-react';
 import { IPresentation } from '../../types/core';
 import { AIService } from '../../infrastructure/services/AIService';
-import React from 'react';
 
 interface PresentationPreviewProps {
   presentation: IPresentation;
@@ -216,6 +220,7 @@ export default function PresentationPreview({
             {renderSlideContent(s)}
           </div>
         ))}
+      </div>
       {/* Sidebar - Hidden if PPTX is shown */}
       {!fileTrainingUrl && (
         <div className="w-full md:w-64 lg:w-72 bg-white border-r border-purple-100 flex flex-col h-1/4 md:h-full overflow-hidden print:hidden">
@@ -349,4 +354,3 @@ export default function PresentationPreview({
   return content;
 }
 
-import { RefreshCw } from 'lucide-react';
