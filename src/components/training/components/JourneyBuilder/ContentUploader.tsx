@@ -337,7 +337,18 @@ export default function ContentUploader(props: ContentUploaderProps) {
         normalizePresentationFromApi((curriculum as any)?.presentation) ||
         null;
 
-      if (!presentation?.slides?.length) {
+      const gigOnlyCurriculum = uploads.length === 0 && !!gigId;
+      if (gigOnlyCurriculum && useKbForPresentation) {
+        try {
+          console.warn('[ContentUploader] Rebuilding presentation with Job KB context (generate-presentation)');
+          presentation =
+            normalizePresentationFromApi(
+              await AIService.generatePresentation(curriculum, { gigId: gigId!, useKnowledgeBase: true })
+            ) || presentation;
+        } catch (fallbackErr) {
+          console.error('[ContentUploader] KB presentation generation failed:', fallbackErr);
+        }
+      } else if (!presentation?.slides?.length) {
         try {
           console.warn('[ContentUploader] Bundled presentation missing or empty slides — fetching via generate-presentation');
           presentation =
@@ -488,7 +499,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
         curriculum?.data?.presentation ||
         null;
 
-      if (!presentation?.slides?.length) {
+      if (gigOnly && useKbForPresentation) {
+        presentation = await AIService.generatePresentation(curriculum, {
+          gigId: gigId!,
+          useKnowledgeBase: true
+        });
+      } else if (!presentation?.slides?.length) {
         presentation = await AIService.generatePresentation(curriculum);
       }
 

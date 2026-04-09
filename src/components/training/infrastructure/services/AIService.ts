@@ -649,10 +649,20 @@ export class AIService {
   }
 
   /**
-   * Generate a rich presentation from the curriculum
+   * Generate a rich presentation from the curriculum.
+   * @param kb — si gigId + useKnowledgeBase, le backend réinjecte les documents Mongo du Job dans le prompt (pas seulement le titre du programme).
    */
-  static async generatePresentation(curriculum: any): Promise<any> {
-    const response = await ApiClient.post<AiResponse<any>>('/api/ai/generate-presentation', { curriculum });
+  static async generatePresentation(
+    curriculum: any,
+    kb?: { gigId?: string | null; useKnowledgeBase?: boolean }
+  ): Promise<any> {
+    const body: Record<string, unknown> = { curriculum };
+    if (kb?.gigId && kb.useKnowledgeBase === true) {
+      body.gigId = kb.gigId;
+      body.useKnowledgeBase = true;
+    }
+
+    const response = await ApiClient.post<AiResponse<any>>('/api/ai/generate-presentation', body);
     
     if (!response.data.success) {
       throw new Error(response.data.error || 'Presentation generation failed');
