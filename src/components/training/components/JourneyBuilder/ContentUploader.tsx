@@ -251,31 +251,53 @@ export default function ContentUploader(props: ContentUploaderProps) {
   };
 
   const handleGenerateCurriculum = async () => {
-    if (uploads.length === 0) return;
+    if (uploads.length === 0 && !gigId) return;
 
     setIsProcessing(true);
     try {
-      const mainAnalysis = uploads[0].aiAnalysis;
-      if (!mainAnalysis) throw new Error('No analysis found');
+      let curriculum;
 
-      const uploadContext = uploads.map(u => ({
-        fileName: u.name,
-        fileType: u.type,
-        keyTopics: u.aiAnalysis?.keyTopics || [],
-        learningObjectives: u.aiAnalysis?.learningObjectives || []
-      }));
+      if (uploads.length > 0) {
+        // Collect all successful analyses
+        const allAnalyses = uploads
+          .filter(u => u.status === 'analyzed' && u.aiAnalysis)
+          .map(u => u.aiAnalysis);
 
-      const curriculum = await AIService.generateCurriculum(
-        mainAnalysis,
-        'General',
-        undefined,
-        uploadContext as any
-      );
+        if (allAnalyses.length === 0) throw new Error('No analyzed content available');
+        
+        if (allAnalyses.length > 1) {
+          console.log(`🧠 Synthesizing ${allAnalyses.length} documents...`);
+          curriculum = await AIService.synthesizeAnalyses(allAnalyses as any);
+        } else {
+          const mainAnalysis = allAnalyses[0];
+          const uploadContext = uploads.map(u => ({
+            fileName: u.name,
+            fileType: u.type,
+            keyTopics: u.aiAnalysis?.keyTopics || [],
+            learningObjectives: u.aiAnalysis?.learningObjectives || []
+          }));
+
+          curriculum = await AIService.generateCurriculum(
+            mainAnalysis,
+            'General',
+            undefined,
+            uploadContext as any
+          );
+        }
+      } else {
+        // Generate from Gig KB directly
+        curriculum = await fetchCurriculumFromGig();
+      }
 
       setGeneratedCurriculum(curriculum);
+      // Automatically store presentation if bundled
+      if (curriculum?.data?.presentation) {
+        setGeneratedPresentation(curriculum.data.presentation);
+      }
+      
       setViewMode('curriculum');
     } catch (error: any) {
-      console.error('Failed to generate curriculum:', error);
+      console.error('Failed to generate curriculum/synthesis:', error);
       alert('Erreur: ' + error.message);
     } finally {
       setIsProcessing(false);
@@ -356,7 +378,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [fileTrainingUrl, setFileTrainingUrl] = useState<string | undefined>(undefined);
 
   const handleGeneratePresentation = async () => {
-    if (uploads.length === 0) return;
+    if (uploads.length === 0 && !gigId) return;
 
     // Si la présentation est déjà générée, on l'ouvre directement
     if (generatedPresentation) {
@@ -373,22 +395,27 @@ export default function ContentUploader(props: ContentUploaderProps) {
       // If we don't have the curriculum yet, we generate it first (which generates both in backend)
       if (!curriculum) {
         setIsProcessing(true); // show the global spin state too
-        const mainAnalysis = uploads[0].aiAnalysis;
-        if (!mainAnalysis) throw new Error('No analysis found');
+        
+        if (uploads.length > 0) {
+          const mainAnalysis = uploads[0].aiAnalysis;
+          if (!mainAnalysis) throw new Error('No analysis found');
 
-        const uploadContext = uploads.map(u => ({
-          fileName: u.name,
-          fileType: u.type,
-          keyTopics: u.aiAnalysis?.keyTopics || [],
-          learningObjectives: u.aiAnalysis?.learningObjectives || []
-        }));
+          const uploadContext = uploads.map(u => ({
+            fileName: u.name,
+            fileType: u.type,
+            keyTopics: u.aiAnalysis?.keyTopics || [],
+            learningObjectives: u.aiAnalysis?.learningObjectives || []
+          }));
 
-        curriculum = await AIService.generateCurriculum(
-          mainAnalysis,
-          'General',
-          undefined,
-          uploadContext as any
-        );
+          curriculum = await AIService.generateCurriculum(
+            mainAnalysis,
+            'General',
+            undefined,
+            uploadContext as any
+          );
+        } else {
+          curriculum = await fetchCurriculumFromGig();
+        }
 
         setGeneratedCurriculum(curriculum);
         setIsProcessing(false);
@@ -417,6 +444,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
     }
   };
 
+  /**
+   * Helper to fetch curriculum from Gig KB if no uploads are present
+   */
+  const fetchCurriculumFromGig = async () => {
+    if (!gigId) throw new Error('No Gig selected');
+    console.log('🎯 Generating from Gig KB:', gigId);
+    return await AIService.generateTrainingFromGig(gigId);
+  };
+
   const getStatusIcon = (status: ContentUpload['status']) => {
     switch (status) {
       case 'analyzed':
@@ -432,8 +468,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
     }
   };
 
-  const canProceed = uploads.length > 0 && uploads.every(u => u.status === 'analyzed');
+  const canProceed = (uploads.length > 0 && uploads.every(u => u.status === 'analyzed')) || (uploads.length === 0 && !!gigId);
   const totalAnalyzed = uploads.filter(u => u.status === 'analyzed').length;
+  const isGigOnly = uploads.length === 0 && !!gigId;
 
   if (isPreviewOpen && generatedPresentation) {
     return (
@@ -553,7 +590,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   ) : (
                     <>
                       <FileIcon className="mr-2 h-5 w-5" />
-                      Générer une Présentation
+                      {isGigOnly ? 'Générer depuis le Job' : 'Générer une Présentation'}
                     </>
                   )}
                 </button>
@@ -891,7 +928,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 ) : (
                   <FileIcon className="h-5 w-5" />
                 )}
-                <span>Générer la présentation</span>
+                <span>{isGigOnly ? 'Générer depuis le Job' : 'Générer la présentation'}</span>
               </button>
 
               <button
