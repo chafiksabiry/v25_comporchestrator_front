@@ -9,7 +9,10 @@ import {
   FileDown,
   Printer,
   RefreshCw,
-  ArrowLeft
+  ArrowLeft,
+  Wand2,
+  Send,
+  Loader2
 } from 'lucide-react';
 import { IPresentation } from '../../types/core';
 import { AIService } from '../../infrastructure/services/AIService';
@@ -58,6 +61,33 @@ export default function PresentationPreview({
 }: PresentationPreviewProps) {
   const [activeSlide, setActiveSlide] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
+  const [localPresentation, setLocalPresentation] = useState(presentation);
+  const [editPrompt, setEditPrompt] = useState('');
+  const [isAiEditing, setIsAiEditing] = useState(false);
+  const [showFloatingPrompt, setShowFloatingPrompt] = useState(false);
+
+  // Sync with prop if it changes (e.g. initial generation)
+  React.useEffect(() => {
+    setLocalPresentation(presentation);
+  }, [presentation]);
+
+  const handleAiEdit = async (promptText: string) => {
+    if (!promptText.trim()) return;
+    setIsAiEditing(true);
+    try {
+      const updatedSlide = await AIService.editSlide(localPresentation.slides[activeSlide], promptText);
+      const newSlides = [...localPresentation.slides];
+      newSlides[activeSlide] = updatedSlide;
+      setLocalPresentation({ ...localPresentation, slides: newSlides });
+      setEditPrompt('');
+      setShowFloatingPrompt(false);
+    } catch (error) {
+      console.error('AI Edit failed:', error);
+      alert('Erreur lors de la modification de la slide par l\'IA.');
+    } finally {
+      setIsAiEditing(false);
+    }
+  };
 
   // Normalize PPT URL to handle multiple field variations (lowercase, camelCase, etc.)
   const actualUrl = fileTrainingUrl || (presentation as any).filetraining || (presentation as any).fileTrainingUrl || (presentation as any).presentationUrl;
@@ -97,7 +127,7 @@ export default function PresentationPreview({
     }
   };
 
-  const currentSlide = presentation.slides[activeSlide];
+  const currentSlide = localPresentation.slides[activeSlide];
 
   // Helper for slide types that use the dark theme
   const isDarkType = (type: string) => ['cover', 'agenda', 'conclusion'].includes(type);
@@ -110,7 +140,7 @@ export default function PresentationPreview({
 
   const renderSlideContent = (slide: any) => {
     const vc = slide.visualConfig || {};
-    const themeParams = (presentation as any).visualTheme || {};
+    const themeParams = (localPresentation as any).visualTheme || {};
 
     // Use generated colors or smart fallbacks
     const isDarkFallback = vc.theme === 'dark' || isDarkType(slide.type);
@@ -224,7 +254,7 @@ export default function PresentationPreview({
 
       {/* Hidden Print Container */}
       <div className="hidden print:block w-full">
-        {presentation.slides.map((s, idx) => (
+        {localPresentation.slides.map((s, idx) => (
           <div key={`print-${idx}`} className="print-slide">
             {renderSlideContent(s)}
           </div>
@@ -249,7 +279,7 @@ export default function PresentationPreview({
               )}
               <div className="h-6 w-px bg-gray-200 mx-1" />
               <h2 className="text-lg font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-purple-600 truncate max-w-md">
-                {presentation.title}
+                {localPresentation.title}
               </h2>
             </div>
 
@@ -282,7 +312,7 @@ export default function PresentationPreview({
                 </h3>
               </div>
               <div className="flex-1 p-2 space-y-1">
-                {presentation.slides.map((slide, idx) => (
+                {localPresentation.slides.map((slide, idx) => (
                   <button
                     key={idx}
                     onClick={() => setActiveSlide(idx)}
@@ -307,6 +337,36 @@ export default function PresentationPreview({
                   </button>
                 ))}
               </div>
+
+              {/* Sidebar AI Prompt Area */}
+              <div className="p-4 border-t border-purple-50 bg-slate-50/30">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                  <Wand2 size={12} className="text-purple-500" />
+                  Optimiser cette slide
+                </p>
+                <div className="relative">
+                  <textarea
+                    value={editPrompt}
+                    onChange={(e) => setEditPrompt(e.target.value)}
+                    placeholder="Ex: 'Ajoute plus d'expertise sur...'"
+                    className="w-full h-20 p-2.5 text-xs bg-white border border-purple-100 rounded-xl focus:ring-2 focus:ring-purple-200 focus:border-purple-300 outline-none resize-none transition-all placeholder:text-slate-400 custom-scrollbar"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleAiEdit(editPrompt);
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => handleAiEdit(editPrompt)}
+                    disabled={isAiEditing || !editPrompt.trim()}
+                    className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-30 transition-colors shadow-sm"
+                  >
+                    {isAiEditing ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                  </button>
+                </div>
+              </div>
+
               <div className="p-4 border-t border-purple-50">
                 <button
                   onClick={handleExportPPTX}
@@ -342,7 +402,62 @@ export default function PresentationPreview({
                 
                 {/* Slide Counter (Floating) */}
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-white/90 backdrop-blur shadow-lg border border-purple-100 text-xs font-bold text-gray-500 z-10">
-                  {activeSlide + 1} / {presentation.slides.length}
+                  {activeSlide + 1} / {localPresentation.slides.length}
+                </div>
+
+                {/* Floating AI Bubble entry point */}
+                <div className="absolute top-6 right-6 z-20">
+                  {!showFloatingPrompt ? (
+                    <button
+                      onClick={() => setShowFloatingPrompt(true)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-purple-600 text-white font-bold text-sm shadow-xl hover:bg-purple-700 hover:scale-105 transition-all animate-in slide-in-from-right duration-300"
+                    >
+                      <Wand2 size={16} />
+                      <span>Modifier avec Claude</span>
+                    </button>
+                  ) : (
+                    <div className="w-80 bg-white rounded-2xl shadow-2xl border border-purple-100 p-4 animate-in zoom-in-95 duration-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Sparkles size={16} className="text-purple-600" />
+                          <h4 className="text-sm font-black text-gray-900">Demander à Claude</h4>
+                        </div>
+                        <button onClick={() => setShowFloatingPrompt(false)} className="text-gray-400 hover:text-gray-600 p-1">
+                          <X size={16} />
+                        </button>
+                      </div>
+                      <textarea
+                        autoFocus
+                        value={editPrompt}
+                        onChange={(e) => setEditPrompt(e.target.value)}
+                        placeholder="Ex: 'Change le style en mode sombre et ajoute un titre plus percutant'"
+                        className="w-full h-24 p-3 text-sm bg-slate-50 border border-purple-100 rounded-xl focus:ring-2 focus:ring-purple-200 focus:border-purple-300 outline-none resize-none transition-all mb-3 text-gray-700 custom-scrollbar"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleAiEdit(editPrompt);
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={() => handleAiEdit(editPrompt)}
+                        disabled={isAiEditing || !editPrompt.trim()}
+                        className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 text-white font-bold text-sm flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 transition-all"
+                      >
+                        {isAiEditing ? (
+                          <>
+                            <Loader2 size={16} className="animate-spin" />
+                            <span>IA en action...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send size={16} />
+                            <span>Appliquer les modifications</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </>
             )}
