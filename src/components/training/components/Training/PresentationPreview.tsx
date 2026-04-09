@@ -225,7 +225,7 @@ export default function PresentationPreview({
         ))}
       </div>
       {/* Sidebar - Hidden if PPTX is shown */}
-      {!fileTrainingUrl && (
+      {!actualUrl && (
         <div className="w-full md:w-64 lg:w-72 bg-white border-r border-purple-100 flex flex-col h-1/4 md:h-full overflow-hidden print:hidden">
           <div className="p-4 border-b border-purple-100 flex items-center gap-3 bg-white sticky top-0 z-10">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-purple-600 flex items-center justify-center shadow-lg transform rotate-3">
@@ -324,26 +324,39 @@ export default function PresentationPreview({
            )}
         </div>
 
-        {/* Footer */}
+        {/* Footer - Only show finish button if PPT view is active */}
         <footer className="h-20 bg-white border-t border-purple-100 flex items-center justify-between px-8">
-          <div className="flex items-center gap-6">
-            <button onClick={() => setActiveSlide(prev => Math.max(0, prev - 1))} disabled={activeSlide === 0} className="p-3 rounded-full hover:bg-purple-50 disabled:opacity-20 text-purple-600 border border-purple-100">
-              <ChevronLeft size={24} />
-            </button>
-            <div className="flex flex-col items-center">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Progress</span>
-              <span className="text-sm font-black text-gray-900">{activeSlide + 1} / {presentation.slides.length}</span>
-            </div>
-            <button onClick={() => setActiveSlide(prev => Math.min(presentation.slides.length - 1, prev + 1))} disabled={activeSlide === presentation.slides.length - 1} className="p-3 rounded-full hover:bg-purple-50 disabled:opacity-20 text-purple-600 border border-purple-100">
-              <ChevronRight size={24} />
-            </button>
-          </div>
+          {!actualUrl ? (
+            <>
+              <div className="flex items-center gap-6">
+                <button onClick={() => setActiveSlide(prev => Math.max(0, prev - 1))} disabled={activeSlide === 0} className="p-3 rounded-full hover:bg-purple-50 disabled:opacity-20 text-purple-600 border border-purple-100">
+                  <ChevronLeft size={24} />
+                </button>
+                <div className="flex flex-col items-center">
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Progress</span>
+                  <span className="text-sm font-black text-gray-900">{activeSlide + 1} / {presentation.slides.length}</span>
+                </div>
+                <button onClick={() => setActiveSlide(prev => Math.min(presentation.slides.length - 1, prev + 1))} disabled={activeSlide === presentation.slides.length - 1} className="p-3 rounded-full hover:bg-purple-50 disabled:opacity-20 text-purple-600 border border-purple-100">
+                  <ChevronRight size={24} />
+                </button>
+              </div>
 
-          {onSave && (
-            <button onClick={onSave} disabled={isSaving} className="px-8 py-3 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-black text-sm flex items-center gap-3">
-              {isSaving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle size={18} />}
-              Terminer la Formation
-            </button>
+              {onSave && (
+                <button onClick={onSave} disabled={isSaving} className="px-8 py-3 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-black text-sm flex items-center gap-3">
+                  {isSaving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle size={18} />}
+                  Terminer la Formation
+                </button>
+              )}
+            </>
+          ) : (
+            <div className="flex items-center justify-end w-full">
+              {onSave && (
+                <button onClick={onSave} disabled={isSaving} className="px-8 py-3 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-black text-sm flex items-center gap-3">
+                  {isSaving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle size={18} />}
+                  Terminer la Formation
+                </button>
+              )}
+            </div>
           )}
         </footer>
       </div>
