@@ -764,11 +764,13 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
       </div>
 
       {isPreviewOpen && presentation && (
-        <PresentationPreview 
-          presentation={presentation} 
-          onClose={() => setIsPreviewOpen(false)} 
-          fileTrainingUrl={fileTrainingUrl}
-        />
+        <div className="fixed inset-0 z-[9999] bg-white overflow-y-auto">
+          <PresentationPreview 
+            presentation={presentation} 
+            onClose={() => setIsPreviewOpen(false)} 
+            fileTrainingUrl={fileTrainingUrl}
+          />
+        </div>
       )}
     </div>
   );
