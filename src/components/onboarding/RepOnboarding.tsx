@@ -24,7 +24,6 @@ import '../training/index.css';
 interface RepOnboardingProps { }
 
 const RepOnboarding: React.FC<RepOnboardingProps> = () => {
-  const [expandedSection, setExpandedSection] = useState<number | null>(1);
   const [trainings, setTrainings] = useState<any[]>([]);
   const [loadingTrainings, setLoadingTrainings] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
@@ -391,7 +390,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100/70 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50/40 to-gray-50 p-4 md:p-8">
       <div className="mx-auto max-w-6xl">
         {selectedPresentation ? (
           <PresentationPreview 
@@ -406,15 +405,21 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           />
         ) : (
           <>
-        <header className="mb-8 rounded-2xl border border-gray-100 bg-white/80 px-6 py-5 shadow-sm backdrop-blur-sm">
+        <header className="mb-8 overflow-hidden rounded-2xl border border-purple-100/80 bg-white/90 px-6 py-5 shadow-[0_8px_30px_rgb(124,58,237,0.08)] backdrop-blur-sm">
+          <div className="h-1 w-full -mx-6 -mt-5 mb-5 rounded-t-2xl bg-gradient-to-r from-rose-500 to-purple-600" aria-hidden />
           <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl">REP Onboarding</h1>
-            <p className="mt-1 text-sm text-gray-500 md:text-base">Complete your setup and start your journey</p>
+            <h1 className="text-2xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-purple-600 to-purple-700 md:text-3xl">
+              REP Onboarding
+            </h1>
+            <p className="mt-1 text-sm text-gray-600 md:text-base">Complete your setup and start your journey</p>
           </div>
           <div className="hidden space-x-2 md:flex">
-            <button className="flex items-center space-x-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50">
-              <Download className="h-4 w-4" />
+            <button
+              type="button"
+              className="flex items-center space-x-2 rounded-xl border border-purple-200 bg-white px-4 py-2 text-sm font-semibold text-purple-800 shadow-sm transition-all hover:border-purple-300 hover:bg-purple-50"
+            >
+              <Download className="h-4 w-4 text-purple-600" />
               <span>Guide PDF</span>
             </button>
           </div>
@@ -424,28 +429,29 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         <div className="space-y-8">
           {/* Main Content */}
           <div className="space-y-6">
-            {/* Training Section */}
-            <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+            {/* Training Section — HARX brand (rose / purple) aligned with Journey Builder */}
+            <section className="overflow-hidden rounded-2xl border border-purple-100/70 bg-white shadow-[0_8px_30px_rgb(124,58,237,0.06)]">
+              <div className="h-1 w-full bg-gradient-to-r from-rose-500 to-purple-600" aria-hidden />
               <div className="p-6">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center space-x-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 ring-1 ring-purple-100 shadow-sm">
                         <BookOpen className="h-5 w-5" />
                       </div>
                       <div>
                         <h2 className="text-lg font-bold text-gray-900">Training & Certification</h2>
-                        <p className="text-sm text-gray-500">Skills development and validation</p>
+                        <p className="text-sm text-purple-600/80">Skills development and validation</p>
                       </div>
                     </div>
 
                     {/* Gig Filter Dropdown */}
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Gig:</span>
+                      <span className="text-xs font-bold uppercase tracking-wider text-purple-500">Gig:</span>
                       <select
                         id="gig-filter-dropdown"
                         value={filterGigId}
                         onChange={(e) => setFilterGigId(e.target.value)}
-                        className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer transition-all"
+                        className="rounded-xl border border-purple-100 bg-white px-3 py-2 text-sm font-medium text-gray-800 shadow-sm outline-none transition-all focus:border-purple-400 focus:ring-2 focus:ring-purple-500/30"
                       >
                         <option value="all">Tous les Gigs</option>
                         {companyGigs.map((gig: any) => (
@@ -458,22 +464,23 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   </div>
 
                 {loadingTrainings ? (
-                  <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-100 py-12 rounded-xl">
-                    <RefreshCw className="h-8 w-8 animate-spin text-indigo-400" />
-                    <p className="mt-4 text-gray-500">Loading available trainings...</p>
+                  <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-purple-100 bg-purple-50/30 py-12">
+                    <RefreshCw className="h-8 w-8 animate-spin text-purple-500" />
+                    <p className="mt-4 text-sm font-medium text-purple-800/80">Loading available trainings...</p>
                   </div>
                 ) : trainings.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center rounded-xl bg-gray-50 py-12 text-center border border-dashed border-gray-200 p-8">
-                    <div className="mb-4 rounded-full bg-white p-3 shadow-sm">
-                      <Plus className="h-6 w-6 text-indigo-600" />
+                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 py-12 p-8 text-center">
+                    <div className="mb-4 rounded-2xl border border-purple-100 bg-white p-3 shadow-sm">
+                      <Plus className="h-6 w-6 text-purple-600" />
                     </div>
-                    <h3 className="text-base font-semibold text-gray-900">No training journeys yet</h3>
-                    <p className="mx-auto mt-2 max-w-xs text-sm text-gray-500">
+                    <h3 className="text-base font-bold text-gray-900">No training journeys yet</h3>
+                    <p className="mx-auto mt-2 max-w-xs text-sm text-gray-600">
                       Add your first training journey to start onboarding your REPs.
                     </p>
                     <button
+                      type="button"
                       onClick={() => setShowTraining({ isOpen: true, newJourney: true })}
-                      className="mt-6 inline-flex items-center space-x-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition-all"
+                      className="mt-6 inline-flex items-center space-x-2 rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg transition-all hover:from-rose-600 hover:to-purple-700 hover:shadow-xl"
                     >
                       <Plus className="h-4 w-4" />
                       <span>Create First Journey</span>
@@ -486,17 +493,18 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                       return (
                         <div
                           key={formatted.id}
-                          className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md"
+                          className="group relative overflow-hidden rounded-xl border border-gray-100 bg-white/95 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-purple-200 hover:shadow-[0_12px_40px_rgb(124,58,237,0.12)]"
                         >
+                          <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-rose-400 to-purple-600 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
                           <div className="flex items-start justify-between">
                             <div className="flex items-start space-x-4">
-                              <div className={`mt-1 flex h-10 w-10 items-center justify-center rounded-lg ${formatted.status === 'completed' ? 'bg-green-50 text-green-600' :
-                                formatted.status === 'in_progress' ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-600'
+                              <div className={`mt-1 flex h-10 w-10 items-center justify-center rounded-xl ${formatted.status === 'completed' ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100' :
+                                formatted.status === 'in_progress' ? 'bg-purple-50 text-purple-600 ring-1 ring-purple-100' : 'bg-gray-50 text-gray-500 ring-1 ring-gray-100'
                                 }`}>
                                 {formatted.status === 'completed' ? <CheckCircle className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                               </div>
                               <div>
-                                <h3 className="text-base font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                                <h3 className="text-base font-bold text-gray-900 transition-colors group-hover:text-purple-700">
                                   {formatted.title}
                                 </h3>
                                 <p className="mt-1 line-clamp-1 text-sm text-gray-500">
@@ -516,11 +524,12 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                             </div>
                             <div className="flex items-center space-x-2">
                               <button
+                                type="button"
                                 onClick={() => handleViewPresentation(formatted.presentationUrl, formatted.id, journey)}
                                 disabled={loadingPresentation}
-                                className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all flex items-center space-x-2 ${formatted.status === 'completed'
-                                  ? 'bg-green-50 text-green-700 hover:bg-green-100'
-                                  : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
+                                className={`rounded-xl px-4 py-2 text-sm font-bold transition-all flex items-center space-x-2 ${formatted.status === 'completed'
+                                  ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100 hover:bg-emerald-100'
+                                  : 'bg-gradient-to-r from-rose-500 to-purple-600 text-white shadow-md hover:from-rose-600 hover:to-purple-700 hover:shadow-lg'
                                   }`}
                               >
                                 {loadingPresentation ? (
@@ -537,12 +546,12 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                           {formatted.status === 'in_progress' && (
                             <div className="mt-4">
                               <div className="flex items-center justify-between text-xs mb-1.5">
-                                <span className="text-gray-500">Progress</span>
-                                <span className="font-medium text-indigo-600">{formatted.progress}%</span>
+                                <span className="font-medium text-gray-500">Progress</span>
+                                <span className="font-bold text-purple-700">{formatted.progress}%</span>
                               </div>
-                              <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                              <div className="h-2 w-full overflow-hidden rounded-full bg-purple-100/80">
                                 <div
-                                  className="h-full bg-indigo-600 transition-all duration-500"
+                                  className="h-full rounded-full bg-gradient-to-r from-rose-500 to-purple-600 transition-all duration-500"
                                   style={{ width: `${formatted.progress}%` }}
                                 />
                               </div>
@@ -553,8 +562,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                     })}
 
                     <button
+                      type="button"
                       onClick={() => setShowTraining({ isOpen: true, newJourney: true })}
-                      className="flex w-full items-center justify-center space-x-2 rounded-xl border-2 border-dashed border-gray-200 py-4 text-sm font-medium text-gray-500 transition-all hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600"
+                      className="flex w-full items-center justify-center space-x-2 rounded-xl border-2 border-dashed border-purple-200 py-4 text-sm font-semibold text-purple-700/80 transition-all hover:border-purple-400 hover:bg-purple-50/90 hover:text-purple-800"
                     >
                       <Plus className="h-4 w-4" />
                       <span>Create New Training Journey</span>
