@@ -23,7 +23,7 @@ interface PresentationPreviewProps {
 
 const parseMarkdown = (text: string) => {
   if (!text) return '';
-  
+
   // Basic Markdown replacement
   let html = text
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -72,7 +72,7 @@ export default function PresentationPreview({
     try {
       console.log('📦 Exporting to PPTX...');
       const blob = await AIService.exportToPowerPoint(presentation);
-      
+
       // Create Object URL and trigger download
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -82,7 +82,7 @@ export default function PresentationPreview({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
+
       console.log('✅ PPTX exported successfully');
     } catch (error) {
       console.error('❌ PPTX export failed:', error);
@@ -106,22 +106,22 @@ export default function PresentationPreview({
   const renderSlideContent = (slide: any) => {
     const vc = slide.visualConfig || {};
     const themeParams = (presentation as any).visualTheme || {};
-    
+
     // Use generated colors or smart fallbacks
     const isDarkFallback = vc.theme === 'dark' || isDarkType(slide.type);
-    
+
     const bgColor = vc.backgroundHex || (isDarkFallback ? '#1a1a2e' : '#ffffff');
     const textColor = vc.textHex || (isDarkFallback ? '#ffffff' : '#111827');
     const accentColor = vc.accentHex || themeParams.primaryColor || '#F43F5E';
     // If AI explicitly chose an accent color, don't force a purple gradient fallback
     const secondaryColor = (vc.accentHex && vc.accentHex.length > 0) ? vc.accentHex : (themeParams.secondaryColor || '#6D28D9');
-    
+
     const layout = vc.layout || (slide.type === 'cover' ? 'split' : 'content');
 
     return (
-      <div 
+      <div
         className={`w-full max-w-5xl aspect-[16/9] rounded-[2.5rem] print:rounded-none print:shadow-none shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-white/10 overflow-hidden flex relative animate-in fade-in duration-500 page-break-inside-avoid print:w-full print:h-full print:max-w-none print:border-none print:m-0 print:flex print:items-center print:justify-center`}
-        style={{ 
+        style={{
           pageBreakAfter: 'always',
           backgroundColor: bgColor,
           color: textColor
@@ -131,7 +131,7 @@ export default function PresentationPreview({
         {layout === 'gradient' && (
           <div className="absolute inset-0 opacity-10 print:opacity-20 pointer-events-none" style={{ background: `linear-gradient(135deg, ${accentColor}, ${secondaryColor})` }} />
         )}
-        
+
         {layout === 'split' && (
           <div className="w-1/3 h-full flex flex-col items-center justify-center p-8 text-white relative overflow-hidden shrink-0" style={{ background: `linear-gradient(180deg, ${accentColor}, ${secondaryColor})`, color: '#ffffff' }}>
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-16 -mt-16 print:hidden" />
@@ -145,12 +145,12 @@ export default function PresentationPreview({
         <div className={`flex-1 p-8 md:p-12 lg:p-14 flex flex-col justify-center relative z-10 overflow-y-auto custom-scrollbar ${layout === 'split' ? '' : 'w-full'}`}>
           {layout !== 'split' && (
             <h1 className="text-3xl md:text-5xl font-black mb-6 leading-[1.2] tracking-tight"
-                style={{ 
-                   background: `linear-gradient(90deg, ${accentColor}, ${secondaryColor})`,
-                   WebkitBackgroundClip: 'text',
-                   WebkitTextFillColor: 'transparent',
-                   color: accentColor
-                }}>
+              style={{
+                background: `linear-gradient(90deg, ${accentColor}, ${secondaryColor})`,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                color: accentColor
+              }}>
               {slide.title}
             </h1>
           )}
@@ -204,9 +204,10 @@ export default function PresentationPreview({
 
   const content = (
     <div className="fixed top-0 left-0 w-screen h-[100dvh] bg-black/90 z-[99999] flex flex-col md:flex-row border-none animate-in fade-in duration-300 overflow-hidden text-gray-900 print:bg-white print:static print:h-auto print:overflow-visible print:block">
-      
+
       {/* Premium Print Styles */}
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @media print {
           @page { size: landscape; margin: 0; }
           body { margin: 0; padding: 0; background: white !important; -webkit-print-color-adjust: exact !important; }
@@ -237,13 +238,6 @@ export default function PresentationPreview({
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleDownloadPDF}
-              className="px-4 py-2 rounded-xl font-bold text-sm bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-            >
-              <Printer size={18} className="text-rose-500" />
-              <span className="hidden sm:inline">Télécharger PDF</span>
-            </button>
 
             <button
               onClick={handleExportPPTX}
@@ -262,47 +256,47 @@ export default function PresentationPreview({
 
         {/* Slide Canvas or PPTX Viewer */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col items-center justify-center bg-slate-100/50">
-           {actualUrl ? (
-             <div className="w-full h-full max-w-6xl bg-white rounded-3xl shadow-2xl border border-purple-200 overflow-hidden flex flex-col">
-               <div className="p-4 border-b border-purple-100 bg-purple-50 flex items-center justify-between shrink-0">
-                 <div className="flex items-center space-x-3">
-                   <div className="p-2 bg-red-100 rounded-lg">
-                     <FileDown className="h-5 w-5 text-red-600" />
-                   </div>
-                   <h3 className="font-bold text-gray-900">Aperçu du Fichier PowerPoint Généré</h3>
-                 </div>
-                 <div className="flex items-center space-x-2">
-                   <span className="text-xs font-semibold text-purple-600 bg-white px-3 py-1 rounded-full border border-purple-100">
-                     Mode Lecteur Intégré
-                   </span>
-                 </div>
-               </div>
-               <div className="flex-1 bg-gray-50 relative">
-                 <iframe
-                   src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(actualUrl)}`}
-                   width="100%"
-                   height="100%"
-                   frameBorder="0"
-                   className="absolute inset-0 w-full h-full"
-                   title="PPTX Preview"
-                 >
-                   Votre navigateur ne peut pas afficher ce fichier.
-                 </iframe>
-               </div>
-             </div>
-           ) : (
-             renderSlideContent(currentSlide)
-           )}
+          {actualUrl ? (
+            <div className="w-full h-full max-w-6xl bg-white rounded-3xl shadow-2xl border border-purple-200 overflow-hidden flex flex-col">
+              <div className="p-4 border-b border-purple-100 bg-purple-50 flex items-center justify-between shrink-0">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-red-100 rounded-lg">
+                    <FileDown className="h-5 w-5 text-red-600" />
+                  </div>
+                  <h3 className="font-bold text-gray-900">Aperçu du Fichier PowerPoint Généré</h3>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs font-semibold text-purple-600 bg-white px-3 py-1 rounded-full border border-purple-100">
+                    Mode Lecteur Intégré
+                  </span>
+                </div>
+              </div>
+              <div className="flex-1 bg-gray-50 relative">
+                <iframe
+                  src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(actualUrl)}`}
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  className="absolute inset-0 w-full h-full"
+                  title="PPTX Preview"
+                >
+                  Votre navigateur ne peut pas afficher ce fichier.
+                </iframe>
+              </div>
+            </div>
+          ) : (
+            renderSlideContent(currentSlide)
+          )}
         </div>
 
         {/* Footer - Only show finish button if PPT view is active */}
         <footer className="h-20 bg-white border-t border-purple-100 flex items-center justify-end px-8">
-              {onSave && (
-                <button onClick={onSave} disabled={isSaving} className="px-8 py-3 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-black text-sm flex items-center gap-3">
-                  {isSaving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle size={18} />}
-                  Terminer la Formation
-                </button>
-              )}
+          {onSave && (
+            <button onClick={onSave} disabled={isSaving} className="px-8 py-3 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-black text-sm flex items-center gap-3">
+              {isSaving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle size={18} />}
+              Terminer la Formation
+            </button>
+          )}
         </footer>
       </div>
     </div>
