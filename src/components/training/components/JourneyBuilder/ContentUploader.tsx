@@ -11,7 +11,7 @@ interface ContentUploaderProps {
   onBack: () => void;
   company?: any;
   gigId?: string | null;
-  onFinishEarly?: (uploads: ContentUpload[], curriculum?: any) => void;
+  onFinishEarly?: (uploads: ContentUpload[], curriculum?: any, presentationData?: any, filetraining?: string) => void;
 }
 
 export default function ContentUploader(props: ContentUploaderProps) {
@@ -337,7 +337,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       
       // On revient à la liste des formations
       if (props.onFinishEarly) {
-        props.onFinishEarly(uploads, generatedCurriculum);
+        props.onFinishEarly(uploads, generatedCurriculum, generatedPresentation, fileTrainingUrl);
       } else if (onBack) {
         onBack();
       }
