@@ -143,4 +143,6 @@ export interface IPresentation {
   totalSlides: number;
   slides: ISlide[];
   estimatedTime?: string;
+  filetraining?: string;    // Optional PPTX URL for direct iframe viewing
+  presentationUrl?: string; // Alternative prop name for the PPTX URL
 }

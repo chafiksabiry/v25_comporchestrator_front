@@ -148,13 +148,17 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
     });
   };
 
-  const handleUploadComplete = async (newUploads: ContentUpload[]) => {
+  const handleUploadComplete = async (newUploads: ContentUpload[], fileTrainingUrl?: string) => {
     setUploads(newUploads);
+    if (fileTrainingUrl && journey) {
+      setJourney({ ...journey, filetraining: fileTrainingUrl });
+    }
     setCurrentStep(2); // Go directly to Curriculum Design
 
     // Sauvegarder immédiatement après l'upload
     await DraftService.saveDraftImmediately({
       uploads: newUploads,
+      filetraining: fileTrainingUrl,
       currentStep: 2
     });
   };
@@ -286,6 +290,7 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
             gigId={selectedGigId}
             onComplete={handleCurriculumComplete}
             onBack={() => setCurrentStep(1)}
+            fileTrainingUrl={journey?.filetraining}
           />
         );
       case 3:

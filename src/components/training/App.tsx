@@ -1245,7 +1245,7 @@ export function AppContent({
       createdAt: selectedTraineeJourney.createdAt || new Date().toISOString(),
       estimatedDuration: selectedTraineeJourney.estimatedDuration || '0',
       targetRoles: [],
-      filetraining: selectedTraineeJourney.filetraining
+      filetraining: (selectedTraineeJourney as any).filetraining || (selectedTraineeJourney as any).fileTrainingUrl
     };
 
     // Transform available journeys for selector
@@ -1345,7 +1345,10 @@ export function AppContent({
     return (
       <TraineePortal
         trainee={selectedTrainee}
-        journey={launchedJourney.journey}
+        journey={{
+          ...launchedJourney.journey,
+          filetraining: (launchedJourney.journey as any).filetraining || (launchedJourney.journey as any).fileTrainingUrl
+        }}
         modules={launchedJourney.modules}
         methodology={undefined} // Would be passed from journey data
         autoStart={!!initialJourneyId}
