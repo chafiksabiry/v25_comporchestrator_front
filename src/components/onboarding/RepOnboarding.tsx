@@ -391,8 +391,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="mx-auto max-w-7xl">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100/70 p-4 md:p-8">
+      <div className="mx-auto max-w-6xl">
         {selectedPresentation ? (
           <PresentationPreview 
             presentation={selectedPresentation} 
@@ -406,10 +406,11 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           />
         ) : (
           <>
-        <header className="mb-8 flex items-center justify-between">
+        <header className="mb-8 rounded-2xl border border-gray-100 bg-white/80 px-6 py-5 shadow-sm backdrop-blur-sm">
+          <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">REP Onboarding</h1>
-            <p className="mt-1 text-gray-500">Complete your setup and start your journey</p>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900 md:text-3xl">REP Onboarding</h1>
+            <p className="mt-1 text-sm text-gray-500 md:text-base">Complete your setup and start your journey</p>
           </div>
           <div className="hidden space-x-2 md:flex">
             <button className="flex items-center space-x-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50">
@@ -417,13 +418,14 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               <span>Guide PDF</span>
             </button>
           </div>
+          </div>
         </header>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="space-y-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6">
             {/* Training Section */}
-            <section className="overflow-hidden rounded-xl bg-white shadow-sm border border-gray-100">
+            <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
               <div className="p-6">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center space-x-3">
@@ -484,7 +486,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                       return (
                         <div
                           key={formatted.id}
-                          className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-5 transition-all hover:border-indigo-300 hover:shadow-md"
+                          className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md"
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex items-start space-x-4">
@@ -561,35 +563,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 )}
               </div>
             </section>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Summary</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">Assigned</span>
-                  <span className="font-bold text-gray-900">{trainings.filter(Boolean).length}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">Completed</span>
-                  <span className="font-bold text-green-600">
-                    {trainings.filter(Boolean).filter(t => t && (t.status === 'completed' || t.journeyStatus === 'completed')).length}
-                  </span>
-                </div>
-                <div className="pt-4 border-t border-gray-50">
-                  <div className="flex items-center justify-between text-sm font-bold">
-                    <span className="text-gray-900">Overall Progress</span>
-                    <span className="text-indigo-600">
-                      {trainings.filter(Boolean).length > 0
-                        ? Math.round((trainings.filter(Boolean).filter(t => t && (t.status === 'completed' || t.journeyStatus === 'completed')).length / trainings.filter(Boolean).length) * 100)
-                        : 0}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
           </>
