@@ -591,6 +591,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
               <div className="mt-4 flex flex-col gap-2 border-t border-gray-100 pt-4">
                 <button
                   type="button"
+                  onClick={handleSavePresentation}
+                  disabled={isSavingCloud || !generatedCurriculum}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600 px-3 py-2.5 text-xs font-bold text-white shadow-md transition-all hover:shadow-lg disabled:opacity-50"
+                >
+                  {isSavingCloud ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Save training
+                </button>
+                <button
+                  type="button"
                   onClick={handleRegeneratePresentation}
                   disabled={isGeneratingPresentation}
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
