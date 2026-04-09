@@ -554,20 +554,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               </button>
                             </div>
                           </div>
-                          {formatted.status === 'in_progress' && (
-                            <div className="px-5 pb-5">
-                              <div className="flex items-center justify-between text-xs mb-1.5">
-                                <span className="font-medium text-gray-500">Progress</span>
-                                <span className="font-bold text-purple-700">{formatted.progress}%</span>
-                              </div>
-                              <div className="h-2 w-full overflow-hidden rounded-full bg-purple-100/80">
-                                <div
-                                  className="h-full rounded-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600 transition-all duration-500"
-                                  style={{ width: `${formatted.progress}%` }}
-                                />
-                              </div>
-                            </div>
-                          )}
                           </div>
                         );
                       })}

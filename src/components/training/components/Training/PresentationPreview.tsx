@@ -7,7 +7,6 @@ import {
   Sparkles,
   CheckCircle,
   FileDown,
-  Printer,
   RefreshCw,
   ArrowLeft,
   Wand2,
@@ -83,7 +82,7 @@ export default function PresentationPreview({
       setShowFloatingPrompt(false);
     } catch (error) {
       console.error('AI Edit failed:', error);
-      alert('Erreur lors de la modification de la slide par l\'IA.');
+      alert('The slide could not be updated by AI. Please try again.');
     } finally {
       setIsAiEditing(false);
     }
@@ -112,7 +111,7 @@ export default function PresentationPreview({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${presentation.title || 'Formation'}.pptx`;
+      a.download = `${presentation.title || 'Training'}.pptx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -121,7 +120,7 @@ export default function PresentationPreview({
       console.log('✅ PPTX exported successfully');
     } catch (error) {
       console.error('❌ PPTX export failed:', error);
-      alert('Erreur lors de l\'exportation PowerPoint.');
+      alert('PowerPoint export failed. Please try again.');
     } finally {
       setIsExporting(false);
     }
@@ -153,6 +152,9 @@ export default function PresentationPreview({
     const secondaryColor = (vc.accentHex && vc.accentHex.length > 0) ? vc.accentHex : (themeParams.secondaryColor || '#6D28D9');
 
     const layout = vc.layout || (slide.type === 'cover' ? 'split' : 'content');
+    const bulletTileClass = isDarkFallback
+      ? 'rounded-2xl border border-white/15 bg-white/5'
+      : 'rounded-2xl border border-slate-200/90 bg-slate-50/90';
 
     return (
       <div
@@ -198,12 +200,12 @@ export default function PresentationPreview({
           )}
 
           {slide.content && (
-            <div className="mb-4 opacity-90 text-base md:text-lg leading-relaxed max-w-3xl" style={{ color: 'inherit' }}>
+            <div className="mb-4 opacity-90 text-base md:text-lg leading-relaxed max-w-5xl" style={{ color: 'inherit' }}>
               {Array.isArray(slide.content) ? (
-                <ul className="space-y-4">
+                <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-x-8 md:gap-y-3">
                   {slide.content.map((bullet: string, i: number) => (
-                    <li key={i} className="flex items-start gap-4">
-                      <span className="w-2.5 h-2.5 rounded-full mt-2.5 shrink-0 shadow-sm" style={{ background: accentColor }} />
+                    <li key={i} className={`flex items-start gap-3 p-3 md:p-4 ${bulletTileClass}`}>
+                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full shadow-sm" style={{ background: accentColor }} />
                       <span className="font-medium" dangerouslySetInnerHTML={{ __html: parseMarkdown(bullet) }} />
                     </li>
                   ))}
@@ -216,10 +218,10 @@ export default function PresentationPreview({
 
           {/* Support for bullets field */}
           {Array.isArray(slide.bullets) && slide.bullets.length > 0 && (
-            <ul className={`space-y-3 max-w-3xl ${slide.content ? 'border-t border-current/10 pt-5 mt-5' : ''}`}>
+            <ul className={`grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-x-8 md:gap-y-3 max-w-5xl ${slide.content ? 'border-t border-current/10 pt-5 mt-5' : ''}`}>
               {slide.bullets.map((bullet: string, i: number) => (
-                <li key={i} className="flex items-start gap-4 text-base md:text-lg">
-                  <span className="w-2.5 h-2.5 rounded-full mt-2 shrink-0 shadow-sm" style={{ background: accentColor }} />
+                <li key={i} className={`flex items-start gap-3 p-3 text-base md:text-lg ${bulletTileClass}`}>
+                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full shadow-sm" style={{ background: accentColor }} />
                   <span className="opacity-90" dangerouslySetInnerHTML={{ __html: parseMarkdown(bullet) }} />
                 </li>
               ))}
@@ -239,7 +241,7 @@ export default function PresentationPreview({
   };
 
   const content = (
-    <div className={`${isEmbedded ? 'relative w-full h-full min-h-[750px]' : 'fixed inset-0 z-[9999] bg-white overflow-y-auto'} border border-purple-100 flex flex-col md:flex-row rounded-3xl shadow-xl animate-in fade-in duration-300 overflow-hidden text-gray-900 print:bg-white print:static print:h-auto print:overflow-visible print:block`}>
+    <div className={`${isEmbedded ? 'relative flex w-full min-h-[750px] flex-col overflow-hidden rounded-3xl border border-rose-100/80 bg-slate-50 shadow-[0_8px_30px_rgb(244,63,94,0.12)]' : 'fixed inset-0 z-[9999] flex flex-col overflow-y-auto overflow-hidden border border-rose-100/80 bg-white md:flex-row'} animate-in fade-in duration-300 text-gray-900 print:bg-white print:static print:h-auto print:overflow-visible print:block`}>
 
       {/* Premium Print Styles */}
       <style dangerouslySetInnerHTML={{
@@ -264,40 +266,44 @@ export default function PresentationPreview({
       {/* Sidebar removed as requested */}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col bg-slate-50 overflow-hidden print:hidden">
-        {/* Header */}
-        {!isEmbedded && (
-          <header className="h-16 border-b border-purple-100 flex items-center justify-between px-6 bg-white/80 backdrop-blur-md shrink-0 z-20">
-            <div className="flex items-center gap-4">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-50 print:hidden">
+        {/* Header — shown in modal and when embedded (e.g. company REP onboarding) */}
+        {(!isEmbedded || onClose) && (
+          <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-rose-100 bg-white/95 px-4 backdrop-blur-md z-20 md:h-16 md:px-6">
+            <div className="flex min-w-0 flex-1 items-center gap-3 md:gap-4">
               {onClose && (
-                <button 
+                <button
+                  type="button"
                   onClick={onClose}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors group"
+                  className="group flex shrink-0 items-center gap-2 rounded-xl border-2 border-rose-500 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-rose-600 transition-colors hover:bg-rose-50 md:text-[11px]"
                 >
-                  <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-                  <span className="font-bold text-sm">Retour aux Formations</span>
+                  <ArrowLeft size={16} strokeWidth={2.5} className="text-rose-600 transition-transform group-hover:-translate-x-0.5" />
+                  <span className="hidden sm:inline">Back to trainings</span>
+                  <span className="sm:hidden">Back</span>
                 </button>
               )}
-              <div className="h-6 w-px bg-gray-200 mx-1" />
-              <h2 className="text-lg font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-purple-600 truncate max-w-md">
+              <div className="hidden h-6 w-px bg-gray-200 sm:block" />
+              <h2 className="min-w-0 truncate text-base font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-fuchsia-600 to-purple-700 md:text-lg md:max-w-md">
                 {localPresentation.title}
               </h2>
             </div>
 
-            <div className="flex items-center gap-2">
-
+            <div className="flex shrink-0 items-center gap-2">
               <button
+                type="button"
                 onClick={handleExportPPTX}
                 disabled={isExporting}
-                className={`px-4 py-2 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-rose-500 to-purple-600 flex items-center gap-2 ${isExporting ? 'opacity-50' : ''}`}
+                className={`flex items-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600 px-3 py-2 text-xs font-bold text-white shadow-md md:px-4 md:text-sm ${isExporting ? 'opacity-50' : 'hover:shadow-lg'}`}
               >
                 {isExporting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <FileDown size={18} />}
-                <span className="hidden sm:inline">Exporter .pptx</span>
+                <span className="hidden sm:inline">Export .pptx</span>
               </button>
 
-              <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600">
-                <X size={24} />
-              </button>
+              {!isEmbedded && onClose && (
+                <button type="button" onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600" aria-label="Close">
+                  <X size={24} />
+                </button>
+              )}
             </div>
           </header>
         )}
@@ -309,7 +315,7 @@ export default function PresentationPreview({
               <div className="p-4 border-b border-purple-50 bg-slate-50/50">
                 <h3 className="text-xs font-black text-purple-900 uppercase tracking-widest flex items-center gap-2">
                   <Sparkles size={14} className="text-rose-500" />
-                  Plan des Slides
+                  Slide outline
                 </h3>
               </div>
               <div className="flex-1 p-2 space-y-1">
@@ -343,13 +349,13 @@ export default function PresentationPreview({
               <div className="p-4 border-t border-purple-50 bg-slate-50/30">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
                   <Wand2 size={12} className="text-purple-500" />
-                  Optimiser cette slide
+                  Refine this slide
                 </p>
                 <div className="relative">
                   <textarea
                     value={editPrompt}
                     onChange={(e) => setEditPrompt(e.target.value)}
-                    placeholder="Ex: 'Ajoute plus d'expertise sur...'"
+                    placeholder="e.g. Add more depth on…"
                     className="w-full h-20 p-2.5 text-xs bg-white border border-purple-100 rounded-xl focus:ring-2 focus:ring-purple-200 focus:border-purple-300 outline-none resize-none transition-all placeholder:text-slate-400 custom-scrollbar"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -375,34 +381,34 @@ export default function PresentationPreview({
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-purple-600 text-white text-xs font-bold hover:bg-purple-700 transition-colors shadow-lg shadow-purple-200"
                 >
                   {isExporting ? <RefreshCw className="h-3 w-3 animate-spin" /> : <FileDown size={14} />}
-                  Exporter PPTX
+                  Export PPTX
                 </button>
               </div>
             </div>
           )}
 
           {/* Slide Canvas or PPTX Viewer */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col items-center justify-center bg-slate-100/50 relative group/canvas">
+          <div className={`relative flex flex-1 flex-col items-center justify-center overflow-y-auto p-4 md:p-8 group/canvas ${isEmbedded ? 'bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950' : 'bg-slate-100/50'}`}>
             {/* Quick Navigation Buttons (Floating) */}
             {!actualUrl && (
               <>
                 <button
                   onClick={() => setActiveSlide(Math.max(0, activeSlide - 1))}
                   disabled={activeSlide === 0}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 p-4 rounded-full bg-white/80 hover:bg-white text-purple-600 shadow-xl border border-purple-100 transition-all opacity-0 group-hover/canvas:opacity-100 disabled:opacity-0 z-10"
+                  className="absolute left-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-rose-200/80 bg-white/95 p-4 text-fuchsia-600 shadow-xl shadow-fuchsia-500/10 transition-all hover:bg-white disabled:opacity-0 opacity-0 group-hover/canvas:opacity-100"
                 >
                   <ChevronLeft size={24} strokeWidth={3} />
                 </button>
                 <button
                   onClick={() => setActiveSlide(Math.min(presentation.slides.length - 1, activeSlide + 1))}
                   disabled={activeSlide === presentation.slides.length - 1}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-4 rounded-full bg-white/80 hover:bg-white text-purple-600 shadow-xl border border-purple-100 transition-all opacity-0 group-hover/canvas:opacity-100 disabled:opacity-0 z-10"
+                  className="absolute right-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-rose-200/80 bg-white/95 p-4 text-fuchsia-600 shadow-xl shadow-fuchsia-500/10 transition-all hover:bg-white disabled:opacity-0 opacity-0 group-hover/canvas:opacity-100"
                 >
                   <ChevronRight size={24} strokeWidth={3} />
                 </button>
                 
                 {/* Slide Counter (Floating) */}
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-white/90 backdrop-blur shadow-lg border border-purple-100 text-xs font-bold text-gray-500 z-10">
+                <div className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-full border border-rose-100 bg-white/95 px-4 py-2 text-xs font-bold text-slate-600 shadow-lg backdrop-blur">
                   {activeSlide + 1} / {localPresentation.slides.length}
                 </div>
 
@@ -411,17 +417,17 @@ export default function PresentationPreview({
                   {!showFloatingPrompt ? (
                     <button
                       onClick={() => setShowFloatingPrompt(true)}
-                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-purple-600 text-white font-bold text-sm shadow-xl hover:bg-purple-700 hover:scale-105 transition-all animate-in slide-in-from-right duration-300"
+                      className="flex animate-in slide-in-from-right items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600 px-4 py-2 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl"
                     >
                       <Wand2 size={16} />
-                      <span>Modifier avec Claude</span>
+                      <span>Edit with Claude</span>
                     </button>
                   ) : (
                     <div className="w-80 bg-white rounded-2xl shadow-2xl border border-purple-100 p-4 animate-in zoom-in-95 duration-200">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <Sparkles size={16} className="text-purple-600" />
-                          <h4 className="text-sm font-black text-gray-900">Demander à Claude</h4>
+                          <h4 className="text-sm font-black text-gray-900">Ask Claude</h4>
                         </div>
                         <button onClick={() => setShowFloatingPrompt(false)} className="text-gray-400 hover:text-gray-600 p-1">
                           <X size={16} />
@@ -431,7 +437,7 @@ export default function PresentationPreview({
                         autoFocus
                         value={editPrompt}
                         onChange={(e) => setEditPrompt(e.target.value)}
-                        placeholder="Ex: 'Change le style en mode sombre et ajoute un titre plus percutant'"
+                        placeholder="e.g. Switch to a darker style and make the title more impactful"
                         className="w-full h-24 p-3 text-sm bg-slate-50 border border-purple-100 rounded-xl focus:ring-2 focus:ring-purple-200 focus:border-purple-300 outline-none resize-none transition-all mb-3 text-gray-700 custom-scrollbar"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
@@ -448,12 +454,12 @@ export default function PresentationPreview({
                         {isAiEditing ? (
                           <>
                             <Loader2 size={16} className="animate-spin" />
-                            <span>IA en action...</span>
+                            <span>Updating…</span>
                           </>
                         ) : (
                           <>
                             <Send size={16} />
-                            <span>Appliquer les modifications</span>
+                            <span>Apply changes</span>
                           </>
                         )}
                       </button>
@@ -470,11 +476,11 @@ export default function PresentationPreview({
                   <div className="p-2 bg-red-100 rounded-lg">
                     <FileDown className="h-5 w-5 text-red-600" />
                   </div>
-                  <h3 className="font-bold text-gray-900">Aperçu du Fichier PowerPoint Généré</h3>
+                  <h3 className="font-bold text-gray-900">Generated PowerPoint preview</h3>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-xs font-semibold text-purple-600 bg-white px-3 py-1 rounded-full border border-purple-100">
-                    Mode Lecteur Intégré
+                    Embedded viewer
                   </span>
                 </div>
               </div>
@@ -487,7 +493,7 @@ export default function PresentationPreview({
                   className="absolute inset-0 w-full h-full"
                   title="PPTX Preview"
                 >
-                  Votre navigateur ne peut pas afficher ce fichier.
+                  Your browser cannot display this file.
                 </iframe>
               </div>
             </div>
@@ -498,11 +504,16 @@ export default function PresentationPreview({
       </div>
 
       {/* Footer - Only show finish button if PPT view is active */}
-        <footer className="h-20 bg-white border-t border-purple-100 flex items-center justify-end px-8">
+        <footer className="flex h-20 shrink-0 items-center justify-end border-t border-rose-100 bg-white px-4 md:px-8">
           {onSave && (
-            <button onClick={onSave} disabled={isSaving} className="px-8 py-3 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-black text-sm flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={isSaving}
+              className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600 px-6 py-3 text-sm font-black text-white shadow-md hover:shadow-lg md:px-8"
+            >
               {isSaving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle size={18} />}
-              Terminer la Formation
+              Complete training
             </button>
           )}
         </footer>
