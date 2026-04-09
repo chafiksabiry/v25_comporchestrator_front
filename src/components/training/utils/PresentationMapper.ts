@@ -61,9 +61,9 @@ export const mapModuleToPresentation = (module: TrainingModule): IPresentation =
     {
       id: slides.length + 1,
       type: 'conclusion',
-      title: 'Félicitations !',
-      subtitle: 'Vous avez terminé ce module.',
-      content: 'Prêt pour le quiz ?',
+      title: 'Well done!',
+      subtitle: 'You have completed this module.',
+      content: 'Ready for the quiz?',
       visualConfig: {
         layout: 'gradient',
         theme: 'dark',
@@ -86,7 +86,7 @@ export const mapModuleToPresentation = (module: TrainingModule): IPresentation =
  * This is useful for providing a slide view even if AI slides weren't generated.
  */
 export const mapJourneyToPresentation = (journey: any): IPresentation => {
-  const title = journey.title || journey.name || 'Formation';
+  const title = journey.title || journey.name || 'Training';
   const description = journey.description || '';
   const modules = journey.modules || [];
   
@@ -111,7 +111,7 @@ export const mapJourneyToPresentation = (journey: any): IPresentation => {
     allSlides.push({
       id: allSlides.length,
       type: 'agenda',
-      title: `Module ${mIdx + 1}: ${module.title || 'Sans titre'}`,
+      title: `Module ${mIdx + 1}: ${module.title || 'Untitled'}`,
       content: module.description || '',
       visualConfig: {
         layout: 'gradient',
@@ -166,9 +166,9 @@ export const mapJourneyToPresentation = (journey: any): IPresentation => {
   allSlides.push({
     id: allSlides.length,
     type: 'conclusion',
-    title: 'Fin de la Formation',
-    subtitle: 'Vous avez parcouru tout le contenu.',
-    content: 'Félicitations pour votre assiduité !',
+    title: 'End of training',
+    subtitle: 'You have reviewed all the content.',
+    content: 'Thank you for completing this journey.',
     visualConfig: {
       layout: 'split',
       theme: 'dark',
