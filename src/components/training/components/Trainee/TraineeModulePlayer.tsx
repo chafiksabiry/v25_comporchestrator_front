@@ -251,6 +251,8 @@ export default function TraineeModulePlayer({
       onProgress(sectionProgressVal);
     }
   }, [sectionProgressVal, onProgress]);
+
+  useEffect(() => {
     if (isPlaying) {
       progressInterval.current = setInterval(() => {
         setCurrentTime(prev => {
@@ -1057,8 +1059,6 @@ export default function TraineeModulePlayer({
               </div>
             </div>
           )}
-
-          </div>
         </div>
       </div>
     </div>
