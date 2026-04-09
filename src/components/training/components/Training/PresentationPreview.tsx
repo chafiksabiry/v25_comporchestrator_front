@@ -208,7 +208,7 @@ export default function PresentationPreview({
   };
 
   const content = (
-    <div className={`${isEmbedded ? 'relative w-full h-full min-h-[700px] border border-gray-200 bg-white' : 'fixed top-0 left-0 w-screen h-[100dvh] z-[99999] bg-black/90'} flex flex-col md:flex-row animate-in fade-in duration-300 overflow-hidden text-gray-900 print:bg-white print:static print:h-auto print:overflow-visible print:block`}>
+    <div className={`relative w-full h-full min-h-[750px] border border-purple-100 bg-white flex flex-col md:flex-row rounded-3xl shadow-xl animate-in fade-in duration-300 overflow-hidden text-gray-900 print:bg-white print:static print:h-auto print:overflow-visible print:block`}>
 
       {/* Premium Print Styles */}
       <style dangerouslySetInnerHTML={{
@@ -321,8 +321,33 @@ export default function PresentationPreview({
           )}
 
           {/* Slide Canvas or PPTX Viewer */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col items-center justify-center bg-slate-100/50">
-          {actualUrl ? (
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col items-center justify-center bg-slate-100/50 relative group/canvas">
+            {/* Quick Navigation Buttons (Floating) */}
+            {!actualUrl && (
+              <>
+                <button
+                  onClick={() => setActiveSlide(Math.max(0, activeSlide - 1))}
+                  disabled={activeSlide === 0}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 p-4 rounded-full bg-white/80 hover:bg-white text-purple-600 shadow-xl border border-purple-100 transition-all opacity-0 group-hover/canvas:opacity-100 disabled:opacity-0 z-10"
+                >
+                  <ChevronLeft size={24} strokeWidth={3} />
+                </button>
+                <button
+                  onClick={() => setActiveSlide(Math.min(presentation.slides.length - 1, activeSlide + 1))}
+                  disabled={activeSlide === presentation.slides.length - 1}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-4 rounded-full bg-white/80 hover:bg-white text-purple-600 shadow-xl border border-purple-100 transition-all opacity-0 group-hover/canvas:opacity-100 disabled:opacity-0 z-10"
+                >
+                  <ChevronRight size={24} strokeWidth={3} />
+                </button>
+                
+                {/* Slide Counter (Floating) */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-white/90 backdrop-blur shadow-lg border border-purple-100 text-xs font-bold text-gray-500 z-10">
+                  {activeSlide + 1} / {presentation.slides.length}
+                </div>
+              </>
+            )}
+
+            {actualUrl ? (
             <div className="w-full h-full max-w-6xl bg-white rounded-3xl shadow-2xl border border-purple-200 overflow-hidden flex flex-col">
               <div className="p-4 border-b border-purple-100 bg-purple-50 flex items-center justify-between shrink-0">
                 <div className="flex items-center space-x-3">
@@ -368,10 +393,6 @@ export default function PresentationPreview({
       </div>
     </div>
   );
-
-  if (typeof document !== 'undefined' && !isEmbedded) {
-    return createPortal(content, document.body);
-  }
 
   return content;
 }

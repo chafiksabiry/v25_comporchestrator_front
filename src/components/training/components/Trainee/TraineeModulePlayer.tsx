@@ -906,11 +906,14 @@ export default function TraineeModulePlayer({
                         Source: AI Generated
                       </span>
                       <button
-                        onClick={() => setShowPresentation(true)}
+                        onClick={() => {
+                          const el = document.getElementById('presentation-viewer');
+                          if (el) el.scrollIntoView({ behavior: 'smooth' });
+                        }}
                         className="text-xs px-3 py-1 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors font-medium flex items-center space-x-1"
                       >
                         <Play className="h-3 w-3" />
-                        <span>Mode Présentation</span>
+                        <span>Aller à la Présentation</span>
                       </button>
                       <a
                         href={fileTrainingUrl}
@@ -923,23 +926,16 @@ export default function TraineeModulePlayer({
                       </a>
                     </div>
                   </div>
-                  <div className="relative w-full bg-gray-50 flex flex-col" style={{ height: '700px' }}>
+                  <div id="presentation-viewer" className="relative w-full bg-gray-50 flex flex-col" style={{ height: '750px' }}>
                     <PresentationPreview
                       presentation={mapModuleToPresentation(module as any)}
                       onClose={() => {}}
                       isEmbedded={true}
                       showPagination={true}
+                      onSave={onComplete}
+                      isSaving={false}
                     />
                   </div>
-
-                  {/* Integration of PresentationPreview Portal */}
-                  {showPresentation && (
-                    <PresentationPreview
-                      presentation={mapModuleToPresentation(module as any)}
-                      onClose={() => setShowPresentation(false)}
-                      fileTrainingUrl={fileTrainingUrl}
-                    />
-                  )}
                 </div>
               ) : null}
 
