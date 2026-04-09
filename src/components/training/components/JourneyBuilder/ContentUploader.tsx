@@ -474,7 +474,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
   if (isPreviewOpen && generatedPresentation) {
     return (
-      <div className="fixed inset-0 z-[2000] bg-white overflow-y-auto">
+      <div className="fixed inset-0 z-[1] bg-white overflow-y-auto">
         <PresentationPreview
           presentation={generatedPresentation}
           onSave={handleSavePresentation}
