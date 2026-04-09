@@ -354,8 +354,9 @@ export default function PresentationPreview({
             renderSlideContent(currentSlide)
           )}
         </div>
+      </div>
 
-        {/* Footer - Only show finish button if PPT view is active */}
+      {/* Footer - Only show finish button if PPT view is active */}
         <footer className="h-20 bg-white border-t border-purple-100 flex items-center justify-end px-8">
           {onSave && (
             <button onClick={onSave} disabled={isSaving} className="px-8 py-3 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-black text-sm flex items-center gap-3">
