@@ -1,5 +1,23 @@
 import { ApiClient } from '../../lib/api';
 
+/** Coerce API presentation payloads into { title, slides[] } for the preview / export. */
+export function normalizePresentationFromApi(raw: any): any | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const slides = Array.isArray(raw.slides)
+    ? raw.slides
+    : Array.isArray(raw.Slides)
+      ? raw.Slides
+      : Array.isArray(raw.slideList)
+        ? raw.slideList
+        : [];
+  return {
+    ...raw,
+    title: raw.title || 'Presentation',
+    slides,
+    totalSlides: slides.length || raw.totalSlides || 0
+  };
+}
+
 export interface DocumentAnalysis {
   keyTopics: string[];
   difficulty: number;
@@ -337,7 +355,13 @@ export class AIService {
       console.info('✅ Fallback curriculum created with', response.data.modules?.length || 0, 'modules');
     }
 
-    return response.data as Curriculum;
+    const body = response.data as any;
+    if (body?.data?.presentation) {
+      const norm = normalizePresentationFromApi(body.data.presentation);
+      if (norm) body.data.presentation = norm;
+    }
+
+    return body as Curriculum;
   }
 
   /**
@@ -353,10 +377,15 @@ export class AIService {
     }
 
     // Backend synthesis returns { success: true, title, description, ..., data: { program, presentation, unifiedAnalysis } }
-    const result = {
+    const result: any = {
       ...response.data,
       data: response.data.data // contains unified context for later presentation generation
     };
+
+    if (result?.data?.presentation) {
+      const norm = normalizePresentationFromApi(result.data.presentation);
+      if (norm) result.data.presentation = norm;
+    }
 
     return result as unknown as Curriculum;
   }
@@ -390,7 +419,10 @@ export class AIService {
       })),
       // Store full data for presentation access
       data: {
-        presentation: journey.methodologyData?.presentation || journey.presentation
+        presentation: (() => {
+          const raw = journey.methodologyData?.presentation || journey.presentation;
+          return normalizePresentationFromApi(raw) || raw;
+        })()
       }
     } as any;
 
@@ -596,8 +628,9 @@ export class AIService {
     if (!response.data.success) {
       throw new Error(response.data.error || 'Presentation generation failed');
     }
-    
-    return (response.data as any).presentation || response.data;
+
+    const raw = (response.data as any).presentation || response.data;
+    return normalizePresentationFromApi(raw) || raw;
   }
 
   /**
