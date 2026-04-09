@@ -61,9 +61,19 @@ export default function PresentationPreview({
   const handleExportPPTX = async () => {
     setIsExporting(true);
     try {
-      console.log('📦 Exporting to PPTX (Python Method)...');
-      // We will update AIService for this later
-      await AIService.exportPresentationToPPTX(presentation);
+      console.log('📦 Exporting to PPTX...');
+      const blob = await AIService.exportToPowerPoint(presentation);
+      
+      // Create Object URL and trigger download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${presentation.title || 'Formation'}.pptx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
       console.log('✅ PPTX exported successfully');
     } catch (error) {
       console.error('❌ PPTX export failed:', error);
