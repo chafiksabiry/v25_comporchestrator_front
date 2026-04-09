@@ -139,6 +139,7 @@ export default function PresentationPreview({
   };
 
   const renderSlideContent = (slide: any) => {
+    if (!slide) return null;
     const vc = slide.visualConfig || {};
     const themeParams = (localPresentation as any).visualTheme || {};
 
