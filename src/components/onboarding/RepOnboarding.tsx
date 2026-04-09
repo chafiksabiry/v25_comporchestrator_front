@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { MemoryRouter } from 'react-router-dom';
 import {
   BookOpen,
   CheckCircle,
@@ -12,13 +11,15 @@ import {
   Plus
 } from 'lucide-react';
 
-import { AppContent } from '../training/App';
-import PresentationPreview from '../training/components/Training/PresentationPreview';
 import { getGigsByCompanyId } from '../../api/matching';
-import { DraftService } from '../training/infrastructure/services/DraftService';
-import { OnboardingService } from '../training/infrastructure/services/OnboardingService';
-import { mapJourneyToPresentation } from '../training/utils/PresentationMapper';
-import '../training/index.css';
+import { getCompanyIdFromCookies, fetchCompanyRaw } from './repTrainingFlow/companyProfile';
+import {
+  hasLocalTrainingDraft,
+  getDraftCompanyIdFromStorage
+} from './repTrainingFlow/localDraftHint';
+import { mapJourneyToPresentation } from './repTrainingFlow/mapJourneyToPresentation';
+import SlideDeckViewer from './repTrainingFlow/SlideDeckViewer';
+import RepTrainingJourneyWizard from './repTrainingFlow/RepTrainingJourneyWizard';
 
 interface RepOnboardingProps { }
 
@@ -211,9 +212,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       });
 
       // --- EMERGENCY BRIDGE: If still 0 and we have a local draft, try that too ---
-      if (journeysArray.length === 0 && DraftService.hasDraft()) {
-        const draft = DraftService.getDraft();
-        const draftCompId = draft.company?.id;
+      if (journeysArray.length === 0 && hasLocalTrainingDraft()) {
+        const draftCompId = getDraftCompanyIdFromStorage();
         
         if (draftCompId && !idsToFetch.includes(draftCompId)) {
           console.log('[RepOnboarding] ⚠️ 0 results, attempting fallback search with draftCompanyId:', draftCompId);
@@ -261,12 +261,10 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       }
 
       // --- DIAGNOSTIC: Check for local drafts ---
-      if (DraftService.hasDraft()) {
-        const draft = DraftService.getDraft();
+      if (hasLocalTrainingDraft()) {
         console.log('[RepOnboarding] Local draft found in storage:', {
-          draftCompanyId: draft.company?.id,
-          currentCompanyId: companyId,
-          journeyName: draft.journey?.name
+          draftCompanyId: getDraftCompanyIdFromStorage(),
+          currentCompanyId: companyId
         });
       }
     } catch (error) {
@@ -279,7 +277,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   // Load company ID on mount
   useEffect(() => {
     // Use centralized service to get companyId
-    const id = OnboardingService.getCompanyId();
+    const id = getCompanyIdFromCookies();
     
     if (id) {
       setCompanyId(id);
@@ -301,20 +299,27 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       if (!companyId) return;
       try {
         console.log('[RepOnboarding] Fetching legacy ID for MongoDB ID:', companyId);
-        const data = await OnboardingService.fetchCompanyData(companyId);
-        
-        // Extract legacy/internal companyId if it exists (e.g. 1775669981637)
-        const idFromApi = data?._id || data?.id || data?.data?._id || data?.data?.id;
-        const legacyId = data?.companyId || data?.data?.companyId;
+        const data = await fetchCompanyRaw(companyId);
+        const nested = data?.data as Record<string, unknown> | undefined;
 
-        if (legacyId && legacyId !== companyId) {
-          console.log('[RepOnboarding] Found distinct legacy ID:', legacyId);
-          setLegacyCompanyId(legacyId);
+        // Extract legacy/internal companyId if it exists (e.g. 1775669981637)
+        const idFromApi =
+          (data?._id as string | undefined) ||
+          (data?.id as string | undefined) ||
+          (nested?._id as string | undefined) ||
+          (nested?.id as string | undefined);
+        const legacyId =
+          (data?.companyId as string | number | undefined) ||
+          (nested?.companyId as string | number | undefined);
+
+        const legacyStr = legacyId != null ? String(legacyId) : '';
+        if (legacyStr && legacyStr !== companyId) {
+          console.log('[RepOnboarding] Found distinct legacy ID:', legacyStr);
+          setLegacyCompanyId(legacyStr);
         } else {
           console.log('[RepOnboarding] No distinct legacy ID found, using standard ID.');
-          // Even if no distinct legacy ID, using the one from API might be safer
           if (idFromApi && idFromApi !== companyId) {
-             setLegacyCompanyId(idFromApi);
+            setLegacyCompanyId(String(idFromApi));
           }
         }
       } catch (error) {
@@ -341,16 +346,17 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   if (showTraining.isOpen && showTraining.newJourney) {
     return (
-      <MemoryRouter>
-        <div className="flex h-[100dvh] max-h-[100dvh] w-full flex-col overflow-hidden">
-          <AppContent
-            initialJourneyId={showTraining.journeyId}
-            isEmbedded={true}
-            startWithJourneyBuilder={true}
-            repOnboardingLayout={true}
-          />
-        </div>
-      </MemoryRouter>
+      <div className="flex h-[100dvh] max-h-[100dvh] w-full flex-col overflow-hidden bg-white">
+        <RepTrainingJourneyWizard
+          companyId={companyId}
+          legacyCompanyId={legacyCompanyId}
+          onClose={() => setShowTraining({ isOpen: false })}
+          onSaved={() => {
+            setShowTraining({ isOpen: false });
+            fetchCompanyTrainings();
+          }}
+        />
+      </div>
     );
   }
 
@@ -386,18 +392,14 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   )}
                 </ol>
               </aside>
-              <div className="min-h-[360px] min-w-0 lg:min-h-0">
-                <PresentationPreview
+              <div className="flex min-h-[360px] min-w-0 flex-col lg:min-h-[calc(100dvh-10rem)]">
+                <SlideDeckViewer
                   presentation={selectedPresentation}
-                  onClose={() => {
+                  title={previewJourney?.title || previewJourney?.name || selectedPresentation?.title}
+                  onBack={() => {
                     setSelectedPresentation(null);
                     setPreviewJourney(null);
                   }}
-                  isEmbedded={true}
-                  showPagination={false}
-                  hideExportPptx={true}
-                  embedLightCanvas={true}
-                  backLabel="Back to list"
                 />
               </div>
             </div>
