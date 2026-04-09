@@ -11,9 +11,11 @@ interface ContentUploaderProps {
   onBack: () => void;
   company?: any;
   gigId?: string | null;
+  onFinishEarly?: (uploads: ContentUpload[], curriculum?: any) => void;
 }
 
-export default function ContentUploader({ onComplete, onBack, company, gigId }: ContentUploaderProps) {
+export default function ContentUploader(props: ContentUploaderProps) {
+  const { onComplete, onBack, company, gigId } = props;
   const [uploads, setUploads] = useState<ContentUpload[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -312,13 +314,13 @@ export default function ContentUploader({ onComplete, onBack, company, gigId }: 
         company?.id || '',
         gigId || '',
         undefined, // finalExam
-        undefined, // journeyId
-        generatedPresentation // Pass presentation data to be saved in Cloudinary/DB
+        generatedPresentation
       );
       
-      alert('La formation a été enregistrée avec succès !');
       // On revient à la liste des formations
-      if (onBack) {
+      if (props.onFinishEarly) {
+        props.onFinishEarly(uploads, generatedCurriculum);
+      } else if (onBack) {
         onBack();
       }
     } catch (error: any) {

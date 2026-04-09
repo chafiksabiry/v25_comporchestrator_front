@@ -25,7 +25,11 @@ const parseMarkdown = (text: string) => {
     .replace(/__(.*?)__/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/_(.*?)_/g, '<em>$1</em>')
-    .replace(/`(.*?)`/g, '<code class="bg-slate-100 text-rose-600 px-1.5 py-0.5 rounded-md text-[0.9em] font-mono border border-slate-200">$1</code>');
+    .replace(/`(.*?)`/g, '<code class="bg-slate-100 text-rose-600 px-1.5 py-0.5 rounded-md text-[0.9em] font-mono border border-slate-200">$1</code>')
+    // Add heading support
+    .replace(/^###\s*(.*$)/gim, '<h3 class="text-xl font-bold mt-4 mb-2">$1</h3>')
+    .replace(/^##\s*(.*$)/gim, '<h2 class="text-2xl font-bold mt-5 mb-3 text-inherit">$1</h2>')
+    .replace(/^#\s*(.*$)/gim, '<h1 class="text-3xl font-black mt-6 mb-4 text-inherit">$1</h1>');
 
   // Handle multi-line lists if the input is a single string
   if (html.includes('\n- ') || html.startsWith('- ')) {
