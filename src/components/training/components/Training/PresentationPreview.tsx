@@ -14,6 +14,7 @@ interface PresentationPreviewProps {
   onClose: () => void;
   onSave?: () => void;
   isSaving?: boolean;
+  fileTrainingUrl?: string; // Optional PPTX URL
 }
 
 const parseMarkdown = (text: string) => {
@@ -43,7 +44,8 @@ export default function PresentationPreview({
   presentation,
   onClose,
   onSave,
-  isSaving = false
+  isSaving = false,
+  fileTrainingUrl
 }: PresentationPreviewProps) {
   const [activeSlide, setActiveSlide] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
@@ -214,37 +216,36 @@ export default function PresentationPreview({
             {renderSlideContent(s)}
           </div>
         ))}
-      </div>
-
-      {/* Sidebar */}
-      <div className="w-full md:w-64 lg:w-72 bg-white border-r border-purple-100 flex flex-col h-1/4 md:h-full overflow-hidden print:hidden">
-        <div className="p-4 border-b border-purple-100 flex items-center gap-3 bg-white sticky top-0 z-10">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-purple-600 flex items-center justify-center shadow-lg transform rotate-3">
-            <Sparkles size={16} className="text-white" />
+      {/* Sidebar - Hidden if PPTX is shown */}
+      {!fileTrainingUrl && (
+        <div className="w-full md:w-64 lg:w-72 bg-white border-r border-purple-100 flex flex-col h-1/4 md:h-full overflow-hidden print:hidden">
+          <div className="p-4 border-b border-purple-100 flex items-center gap-3 bg-white sticky top-0 z-10">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-purple-600 flex items-center justify-center shadow-lg transform rotate-3">
+              <Sparkles size={16} className="text-white" />
+            </div>
+            <span className="font-bold text-gray-900 tracking-tight">Slides</span>
           </div>
-          <span className="font-bold text-gray-900 tracking-tight">Slides</span>
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {presentation.slides.map((slide, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActiveSlide(idx)}
+                className={`w-full text-left p-3 rounded-xl border-2 transition-all transform ${activeSlide === idx
+                  ? 'border-purple-500 bg-purple-50 shadow-md translate-x-1'
+                  : 'border-transparent bg-gray-50 hover:bg-white hover:border-purple-200'
+                  }`}
+              >
+                <div className={`text-[10px] uppercase tracking-widest mb-1 font-bold ${activeSlide === idx ? 'text-purple-600' : 'text-gray-400'}`}>
+                  Slide {idx + 1} • {slide.type}
+                </div>
+                <div className={`text-sm font-bold truncate ${activeSlide === idx ? 'text-gray-900' : 'text-gray-600'}`}>
+                  {slide.title}
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
-
-        <div className="flex-1 overflow-y-auto p-3 space-y-2">
-          {presentation.slides.map((slide, idx) => (
-            <button
-              key={idx}
-              onClick={() => setActiveSlide(idx)}
-              className={`w-full text-left p-3 rounded-xl border-2 transition-all transform ${activeSlide === idx
-                ? 'border-purple-500 bg-purple-50 shadow-md translate-x-1'
-                : 'border-transparent bg-gray-50 hover:bg-white hover:border-purple-200'
-                }`}
-            >
-              <div className={`text-[10px] uppercase tracking-widest mb-1 font-bold ${activeSlide === idx ? 'text-purple-600' : 'text-gray-400'}`}>
-                Slide {idx + 1} • {slide.type}
-              </div>
-              <div className={`text-sm font-bold truncate ${activeSlide === idx ? 'text-gray-900' : 'text-gray-600'}`}>
-                {slide.title}
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col bg-slate-50 overflow-hidden print:hidden">
@@ -280,9 +281,39 @@ export default function PresentationPreview({
           </div>
         </header>
 
-        {/* Slide Canvas */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-12 flex flex-col items-center justify-center bg-slate-100/50">
-           {renderSlideContent(currentSlide)}
+        {/* Slide Canvas or PPTX Viewer */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col items-center justify-center bg-slate-100/50">
+           {fileTrainingUrl ? (
+             <div className="w-full h-full max-w-6xl bg-white rounded-3xl shadow-2xl border border-purple-200 overflow-hidden flex flex-col">
+               <div className="p-4 border-b border-purple-100 bg-purple-50 flex items-center justify-between shrink-0">
+                 <div className="flex items-center space-x-3">
+                   <div className="p-2 bg-red-100 rounded-lg">
+                     <FileDown className="h-5 w-5 text-red-600" />
+                   </div>
+                   <h3 className="font-bold text-gray-900">Aperçu du Fichier PowerPoint Généré</h3>
+                 </div>
+                 <div className="flex items-center space-x-2">
+                   <span className="text-xs font-semibold text-purple-600 bg-white px-3 py-1 rounded-full border border-purple-100">
+                     Mode Lecteur Intégré
+                   </span>
+                 </div>
+               </div>
+               <div className="flex-1 bg-gray-50 relative">
+                 <iframe
+                   src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileTrainingUrl)}`}
+                   width="100%"
+                   height="100%"
+                   frameBorder="0"
+                   className="absolute inset-0 w-full h-full"
+                   title="PPTX Preview"
+                 >
+                   Votre navigateur ne peut pas afficher ce fichier.
+                 </iframe>
+               </div>
+             </div>
+           ) : (
+             renderSlideContent(currentSlide)
+           )}
         </div>
 
         {/* Footer */}

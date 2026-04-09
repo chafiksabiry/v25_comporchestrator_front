@@ -889,6 +889,7 @@ export default function TraineePortal({
         totalModules={modules.length}
         onBack={handleBackToDashboard}
         visualTheme={journey.visualTheme}
+        fileTrainingUrl={journey.filetraining}
       />
     );
   };

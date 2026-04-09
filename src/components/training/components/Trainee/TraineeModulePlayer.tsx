@@ -52,6 +52,7 @@ interface TraineeModulePlayerProps {
     fontFamily?: string;
     layoutStyle?: 'modern' | 'corporate' | 'creative';
   };
+  fileTrainingUrl?: string; // URL of the generated PPTX presentation
 }
 
 export default function TraineeModulePlayer({ 
@@ -65,7 +66,8 @@ export default function TraineeModulePlayer({
   onNextModule,
   totalModules,
   onQuizComplete,
-  visualTheme
+  visualTheme,
+  fileTrainingUrl
 }: TraineeModulePlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -887,10 +889,48 @@ export default function TraineeModulePlayer({
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Main Content Area */}
             <div className="lg:col-span-3">
-              {/* Content Player - Display section content */}
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden mb-6">
-                {/* Section Content Display */}
-                {sections.length > 0 && currentSectionData ? (
+              {/* PPTX Presentation Viewer (Primary Content) */}
+              {fileTrainingUrl ? (
+                <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden mb-6">
+                  <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="h-5 w-5 text-red-600" />
+                      <h2 className="font-semibold text-gray-900">Présentation Interactive (PPTX)</h2>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                        Source: AI Generated
+                      </span>
+                      <a 
+                        href={fileTrainingUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-xs px-3 py-1 bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition-colors font-medium flex items-center space-x-1"
+                      >
+                        <Maximize className="h-3 w-3" />
+                        <span>Plein écran</span>
+                      </a>
+                    </div>
+                  </div>
+                  <div className="relative w-full bg-gray-100" style={{ height: '700px' }}>
+                    <iframe
+                      src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileTrainingUrl)}`}
+                      width="100%"
+                      height="100%"
+                      frameBorder="0"
+                      className="w-full h-full"
+                      title="PowerPoint Presentation Viewer"
+                    >
+                      Ce navigateur ne supporte pas l'affichage des documents. 
+                      <a href={fileTrainingUrl} className="text-blue-600 underline">Cliquez ici pour télécharger</a>.
+                    </iframe>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Content Player - Display section content (Fallback or if no PPTX) */}
+              {(!fileTrainingUrl && sections.length > 0 && currentSectionData) ? (
+                <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden mb-6">
                   <div className="flex flex-col" style={{ minHeight: '600px' }}>
                     {/* Section Header */}
                     <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -1193,6 +1233,19 @@ export default function TraineeModulePlayer({
                 </div>
                 )}
               </div>
+
+              {/* Completion Button for PPTX mode (since sections are hidden) */}
+              {fileTrainingUrl && !moduleCompleted && (
+                <div className="flex justify-center mb-12">
+                  <button
+                    onClick={handleSectionComplete}
+                    className="flex items-center space-x-3 px-8 py-4 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all shadow-lg font-bold text-lg"
+                  >
+                    <CheckCircle className="h-6 w-6" />
+                    <span>J'ai terminé la lecture de la présentation</span>
+                  </button>
+                </div>
+              )}
 
               {/* ✅ Section QCM Complète */}
               {module.assessments && module.assessments.length > 0 && module.assessments[0].questions && (
