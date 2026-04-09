@@ -84,9 +84,14 @@ export class AIService {
   /**
    * Uploads a document to the backend (GCS with local fallback)
    */
-  static async uploadDocumentViaBackend(file: File): Promise<{ url: string, publicId: string, analysis?: any }> {
+  static async uploadDocumentViaBackend(
+    file: File,
+    metadata?: { gigId?: string; companyId?: string }
+  ): Promise<{ url: string, publicId: string, analysis?: any }> {
     const formData = new FormData();
     formData.append('file', file);
+    if (metadata?.gigId) formData.append('gigId', metadata.gigId);
+    if (metadata?.companyId) formData.append('companyId', metadata.companyId);
     
     const response = await ApiClient.upload<any>('/api/ai/analyze-document', formData);
     return {
@@ -99,10 +104,15 @@ export class AIService {
   /**
    * Analyse un document avec l'IA (OpenAI GPT-4 ou Claude)
    */
-  static async analyzeDocument(file: File): Promise<DocumentAnalysis> {
+  static async analyzeDocument(
+    file: File,
+    metadata?: { gigId?: string; companyId?: string }
+  ): Promise<DocumentAnalysis> {
     try {
       const formData = new FormData();
       formData.append('file', file);
+      if (metadata?.gigId) formData.append('gigId', metadata.gigId);
+      if (metadata?.companyId) formData.append('companyId', metadata.companyId);
 
       console.log('📄 Analyzing document:', file.name, 'Size:', file.size, 'Type:', file.type);
 
