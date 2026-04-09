@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import * as React from 'react';
+
+const { useState, useEffect, useCallback, useMemo } = React;
 import {
   Loader2,
   RefreshCw,
