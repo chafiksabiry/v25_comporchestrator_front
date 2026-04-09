@@ -289,18 +289,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setIsSavingCloud(true);
       console.log('💾 Sauvegarde du parcours de formation généré par IA...');
       
-      let fileTrainingUrl = undefined;
-      // 1. Generate PPTX & Upload
+      let fileTrainingUrl: string | undefined = undefined;
+      // 1. Generate PPTX & Upload (non-blocking - save journey even if Cloudinary fails)
       if (generatedPresentation) {
         try {
           console.log('📦 Génération du PPTX pour sauvegarde...');
           const pptxBlob = await AIService.exportToPowerPoint(generatedPresentation);
           const file = new File([pptxBlob], `${generatedCurriculum.title || 'Formation'}.pptx`, { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
           const uploadResult = await cloudinaryService.uploadDocument(file, 'trainings/pptx');
-          fileTrainingUrl = uploadResult.secureUrl;
+          fileTrainingUrl = uploadResult.secureUrl || uploadResult.url;
           console.log('✅ PPTX enregistré dans Cloudinary:', fileTrainingUrl);
-        } catch (e) {
-          console.error("Erreur PPTX:", e);
+        } catch (e: any) {
+          // Cloudinary may be disabled or credentials invalid — log warning but don't block save
+          console.warn('⚠️ PPTX Cloudinary upload skipped:', e?.message || e);
         }
       }
       
