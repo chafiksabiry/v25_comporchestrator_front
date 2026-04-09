@@ -8,7 +8,8 @@ import {
   CheckCircle,
   FileDown,
   Printer,
-  RefreshCw
+  RefreshCw,
+  ArrowLeft
 } from 'lucide-react';
 import { IPresentation } from '../../types/core';
 import { AIService } from '../../infrastructure/services/AIService';
@@ -19,6 +20,7 @@ interface PresentationPreviewProps {
   onSave?: () => void;
   isSaving?: boolean;
   fileTrainingUrl?: string; // Optional PPTX URL
+  isEmbedded?: boolean;     // Whether to render as a modal or inline
 }
 
 const parseMarkdown = (text: string) => {
@@ -49,7 +51,8 @@ export default function PresentationPreview({
   onClose,
   onSave,
   isSaving = false,
-  fileTrainingUrl
+  fileTrainingUrl,
+  isEmbedded = false
 }: PresentationPreviewProps) {
   const [activeSlide, setActiveSlide] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
@@ -203,7 +206,7 @@ export default function PresentationPreview({
   };
 
   const content = (
-    <div className="fixed top-0 left-0 w-screen h-[100dvh] bg-black/90 z-[99999] flex flex-col md:flex-row border-none animate-in fade-in duration-300 overflow-hidden text-gray-900 print:bg-white print:static print:h-auto print:overflow-visible print:block">
+    <div className={`${isEmbedded ? 'relative w-full h-full min-h-[700px] border border-gray-200 bg-white' : 'fixed top-0 left-0 w-screen h-[100dvh] z-[99999] bg-black/90'} flex flex-col md:flex-row animate-in fade-in duration-300 overflow-hidden text-gray-900 print:bg-white print:static print:h-auto print:overflow-visible print:block`}>
 
       {/* Premium Print Styles */}
       <style dangerouslySetInnerHTML={{
@@ -232,6 +235,16 @@ export default function PresentationPreview({
         {/* Header */}
         <header className="h-16 border-b border-purple-100 flex items-center justify-between px-6 bg-white/80 backdrop-blur-md shrink-0 z-20">
           <div className="flex items-center gap-4">
+            {onClose && (
+              <button 
+                onClick={onClose}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors group"
+              >
+                <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+                <span className="font-bold text-sm">Retour aux Formations</span>
+              </button>
+            )}
+            <div className="h-6 w-px bg-gray-200 mx-1" />
             <h2 className="text-lg font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-purple-600 truncate max-w-md">
               {presentation.title}
             </h2>
@@ -302,7 +315,7 @@ export default function PresentationPreview({
     </div>
   );
 
-  if (typeof document !== 'undefined') {
+  if (typeof document !== 'undefined' && !isEmbedded) {
     return createPortal(content, document.body);
   }
 
