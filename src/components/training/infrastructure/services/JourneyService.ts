@@ -65,7 +65,7 @@ export class JourneyService {
    * The backend will automatically partition this data into separate collections.
    * @param journeyId Optional: if provided, updates existing journey instead of creating new one
    */
-  static async saveJourney(journey: TrainingJourney, modules: TrainingModule[], companyId?: string, gigId?: string, finalExam?: any, journeyId?: string, presentationData?: any): Promise<any> {
+  static async saveJourney(journey: TrainingJourney, modules: TrainingModule[], companyId?: string, gigId?: string, finalExam?: any, journeyId?: string, presentationData?: any, filetraining?: string): Promise<any> {
     // Convert modules to embedded structure with sections and quizzes
     const embeddedModules = modules.map((m, index) => {
       // Convert sections
@@ -169,7 +169,8 @@ export class JourneyService {
       gigId: gigId,
       modules: embeddedModules,
       finalExam: embeddedFinalExam,
-      presentationData: presentationData // Send presentation data to backend
+      presentationData: presentationData, // Send presentation data to backend
+      filetraining: filetraining || (journey as any).filetraining
     };
 
     // If journeyId is provided, include it for update
