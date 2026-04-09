@@ -264,7 +264,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           .map(u => u.aiAnalysis);
 
         if (allAnalyses.length === 0) throw new Error('No analyzed content available');
-        
+
         if (allAnalyses.length > 1) {
           console.log(`🧠 Synthesizing ${allAnalyses.length} documents...`);
           curriculum = await AIService.synthesizeAnalyses(allAnalyses as any);
@@ -294,7 +294,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       if (curriculum?.data?.presentation) {
         setGeneratedPresentation(curriculum.data.presentation);
       }
-      
+
       setViewMode('curriculum');
     } catch (error: any) {
       console.error('Failed to generate curriculum/synthesis:', error);
@@ -395,7 +395,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       // If we don't have the curriculum yet, we generate it first (which generates both in backend)
       if (!curriculum) {
         setIsProcessing(true); // show the global spin state too
-        
+
         if (uploads.length > 0) {
           const mainAnalysis = uploads[0].aiAnalysis;
           if (!mainAnalysis) throw new Error('No analysis found');
@@ -474,7 +474,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
   if (isPreviewOpen && generatedPresentation) {
     return (
-      <div className="fixed inset-0 z-[100] bg-white overflow-y-auto">
+      <div className="fixed inset-0 z-[2000] bg-white overflow-y-auto">
         <PresentationPreview
           presentation={generatedPresentation}
           onSave={handleSavePresentation}
@@ -573,8 +573,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   onClick={handleGeneratePresentation}
                   disabled={isGeneratingPresentation}
                   className={`px-8 py-4 rounded-2xl font-bold text-lg shadow-md transition-all flex items-center justify-center ${generatedPresentation
-                      ? 'bg-amber-100 text-amber-700 border border-amber-300 hover:bg-amber-200'
-                      : 'bg-white text-purple-700 border border-purple-200 hover:bg-purple-50 hover:shadow-lg'
+                    ? 'bg-amber-100 text-amber-700 border border-amber-300 hover:bg-amber-200'
+                    : 'bg-white text-purple-700 border border-purple-200 hover:bg-purple-50 hover:shadow-lg'
                     }`}
                 >
                   {isGeneratingPresentation ? (
