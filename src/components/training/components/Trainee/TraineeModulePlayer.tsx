@@ -31,6 +31,8 @@ import {
 } from 'lucide-react';
 import { TrainingModule, Rep, Exercise, Quiz } from '../../types';
 import DocumentViewer from '../DocumentViewer/DocumentViewer';
+import PresentationPreview from '../Training/PresentationPreview';
+import { mapModuleToPresentation } from '../../utils/PresentationMapper';
 import { ProgressService } from '../../infrastructure/services/ProgressService';
 import { extractObjectId } from '../../lib/mongoUtils';
 import { div } from '@tensorflow/tfjs';
@@ -92,6 +94,7 @@ export default function TraineeModulePlayer({
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const [allQuizzesPassed, setAllQuizzesPassed] = useState(false);
   const [activeImage, setActiveImage] = useState<string | null>(null);
+  const [showPresentation, setShowPresentation] = useState(!!fileTrainingUrl);
 
   // Apply visual theme via CSS variables
   useEffect(() => {
@@ -902,6 +905,13 @@ export default function TraineeModulePlayer({
                       <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
                         Source: AI Generated
                       </span>
+                      <button
+                        onClick={() => setShowPresentation(true)}
+                        className="text-xs px-3 py-1 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors font-medium flex items-center space-x-1"
+                      >
+                        <Play className="h-3 w-3" />
+                        <span>Mode Présentation</span>
+                      </button>
                       <a
                         href={fileTrainingUrl}
                         target="_blank"
@@ -926,6 +936,15 @@ export default function TraineeModulePlayer({
                       <a href={fileTrainingUrl} className="text-blue-600 underline">Cliquez ici pour télécharger</a>.
                     </iframe>
                   </div>
+
+                  {/* Integration of PresentationPreview Portal */}
+                  {showPresentation && (
+                    <PresentationPreview
+                      presentation={mapModuleToPresentation(module as any)}
+                      onClose={() => setShowPresentation(false)}
+                      fileTrainingUrl={fileTrainingUrl}
+                    />
+                  )}
                 </div>
               ) : null}
 

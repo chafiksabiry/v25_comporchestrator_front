@@ -1244,7 +1244,8 @@ export function AppContent({
       steps: [],
       createdAt: selectedTraineeJourney.createdAt || new Date().toISOString(),
       estimatedDuration: selectedTraineeJourney.estimatedDuration || '0',
-      targetRoles: []
+      targetRoles: [],
+      filetraining: selectedTraineeJourney.filetraining
     };
 
     // Transform available journeys for selector
@@ -1258,7 +1259,8 @@ export function AppContent({
       steps: [],
       createdAt: j.createdAt || new Date().toISOString(),
       estimatedDuration: j.estimatedDuration || '0',
-      targetRoles: []
+      targetRoles: [],
+      filetraining: j.filetraining
     }));
 
     return (
@@ -1444,6 +1446,7 @@ export function AppContent({
                 module={module}
                 onProgress={(progress) => handleModuleProgress(selectedModule, progress)}
                 onComplete={() => handleModuleComplete(selectedModule)}
+                fileTrainingUrl={(selectedJourney as any)?.filetraining}
                 onBack={() => {
                   setSelectedModule(null);
                   window.scrollTo({ top: 0, behavior: 'smooth' });

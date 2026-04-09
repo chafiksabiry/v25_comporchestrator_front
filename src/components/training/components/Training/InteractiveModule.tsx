@@ -10,9 +10,10 @@ interface InteractiveModuleProps {
   onProgress: (progress: number) => void;
   onComplete: () => void;
   onBack?: () => void;
+  fileTrainingUrl?: string;
 }
 
-export default function InteractiveModule({ module, onProgress, onComplete, onBack }: InteractiveModuleProps) {
+export default function InteractiveModule({ module, onProgress, onComplete, onBack, fileTrainingUrl }: InteractiveModuleProps) {
   const [currentSection, setCurrentSection] = useState(0);
   const [completedSections, setCompletedSections] = useState<Set<number>>(new Set());
   const [showQuizzes, setShowQuizzes] = useState(false);
@@ -22,7 +23,7 @@ export default function InteractiveModule({ module, onProgress, onComplete, onBa
   const [showQuizResult, setShowQuizResult] = useState(false);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loadingQuizzes, setLoadingQuizzes] = useState(false);
-  const [viewMode, setViewMode] = useState<'reading' | 'slides'>('reading');
+  const [viewMode, setViewMode] = useState<'reading' | 'slides'>(fileTrainingUrl ? 'slides' : 'reading');
 
   // Get sections from module.content or module.sections
   const moduleAny = module as any;
@@ -378,6 +379,7 @@ export default function InteractiveModule({ module, onProgress, onComplete, onBa
               <PresentationPreview 
                 presentation={mapModuleToPresentation(module as any)}
                 onClose={() => setViewMode('reading')}
+                fileTrainingUrl={fileTrainingUrl}
               />
             </div>
           ) : (
