@@ -34,11 +34,20 @@ export async function generateCurriculum(
   analysis: Record<string, unknown>,
   industry: string,
   gig: string | undefined,
-  uploadContext: Array<Record<string, unknown>>
+  uploadContext: Array<Record<string, unknown>>,
+  options?: { useKnowledgeBase?: boolean; gigId?: string }
 ): Promise<Record<string, unknown>> {
+  const gigId = options?.gigId ?? gig;
   const body = await trainingRequest<Record<string, unknown>>('/api/ai/generate-curriculum', {
     method: 'POST',
-    body: JSON.stringify({ analysis, industry, gig, uploadContext })
+    body: JSON.stringify({
+      analysis,
+      industry,
+      gig,
+      uploadContext,
+      gigId: gigId || undefined,
+      useKnowledgeBase: Boolean(options?.useKnowledgeBase && gigId)
+    })
   });
   if (body.success === false) {
     throw new Error((body.error as string) || 'Curriculum generation failed');
