@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen } from 'lucide-react';
+import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, BookOpen } from 'lucide-react';
 import { ContentUpload } from '../../types/core';
 import { AIService, normalizePresentationFromApi } from '../../infrastructure/services/AIService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
@@ -12,10 +12,12 @@ interface ContentUploaderProps {
   company?: any;
   gigId?: string | null;
   onFinishEarly?: (uploads: ContentUpload[], curriculum?: any, presentationData?: any, filetraining?: string) => void;
+  /** REP company onboarding: modules sidebar + slides only, no PPTX/fullscreen/continue CTA */
+  repOnboardingLayout?: boolean;
 }
 
 export default function ContentUploader(props: ContentUploaderProps) {
-  const { onComplete, onBack, company, gigId } = props;
+  const { onComplete, onBack, company, gigId, repOnboardingLayout = false } = props;
   const analysisMetadata = {
     gigId: gigId || undefined,
     companyId: company?.id || company?._id || undefined
@@ -524,7 +526,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const totalAnalyzed = uploads.filter(u => u.status === 'analyzed').length;
   const isGigOnly = uploads.length === 0 && !!gigId;
 
-  if (isPreviewOpen && generatedPresentation) {
+  if (isPreviewOpen && generatedPresentation && !repOnboardingLayout) {
     return (
       <PresentationPreview
         presentation={generatedPresentation}
@@ -537,6 +539,95 @@ export default function ContentUploader(props: ContentUploaderProps) {
   }
 
   if (generatedPresentation && !isPreviewOpen) {
+    if (repOnboardingLayout) {
+      if (workspaceTab === 'sources') {
+        return (
+          <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-slate-50">
+            <div className="shrink-0 border-b border-gray-200 bg-white px-4 py-3">
+              <button
+                type="button"
+                onClick={() => setWorkspaceTab('artifact')}
+                className="text-sm font-semibold text-fuchsia-700 hover:text-fuchsia-900"
+              >
+                ← Back to program & slides
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">{renderSourcesUploadUI()}</div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-gradient-to-b from-slate-50 to-white">
+          <div className="grid min-h-[60dvh] flex-1 grid-cols-1 gap-3 p-3 lg:min-h-0 lg:grid-cols-[minmax(260px,300px)_minmax(0,1fr)] lg:gap-4 lg:p-4">
+            <aside className="flex min-h-0 max-h-[calc(100dvh-6rem)] flex-col overflow-y-auto rounded-2xl border border-rose-100/80 bg-white p-4 shadow-sm">
+              <div className="mb-3 flex items-center gap-2 text-fuchsia-700">
+                <BookOpen className="h-5 w-5 shrink-0" />
+                <p className="text-[10px] font-bold uppercase tracking-widest">Modules</p>
+              </div>
+              <h2 className="text-base font-bold leading-snug text-gray-900">
+                {generatedCurriculum?.title || generatedPresentation?.title || 'Training'}
+              </h2>
+              {generatedCurriculum?.description && (
+                <p className="mt-2 line-clamp-3 text-xs text-gray-600">{generatedCurriculum.description}</p>
+              )}
+              <ol className="mt-4 flex-1 space-y-1.5 overflow-y-auto border-t border-gray-100 pt-3">
+                {(generatedCurriculum?.modules || []).length === 0 ? (
+                  <li className="text-xs text-gray-500">No module list — use the slide navigator on the right.</li>
+                ) : (
+                  (generatedCurriculum?.modules || []).map((mod: any, idx: number) => (
+                    <li
+                      key={idx}
+                      className="flex gap-2 rounded-xl border border-transparent px-2 py-2 text-sm text-gray-800 hover:border-fuchsia-100 hover:bg-fuchsia-50/40"
+                    >
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-rose-100 to-fuchsia-100 text-xs font-bold text-fuchsia-900">
+                        {idx + 1}
+                      </span>
+                      <span className="min-w-0 flex-1 font-medium leading-snug">{mod.title || `Module ${idx + 1}`}</span>
+                    </li>
+                  ))
+                )}
+              </ol>
+              <div className="mt-4 flex flex-col gap-2 border-t border-gray-100 pt-4">
+                <button
+                  type="button"
+                  onClick={handleRegeneratePresentation}
+                  disabled={isGeneratingPresentation}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                >
+                  {isGeneratingPresentation ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  Regenerate slides
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWorkspaceTab('sources')}
+                  className="text-center text-xs font-semibold text-gray-500 hover:text-gray-800"
+                >
+                  Source files
+                </button>
+                <button type="button" onClick={onBack} className="text-center text-xs font-semibold text-gray-500 hover:text-gray-800">
+                  Back to setup
+                </button>
+              </div>
+            </aside>
+
+            <section className="flex h-full min-h-[280px] flex-col overflow-hidden rounded-2xl border border-rose-100/80 bg-white shadow-sm lg:min-h-0">
+              <PresentationPreview
+                presentation={generatedPresentation}
+                onClose={() => setWorkspaceTab('sources')}
+                fileTrainingUrl={undefined}
+                isEmbedded={true}
+                showPagination={false}
+                hideExportPptx={true}
+                embedLightCanvas={true}
+                backLabel="Source files"
+              />
+            </section>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex min-h-[85dvh] flex-col bg-gradient-to-b from-slate-50 to-white">
         <div className="flex shrink-0 flex-wrap gap-2 border-b border-gray-200 bg-white px-3 py-2 shadow-sm">

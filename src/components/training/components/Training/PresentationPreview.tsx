@@ -24,6 +24,12 @@ interface PresentationPreviewProps {
   fileTrainingUrl?: string; // Optional PPTX URL
   isEmbedded?: boolean;     // Whether to render as a modal or inline
   showPagination?: boolean; // Whether to show the slide list sidebar
+  /** Hide Export .pptx in header (and in slide sidebar when visible) */
+  hideExportPptx?: boolean;
+  /** Use a light slide canvas instead of dark gradient (better readability when embedded) */
+  embedLightCanvas?: boolean;
+  /** Optional label for the back control (default: Back to trainings) */
+  backLabel?: string;
 }
 
 const parseMarkdown = (text: string) => {
@@ -56,7 +62,10 @@ export default function PresentationPreview({
   isSaving = false,
   fileTrainingUrl,
   isEmbedded = false,
-  showPagination = false
+  showPagination = false,
+  hideExportPptx = false,
+  embedLightCanvas = false,
+  backLabel
 }: PresentationPreviewProps) {
   const [activeSlide, setActiveSlide] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
@@ -246,7 +255,7 @@ export default function PresentationPreview({
   };
 
   const content = (
-    <div className={`${isEmbedded ? 'relative flex w-full min-h-[750px] flex-col overflow-hidden rounded-3xl border border-rose-100/80 bg-slate-50 shadow-[0_8px_30px_rgb(244,63,94,0.12)]' : 'fixed inset-0 z-[9999] flex flex-col overflow-y-auto overflow-hidden border border-rose-100/80 bg-white md:flex-row'} animate-in fade-in duration-300 text-gray-900 print:bg-white print:static print:h-auto print:overflow-visible print:block`}>
+    <div className={`${isEmbedded ? `relative flex h-full min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-rose-100/80 bg-slate-50 shadow-sm ${embedLightCanvas ? '' : 'min-h-[560px]'}` : 'fixed inset-0 z-[9999] flex flex-col overflow-y-auto overflow-hidden border border-rose-100/80 bg-white md:flex-row'} animate-in fade-in duration-300 text-gray-900 print:bg-white print:static print:h-auto print:overflow-visible print:block`}>
 
       {/* Premium Print Styles */}
       <style dangerouslySetInnerHTML={{
@@ -283,7 +292,7 @@ export default function PresentationPreview({
                   className="group flex shrink-0 items-center gap-2 rounded-xl border-2 border-rose-500 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-rose-600 transition-colors hover:bg-rose-50 md:text-[11px]"
                 >
                   <ArrowLeft size={16} strokeWidth={2.5} className="text-rose-600 transition-transform group-hover:-translate-x-0.5" />
-                  <span className="hidden sm:inline">Back to trainings</span>
+                  <span className="hidden sm:inline">{backLabel || 'Back to trainings'}</span>
                   <span className="sm:hidden">Back</span>
                 </button>
               )}
@@ -294,15 +303,17 @@ export default function PresentationPreview({
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
-              <button
-                type="button"
-                onClick={handleExportPPTX}
-                disabled={isExporting}
-                className={`flex items-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600 px-3 py-2 text-xs font-bold text-white shadow-md md:px-4 md:text-sm ${isExporting ? 'opacity-50' : 'hover:shadow-lg'}`}
-              >
-                {isExporting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <FileDown size={18} />}
-                <span className="hidden sm:inline">Export .pptx</span>
-              </button>
+              {!hideExportPptx && (
+                <button
+                  type="button"
+                  onClick={handleExportPPTX}
+                  disabled={isExporting}
+                  className={`flex items-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600 px-3 py-2 text-xs font-bold text-white shadow-md md:px-4 md:text-sm ${isExporting ? 'opacity-50' : 'hover:shadow-lg'}`}
+                >
+                  {isExporting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <FileDown size={18} />}
+                  <span className="hidden sm:inline">Export .pptx</span>
+                </button>
+              )}
 
               {!isEmbedded && onClose && (
                 <button type="button" onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600" aria-label="Close">
@@ -379,21 +390,23 @@ export default function PresentationPreview({
                 </div>
               </div>
 
-              <div className="p-4 border-t border-purple-50">
-                <button
-                  onClick={handleExportPPTX}
-                  disabled={isExporting}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-purple-600 text-white text-xs font-bold hover:bg-purple-700 transition-colors shadow-lg shadow-purple-200"
-                >
-                  {isExporting ? <RefreshCw className="h-3 w-3 animate-spin" /> : <FileDown size={14} />}
-                  Export PPTX
-                </button>
-              </div>
+              {!hideExportPptx && (
+                <div className="p-4 border-t border-purple-50">
+                  <button
+                    onClick={handleExportPPTX}
+                    disabled={isExporting}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-purple-600 text-white text-xs font-bold hover:bg-purple-700 transition-colors shadow-lg shadow-purple-200"
+                  >
+                    {isExporting ? <RefreshCw className="h-3 w-3 animate-spin" /> : <FileDown size={14} />}
+                    Export PPTX
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
           {/* Slide Canvas or PPTX Viewer */}
-          <div className={`relative flex flex-1 flex-col items-center justify-center overflow-y-auto p-4 md:p-8 group/canvas ${isEmbedded ? 'bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950' : 'bg-slate-100/50'}`}>
+          <div className={`relative flex flex-1 flex-col items-center justify-center overflow-y-auto p-4 md:p-8 group/canvas ${isEmbedded ? (embedLightCanvas ? 'bg-slate-100/80' : 'bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950') : 'bg-slate-100/50'}`}>
             {/* Quick Navigation Buttons (Floating) */}
             {!actualUrl && (
               <>
@@ -503,9 +516,9 @@ export default function PresentationPreview({
               </div>
             </div>
           ) : slides.length === 0 ? (
-            <div className="mx-auto max-w-md px-6 text-center text-slate-300">
-              <p className="mb-2 text-lg font-bold text-slate-200">No slides to display</p>
-              <p className="text-sm text-slate-400">
+            <div className={`mx-auto max-w-md px-6 text-center ${embedLightCanvas ? 'text-slate-600' : 'text-slate-300'}`}>
+              <p className={`mb-2 text-lg font-bold ${embedLightCanvas ? 'text-slate-800' : 'text-slate-200'}`}>No slides to display</p>
+              <p className={`text-sm ${embedLightCanvas ? 'text-slate-500' : 'text-slate-400'}`}>
                 The API returned a program but no slide deck. Use &quot;Regenerate presentation&quot; in the panel on the left, or generate the curriculum again.
               </p>
             </div>
@@ -515,20 +528,19 @@ export default function PresentationPreview({
         </div>
       </div>
 
-      {/* Footer - Only show finish button if PPT view is active */}
+      {onSave && (
         <footer className="flex h-20 shrink-0 items-center justify-end border-t border-rose-100 bg-white px-4 md:px-8">
-          {onSave && (
-            <button
-              type="button"
-              onClick={onSave}
-              disabled={isSaving}
-              className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600 px-6 py-3 text-sm font-black text-white shadow-md hover:shadow-lg md:px-8"
-            >
-              {isSaving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle size={18} />}
-              Complete training
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={isSaving}
+            className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600 px-6 py-3 text-sm font-black text-white shadow-md hover:shadow-lg md:px-8"
+          >
+            {isSaving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle size={18} />}
+            Complete training
+          </button>
         </footer>
+      )}
       </div>
     </div>
   );

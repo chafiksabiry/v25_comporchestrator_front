@@ -31,9 +31,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [filterGigId, setFilterGigId] = useState<string>('all');
   const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string, newJourney?: boolean }>({ isOpen: false });
   const [selectedPresentation, setSelectedPresentation] = useState<any | null>(null);
+  /** Journey used for module sidebar when previewing slides */
+  const [previewJourney, setPreviewJourney] = useState<any | null>(null);
   const [loadingPresentation, setLoadingPresentation] = useState(false);
-  const [activeJourneyId, setActiveJourneyId] = useState<string | null>(null);
-  const [isCompleting, setIsCompleting] = useState(false);
 
   // Helper function to format training journey data for display
   const formatTrainingJourney = (journey: any) => {
@@ -72,9 +72,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     };
   };
 
-  const handleViewPresentation = async (url: string | null, journeyId: string, journey: any) => {
-    setActiveJourneyId(journeyId);
-    
+  const handleViewPresentation = async (url: string | null, _journeyId: string, journey: any) => {
+    setPreviewJourney(journey || null);
+
     if (url) {
       setLoadingPresentation(true);
       try {
@@ -104,43 +104,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     }
     
     setSelectedPresentation(presentationToUse);
-  };
-
-  const handleJourneyComplete = async () => {
-    if (!activeJourneyId) return;
-    
-    setIsCompleting(true);
-    try {
-      const backendUrl = getTrainingBackendUrl();
-      const endpoint = `${backendUrl}/api/training_journeys/${activeJourneyId}`;
-      
-      console.log('[RepOnboarding] Marking journey as completed:', endpoint);
-      await axios.put(endpoint, {
-        status: 'completed',
-        journeyStatus: 'completed',
-        progress: 100
-      });
-
-      // Update local state to show green badge immediately
-      setTrainings(prev => prev.map(t => 
-        (t._id === activeJourneyId || t.id === activeJourneyId) 
-          ? { ...t, status: 'completed', journeyStatus: 'completed', progress: 100 } 
-          : t
-      ));
-
-      // Close modal
-      setSelectedPresentation(null);
-      setActiveJourneyId(null);
-      
-      // Update main platform progress (Phase 3 Step 9)
-      updateOnboardingProgress();
-      
-    } catch (error) {
-      console.error('[RepOnboarding] Error completing journey:', error);
-      alert('Erreur lors de la validation de la formation.');
-    } finally {
-      setIsCompleting(false);
-    }
   };
 
   // Function to get training backend URL
@@ -384,6 +347,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
             initialJourneyId={showTraining.journeyId}
             isEmbedded={true}
             startWithJourneyBuilder={true}
+            repOnboardingLayout={true}
           />
         </div>
       </MemoryRouter>
@@ -394,16 +358,50 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50/40 to-gray-50 p-4 md:p-8">
       <div className="mx-auto max-w-6xl">
         {selectedPresentation ? (
-          <PresentationPreview 
-            presentation={selectedPresentation} 
-            onClose={() => {
-              setSelectedPresentation(null);
-              setActiveJourneyId(null);
-            }} 
-            onSave={handleJourneyComplete}
-            isSaving={isCompleting}
-            isEmbedded={true}
-          />
+          <div className="overflow-hidden rounded-2xl border border-rose-100/80 bg-white shadow-[0_8px_30px_rgb(244,63,94,0.1)]">
+            <div className="grid min-h-[min(720px,calc(100dvh-8rem))] grid-cols-1 lg:grid-cols-[minmax(260px,300px)_1fr] lg:min-h-[calc(100dvh-10rem)]">
+              <aside className="max-h-[40vh] overflow-y-auto border-b border-rose-100/60 bg-gradient-to-b from-fuchsia-50/50 to-white p-4 lg:max-h-none lg:border-b-0 lg:border-r lg:border-rose-100/60">
+                <div className="mb-2 flex items-center gap-2 text-fuchsia-700">
+                  <BookOpen className="h-5 w-5 shrink-0" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Modules</span>
+                </div>
+                <h2 className="text-base font-bold leading-snug text-gray-900 line-clamp-2">
+                  {previewJourney?.title || previewJourney?.name || selectedPresentation?.title || 'Training'}
+                </h2>
+                <ol className="mt-3 space-y-1.5">
+                  {Array.isArray(previewJourney?.modules) && previewJourney.modules.length > 0 ? (
+                    previewJourney.modules.map((mod: any, idx: number) => (
+                      <li
+                        key={mod._id || mod.id || idx}
+                        className="flex gap-2 rounded-xl px-2 py-2 text-sm text-gray-800 hover:bg-white/80"
+                      >
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-rose-100 to-fuchsia-100 text-xs font-bold text-fuchsia-900">
+                          {idx + 1}
+                        </span>
+                        <span className="min-w-0 flex-1 font-medium leading-snug">{mod.title || `Module ${idx + 1}`}</span>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="text-xs text-gray-500">Module list unavailable — browse slides on the right.</li>
+                  )}
+                </ol>
+              </aside>
+              <div className="min-h-[360px] min-w-0 lg:min-h-0">
+                <PresentationPreview
+                  presentation={selectedPresentation}
+                  onClose={() => {
+                    setSelectedPresentation(null);
+                    setPreviewJourney(null);
+                  }}
+                  isEmbedded={true}
+                  showPagination={false}
+                  hideExportPptx={true}
+                  embedLightCanvas={true}
+                  backLabel="Back to list"
+                />
+              </div>
+            </div>
+          </div>
         ) : (
           <>
         <header className="mb-8 overflow-hidden rounded-2xl border border-rose-100/80 bg-white/90 px-6 py-5 shadow-[0_8px_30px_rgb(244,63,94,0.14)] backdrop-blur-sm">
