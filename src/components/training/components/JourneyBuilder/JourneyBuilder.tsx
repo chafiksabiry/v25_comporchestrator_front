@@ -24,8 +24,8 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
   const [rehearsalFeedback, setRehearsalFeedback] = useState<RehearsalFeedback[]>([]);
   const [rehearsalRating, setRehearsalRating] = useState(0);
   const [showLaunchApproval, setShowLaunchApproval] = useState(false);
-  const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
   const [isRestoringDraft, setIsRestoringDraft] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
 
   // Restaurer le brouillon au chargement
   useEffect(() => {
@@ -68,7 +68,7 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
       return;
     }
 
-    if (!isRestoringDraft && (company || journey || uploads.length > 0 || modules.length > 0)) {
+    if (!isFinishing && !isRestoringDraft && (company || journey || uploads.length > 0 || modules.length > 0)) {
       // IMPORTANT: Check if draftId exists before saving to avoid creating duplicate journeys
       const currentDraft = DraftService.getDraft();
 
@@ -158,37 +158,58 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
     });
   };
 
-  const handleFinishEarly = async (finalUploads: ContentUpload[], curriculum: any) => {
-    setUploads(finalUploads);
-    
-    let parsedModules: TrainingModule[] = [];
-    if (curriculum && curriculum.modules) {
-      parsedModules = curriculum.modules.map((m: any, index: number) => ({
-        id: Date.now().toString() + index,
-        title: m.title,
-        description: m.description,
-        duration: m.duration || 30,
-        difficulty: m.difficulty === 'beginner' ? 'beginner' : (m.difficulty === 'advanced' ? 'advanced' : 'intermediate'),
-        prerequisites: m.prerequisites || [],
-        learningObjectives: m.learningObjectives || [],
-        content: [],
-        assessments: []
-      }));
-      setModules(parsedModules);
-    }
-    
-    // Save draft immediately to ensure database has it
-    if (journey) {
-      const activeJourney = { ...journey, status: 'active' as const };
-      await DraftService.saveDraftImmediately({
-        uploads: finalUploads,
-        modules: parsedModules,
-        journey: activeJourney
-      });
+  const handleFinishEarly = async (finalUploads: ContentUpload[], curriculum: any, presentationData?: any, filetraining?: string) => {
+    try {
+      setIsFinishing(true); // Stop auto-save from interfering
+      setUploads(finalUploads);
       
-      // Clear draft since it's fully finished and call onComplete to return to onboarding main page
-      DraftService.clearDraft();
-      onComplete(activeJourney, parsedModules, []);
+      let parsedModules: TrainingModule[] = [];
+      if (curriculum && curriculum.modules) {
+        parsedModules = curriculum.modules.map((m: any, index: number) => ({
+          id: m.id || Date.now().toString() + index,
+          title: m.title,
+          description: m.description,
+          duration: m.duration || 30,
+          difficulty: m.difficulty === 'beginner' ? 'beginner' : (m.difficulty === 'advanced' ? 'advanced' : 'intermediate'),
+          prerequisites: m.prerequisites || [],
+          learningObjectives: m.learningObjectives || [],
+          // CRITICAL FIX: Don't lose sections/quizzes during the manual finish save
+          sections: m.sections || [],
+          quizzes: m.quizzes || [],
+          content: m.sections || [],
+          assessments: m.quizzes || []
+        }));
+        setModules(parsedModules);
+      }
+      
+      // Save draft immediately to ensure database has it
+      if (journey) {
+        const activeJourney = { 
+          ...journey, 
+          status: 'active' as const,
+          // Explicitly pass AI generation artifacts
+          filetraining,
+          presentation: presentationData 
+        };
+        
+        console.log('[JourneyBuilder] Finalizing journey with PPTX/Presentation:', { filetraining, hasPresentation: !!presentationData });
+        
+        await DraftService.saveDraftImmediately({
+          uploads: finalUploads,
+          modules: parsedModules,
+          journey: activeJourney,
+          presentationData,
+          filetraining
+        });
+        
+        // Clear draft since it's fully finished and call onComplete to return to onboarding main page
+        DraftService.clearDraft();
+        onComplete(activeJourney, parsedModules, []);
+      }
+    } catch (error) {
+       console.error('[JourneyBuilder] Error in handleFinishEarly:', error);
+    } finally {
+       setIsFinishing(false);
     }
   };
 
