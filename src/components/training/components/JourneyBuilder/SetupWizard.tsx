@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Building2, Loader2, Target, Users, Sparkles, Briefcase, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
+import { Building2, Loader2, Target, Users, Sparkles, Briefcase, AlertCircle, CheckCircle, ArrowRight, ChevronDown } from 'lucide-react';
 import { Company, TrainingJourney } from '../../types/core';
 import { Industry, GigFromApi } from '../../types';
 import { TrainingMethodology } from '../../types/methodology';
@@ -72,6 +72,13 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
     fetchIndustries();
   }, []);
+
+  useEffect(() => {
+    const el = document.querySelector('[data-journey-main-scroll]');
+    if (el instanceof HTMLElement) {
+      el.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  }, [currentStep]);
 
   const steps = [
     {
@@ -232,10 +239,6 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     setCurrentStep(5);
   };
 
-  // Scroll to top when step changes
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentStep]);
 
   if (showMethodologySelector) {
     return (
@@ -282,27 +285,35 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             ) : companyData ? (
               <div className="space-y-8">
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-gray-800">
-                    Select training industry <span className="text-rose-500">*</span>
+                  <label className="mb-2 block text-sm font-semibold text-gray-900">
+                    Select training industry <span className="font-bold text-rose-500">*</span>
                   </label>
                   {loadingIndustries ? (
-                    <div className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 px-4 py-3">
+                    <div className="flex w-full items-center justify-center gap-3 rounded-xl border-2 border-dashed border-fuchsia-200 bg-gradient-to-r from-fuchsia-50/80 to-purple-50/50 px-4 py-4">
                       <Loader2 className="h-5 w-5 animate-spin text-fuchsia-600" />
-                      <span className="text-sm text-gray-600">Loading industries…</span>
+                      <span className="text-sm font-medium text-fuchsia-900/80">Loading industries…</span>
                     </div>
                   ) : (
-                    <select
-                      value={company.industry || ''}
-                      onChange={(e) => setCompany({ ...company, industry: e.target.value })}
-                      className="w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-3 text-base font-medium text-gray-800 outline-none transition-colors focus:border-fuchsia-400 focus:ring-2 focus:ring-fuchsia-500/25"
-                    >
-                      <option value="">Select the industry for training</option>
-                      {industries.map((industry) => (
-                        <option key={industry._id} value={industry._id}>
-                          {industry.name}
+                    <div className="relative">
+                      <select
+                        value={company.industry || ''}
+                        onChange={(e) => setCompany({ ...company, industry: e.target.value })}
+                        className="w-full cursor-pointer appearance-none rounded-xl border-2 border-fuchsia-200/90 bg-gradient-to-b from-white to-fuchsia-50/40 py-3.5 pl-4 pr-12 text-base font-medium text-gray-900 shadow-sm transition-all outline-none hover:border-fuchsia-400 hover:shadow-md hover:shadow-fuchsia-500/10 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/20"
+                      >
+                        <option value="" className="text-gray-500">
+                          Select the industry for training
                         </option>
-                      ))}
-                    </select>
+                        {industries.map((industry) => (
+                          <option key={industry._id} value={industry._id} className="bg-white text-gray-900">
+                            {industry.name}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        className="pointer-events-none absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-fuchsia-600"
+                        aria-hidden
+                      />
+                    </div>
                   )}
                 </div>
 
@@ -500,8 +511,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   };
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col bg-white">
-      <div className="shrink-0 border-b border-gray-100 px-4 py-6 md:px-10 md:py-8">
+    <div className="flex w-full flex-col bg-white">
+      <div className="shrink-0 border-b border-gray-100 px-4 py-5 md:px-10 md:py-6">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="flex items-center justify-center gap-2 text-2xl font-extrabold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-fuchsia-600 to-purple-700 md:text-3xl md:gap-3">
             <Sparkles className="h-7 w-7 shrink-0 text-rose-500 md:h-8 md:w-8" aria-hidden />
@@ -512,7 +523,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           </p>
         </div>
 
-        <div className="mx-auto mt-8 max-w-4xl overflow-x-auto pb-1">
+        <div className="mx-auto mt-5 max-w-4xl overflow-x-auto pb-1 md:mt-6">
           <div className="flex min-w-min items-center justify-center gap-0 px-2">
             {steps.map((step, index) => {
               const Icon = step.icon;
@@ -559,13 +570,13 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       </div>
 
       {currentStep !== 4 && (
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 custom-scrollbar md:px-10">
+        <div className="px-4 py-5 md:px-10 md:py-6">
           <div className="mx-auto max-w-3xl">{renderStepContent()}</div>
         </div>
       )}
 
       {currentStep !== 2 && currentStep !== 4 && (
-        <div className="flex shrink-0 items-center justify-between gap-4 border-t border-gray-100 px-4 py-4 md:px-10">
+        <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-between gap-4 border-t border-gray-100 bg-white px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] md:px-10 md:py-4">
           <button
             type="button"
             onClick={() => {

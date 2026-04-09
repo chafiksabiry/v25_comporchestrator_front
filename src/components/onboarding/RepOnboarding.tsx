@@ -379,11 +379,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   if (showTraining.isOpen && showTraining.newJourney) {
     return (
       <MemoryRouter>
-        <AppContent
-          initialJourneyId={showTraining.journeyId}
-          isEmbedded={true}
-          startWithJourneyBuilder={true}
-        />
+        <div className="flex h-[100dvh] max-h-[100dvh] w-full flex-col overflow-hidden">
+          <AppContent
+            initialJourneyId={showTraining.journeyId}
+            isEmbedded={true}
+            startWithJourneyBuilder={true}
+          />
+        </div>
       </MemoryRouter>
     );
   }
