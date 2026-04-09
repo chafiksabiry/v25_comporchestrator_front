@@ -591,6 +591,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               </div>
             </div>
           </div>
+        </div>
           </>
         )}
       </div>
