@@ -1122,7 +1122,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           )}
 
           {/* AI Enhancement Preview */}
-          {totalAnalyzed > 0 && (
+          {/* {totalAnalyzed > 0 && (
             <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 p-6 mb-6">
               <div className="text-center">
                 <Zap className="h-10 w-10 text-purple-500 mx-auto mb-3" />
@@ -1155,7 +1155,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 </div>
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Navigation */}
           <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mt-8 pt-6 border-t border-gray-200">
