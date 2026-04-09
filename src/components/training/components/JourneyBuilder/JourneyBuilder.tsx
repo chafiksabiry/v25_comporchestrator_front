@@ -24,6 +24,7 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
   const [rehearsalFeedback, setRehearsalFeedback] = useState<RehearsalFeedback[]>([]);
   const [rehearsalRating, setRehearsalRating] = useState(0);
   const [showLaunchApproval, setShowLaunchApproval] = useState(false);
+  const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
   const [isRestoringDraft, setIsRestoringDraft] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
 
