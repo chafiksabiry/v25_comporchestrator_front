@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Play, 
-  Pause, 
-  RotateCcw, 
-  CheckCircle, 
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  CheckCircle,
   ArrowLeft,
-  ArrowRight, 
-  Volume2, 
-  VolumeX, 
-  Maximize, 
+  ArrowRight,
+  Volume2,
+  VolumeX,
+  Maximize,
   Settings,
   BookOpen,
   Video,
@@ -55,13 +55,13 @@ interface TraineeModulePlayerProps {
   fileTrainingUrl?: string; // URL of the generated PPTX presentation
 }
 
-export default function TraineeModulePlayer({ 
-  module, 
-  trainee, 
+export default function TraineeModulePlayer({
+  module,
+  trainee,
   journeyId,
   moduleIndex,
-  onProgress, 
-  onComplete, 
+  onProgress,
+  onComplete,
   onBack,
   onNextModule,
   totalModules,
@@ -100,7 +100,7 @@ export default function TraineeModulePlayer({
       if (visualTheme.secondaryColor) root.style.setProperty('--secondary-color', visualTheme.secondaryColor);
       if (visualTheme.accentColor) root.style.setProperty('--accent-color', visualTheme.accentColor);
       if (visualTheme.fontFamily) root.style.setProperty('--font-family', visualTheme.fontFamily);
-      
+
       return () => {
         // Reset to defaults on unmount
         root.style.removeProperty('--primary-color');
@@ -118,21 +118,21 @@ export default function TraineeModulePlayer({
   // Save progress to backend periodically
   const saveProgressToBackend = async (progressPercent: number, timeSpentSeconds: number) => {
     if (!journeyId || !trainee.id) return;
-    
+
     // Module MUST have a MongoDB ObjectId _id
     const moduleId = extractObjectId((module as any)._id) || extractObjectId(module.id);
     if (!moduleId || !/^[0-9a-fA-F]{24}$/.test(moduleId)) {
       console.error('[TraineeModulePlayer] Module must have a valid MongoDB ObjectId _id:', module);
       return;
     }
-    
+
     // Only save if progress changed significantly (more than 5%) or every 2 minutes
     const progressDiff = Math.abs(progressPercent - lastSavedProgress.current);
     if (progressDiff < 5 && timeSpentSeconds % 120 !== 0) return;
-    
+
     const timeSpentMinutes = Math.floor(timeSpentSeconds / 60);
     const status = ProgressService.getStatusFromProgress(progressPercent);
-    
+
     try {
       await ProgressService.updateProgress({
         repId: trainee.id,
@@ -176,7 +176,7 @@ export default function TraineeModulePlayer({
     let passingScore = 70; // Default is always 70% (percentage)
     let totalPoints = 0;
     const passingScoreIsPercentage = true; // Always percentage
-    
+
     // Check quizzes first (new structure)
     if (moduleAny.quizzes && Array.isArray(moduleAny.quizzes) && moduleAny.quizzes.length > 0) {
       const firstQuiz = moduleAny.quizzes[0];
@@ -198,7 +198,7 @@ export default function TraineeModulePlayer({
       const questions = getQuizQuestions();
       totalPoints = questions.reduce((sum: number, q: any) => sum + (q.points || 10), 0);
     }
-    
+
     return { passingScore, totalPoints, passingScoreIsPercentage };
   };
 
@@ -206,7 +206,7 @@ export default function TraineeModulePlayer({
   const calculateQuizScore = (): { score: number; totalPoints: number; percentage: number; passed: boolean; passingScore: number; passingScoreIsPercentage: boolean } => {
     const questions = getQuizQuestions();
     const { passingScore, totalPoints, passingScoreIsPercentage } = getQuizMetadata();
-    
+
     let score = 0;
     questions.forEach((q: any, idx: number) => {
       const answer = quizAnswers[idx];
@@ -217,14 +217,14 @@ export default function TraineeModulePlayer({
         }
       }
     });
-    
+
     const percentage = totalPoints > 0 ? Math.round((score / totalPoints) * 100) : 0;
-    
+
     // Determine if passed: if passingScore is percentage, compare percentage; otherwise compare points
-    const passed = passingScoreIsPercentage 
-      ? percentage >= passingScore 
+    const passed = passingScoreIsPercentage
+      ? percentage >= passingScore
       : score >= passingScore;
-    
+
     return { score, totalPoints, percentage, passed, passingScore, passingScoreIsPercentage };
   };
 
@@ -240,7 +240,7 @@ export default function TraineeModulePlayer({
   const currentSectionData = sections[currentSection] || null;
 
   // Use topics as fallback if no sections
-  const sectionTitles = sections.length > 0 
+  const sectionTitles = sections.length > 0
     ? sections.map((s: any) => s.title || 'Untitled Section')
     : (module.topics || []);
 
@@ -251,20 +251,20 @@ export default function TraineeModulePlayer({
           const newTime = prev + 1;
           const totalDuration = parseInt(module.duration) * 60; // Convert to seconds
           const progress = Math.min((newTime / totalDuration) * 100, 100);
-          
+
           onProgress(progress);
           setSectionProgress(progress);
-          
+
           // Save progress to backend every 30 seconds or when progress changes significantly
           if (newTime % 30 === 0 || Math.abs(progress - lastSavedProgress.current) >= 5) {
             saveProgressToBackend(progress, newTime);
           }
-          
+
           // Update engagement based on interaction
           if (newTime % 30 === 0) { // Every 30 seconds
             setEngagementScore(prev => Math.max(prev - 1, 0));
           }
-          
+
           return newTime;
         });
       }, 1000 / playbackSpeed);
@@ -333,19 +333,19 @@ export default function TraineeModulePlayer({
     } else {
       // Module sections completed - check for quizzes before marking as completed
       setModuleCompleted(true);
-      
+
       // Check for quizzes in assessments
-      const hasAssessments = module.assessments && 
-                             module.assessments.length > 0 && 
-                             module.assessments[0] &&
-                             module.assessments[0].questions && 
-                             Array.isArray(module.assessments[0].questions) &&
-                             module.assessments[0].questions.length > 0;
-      
+      const hasAssessments = module.assessments &&
+        module.assessments.length > 0 &&
+        module.assessments[0] &&
+        module.assessments[0].questions &&
+        Array.isArray(module.assessments[0].questions) &&
+        module.assessments[0].questions.length > 0;
+
       // Check for quizzes in module.quizzes
-      const hasQuizzes = (module as any).quizzes && Array.isArray((module as any).quizzes) && 
-                        (module as any).quizzes.length > 0;
-      
+      const hasQuizzes = (module as any).quizzes && Array.isArray((module as any).quizzes) &&
+        (module as any).quizzes.length > 0;
+
       // Save progress but DON'T mark as completed if there are quizzes
       // The module will only be marked as completed after quizzes are passed
       if (journeyId && trainee.id) {
@@ -359,20 +359,20 @@ export default function TraineeModulePlayer({
           // Only mark as completed if there are no quizzes
           // If there are quizzes, keep status as "in-progress" until quizzes are passed
           const moduleStatus = (hasAssessments || hasQuizzes) ? 'in-progress' : 'completed';
-          
+
           // Show alert if module has quizzes and is being marked as in-progress
           if ((hasAssessments || hasQuizzes) && moduleStatus === 'in-progress') {
             // Get passing score from quiz metadata
             const { passingScore, passingScoreIsPercentage } = getQuizMetadata();
-            const passingScoreText = passingScoreIsPercentage 
-              ? `${passingScore}%` 
+            const passingScoreText = passingScoreIsPercentage
+              ? `${passingScore}%`
               : `${passingScore} points`;
-            
+
             setTimeout(() => {
               alert(`⚠️ Module en cours\n\nVous devez réussir le quiz de ce module avec un score minimum de ${passingScoreText} pour passer au module suivant.\n\nVeuillez compléter le quiz ci-dessous.`);
             }, 500);
           }
-          
+
           ProgressService.updateProgress({
             repId: trainee.id,
             journeyId: journeyId,
@@ -384,20 +384,20 @@ export default function TraineeModulePlayer({
           }).catch(err => console.error('Error saving completed progress:', err));
         }
       }
-      
+
       console.log('[TraineeModulePlayer] Module completed, checking for quizzes:', {
         hasAssessments,
         hasQuizzes,
         assessments: module.assessments,
         quizzes: (module as any).quizzes
       });
-      
+
       // If quizzes exist, redirect automatically to quiz
       if (hasAssessments && module.assessments && module.assessments[0] && module.assessments[0].questions) {
         console.log('[TraineeModulePlayer] Module completed, redirecting to quiz automatically');
         const firstQuestion = module.assessments[0].questions[0];
         console.log('[TraineeModulePlayer] First question:', firstQuestion);
-        
+
         if (firstQuestion) {
           const quizData = {
             id: `quiz-0`,
@@ -409,11 +409,11 @@ export default function TraineeModulePlayer({
             aiGenerated: true
           };
           console.log('[TraineeModulePlayer] Setting quiz data:', quizData);
-          
+
           setCurrentQuiz(quizData);
           setShowModuleQuiz(true);
           setCurrentQuizIndex(0);
-          
+
           // Scroll to quiz section after state update
           setTimeout(() => {
             const quizSection = document.querySelector('.bg-white.rounded-2xl.shadow-xl.border.border-gray-200.mt-6');
@@ -431,25 +431,25 @@ export default function TraineeModulePlayer({
         if (questions.length > 0) {
           const firstQuestion = questions[0];
           console.log('[TraineeModulePlayer] First question from quizzes:', firstQuestion);
-          
+
           if (firstQuestion) {
             const quizData = {
               id: firstQuestion._id ? `quiz-${firstQuestion._id}` : `quiz-0`,
               question: firstQuestion.question || firstQuestion.text || '',
               options: firstQuestion.options || [],
-              correctAnswer: Array.isArray(firstQuestion.correctAnswer) 
-                ? firstQuestion.correctAnswer[0] 
+              correctAnswer: Array.isArray(firstQuestion.correctAnswer)
+                ? firstQuestion.correctAnswer[0]
                 : (firstQuestion.correctAnswer !== undefined ? firstQuestion.correctAnswer : 0),
               explanation: firstQuestion.explanation || 'Good job!',
               difficulty: firstQuestion.difficulty === 'easy' ? 3 : firstQuestion.difficulty === 'medium' ? 5 : 8,
               aiGenerated: true
             };
             console.log('[TraineeModulePlayer] Setting quiz data from quizzes array:', quizData);
-            
+
             setCurrentQuiz(quizData);
             setShowModuleQuiz(true);
             setCurrentQuizIndex(0);
-            
+
             // Scroll to quiz section after state update
             setTimeout(() => {
               const quizSection = document.querySelector('.bg-white.rounded-2xl.shadow-xl.border.border-gray-200.mt-6');
@@ -491,12 +491,12 @@ export default function TraineeModulePlayer({
       // Save answer
       setQuizAnswers(prev => {
         const newAnswers = { ...prev, [currentQuizIndex]: quizAnswer };
-        
+
         // Check if quiz is passed based on score
         const questions = getQuizQuestions();
         if (questions && questions.length > 0) {
           const allAnswered = questions.every((q: any, idx: number) => newAnswers[idx] !== undefined);
-          
+
           if (allAnswered) {
             // Calculate score
             let score = 0;
@@ -510,15 +510,15 @@ export default function TraineeModulePlayer({
                 }
               }
             });
-            
+
             const percentage = totalPoints > 0 ? Math.round((score / totalPoints) * 100) : 0;
             const { passingScore, passingScoreIsPercentage } = getQuizMetadata();
-            
+
             // Check if passed: if passingScore is percentage, compare percentage; otherwise compare points
-            const passed = passingScoreIsPercentage 
-              ? percentage >= passingScore 
+            const passed = passingScoreIsPercentage
+              ? percentage >= passingScore
               : score >= passingScore;
-            
+
             // ALWAYS save quiz results when all questions are answered
             if (journeyId && trainee.id) {
               const moduleId = extractObjectId((module as any)._id) || extractObjectId(module.id);
@@ -526,7 +526,7 @@ export default function TraineeModulePlayer({
                 // Get quiz ID - check assessments first, then quizzes
                 let quizId = moduleId; // Default to moduleId
                 const moduleAny = module as any;
-                
+
                 if (moduleAny.assessments && Array.isArray(moduleAny.assessments) && moduleAny.assessments.length > 0) {
                   const firstAssessment = moduleAny.assessments[0];
                   quizId = extractObjectId(firstAssessment._id) || extractObjectId(firstAssessment.id) || moduleId;
@@ -534,14 +534,14 @@ export default function TraineeModulePlayer({
                   const firstQuiz = moduleAny.quizzes[0];
                   quizId = extractObjectId(firstQuiz._id) || extractObjectId(firstQuiz.id) || moduleId;
                 }
-                
+
                 const correctAnswers = questions.filter((q: any, idx: number) => {
                   const answer = newAnswers[idx];
                   if (answer === undefined) return false;
                   const correctAnswer = Array.isArray(q.correctAnswer) ? q.correctAnswer[0] : q.correctAnswer;
                   return answer === correctAnswer;
                 }).length;
-                
+
                 const quizz: Record<string, any> = {};
                 quizz[quizId] = {
                   quizId: quizId,
@@ -552,7 +552,7 @@ export default function TraineeModulePlayer({
                   completedAt: new Date().toISOString(),
                   attempts: 1
                 };
-                
+
                 console.log('[TraineeModulePlayer] 💾 Saving quiz result in submitQuizAnswer:', {
                   quizId,
                   score: percentage,
@@ -560,7 +560,7 @@ export default function TraineeModulePlayer({
                   correctAnswers,
                   totalQuestions: questions.length
                 });
-                
+
                 // Save quiz results immediately
                 ProgressService.updateProgress({
                   repId: trainee.id,
@@ -576,7 +576,7 @@ export default function TraineeModulePlayer({
                 }).catch(err => console.error('Error saving quiz result in submitQuizAnswer:', err));
               }
             }
-            
+
             if (passed) {
               setAllQuizzesPassed(true);
               console.log('[TraineeModulePlayer] ✅ Quiz passed! Score:', score, '/', totalPoints, `(${percentage}%)`);
@@ -588,7 +588,7 @@ export default function TraineeModulePlayer({
             setAllQuizzesPassed(false);
           }
         }
-        
+
         return newAnswers;
       });
     }
@@ -596,7 +596,7 @@ export default function TraineeModulePlayer({
 
   const handleNextQuiz = () => {
     const questions = getQuizQuestions();
-    
+
     if (!questions || questions.length === 0) {
       // No more quizzes, complete module
       // Save completed progress
@@ -636,8 +636,8 @@ export default function TraineeModulePlayer({
           id: nextQuestion._id ? `quiz-${nextQuestion._id}` : `quiz-${nextIndex}`,
           question: nextQuestion.question || nextQuestion.text || '',
           options: nextQuestion.options || [],
-          correctAnswer: Array.isArray(nextQuestion.correctAnswer) 
-            ? nextQuestion.correctAnswer[0] 
+          correctAnswer: Array.isArray(nextQuestion.correctAnswer)
+            ? nextQuestion.correctAnswer[0]
             : (nextQuestion.correctAnswer !== undefined ? nextQuestion.correctAnswer : 0),
           explanation: nextQuestion.explanation || 'Good job!',
           difficulty: nextQuestion.difficulty === 'easy' ? 3 : nextQuestion.difficulty === 'medium' ? 5 : 8,
@@ -651,9 +651,9 @@ export default function TraineeModulePlayer({
         console.error('[TraineeModulePlayer] Cannot check quiz completion: no questions found');
         return;
       }
-      
+
       const allAnswered = allQuestions.every((q: any, idx: number) => quizAnswers[idx] !== undefined);
-      
+
       if (allAnswered) {
         // Calculate score
         let score = 0;
@@ -667,15 +667,15 @@ export default function TraineeModulePlayer({
             }
           }
         });
-        
+
         const percentage = totalPoints > 0 ? Math.round((score / totalPoints) * 100) : 0;
         const { passingScore, passingScoreIsPercentage } = getQuizMetadata();
-        
+
         // Check if passed: if passingScore is percentage, compare percentage; otherwise compare points
-        const passed = passingScoreIsPercentage 
-          ? percentage >= passingScore 
+        const passed = passingScoreIsPercentage
+          ? percentage >= passingScore
           : score >= passingScore;
-        
+
         console.log('[TraineeModulePlayer] Quiz completion check:', {
           allAnswered,
           score,
@@ -687,11 +687,11 @@ export default function TraineeModulePlayer({
           totalQuestions: allQuestions.length,
           answeredCount: Object.keys(quizAnswers).length
         });
-        
+
         if (passed) {
           setAllQuizzesPassed(true);
           console.log('[TraineeModulePlayer] ✅ Quiz passed! Module can be completed.');
-          
+
           // Save final progress before completing
           if (journeyId && trainee.id) {
             const moduleId = extractObjectId((module as any)._id) || extractObjectId(module.id);
@@ -701,11 +701,11 @@ export default function TraineeModulePlayer({
             }
             if (moduleId) {
               const timeSpentMinutes = Math.floor(currentTime / 60);
-              
+
               // Get quiz ID - check assessments first, then quizzes
               const moduleAny = module as any;
               let quizId = moduleId; // Default to moduleId
-              
+
               if (moduleAny.assessments && Array.isArray(moduleAny.assessments) && moduleAny.assessments.length > 0) {
                 const firstAssessment = moduleAny.assessments[0];
                 quizId = extractObjectId(firstAssessment._id) || extractObjectId(firstAssessment.id) || moduleId;
@@ -713,7 +713,7 @@ export default function TraineeModulePlayer({
                 const firstQuiz = moduleAny.quizzes[0];
                 quizId = extractObjectId(firstQuiz._id) || extractObjectId(firstQuiz.id) || moduleId;
               }
-              
+
               // Count correct answers
               const correctAnswers = allQuestions.filter((q: any, idx: number) => {
                 const answer = quizAnswers[idx];
@@ -721,7 +721,7 @@ export default function TraineeModulePlayer({
                 const correctAnswer = Array.isArray(q.correctAnswer) ? q.correctAnswer[0] : q.correctAnswer;
                 return answer === correctAnswer;
               }).length;
-              
+
               // Prepare quiz results to save in quizz field
               const quizz: Record<string, any> = {};
               quizz[quizId] = {
@@ -733,7 +733,7 @@ export default function TraineeModulePlayer({
                 completedAt: new Date().toISOString(),
                 attempts: 1
               };
-              
+
               // Now mark module as completed since quiz is passed
               ProgressService.updateProgress({
                 repId: trainee.id,
@@ -753,13 +753,13 @@ export default function TraineeModulePlayer({
               }).catch(err => console.error('Error saving final progress:', err));
             }
           }
-          
+
           // Don't auto-navigate, let user click "Next Module" button
           // The button will appear after all quizzes are passed
         } else {
           console.log('[TraineeModulePlayer] ⚠️ Quiz not passed. Cannot proceed to next module.');
           setAllQuizzesPassed(false);
-          
+
           // ALWAYS save quiz result even if not passed (to track attempts)
           if (journeyId && trainee.id) {
             const moduleId = extractObjectId((module as any)._id) || extractObjectId(module.id);
@@ -767,7 +767,7 @@ export default function TraineeModulePlayer({
               // Get quiz ID - check assessments first, then quizzes
               const moduleAny = module as any;
               let quizId = moduleId; // Default to moduleId
-              
+
               if (moduleAny.assessments && Array.isArray(moduleAny.assessments) && moduleAny.assessments.length > 0) {
                 const firstAssessment = moduleAny.assessments[0];
                 quizId = extractObjectId(firstAssessment._id) || extractObjectId(firstAssessment.id) || moduleId;
@@ -775,14 +775,14 @@ export default function TraineeModulePlayer({
                 const firstQuiz = moduleAny.quizzes[0];
                 quizId = extractObjectId(firstQuiz._id) || extractObjectId(firstQuiz.id) || moduleId;
               }
-              
+
               const correctAnswers = allQuestions.filter((q: any, idx: number) => {
                 const answer = quizAnswers[idx];
                 if (answer === undefined) return false;
                 const correctAnswer = Array.isArray(q.correctAnswer) ? q.correctAnswer[0] : q.correctAnswer;
                 return answer === correctAnswer;
               }).length;
-              
+
               const quizz: Record<string, any> = {};
               quizz[quizId] = {
                 quizId: quizId,
@@ -793,7 +793,7 @@ export default function TraineeModulePlayer({
                 completedAt: new Date().toISOString(),
                 attempts: 1
               };
-              
+
               console.log('[TraineeModulePlayer] 💾 Saving quiz result (failed):', {
                 quizId,
                 score: percentage,
@@ -801,7 +801,7 @@ export default function TraineeModulePlayer({
                 correctAnswers,
                 totalQuestions: allQuestions.length
               });
-              
+
               // Keep module status as "in-progress" since quiz is not passed
               ProgressService.updateProgress({
                 repId: trainee.id,
@@ -873,7 +873,7 @@ export default function TraineeModulePlayer({
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <div className="text-right">
                 <div className="text-2xl font-bold text-blue-600">{Math.round(sectionProgress)}%</div>
@@ -901,9 +901,9 @@ export default function TraineeModulePlayer({
                       <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
                         Source: AI Generated
                       </span>
-                      <a 
-                        href={fileTrainingUrl} 
-                        target="_blank" 
+                      <a
+                        href={fileTrainingUrl}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs px-3 py-1 bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition-colors font-medium flex items-center space-x-1"
                       >
@@ -921,7 +921,7 @@ export default function TraineeModulePlayer({
                       className="w-full h-full"
                       title="PowerPoint Presentation Viewer"
                     >
-                      Ce navigateur ne supporte pas l'affichage des documents. 
+                      Ce navigateur ne supporte pas l'affichage des documents.
                       <a href={fileTrainingUrl} className="text-blue-600 underline">Cliquez ici pour télécharger</a>.
                     </iframe>
                   </div>
@@ -959,9 +959,9 @@ export default function TraineeModulePlayer({
                       {currentSectionData.imageUrl && (
                         <div className="px-6 pt-6">
                           <div className="rounded-xl overflow-hidden shadow-lg border border-gray-100 max-h-80 flex items-center justify-center bg-gray-50">
-                            <img 
-                              src={currentSectionData.imageUrl} 
-                              alt={currentSectionData.imageDescription || 'Section visual'} 
+                            <img
+                              src={currentSectionData.imageUrl}
+                              alt={currentSectionData.imageDescription || 'Section visual'}
                               className="w-full h-full object-contain"
                             />
                           </div>
@@ -997,241 +997,241 @@ export default function TraineeModulePlayer({
                       )}
                     </div>
                   </div>
-                ) : (
+                  ) : (
                   /* Fallback: Show video player if no sections */
-                <div className="bg-gray-900 aspect-video relative">
-                  <video
-                    ref={videoRef}
-                    className="w-full h-full object-cover"
-                    poster="https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop"
-                  />
-                  
-                  {/* Video Overlay */}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 group">
-                    {/* Center Play Button */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => {
-                          handleInteraction();
-                          setIsPlaying(!isPlaying);
-                        }}
-                        className="w-20 h-20 bg-white bg-opacity-90 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all shadow-lg"
-                      >
-                        {isPlaying ? (
-                          <Pause className="h-10 w-10 text-gray-900 ml-1" />
-                        ) : (
-                          <Play className="h-10 w-10 text-gray-900 ml-2" />
-                        )}
-                      </button>
-                    </div>
+                  <div className="bg-gray-900 aspect-video relative">
+                    <video
+                      ref={videoRef}
+                      className="w-full h-full object-cover"
+                      poster="https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop"
+                    />
 
-                    {/* Top Overlay */}
-                    <div className="absolute top-4 left-4 right-4 flex justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="bg-black bg-opacity-75 text-white px-4 py-2 rounded-lg">
+                    {/* Video Overlay */}
+                    <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 group">
+                      {/* Center Play Button */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => {
+                            handleInteraction();
+                            setIsPlaying(!isPlaying);
+                          }}
+                          className="w-20 h-20 bg-white bg-opacity-90 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all shadow-lg"
+                        >
+                          {isPlaying ? (
+                            <Pause className="h-10 w-10 text-gray-900 ml-1" />
+                          ) : (
+                            <Play className="h-10 w-10 text-gray-900 ml-2" />
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Top Overlay */}
+                      <div className="absolute top-4 left-4 right-4 flex justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="bg-black bg-opacity-75 text-white px-4 py-2 rounded-lg">
                           <div className="text-sm">Section {currentSection + 1}: {sectionTitles[currentSection] || 'Untitled Section'}</div>
-                      </div>
-                      <div className="bg-black bg-opacity-75 text-white px-4 py-2 rounded-lg">
-                        <div className="text-sm">{formatTime(currentTime)} / {module.duration}</div>
-                      </div>
-                    </div>
-
-                    {/* Bottom Controls */}
-                    <div className="absolute bottom-4 left-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="bg-black bg-opacity-75 rounded-lg p-4">
-                        {/* Progress Bar */}
-                        <div className="w-full bg-gray-600 rounded-full h-2 mb-4">
-                          <div 
-                            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${sectionProgress}%` }}
-                          />
                         </div>
+                        <div className="bg-black bg-opacity-75 text-white px-4 py-2 rounded-lg">
+                          <div className="text-sm">{formatTime(currentTime)} / {module.duration}</div>
+                        </div>
+                      </div>
 
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <button
-                              onClick={() => {
-                                handleInteraction();
-                                setIsPlaying(!isPlaying);
-                              }}
-                              className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
-                            >
-                              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-                            </button>
+                      {/* Bottom Controls */}
+                      <div className="absolute bottom-4 left-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="bg-black bg-opacity-75 rounded-lg p-4">
+                          {/* Progress Bar */}
+                          <div className="w-full bg-gray-600 rounded-full h-2 mb-4">
+                            <div
+                              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${sectionProgress}%` }}
+                            />
+                          </div>
 
-                            <button
-                              onClick={() => {
-                                handleInteraction();
-                                setCurrentTime(0);
-                                setSectionProgress(0);
-                              }}
-                              className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
-                            >
-                              <RotateCcw className="h-5 w-5" />
-                            </button>
-
-                            <div className="flex items-center space-x-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
                               <button
-                                onClick={() => setIsMuted(!isMuted)}
+                                onClick={() => {
+                                  handleInteraction();
+                                  setIsPlaying(!isPlaying);
+                                }}
                                 className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
                               >
-                                {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                                {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                               </button>
-                              <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                value={volume}
-                                onChange={(e) => setVolume(parseInt(e.target.value))}
-                                className="w-20"
-                              />
+
+                              <button
+                                onClick={() => {
+                                  handleInteraction();
+                                  setCurrentTime(0);
+                                  setSectionProgress(0);
+                                }}
+                                className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
+                              >
+                                <RotateCcw className="h-5 w-5" />
+                              </button>
+
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => setIsMuted(!isMuted)}
+                                  className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
+                                >
+                                  {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                                </button>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="100"
+                                  value={volume}
+                                  onChange={(e) => setVolume(parseInt(e.target.value))}
+                                  className="w-20"
+                                />
+                              </div>
+
+                              <select
+                                value={playbackSpeed}
+                                onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
+                                className="bg-white bg-opacity-20 text-white rounded px-2 py-1 text-sm"
+                              >
+                                <option value={0.5}>0.5x</option>
+                                <option value={0.75}>0.75x</option>
+                                <option value={1}>1x</option>
+                                <option value={1.25}>1.25x</option>
+                                <option value={1.5}>1.5x</option>
+                                <option value={2}>2x</option>
+                              </select>
                             </div>
 
-                            <select
-                              value={playbackSpeed}
-                              onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
-                              className="bg-white bg-opacity-20 text-white rounded px-2 py-1 text-sm"
-                            >
-                              <option value={0.5}>0.5x</option>
-                              <option value={0.75}>0.75x</option>
-                              <option value={1}>1x</option>
-                              <option value={1.25}>1.25x</option>
-                              <option value={1.5}>1.5x</option>
-                              <option value={2}>2x</option>
-                            </select>
-                          </div>
+                            <div className="flex items-center space-x-3">
+                              <button
+                                onClick={addBookmark}
+                                className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
+                              >
+                                <Star className="h-4 w-4" />
+                              </button>
 
-                          <div className="flex items-center space-x-3">
-                            <button
-                              onClick={addBookmark}
-                              className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
-                            >
-                              <Star className="h-4 w-4" />
-                            </button>
+                              <button
+                                onClick={() => setShowTranscript(!showTranscript)}
+                                className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
+                              >
+                                <MessageSquare className="h-4 w-4" />
+                              </button>
 
-                            <button
-                              onClick={() => setShowTranscript(!showTranscript)}
-                              className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
-                            >
-                              <MessageSquare className="h-4 w-4" />
-                            </button>
+                              <button
+                                onClick={() => setShowNotes(!showNotes)}
+                                className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
+                              >
+                                <BookOpen className="h-4 w-4" />
+                              </button>
 
-                            <button
-                              onClick={() => setShowNotes(!showNotes)}
-                              className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
-                            >
-                              <BookOpen className="h-4 w-4" />
-                            </button>
-
-                            <button className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors">
-                              <Maximize className="h-4 w-4" />
-                            </button>
+                              <button className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors">
+                                <Maximize className="h-4 w-4" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
                 )}
 
-                {/* Module Content Sections - Only show if no sections */}
-                {sections.length === 0 && (
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-gray-900">
-                        Section {currentSection + 1}: {sectionTitles[currentSection]}
-                    </h2>
-                    <button
-                      onClick={handleSectionComplete}
-                      className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      <CheckCircle className="h-4 w-4" />
-                      <span>Mark Complete</span>
-                    </button>
-                  </div>
-
-                  {/* Interactive Elements */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Practice Exercises */}
-                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-6">
-                      <h3 className="font-semibold text-blue-900 mb-4 flex items-center space-x-2">
-                        <Target className="h-5 w-5" />
-                        <span>Practice Exercises</span>
-                      </h3>
-                      <div className="space-y-3">
-                        {Array.isArray(module.practicalExercises) && module.practicalExercises.length > 0 ? (
-                          module.practicalExercises.slice(0, 2).map((exercise) => (
-                          <button
-                            key={exercise.id}
-                            onClick={() => handleInteraction()}
-                            className="w-full text-left p-4 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="font-medium text-gray-900">{exercise.title}</div>
-                                <div className="text-sm text-gray-600">{exercise.type} • Difficulty: {exercise.difficulty}/10</div>
-                              </div>
-                              {exercise.completed && (
-                                <CheckCircle className="h-5 w-5 text-green-500" />
-                              )}
-                            </div>
-                          </button>
-                          ))
-                        ) : (
-                          <p className="text-sm text-gray-500">No exercises available</p>
-                        )}
+                  {/* Module Content Sections - Only show if no sections */}
+                  {sections.length === 0 && (
+                    <div className="p-6">
+                      <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-semibold text-gray-900">
+                          Section {currentSection + 1}: {sectionTitles[currentSection]}
+                        </h2>
+                        <button
+                          onClick={handleSectionComplete}
+                          className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          <span>Mark Complete</span>
+                        </button>
                       </div>
-                    </div>
 
-                    {/* Knowledge Checks / QCM */}
-                    {module.assessments && 
-                     Array.isArray(module.assessments) && 
-                     module.assessments.length > 0 && 
-                     module.assessments[0] && 
-                     Array.isArray(module.assessments[0].questions) && 
-                     module.assessments[0].questions.length > 0 && (
-                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
-                        <h3 className="font-semibold text-purple-900 mb-4 flex items-center space-x-2">
-                          <Brain className="h-5 w-5" />
-                          <span>QCM - Quiz ({module.assessments[0].questions.length} Questions)</span>
-                        </h3>
-                        <div className="space-y-3">
-                          {module.assessments[0].questions.slice(0, 5).map((question: any, index: number) => (
-                            <button
-                              key={`quiz-${index}`}
-                              onClick={() => startQuiz({
-                                id: `quiz-${index}`,
-                                question: question.text,
-                                options: question.options,
-                                correctAnswer: question.correctAnswer,
-                                explanation: question.explanation || 'Good job!',
-                                difficulty: question.difficulty === 'easy' ? 3 : question.difficulty === 'medium' ? 5 : 8,
-                                aiGenerated: true
-                              })}
-                              className="w-full text-left p-4 bg-white border border-purple-200 rounded-lg hover:bg-purple-50 transition-colors"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1 pr-4">
-                                  <div className="font-medium text-gray-900 mb-1">Question {index + 1}</div>
-                                  <div className="text-sm text-gray-600 line-clamp-2">{question.text}</div>
-                                  <div className="text-xs text-purple-600 mt-1">
-                                    {question.difficulty} • {question.points || 10} points
+                      {/* Interactive Elements */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Practice Exercises */}
+                        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-6">
+                          <h3 className="font-semibold text-blue-900 mb-4 flex items-center space-x-2">
+                            <Target className="h-5 w-5" />
+                            <span>Practice Exercises</span>
+                          </h3>
+                          <div className="space-y-3">
+                            {Array.isArray(module.practicalExercises) && module.practicalExercises.length > 0 ? (
+                              module.practicalExercises.slice(0, 2).map((exercise) => (
+                                <button
+                                  key={exercise.id}
+                                  onClick={() => handleInteraction()}
+                                  className="w-full text-left p-4 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <div className="font-medium text-gray-900">{exercise.title}</div>
+                                      <div className="text-sm text-gray-600">{exercise.type} • Difficulty: {exercise.difficulty}/10</div>
+                                    </div>
+                                    {exercise.completed && (
+                                      <CheckCircle className="h-5 w-5 text-green-500" />
+                                    )}
                                   </div>
-                                </div>
-                                <Brain className="h-5 w-5 text-purple-500 flex-shrink-0" />
+                                </button>
+                              ))
+                            ) : (
+                              <p className="text-sm text-gray-500">No exercises available</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Knowledge Checks / QCM */}
+                        {module.assessments &&
+                          Array.isArray(module.assessments) &&
+                          module.assessments.length > 0 &&
+                          module.assessments[0] &&
+                          Array.isArray(module.assessments[0].questions) &&
+                          module.assessments[0].questions.length > 0 && (
+                            <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
+                              <h3 className="font-semibold text-purple-900 mb-4 flex items-center space-x-2">
+                                <Brain className="h-5 w-5" />
+                                <span>QCM - Quiz ({module.assessments[0].questions.length} Questions)</span>
+                              </h3>
+                              <div className="space-y-3">
+                                {module.assessments[0].questions.slice(0, 5).map((question: any, index: number) => (
+                                  <button
+                                    key={`quiz-${index}`}
+                                    onClick={() => startQuiz({
+                                      id: `quiz-${index}`,
+                                      question: question.text,
+                                      options: question.options,
+                                      correctAnswer: question.correctAnswer,
+                                      explanation: question.explanation || 'Good job!',
+                                      difficulty: question.difficulty === 'easy' ? 3 : question.difficulty === 'medium' ? 5 : 8,
+                                      aiGenerated: true
+                                    })}
+                                    className="w-full text-left p-4 bg-white border border-purple-200 rounded-lg hover:bg-purple-50 transition-colors"
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex-1 pr-4">
+                                        <div className="font-medium text-gray-900 mb-1">Question {index + 1}</div>
+                                        <div className="text-sm text-gray-600 line-clamp-2">{question.text}</div>
+                                        <div className="text-xs text-purple-600 mt-1">
+                                          {question.difficulty} • {question.points || 10} points
+                                        </div>
+                                      </div>
+                                      <Brain className="h-5 w-5 text-purple-500 flex-shrink-0" />
+                                    </div>
+                                  </button>
+                                ))}
+                                {module.assessments[0].questions.length > 5 && (
+                                  <div className="text-center text-sm text-gray-600 py-2">
+                                    +{module.assessments[0].questions.length - 5} autres questions disponibles
+                                  </div>
+                                )}
                               </div>
-                            </button>
-                          ))}
-                          {module.assessments[0].questions.length > 5 && (
-                            <div className="text-center text-sm text-gray-600 py-2">
-                              +{module.assessments[0].questions.length - 5} autres questions disponibles
                             </div>
                           )}
-                        </div>
                       </div>
-                    )}
-                  </div>
-                </div>
-                )}
+                    </div>
+              </div>
 
               {/* Completion Button for PPTX mode (since sections are hidden) */}
               {fileTrainingUrl && !moduleCompleted && (
@@ -1256,8 +1256,8 @@ export default function TraineeModulePlayer({
                         QCM - Évaluation du Module
                       </h2>
                       <p className="text-green-700 mt-2">
-                        {module.assessments[0].questions.length} questions • 
-                        Score de passage: {module.assessments[0].passingScore || 70}% • 
+                        {module.assessments[0].questions.length} questions •
+                        Score de passage: {module.assessments[0].passingScore || 70}% •
                         Durée: {module.assessments[0].timeLimit || 30} min
                       </p>
                     </div>
@@ -1288,11 +1288,10 @@ export default function TraineeModulePlayer({
                               {index + 1}
                             </div>
                             <div>
-                              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                question.difficulty === 'easy' ? 'bg-blue-100 text-blue-800' :
+                              <span className={`text-xs px-2 py-1 rounded-full font-medium ${question.difficulty === 'easy' ? 'bg-blue-100 text-blue-800' :
                                 question.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-red-100 text-red-800'
-                              }`}>
+                                  'bg-red-100 text-red-800'
+                                }`}>
                                 {question.difficulty}
                               </span>
                             </div>
@@ -1301,11 +1300,11 @@ export default function TraineeModulePlayer({
                             {question.points || 10} pts
                           </div>
                         </div>
-                        
+
                         <p className="text-gray-900 font-medium mb-3 line-clamp-3">
                           {question.text}
                         </p>
-                        
+
                         <div className="flex items-center justify-between text-sm text-gray-600">
                           <span>{question.options?.length || 4} options</span>
                           <div className="flex items-center text-green-600 group-hover:text-green-700 font-medium">
@@ -1348,7 +1347,7 @@ export default function TraineeModulePlayer({
               {/* Learning Progress */}
               <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <h3 className="font-semibold text-gray-900 mb-4">Your Progress</h3>
-                
+
                 <div className="space-y-4">
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -1356,7 +1355,7 @@ export default function TraineeModulePlayer({
                       <span className="text-sm font-bold text-gray-900">{Math.round(sectionProgress)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div 
+                      <div
                         className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-300"
                         style={{ width: `${sectionProgress}%` }}
                       />
@@ -1391,20 +1390,18 @@ export default function TraineeModulePlayer({
                         setSectionProgress(0);
                         setCurrentTime(0);
                       }}
-                      className={`w-full text-left p-3 rounded-lg transition-colors ${
-                        index === currentSection 
-                          ? 'bg-blue-100 border border-blue-300 text-blue-900' 
-                          : index < currentSection
+                      className={`w-full text-left p-3 rounded-lg transition-colors ${index === currentSection
+                        ? 'bg-blue-100 border border-blue-300 text-blue-900'
+                        : index < currentSection
                           ? 'bg-green-100 border border-green-300 text-green-900'
                           : 'bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center space-x-3">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                          index < currentSection ? 'bg-green-500 text-white' :
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${index < currentSection ? 'bg-green-500 text-white' :
                           index === currentSection ? 'bg-blue-500 text-white' :
-                          'bg-gray-300 text-gray-600'
-                        }`}>
+                            'bg-gray-300 text-gray-600'
+                          }`}>
                           {index < currentSection ? (
                             <CheckCircle className="h-4 w-4" />
                           ) : (
@@ -1471,7 +1468,7 @@ export default function TraineeModulePlayer({
                     </button>
                   </div>
                 </div>
-                
+
                 <div className="p-6">
                   <textarea
                     value={notes}
@@ -1483,7 +1480,7 @@ export default function TraineeModulePlayer({
                     rows={10}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                  
+
                   <div className="flex justify-end space-x-3 mt-4">
                     <button
                       onClick={() => setShowNotes(false)}
@@ -1510,243 +1507,237 @@ export default function TraineeModulePlayer({
           {showModuleQuiz && currentQuiz && (() => {
             const quizQuestions = getQuizQuestions();
             return (
-            <div id="quiz-section" className="bg-white rounded-2xl shadow-xl border border-gray-200 mt-6">
-              <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-indigo-50">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Module Quiz - {module.title}</h3>
-                    {quizQuestions.length > 0 && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        Question {currentQuizIndex + 1} of {quizQuestions.length}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    {quizQuestions.length > 0 && (
-                      <>
-                        <div className="text-2xl font-bold text-green-600">
-                          {Math.round(((currentQuizIndex + (showQuizResult ? 1 : 0)) / quizQuestions.length) * 100)}%
-                        </div>
-                        <div className="text-xs text-gray-600">Progress</div>
-                      </>
-                    )}
+              <div id="quiz-section" className="bg-white rounded-2xl shadow-xl border border-gray-200 mt-6">
+                <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-indigo-50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Module Quiz - {module.title}</h3>
+                      {quizQuestions.length > 0 && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          Question {currentQuizIndex + 1} of {quizQuestions.length}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      {quizQuestions.length > 0 && (
+                        <>
+                          <div className="text-2xl font-bold text-green-600">
+                            {Math.round(((currentQuizIndex + (showQuizResult ? 1 : 0)) / quizQuestions.length) * 100)}%
+                          </div>
+                          <div className="text-xs text-gray-600">Progress</div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="p-6">
-                {currentQuiz && currentQuiz.question && (
-                  <>
-                    <p className="text-gray-700 mb-4 text-lg font-medium">{currentQuiz.question}</p>
-                    
-                    <div className="space-y-2 mb-4">
-                      {currentQuiz.options && Array.isArray(currentQuiz.options) && currentQuiz.options.map((option, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        handleInteraction();
-                        setQuizAnswer(index);
-                      }}
-                      disabled={showQuizResult}
-                      className={`w-full text-left p-4 border-2 rounded-lg transition-colors ${
-                        quizAnswer === index
-                          ? showQuizResult && quizAnswer === currentQuiz.correctAnswer
-                            ? 'border-green-500 bg-green-50'
-                            : showQuizResult && quizAnswer !== currentQuiz.correctAnswer
-                            ? 'border-red-500 bg-red-50'
-                            : 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:bg-gray-50'
-                      } ${showQuizResult ? 'cursor-default' : 'cursor-pointer'}`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{option}</span>
-                        {showQuizResult && quizAnswer === index && quizAnswer !== currentQuiz.correctAnswer && (
-                          <span className="text-red-600 font-bold">✗ Incorrect</span>
-                        )}
-                        {showQuizResult && quizAnswer === index && quizAnswer === currentQuiz.correctAnswer && (
-                          <span className="text-green-600 font-bold">✓ Correct</span>
-                        )}
-                      </div>
-                    </button>
-                      ))}
-                    </div>
-                  </>
-                )}
 
-                {showQuizResult && currentQuiz && (
-                  <div className={`p-4 rounded-lg mb-4 ${
-                    quizAnswer === currentQuiz.correctAnswer
-                      ? 'bg-green-50 border border-green-200'
-                      : 'bg-red-50 border border-red-200'
-                  }`}>
-                    <p className={`font-medium text-lg ${
-                      quizAnswer === currentQuiz.correctAnswer ? 'text-green-800' : 'text-red-800'
-                    }`}>
-                      {quizAnswer === currentQuiz.correctAnswer ? 'Correct! 🎉' : 'Incorrect 😔'}
-                    </p>
-                    {currentQuiz.explanation && (
-                      <p className="text-sm text-gray-700 mt-2">{currentQuiz.explanation}</p>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex space-x-3">
-                  {!showQuizResult ? (
-                    <button
-                      onClick={submitQuizAnswer}
-                      disabled={quizAnswer === null}
-                      className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
-                    >
-                      Submit Answer
-                    </button>
-                  ) : (() => {
-                    const quizQuestions = getQuizQuestions();
-                    return (
+                <div className="p-6">
+                  {currentQuiz && currentQuiz.question && (
                     <>
-                      {quizQuestions.length > 0 && 
-                       currentQuizIndex < (quizQuestions.length - 1) ? (
-                        <button
-                          onClick={handleNextQuiz}
-                          className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors font-semibold flex items-center justify-center space-x-2"
-                        >
-                          <span>Next Question</span>
-                          <ArrowRight className="h-5 w-5" />
-                        </button>
-                      ) : (() => {
-                        // Show quiz summary when all questions are answered
-                        const quizQuestions = getQuizQuestions();
-                        const allAnswered = quizQuestions.every((q: any, idx: number) => quizAnswers[idx] !== undefined);
-                        const quizScore = calculateQuizScore();
-                        
-                        return (
-                        <>
-                          {/* Quiz Summary - Show when all questions are answered */}
-                          {allAnswered && (
-                            <div className={`mb-6 p-6 rounded-lg border-2 ${
-                              quizScore.passed 
-                                ? 'bg-green-50 border-green-300' 
-                                : 'bg-red-50 border-red-300'
-                            }`}>
-                              <div className="flex items-center justify-between mb-4">
-                                <h4 className={`text-xl font-bold ${
-                                  quizScore.passed ? 'text-green-800' : 'text-red-800'
-                                }`}>
-                                  {quizScore.passed ? '✅ Quiz Réussi!' : '❌ Quiz Échoué'}
-                                </h4>
-                                <div className={`text-2xl font-bold ${
-                                  quizScore.passed ? 'text-green-600' : 'text-red-600'
-                                }`}>
-                                  {quizScore.percentage}%
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                  <span className="text-gray-600">Score obtenu:</span>
-                                  <span className="ml-2 font-semibold text-gray-900">
-                                    {quizScore.score} / {quizScore.totalPoints} points
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-gray-600">Score de passage:</span>
-                                  <span className="ml-2 font-semibold text-gray-900">
-                                    {quizScore.passingScoreIsPercentage 
-                                      ? `${quizScore.passingScore}%` 
-                                      : `${quizScore.passingScore} points`}
-                                  </span>
-                                </div>
-                              </div>
-                              {!quizScore.passed && (
-                                <p className="mt-4 text-sm text-red-700">
-                                  ⚠️ Vous devez obtenir au moins {
-                                    quizScore.passingScoreIsPercentage 
-                                      ? `${quizScore.passingScore}%` 
-                                      : `${quizScore.passingScore} points`
-                                  } pour réussir ce quiz.
-                                </p>
+                      <p className="text-gray-700 mb-4 text-lg font-medium">{currentQuiz.question}</p>
+
+                      <div className="space-y-2 mb-4">
+                        {currentQuiz.options && Array.isArray(currentQuiz.options) && currentQuiz.options.map((option, index) => (
+                          <button
+                            key={index}
+                            onClick={() => {
+                              handleInteraction();
+                              setQuizAnswer(index);
+                            }}
+                            disabled={showQuizResult}
+                            className={`w-full text-left p-4 border-2 rounded-lg transition-colors ${quizAnswer === index
+                              ? showQuizResult && quizAnswer === currentQuiz.correctAnswer
+                                ? 'border-green-500 bg-green-50'
+                                : showQuizResult && quizAnswer !== currentQuiz.correctAnswer
+                                  ? 'border-red-500 bg-red-50'
+                                  : 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:bg-gray-50'
+                              } ${showQuizResult ? 'cursor-default' : 'cursor-pointer'}`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">{option}</span>
+                              {showQuizResult && quizAnswer === index && quizAnswer !== currentQuiz.correctAnswer && (
+                                <span className="text-red-600 font-bold">✗ Incorrect</span>
+                              )}
+                              {showQuizResult && quizAnswer === index && quizAnswer === currentQuiz.correctAnswer && (
+                                <span className="text-green-600 font-bold">✓ Correct</span>
                               )}
                             </div>
-                          )}
-                          
-                          {allQuizzesPassed && onNextModule && moduleIndex !== undefined && totalModules && moduleIndex < totalModules - 1 ? (
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {showQuizResult && currentQuiz && (
+                    <div className={`p-4 rounded-lg mb-4 ${quizAnswer === currentQuiz.correctAnswer
+                      ? 'bg-green-50 border border-green-200'
+                      : 'bg-red-50 border border-red-200'
+                      }`}>
+                      <p className={`font-medium text-lg ${quizAnswer === currentQuiz.correctAnswer ? 'text-green-800' : 'text-red-800'
+                        }`}>
+                        {quizAnswer === currentQuiz.correctAnswer ? 'Correct! 🎉' : 'Incorrect 😔'}
+                      </p>
+                      {currentQuiz.explanation && (
+                        <p className="text-sm text-gray-700 mt-2">{currentQuiz.explanation}</p>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex space-x-3">
+                    {!showQuizResult ? (
+                      <button
+                        onClick={submitQuizAnswer}
+                        disabled={quizAnswer === null}
+                        className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
+                      >
+                        Submit Answer
+                      </button>
+                    ) : (() => {
+                      const quizQuestions = getQuizQuestions();
+                      return (
+                        <>
+                          {quizQuestions.length > 0 &&
+                            currentQuizIndex < (quizQuestions.length - 1) ? (
                             <button
-                              onClick={() => {
-                                // Save progress before moving to next module
-                                // Note: Quiz results should already be saved when quiz was passed
-                                if (journeyId && trainee.id) {
-                                  const moduleId = extractObjectId((module as any)._id) || extractObjectId(module.id);
-                                  if (moduleId && /^[0-9a-fA-F]{24}$/.test(moduleId)) {
-                                    const timeSpentMinutes = Math.floor(currentTime / 60);
-                                    // Ensure module is marked as completed (quiz results already saved)
-                                    ProgressService.updateProgress({
-                                      repId: trainee.id,
-                                      journeyId: journeyId,
-                                      moduleId: moduleId,
-                                      progress: 100,
-                                      status: 'completed',
-                                      timeSpent: timeSpentMinutes,
-                                      engagementScore: engagementScore
-                                    }).catch(err => console.error('Error saving progress:', err));
-                                  }
-                                }
-                                onNextModule();
-                              }}
-                              className="flex-1 bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 transition-colors font-semibold flex items-center justify-center space-x-2"
-                            >
-                              <span>Next Module</span>
-                              <ArrowRight className="h-5 w-5" />
-                            </button>
-                          ) : allQuizzesPassed ? (
-                            <button
-                              onClick={onComplete}
+                              onClick={handleNextQuiz}
                               className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors font-semibold flex items-center justify-center space-x-2"
                             >
-                              <span>Complete Module</span>
+                              <span>Next Question</span>
                               <ArrowRight className="h-5 w-5" />
                             </button>
-                          ) : (
-                            <div className="flex-1">
-                              <p className="text-sm text-red-600 mb-2 text-center">
-                                ⚠️ Vous devez répondre correctement à toutes les questions pour passer au module suivant.
-                              </p>
-                              <button
-                                onClick={() => {
-                                  // Reset quiz to allow retry
-                                  setShowQuizResult(false);
-                                  setCurrentQuizIndex(0);
-                                  setQuizAnswer(null);
-                                  setAllQuizzesPassed(false);
-                                  const questions = getQuizQuestions();
-                                  if (questions && questions.length > 0 && questions[0]) {
-                                    const firstQuestion = questions[0];
-                                    setCurrentQuiz({
-                                      id: firstQuestion._id ? `quiz-${firstQuestion._id}` : `quiz-0`,
-                                      question: firstQuestion.question || firstQuestion.text || '',
-                                      options: firstQuestion.options || [],
-                                      correctAnswer: Array.isArray(firstQuestion.correctAnswer) 
-                                        ? firstQuestion.correctAnswer[0] 
-                                        : (firstQuestion.correctAnswer !== undefined ? firstQuestion.correctAnswer : 0),
-                                      explanation: firstQuestion.explanation || 'Please retry the quiz.',
-                                      difficulty: firstQuestion.difficulty === 'easy' ? 3 : firstQuestion.difficulty === 'medium' ? 5 : 8,
-                                      aiGenerated: true
-                                    });
-                                  }
-                                  setQuizAnswers({});
-                                }}
-                                className="w-full bg-orange-600 text-white py-3 px-6 rounded-lg hover:bg-orange-700 transition-colors font-semibold"
-                              >
-                                Retry Quiz
-                              </button>
-                            </div>
-                          )}
+                          ) : (() => {
+                            // Show quiz summary when all questions are answered
+                            const quizQuestions = getQuizQuestions();
+                            const allAnswered = quizQuestions.every((q: any, idx: number) => quizAnswers[idx] !== undefined);
+                            const quizScore = calculateQuizScore();
+
+                            return (
+                              <>
+                                {/* Quiz Summary - Show when all questions are answered */}
+                                {allAnswered && (
+                                  <div className={`mb-6 p-6 rounded-lg border-2 ${quizScore.passed
+                                    ? 'bg-green-50 border-green-300'
+                                    : 'bg-red-50 border-red-300'
+                                    }`}>
+                                    <div className="flex items-center justify-between mb-4">
+                                      <h4 className={`text-xl font-bold ${quizScore.passed ? 'text-green-800' : 'text-red-800'
+                                        }`}>
+                                        {quizScore.passed ? '✅ Quiz Réussi!' : '❌ Quiz Échoué'}
+                                      </h4>
+                                      <div className={`text-2xl font-bold ${quizScore.passed ? 'text-green-600' : 'text-red-600'
+                                        }`}>
+                                        {quizScore.percentage}%
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                      <div>
+                                        <span className="text-gray-600">Score obtenu:</span>
+                                        <span className="ml-2 font-semibold text-gray-900">
+                                          {quizScore.score} / {quizScore.totalPoints} points
+                                        </span>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-600">Score de passage:</span>
+                                        <span className="ml-2 font-semibold text-gray-900">
+                                          {quizScore.passingScoreIsPercentage
+                                            ? `${quizScore.passingScore}%`
+                                            : `${quizScore.passingScore} points`}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    {!quizScore.passed && (
+                                      <p className="mt-4 text-sm text-red-700">
+                                        ⚠️ Vous devez obtenir au moins {
+                                          quizScore.passingScoreIsPercentage
+                                            ? `${quizScore.passingScore}%`
+                                            : `${quizScore.passingScore} points`
+                                        } pour réussir ce quiz.
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+
+                                {allQuizzesPassed && onNextModule && moduleIndex !== undefined && totalModules && moduleIndex < totalModules - 1 ? (
+                                  <button
+                                    onClick={() => {
+                                      // Save progress before moving to next module
+                                      // Note: Quiz results should already be saved when quiz was passed
+                                      if (journeyId && trainee.id) {
+                                        const moduleId = extractObjectId((module as any)._id) || extractObjectId(module.id);
+                                        if (moduleId && /^[0-9a-fA-F]{24}$/.test(moduleId)) {
+                                          const timeSpentMinutes = Math.floor(currentTime / 60);
+                                          // Ensure module is marked as completed (quiz results already saved)
+                                          ProgressService.updateProgress({
+                                            repId: trainee.id,
+                                            journeyId: journeyId,
+                                            moduleId: moduleId,
+                                            progress: 100,
+                                            status: 'completed',
+                                            timeSpent: timeSpentMinutes,
+                                            engagementScore: engagementScore
+                                          }).catch(err => console.error('Error saving progress:', err));
+                                        }
+                                      }
+                                      onNextModule();
+                                    }}
+                                    className="flex-1 bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 transition-colors font-semibold flex items-center justify-center space-x-2"
+                                  >
+                                    <span>Next Module</span>
+                                    <ArrowRight className="h-5 w-5" />
+                                  </button>
+                                ) : allQuizzesPassed ? (
+                                  <button
+                                    onClick={onComplete}
+                                    className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors font-semibold flex items-center justify-center space-x-2"
+                                  >
+                                    <span>Complete Module</span>
+                                    <ArrowRight className="h-5 w-5" />
+                                  </button>
+                                ) : (
+                                  <div className="flex-1">
+                                    <p className="text-sm text-red-600 mb-2 text-center">
+                                      ⚠️ Vous devez répondre correctement à toutes les questions pour passer au module suivant.
+                                    </p>
+                                    <button
+                                      onClick={() => {
+                                        // Reset quiz to allow retry
+                                        setShowQuizResult(false);
+                                        setCurrentQuizIndex(0);
+                                        setQuizAnswer(null);
+                                        setAllQuizzesPassed(false);
+                                        const questions = getQuizQuestions();
+                                        if (questions && questions.length > 0 && questions[0]) {
+                                          const firstQuestion = questions[0];
+                                          setCurrentQuiz({
+                                            id: firstQuestion._id ? `quiz-${firstQuestion._id}` : `quiz-0`,
+                                            question: firstQuestion.question || firstQuestion.text || '',
+                                            options: firstQuestion.options || [],
+                                            correctAnswer: Array.isArray(firstQuestion.correctAnswer)
+                                              ? firstQuestion.correctAnswer[0]
+                                              : (firstQuestion.correctAnswer !== undefined ? firstQuestion.correctAnswer : 0),
+                                            explanation: firstQuestion.explanation || 'Please retry the quiz.',
+                                            difficulty: firstQuestion.difficulty === 'easy' ? 3 : firstQuestion.difficulty === 'medium' ? 5 : 8,
+                                            aiGenerated: true
+                                          });
+                                        }
+                                        setQuizAnswers({});
+                                      }}
+                                      className="w-full bg-orange-600 text-white py-3 px-6 rounded-lg hover:bg-orange-700 transition-colors font-semibold"
+                                    >
+                                      Retry Quiz
+                                    </button>
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
                         </>
-                        );
-                      })()}
-                    </>
-                    );
-                  })()}
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
-            </div>
             );
           })()}
 
@@ -1757,12 +1748,12 @@ export default function TraineeModulePlayer({
                 <div className="p-6 border-b border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900">Knowledge Check</h3>
                 </div>
-                
+
                 <div className="p-6">
                   {currentQuiz && (
                     <>
                       <p className="text-gray-700 mb-4">{currentQuiz.question}</p>
-                      
+
                       <div className="space-y-2 mb-4">
                         {currentQuiz.options.map((option, index) => (
                           <button
@@ -1771,11 +1762,10 @@ export default function TraineeModulePlayer({
                               handleInteraction();
                               setQuizAnswer(index);
                             }}
-                            className={`w-full text-left p-3 border rounded-lg transition-colors ${
-                              quizAnswer === index
-                                ? 'border-blue-500 bg-blue-50'
-                                : 'border-gray-200 hover:bg-gray-50'
-                            }`}
+                            className={`w-full text-left p-3 border rounded-lg transition-colors ${quizAnswer === index
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:bg-gray-50'
+                              }`}
                           >
                             {option}
                           </button>
@@ -1783,16 +1773,14 @@ export default function TraineeModulePlayer({
                       </div>
                     </>
                   )}
-                  
+
                   {showQuizResult && currentQuiz && (
-                    <div className={`p-3 rounded-lg mb-4 ${
-                      quizAnswer === currentQuiz.correctAnswer
-                        ? 'bg-green-50 border border-green-200'
-                        : 'bg-red-50 border border-red-200'
-                    }`}>
-                      <p className={`font-medium ${
-                        quizAnswer === currentQuiz.correctAnswer ? 'text-green-800' : 'text-red-800'
+                    <div className={`p-3 rounded-lg mb-4 ${quizAnswer === currentQuiz.correctAnswer
+                      ? 'bg-green-50 border border-green-200'
+                      : 'bg-red-50 border border-red-200'
                       }`}>
+                      <p className={`font-medium ${quizAnswer === currentQuiz.correctAnswer ? 'text-green-800' : 'text-red-800'
+                        }`}>
                         {quizAnswer === currentQuiz.correctAnswer ? 'Correct! 🎉' : 'Incorrect 😔'}
                       </p>
                       <p className="text-sm text-gray-700 mt-1">{currentQuiz.explanation}</p>
@@ -1834,4 +1822,4 @@ export default function TraineeModulePlayer({
       </div>
     </div>
   );
-}
+})
