@@ -33,6 +33,7 @@ import { TrainingModule, Rep, Exercise, Quiz } from '../../types';
 import DocumentViewer from '../DocumentViewer/DocumentViewer';
 import { ProgressService } from '../../infrastructure/services/ProgressService';
 import { extractObjectId } from '../../lib/mongoUtils';
+import { div } from '@tensorflow/tfjs';
 
 interface TraineeModulePlayerProps {
   module: TrainingModule;
@@ -997,241 +998,242 @@ export default function TraineeModulePlayer({
                       )}
                     </div>
                   </div>
-                  ) : (
-                  /* Fallback: Show video player if no sections */
-                  <div className="bg-gray-900 aspect-video relative">
-                    <video
-                      ref={videoRef}
-                      className="w-full h-full object-cover"
-                      poster="https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop"
-                    />
+                </div>
+              ) : (
+                /* Fallback: Show video player if no sections */
+                <div className="bg-gray-900 aspect-video relative">
+                  <video
+                    ref={videoRef}
+                    className="w-full h-full object-cover"
+                    poster="https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop"
+                  />
 
-                    {/* Video Overlay */}
-                    <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 group">
-                      {/* Center Play Button */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => {
-                            handleInteraction();
-                            setIsPlaying(!isPlaying);
-                          }}
-                          className="w-20 h-20 bg-white bg-opacity-90 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all shadow-lg"
-                        >
-                          {isPlaying ? (
-                            <Pause className="h-10 w-10 text-gray-900 ml-1" />
-                          ) : (
-                            <Play className="h-10 w-10 text-gray-900 ml-2" />
-                          )}
-                        </button>
+                  {/* Video Overlay */}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-300 group">
+                    {/* Center Play Button */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => {
+                          handleInteraction();
+                          setIsPlaying(!isPlaying);
+                        }}
+                        className="w-20 h-20 bg-white bg-opacity-90 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all shadow-lg"
+                      >
+                        {isPlaying ? (
+                          <Pause className="h-10 w-10 text-gray-900 ml-1" />
+                        ) : (
+                          <Play className="h-10 w-10 text-gray-900 ml-2" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Top Overlay */}
+                    <div className="absolute top-4 left-4 right-4 flex justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="bg-black bg-opacity-75 text-white px-4 py-2 rounded-lg">
+                        <div className="text-sm">Section {currentSection + 1}: {sectionTitles[currentSection] || 'Untitled Section'}</div>
                       </div>
-
-                      {/* Top Overlay */}
-                      <div className="absolute top-4 left-4 right-4 flex justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="bg-black bg-opacity-75 text-white px-4 py-2 rounded-lg">
-                          <div className="text-sm">Section {currentSection + 1}: {sectionTitles[currentSection] || 'Untitled Section'}</div>
-                        </div>
-                        <div className="bg-black bg-opacity-75 text-white px-4 py-2 rounded-lg">
-                          <div className="text-sm">{formatTime(currentTime)} / {module.duration}</div>
-                        </div>
+                      <div className="bg-black bg-opacity-75 text-white px-4 py-2 rounded-lg">
+                        <div className="text-sm">{formatTime(currentTime)} / {module.duration}</div>
                       </div>
+                    </div>
 
-                      {/* Bottom Controls */}
-                      <div className="absolute bottom-4 left-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="bg-black bg-opacity-75 rounded-lg p-4">
-                          {/* Progress Bar */}
-                          <div className="w-full bg-gray-600 rounded-full h-2 mb-4">
-                            <div
-                              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${sectionProgress}%` }}
-                            />
+                    {/* Bottom Controls */}
+                    <div className="absolute bottom-4 left-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="bg-black bg-opacity-75 rounded-lg p-4">
+                        {/* Progress Bar */}
+                        <div className="w-full bg-gray-600 rounded-full h-2 mb-4">
+                          <div
+                            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${sectionProgress}%` }}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <button
+                              onClick={() => {
+                                handleInteraction();
+                                setIsPlaying(!isPlaying);
+                              }}
+                              className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
+                            >
+                              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                handleInteraction();
+                                setCurrentTime(0);
+                                setSectionProgress(0);
+                              }}
+                              className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
+                            >
+                              <RotateCcw className="h-5 w-5" />
+                            </button>
+
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => setIsMuted(!isMuted)}
+                                className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
+                              >
+                                {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                              </button>
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={volume}
+                                onChange={(e) => setVolume(parseInt(e.target.value))}
+                                className="w-20"
+                              />
+                            </div>
+
+                            <select
+                              value={playbackSpeed}
+                              onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
+                              className="bg-white bg-opacity-20 text-white rounded px-2 py-1 text-sm"
+                            >
+                              <option value={0.5}>0.5x</option>
+                              <option value={0.75}>0.75x</option>
+                              <option value={1}>1x</option>
+                              <option value={1.25}>1.25x</option>
+                              <option value={1.5}>1.5x</option>
+                              <option value={2}>2x</option>
+                            </select>
                           </div>
 
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <button
-                                onClick={() => {
-                                  handleInteraction();
-                                  setIsPlaying(!isPlaying);
-                                }}
-                                className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
-                              >
-                                {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-                              </button>
+                          <div className="flex items-center space-x-3">
+                            <button
+                              onClick={addBookmark}
+                              className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
+                            >
+                              <Star className="h-4 w-4" />
+                            </button>
 
-                              <button
-                                onClick={() => {
-                                  handleInteraction();
-                                  setCurrentTime(0);
-                                  setSectionProgress(0);
-                                }}
-                                className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
-                              >
-                                <RotateCcw className="h-5 w-5" />
-                              </button>
+                            <button
+                              onClick={() => setShowTranscript(!showTranscript)}
+                              className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                            </button>
 
-                              <div className="flex items-center space-x-2">
-                                <button
-                                  onClick={() => setIsMuted(!isMuted)}
-                                  className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
-                                >
-                                  {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                                </button>
-                                <input
-                                  type="range"
-                                  min="0"
-                                  max="100"
-                                  value={volume}
-                                  onChange={(e) => setVolume(parseInt(e.target.value))}
-                                  className="w-20"
-                                />
-                              </div>
+                            <button
+                              onClick={() => setShowNotes(!showNotes)}
+                              className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
+                            >
+                              <BookOpen className="h-4 w-4" />
+                            </button>
 
-                              <select
-                                value={playbackSpeed}
-                                onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
-                                className="bg-white bg-opacity-20 text-white rounded px-2 py-1 text-sm"
-                              >
-                                <option value={0.5}>0.5x</option>
-                                <option value={0.75}>0.75x</option>
-                                <option value={1}>1x</option>
-                                <option value={1.25}>1.25x</option>
-                                <option value={1.5}>1.5x</option>
-                                <option value={2}>2x</option>
-                              </select>
-                            </div>
-
-                            <div className="flex items-center space-x-3">
-                              <button
-                                onClick={addBookmark}
-                                className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
-                              >
-                                <Star className="h-4 w-4" />
-                              </button>
-
-                              <button
-                                onClick={() => setShowTranscript(!showTranscript)}
-                                className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
-                              >
-                                <MessageSquare className="h-4 w-4" />
-                              </button>
-
-                              <button
-                                onClick={() => setShowNotes(!showNotes)}
-                                className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
-                              >
-                                <BookOpen className="h-4 w-4" />
-                              </button>
-
-                              <button className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors">
-                                <Maximize className="h-4 w-4" />
-                              </button>
-                            </div>
+                            <button className="p-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors">
+                              <Maximize className="h-4 w-4" />
+                            </button>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                  {/* Module Content Sections - Only show if no sections */}
-                  {sections.length === 0 && (
-                    <div className="p-6">
-                      <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-semibold text-gray-900">
-                          Section {currentSection + 1}: {sectionTitles[currentSection]}
-                        </h2>
-                        <button
-                          onClick={handleSectionComplete}
-                          className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                          <span>Mark Complete</span>
-                        </button>
+              {/* Module Content Sections - Only show if no sections */}
+              {sections.length === 0 && (
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Section {currentSection + 1}: {sectionTitles[currentSection]}
+                    </h2>
+                    <button
+                      onClick={handleSectionComplete}
+                      className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      <span>Mark Complete</span>
+                    </button>
+                  </div>
+
+                  {/* Interactive Elements */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Practice Exercises */}
+                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-6">
+                      <h3 className="font-semibold text-blue-900 mb-4 flex items-center space-x-2">
+                        <Target className="h-5 w-5" />
+                        <span>Practice Exercises</span>
+                      </h3>
+                      <div className="space-y-3">
+                        {Array.isArray(module.practicalExercises) && module.practicalExercises.length > 0 ? (
+                          module.practicalExercises.slice(0, 2).map((exercise) => (
+                            <button
+                              key={exercise.id}
+                              onClick={() => handleInteraction()}
+                              className="w-full text-left p-4 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="font-medium text-gray-900">{exercise.title}</div>
+                                  <div className="text-sm text-gray-600">{exercise.type} • Difficulty: {exercise.difficulty}/10</div>
+                                </div>
+                                {exercise.completed && (
+                                  <CheckCircle className="h-5 w-5 text-green-500" />
+                                )}
+                              </div>
+                            </button>
+                          ))
+                        ) : (
+                          <p className="text-sm text-gray-500">No exercises available</p>
+                        )}
                       </div>
+                    </div>
 
-                      {/* Interactive Elements */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Practice Exercises */}
-                        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-6">
-                          <h3 className="font-semibold text-blue-900 mb-4 flex items-center space-x-2">
-                            <Target className="h-5 w-5" />
-                            <span>Practice Exercises</span>
+                    {/* Knowledge Checks / QCM */}
+                    {module.assessments &&
+                      Array.isArray(module.assessments) &&
+                      module.assessments.length > 0 &&
+                      module.assessments[0] &&
+                      Array.isArray(module.assessments[0].questions) &&
+                      module.assessments[0].questions.length > 0 && (
+                        <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
+                          <h3 className="font-semibold text-purple-900 mb-4 flex items-center space-x-2">
+                            <Brain className="h-5 w-5" />
+                            <span>QCM - Quiz ({module.assessments[0].questions.length} Questions)</span>
                           </h3>
                           <div className="space-y-3">
-                            {Array.isArray(module.practicalExercises) && module.practicalExercises.length > 0 ? (
-                              module.practicalExercises.slice(0, 2).map((exercise) => (
-                                <button
-                                  key={exercise.id}
-                                  onClick={() => handleInteraction()}
-                                  className="w-full text-left p-4 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <div className="font-medium text-gray-900">{exercise.title}</div>
-                                      <div className="text-sm text-gray-600">{exercise.type} • Difficulty: {exercise.difficulty}/10</div>
+                            {module.assessments[0].questions.slice(0, 5).map((question: any, index: number) => (
+                              <button
+                                key={`quiz-${index}`}
+                                onClick={() => startQuiz({
+                                  id: `quiz-${index}`,
+                                  question: question.text,
+                                  options: question.options,
+                                  correctAnswer: question.correctAnswer,
+                                  explanation: question.explanation || 'Good job!',
+                                  difficulty: question.difficulty === 'easy' ? 3 : question.difficulty === 'medium' ? 5 : 8,
+                                  aiGenerated: true
+                                })}
+                                className="w-full text-left p-4 bg-white border border-purple-200 rounded-lg hover:bg-purple-50 transition-colors"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1 pr-4">
+                                    <div className="font-medium text-gray-900 mb-1">Question {index + 1}</div>
+                                    <div className="text-sm text-gray-600 line-clamp-2">{question.text}</div>
+                                    <div className="text-xs text-purple-600 mt-1">
+                                      {question.difficulty} • {question.points || 10} points
                                     </div>
-                                    {exercise.completed && (
-                                      <CheckCircle className="h-5 w-5 text-green-500" />
-                                    )}
                                   </div>
-                                </button>
-                              ))
-                            ) : (
-                              <p className="text-sm text-gray-500">No exercises available</p>
+                                  <Brain className="h-5 w-5 text-purple-500 flex-shrink-0" />
+                                </div>
+                              </button>
+                            ))}
+                            {module.assessments[0].questions.length > 5 && (
+                              <div className="text-center text-sm text-gray-600 py-2">
+                                +{module.assessments[0].questions.length - 5} autres questions disponibles
+                              </div>
                             )}
                           </div>
                         </div>
-
-                        {/* Knowledge Checks / QCM */}
-                        {module.assessments &&
-                          Array.isArray(module.assessments) &&
-                          module.assessments.length > 0 &&
-                          module.assessments[0] &&
-                          Array.isArray(module.assessments[0].questions) &&
-                          module.assessments[0].questions.length > 0 && (
-                            <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
-                              <h3 className="font-semibold text-purple-900 mb-4 flex items-center space-x-2">
-                                <Brain className="h-5 w-5" />
-                                <span>QCM - Quiz ({module.assessments[0].questions.length} Questions)</span>
-                              </h3>
-                              <div className="space-y-3">
-                                {module.assessments[0].questions.slice(0, 5).map((question: any, index: number) => (
-                                  <button
-                                    key={`quiz-${index}`}
-                                    onClick={() => startQuiz({
-                                      id: `quiz-${index}`,
-                                      question: question.text,
-                                      options: question.options,
-                                      correctAnswer: question.correctAnswer,
-                                      explanation: question.explanation || 'Good job!',
-                                      difficulty: question.difficulty === 'easy' ? 3 : question.difficulty === 'medium' ? 5 : 8,
-                                      aiGenerated: true
-                                    })}
-                                    className="w-full text-left p-4 bg-white border border-purple-200 rounded-lg hover:bg-purple-50 transition-colors"
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex-1 pr-4">
-                                        <div className="font-medium text-gray-900 mb-1">Question {index + 1}</div>
-                                        <div className="text-sm text-gray-600 line-clamp-2">{question.text}</div>
-                                        <div className="text-xs text-purple-600 mt-1">
-                                          {question.difficulty} • {question.points || 10} points
-                                        </div>
-                                      </div>
-                                      <Brain className="h-5 w-5 text-purple-500 flex-shrink-0" />
-                                    </div>
-                                  </button>
-                                ))}
-                                {module.assessments[0].questions.length > 5 && (
-                                  <div className="text-center text-sm text-gray-600 py-2">
-                                    +{module.assessments[0].questions.length - 5} autres questions disponibles
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                      </div>
-                    </div>
-              </div>
+                      )}
+                  </div>
+                </div>
+              )}
 
               {/* Completion Button for PPTX mode (since sections are hidden) */}
               {fileTrainingUrl && !moduleCompleted && (
@@ -1662,12 +1664,10 @@ export default function TraineeModulePlayer({
                                   <button
                                     onClick={() => {
                                       // Save progress before moving to next module
-                                      // Note: Quiz results should already be saved when quiz was passed
                                       if (journeyId && trainee.id) {
                                         const moduleId = extractObjectId((module as any)._id) || extractObjectId(module.id);
                                         if (moduleId && /^[0-9a-fA-F]{24}$/.test(moduleId)) {
                                           const timeSpentMinutes = Math.floor(currentTime / 60);
-                                          // Ensure module is marked as completed (quiz results already saved)
                                           ProgressService.updateProgress({
                                             repId: trainee.id,
                                             journeyId: journeyId,
@@ -1701,7 +1701,7 @@ export default function TraineeModulePlayer({
                                     </p>
                                     <button
                                       onClick={() => {
-                                        // Reset quiz to allow retry
+                                        // Reset quiz
                                         setShowQuizResult(false);
                                         setCurrentQuizIndex(0);
                                         setQuizAnswer(null);
@@ -1740,86 +1740,8 @@ export default function TraineeModulePlayer({
               </div>
             );
           })()}
-
-          {/* Regular Quiz Modal (for inline quizzes during module) - DISABLED */}
-          {false && !showModuleQuiz && currentQuiz && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg max-w-md w-full">
-                <div className="p-6 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900">Knowledge Check</h3>
-                </div>
-
-                <div className="p-6">
-                  {currentQuiz && (
-                    <>
-                      <p className="text-gray-700 mb-4">{currentQuiz.question}</p>
-
-                      <div className="space-y-2 mb-4">
-                        {currentQuiz.options.map((option, index) => (
-                          <button
-                            key={index}
-                            onClick={() => {
-                              handleInteraction();
-                              setQuizAnswer(index);
-                            }}
-                            className={`w-full text-left p-3 border rounded-lg transition-colors ${quizAnswer === index
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 hover:bg-gray-50'
-                              }`}
-                          >
-                            {option}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-
-                  {showQuizResult && currentQuiz && (
-                    <div className={`p-3 rounded-lg mb-4 ${quizAnswer === currentQuiz.correctAnswer
-                      ? 'bg-green-50 border border-green-200'
-                      : 'bg-red-50 border border-red-200'
-                      }`}>
-                      <p className={`font-medium ${quizAnswer === currentQuiz.correctAnswer ? 'text-green-800' : 'text-red-800'
-                        }`}>
-                        {quizAnswer === currentQuiz.correctAnswer ? 'Correct! 🎉' : 'Incorrect 😔'}
-                      </p>
-                      <p className="text-sm text-gray-700 mt-1">{currentQuiz.explanation}</p>
-                    </div>
-                  )}
-
-                  <div className="flex space-x-3">
-                    {!showQuizResult ? (
-                      <button
-                        onClick={submitQuizAnswer}
-                        disabled={quizAnswer === null}
-                        className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        Submit Answer
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setCurrentQuiz(null);
-                          setIsPlaying(true);
-                        }}
-                        className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
-                      >
-                        Continue Learning
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setCurrentQuiz(null)}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
   );
-})
+}
