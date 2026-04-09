@@ -923,18 +923,13 @@ export default function TraineeModulePlayer({
                       </a>
                     </div>
                   </div>
-                  <div className="relative w-full bg-gray-100" style={{ height: '700px' }}>
-                    <iframe
-                      src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileTrainingUrl)}`}
-                      width="100%"
-                      height="100%"
-                      frameBorder="0"
-                      className="w-full h-full"
-                      title="PowerPoint Presentation Viewer"
-                    >
-                      Ce navigateur ne supporte pas l'affichage des documents.
-                      <a href={fileTrainingUrl} className="text-blue-600 underline">Cliquez ici pour télécharger</a>.
-                    </iframe>
+                  <div className="relative w-full bg-gray-50 flex flex-col" style={{ height: '700px' }}>
+                    <PresentationPreview
+                      presentation={mapModuleToPresentation(module as any)}
+                      onClose={() => {}}
+                      isEmbedded={true}
+                      showPagination={true}
+                    />
                   </div>
 
                   {/* Integration of PresentationPreview Portal */}

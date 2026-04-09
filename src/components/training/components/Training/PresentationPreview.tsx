@@ -21,6 +21,7 @@ interface PresentationPreviewProps {
   isSaving?: boolean;
   fileTrainingUrl?: string; // Optional PPTX URL
   isEmbedded?: boolean;     // Whether to render as a modal or inline
+  showPagination?: boolean; // Whether to show the slide list sidebar
 }
 
 const parseMarkdown = (text: string) => {
@@ -52,7 +53,8 @@ export default function PresentationPreview({
   onSave,
   isSaving = false,
   fileTrainingUrl,
-  isEmbedded = false
+  isEmbedded = false,
+  showPagination = false
 }: PresentationPreviewProps) {
   const [activeSlide, setActiveSlide] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
@@ -233,42 +235,93 @@ export default function PresentationPreview({
       {/* Main Content */}
       <div className="flex-1 flex flex-col bg-slate-50 overflow-hidden print:hidden">
         {/* Header */}
-        <header className="h-16 border-b border-purple-100 flex items-center justify-between px-6 bg-white/80 backdrop-blur-md shrink-0 z-20">
-          <div className="flex items-center gap-4">
-            {onClose && (
-              <button 
-                onClick={onClose}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors group"
+        {!isEmbedded && (
+          <header className="h-16 border-b border-purple-100 flex items-center justify-between px-6 bg-white/80 backdrop-blur-md shrink-0 z-20">
+            <div className="flex items-center gap-4">
+              {onClose && (
+                <button 
+                  onClick={onClose}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors group"
+                >
+                  <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+                  <span className="font-bold text-sm">Retour aux Formations</span>
+                </button>
+              )}
+              <div className="h-6 w-px bg-gray-200 mx-1" />
+              <h2 className="text-lg font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-purple-600 truncate max-w-md">
+                {presentation.title}
+              </h2>
+            </div>
+
+            <div className="flex items-center gap-2">
+
+              <button
+                onClick={handleExportPPTX}
+                disabled={isExporting}
+                className={`px-4 py-2 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-rose-500 to-purple-600 flex items-center gap-2 ${isExporting ? 'opacity-50' : ''}`}
               >
-                <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-                <span className="font-bold text-sm">Retour aux Formations</span>
+                {isExporting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <FileDown size={18} />}
+                <span className="hidden sm:inline">Exporter .pptx</span>
               </button>
-            )}
-            <div className="h-6 w-px bg-gray-200 mx-1" />
-            <h2 className="text-lg font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-purple-600 truncate max-w-md">
-              {presentation.title}
-            </h2>
-          </div>
 
-          <div className="flex items-center gap-2">
+              <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600">
+                <X size={24} />
+              </button>
+            </div>
+          </header>
+        )}
 
-            <button
-              onClick={handleExportPPTX}
-              disabled={isExporting}
-              className={`px-4 py-2 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-rose-500 to-purple-600 flex items-center gap-2 ${isExporting ? 'opacity-50' : ''}`}
-            >
-              {isExporting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <FileDown size={18} />}
-              <span className="hidden sm:inline">Exporter .pptx</span>
-            </button>
+        <div className="flex-1 flex overflow-hidden">
+          {/* Slide Pagination Sidebar (Inline mode) */}
+          {showPagination && (
+            <div className="w-64 border-r border-purple-100 bg-white overflow-y-auto custom-scrollbar flex flex-col shrink-0">
+              <div className="p-4 border-b border-purple-50 bg-slate-50/50">
+                <h3 className="text-xs font-black text-purple-900 uppercase tracking-widest flex items-center gap-2">
+                  <Sparkles size={14} className="text-rose-500" />
+                  Plan des Slides
+                </h3>
+              </div>
+              <div className="flex-1 p-2 space-y-1">
+                {presentation.slides.map((slide, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveSlide(idx)}
+                    className={`w-full text-left p-3 rounded-xl transition-all group relative overflow-hidden ${
+                      activeSlide === idx
+                        ? 'bg-gradient-to-r from-rose-50 to-purple-50 border border-purple-200 shadow-sm'
+                        : 'hover:bg-slate-50 border border-transparent'
+                    }`}
+                  >
+                    {activeSlide === idx && (
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-rose-500 to-purple-600" />
+                    )}
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-[10px] font-bold ${activeSlide === idx ? 'text-rose-600' : 'text-slate-400'}`}>
+                        SLIDE {String(idx + 1).padStart(2, '0')}
+                      </span>
+                      {slide.type === 'cover' && <Sparkles size={10} className="text-amber-400" />}
+                    </div>
+                    <div className={`text-xs font-bold truncate ${activeSlide === idx ? 'text-purple-900' : 'text-slate-600'}`}>
+                      {slide.title}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <div className="p-4 border-t border-purple-50">
+                <button
+                  onClick={handleExportPPTX}
+                  disabled={isExporting}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-purple-600 text-white text-xs font-bold hover:bg-purple-700 transition-colors shadow-lg shadow-purple-200"
+                >
+                  {isExporting ? <RefreshCw className="h-3 w-3 animate-spin" /> : <FileDown size={14} />}
+                  Exporter PPTX
+                </button>
+              </div>
+            </div>
+          )}
 
-            <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600">
-              <X size={24} />
-            </button>
-          </div>
-        </header>
-
-        {/* Slide Canvas or PPTX Viewer */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col items-center justify-center bg-slate-100/50">
+          {/* Slide Canvas or PPTX Viewer */}
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col items-center justify-center bg-slate-100/50">
           {actualUrl ? (
             <div className="w-full h-full max-w-6xl bg-white rounded-3xl shadow-2xl border border-purple-200 overflow-hidden flex flex-col">
               <div className="p-4 border-b border-purple-100 bg-purple-50 flex items-center justify-between shrink-0">
