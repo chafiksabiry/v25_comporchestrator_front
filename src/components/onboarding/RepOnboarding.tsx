@@ -7,7 +7,6 @@ import {
   CheckCircle,
   FileText,
   Clock,
-  Download,
   Play,
   RefreshCw,
   Plus
@@ -407,22 +406,21 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           <>
         <header className="mb-8 overflow-hidden rounded-2xl border border-rose-100/80 bg-white/90 px-6 py-5 shadow-[0_8px_30px_rgb(244,63,94,0.14)] backdrop-blur-sm">
           <div className="h-1 w-full -mx-6 -mt-5 mb-5 rounded-t-2xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600" aria-hidden />
-          <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-fuchsia-600 to-purple-700 md:text-3xl">
-              REP Onboarding
-            </h1>
-            <p className="mt-1 text-sm text-gray-600 md:text-base">Complete your setup and start your journey</p>
-          </div>
-          <div className="hidden space-x-2 md:flex">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-fuchsia-600 to-purple-700 md:text-3xl">
+                REP Onboarding
+              </h1>
+              <p className="mt-1 text-sm text-gray-600 md:text-base">Complete your setup and start your journey</p>
+            </div>
             <button
               type="button"
-              className="flex items-center space-x-2 rounded-xl border border-purple-200 bg-white px-4 py-2 text-sm font-semibold text-purple-800 shadow-sm transition-all hover:border-purple-300 hover:bg-purple-50"
+              onClick={() => setShowTraining({ isOpen: true, newJourney: true })}
+              className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:from-rose-600 hover:via-fuchsia-600 hover:to-purple-700 hover:shadow-lg sm:w-auto"
             >
-              <Download className="h-4 w-4 text-purple-600" />
-              <span>Guide PDF</span>
+              <Plus className="h-4 w-4" />
+              <span>New training journey</span>
             </button>
-          </div>
           </div>
         </header>
 
@@ -558,15 +556,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         );
                       })}
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowTraining({ isOpen: true, newJourney: true })}
-                      className="flex w-full items-center justify-center space-x-2 rounded-2xl border-2 border-dashed border-rose-200 py-4 text-sm font-semibold text-fuchsia-700 transition-all hover:border-fuchsia-400 hover:bg-fuchsia-50/70"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span>Create New Training Journey</span>
-                    </button>
                   </div>
                 )}
               </div>
