@@ -1232,7 +1232,6 @@ export default function TraineeModulePlayer({
                   </div>
                 </div>
                 )}
-              </div>
 
               {/* Completion Button for PPTX mode (since sections are hidden) */}
               {fileTrainingUrl && !moduleCompleted && (
