@@ -16,6 +16,11 @@ interface ContentUploaderProps {
 
 export default function ContentUploader(props: ContentUploaderProps) {
   const { onComplete, onBack, company, gigId } = props;
+  const analysisMetadata = {
+    gigId: gigId || undefined,
+    companyId: company?.id || company?._id || undefined
+  };
+
   const [uploads, setUploads] = useState<ContentUpload[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -110,7 +115,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           console.warn('⚠️ Cloudinary upload failed, attempting fallback to backend storage:', uploadError);
           try {
             if (!upload.file) throw new Error('File content is missing');
-            const backendResult = await AIService.uploadDocumentViaBackend(upload.file);
+            const backendResult = await AIService.uploadDocumentViaBackend(upload.file, analysisMetadata);
             cloudinaryUrl = backendResult.url;
             publicId = backendResult.publicId;
             console.log(`✅ File uploaded via fallback to backend: ${upload.name}`, cloudinaryUrl);
@@ -121,7 +126,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
         // ✅ Vraie analyse avec AI
         if (!upload.file) throw new Error('File content is missing for analysis');
-        const analysis = await AIService.analyzeDocument(upload.file);
+        const analysis = await AIService.analyzeDocument(upload.file, analysisMetadata);
 
         setUploads(prev => prev.map(u =>
           u.id === upload.id
@@ -223,7 +228,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     setIsProcessing(true);
 
     try {
-      const analysis = await AIService.analyzeDocument(upload.file);
+      const analysis = await AIService.analyzeDocument(upload.file, analysisMetadata);
 
       setUploads(prev => prev.map(u =>
         u.id === upload.id
