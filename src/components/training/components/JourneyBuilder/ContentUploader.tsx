@@ -252,26 +252,26 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
   const handleGenerateCurriculum = async () => {
     if (uploads.length === 0) return;
-    
+
     setIsProcessing(true);
     try {
       const mainAnalysis = uploads[0].aiAnalysis;
       if (!mainAnalysis) throw new Error('No analysis found');
-      
+
       const uploadContext = uploads.map(u => ({
         fileName: u.name,
         fileType: u.type,
         keyTopics: u.aiAnalysis?.keyTopics || [],
         learningObjectives: u.aiAnalysis?.learningObjectives || []
       }));
-      
+
       const curriculum = await AIService.generateCurriculum(
         mainAnalysis,
         'General',
         undefined,
         uploadContext as any
       );
-      
+
       setGeneratedCurriculum(curriculum);
       setViewMode('curriculum');
     } catch (error: any) {
@@ -281,14 +281,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setIsProcessing(false);
     }
   };
-  
+
 
   const handleSavePresentation = async () => {
     if (!generatedCurriculum) return;
     try {
       setIsSavingCloud(true);
       console.log('💾 Sauvegarde du parcours de formation généré par IA...');
-      
+
       let fileTrainingUrl: string | undefined = undefined;
       // 1. Generate PPTX & Upload (non-blocking - save journey even if Cloudinary fails)
       if (generatedPresentation) {
@@ -305,7 +305,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           console.warn('⚠️ PPTX Cloudinary upload skipped:', e?.message || e);
         }
       }
-      
+
       const journeyToSave: any = {
         title: generatedCurriculum.title || 'Formation Générée par IA',
         description: generatedCurriculum.description || 'Description générée par IA',
@@ -335,7 +335,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         generatedPresentation, // Pass presentation data to be saved in Cloudinary/DB
         fileTrainingUrl
       );
-      
+
       // On revient à la liste des formations
       if (props.onFinishEarly) {
         props.onFinishEarly(uploads, generatedCurriculum, generatedPresentation, fileTrainingUrl);
@@ -357,7 +357,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
   const handleGeneratePresentation = async () => {
     if (uploads.length === 0) return;
-    
+
     // Si la présentation est déjà générée, on l'ouvre directement
     if (generatedPresentation) {
       setIsPreviewOpen(true);
@@ -367,46 +367,46 @@ export default function ContentUploader(props: ContentUploaderProps) {
     try {
       setIsGeneratingPresentation(true);
       console.log('🤖 Génération de la présentation en cours...');
-      
+
       let curriculum = generatedCurriculum;
-      
+
       // If we don't have the curriculum yet, we generate it first (which generates both in backend)
       if (!curriculum) {
         setIsProcessing(true); // show the global spin state too
         const mainAnalysis = uploads[0].aiAnalysis;
         if (!mainAnalysis) throw new Error('No analysis found');
-        
+
         const uploadContext = uploads.map(u => ({
           fileName: u.name,
           fileType: u.type,
           keyTopics: u.aiAnalysis?.keyTopics || [],
           learningObjectives: u.aiAnalysis?.learningObjectives || []
         }));
-        
+
         curriculum = await AIService.generateCurriculum(
           mainAnalysis,
           'General',
           undefined,
           uploadContext as any
         );
-        
+
         setGeneratedCurriculum(curriculum);
         setIsProcessing(false);
       }
-      
+
       // Look for the presentation directly in the curriculum payload (if backend already generated it)
       let presentation = curriculum?.data?.presentation;
-      
+
       // If not bundled, fetch it specifically
       if (!presentation) {
         presentation = await AIService.generatePresentation(curriculum);
       }
-      
+
       setGeneratedPresentation(presentation);
-      
+
       // Automatically switch to the preview mode so they can see it
       setIsPreviewOpen(true);
-      
+
       console.log('✅ Présentation générée avec succès !');
     } catch (error: any) {
       console.error('Failed to generate presentation:', error);
@@ -439,13 +439,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
     return (
       <div className="min-h-full p-2 md:p-4">
         <div className="max-w-5xl mx-auto bg-white/60 backdrop-blur-xl rounded-3xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-10">
-          <button 
+          <button
             onClick={() => setViewMode('upload')}
             className="flex items-center text-purple-600 font-medium mb-6 hover:text-purple-800 transition-colors"
           >
             <X className="h-5 w-5 mr-1" /> Retour aux fichiers
           </button>
-          
+
           <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
             <div className="bg-gradient-to-r from-rose-500 to-purple-600 p-8 text-white rounded-t-2xl">
               <div className="flex items-center space-x-3 mb-4">
@@ -470,12 +470,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 )}
               </div>
             </div>
-            
+
             <div className="p-8">
               <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
                 <FileText className="h-6 w-6 mr-2 text-purple-500" /> Structure du Programme
               </h3>
-              
+
               <div className="space-y-6">
                 {generatedCurriculum.modules?.map((module: any, idx: number) => (
                   <div key={idx} className="group relative bg-white/40 rounded-2xl p-6 border border-gray-100/50 hover:border-purple-300 hover:shadow-md transition-all">
@@ -488,7 +488,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           <h4 className="text-lg font-bold text-gray-900">{module.title}</h4>
                         </div>
                         <p className="text-gray-600 mb-4 ml-11">{module.description}</p>
-                        
+
                         <div className="ml-11 flex flex-wrap gap-4 text-sm">
                           <div className="flex items-center text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200">
                             <Clock className="h-4 w-4 mr-1.5 text-purple-500" /> {module.duration} min
@@ -497,7 +497,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             <Zap className="h-4 w-4 mr-1.5 text-orange-500" /> {module.difficulty || 'Moyen'}
                           </div>
                         </div>
-                        
+
                         {module.learningObjectives?.length > 0 && (
                           <div className="mt-4 ml-11">
                             <h5 className="text-sm font-semibold text-gray-700 mb-2">Objectifs d'apprentissage :</h5>
@@ -516,16 +516,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   </div>
                 ))}
               </div>
-              
+
               <div className="mt-10 flex flex-col md:flex-row justify-center gap-4">
-                <button 
+                <button
                   onClick={handleGeneratePresentation}
                   disabled={isGeneratingPresentation}
-                  className={`px-8 py-4 rounded-2xl font-bold text-lg shadow-md transition-all flex items-center justify-center ${
-                    generatedPresentation 
+                  className={`px-8 py-4 rounded-2xl font-bold text-lg shadow-md transition-all flex items-center justify-center ${generatedPresentation
                       ? 'bg-amber-100 text-amber-700 border border-amber-300 hover:bg-amber-200'
                       : 'bg-white text-purple-700 border border-purple-200 hover:bg-purple-50 hover:shadow-lg'
-                  }`}
+                    }`}
                 >
                   {isGeneratingPresentation ? (
                     <>
@@ -545,7 +544,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   )}
                 </button>
 
-                <button 
+                <button
                   onClick={handleSavePresentation}
                   disabled={isSavingCloud}
                   className="px-10 py-4 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center"
@@ -869,19 +868,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
 
               <button
-                onClick={handleGenerateCurriculum}
-                disabled={!canProceed || isProcessing}
-                className="px-6 py-3 bg-white text-purple-700 rounded-xl border border-purple-200 hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-sm flex items-center justify-center space-x-2"
-              >
-                {isProcessing ? (
-                  <Wand2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Sparkles className="h-5 w-5" />
-                )}
-                <span>Aperçu du programme</span>
-              </button>
-
-              <button
                 onClick={handleGeneratePresentation}
                 disabled={!canProceed || isProcessing}
                 className="px-6 py-3 bg-white text-rose-600 rounded-xl border border-rose-200 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-sm flex items-center justify-center space-x-2"
@@ -908,11 +894,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
       </div>
 
       {isPreviewOpen && generatedPresentation && (
-        <PresentationPreview 
-          presentation={generatedPresentation} 
+        <PresentationPreview
+          presentation={generatedPresentation}
           onSave={handleSavePresentation}
           isSaving={isSavingCloud}
-          onClose={() => setIsPreviewOpen(false)} 
+          onClose={() => setIsPreviewOpen(false)}
           fileTrainingUrl={fileTrainingUrl}
         />
       )}
