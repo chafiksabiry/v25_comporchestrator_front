@@ -185,7 +185,7 @@ export default function PresentationPreview({
         )}
 
         {layout === 'split' && (
-          <div className="w-1/3 h-full flex flex-col items-center justify-center p-8 text-white relative overflow-hidden shrink-0" style={{ background: `linear-gradient(180deg, ${accentColor}, ${secondaryColor})`, color: '#ffffff' }}>
+          <div className="flex h-full min-h-0 w-1/3 shrink-0 flex-col items-center justify-start overflow-y-auto p-8 pt-10 text-white relative" style={{ background: `linear-gradient(180deg, ${accentColor}, ${secondaryColor})`, color: '#ffffff' }}>
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-16 -mt-16 print:hidden" />
             <h1 className="text-3xl font-black text-center relative z-10 leading-tight drop-shadow-md">
               {slide.title}
@@ -194,7 +194,7 @@ export default function PresentationPreview({
         )}
 
         {/* Content Area */}
-        <div className={`flex-1 p-8 md:p-12 lg:p-14 flex flex-col justify-center relative z-10 overflow-y-auto custom-scrollbar ${layout === 'split' ? '' : 'w-full'}`}>
+        <div className={`relative z-10 flex min-h-0 flex-1 flex-col justify-start overflow-y-auto p-8 md:p-12 lg:p-14 custom-scrollbar ${layout === 'split' ? '' : 'w-full'}`}>
           {layout !== 'split' && (
             <h1 className="text-3xl md:text-5xl font-black mb-6 leading-[1.2] tracking-tight"
               style={{
@@ -324,7 +324,7 @@ export default function PresentationPreview({
           </header>
         )}
 
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex min-h-0 flex-1 overflow-hidden">
           {/* Slide Pagination Sidebar (Inline mode) */}
           {showPagination && (
             <div className="w-64 border-r border-purple-100 bg-white overflow-y-auto custom-scrollbar flex flex-col shrink-0">
@@ -406,7 +406,7 @@ export default function PresentationPreview({
           )}
 
           {/* Slide Canvas or PPTX Viewer */}
-          <div className={`relative flex flex-1 flex-col items-center justify-center overflow-y-auto p-4 md:p-8 group/canvas ${isEmbedded ? (embedLightCanvas ? 'bg-slate-100/80' : 'bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950') : 'bg-slate-100/50'}`}>
+          <div className={`group/canvas relative flex min-h-0 flex-1 flex-col items-center overflow-y-auto overscroll-contain px-4 pb-10 pt-4 md:px-8 md:pb-12 md:pt-6 ${isEmbedded ? (embedLightCanvas ? 'bg-slate-100/80' : 'bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950') : 'bg-slate-100/50'}`}>
             {/* Quick Navigation Buttons (Floating) */}
             {!actualUrl && (
               <>
@@ -431,7 +431,7 @@ export default function PresentationPreview({
                 </div>
 
                 {/* Floating AI Bubble entry point */}
-                <div className="absolute top-6 right-6 z-20">
+                <div className={`absolute z-20 ${isEmbedded ? 'bottom-24 right-4 top-auto md:right-6' : 'right-6 top-6'}`}>
                   {!showFloatingPrompt ? (
                     <button
                       onClick={() => setShowFloatingPrompt(true)}
