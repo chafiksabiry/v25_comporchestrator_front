@@ -34,11 +34,43 @@ export default function ContentUploader(props: ContentUploaderProps) {
   /** When a presentation exists: split workspace — program preview vs upload sources */
   const [workspaceTab, setWorkspaceTab] = useState<'artifact' | 'sources'>('artifact');
   const [isExportingPptx, setIsExportingPptx] = useState(false);
+  const [isGeneratingPresentation, setIsGeneratingPresentation] = useState(false);
+  const [generatedPresentation, setGeneratedPresentation] = useState<any>(null);
+  const [fileTrainingUrl, setFileTrainingUrl] = useState<string | undefined>(undefined);
+  /** Gig-only: si coché, la génération s’appuie sur les documents KB du Job */
+  const [useKbForPresentation, setUseKbForPresentation] = useState(false);
+  const [gigKbDocuments, setGigKbDocuments] = useState<
+    Array<{ _id: string; name: string; fileType?: string; summary?: string; createdAt?: string }>
+  >([]);
+  const [isLoadingGigKbDocs, setIsLoadingGigKbDocs] = useState(false);
 
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
+
+  useEffect(() => {
+    if (!gigId || !useKbForPresentation) {
+      setGigKbDocuments([]);
+      return;
+    }
+    let cancelled = false;
+    setIsLoadingGigKbDocs(true);
+    AIService.listGigKnowledgeDocuments(gigId)
+      .then((docs) => {
+        if (!cancelled) setGigKbDocuments(docs as any);
+      })
+      .catch((err) => {
+        console.error('[ContentUploader] KB documents list failed:', err);
+        if (!cancelled) setGigKbDocuments([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingGigKbDocs(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [gigId, useKbForPresentation]);
 
   const getFileIcon = (type: ContentUpload['type']) => {
     switch (type) {
@@ -399,11 +431,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
     }
   };
 
-  // Generate Presentation State
-  const [isGeneratingPresentation, setIsGeneratingPresentation] = useState(false);
-  const [generatedPresentation, setGeneratedPresentation] = useState<any>(null);
-  const [fileTrainingUrl, setFileTrainingUrl] = useState<string | undefined>(undefined);
-
   const generatePresentationFromState = async (regenerate: boolean) => {
     if (uploads.length === 0 && !gigId) return;
 
@@ -421,6 +448,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       console.log('🤖 Génération de la présentation en cours...');
 
       let curriculum = generatedCurriculum;
+      const gigOnly = uploads.length === 0 && !!gigId;
 
       if (!curriculum) {
         setIsProcessing(true);
@@ -446,6 +474,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
           curriculum = await fetchCurriculumFromGig();
         }
 
+        setGeneratedCurriculum(curriculum);
+        setIsProcessing(false);
+      } else if (regenerate && gigOnly) {
+        setIsProcessing(true);
+        curriculum = await fetchCurriculumFromGig();
         setGeneratedCurriculum(curriculum);
         setIsProcessing(false);
       }
@@ -503,8 +536,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
    */
   const fetchCurriculumFromGig = async () => {
     if (!gigId) throw new Error('No Gig selected');
-    console.log('🎯 Generating from Gig KB:', gigId);
-    return await AIService.generateTrainingFromGig(gigId);
+    console.log('🎯 Generating from Gig:', gigId, 'useKnowledgeBase:', useKbForPresentation);
+    return await AIService.generateTrainingFromGig(gigId, { useKnowledgeBase: useKbForPresentation });
   };
 
   const getStatusIcon = (status: ContentUpload['status']) => {
@@ -843,6 +876,57 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 ))}
               </div>
 
+              {isGigOnly && (
+                <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-rose-100 bg-rose-50/50 px-4 py-4">
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-4 w-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500"
+                      checked={useKbForPresentation}
+                      onChange={(e) => setUseKbForPresentation(e.target.checked)}
+                    />
+                    <span className="text-sm font-medium text-gray-800">
+                      Use KB for generate presentation
+                      <span className="mt-1 block text-xs font-normal text-gray-600">
+                        La présentation sera ancrée sur les documents de la base de connaissances de ce Job.
+                      </span>
+                    </span>
+                  </label>
+                  {useKbForPresentation && (
+                    <div className="mt-4 border-t border-rose-100/80 pt-4">
+                      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-rose-700">Documents liés au Job</p>
+                      {isLoadingGigKbDocs ? (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Chargement…
+                        </div>
+                      ) : gigKbDocuments.length === 0 ? (
+                        <p className="text-sm text-amber-800">
+                          Aucun document KB pour ce Job — la génération s&apos;appuiera surtout sur la fiche Job.
+                        </p>
+                      ) : (
+                        <ul className="max-h-48 space-y-2 overflow-y-auto text-sm">
+                          {gigKbDocuments.map((doc) => (
+                            <li
+                              key={doc._id}
+                              className="flex items-start gap-2 rounded-lg bg-white/90 px-3 py-2 shadow-sm"
+                            >
+                              <FileText className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
+                              <div className="min-w-0">
+                                <div className="font-medium text-gray-900">{doc.name}</div>
+                                {doc.summary ? (
+                                  <p className="line-clamp-2 text-xs text-gray-600">{doc.summary}</p>
+                                ) : null}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="mt-10 flex flex-col md:flex-row justify-center gap-4">
                 <button
                   onClick={handleGeneratePresentation}
@@ -865,7 +949,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   ) : (
                     <>
                       <FileIcon className="mr-2 h-5 w-5" />
-                      {isGigOnly ? 'Générer depuis le Job' : 'Générer une Présentation'}
+                      Générer la présentation
                     </>
                   )}
                 </button>
@@ -1166,6 +1250,57 @@ export default function ContentUploader(props: ContentUploaderProps) {
             </div>
           )} */}
 
+          {isGigOnly && (
+            <div className="mt-6 rounded-2xl border border-rose-100 bg-rose-50/40 px-4 py-4">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500"
+                  checked={useKbForPresentation}
+                  onChange={(e) => setUseKbForPresentation(e.target.checked)}
+                />
+                <span className="text-sm font-medium text-gray-800">
+                  Use KB for generate presentation
+                  <span className="mt-1 block text-xs font-normal text-gray-600">
+                    La présentation sera ancrée sur les documents KB de ce Job lorsque vous cliquez sur Générer.
+                  </span>
+                </span>
+              </label>
+              {useKbForPresentation && (
+                <div className="mt-4 border-t border-rose-100/80 pt-4">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-rose-700">Documents liés au Job</p>
+                  {isLoadingGigKbDocs ? (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Chargement…
+                    </div>
+                  ) : gigKbDocuments.length === 0 ? (
+                    <p className="text-sm text-amber-800">
+                      Aucun document KB pour ce Job — la génération s&apos;appuiera surtout sur la fiche Job.
+                    </p>
+                  ) : (
+                    <ul className="max-h-48 space-y-2 overflow-y-auto text-sm">
+                      {gigKbDocuments.map((doc) => (
+                        <li
+                          key={doc._id}
+                          className="flex items-start gap-2 rounded-lg bg-white/90 px-3 py-2 shadow-sm"
+                        >
+                          <FileText className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
+                          <div className="min-w-0">
+                            <div className="font-medium text-gray-900">{doc.name}</div>
+                            {doc.summary ? (
+                              <p className="line-clamp-2 text-xs text-gray-600">{doc.summary}</p>
+                            ) : null}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Navigation */}
           <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mt-8 pt-6 border-t border-gray-200">
             <button
@@ -1203,7 +1338,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 ) : (
                   <FileIcon className="h-5 w-5" />
                 )}
-                <span>{isGigOnly ? 'Générer depuis le Job' : 'Générer la présentation'}</span>
+                <span>Générer la présentation</span>
               </button>
 
               {/* <button
