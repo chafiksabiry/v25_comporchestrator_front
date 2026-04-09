@@ -239,7 +239,7 @@ export default function PresentationPreview({
   };
 
   const content = (
-    <div className={`relative w-full h-full min-h-[750px] border border-purple-100 bg-white flex flex-col md:flex-row rounded-3xl shadow-xl animate-in fade-in duration-300 overflow-hidden text-gray-900 print:bg-white print:static print:h-auto print:overflow-visible print:block`}>
+    <div className={`${isEmbedded ? 'relative w-full h-full min-h-[750px]' : 'fixed inset-0 z-[9999] bg-white overflow-y-auto'} border border-purple-100 flex flex-col md:flex-row rounded-3xl shadow-xl animate-in fade-in duration-300 overflow-hidden text-gray-900 print:bg-white print:static print:h-auto print:overflow-visible print:block`}>
 
       {/* Premium Print Styles */}
       <style dangerouslySetInnerHTML={{
@@ -510,6 +510,10 @@ export default function PresentationPreview({
     </div>
   );
 
-  return content;
+  if (isEmbedded) {
+    return content;
+  }
+
+  return createPortal(content, document.body);
 }
 
