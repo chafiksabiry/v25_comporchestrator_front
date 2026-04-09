@@ -432,7 +432,7 @@ export class AIService {
   static async exportPresentationToPPTX(presentation: any): Promise<void> {
     try {
       const token = ApiClient.getToken();
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://v25platformtrainingbackend-production.up.railway.app';
+      const apiUrl = import.meta.env.VITE_API_TRAINING_URL || 'https://v25platformtrainingbackend-production.up.railway.app';
       const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
 
       console.log('📤 Exporting presentation to PPTX (Python Premium Mode)...');
@@ -501,7 +501,7 @@ export class AIService {
    */
   static async exportToPowerPoint(presentation: any): Promise<Blob> {
     const token = ApiClient.getToken();
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://v25platformtrainingbackend-production.up.railway.app';
+    const apiUrl = import.meta.env.VITE_API_TRAINING_URL || 'https://v25platformtrainingbackend-production.up.railway.app';
     const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
 
     const response = await fetch(`${baseUrl}/api/ai/export-pptx`, {
