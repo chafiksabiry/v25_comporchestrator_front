@@ -391,10 +391,19 @@ export class AIService {
   }
 
   /**
-   * Génère une formation complète à partir du Job (Gig) et de sa base de connaissances existante
+   * Génère une formation complète à partir du Job (Gig).
+   * @param options.useKnowledgeBase false = programme/présentation sans contenu des documents KB du Gig.
    */
-  static async generateTrainingFromGig(gigId: string): Promise<Curriculum> {
-    const response = await ApiClient.post<AiResponse<any>>(`/api/ai/generate-training/${gigId}`);
+  static async generateTrainingFromGig(
+    gigId: string,
+    options?: { useKnowledgeBase?: boolean }
+  ): Promise<Curriculum> {
+    const body =
+      options != null && options.useKnowledgeBase !== undefined
+        ? { useKnowledgeBase: options.useKnowledgeBase }
+        : undefined;
+
+    const response = await ApiClient.post<AiResponse<any>>(`/api/ai/generate-training/${gigId}`, body);
 
     if (!response.data.success && !response.data.journey) {
       throw new Error(response.data.error || 'Gig training generation failed');
@@ -427,6 +436,26 @@ export class AIService {
     } as any;
 
     return curriculum;
+  }
+
+  /** Documents enregistrés en KB pour ce Gig (analyse / méta). */
+  static async listGigKnowledgeDocuments(gigId: string): Promise<
+    Array<{
+      _id: string;
+      name: string;
+      fileType?: string;
+      description?: string;
+      createdAt?: string;
+      summary?: string;
+      keyTerms?: string[];
+    }>
+  > {
+    const response = await ApiClient.get<{ success?: boolean; documents?: any[] }>(
+      `/api/ai/gig/${gigId}/knowledge-documents`
+    );
+    const raw = response.data as any;
+    const list = raw.documents ?? raw.data?.documents ?? [];
+    return Array.isArray(list) ? list : [];
   }
 
   /**
