@@ -120,6 +120,20 @@ export interface RepProgress {
   lastAccessed: string;
 }
 
+export interface ISlideVisualElement {
+  type: 'rectangle' | 'rounded-rectangle' | 'circle' | 'ellipse' | 'triangle' | 'line' | 'arrow';
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  fill?: string;
+  stroke?: string;
+  strokeWidth?: number;
+  opacity?: number;
+  rotation?: number;
+  label?: string;
+}
+
 export interface ISlide {
   id: number;
   type: string;
@@ -134,8 +148,13 @@ export interface ISlide {
     theme?: string;
     accent?: string;
     icon?: string;
+    backgroundHex?: string;
+    textHex?: string;
+    accentHex?: string;
   };
   imageDescription?: string;
+  illustrationUrl?: string;
+  visualElements?: ISlideVisualElement[];
 }
 
 export interface IPresentation {
