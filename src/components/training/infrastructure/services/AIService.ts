@@ -534,6 +534,24 @@ export class AIService {
   }
 
   /**
+   * Modifie une slide spécifique via un prompt IA
+   */
+  static async editSlide(slide: any, prompt: string): Promise<any> {
+    try {
+      const response = await ApiClient.post<AiResponse<any>>('/api/ai/edit-slide', { slide, prompt });
+      
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Slide modification failed');
+      }
+      
+      return response.data.slide;
+    } catch (error: any) {
+      console.error('❌ Error in editSlide:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Génère un podcast audio de haute qualité avec Vertex AI
    */
   static async generatePodcast(title: string, content: string): Promise<string | undefined> {
