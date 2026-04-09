@@ -289,6 +289,21 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setIsSavingCloud(true);
       console.log('💾 Sauvegarde du parcours de formation généré par IA...');
       
+      let fileTrainingUrl = undefined;
+      // 1. Generate PPTX & Upload
+      if (generatedPresentation) {
+        try {
+          console.log('📦 Génération du PPTX pour sauvegarde...');
+          const pptxBlob = await AIService.exportToPowerPoint(generatedPresentation);
+          const file = new File([pptxBlob], `${generatedCurriculum.title || 'Formation'}.pptx`, { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
+          const uploadResult = await cloudinaryService.uploadDocument(file, 'trainings/pptx');
+          fileTrainingUrl = uploadResult.secureUrl;
+          console.log('✅ PPTX enregistré dans Cloudinary:', fileTrainingUrl);
+        } catch (e) {
+          console.error("Erreur PPTX:", e);
+        }
+      }
+      
       const journeyToSave: any = {
         title: generatedCurriculum.title || 'Formation Générée par IA',
         description: generatedCurriculum.description || 'Description générée par IA',
@@ -314,7 +329,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
         company?.id || '',
         gigId || '',
         undefined, // finalExam
-        generatedPresentation
+        undefined, // journeyId
+        generatedPresentation, // Pass presentation data to be saved in Cloudinary/DB
+        fileTrainingUrl
       );
       
       // On revient à la liste des formations
