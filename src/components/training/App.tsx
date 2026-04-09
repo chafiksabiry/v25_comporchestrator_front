@@ -73,12 +73,15 @@ export function AppContent({
   isEmbedded = false,
   startWithJourneyBuilder = false,
   startWithManualTraining = false,
+  repOnboardingLayout = false,
   onJourneyLaunch
 }: {
   initialJourneyId?: string,
   isEmbedded?: boolean,
   startWithJourneyBuilder?: boolean,
   startWithManualTraining?: boolean,
+  /** Simpler modules + slides only (no PPTX download, fullscreen, or “Continue to AI enhancement”) */
+  repOnboardingLayout?: boolean,
   onJourneyLaunch?: () => void
 } = {}) {
   // Get journey ID from route params (inside Router context)
@@ -928,7 +931,13 @@ export function AppContent({
       setShowJourneyBuilder(false);
       return null;
     }
-    return <JourneyBuilder onComplete={handleJourneyComplete} forceNew={startWithJourneyBuilder} />;
+    return (
+      <JourneyBuilder
+        onComplete={handleJourneyComplete}
+        forceNew={startWithJourneyBuilder}
+        repOnboardingLayout={repOnboardingLayout}
+      />
+    );
   }
 
   // Show journey list first for trainees ONLY if they have journeys, otherwise show normal dashboard

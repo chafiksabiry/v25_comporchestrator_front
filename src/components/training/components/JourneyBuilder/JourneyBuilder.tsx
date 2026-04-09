@@ -11,9 +11,10 @@ import { DraftService } from '../../infrastructure/services/DraftService';
 interface JourneyBuilderProps {
   onComplete: (journey: TrainingJourney, modules: TrainingModule[], enrolledReps: Rep[]) => void;
   forceNew?: boolean;
+  repOnboardingLayout?: boolean;
 }
 
-export default function JourneyBuilder({ onComplete, forceNew = false }: JourneyBuilderProps) {
+export default function JourneyBuilder({ onComplete, forceNew = false, repOnboardingLayout = false }: JourneyBuilderProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [company, setCompany] = useState<Company | null>(null);
   const [journey, setJourney] = useState<TrainingJourney | null>(null);
@@ -253,6 +254,7 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
             onBack={() => setCurrentStep(0)}
             company={company}
             gigId={selectedGigId}
+            repOnboardingLayout={repOnboardingLayout}
           />
         );
       case 2:
@@ -305,7 +307,7 @@ export default function JourneyBuilder({ onComplete, forceNew = false }: Journey
       <div
         ref={mainScrollRef}
         data-journey-main-scroll
-        className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain"
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain"
       >
         {renderCurrentStep()}
       </div>
