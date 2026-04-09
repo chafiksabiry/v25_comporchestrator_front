@@ -331,6 +331,63 @@ export class AIService {
   }
 
   /**
+   * Synthétise plusieurs analyses en un seul programme cohérent
+   */
+  static async synthesizeAnalyses(analyses: DocumentAnalysis[]): Promise<Curriculum> {
+    const response = await ApiClient.post<Curriculum & AiBaseResponse & { data: any }>('/api/ai/synthesize-programs', {
+      analyses
+    });
+
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Synthesis failed');
+    }
+
+    // Backend synthesis returns { success: true, title, description, ..., data: { program, presentation, unifiedAnalysis } }
+    const result = {
+      ...response.data,
+      data: response.data.data // contains unified context for later presentation generation
+    };
+
+    return result as unknown as Curriculum;
+  }
+
+  /**
+   * Génère une formation complète à partir du Job (Gig) et de sa base de connaissances existante
+   */
+  static async generateTrainingFromGig(gigId: string): Promise<Curriculum> {
+    const response = await ApiClient.post<AiResponse<any>>(`/api/ai/generate-training/${gigId}`);
+
+    if (!response.data.success && !response.data.journey) {
+      throw new Error(response.data.error || 'Gig training generation failed');
+    }
+
+    const journey = response.data.journey;
+    
+    // Transform journey into Curriculum format
+    const curriculum: Curriculum = {
+      success: true,
+      title: journey.title || journey.name || 'Formation Job',
+      description: journey.description || '',
+      totalDuration: parseInt(journey.estimatedDuration || '120'),
+      methodology: 'Méthode 360° Grounded',
+      modules: (journey.modules || []).map((m: any) => ({
+        title: m.title,
+        description: m.description,
+        duration: m.duration || 30,
+        difficulty: m.difficulty || 'intermediate',
+        learningObjectives: m.learningObjectives || [],
+        sections: m.sections || []
+      })),
+      // Store full data for presentation access
+      data: {
+        presentation: journey.methodologyData?.presentation || journey.presentation
+      }
+    } as any;
+
+    return curriculum;
+  }
+
+  /**
    * Génère un script vidéo détaillé avec GPT-4
    */
   static async generateVideoScript(
