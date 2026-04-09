@@ -76,7 +76,8 @@ export const mapModuleToPresentation = (module: TrainingModule): IPresentation =
     title: module.title,
     totalSlides: slidesWithCover.length,
     slides: slidesWithCover,
-    estimatedTime: `${module.duration} min`
+    estimatedTime: `${module.duration} min`,
+    filetraining: (module as any).filetraining || (module as any).fileTrainingUrl
   };
 };
 
@@ -179,6 +180,7 @@ export const mapJourneyToPresentation = (journey: any): IPresentation => {
     title: title,
     totalSlides: allSlides.length,
     slides: allSlides,
-    estimatedTime: 'N/A'
+    estimatedTime: 'N/A',
+    filetraining: journey.filetraining || journey.fileTrainingUrl
   };
 };

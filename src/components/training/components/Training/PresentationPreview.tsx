@@ -54,6 +54,9 @@ export default function PresentationPreview({
   const [activeSlide, setActiveSlide] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
 
+  // Normalize PPT URL to handle multiple field variations (lowercase, camelCase, etc.)
+  const actualUrl = fileTrainingUrl || (presentation as any).filetraining || (presentation as any).fileTrainingUrl || (presentation as any).presentationUrl;
+
   const handleDownloadJSON = () => {
     const blob = new Blob([JSON.stringify(presentation, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -288,7 +291,7 @@ export default function PresentationPreview({
 
         {/* Slide Canvas or PPTX Viewer */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col items-center justify-center bg-slate-100/50">
-           {fileTrainingUrl ? (
+           {actualUrl ? (
              <div className="w-full h-full max-w-6xl bg-white rounded-3xl shadow-2xl border border-purple-200 overflow-hidden flex flex-col">
                <div className="p-4 border-b border-purple-100 bg-purple-50 flex items-center justify-between shrink-0">
                  <div className="flex items-center space-x-3">
@@ -305,7 +308,7 @@ export default function PresentationPreview({
                </div>
                <div className="flex-1 bg-gray-50 relative">
                  <iframe
-                   src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileTrainingUrl)}`}
+                   src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(actualUrl)}`}
                    width="100%"
                    height="100%"
                    frameBorder="0"

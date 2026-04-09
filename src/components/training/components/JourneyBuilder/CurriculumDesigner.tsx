@@ -26,9 +26,10 @@ interface CurriculumDesignerProps {
   gigId?: string | null;
   onComplete: (modules: TrainingModule[]) => void;
   onBack: () => void;
+  fileTrainingUrl?: string;
 }
 
-export default function CurriculumDesigner({ uploads, methodology, gigId, onComplete }: CurriculumDesignerProps) {
+export default function CurriculumDesigner({ uploads, methodology, gigId, onComplete, onBack, fileTrainingUrl }: CurriculumDesignerProps) {
   const [modules, setModules] = React.useState<TrainingModule[]>([]);
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [editingModuleId, setEditingModuleId] = React.useState<string | null>(null);
@@ -766,6 +767,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
         <PresentationPreview 
           presentation={presentation} 
           onClose={() => setIsPreviewOpen(false)} 
+          fileTrainingUrl={fileTrainingUrl}
         />
       )}
     </div>
