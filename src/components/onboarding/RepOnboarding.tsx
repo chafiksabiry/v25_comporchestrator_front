@@ -392,7 +392,20 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-7xl">
+        {selectedPresentation ? (
+          <PresentationPreview 
+            presentation={selectedPresentation} 
+            onClose={() => {
+              setSelectedPresentation(null);
+              setActiveJourneyId(null);
+            }} 
+            onSave={handleJourneyComplete}
+            isSaving={isCompleting}
+            isEmbedded={true}
+          />
+        ) : (
+          <>
         <header className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">REP Onboarding</h1>
@@ -578,19 +591,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               </div>
             </div>
           </div>
-        </div>
+          </>
+        )}
       </div>
-      {selectedPresentation && (
-        <PresentationPreview 
-          presentation={selectedPresentation} 
-          onClose={() => {
-            setSelectedPresentation(null);
-            setActiveJourneyId(null);
-          }} 
-          onSave={handleJourneyComplete}
-          isSaving={isCompleting}
-        />
-      )}
     </div>
   );
 };
