@@ -89,9 +89,12 @@ export function normalizeObjectIds<T>(data: any): T {
       if (data.hasOwnProperty(key)) {
         const value = data[key];
         
-        // Special handling for ID fields
+        // Special handling for ID fields (Mongo ObjectId / Extended JSON only).
+        // Numeric `id` (e.g. slide index 1..17, module plan id) must stay a number — not coerced via extractObjectId.
         if (key === '_id' || key === 'id' || key.endsWith('Id') || key.endsWith('Ids')) {
-          if (Array.isArray(value)) {
+          if (key === 'id' && typeof value === 'number') {
+            normalized[key] = value;
+          } else if (Array.isArray(value)) {
             normalized[key] = value.map((item: any) => extractObjectId(item));
           } else {
             normalized[key] = extractObjectId(value);

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen } from 'lucide-react';
 import { ContentUpload } from '../../types/core';
-import { AIService } from '../../infrastructure/services/AIService';
+import { AIService, normalizePresentationFromApi } from '../../infrastructure/services/AIService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
 import { cloudinaryService } from '../../lib/cloudinaryService';
 import PresentationPreview from '../Training/PresentationPreview';
@@ -297,9 +297,27 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
 
       setGeneratedCurriculum(curriculum);
-      // Automatically store presentation if bundled
-      if (curriculum?.data?.presentation) {
-        setGeneratedPresentation(curriculum.data.presentation);
+
+      let presentation =
+        normalizePresentationFromApi(curriculum?.data?.presentation) ||
+        normalizePresentationFromApi((curriculum as any)?.presentation) ||
+        null;
+
+      if (!presentation?.slides?.length) {
+        try {
+          console.warn('[ContentUploader] Bundled presentation missing or empty slides — fetching via generate-presentation');
+          presentation =
+            normalizePresentationFromApi(await AIService.generatePresentation(curriculum)) || presentation;
+        } catch (fallbackErr) {
+          console.error('[ContentUploader] Fallback presentation generation failed:', fallbackErr);
+        }
+      }
+
+      if (presentation?.slides?.length) {
+        setGeneratedPresentation(presentation);
+      } else {
+        setGeneratedPresentation(null);
+        console.warn('[ContentUploader] No slides to preview after curriculum generation');
       }
 
       setViewMode('curriculum');
@@ -430,13 +448,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
         setIsProcessing(false);
       }
 
-      let presentation = curriculum?.data?.presentation;
+      let presentation =
+        normalizePresentationFromApi(curriculum?.data?.presentation) ||
+        curriculum?.data?.presentation ||
+        null;
 
-      if (!presentation) {
+      if (!presentation?.slides?.length) {
         presentation = await AIService.generatePresentation(curriculum);
       }
 
-      setGeneratedPresentation(presentation);
+      setGeneratedPresentation(normalizePresentationFromApi(presentation) || presentation);
       setIsPreviewOpen(false);
       setWorkspaceTab('artifact');
 

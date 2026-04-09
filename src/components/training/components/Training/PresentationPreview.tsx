@@ -68,14 +68,19 @@ export default function PresentationPreview({
   // Sync with prop if it changes (e.g. initial generation)
   React.useEffect(() => {
     setLocalPresentation(presentation);
+    setActiveSlide(0);
   }, [presentation]);
+
+  const slides = localPresentation.slides ?? [];
 
   const handleAiEdit = async (promptText: string) => {
     if (!promptText.trim()) return;
+    const target = slides[activeSlide];
+    if (!target) return;
     setIsAiEditing(true);
     try {
-      const updatedSlide = await AIService.editSlide(localPresentation.slides[activeSlide], promptText);
-      const newSlides = [...localPresentation.slides];
+      const updatedSlide = await AIService.editSlide(target, promptText);
+      const newSlides = [...slides];
       newSlides[activeSlide] = updatedSlide;
       setLocalPresentation({ ...localPresentation, slides: newSlides });
       setEditPrompt('');
@@ -126,7 +131,7 @@ export default function PresentationPreview({
     }
   };
 
-  const currentSlide = localPresentation.slides[activeSlide];
+  const currentSlide = slides[activeSlide];
 
   // Helper for slide types that use the dark theme
   const isDarkType = (type: string) => ['cover', 'agenda', 'conclusion'].includes(type);
@@ -257,7 +262,7 @@ export default function PresentationPreview({
 
       {/* Hidden Print Container */}
       <div className="hidden print:block w-full">
-        {localPresentation.slides.map((s, idx) => (
+        {slides.map((s, idx) => (
           <div key={`print-${idx}`} className="print-slide">
             {renderSlideContent(s)}
           </div>
@@ -319,7 +324,7 @@ export default function PresentationPreview({
                 </h3>
               </div>
               <div className="flex-1 p-2 space-y-1">
-                {localPresentation.slides.map((slide, idx) => (
+                {slides.map((slide, idx) => (
                   <button
                     key={idx}
                     onClick={() => setActiveSlide(idx)}
@@ -394,14 +399,14 @@ export default function PresentationPreview({
               <>
                 <button
                   onClick={() => setActiveSlide(Math.max(0, activeSlide - 1))}
-                  disabled={activeSlide === 0}
+                  disabled={slides.length === 0 || activeSlide === 0}
                   className="absolute left-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-rose-200/80 bg-white/95 p-4 text-fuchsia-600 shadow-xl shadow-fuchsia-500/10 transition-all hover:bg-white disabled:opacity-0 opacity-0 group-hover/canvas:opacity-100"
                 >
                   <ChevronLeft size={24} strokeWidth={3} />
                 </button>
                 <button
-                  onClick={() => setActiveSlide(Math.min(presentation.slides.length - 1, activeSlide + 1))}
-                  disabled={activeSlide === presentation.slides.length - 1}
+                  onClick={() => setActiveSlide(Math.min(slides.length - 1, activeSlide + 1))}
+                  disabled={slides.length === 0 || activeSlide === slides.length - 1}
                   className="absolute right-4 top-1/2 z-10 -translate-y-1/2 rounded-full border border-rose-200/80 bg-white/95 p-4 text-fuchsia-600 shadow-xl shadow-fuchsia-500/10 transition-all hover:bg-white disabled:opacity-0 opacity-0 group-hover/canvas:opacity-100"
                 >
                   <ChevronRight size={24} strokeWidth={3} />
@@ -409,7 +414,7 @@ export default function PresentationPreview({
                 
                 {/* Slide Counter (Floating) */}
                 <div className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-full border border-rose-100 bg-white/95 px-4 py-2 text-xs font-bold text-slate-600 shadow-lg backdrop-blur">
-                  {activeSlide + 1} / {localPresentation.slides.length}
+                  {slides.length ? `${activeSlide + 1} / ${slides.length}` : '0 / 0'}
                 </div>
 
                 {/* Floating AI Bubble entry point */}
@@ -496,6 +501,13 @@ export default function PresentationPreview({
                   Your browser cannot display this file.
                 </iframe>
               </div>
+            </div>
+          ) : slides.length === 0 ? (
+            <div className="mx-auto max-w-md px-6 text-center text-slate-300">
+              <p className="mb-2 text-lg font-bold text-slate-200">No slides to display</p>
+              <p className="text-sm text-slate-400">
+                The API returned a program but no slide deck. Use &quot;Regenerate presentation&quot; in the panel on the left, or generate the curriculum again.
+              </p>
             </div>
           ) : (
             renderSlideContent(currentSlide)
