@@ -474,15 +474,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
   if (isPreviewOpen && generatedPresentation) {
     return (
-      <div className="fixed inset-0 z-[9999] bg-white overflow-y-auto">
-        <PresentationPreview
-          presentation={generatedPresentation}
-          onSave={handleSavePresentation}
-          isSaving={isSavingCloud}
-          onClose={() => setIsPreviewOpen(false)}
-          fileTrainingUrl={fileTrainingUrl}
-        />
-      </div>
+      <PresentationPreview
+        presentation={generatedPresentation}
+        onSave={handleSavePresentation}
+        isSaving={isSavingCloud}
+        onClose={() => setIsPreviewOpen(false)}
+        fileTrainingUrl={fileTrainingUrl}
+      />
     );
   }
 
