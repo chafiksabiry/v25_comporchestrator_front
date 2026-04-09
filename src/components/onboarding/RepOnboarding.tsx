@@ -95,10 +95,17 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       }
     }
 
-    // Fallback or Direct local mapping if no URL or fetch failed
-    console.log('[RepOnboarding] Using local mapping for presentation');
-    const localPresentation = mapJourneyToPresentation(journey);
-    setSelectedPresentation(localPresentation);
+    // Use AI generated presentation if it exists in the journey object, otherwise fallback to local mapping
+    let presentationToUse;
+    if (journey.presentation && journey.presentation.slides && journey.presentation.slides.length > 0) {
+      console.log('[RepOnboarding] Using stored AI presentation from journey object');
+      presentationToUse = journey.presentation;
+    } else {
+      console.log('[RepOnboarding] Using local mapping for presentation');
+      presentationToUse = mapJourneyToPresentation(journey);
+    }
+    
+    setSelectedPresentation(presentationToUse);
   };
 
   const handleJourneyComplete = async () => {
