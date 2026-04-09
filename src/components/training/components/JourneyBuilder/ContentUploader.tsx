@@ -560,7 +560,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       return (
         <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-gradient-to-b from-slate-50 to-white">
           <div className="grid min-h-[60dvh] flex-1 grid-cols-1 gap-3 p-3 lg:min-h-0 lg:grid-cols-[minmax(260px,300px)_minmax(0,1fr)] lg:gap-4 lg:p-4">
-            <aside className="flex min-h-0 max-h-[calc(100dvh-6rem)] flex-col overflow-y-auto rounded-2xl border border-rose-100/80 bg-white p-4 shadow-sm">
+            <aside className="flex min-h-0 max-h-[calc(100dvh-6rem)] flex-col overflow-hidden rounded-2xl border border-rose-100/80 bg-white p-4 shadow-sm">
               <div className="mb-3 flex items-center gap-2 text-fuchsia-700">
                 <BookOpen className="h-5 w-5 shrink-0" />
                 <p className="text-[10px] font-bold uppercase tracking-widest">Modules</p>
@@ -571,7 +571,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               {generatedCurriculum?.description && (
                 <p className="mt-2 line-clamp-3 text-xs text-gray-600">{generatedCurriculum.description}</p>
               )}
-              <ol className="mt-4 flex-1 space-y-1.5 overflow-y-auto border-t border-gray-100 pt-3">
+              <ol className="mt-4 min-h-0 flex-1 space-y-1.5 overflow-y-auto border-t border-gray-100 pt-3 pr-1">
                 {(generatedCurriculum?.modules || []).length === 0 ? (
                   <li className="text-xs text-gray-500">No module list — use the slide navigator on the right.</li>
                 ) : (
@@ -620,7 +620,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               </div>
             </aside>
 
-            <section className="flex h-full min-h-[280px] flex-col overflow-hidden rounded-2xl border border-rose-100/80 bg-white shadow-sm lg:min-h-0">
+            <section className="flex h-full min-h-[280px] min-w-0 flex-col overflow-hidden rounded-2xl border border-rose-100/80 bg-white shadow-sm lg:min-h-0">
               <PresentationPreview
                 presentation={generatedPresentation}
                 onClose={() => setWorkspaceTab('sources')}
@@ -723,7 +723,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   <Maximize2 className="h-4 w-4" />
                   Open fullscreen
                 </button>
-                <button
+                {/* <button
                   type="button"
                   onClick={() => onComplete(uploads, fileTrainingUrl)}
                   disabled={!canProceed}
@@ -731,7 +731,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 >
                   Continue to AI enhancement
                   <Wand2 className="h-4 w-4" />
-                </button>
+                </button> */}
                 <button
                   type="button"
                   onClick={onBack}
@@ -1206,14 +1206,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 <span>{isGigOnly ? 'Générer depuis le Job' : 'Générer la présentation'}</span>
               </button>
 
-              <button
+              {/* <button
                 onClick={() => onComplete(uploads, fileTrainingUrl)}
                 disabled={!canProceed}
                 className="px-8 py-3 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-xl hover:from-rose-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg flex items-center justify-center space-x-2"
               >
                 <span>Continue to AI Enhancement</span>
                 <Wand2 className="h-5 w-5" />
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
