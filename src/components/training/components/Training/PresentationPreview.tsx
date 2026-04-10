@@ -457,7 +457,13 @@ export default function PresentationPreview({
                 </button>
               )}
               <div className="hidden h-6 w-px bg-gray-200 sm:block" />
-              <h2 className="min-w-0 truncate text-base font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-fuchsia-600 to-purple-700 md:text-lg md:max-w-md">
+              <h2
+                className={`min-w-0 text-base font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-fuchsia-600 to-purple-700 md:text-lg ${
+                  isEmbedded
+                    ? 'line-clamp-2 max-w-none flex-1 break-words [overflow-wrap:anywhere] pr-2 sm:pr-4'
+                    : 'truncate md:max-w-md'
+                }`}
+              >
                 {localPresentation.title}
               </h2>
             </div>
@@ -566,7 +572,7 @@ export default function PresentationPreview({
           )}
 
           {/* Slide Canvas or PPTX Viewer */}
-          <div className={`group/canvas relative flex min-h-0 flex-1 flex-col items-center overflow-y-auto overscroll-contain px-4 pb-10 pt-4 md:px-8 md:pb-12 md:pt-6 ${isEmbedded ? (embedLightCanvas ? 'bg-slate-100/80' : 'bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950') : 'bg-slate-100/50'}`}>
+          <div className={`group/canvas relative flex min-h-0 flex-1 flex-col items-center overflow-y-auto overscroll-contain px-4 pt-4 md:px-8 md:pt-6 ${isEmbedded ? `pb-20 md:pb-24 ${embedLightCanvas ? 'bg-slate-100/80' : 'bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950'}` : 'bg-slate-100/50 pb-10 md:pb-12'}`}>
             {/* Quick Navigation Buttons (Floating) */}
             {!actualUrl && (
               <>
@@ -585,13 +591,15 @@ export default function PresentationPreview({
                   <ChevronRight size={24} strokeWidth={3} />
                 </button>
                 
-                {/* Slide Counter (Floating) */}
-                <div className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-full border border-rose-100 bg-white/95 px-4 py-2 text-xs font-bold text-slate-600 shadow-lg backdrop-blur">
-                  {slides.length ? `${activeSlide + 1} / ${slides.length}` : '0 / 0'}
+                {/* Slide counter — remonté un peu pour laisser de l’air sous la slide */}
+                <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2 sm:bottom-5">
+                  <div className="pointer-events-auto rounded-full border border-rose-100 bg-white/95 px-4 py-2 text-xs font-bold text-slate-600 shadow-lg backdrop-blur">
+                    {slides.length ? `${activeSlide + 1} / ${slides.length}` : '0 / 0'}
+                  </div>
                 </div>
 
-                {/* Floating AI Bubble entry point */}
-                <div className={`absolute z-20 ${isEmbedded ? 'bottom-24 right-4 top-auto md:right-6' : 'right-6 top-6'}`}>
+                {/* Claude : en embarqué, coin haut-droit pour ne pas recouvrir le compteur / bord bas */}
+                <div className={`absolute z-20 ${isEmbedded ? 'right-3 top-3 md:right-4 md:top-4' : 'right-6 top-6'}`}>
                   {!showFloatingPrompt ? (
                     <button
                       onClick={() => setShowFloatingPrompt(true)}
