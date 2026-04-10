@@ -276,6 +276,12 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     }
   }, [companyId, legacyCompanyId, filterGigId]);
 
+  /** Ferme le Journey Builder embarqué et revient à la liste « Training & Certification » (évite l’écran JourneySuccess / déploiement). */
+  const handleEmbeddedJourneyComplete = useCallback(() => {
+    setShowTraining({ isOpen: false });
+    void fetchCompanyTrainings();
+  }, [fetchCompanyTrainings]);
+
   // Load company ID on mount
   useEffect(() => {
     // Use centralized service to get companyId
@@ -348,6 +354,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
             isEmbedded={true}
             startWithJourneyBuilder={true}
             repOnboardingLayout={true}
+            onJourneyLaunch={handleEmbeddedJourneyComplete}
           />
         </div>
       </MemoryRouter>
