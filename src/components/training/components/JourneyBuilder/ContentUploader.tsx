@@ -608,19 +608,21 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
       return (
         <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-gradient-to-b from-slate-50 to-white">
-          <div className="grid min-h-[60dvh] flex-1 grid-cols-1 gap-3 p-3 lg:min-h-0 lg:grid-cols-[minmax(260px,300px)_minmax(0,1fr)] lg:gap-4 lg:p-4">
-            <aside className="flex min-h-0 max-h-[calc(100dvh-6rem)] flex-col overflow-hidden rounded-2xl border border-rose-100/80 bg-white p-4 shadow-sm">
-              <div className="mb-3 flex items-center gap-2 text-fuchsia-700">
-                <BookOpen className="h-5 w-5 shrink-0" />
-                <p className="text-[10px] font-bold uppercase tracking-widest">Modules</p>
+          <div className="grid min-h-[52dvh] flex-1 grid-cols-1 gap-3 p-3 sm:p-4 lg:min-h-0 lg:grid-cols-[minmax(280px,340px)_minmax(0,1fr)] lg:gap-5">
+            <aside className="flex max-h-[48vh] min-h-0 flex-col overflow-hidden rounded-2xl border border-rose-100/80 bg-white shadow-sm lg:max-h-none lg:h-full">
+              <div className="shrink-0 px-4 pb-2 pt-4">
+                <div className="mb-2 flex items-center gap-2 text-fuchsia-700">
+                  <BookOpen className="h-5 w-5 shrink-0" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest">Modules</p>
+                </div>
+                <h2 className="break-words text-base font-bold leading-snug text-gray-900 [overflow-wrap:anywhere] sm:text-lg">
+                  {generatedCurriculum?.title || generatedPresentation?.title || 'Training'}
+                </h2>
+                {generatedCurriculum?.description && (
+                  <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-gray-600">{generatedCurriculum.description}</p>
+                )}
               </div>
-              <h2 className="text-base font-bold leading-snug text-gray-900">
-                {generatedCurriculum?.title || generatedPresentation?.title || 'Training'}
-              </h2>
-              {generatedCurriculum?.description && (
-                <p className="mt-2 line-clamp-3 text-xs text-gray-600">{generatedCurriculum.description}</p>
-              )}
-              <ol className="mt-4 min-h-0 flex-1 space-y-1.5 overflow-y-auto border-t border-gray-100 pt-3 pr-1">
+              <ol className="min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-y-contain border-t border-gray-100 px-4 py-3 [scrollbar-color:rgba(192,132,252,0.45)_transparent] [scrollbar-width:thin]">
                 {(generatedCurriculum?.modules || []).length === 0 ? (
                   <li className="text-xs text-gray-500">No module list — use the slide navigator on the right.</li>
                 ) : (
@@ -632,12 +634,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-rose-100 to-fuchsia-100 text-xs font-bold text-fuchsia-900">
                         {idx + 1}
                       </span>
-                      <span className="min-w-0 flex-1 font-medium leading-snug">{mod.title || `Module ${idx + 1}`}</span>
+                      <span className="min-w-0 flex-1 font-medium leading-snug [overflow-wrap:anywhere]">{mod.title || `Module ${idx + 1}`}</span>
                     </li>
                   ))
                 )}
               </ol>
-              <div className="mt-4 flex flex-col gap-2 border-t border-gray-100 pt-4">
+              <div className="shrink-0 space-y-2 border-t border-gray-100 bg-white px-4 py-4">
                 <button
                   type="button"
                   onClick={handleSavePresentation}
