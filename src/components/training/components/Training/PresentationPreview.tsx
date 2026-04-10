@@ -33,11 +33,32 @@ interface PresentationPreviewProps {
   backLabel?: string;
 }
 
-const parseMarkdown = (text: string) => {
-  if (!text) return '';
+/** Texte affichable pour une puce / ligne issue de l’API (string, objet { text }, etc.) */
+function toSlideText(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (typeof value === 'object' && value !== null) {
+    const o = value as Record<string, unknown>;
+    if (typeof o.text === 'string') return o.text;
+    if (typeof o.title === 'string') return o.title;
+    if (typeof o.label === 'string') return o.label;
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+  return String(value);
+}
+
+const parseMarkdown = (text: unknown): string => {
+  if (text == null || text === '') return '';
+  const str = typeof text === 'string' ? text : toSlideText(text);
+  if (!str) return '';
 
   // Basic Markdown replacement
-  let html = text
+  let html = str
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/__(.*?)__/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
@@ -56,9 +77,10 @@ const parseMarkdown = (text: string) => {
   return html.replace(/\n/g, '<br />');
 };
 
-function normalizeHexColor(c: string | undefined, fallback: string) {
-  if (!c?.trim()) return fallback;
-  const s = c.trim();
+function normalizeHexColor(c: string | number | undefined, fallback: string) {
+  if (c == null || c === '') return fallback;
+  const s = String(c).trim();
+  if (!s) return fallback;
   return s.startsWith('#') ? s : `#${s}`;
 }
 
@@ -294,8 +316,14 @@ export default function PresentationPreview({
     const bgColor = vc.backgroundHex || (isDarkFallback ? '#1a1a2e' : '#ffffff');
     const textColor = vc.textHex || (isDarkFallback ? '#ffffff' : '#111827');
     const accentColor = vc.accentHex || themeParams.primaryColor || '#F43F5E';
-    // If AI explicitly chose an accent color, don't force a purple gradient fallback
-    const secondaryColor = (vc.accentHex && vc.accentHex.length > 0) ? vc.accentHex : (themeParams.secondaryColor || '#6D28D9');
+    const explicitAccent =
+      typeof vc.accentHex === 'string'
+        ? vc.accentHex
+        : vc.accentHex != null && vc.accentHex !== ''
+          ? String(vc.accentHex)
+          : '';
+    const secondaryColor =
+      explicitAccent.trim().length > 0 ? explicitAccent : themeParams.secondaryColor || '#6D28D9';
 
     const layout = vc.layout || (slide.type === 'cover' ? 'split' : 'content');
     const bulletTileClass = isDarkFallback
@@ -328,7 +356,7 @@ export default function PresentationPreview({
           <div className="flex h-full min-h-0 w-1/3 shrink-0 flex-col items-center justify-start overflow-y-auto p-8 pt-10 text-white relative" style={{ background: `linear-gradient(180deg, ${accentColor}, ${secondaryColor})`, color: '#ffffff' }}>
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-16 -mt-16 print:hidden" />
             <h1 className="text-3xl font-black text-center relative z-10 leading-tight drop-shadow-md">
-              {slide.title}
+              {toSlideText(slide.title)}
             </h1>
           </div>
         )}
@@ -343,13 +371,13 @@ export default function PresentationPreview({
                 WebkitTextFillColor: 'transparent',
                 color: accentColor
               }}>
-              {slide.title}
+              {toSlideText(slide.title)}
             </h1>
           )}
 
           {slide.subtitle && (
             <h2 className="text-lg md:text-xl font-bold mb-6 opacity-90" style={{ color: accentColor }}>
-              {slide.subtitle}
+              {toSlideText(slide.subtitle)}
             </h2>
           )}
 
@@ -357,10 +385,10 @@ export default function PresentationPreview({
             <div className="mb-4 opacity-90 text-base md:text-lg leading-relaxed max-w-5xl" style={{ color: 'inherit' }}>
               {Array.isArray(slide.content) ? (
                 <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-x-8 md:gap-y-3">
-                  {slide.content.map((bullet: string, i: number) => (
+                  {slide.content.map((bullet: unknown, i: number) => (
                     <li key={i} className={`flex items-start gap-3 p-3 md:p-4 ${bulletTileClass}`}>
                       <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full shadow-sm" style={{ background: accentColor }} />
-                      <span className="font-medium" dangerouslySetInnerHTML={{ __html: parseMarkdown(bullet) }} />
+                      <span className="font-medium" dangerouslySetInnerHTML={{ __html: parseMarkdown(toSlideText(bullet)) }} />
                     </li>
                   ))}
                 </ul>
@@ -373,10 +401,10 @@ export default function PresentationPreview({
           {/* Support for bullets field */}
           {Array.isArray(slide.bullets) && slide.bullets.length > 0 && (
             <ul className={`grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-x-8 md:gap-y-3 max-w-5xl ${slide.content ? 'border-t border-current/10 pt-5 mt-5' : ''}`}>
-              {slide.bullets.map((bullet: string, i: number) => (
+              {slide.bullets.map((bullet: unknown, i: number) => (
                 <li key={i} className={`flex items-start gap-3 p-3 text-base md:text-lg ${bulletTileClass}`}>
                   <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full shadow-sm" style={{ background: accentColor }} />
-                  <span className="opacity-90" dangerouslySetInnerHTML={{ __html: parseMarkdown(bullet) }} />
+                  <span className="opacity-90" dangerouslySetInnerHTML={{ __html: parseMarkdown(toSlideText(bullet)) }} />
                 </li>
               ))}
             </ul>
@@ -395,7 +423,7 @@ export default function PresentationPreview({
                   <ImageIcon className="mt-0.5 h-7 w-7 shrink-0 opacity-50" aria-hidden />
                   <div className="min-w-0">
                     <p className="text-[10px] font-black uppercase tracking-wider opacity-50">Image / illustration</p>
-                    <p className="mt-1 text-sm leading-snug opacity-90">{slide.imageDescription}</p>
+                    <p className="mt-1 text-sm leading-snug opacity-90">{toSlideText(slide.imageDescription)}</p>
                   </div>
                 </div>
               )}
@@ -464,7 +492,7 @@ export default function PresentationPreview({
                     : 'truncate md:max-w-md'
                 }`}
               >
-                {localPresentation.title}
+                {toSlideText(localPresentation.title)}
               </h2>
             </div>
 
@@ -521,7 +549,7 @@ export default function PresentationPreview({
                       {slide.type === 'cover' && <Sparkles size={10} className="text-amber-400" />}
                     </div>
                     <div className={`text-xs font-bold truncate ${activeSlide === idx ? 'text-purple-900' : 'text-slate-600'}`}>
-                      {slide.title}
+                      {toSlideText(slide.title)}
                     </div>
                   </button>
                 ))}

@@ -161,8 +161,8 @@ export default function MediaGenerator({ content, onGenerate }: MediaGeneratorPr
                     }))}
                   >
                     {(options as string[]).map((option) => (
-                      <option key={option} value={option} className="capitalize">
-                        {option.replace('-', ' ')}
+                      <option key={String(option)} value={String(option)} className="capitalize">
+                        {String(option).replace(/-/g, ' ')}
                       </option>
                     ))}
                   </select>

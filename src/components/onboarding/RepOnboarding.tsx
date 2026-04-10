@@ -36,6 +36,19 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [loadingPresentation, setLoadingPresentation] = useState(false);
 
   // Helper function to format training journey data for display
+  const asUiString = (v: unknown, fallback: string): string => {
+    if (v == null) return fallback;
+    if (typeof v === 'string') return v || fallback;
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+    if (typeof v === 'object') {
+      const o = v as Record<string, unknown>;
+      if (typeof o.title === 'string') return o.title;
+      if (typeof o.name === 'string') return o.name;
+      if (typeof o.label === 'string') return o.label;
+    }
+    return fallback;
+  };
+
   const formatTrainingJourney = (journey: any) => {
     // Map presentation fields
     const presentationUrl = journey.presentationUrl || journey.presentation?.url;
@@ -62,8 +75,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
     return {
       id: String(journey._id || journey.id || ''),
-      title: journey.title || journey.name || 'Untitled Training',
-      description: journey.description || 'No description provided',
+      title: asUiString(journey.title ?? journey.name, 'Untitled Training'),
+      description: asUiString(journey.description, 'No description provided'),
       duration: duration,
       modulesCount: journey.modules ? journey.modules.length : 0,
       status: status,
