@@ -308,10 +308,16 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
         ref={mainScrollRef}
         data-journey-main-scroll
         className={`flex min-h-0 flex-1 flex-col overscroll-y-contain ${
-          currentStep === 0 ? 'overflow-hidden' : 'overflow-y-auto'
+          currentStep === 0 ? 'min-h-0 overflow-hidden' : 'overflow-y-auto'
         }`}
       >
-        {renderCurrentStep()}
+        {currentStep === 0 ? (
+          <div className="flex min-h-0 flex-1 flex-col">
+            {renderCurrentStep()}
+          </div>
+        ) : (
+          renderCurrentStep()
+        )}
       </div>
     </div>
   );
