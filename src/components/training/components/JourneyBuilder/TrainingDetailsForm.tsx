@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Target, ArrowLeft, ArrowRight } from 'lucide-react';
+
+const HARX = '#ff4d4d';
+const HARX_GRADIENT = 'linear-gradient(to right, #ff4d4d, #ec4899)';
 
 interface TrainingDetailsFormProps {
   onComplete: (data: { trainingName: string; trainingDescription: string; estimatedDuration: string }) => void;
@@ -7,132 +10,136 @@ interface TrainingDetailsFormProps {
   gigData?: any;
 }
 
-export default function TrainingDetailsForm({ onComplete, onBack, gigData }: TrainingDetailsFormProps) {
+export default function TrainingDetailsForm({ onComplete, onBack }: TrainingDetailsFormProps) {
   const [trainingName, setTrainingName] = useState('');
   const [trainingDescription, setTrainingDescription] = useState('');
   const [estimatedDuration, setEstimatedDuration] = useState('');
 
   const handleSubmit = () => {
-    onComplete({
-      trainingName,
-      trainingDescription,
-      estimatedDuration
-    });
+    onComplete({ trainingName, trainingDescription, estimatedDuration });
   };
 
   const canProceed = trainingName.trim() && estimatedDuration;
 
-  // Scroll to top on mount
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const el = document.querySelector('[data-journey-main-scroll]');
+    if (el instanceof HTMLElement) el.scrollTo({ top: 0, behavior: 'auto' });
   }, []);
 
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="flex-1 w-full max-w-4xl mx-auto flex flex-col">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex-1 flex flex-col md:p-5">
-          {/* Navigation Labels */}
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <div className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md text-[10px] font-medium">
-              AI-suggested goals
-            </div>
-            <div className="px-2 py-0.5 text-gray-500 bg-gray-50 rounded-md text-[10px] font-medium">
-              Success metrics
-            </div>
-            <div className="px-2 py-0.5 text-gray-500 bg-gray-50 rounded-md text-[10px] font-medium">
-              Timeline planning
-            </div>
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 520, margin: '0 auto', width: '100%' }}>
 
-          <div className="space-y-3">
-            {/* Training Program Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Training Program Name *
-              </label>
-              <input
-                type="text"
-                value={trainingName}
-                onChange={(e) => setTrainingName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base"
-                placeholder="e.g., Customer Success Mastery Program"
-              />
-            </div>
+      <div style={{ textAlign: 'center' }}>
+        <h3 style={{ fontSize: 20, fontWeight: 800, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <Target style={{ width: 20, height: 20, color: HARX }} />
+          Define your training vision
+        </h3>
+        <p style={{ fontSize: 13, color: '#6b7280', marginTop: 6 }}>
+          AI-suggested goals · Success metrics · Timeline planning
+        </p>
+      </div>
 
-            {/* Program Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Program Description
-              </label>
-              <textarea
-                value={trainingDescription}
-                onChange={(e) => setTrainingDescription(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                placeholder="Describe the goals, outcomes, and key benefits of this training program..."
-              />
-            </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#1f2937', marginBottom: 8 }}>
+            Training Program Name <span style={{ color: HARX }}>*</span>
+          </label>
+          <input
+            type="text"
+            value={trainingName}
+            onChange={(e) => setTrainingName(e.target.value)}
+            placeholder="e.g., Customer Success Mastery Program"
+            style={{
+              width: '100%', border: '1px solid #d1d5db', borderRadius: 10,
+              padding: '11px 14px', fontSize: 14, color: '#111827', outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
 
-            {/* Expected Program Duration */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Expected Program Duration
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {[
-                  { value: '120', label: 'Quick Start', desc: '1-2 hours' },
-                  { value: '240', label: 'Half Day', desc: '3-4 hours' },
-                  { value: '480', label: 'Full Day', desc: '6-8 hours' },
-                  { value: '2400', label: 'One Week', desc: 'Multi-session' },
-                  { value: '4800', label: 'Two Weeks', desc: 'Comprehensive' },
-                  { value: '9600', label: 'One Month', desc: 'Deep Learning' },
-                ].map((duration) => (
-                  <button
-                    key={duration.value}
-                    type="button"
-                    onClick={() => setEstimatedDuration(duration.value)}
-                    className={`px-2 py-1.5 border rounded-lg text-left transition-all hover:shadow-sm ${estimatedDuration === duration.value
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
-                      : 'border-gray-200 hover:border-indigo-300'
-                      }`}
-                  >
-                    <div className="flex items-center space-x-1">
-                      <span className="font-medium text-[11px]">{duration.label}</span>
-                      <span className="text-[9px] text-gray-500">({duration.desc})</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+        <div>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#1f2937', marginBottom: 8 }}>
+            Program Description
+          </label>
+          <textarea
+            value={trainingDescription}
+            onChange={(e) => setTrainingDescription(e.target.value)}
+            rows={3}
+            placeholder="Describe the goals, outcomes, and key benefits of this training program..."
+            style={{
+              width: '100%', border: '1px solid #d1d5db', borderRadius: 10,
+              padding: '11px 14px', fontSize: 14, color: '#111827', outline: 'none',
+              resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box',
+            }}
+          />
+        </div>
 
-          {/* Progress Bar & Navigation Buttons */}
-          <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
-            <button
-              onClick={onBack}
-              className="px-4 py-1.5 border border-gray-200 text-xs text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium flex items-center space-x-1"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Back</span>
-            </button>
-
-            <div className="flex flex-col items-center w-1/3">
-              <span className="text-[10px] font-medium text-gray-500 mb-1">Step 2 of 4</span>
-              <div className="w-full bg-gray-200 rounded-full h-1">
-                <div className="bg-indigo-500 h-1 rounded-full" style={{ width: '50%' }}></div>
-              </div>
-            </div>
-
-            <button
-              onClick={handleSubmit}
-              disabled={!canProceed}
-              className="px-5 py-1.5 bg-indigo-600 text-xs text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-sm flex items-center space-x-1"
-            >
-              <span>Continue</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </button>
+        <div>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#1f2937', marginBottom: 10 }}>
+            Expected Program Duration <span style={{ color: HARX }}>*</span>
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            {[
+              { value: '120', label: 'Quick Start', desc: '1-2 hours' },
+              { value: '240', label: 'Half Day', desc: '3-4 hours' },
+              { value: '480', label: 'Full Day', desc: '6-8 hours' },
+              { value: '2400', label: 'One Week', desc: 'Multi-session' },
+              { value: '4800', label: 'Two Weeks', desc: 'Comprehensive' },
+              { value: '9600', label: 'One Month', desc: 'Deep Learning' },
+            ].map((d) => {
+              const selected = estimatedDuration === d.value;
+              return (
+                <button
+                  key={d.value}
+                  type="button"
+                  onClick={() => setEstimatedDuration(d.value)}
+                  style={{
+                    padding: '10px 8px', border: `1.5px solid ${selected ? HARX : '#e5e7eb'}`,
+                    borderRadius: 10, background: selected ? '#fff5f5' : 'transparent',
+                    cursor: 'pointer', textAlign: 'left', transition: 'all 150ms',
+                  }}
+                >
+                  <div style={{ fontSize: 12, fontWeight: 600, color: selected ? HARX : '#111827' }}>{d.label}</div>
+                  <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>{d.desc}</div>
+                </button>
+              );
+            })}
           </div>
         </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8 }}>
+        <button
+          type="button"
+          onClick={onBack}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '8px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700,
+            border: '1px solid #d1d5db', background: 'transparent', color: '#374151',
+            cursor: 'pointer',
+          }}
+        >
+          <ArrowLeft style={{ width: 16, height: 16 }} />
+          Back
+        </button>
+
+        <span style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af' }}>Step 2 of 4</span>
+
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={!canProceed}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '8px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700,
+            border: 'none', color: '#fff', cursor: canProceed ? 'pointer' : 'not-allowed',
+            background: canProceed ? HARX_GRADIENT : '#d1d5db',
+            boxShadow: canProceed ? '0 2px 8px rgba(255,77,77,0.25)' : 'none',
+          }}
+        >
+          Continue
+          <ArrowRight style={{ width: 16, height: 16 }} />
+        </button>
       </div>
     </div>
   );

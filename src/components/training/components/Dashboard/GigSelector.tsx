@@ -81,7 +81,7 @@ export default function GigSelector({ companyId, industryFilter, industryName, o
       </div>
       {gigs.length === 0 && (
         <div className="flex items-start gap-2 rounded-[10px] border border-harx-200 px-3.5 py-2.5 text-[13px] text-harx-700">
-          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-500" />
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-harx-500" />
           <span>No gigs for &quot;{industryName || industryFilter || 'this industry'}&quot;. Choose another industry.</span>
         </div>
       )}
