@@ -184,12 +184,12 @@ export default function GigSelectorDemo() {
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">Location</h3>
                 <div className="flex items-center space-x-3">
                   <img
-                    src={selectedGig.destination_zone.flags.png}
-                    alt={selectedGig.destination_zone.name.common}
+                    src={selectedGig.destination_zone?.flags?.png}
+                    alt={selectedGig.destination_zone?.name?.common || ''}
                     className="w-8 h-6 object-cover rounded shadow"
                   />
                   <span className="text-gray-900 font-medium">
-                    {selectedGig.destination_zone.name.common}
+                    {selectedGig.destination_zone?.name?.common || 'Unknown'}
                   </span>
                 </div>
               </div>

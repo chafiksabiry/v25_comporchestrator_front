@@ -136,10 +136,10 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
         if (uploads.length === 1) {
           const upload = uploads[0];
           const aiModule: any = modulesToUse[0] || {
-            title: upload.aiAnalysis?.keyTopics?.[0] || upload.name.replace(/\.[^/.]+$/, ''),
+            title: upload.aiAnalysis?.keyTopics?.[0] || (upload.name || 'Untitled').replace(/\.[^/.]+$/, ''),
             description: upload.aiAnalysis
               ? `Training module covering: ${upload.aiAnalysis.keyTopics?.join(', ') || 'core concepts'}`
-              : `Training module based on: ${upload.name}`,
+              : `Training module based on: ${upload.name || 'Untitled'}`,
             duration: upload.aiAnalysis?.estimatedReadTime || 60,
             difficulty: 'intermediate' as const,
             learningObjectives: upload.aiAnalysis?.learningObjectives || []
@@ -246,10 +246,10 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
 
       return [{
         id: `module-1`,
-        title: upload.aiAnalysis?.keyTopics?.[0] || upload.name.replace(/\.[^/.]+$/, ''),
+        title: upload.aiAnalysis?.keyTopics?.[0] || (upload.name || 'Untitled').replace(/\.[^/.]+$/, ''),
         description: upload.aiAnalysis
           ? `Training module covering: ${upload.aiAnalysis.keyTopics?.join(', ') || 'core concepts'}`
-          : `Training module based on: ${upload.name}`,
+          : `Training module based on: ${upload.name || 'Untitled'}`,
         content: [],
         sections: [section],
         duration: upload.aiAnalysis?.estimatedReadTime || 60,
@@ -266,10 +266,10 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
 
       return {
         id: `module-${i + 1}`,
-        title: upload.aiAnalysis?.keyTopics?.[0] || upload.name.replace(/\.[^/.]+$/, ''),
+        title: upload.aiAnalysis?.keyTopics?.[0] || (upload.name || 'Untitled').replace(/\.[^/.]+$/, ''),
         description: upload.aiAnalysis
           ? `Training module covering: ${upload.aiAnalysis.keyTopics?.join(', ') || 'core concepts'}`
-          : `Training module based on uploaded content: ${upload.name}`,
+          : `Training module based on uploaded content: ${upload.name || 'Untitled'}`,
         content: [],
         sections: [section],
         duration: upload.aiAnalysis?.estimatedReadTime || 60,
@@ -290,7 +290,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
       sectionType = 'document';
     }
 
-    let sectionTitle = upload.name.replace(/\.[^/.]+$/, '');
+    let sectionTitle = (upload.name || 'Untitled').replace(/\.[^/.]+$/, '');
     if (upload.aiAnalysis?.keyTopics && upload.aiAnalysis.keyTopics.length > 0) {
       sectionTitle = upload.aiAnalysis.keyTopics[0];
     }

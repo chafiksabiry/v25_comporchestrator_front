@@ -264,7 +264,7 @@ export const ManualTrainingSetup: React.FC<ManualTrainingSetupProps> = ({ onComp
                     <div className="flex justify-between items-start mb-1">
                       <h4 className="font-medium text-green-900">{setupData.gig.title}</h4>
                       <span className={`inline - block px - 2 py - 1 text - xs font - medium rounded - full border ${getStatusBadgeColor(setupData.gig.status)} `}>
-                        {setupData.gig.status.replace('_', ' ').toUpperCase()}
+                        {(setupData.gig.status || 'unknown').replace('_', ' ').toUpperCase()}
                       </span>
                     </div>
                     {setupData.gig.description && (

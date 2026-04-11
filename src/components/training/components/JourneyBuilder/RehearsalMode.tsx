@@ -104,8 +104,8 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
       // Match uploads to modules based on index or content
       const relevantUploads = uploads.filter((upload, uploadIndex) => {
         // Try to match by module title or use index-based matching
-        const moduleTitleLower = module.title.toLowerCase();
-        const uploadNameLower = upload.name.toLowerCase();
+        const moduleTitleLower = (module.title || '').toLowerCase();
+        const uploadNameLower = (upload.name || '').toLowerCase();
         return moduleTitleLower.includes(uploadNameLower.replace(/\.[^/.]+$/, '')) ||
           uploadIndex === moduleIndex;
       });
@@ -174,7 +174,7 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
 
         return {
           id: `section-${moduleIndex}-${uploadIdx}`,
-          title: upload.name.replace(/\.[^/.]+$/, ''),
+          title: (upload.name || 'Untitled').replace(/\.[^/.]+$/, ''),
           type: sectionType,
           content: sectionContent,
           orderIndex: uploadIdx + 1,
