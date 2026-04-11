@@ -182,13 +182,19 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       </div>
 
       {/* ── Content ── */}
-      <div style={{ flex: 1, minHeight: 0, overflowY: currentStep === 1 ? 'hidden' : 'auto', padding: '16px 20px' }}>
-        <div style={{ maxWidth: 560, margin: '0 auto' }}>
+      <div style={{
+        flex: 1, minHeight: 0, overflow: currentStep === 1 ? 'hidden' : 'auto',
+        display: currentStep === 1 ? 'flex' : 'block',
+        alignItems: currentStep === 1 ? 'center' : undefined,
+        justifyContent: currentStep === 1 ? 'center' : undefined,
+        padding: currentStep === 1 ? '0 20px' : '16px 20px',
+      }}>
+        <div style={{ maxWidth: 560, margin: '0 auto', width: '100%' }}>
 
           {currentStep === 1 && (
             <>
-              <div style={{ textAlign: 'center', marginBottom: 16 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: 0 }}>
+              <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: 0 }}>
                   Welcome to your training journey
                 </h3>
                 <p style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
@@ -202,9 +208,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                   <p style={{ fontSize: 12, color: '#6b7280' }}>Loading company information...</p>
                 </div>
               ) : companyData ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 }}>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
                       Training industry <span style={{ color: '#ef4444' }}>*</span>
                     </label>
                     {loadingIndustries ? (
@@ -228,7 +234,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                   </div>
 
                   <div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 4 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
                       <Briefcase style={{ width: 14, height: 14, color: '#a855f7' }} />
                       Your gig <span style={{ color: '#ef4444' }}>*</span>
                     </label>
