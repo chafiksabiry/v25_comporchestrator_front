@@ -302,7 +302,7 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
 
   return (
     <div
-      className={`flex h-[100dvh] max-h-[100dvh] w-full flex-col overflow-hidden ${currentStep === 0 ? 'bg-gray-50' : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}
+      className={`flex h-[100dvh] max-h-[100dvh] w-full flex-col overflow-hidden ${currentStep === 0 ? 'bg-white' : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}
     >
       <div
         ref={mainScrollRef}
