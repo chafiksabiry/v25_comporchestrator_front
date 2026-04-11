@@ -360,17 +360,40 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   if (showTraining.isOpen && showTraining.newJourney) {
     return (
-      <MemoryRouter>
-        <div className="flex h-[100dvh] max-h-[100dvh] w-full flex-col overflow-hidden">
-          <AppContent
-            initialJourneyId={showTraining.journeyId}
-            isEmbedded={true}
-            startWithJourneyBuilder={true}
-            repOnboardingLayout={true}
-            onJourneyLaunch={handleEmbeddedJourneyComplete}
-          />
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50/40 to-gray-50 p-4 md:p-8">
+        <div className="mx-auto max-w-6xl">
+          <header className="mb-8 overflow-hidden rounded-2xl border border-rose-100/80 bg-white/90 px-6 py-5 shadow-[0_8px_30px_rgb(244,63,94,0.14)] backdrop-blur-sm">
+            <div className="h-1 w-full -mx-6 -mt-5 mb-5 rounded-t-2xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600" aria-hidden />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <div className="min-w-0">
+                <h1 className="text-2xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-fuchsia-600 to-purple-700 md:text-3xl">
+                  REP Onboarding
+                </h1>
+                <p className="mt-1 text-sm text-gray-600 md:text-base">Complete your setup and start your journey</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTraining({ isOpen: false })}
+                className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-700 shadow-sm transition-all hover:bg-gray-50 sm:w-auto"
+              >
+                ← Back to list
+              </button>
+            </div>
+          </header>
+          <div className="overflow-hidden rounded-2xl border border-rose-100/80 bg-white shadow-[0_8px_30px_rgb(244,63,94,0.06)]" style={{ minHeight: 480 }}>
+            <div className="h-1 w-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600" aria-hidden />
+            <MemoryRouter>
+              <AppContent
+                initialJourneyId={showTraining.journeyId}
+                isEmbedded={true}
+                startWithJourneyBuilder={true}
+                repOnboardingLayout={true}
+                onJourneyLaunch={handleEmbeddedJourneyComplete}
+              />
+            </MemoryRouter>
+          </div>
         </div>
-      </MemoryRouter>
+      </div>
     );
   }
 
