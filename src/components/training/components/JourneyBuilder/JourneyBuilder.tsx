@@ -302,13 +302,14 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
 
   return (
     <div
-      className={`flex h-[100dvh] max-h-[100dvh] w-full flex-col overflow-hidden ${currentStep === 0 ? 'bg-white' : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}
+      className="flex h-[100dvh] max-h-[100dvh] w-full flex-col overflow-hidden"
+      style={{ background: currentStep === 0 ? '#fff' : undefined }}
     >
       <div
         ref={mainScrollRef}
         data-journey-main-scroll
         className={`flex min-h-0 flex-1 flex-col overscroll-y-contain ${
-          currentStep === 0 ? 'overflow-hidden' : 'overflow-y-auto'
+          currentStep === 0 ? 'overflow-hidden' : 'overflow-y-auto bg-gradient-to-br from-gray-50 to-gray-100'
         }`}
       >
         <div className="flex min-h-0 flex-1 flex-col">
