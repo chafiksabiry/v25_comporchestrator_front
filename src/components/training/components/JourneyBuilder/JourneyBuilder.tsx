@@ -311,7 +311,9 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
           currentStep === 0 ? 'overflow-hidden' : 'overflow-y-auto'
         }`}
       >
-        {renderCurrentStep()}
+        <div className="flex min-h-0 flex-1 flex-col">
+          {renderCurrentStep()}
+        </div>
       </div>
     </div>
   );
