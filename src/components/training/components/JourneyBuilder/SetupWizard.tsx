@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { Building2, Loader2, Target, Users, Sparkles, Briefcase, AlertCircle, CheckCircle, ArrowRight, ArrowLeft, ChevronDown, Check } from 'lucide-react';
 import { Company, TrainingJourney } from '../../types/core';
 import { Industry, GigFromApi } from '../../types';
@@ -8,7 +8,6 @@ import MethodologyBuilder from '../Methodology/MethodologyBuilder';
 import { OnboardingService } from '../../infrastructure/services/OnboardingService';
 import GigSelector from '../Dashboard/GigSelector';
 import TrainingDetailsForm from './TrainingDetailsForm';
-import React from 'react';
 
 interface SetupWizardProps {
   onComplete: (company: Company, journey: TrainingJourney, methodology?: TrainingMethodology, gigId?: string) => void;
@@ -152,7 +151,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             const done = currentStep > step.id;
             const active = currentStep === step.id || (currentStep === 5 && step.id === 4);
             return (
-              <React.Fragment key={step.id}>
+              <Fragment key={step.id}>
                 <button
                   type="button"
                   onClick={() => { if (done) setCurrentStep(step.id); }}
@@ -178,7 +177,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 {i < steps.length - 1 && (
                   <div style={{ width: 24, height: 2, borderRadius: 1, background: done ? '#059669' : '#e5e7eb' }} />
                 )}
-              </React.Fragment>
+              </Fragment>
             );
           })}
         </div>
