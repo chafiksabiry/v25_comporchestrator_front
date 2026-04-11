@@ -143,7 +143,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: '#fff' }}>
 
       {/* ── Stepper ── */}
-      <div style={{ flexShrink: 0, borderBottom: '1px solid #f3f4f6', padding: '8px 16px' }}>
+      <div style={{ flexShrink: 0, padding: '10px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
           {steps.map((step, i) => {
             const done = currentStep > step.id;
@@ -376,7 +376,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
       {/* ── Footer ── */}
       {!isStep2 && (
-        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #f3f4f6', padding: '10px 20px', background: '#fff' }}>
+        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px' }}>
           <button
             type="button"
             onClick={() => { if (currentStep === 5) setCurrentStep(4); else if (currentStep > 1) setCurrentStep(currentStep - 1); }}

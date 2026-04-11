@@ -302,8 +302,8 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
 
   return (
     <div
-      className="flex h-[100dvh] max-h-[100dvh] w-full flex-col overflow-hidden"
-      style={{ background: currentStep === 0 ? '#fff' : undefined }}
+      className="flex w-full flex-col overflow-hidden"
+      style={{ height: '100%', maxHeight: '100%', background: currentStep === 0 ? '#fff' : undefined }}
     >
       <div
         ref={mainScrollRef}
