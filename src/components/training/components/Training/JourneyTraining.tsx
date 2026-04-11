@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Play, Clock, CheckCircle, BookOpen, Users, Award } from 'lucide-react';
-import React from 'react';
 interface JourneyTrainingProps {
   journeys: any[];
   onJourneySelect?: (journeyId: string) => void;
