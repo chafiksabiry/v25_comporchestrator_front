@@ -62,7 +62,7 @@ export default function GigSelector({ companyId, industryFilter, industryName, o
             if (g) onGigSelect(g);
           }}
           disabled={gigs.length === 0}
-          className="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white py-2.5 pl-3 pr-10 text-sm text-gray-900 shadow-sm transition-all outline-none hover:border-fuchsia-300 focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-400"
+          className="w-full cursor-pointer appearance-none rounded-lg border border-gray-300 bg-white py-2.5 pl-3.5 pr-10 text-sm text-gray-900 transition-all outline-none hover:border-fuchsia-400 focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-400"
         >
           <option value="" disabled className="text-gray-400">
             Select a gig...
