@@ -183,7 +183,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
       {/* ── Content ── */}
       <div style={{
-        flex: 1, minHeight: 0, overflow: currentStep === 1 ? 'hidden' : 'auto',
+        flex: 1, minHeight: 0, overflowY: 'auto',
         display: currentStep === 1 ? 'flex' : 'block',
         alignItems: currentStep === 1 ? 'center' : undefined,
         justifyContent: currentStep === 1 ? 'center' : undefined,
