@@ -140,7 +140,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const isStep2 = currentStep === 2;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: '#fff' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
 
       {/* ── Stepper ── */}
       <div style={{ flexShrink: 0, padding: '10px 16px' }}>
@@ -157,7 +157,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                     display: 'flex', alignItems: 'center', gap: 6,
                     padding: '4px 10px', borderRadius: 9999, border: 'none',
                     fontSize: 11, fontWeight: 600, cursor: done ? 'pointer' : 'default',
-                    background: done ? '#ecfdf5' : active ? '#fdf4ff' : 'transparent',
+                    background: 'transparent',
                     color: done ? '#047857' : active ? '#a21caf' : '#9ca3af',
                     transition: 'all 150ms',
                   }}
@@ -214,7 +214,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                       Training industry <span style={{ color: '#ef4444' }}>*</span>
                     </label>
                     {loadingIndustries ? (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, border: '1px dashed #e5e7eb', borderRadius: 8, padding: '10px 12px', background: '#f9fafb' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, border: '1px dashed #d1d5db', borderRadius: 8, padding: '10px 12px' }}>
                         <Loader2 className="animate-spin" style={{ width: 16, height: 16, color: '#a855f7' }} />
                         <span style={{ fontSize: 12, color: '#6b7280' }}>Loading...</span>
                       </div>
@@ -247,7 +247,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                   </div>
 
                   {selectedGig && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#ecfdf5', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#065f46' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#065f46' }}>
                       <CheckCircle style={{ width: 14, height: 14, color: '#10b981', flexShrink: 0 }} />
                       <span style={{ fontWeight: 500 }}>{selectedGig.title}</span>
                     </div>
