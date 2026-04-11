@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Target, ArrowLeft, ArrowRight } from 'lucide-react';
 
 const HARX = '#ff4d4d';

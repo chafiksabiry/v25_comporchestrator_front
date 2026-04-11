@@ -1,9 +1,7 @@
-import React from 'react';
+import React, { StrictMode } from 'react';
 import './public-path';  // For proper Qiankun integration
 import { qiankunWindow } from 'vite-plugin-qiankun/dist/helper';
 import { logger } from './utils/logger';
-
-import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';

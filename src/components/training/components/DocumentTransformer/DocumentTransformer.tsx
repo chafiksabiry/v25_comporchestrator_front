@@ -1,8 +1,7 @@
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import axios from 'axios';
 import { Upload, FileText, Video, Image, Wand2, Sparkles, Eye, Download, CheckCircle, AlertCircle, Clock, Zap, Palette, Volume2, BarChart3, Target, Key, ShieldCheck } from 'lucide-react';
 import { SourceDocument, ContentTransformation, EnhancedTrainingModule } from '../../types';
-import React from 'react';
 interface DocumentTransformerProps {
   onComplete: (modules: EnhancedTrainingModule[]) => void;
 }
