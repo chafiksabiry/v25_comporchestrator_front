@@ -139,12 +139,15 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const stepNum = currentStep > 4 ? 4 : currentStep;
   const isStep2 = currentStep === 2;
 
+  const HARX = '#ff4d4d';
+  const HARX_GRADIENT = 'linear-gradient(to right, #ff4d4d, #ec4899)';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
 
       {/* ── Stepper ── */}
-      <div style={{ flexShrink: 0, padding: '10px 16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+      <div style={{ flexShrink: 0, padding: '12px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
           {steps.map((step, i) => {
             const done = currentStep > step.id;
             const active = currentStep === step.id || (currentStep === 5 && step.id === 4);
@@ -156,24 +159,24 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 6,
                     padding: '4px 10px', borderRadius: 9999, border: 'none',
-                    fontSize: 11, fontWeight: 600, cursor: done ? 'pointer' : 'default',
+                    fontSize: 12, fontWeight: 600, cursor: done ? 'pointer' : 'default',
                     background: 'transparent',
-                    color: done ? '#047857' : active ? '#a21caf' : '#9ca3af',
+                    color: done ? '#059669' : active ? HARX : '#9ca3af',
                     transition: 'all 150ms',
                   }}
                 >
                   <span style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    width: 20, height: 20, borderRadius: '50%', fontSize: 10, fontWeight: 700,
-                    background: done ? '#10b981' : active ? '#a855f7' : '#e5e7eb',
-                    color: done || active ? '#fff' : '#6b7280',
+                    width: 22, height: 22, borderRadius: '50%', fontSize: 11, fontWeight: 700,
+                    background: done ? '#059669' : active ? HARX : '#d1d5db',
+                    color: '#fff',
                   }}>
                     {done ? <Check style={{ width: 12, height: 12 }} /> : step.id}
                   </span>
-                  <span style={{ display: 'inline' }}>{step.label}</span>
+                  <span>{step.label}</span>
                 </button>
                 {i < steps.length - 1 && (
-                  <div style={{ width: 20, height: 1, background: done ? '#6ee7b7' : '#e5e7eb' }} />
+                  <div style={{ width: 24, height: 2, borderRadius: 1, background: done ? '#059669' : '#e5e7eb' }} />
                 )}
               </React.Fragment>
             );
@@ -187,56 +190,56 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         display: currentStep === 1 ? 'flex' : 'block',
         alignItems: currentStep === 1 ? 'center' : undefined,
         justifyContent: currentStep === 1 ? 'center' : undefined,
-        padding: currentStep === 1 ? '0 20px' : '16px 20px',
+        padding: currentStep === 1 ? '0 32px' : '20px 32px',
       }}>
-        <div style={{ maxWidth: 560, margin: '0 auto', width: '100%' }}>
+        <div style={{ maxWidth: 520, margin: '0 auto', width: '100%' }}>
 
           {currentStep === 1 && (
             <>
-              <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: 0 }}>
+              <div style={{ textAlign: 'center', marginBottom: 28 }}>
+                <h3 style={{ fontSize: 20, fontWeight: 800, color: '#111827', margin: 0, letterSpacing: '-0.01em' }}>
                   Welcome to your training journey
                 </h3>
-                <p style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+                <p style={{ fontSize: 13, color: '#6b7280', marginTop: 6 }}>
                   Industry templates · Smart defaults · Compliance
                 </p>
               </div>
 
               {loadingCompany ? (
-                <div style={{ textAlign: 'center', padding: '24px 0' }}>
-                  <Loader2 className="animate-spin" style={{ width: 20, height: 20, color: '#a855f7', margin: '0 auto 8px' }} />
-                  <p style={{ fontSize: 12, color: '#6b7280' }}>Loading company information...</p>
+                <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                  <Loader2 className="animate-spin" style={{ width: 24, height: 24, color: HARX, margin: '0 auto 10px' }} />
+                  <p style={{ fontSize: 13, color: '#6b7280' }}>Loading company information...</p>
                 </div>
               ) : companyData ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
-                      Training industry <span style={{ color: '#ef4444' }}>*</span>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#1f2937', marginBottom: 8 }}>
+                      Training industry <span style={{ color: HARX }}>*</span>
                     </label>
                     {loadingIndustries ? (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, border: '1px dashed #d1d5db', borderRadius: 8, padding: '10px 12px' }}>
-                        <Loader2 className="animate-spin" style={{ width: 16, height: 16, color: '#a855f7' }} />
-                        <span style={{ fontSize: 12, color: '#6b7280' }}>Loading...</span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, border: '1px dashed #d1d5db', borderRadius: 10, padding: '12px 14px' }}>
+                        <Loader2 className="animate-spin" style={{ width: 16, height: 16, color: HARX }} />
+                        <span style={{ fontSize: 13, color: '#6b7280' }}>Loading...</span>
                       </div>
                     ) : (
                       <div style={{ position: 'relative' }}>
                         <select
                           value={company.industry || ''}
                           onChange={(e) => setCompany({ ...company, industry: e.target.value })}
-                          style={{ width: '100%', appearance: 'none', border: '1px solid #d1d5db', borderRadius: 8, padding: '10px 40px 10px 12px', fontSize: 14, color: '#111827', background: '#fff', outline: 'none', cursor: 'pointer' }}
+                          style={{ width: '100%', appearance: 'none', border: '1px solid #d1d5db', borderRadius: 10, padding: '11px 40px 11px 14px', fontSize: 14, color: company.industry ? '#111827' : '#9ca3af', outline: 'none', cursor: 'pointer' }}
                         >
                           <option value="">Select industry...</option>
                           {industries.map(ind => <option key={ind._id} value={ind._id}>{ind.name}</option>)}
                         </select>
-                        <ChevronDown style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: '#9ca3af', pointerEvents: 'none' }} />
+                        <ChevronDown style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: '#9ca3af', pointerEvents: 'none' }} />
                       </div>
                     )}
                   </div>
 
                   <div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
-                      <Briefcase style={{ width: 14, height: 14, color: '#a855f7' }} />
-                      Your gig <span style={{ color: '#ef4444' }}>*</span>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: '#1f2937', marginBottom: 8 }}>
+                      <Briefcase style={{ width: 14, height: 14, color: HARX }} />
+                      Your gig <span style={{ color: HARX }}>*</span>
                     </label>
                     <GigSelector
                       industryFilter={company.industry}
@@ -247,15 +250,15 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                   </div>
 
                   {selectedGig && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#065f46' }}>
-                      <CheckCircle style={{ width: 14, height: 14, color: '#10b981', flexShrink: 0 }} />
-                      <span style={{ fontWeight: 500 }}>{selectedGig.title}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#065f46', border: '1px solid #d1fae5' }}>
+                      <CheckCircle style={{ width: 16, height: 16, color: '#059669', flexShrink: 0 }} />
+                      <span style={{ fontWeight: 600 }}>{selectedGig.title}</span>
                     </div>
                   )}
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', padding: '16px 0' }}>
-                  <AlertCircle style={{ width: 28, height: 28, color: '#f87171', margin: '0 auto 8px' }} />
+                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  <AlertCircle style={{ width: 28, height: 28, color: HARX, margin: '0 auto 8px' }} />
                   <p style={{ fontSize: 14, color: '#dc2626' }}>Failed to load company data</p>
                 </div>
               )}
@@ -271,19 +274,19 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           )}
 
           {currentStep === 3 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <div style={{ textAlign: 'center' }}>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                  <Users style={{ width: 20, height: 20, color: '#a855f7' }} />
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <Users style={{ width: 20, height: 20, color: HARX }} />
                   Identify your learners
                 </h3>
-                <p style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>Role-based paths · Skill assessments · Personalization</p>
+                <p style={{ fontSize: 13, color: '#6b7280', marginTop: 6 }}>Role-based paths · Skill assessments · Personalization</p>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#1f2937', marginBottom: 8 }}>
-                  Target roles & departments <span style={{ color: '#ef4444' }}>*</span>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#1f2937', marginBottom: 10 }}>
+                  Target roles & departments <span style={{ color: HARX }}>*</span>
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
                   {[
                     { role: 'Customer Success Representatives', dept: 'Customer Success', icon: '🎯' },
                     { role: 'Sales Representatives', dept: 'Sales', icon: '💼' },
@@ -296,7 +299,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                   ].map(item => {
                     const checked = journey.targetRoles?.includes(item.role) || false;
                     return (
-                      <label key={item.role} style={{ display: 'flex', alignItems: 'center', padding: 8, border: `1px solid ${checked ? '#a855f7' : '#e5e7eb'}`, borderRadius: 8, cursor: 'pointer', background: checked ? '#faf5ff' : '#fff', transition: 'all 150ms' }}>
+                      <label key={item.role} style={{ display: 'flex', alignItems: 'center', padding: 10, border: `1.5px solid ${checked ? HARX : '#e5e7eb'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 150ms' }}>
                         <input
                           type="checkbox"
                           checked={checked}
@@ -304,12 +307,12 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                             const cur = journey.targetRoles || [];
                             setJourney({ ...journey, targetRoles: e.target.checked ? [...cur, item.role] : cur.filter(r => r !== item.role) });
                           }}
-                          style={{ marginRight: 8, accentColor: '#a855f7' }}
+                          style={{ marginRight: 8, accentColor: HARX }}
                         />
-                        <span style={{ fontSize: 13, marginRight: 6 }}>{item.icon}</span>
+                        <span style={{ fontSize: 14, marginRight: 6 }}>{item.icon}</span>
                         <div>
-                          <div style={{ fontSize: 11, fontWeight: 500, color: '#111827', lineHeight: 1.3 }}>{item.role}</div>
-                          <div style={{ fontSize: 9, color: '#6b7280' }}>{item.dept}</div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: '#111827', lineHeight: 1.3 }}>{item.role}</div>
+                          <div style={{ fontSize: 10, color: '#6b7280' }}>{item.dept}</div>
                         </div>
                       </label>
                     );
@@ -320,49 +323,49 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           )}
 
           {currentStep === 5 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <div style={{ textAlign: 'center' }}>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                  <CheckCircle style={{ width: 20, height: 20, color: '#059669' }} />
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <CheckCircle style={{ width: 22, height: 22, color: '#059669' }} />
                   Setup complete
                 </h3>
-                <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>360° methodology applied. Upload and transform content next.</p>
+                <p style={{ fontSize: 13, color: '#6b7280', marginTop: 6 }}>360° methodology applied. Upload and transform content next.</p>
               </div>
-              <div style={{ border: '1px solid #e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
-                <div style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6' }}>
-                  <h5 style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Building2 style={{ width: 14, height: 14, color: '#a855f7' }} /> Industry & gig
+              <div style={{ border: '1px solid #e5e7eb', borderRadius: 14, overflow: 'hidden' }}>
+                <div style={{ padding: '14px 18px', borderBottom: '1px solid #f3f4f6' }}>
+                  <h5 style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9ca3af', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Building2 style={{ width: 14, height: 14, color: HARX }} /> Industry & gig
                   </h5>
-                  <p style={{ fontSize: 13, color: '#374151', margin: 0 }}>
+                  <p style={{ fontSize: 14, color: '#374151', margin: 0, fontWeight: 500 }}>
                     {company.industry ? (industries.find(i => i._id === company.industry)?.name || company.industry) : 'N/A'}
                   </p>
-                  <p style={{ fontSize: 12, color: '#6b7280', margin: '2px 0 0' }}>{selectedGig?.title || 'No gig selected'}</p>
+                  <p style={{ fontSize: 13, color: '#6b7280', margin: '2px 0 0' }}>{selectedGig?.title || 'No gig selected'}</p>
                 </div>
-                <div style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6' }}>
-                  <h5 style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Target style={{ width: 14, height: 14, color: '#a855f7' }} /> Training program
+                <div style={{ padding: '14px 18px', borderBottom: '1px solid #f3f4f6' }}>
+                  <h5 style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9ca3af', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Target style={{ width: 14, height: 14, color: HARX }} /> Training program
                   </h5>
-                  <p style={{ fontSize: 13, color: '#374151', margin: 0 }}>{trainingDetails?.trainingName || selectedGig?.title || 'N/A'}</p>
-                  <p style={{ fontSize: 12, color: '#6b7280', margin: '2px 0 0' }}>
+                  <p style={{ fontSize: 14, color: '#374151', margin: 0, fontWeight: 500 }}>{trainingDetails?.trainingName || selectedGig?.title || 'N/A'}</p>
+                  <p style={{ fontSize: 13, color: '#6b7280', margin: '2px 0 0' }}>
                     {trainingDetails?.estimatedDuration ? (() => { const m = parseInt(trainingDetails.estimatedDuration); if (m >= 1440) return `${Math.round(m / 1440)} day(s)`; if (m >= 60) return `${Math.round(m / 60)} hour(s)`; return `${m} minute(s)`; })() : journey.estimatedDuration || 'N/A'}
                     {' · '}{journey.targetRoles?.length || 0} target roles
                   </p>
                 </div>
                 {selectedMethodology && (
-                  <div style={{ padding: '12px 16px' }}>
-                    <h5 style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Sparkles style={{ width: 14, height: 14, color: '#a855f7' }} /> Methodology
+                  <div style={{ padding: '14px 18px' }}>
+                    <h5 style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9ca3af', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Sparkles style={{ width: 14, height: 14, color: HARX }} /> Methodology
                     </h5>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                       {selectedMethodology.components?.slice(0, showAllComponents ? undefined : 6).map((c: any, i: number) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#374151' }}>
-                          <CheckCircle style={{ width: 12, height: 12, color: '#10b981', flexShrink: 0 }} />
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#374151' }}>
+                          <CheckCircle style={{ width: 14, height: 14, color: '#059669', flexShrink: 0 }} />
                           <span>{c.title}</span>
                         </div>
                       ))}
                     </div>
                     {selectedMethodology.components && selectedMethodology.components.length > 6 && (
-                      <button type="button" onClick={() => setShowAllComponents(!showAllComponents)} style={{ marginTop: 8, fontSize: 11, fontWeight: 600, color: '#a855f7', background: 'none', border: 'none', cursor: 'pointer' }}>
+                      <button type="button" onClick={() => setShowAllComponents(!showAllComponents)} style={{ marginTop: 8, fontSize: 12, fontWeight: 700, color: HARX, background: 'none', border: 'none', cursor: 'pointer' }}>
                         {showAllComponents ? 'Show less' : `+${selectedMethodology.components.length - 6} more`}
                       </button>
                     )}
@@ -376,39 +379,39 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
       {/* ── Footer ── */}
       {!isStep2 && (
-        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px' }}>
+        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 32px' }}>
           <button
             type="button"
             onClick={() => { if (currentStep === 5) setCurrentStep(4); else if (currentStep > 1) setCurrentStep(currentStep - 1); }}
             disabled={currentStep === 1}
             style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
-              border: currentStep === 1 ? 'none' : '1px solid #e5e7eb',
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700,
+              border: currentStep === 1 ? 'none' : '1px solid #d1d5db',
               background: 'transparent', color: currentStep === 1 ? '#d1d5db' : '#374151',
               cursor: currentStep === 1 ? 'not-allowed' : 'pointer',
             }}
           >
-            <ArrowLeft style={{ width: 14, height: 14 }} />
+            <ArrowLeft style={{ width: 16, height: 16 }} />
             Back
           </button>
 
-          <span style={{ fontSize: 11, color: '#9ca3af' }}>Step {stepNum} of {steps.length}</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af' }}>Step {stepNum} of {steps.length}</span>
 
           <button
             type="button"
             onClick={handleNext}
             disabled={!isStepValid()}
             style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              padding: '6px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700,
               border: 'none', color: '#fff', cursor: isStepValid() ? 'pointer' : 'not-allowed',
-              background: isStepValid() ? 'linear-gradient(to right, #d946ef, #9333ea)' : '#e5e7eb',
-              boxShadow: isStepValid() ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              background: isStepValid() ? HARX_GRADIENT : '#d1d5db',
+              boxShadow: isStepValid() ? '0 2px 8px rgba(255,77,77,0.25)' : 'none',
             }}
           >
             {currentStep === 5 ? 'Start building' : 'Continue'}
-            <ArrowRight style={{ width: 14, height: 14 }} />
+            <ArrowRight style={{ width: 16, height: 16 }} />
           </button>
         </div>
       )}
