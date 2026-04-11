@@ -232,125 +232,75 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   );
 
   /* ─────────────── Step 1: Industry & Gig ─────────────── */
-  const renderStep1 = () => (
-    <div className="mx-auto w-full max-w-lg">
-      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
-        {/* Card header with gradient accent */}
-        <div className="rounded-t-2xl bg-gradient-to-r from-fuchsia-500/5 via-purple-500/5 to-indigo-500/5 px-5 py-4 text-center md:px-6">
-          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-purple-600 shadow-lg shadow-fuchsia-500/20">
-            <Building2 className="h-5 w-5 text-white" />
-          </div>
-          <h3 className="text-base font-bold text-gray-900 md:text-lg">
-            Welcome to your training journey
-          </h3>
-          <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1.5">
-            {['Industry templates', 'Smart defaults', 'Compliance'].map(tag => (
-              <span key={tag} className="rounded-full bg-white/80 px-2.5 py-0.5 text-[10px] font-medium text-fuchsia-700 ring-1 ring-fuchsia-100">
-                {tag}
-              </span>
-            ))}
-          </div>
+  const renderStep1Body = () => (
+    <div className="mx-auto w-full max-w-lg space-y-4">
+      {/* Title */}
+      <div className="text-center">
+        <h3 className="text-base font-bold text-gray-900">Welcome to your training journey</h3>
+        <p className="mt-0.5 text-xs text-gray-500">Industry templates · Smart defaults · Compliance</p>
+      </div>
+
+      {loadingCompany ? (
+        <div className="flex flex-col items-center justify-center py-6">
+          <Loader2 className="mb-2 h-5 w-5 animate-spin text-fuchsia-500" />
+          <p className="text-xs text-gray-500">Loading company information...</p>
         </div>
-
-        {/* Card body */}
-        <div className="space-y-4 px-5 py-4 md:px-6">
-          {loadingCompany ? (
-            <div className="flex flex-col items-center justify-center py-6">
-              <Loader2 className="mb-2 h-6 w-6 animate-spin text-fuchsia-500" />
-              <p className="text-xs text-gray-500">Loading company information...</p>
-            </div>
-          ) : companyData ? (
-            <>
-              {/* Industry select */}
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-gray-700">
-                  Training industry <span className="text-rose-500">*</span>
-                </label>
-                {loadingIndustries ? (
-                  <div className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-3">
-                    <Loader2 className="h-4 w-4 animate-spin text-fuchsia-500" />
-                    <span className="text-xs text-gray-500">Loading...</span>
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <select
-                      value={company.industry || ''}
-                      onChange={(e) => setCompany({ ...company, industry: e.target.value })}
-                      className="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white py-2.5 pl-3 pr-10 text-sm text-gray-900 shadow-sm transition-all outline-none hover:border-fuchsia-300 focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20"
-                    >
-                      <option value="" className="text-gray-400">Select industry...</option>
-                      {industries.map((industry) => (
-                        <option key={industry._id} value={industry._id}>{industry.name}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden />
-                  </div>
-                )}
+      ) : companyData ? (
+        <div className="space-y-3">
+          {/* Industry select */}
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-gray-700">
+              Training industry <span className="text-rose-500">*</span>
+            </label>
+            {loadingIndustries ? (
+              <div className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-2.5">
+                <Loader2 className="h-4 w-4 animate-spin text-fuchsia-500" />
+                <span className="text-xs text-gray-500">Loading...</span>
               </div>
-
-              {/* Gig select */}
-              <div>
-                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-gray-700">
-                  <Briefcase className="h-3.5 w-3.5 text-fuchsia-500" />
-                  Your gig <span className="text-rose-500">*</span>
-                </label>
-                <GigSelector
-                  industryFilter={company.industry}
-                  industryName={industries.find(ind => ind._id === company.industry)?.name || company.industry}
-                  onGigSelect={handleGigSelect}
-                  selectedGigId={selectedGig?._id}
-                />
+            ) : (
+              <div className="relative">
+                <select
+                  value={company.industry || ''}
+                  onChange={(e) => setCompany({ ...company, industry: e.target.value })}
+                  className="w-full cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white py-2.5 pl-3 pr-10 text-sm text-gray-900 shadow-sm transition-all outline-none hover:border-fuchsia-300 focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20"
+                >
+                  <option value="" className="text-gray-400">Select industry...</option>
+                  {industries.map((industry) => (
+                    <option key={industry._id} value={industry._id}>{industry.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden />
               </div>
+            )}
+          </div>
 
-              {/* Selected gig preview */}
-              {selectedGig && (
-                <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
-                  <CheckCircle className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                  <span className="font-medium">{selectedGig.title}</span>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="py-4 text-center">
-              <AlertCircle className="mx-auto mb-2 h-7 w-7 text-red-400" />
-              <p className="text-sm text-red-600">Failed to load company data</p>
+          {/* Gig select */}
+          <div>
+            <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-gray-700">
+              <Briefcase className="h-3.5 w-3.5 text-fuchsia-500" />
+              Your gig <span className="text-rose-500">*</span>
+            </label>
+            <GigSelector
+              industryFilter={company.industry}
+              industryName={industries.find(ind => ind._id === company.industry)?.name || company.industry}
+              onGigSelect={handleGigSelect}
+              selectedGigId={selectedGig?._id}
+            />
+          </div>
+
+          {selectedGig && (
+            <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+              <CheckCircle className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+              <span className="font-medium">{selectedGig.title}</span>
             </div>
           )}
         </div>
-
-        {/* Card footer / navigation */}
-        <div className="flex items-center justify-between border-t border-gray-100 px-5 py-3 md:px-6">
-          <button
-            type="button"
-            disabled
-            className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-300 cursor-not-allowed"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back
-          </button>
-
-          <div className="flex items-center gap-1.5">
-            {steps.map((s) => (
-              <div
-                key={s.id}
-                className={`h-1.5 rounded-full transition-all ${
-                  s.id === currentStep ? 'w-5 bg-fuchsia-500' : s.id < currentStep ? 'w-1.5 bg-emerald-400' : 'w-1.5 bg-gray-200'
-                }`}
-              />
-            ))}
-          </div>
-
-          <button
-            type="button"
-            onClick={handleNext}
-            disabled={!isStepValid()}
-            className="flex items-center gap-1 rounded-lg bg-gradient-to-r from-fuchsia-500 to-purple-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:shadow-md hover:from-fuchsia-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Continue
-            <ArrowRight className="h-3.5 w-3.5" />
-          </button>
+      ) : (
+        <div className="py-4 text-center">
+          <AlertCircle className="mx-auto mb-2 h-7 w-7 text-red-400" />
+          <p className="text-sm text-red-600">Failed to load company data</p>
         </div>
-      </div>
+      )}
     </div>
   );
 
@@ -498,92 +448,77 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     }
   };
 
-  /* ─────────────── Main layout ─────────────── */
+  /* ─────────────── Shared footer ─────────────── */
+  const renderFooter = () => (
+    <div className="flex shrink-0 items-center justify-between border-t border-gray-100 bg-white px-4 py-2 md:px-6">
+      <button
+        type="button"
+        onClick={() => {
+          if (currentStep === 5) setCurrentStep(4);
+          else if (currentStep > 1) setCurrentStep(currentStep - 1);
+        }}
+        disabled={currentStep === 1}
+        className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+          currentStep === 1
+            ? 'cursor-not-allowed text-gray-300'
+            : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+        }`}
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Back
+      </button>
 
-  // Step 1 has its own card-based layout with integrated footer
-  if (currentStep === 1) {
-    return (
-      <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-gradient-to-b from-gray-50 to-white">
-        {/* Thin stepper bar */}
-        <div className="shrink-0 border-b border-gray-100 bg-white/80 px-3 py-2 backdrop-blur-sm">
-          {renderStepper()}
-        </div>
+      <span className="text-[11px] text-gray-400">
+        Step {currentStep > 4 ? 4 : currentStep} of {steps.length}
+      </span>
 
-        {/* Centered card */}
-        <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-4 py-4">
-          {renderStep1()}
-        </div>
-      </div>
-    );
-  }
+      <button
+        type="button"
+        onClick={handleNext}
+        disabled={!isStepValid()}
+        className="flex items-center gap-1 rounded-lg bg-gradient-to-r from-fuchsia-500 to-purple-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:shadow-md hover:from-fuchsia-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        {currentStep === 5 ? 'Start building' : 'Continue'}
+        <ArrowRight className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
 
-  // Step 2 (TrainingDetailsForm) has its own full-screen layout
-  if (currentStep === 2) {
-    return (
-      <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-gradient-to-b from-gray-50 to-white">
-        <div className="shrink-0 border-b border-gray-100 bg-white/80 px-3 py-2 backdrop-blur-sm">
-          {renderStepper()}
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3 md:px-6">
-          <TrainingDetailsForm
-            onComplete={handleTrainingDetailsComplete}
-            onBack={() => setCurrentStep(1)}
-            gigData={selectedGig}
-          />
-        </div>
-      </div>
-    );
-  }
+  /* ─────────────── Main layout (same shell for every step) ─────────────── */
 
-  // Step 4 is handled by MethodologySelector
-  if (currentStep === 4) {
-    return null;
-  }
+  if (currentStep === 4) return null;
 
-  // Steps 3, 5: generic scrollable layout with shared footer
+  const isStep2 = currentStep === 2;
+
   return (
-    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-gradient-to-b from-gray-50 to-white">
-      <div className="shrink-0 border-b border-gray-100 bg-white/80 px-3 py-2 backdrop-blur-sm">
+    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-white">
+      {/* Stepper */}
+      <div className="shrink-0 border-b border-gray-100 px-3 py-2">
         {renderStepper()}
       </div>
 
-      <div className="mx-auto min-h-0 w-full max-w-3xl flex-1 overflow-y-auto px-4 py-4 md:px-6">
-        {renderGenericStepContent()}
-      </div>
-
-      <div className="flex shrink-0 items-center justify-between border-t border-gray-100 bg-white px-4 py-2.5 shadow-[0_-2px_8px_rgba(0,0,0,0.04)] md:px-6">
-        <button
-          type="button"
-          onClick={() => {
-            if (currentStep === 5) setCurrentStep(4);
-            else if (currentStep > 1) setCurrentStep(currentStep - 1);
-          }}
-          className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+      {/* Body + footer wrapper: flex-1 so footer stays at bottom */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div
+          className={`mx-auto w-full max-w-3xl px-4 md:px-6 ${
+            currentStep === 1
+              ? 'shrink-0 pt-3 pb-2'
+              : 'min-h-0 flex-1 overflow-y-auto py-3'
+          }`}
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Back
-        </button>
-
-        <div className="flex items-center gap-1.5">
-          {steps.map((s) => (
-            <div
-              key={s.id}
-              className={`h-1.5 rounded-full transition-all ${
-                s.id === currentStep ? 'w-5 bg-fuchsia-500' : s.id < currentStep ? 'w-1.5 bg-emerald-400' : 'w-1.5 bg-gray-200'
-              }`}
+          {currentStep === 1 && renderStep1Body()}
+          {isStep2 && (
+            <TrainingDetailsForm
+              onComplete={handleTrainingDetailsComplete}
+              onBack={() => setCurrentStep(1)}
+              gigData={selectedGig}
             />
-          ))}
+          )}
+          {currentStep === 3 && renderStep3()}
+          {currentStep === 5 && renderStep5()}
         </div>
 
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={!isStepValid()}
-          className="flex items-center gap-1 rounded-lg bg-gradient-to-r from-fuchsia-500 to-purple-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:shadow-md hover:from-fuchsia-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {currentStep === 5 ? 'Start building' : 'Continue'}
-          <ArrowRight className="h-3.5 w-3.5" />
-        </button>
+        {!isStep2 && <div className="mt-auto">{renderFooter()}</div>}
       </div>
     </div>
   );
