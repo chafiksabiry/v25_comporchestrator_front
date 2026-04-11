@@ -1239,12 +1239,10 @@ const CompanyOnboarding = () => {
   }
 
   if (activeComponent) {
-    const isFullScreen = activeStep === 9;
-    return isFullScreen ? (
-      <div className="animate-fade-in" style={{ height: 'calc(100vh - 80px)', minHeight: 0 }}>
-        {activeComponent}
-      </div>
-    ) : (
+    if (activeStep === 9) {
+      return <div style={{ height: 'calc(100vh - 80px)' }}>{activeComponent}</div>;
+    }
+    return (
       <div className="space-y-4 animate-fade-in">
         <div className="bg-white/40 backdrop-blur-xl rounded-3xl p-1 border border-white/20 shadow-2xl">
           {activeComponent}
