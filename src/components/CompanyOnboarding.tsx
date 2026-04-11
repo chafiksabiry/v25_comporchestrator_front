@@ -1240,10 +1240,8 @@ const CompanyOnboarding = () => {
 
   if (activeComponent) {
     return (
-      <div className="space-y-4 animate-fade-in">
-        <div className="bg-white/40 backdrop-blur-xl rounded-3xl p-1 border border-white/20 shadow-2xl">
-          {activeComponent}
-        </div>
+      <div className="animate-fade-in">
+        {activeComponent}
       </div>
     );
   }

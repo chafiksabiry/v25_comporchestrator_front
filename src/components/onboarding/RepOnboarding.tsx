@@ -360,28 +360,28 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   if (showTraining.isOpen && showTraining.newJourney) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50/40 to-gray-50 p-4 md:p-8">
+      <div className="p-4 md:p-8">
         <div className="mx-auto max-w-6xl">
-          <header className="mb-8 overflow-hidden rounded-2xl border border-rose-100/80 bg-white/90 px-6 py-5 shadow-[0_8px_30px_rgb(244,63,94,0.14)] backdrop-blur-sm">
-            <div className="h-1 w-full -mx-6 -mt-5 mb-5 rounded-t-2xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600" aria-hidden />
+          <header className="mb-6 overflow-hidden rounded-2xl border border-harx-100 px-6 py-5">
+            <div className="h-1 w-full -mx-6 -mt-5 mb-5 rounded-t-2xl bg-gradient-harx" aria-hidden />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <div className="min-w-0">
-                <h1 className="text-2xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-fuchsia-600 to-purple-700 md:text-3xl">
+                <h1 className="text-2xl font-extrabold tracking-tight text-harx-600 md:text-3xl">
                   REP Onboarding
                 </h1>
-                <p className="mt-1 text-sm text-gray-600 md:text-base">Complete your setup and start your journey</p>
+                <p className="mt-1 text-sm text-gray-500">Complete your setup and start your journey</p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowTraining({ isOpen: false })}
-                className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-700 shadow-sm transition-all hover:bg-gray-50 sm:w-auto"
+                className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-700 transition-all hover:border-harx-200 hover:text-harx-600 sm:w-auto"
               >
                 ← Back to list
               </button>
             </div>
           </header>
-          <div className="overflow-hidden rounded-2xl border border-rose-100/80 bg-white shadow-[0_8px_30px_rgb(244,63,94,0.06)]" style={{ minHeight: 480 }}>
-            <div className="h-1 w-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600" aria-hidden />
+          <div className="overflow-hidden rounded-2xl border border-harx-100" style={{ minHeight: 420 }}>
+            <div className="h-1 w-full bg-gradient-harx" aria-hidden />
             <MemoryRouter>
               <AppContent
                 initialJourneyId={showTraining.journeyId}
@@ -398,13 +398,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50/40 to-gray-50 p-4 md:p-8">
+    <div className="p-4 md:p-8">
       <div className="mx-auto max-w-6xl">
         {selectedPresentation ? (
-          <div className="overflow-hidden rounded-2xl border border-rose-100/80 bg-white shadow-[0_8px_30px_rgb(244,63,94,0.1)]">
+          <div className="overflow-hidden rounded-2xl border border-harx-100 bg-white">
             <div className="grid min-h-[min(720px,calc(100dvh-8rem))] grid-cols-1 lg:grid-cols-[minmax(260px,300px)_1fr] lg:min-h-[calc(100dvh-10rem)]">
-              <aside className="max-h-[40vh] overflow-y-auto border-b border-rose-100/60 bg-gradient-to-b from-fuchsia-50/50 to-white p-4 lg:max-h-none lg:border-b-0 lg:border-r lg:border-rose-100/60">
-                <div className="mb-2 flex items-center gap-2 text-fuchsia-700">
+              <aside className="max-h-[40vh] overflow-y-auto border-b border-harx-100/60 p-4 lg:max-h-none lg:border-b-0 lg:border-r lg:border-harx-100/60">
+                <div className="mb-2 flex items-center gap-2 text-harx-600">
                   <BookOpen className="h-5 w-5 shrink-0" />
                   <span className="text-[10px] font-bold uppercase tracking-widest">Modules</span>
                 </div>
@@ -418,7 +418,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         key={mod._id || mod.id || idx}
                         className="flex gap-2 rounded-xl px-2 py-2 text-sm text-gray-800 hover:bg-white/80"
                       >
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-rose-100 to-fuchsia-100 text-xs font-bold text-fuchsia-900">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-harx-50 text-xs font-bold text-harx-600">
                           {idx + 1}
                         </span>
                         <span className="min-w-0 flex-1 font-medium leading-snug">{mod.title || `Module ${idx + 1}`}</span>
@@ -447,19 +447,19 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           </div>
         ) : (
           <>
-        <header className="mb-8 overflow-hidden rounded-2xl border border-rose-100/80 bg-white/90 px-6 py-5 shadow-[0_8px_30px_rgb(244,63,94,0.14)] backdrop-blur-sm">
-          <div className="h-1 w-full -mx-6 -mt-5 mb-5 rounded-t-2xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600" aria-hidden />
+        <header className="mb-6 overflow-hidden rounded-2xl border border-harx-100 px-6 py-5">
+          <div className="h-1 w-full -mx-6 -mt-5 mb-5 rounded-t-2xl bg-gradient-harx" aria-hidden />
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <div className="min-w-0">
-              <h1 className="text-2xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-fuchsia-600 to-purple-700 md:text-3xl">
+              <h1 className="text-2xl font-extrabold tracking-tight text-harx-600 md:text-3xl">
                 REP Onboarding
               </h1>
-              <p className="mt-1 text-sm text-gray-600 md:text-base">Complete your setup and start your journey</p>
+              <p className="mt-1 text-sm text-gray-500">Complete your setup and start your journey</p>
             </div>
             <button
               type="button"
               onClick={() => setShowTraining({ isOpen: true, newJourney: true })}
-              className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600 px-4 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:from-rose-600 hover:via-fuchsia-600 hover:to-purple-700 hover:shadow-lg sm:w-auto"
+              className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-harx px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md sm:w-auto"
             >
               <Plus className="h-4 w-4" />
               <span>New training journey</span>
@@ -471,28 +471,28 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           {/* Main Content */}
           <div className="space-y-6">
             {/* Training Section — HARX brand (rose / purple) aligned with Journey Builder */}
-            <section className="overflow-hidden rounded-2xl border border-rose-100/70 bg-white shadow-[0_8px_30px_rgb(244,63,94,0.08)]">
-              <div className="h-1 w-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600" aria-hidden />
+            <section className="overflow-hidden rounded-2xl border border-harx-100">
+              <div className="h-1 w-full bg-gradient-harx" aria-hidden />
               <div className="p-6">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center space-x-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 ring-1 ring-purple-100 shadow-sm">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-harx-50 text-harx-500 ring-1 ring-harx-100">
                         <BookOpen className="h-5 w-5" />
                       </div>
                       <div>
                         <h2 className="text-lg font-bold text-gray-900">Training & Certification</h2>
-                        <p className="text-sm text-purple-600/80">Skills development and validation</p>
+                        <p className="text-sm text-harx-500/80">Skills development and validation</p>
                       </div>
                     </div>
 
                     {/* Gig Filter Dropdown */}
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold uppercase tracking-wider text-purple-500">Gig:</span>
+                      <span className="text-xs font-bold uppercase tracking-wider text-harx-500">Gig:</span>
                       <select
                         id="gig-filter-dropdown"
                         value={filterGigId}
                         onChange={(e) => setFilterGigId(e.target.value)}
-                        className="rounded-xl border border-purple-100 bg-white px-3 py-2 text-sm font-medium text-gray-800 shadow-sm outline-none transition-all focus:border-purple-400 focus:ring-2 focus:ring-purple-500/30"
+                        className="rounded-xl border border-harx-100 bg-white px-3 py-2 text-sm font-medium text-gray-800 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
                       >
                         <option value="all">Tous les Gigs</option>
                         {companyGigs.map((gig: any) => (
@@ -505,14 +505,14 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   </div>
 
                 {loadingTrainings ? (
-                  <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-purple-100 bg-purple-50/30 py-12">
-                    <RefreshCw className="h-8 w-8 animate-spin text-purple-500" />
-                    <p className="mt-4 text-sm font-medium text-purple-800/80">Loading available trainings...</p>
+                  <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-harx-100 py-12">
+                    <RefreshCw className="h-8 w-8 animate-spin text-harx-500" />
+                    <p className="mt-4 text-sm font-medium text-gray-600">Loading available trainings...</p>
                   </div>
                 ) : trainings.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 py-12 p-8 text-center">
-                    <div className="mb-4 rounded-2xl border border-purple-100 bg-white p-3 shadow-sm">
-                      <Plus className="h-6 w-6 text-purple-600" />
+                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-harx-200 py-12 p-8 text-center">
+                    <div className="mb-4 rounded-2xl border border-harx-100 bg-white p-3">
+                      <Plus className="h-6 w-6 text-harx-500" />
                     </div>
                     <h3 className="text-base font-bold text-gray-900">No training journeys yet</h3>
                     <p className="mx-auto mt-2 max-w-xs text-sm text-gray-600">
@@ -521,7 +521,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                     <button
                       type="button"
                       onClick={() => setShowTraining({ isOpen: true, newJourney: true })}
-                      className="mt-6 inline-flex items-center space-x-2 rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg transition-all hover:from-rose-600 hover:to-purple-700 hover:shadow-xl"
+                      className="mt-6 inline-flex items-center space-x-2 rounded-xl bg-gradient-harx px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md"
                     >
                       <Plus className="h-4 w-4" />
                       <span>Create First Journey</span>
@@ -535,19 +535,19 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         return (
                           <div
                           key={formatted.id}
-                          className="group relative overflow-hidden rounded-2xl border border-rose-100/70 bg-white p-0 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-rose-200 hover:shadow-[0_12px_40px_rgb(244,63,94,0.16)]"
+                          className="group relative overflow-hidden rounded-2xl border border-harx-100 bg-white p-0 transition-all duration-200 hover:-translate-y-1 hover:border-harx-200 hover:shadow-md"
                           >
-                          <div className="h-1.5 w-full bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600" aria-hidden />
+                          <div className="h-1.5 w-full bg-gradient-harx" aria-hidden />
                           <div className="p-5">
                             <div className="mb-4 flex items-start justify-between gap-3">
                               <div className="flex items-start space-x-3">
                                 <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${formatted.status === 'completed' ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100' :
-                                  formatted.status === 'in_progress' ? 'bg-purple-50 text-purple-600 ring-1 ring-purple-100' : 'bg-rose-50 text-rose-600 ring-1 ring-rose-100'
+                                  formatted.status === 'in_progress' ? 'bg-harx-50 text-harx-500 ring-1 ring-harx-100' : 'bg-harx-50 text-harx-400 ring-1 ring-harx-100'
                                   }`}>
                                   {formatted.status === 'completed' ? <CheckCircle className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                                 </div>
                                 <div>
-                                  <h3 className="line-clamp-2 text-base font-bold leading-snug text-gray-900 transition-colors group-hover:text-fuchsia-700">
+                                  <h3 className="line-clamp-2 text-base font-bold leading-snug text-gray-900 transition-colors group-hover:text-harx-600">
                                     {formatted.title}
                                   </h3>
                                   <p className="mt-1 line-clamp-2 text-sm text-gray-500">
@@ -558,19 +558,19 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               <span className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${formatted.status === 'completed'
                                 ? 'bg-emerald-50 text-emerald-700'
                                 : formatted.status === 'in_progress'
-                                  ? 'bg-purple-50 text-purple-700'
-                                  : 'bg-rose-50 text-rose-700'
+                                  ? 'bg-harx-50 text-harx-600'
+                                  : 'bg-harx-50 text-harx-500'
                                 }`}>
                                 {formatted.status === 'completed' ? 'Done' : formatted.status === 'in_progress' ? 'In progress' : 'New'}
                               </span>
                             </div>
                             <div className="mb-4 grid grid-cols-2 gap-2">
                               <div className="rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-2 text-xs text-gray-600">
-                                <Clock className="mr-1.5 inline h-3.5 w-3.5 text-rose-500" />
+                                <Clock className="mr-1.5 inline h-3.5 w-3.5 text-harx-500" />
                                 {formatted.duration}
                               </div>
                               <div className="rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-2 text-xs text-gray-600">
-                                <FileText className="mr-1.5 inline h-3.5 w-3.5 text-fuchsia-500" />
+                                <FileText className="mr-1.5 inline h-3.5 w-3.5 text-harx-alt-500" />
                                 {formatted.modulesCount} modules
                               </div>
                             </div>
@@ -581,7 +581,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                 disabled={loadingPresentation}
                                 className={`inline-flex items-center space-x-2 rounded-xl px-4 py-2 text-sm font-bold transition-all ${formatted.status === 'completed'
                                   ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100 hover:bg-emerald-100'
-                                  : 'bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600 text-white shadow-md hover:from-rose-600 hover:via-fuchsia-600 hover:to-purple-700 hover:shadow-lg'
+                                  : 'bg-gradient-harx text-white shadow-sm hover:shadow-md'
                                   }`}
                               >
                                 {loadingPresentation ? (
