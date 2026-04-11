@@ -30,7 +30,7 @@ export default function TrainingDetailsForm({ onComplete, onBack, gigData }: Tra
   return (
     <div className="w-full h-full flex flex-col">
       <div className="flex-1 w-full max-w-4xl mx-auto flex flex-col">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex-1 flex flex-col">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex-1 flex flex-col md:p-5">
           {/* Navigation Labels */}
           <div className="flex items-center justify-center gap-2 mb-3">
             <div className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md text-[10px] font-medium">
@@ -67,7 +67,7 @@ export default function TrainingDetailsForm({ onComplete, onBack, gigData }: Tra
               <textarea
                 value={trainingDescription}
                 onChange={(e) => setTrainingDescription(e.target.value)}
-                rows={4}
+                rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
                 placeholder="Describe the goals, outcomes, and key benefits of this training program..."
               />

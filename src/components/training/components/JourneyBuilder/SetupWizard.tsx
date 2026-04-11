@@ -266,39 +266,39 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-8">
+          <div className="space-y-4 md:space-y-5">
             <div className="text-center">
-              <h3 className="flex items-center justify-center gap-2 text-xl font-bold tracking-tight text-gray-900 md:text-2xl">
-                <Building2 className="h-6 w-6 shrink-0 text-fuchsia-600" aria-hidden />
+              <h3 className="flex items-center justify-center gap-1.5 text-base font-bold tracking-tight text-gray-900 md:gap-2 md:text-lg">
+                <Building2 className="h-5 w-5 shrink-0 text-fuchsia-600 md:h-6 md:w-6" aria-hidden />
                 Welcome to your training journey
               </h3>
-              <p className="mt-3 text-sm text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 md:text-sm">
                 {steps[0].features.join(' · ')}
               </p>
             </div>
 
             {loadingCompany ? (
-              <div className="flex flex-col items-center justify-center py-8">
-                <Loader2 className="mb-2 h-6 w-6 animate-spin text-fuchsia-600" />
-                <p className="text-sm text-gray-600">Loading company information…</p>
+              <div className="flex flex-col items-center justify-center py-4">
+                <Loader2 className="mb-1 h-5 w-5 animate-spin text-fuchsia-600" />
+                <p className="text-xs text-gray-600 md:text-sm">Loading company information…</p>
               </div>
             ) : companyData ? (
-              <div className="space-y-8">
+              <div className="space-y-4 md:space-y-5">
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-gray-900">
+                  <label className="mb-1 block text-xs font-semibold text-gray-900 md:text-sm">
                     Select training industry <span className="font-bold text-rose-500">*</span>
                   </label>
                   {loadingIndustries ? (
-                    <div className="flex w-full items-center justify-center gap-3 rounded-xl border-2 border-dashed border-fuchsia-200 bg-gradient-to-r from-fuchsia-50/80 to-purple-50/50 px-4 py-4">
-                      <Loader2 className="h-5 w-5 animate-spin text-fuchsia-600" />
-                      <span className="text-sm font-medium text-fuchsia-900/80">Loading industries…</span>
+                    <div className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-fuchsia-200 bg-gradient-to-r from-fuchsia-50/80 to-purple-50/50 px-3 py-2.5">
+                      <Loader2 className="h-4 w-4 animate-spin text-fuchsia-600" />
+                      <span className="text-xs font-medium text-fuchsia-900/80 md:text-sm">Loading industries…</span>
                     </div>
                   ) : (
                     <div className="relative">
                       <select
                         value={company.industry || ''}
                         onChange={(e) => setCompany({ ...company, industry: e.target.value })}
-                        className="w-full cursor-pointer appearance-none rounded-xl border-2 border-fuchsia-200/90 bg-gradient-to-b from-white to-fuchsia-50/40 py-3.5 pl-4 pr-12 text-base font-medium text-gray-900 shadow-sm transition-all outline-none hover:border-fuchsia-400 hover:shadow-md hover:shadow-fuchsia-500/10 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/20"
+                        className="w-full cursor-pointer appearance-none rounded-xl border-2 border-fuchsia-200/90 bg-gradient-to-b from-white to-fuchsia-50/40 py-2 pl-3 pr-10 text-sm font-medium text-gray-900 shadow-sm transition-all outline-none hover:border-fuchsia-400 hover:shadow-md hover:shadow-fuchsia-500/10 focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 md:py-2.5 md:pl-4 md:pr-12 md:text-base"
                       >
                         <option value="" className="text-gray-500">
                           Select the industry for training
@@ -310,7 +310,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                         ))}
                       </select>
                       <ChevronDown
-                        className="pointer-events-none absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-fuchsia-600"
+                        className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-fuchsia-600 md:right-3.5 md:h-5 md:w-5"
                         aria-hidden
                       />
                     </div>
@@ -318,8 +318,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 </div>
 
                 <div>
-                  <h4 className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-800">
-                    <Briefcase className="h-4 w-4 text-fuchsia-600" aria-hidden />
+                  <h4 className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-gray-800 md:mb-2 md:gap-2 md:text-sm">
+                    <Briefcase className="h-3.5 w-3.5 text-fuchsia-600 md:h-4 md:w-4" aria-hidden />
                     Select your gig <span className="text-rose-500">*</span>
                   </h4>
                   <GigSelector
@@ -331,9 +331,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 </div>
               </div>
             ) : (
-              <div className="py-12 text-center">
-                <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
-                <p className="text-red-600">Failed to load company information</p>
+              <div className="py-6 text-center">
+                <AlertCircle className="mx-auto mb-2 h-8 w-8 text-red-500" />
+                <p className="text-sm text-red-600">Failed to load company information</p>
               </div>
             )}
           </div>
@@ -511,20 +511,20 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   };
 
   return (
-    <div className="flex w-full flex-col bg-white">
-      <div className="shrink-0 border-b border-gray-100 px-4 py-5 md:px-10 md:py-6">
+    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-white">
+      <div className="shrink-0 border-b border-gray-100 px-3 py-2 md:px-6 md:py-2.5">
         <div className="mx-auto max-w-3xl text-center">
-          <h1 className="flex items-center justify-center gap-2 text-2xl font-extrabold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-fuchsia-600 to-purple-700 md:text-3xl md:gap-3">
-            <Sparkles className="h-7 w-7 shrink-0 text-rose-500 md:h-8 md:w-8" aria-hidden />
+          <h1 className="flex items-center justify-center gap-1.5 text-lg font-extrabold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-fuchsia-600 to-purple-700 md:gap-2 md:text-2xl">
+            <Sparkles className="h-5 w-5 shrink-0 text-rose-500 md:h-6 md:w-6" aria-hidden />
             Create amazing training in minutes
           </h1>
-          <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-600 md:text-base">
+          <p className="mx-auto mt-1 max-w-2xl text-xs text-gray-600 md:text-sm">
             Turn your content into interactive programs with AI-assisted steps.
           </p>
         </div>
 
-        <div className="mx-auto mt-5 max-w-4xl overflow-x-auto pb-1 md:mt-6">
-          <div className="flex min-w-min items-center justify-center gap-0 px-2">
+        <div className="mx-auto mt-2 max-w-4xl overflow-x-auto pb-0.5 md:mt-2.5">
+          <div className="flex min-w-min items-center justify-center gap-0 px-1">
             {steps.map((step, index) => {
               const Icon = step.icon;
               const isActive = currentStep === step.id;
@@ -534,34 +534,34 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 <div key={step.id} className="flex items-center">
                   <div className="flex flex-col items-center">
                     <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${
+                      className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all duration-300 md:h-9 md:w-9 ${
                         isCompleted
                           ? 'border-transparent bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-md'
                           : isActive
-                            ? 'scale-105 border-transparent bg-gradient-to-br from-rose-500 via-fuchsia-500 to-purple-600 text-white shadow-md ring-2 ring-rose-200/80'
+                            ? 'scale-[1.02] border-transparent bg-gradient-to-br from-rose-500 via-fuchsia-500 to-purple-600 text-white shadow-md ring-2 ring-rose-200/80'
                             : 'border-gray-200 bg-white text-gray-400'
                       }`}
                     >
-                      {isCompleted ? <CheckCircle className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+                      {isCompleted ? <CheckCircle className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
                     </div>
-                    <div className={`mt-2 max-w-[5.5rem] text-center text-[10px] font-bold uppercase leading-tight tracking-wide md:max-w-[6.5rem] ${isActive ? 'text-fuchsia-700' : isCompleted ? 'text-emerald-600' : 'text-gray-400'}`}>
+                    <div className={`mt-0.5 max-w-[4.75rem] text-center text-[9px] font-bold uppercase leading-tight tracking-wide md:mt-1 md:max-w-[6rem] md:text-[10px] ${isActive ? 'text-fuchsia-700' : isCompleted ? 'text-emerald-600' : 'text-gray-400'}`}>
                       {step.title}
                     </div>
                   </div>
                   {index < steps.length - 1 && (
-                    <div className={`mx-2 h-0.5 w-8 shrink-0 rounded-full md:mx-3 md:w-12 ${isCompleted ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' : 'bg-gray-100'}`} />
+                    <div className={`mx-1 h-0.5 w-6 shrink-0 rounded-full md:mx-2 md:w-10 ${isCompleted ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' : 'bg-gray-100'}`} />
                   )}
                 </div>
               );
             })}
             {currentStep === 5 && (
               <>
-                <div className="mx-2 h-0.5 w-6 shrink-0 rounded-full bg-emerald-500 md:w-8" />
+                <div className="mx-1 h-0.5 w-5 shrink-0 rounded-full bg-emerald-500 md:w-7" />
                 <div className="flex flex-col items-center">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-emerald-500 bg-emerald-500 text-white">
-                    <CheckCircle className="h-4 w-4" />
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-emerald-500 bg-emerald-500 text-white md:h-8 md:w-8">
+                    <CheckCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
                   </div>
-                  <div className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-emerald-600">Done</div>
+                  <div className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-600 md:mt-1 md:text-[10px]">Done</div>
                 </div>
               </>
             )}
@@ -570,13 +570,13 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       </div>
 
       {currentStep !== 4 && (
-        <div className="px-4 py-5 md:px-10 md:py-6">
-          <div className="mx-auto max-w-3xl">{renderStepContent()}</div>
+        <div className="mx-auto min-h-0 w-full max-w-3xl flex-1 overflow-y-auto px-3 py-2 md:px-6 md:py-3">
+          {renderStepContent()}
         </div>
       )}
 
       {currentStep !== 2 && currentStep !== 4 && (
-        <div className="sticky bottom-0 z-10 flex shrink-0 items-center justify-between gap-4 border-t border-gray-100 bg-white px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] md:px-10 md:py-4">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-gray-100 bg-white px-3 py-2 shadow-[0_-2px_8px_rgba(0,0,0,0.04)] md:gap-4 md:px-6 md:py-2.5">
           <button
             type="button"
             onClick={() => {
@@ -586,7 +586,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 setCurrentStep(currentStep - 1);
               }
             }}
-            className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors ${
+            className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors md:rounded-xl md:px-5 md:py-2.5 md:text-sm ${
               currentStep === 1
                 ? 'cursor-not-allowed text-gray-400'
                 : 'border border-gray-200 text-gray-800 hover:border-gray-300 hover:bg-gray-50'
@@ -604,10 +604,10 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             type="button"
             onClick={handleNext}
             disabled={!isStepValid()}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600 px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:from-rose-600 hover:via-fuchsia-600 hover:to-purple-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600 px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:from-rose-600 hover:via-fuchsia-600 hover:to-purple-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 md:gap-2 md:rounded-xl md:px-6 md:py-2.5 md:text-sm"
           >
             <span>{currentStep === 5 ? 'Start building' : 'Continue'}</span>
-            <ArrowRight className="h-5 w-5" />
+            <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
           </button>
         </div>
       )}

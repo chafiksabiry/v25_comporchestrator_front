@@ -48,15 +48,15 @@ export default function GigSelector({ companyId, industryFilter, industryName, o
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-fuchsia-200 bg-gradient-to-r from-fuchsia-50/80 to-purple-50/50 py-10">
-        <Loader2 className="h-8 w-8 animate-spin text-fuchsia-600" />
-        <p className="text-sm font-medium text-fuchsia-900/80">Loading available gigs…</p>
+      <div className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-fuchsia-200 bg-gradient-to-r from-fuchsia-50/80 to-purple-50/50 py-5">
+        <Loader2 className="h-6 w-6 animate-spin text-fuchsia-600" />
+        <p className="text-xs font-medium text-fuchsia-900/80 md:text-sm">Loading available gigs…</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full space-y-3">
+    <div className="w-full space-y-2">
       <div className="relative w-full">
         <select
           value={selectedGigId || ''}
@@ -65,7 +65,7 @@ export default function GigSelector({ companyId, industryFilter, industryName, o
             if (selectedGig) onGigSelect(selectedGig);
           }}
           disabled={gigs.length === 0}
-          className="w-full cursor-pointer appearance-none rounded-xl border-2 border-fuchsia-200/90 bg-gradient-to-b from-white to-purple-50/35 py-3.5 pl-4 pr-12 text-base font-medium text-gray-900 shadow-sm transition-all outline-none hover:border-fuchsia-400 hover:shadow-md hover:shadow-fuchsia-500/10 focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-500/20 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-400"
+          className="w-full cursor-pointer appearance-none rounded-xl border-2 border-fuchsia-200/90 bg-gradient-to-b from-white to-purple-50/35 py-2 pl-3 pr-10 text-sm font-medium text-gray-900 shadow-sm transition-all outline-none hover:border-fuchsia-400 hover:shadow-md hover:shadow-fuchsia-500/10 focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-400 md:py-2.5 md:pl-4 md:pr-12 md:text-base"
         >
           <option value="" disabled className="text-gray-500">
             Select a gig…
@@ -78,7 +78,7 @@ export default function GigSelector({ companyId, industryFilter, industryName, o
           ))}
         </select>
         <ChevronDown
-          className={`pointer-events-none absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 ${gigs.length === 0 ? 'text-gray-400' : 'text-fuchsia-600'}`}
+          className={`pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 md:right-3.5 md:h-5 md:w-5 ${gigs.length === 0 ? 'text-gray-400' : 'text-fuchsia-600'}`}
           aria-hidden
         />
       </div>
