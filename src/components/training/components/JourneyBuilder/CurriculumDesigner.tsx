@@ -290,7 +290,7 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
       sectionType = 'document';
     }
 
-    let sectionTitle = (upload.name || 'Untitled').replace(/\.[^/.]+$/, '');
+    let sectionTitle = upload.name.replace(/\.[^/.]+$/, '');
     if (upload.aiAnalysis?.keyTopics && upload.aiAnalysis.keyTopics.length > 0) {
       sectionTitle = upload.aiAnalysis.keyTopics[0];
     }

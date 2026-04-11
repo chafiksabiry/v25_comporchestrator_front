@@ -9,6 +9,7 @@ import { AIService } from '../../infrastructure/services/AIService';
 import { DraftService } from '../../infrastructure/services/DraftService';
 import axios from 'axios';
 
+
 interface SlideData {
   title: string;
   content: string;
