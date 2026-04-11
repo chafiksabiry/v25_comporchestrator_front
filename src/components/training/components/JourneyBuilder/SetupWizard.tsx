@@ -266,26 +266,26 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-4 md:space-y-5">
+          <div className="space-y-2.5 md:space-y-3">
             <div className="text-center">
-              <h3 className="flex items-center justify-center gap-1.5 text-base font-bold tracking-tight text-gray-900 md:gap-2 md:text-lg">
-                <Building2 className="h-5 w-5 shrink-0 text-fuchsia-600 md:h-6 md:w-6" aria-hidden />
+              <h3 className="flex items-center justify-center gap-1.5 text-sm font-bold tracking-tight text-gray-900 md:gap-2 md:text-base">
+                <Building2 className="h-4 w-4 shrink-0 text-fuchsia-600 md:h-5 md:w-5" aria-hidden />
                 Welcome to your training journey
               </h3>
-              <p className="mt-1 text-xs text-gray-500 md:text-sm">
+              <p className="mt-0.5 text-[11px] text-gray-500 md:text-xs">
                 {steps[0].features.join(' · ')}
               </p>
             </div>
 
             {loadingCompany ? (
-              <div className="flex flex-col items-center justify-center py-4">
+              <div className="flex flex-col items-center justify-center py-3">
                 <Loader2 className="mb-1 h-5 w-5 animate-spin text-fuchsia-600" />
                 <p className="text-xs text-gray-600 md:text-sm">Loading company information…</p>
               </div>
             ) : companyData ? (
-              <div className="space-y-4 md:space-y-5">
+              <div className="space-y-2.5 md:space-y-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-gray-900 md:text-sm">
+                  <label className="mb-0.5 block text-xs font-semibold text-gray-900 md:text-sm">
                     Select training industry <span className="font-bold text-rose-500">*</span>
                   </label>
                   {loadingIndustries ? (
@@ -318,7 +318,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 </div>
 
                 <div>
-                  <h4 className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-gray-800 md:mb-2 md:gap-2 md:text-sm">
+                  <h4 className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-gray-800 md:gap-2 md:text-sm">
                     <Briefcase className="h-3.5 w-3.5 text-fuchsia-600 md:h-4 md:w-4" aria-hidden />
                     Select your gig <span className="text-rose-500">*</span>
                   </h4>
@@ -510,20 +510,26 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     }
   };
 
+  const compactHeaderSteps = currentStep === 1;
+
   return (
     <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-white">
-      <div className="shrink-0 border-b border-gray-100 px-3 py-2 md:px-6 md:py-2.5">
+      <div
+        className={`shrink-0 border-b border-gray-100 px-3 md:px-6 ${compactHeaderSteps ? 'py-1.5 md:py-2' : 'py-2 md:py-2.5'}`}
+      >
         <div className="mx-auto max-w-3xl text-center">
-          <h1 className="flex items-center justify-center gap-1.5 text-lg font-extrabold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-fuchsia-600 to-purple-700 md:gap-2 md:text-2xl">
-            <Sparkles className="h-5 w-5 shrink-0 text-rose-500 md:h-6 md:w-6" aria-hidden />
+          <h1 className="flex items-center justify-center gap-1.5 text-base font-extrabold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-fuchsia-600 to-purple-700 md:gap-2 md:text-xl">
+            <Sparkles className="h-4 w-4 shrink-0 text-rose-500 md:h-5 md:w-5" aria-hidden />
             Create amazing training in minutes
           </h1>
-          <p className="mx-auto mt-1 max-w-2xl text-xs text-gray-600 md:text-sm">
-            Turn your content into interactive programs with AI-assisted steps.
-          </p>
+          {!compactHeaderSteps && (
+            <p className="mx-auto mt-1 max-w-2xl text-xs text-gray-600 md:text-sm">
+              Turn your content into interactive programs with AI-assisted steps.
+            </p>
+          )}
         </div>
 
-        <div className="mx-auto mt-2 max-w-4xl overflow-x-auto pb-0.5 md:mt-2.5">
+        <div className={`mx-auto max-w-4xl overflow-x-auto pb-0.5 ${compactHeaderSteps ? 'mt-1.5 md:mt-2' : 'mt-2 md:mt-2.5'}`}>
           <div className="flex min-w-min items-center justify-center gap-0 px-1">
             {steps.map((step, index) => {
               const Icon = step.icon;
@@ -569,14 +575,22 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         </div>
       </div>
 
-      {currentStep !== 4 && (
-        <div className="mx-auto min-h-0 w-full max-w-3xl flex-1 overflow-y-auto px-3 py-2 md:px-6 md:py-3">
-          {renderStepContent()}
-        </div>
-      )}
+      {/* Step 1: natural-height body + mt-auto footer removes the empty band above Back/Continue */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {currentStep !== 4 && (
+          <div
+            className={`mx-auto w-full max-w-3xl px-3 md:px-6 ${
+              currentStep === 1
+                ? 'shrink-0 py-1'
+                : 'min-h-0 flex-1 overflow-y-auto py-2 md:py-3'
+            }`}
+          >
+            {renderStepContent()}
+          </div>
+        )}
 
-      {currentStep !== 2 && currentStep !== 4 && (
-        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-gray-100 bg-white px-3 py-2 shadow-[0_-2px_8px_rgba(0,0,0,0.04)] md:gap-4 md:px-6 md:py-2.5">
+        {currentStep !== 2 && currentStep !== 4 && (
+        <div className="mt-auto flex shrink-0 items-center justify-between gap-3 border-t border-gray-100 bg-white px-3 py-1.5 shadow-[0_-2px_8px_rgba(0,0,0,0.04)] md:gap-4 md:px-6 md:py-2">
           <button
             type="button"
             onClick={() => {
@@ -610,7 +624,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
           </button>
         </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
