@@ -71,6 +71,10 @@ export const OnboardingService = {
       console.log('[OnboardingService] Total gigs fetched:', response.data.length);
 
       // Check if industryIdentifier is an ID (ObjectId format: 24 hex characters) or a name
+      if (!industryIdentifier) {
+        console.warn('[OnboardingService] industryIdentifier is empty, returning all company gigs');
+        return response;
+      }
       const isObjectId = /^[0-9a-fA-F]{24}$/.test(industryIdentifier);
       const searchTerms = isObjectId ? [] : industryIdentifier.toLowerCase().trim().split(/\s+/).filter((t: string) => t.length > 3);
 

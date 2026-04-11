@@ -28,7 +28,7 @@ export default function CurrentGig({ gig }: CurrentGigProps) {
           <h3 className="text-xl font-bold text-blue-600 mb-2">{gig.title}</h3>
         </div>
         <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(gig.status)}`}>
-          {gig.status.charAt(0).toUpperCase() + gig.status.slice(1)}
+          {(gig.status || 'unknown').charAt(0).toUpperCase() + (gig.status || 'unknown').slice(1)}
         </span>
       </div>
 
