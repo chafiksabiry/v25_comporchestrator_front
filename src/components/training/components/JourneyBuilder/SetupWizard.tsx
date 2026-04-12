@@ -36,6 +36,11 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const industryBtnRef = useRef<HTMLButtonElement>(null);
   const industryMenuRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 0 });
+  const [setupSummaryModulesExpanded, setSetupSummaryModulesExpanded] = useState(false);
+
+  useEffect(() => {
+    if (currentStep !== 5) setSetupSummaryModulesExpanded(false);
+  }, [currentStep]);
 
   const updateMenuPos = useCallback(() => {
     if (industryBtnRef.current) {
@@ -598,7 +603,17 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 </div>
 
                 {selectedMethodology ? (
-                  <div style={{ padding: '8px 12px', flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                  <div
+                    style={{
+                      padding: '8px 12px',
+                      flex: 1,
+                      minHeight: 0,
+                      overflowY: setupSummaryModulesExpanded ? 'auto' : 'hidden',
+                      overflowX: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column',
+                    }}
+                  >
                     <h5
                       style={{
                         fontSize: 9,
@@ -616,20 +631,53 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                       <Sparkles style={{ width: 12, height: 12, color: HARX }} />
                       Methodology
                     </h5>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, flex: 1, minHeight: 0, alignContent: 'start' }}>
-                      {selectedMethodology.components?.slice(0, 4).map((c: MethodologyComponent, i: number) => (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, alignContent: 'start', flexShrink: 0 }}>
+                      {(setupSummaryModulesExpanded
+                        ? selectedMethodology.components
+                        : selectedMethodology.components?.slice(0, 4) || []
+                      ).map((c: MethodologyComponent, i: number) => (
                         <div key={c.id || i} style={{ display: 'flex', alignItems: 'flex-start', gap: 4, minWidth: 0 }}>
                           <CheckCircle style={{ width: 11, height: 11, color: '#059669', flexShrink: 0, marginTop: 2 }} />
-                          <span style={{ fontSize: 10, color: '#374151', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                          <span
+                            style={{
+                              fontSize: 10,
+                              color: '#374151',
+                              lineHeight: 1.3,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              display: '-webkit-box',
+                              WebkitLineClamp: setupSummaryModulesExpanded ? 3 : 2,
+                              WebkitBoxOrient: 'vertical',
+                            }}
+                          >
                             {c.title}
                           </span>
                         </div>
                       ))}
                     </div>
                     {selectedMethodology.components && selectedMethodology.components.length > 4 ? (
-                      <p style={{ margin: '6px 0 0', fontSize: 10, fontWeight: 700, color: HARX, flexShrink: 0 }}>
-                        +{selectedMethodology.components.length - 4} more modules
-                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setSetupSummaryModulesExpanded(!setupSummaryModulesExpanded)}
+                        style={{
+                          margin: '8px 0 0',
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: HARX,
+                          flexShrink: 0,
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: 0,
+                          textAlign: 'left',
+                          textDecoration: 'underline',
+                          textUnderlineOffset: 2,
+                        }}
+                      >
+                        {setupSummaryModulesExpanded
+                          ? 'Show less'
+                          : `+${selectedMethodology.components.length - 4} more modules`}
+                      </button>
                     ) : null}
                   </div>
                 ) : null}
