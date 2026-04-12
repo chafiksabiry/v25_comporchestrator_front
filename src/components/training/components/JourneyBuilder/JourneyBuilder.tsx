@@ -304,7 +304,7 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
     <div
       ref={mainScrollRef}
       data-journey-main-scroll
-      style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: currentStep === 0 ? 'hidden' : 'auto' }}
+      style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%', overflow: currentStep === 0 ? 'hidden' : 'auto' }}
     >
       {renderCurrentStep()}
     </div>
