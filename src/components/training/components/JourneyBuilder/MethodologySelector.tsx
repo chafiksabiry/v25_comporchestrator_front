@@ -282,27 +282,6 @@ export default function MethodologySelector({ onMethodologySelect, onCustomMetho
                 })}
               </div>
             </div>
-
-            <div className="mt-2 flex flex-col gap-3 rounded-xl border border-dashed border-harx-200/90 bg-harx-50/25 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <div className="flex min-w-0 items-start gap-2.5 text-left sm:items-center">
-                <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-harx-400 sm:mt-0" />
-                <div className="min-w-0">
-                  <h3 className="text-sm font-bold text-gray-900">Don&apos;t see your industry?</h3>
-                  <p className="text-[10px] leading-snug text-gray-500">
-                    Create a custom training methodology tailored to your specific requirements.
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={onCustomMethodology}
-                className="inline-flex shrink-0 items-center justify-center gap-1.5 self-stretch rounded-lg border border-harx-200 bg-white px-3 py-2 text-xs font-bold text-harx-600 shadow-sm transition-all hover:border-harx-300 hover:bg-harx-50/80 sm:self-auto"
-              >
-                <Brain className="h-3.5 w-3.5" />
-                <span>Build custom</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
           </div>
         </div>
       </div>
