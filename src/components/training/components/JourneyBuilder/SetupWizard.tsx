@@ -221,7 +221,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const HARX_GRADIENT = 'linear-gradient(to right, #ff4d4d, #ec4899)';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%', width: '100%' }}>
 
       {/* ── Stepper ── */}
       <div style={{ flexShrink: 0, padding: '8px 24px' }}>
@@ -262,16 +262,18 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         </div>
       </div>
 
-      {/* ── Content ── */}
-      <div style={{
-        flex: 1, minHeight: 0,
-        overflowY: isStep2 ? 'hidden' : 'auto',
-        display: currentStep === 1 || isStep2 ? 'flex' : 'block',
-        flexDirection: 'column',
-        alignItems: currentStep === 1 ? 'center' : undefined,
-        justifyContent: currentStep === 1 ? 'center' : undefined,
-        padding: currentStep === 1 ? '0 28px' : isStep2 ? '12px 28px 0' : '16px 28px',
-      }}>
+      {/* Body + footer column: footer stays at bottom of card; only the area above scrolls */}
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', width: '100%' }}>
+        <div style={{
+          flex: 1, minHeight: 0,
+          overflowY: isStep2 ? 'hidden' : 'auto',
+          display: currentStep === 1 || isStep2 ? 'flex' : 'block',
+          flexDirection: 'column',
+          alignItems: currentStep === 1 || isStep2 ? 'center' : undefined,
+          justifyContent: currentStep === 1 ? 'flex-start' : isStep2 ? 'stretch' : undefined,
+          padding: currentStep === 1 ? '12px 28px 8px' : isStep2 ? '12px 28px 8px' : '16px 28px',
+          width: '100%',
+        }}>
         <div style={{
           maxWidth: 500,
           margin: '0 auto',
@@ -606,6 +608,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             </button>
           </>
         )}
+      </div>
       </div>
     </div>
   );
