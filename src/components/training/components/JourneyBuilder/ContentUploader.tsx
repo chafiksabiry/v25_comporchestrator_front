@@ -44,9 +44,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
   >([]);
   const [isLoadingGigKbDocs, setIsLoadingGigKbDocs] = useState(false);
 
-  // Scroll to top when component mounts
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const el = document.querySelector('[data-journey-main-scroll]');
+    if (el instanceof HTMLElement) el.scrollTo({ top: 0, behavior: 'auto' });
+    else window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   useEffect(() => {
@@ -72,20 +73,21 @@ export default function ContentUploader(props: ContentUploaderProps) {
     };
   }, [gigId, useKbForPresentation]);
 
-  const getFileIcon = (type: ContentUpload['type']) => {
+  const getFileIcon = (type: ContentUpload['type'], harxLayout?: boolean) => {
+    const sz = harxLayout ? 'h-6 w-6' : 'h-8 w-8';
     switch (type) {
       case 'document':
-        return <FileText className="h-8 w-8 text-purple-500" />;
+        return <FileText className={`${sz} ${harxLayout ? 'text-harx-500' : 'text-purple-500'}`} />;
       case 'video':
-        return <Video className="h-8 w-8 text-red-500" />;
+        return <Video className={`${sz} text-red-500`} />;
       case 'audio':
-        return <Music className="h-8 w-8 text-green-500" />;
+        return <Music className={`${sz} text-green-600`} />;
       case 'image':
-        return <Image className="h-8 w-8 text-purple-500" />;
+        return <Image className={`${sz} ${harxLayout ? 'text-harx-400' : 'text-purple-500'}`} />;
       case 'presentation':
-        return <FileIcon className="h-8 w-8 text-orange-500" />;
+        return <FileIcon className={`${sz} ${harxLayout ? 'text-harx-600' : 'text-orange-500'}`} />;
       default:
-        return <FileIcon className="h-8 w-8 text-gray-500" />;
+        return <FileIcon className={`${sz} text-gray-500`} />;
     }
   };
 
@@ -998,44 +1000,74 @@ export default function ContentUploader(props: ContentUploaderProps) {
   }
 
   function renderSourcesUploadUI() {
+    const rep = repOnboardingLayout;
+
     return (
-    <div className="min-h-full p-2 md:p-4">
-      <div className="container mx-auto max-w-6xl">
-        <div className="w-full flex-1 flex flex-col p-6 md:p-10 bg-white/60 backdrop-blur-xl rounded-3xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+    <div className={rep ? 'flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white' : 'min-h-full p-2 md:p-4'}>
+      <div className={rep ? 'mx-auto flex h-full min-h-0 w-full max-w-5xl flex-1 flex-col px-3 pb-2 pt-1 md:px-5' : 'container mx-auto max-w-6xl'}>
+        <div
+          className={
+            rep
+              ? 'flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-harx-100 bg-white shadow-sm'
+              : 'w-full flex-1 flex flex-col p-6 md:p-10 bg-white/60 backdrop-blur-xl rounded-3xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
+          }
+        >
+          {rep && <div className="h-0.5 w-full shrink-0 bg-gradient-harx" aria-hidden />}
+          <div className={rep ? 'flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-3 py-2 [scrollbar-width:thin]' : 'contents'}>
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center space-x-2 bg-purple-50 px-3 py-1.5 rounded-full shadow-inner border border-purple-100 mb-3">
-              <Upload className="h-4 w-4 text-purple-500" />
-              <span className="text-xs font-medium text-purple-700">Step 1: Content Upload & AI Analysis</span>
+          <div className={rep ? 'mb-3 shrink-0 text-center px-1' : 'text-center mb-8'}>
+            <div
+              className={
+                rep
+                  ? 'mb-2 inline-flex items-center gap-1.5 rounded-full border border-harx-200 bg-harx-50/90 px-2.5 py-1'
+                  : 'inline-flex items-center space-x-2 bg-purple-50 px-3 py-1.5 rounded-full shadow-inner border border-purple-100 mb-3'
+              }
+            >
+              <Upload className={rep ? 'h-3.5 w-3.5 text-harx-500' : 'h-4 w-4 text-purple-500'} />
+              <span className={rep ? 'text-[10px] font-bold uppercase tracking-wide text-harx-600' : 'text-xs font-medium text-purple-700'}>
+                Step 1: Content Upload & AI Analysis
+              </span>
             </div>
-            <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-purple-500 to-pink-500 mb-2">Upload Your Training Materials</h2>
-            <p className="text-base text-gray-600 font-medium max-w-3xl mx-auto">
-              Upload your existing documents, videos, presentations, and media. Our AI will analyze and transform them into engaging training content.
+            <h2
+              className={
+                rep
+                  ? 'mb-1 text-[17px] font-extrabold tracking-tight text-harx-600 md:text-lg'
+                  : 'text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-purple-500 to-pink-500 mb-2'
+              }
+            >
+              Upload your training materials
+            </h2>
+            <p className={rep ? 'mx-auto max-w-xl text-[11px] leading-snug text-gray-500' : 'text-base text-gray-600 font-medium max-w-3xl mx-auto'}>
+              Upload documents, videos, presentations, and media. Our AI analyzes and transforms them into training content.
             </p>
           </div>
 
           {/* Upload Area */}
-          <div className="mb-4">
+          <div className={rep ? 'mb-2 shrink-0' : 'mb-4'}>
             <div
-              className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 ${dragOver
-                ? 'border-purple-500 bg-purple-50 scale-105'
-                : 'border-gray-200 hover:border-purple-400 hover:bg-white/50'
+              className={`border-2 border-dashed text-center transition-all duration-300 ${rep ? 'rounded-xl p-4' : 'rounded-2xl p-8'} ${dragOver
+                ? rep
+                  ? 'scale-[1.01] border-harx-400 bg-harx-50/50'
+                  : 'border-purple-500 bg-purple-50 scale-105'
+                : rep
+                  ? 'border-harx-200 hover:border-harx-300 hover:bg-harx-50/40'
+                  : 'border-gray-200 hover:border-purple-400 hover:bg-white/50'
                 }`}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
             >
-              <div className="flex justify-center mb-4">
+              <div className={rep ? 'mb-2 flex justify-center' : 'mb-4 flex justify-center'}>
                 <div className="relative">
-                  <Upload className="h-12 w-12 text-gray-400" />
-                  <Sparkles className="h-5 w-5 text-purple-500 absolute -top-2 -right-2 animate-pulse" />
+                  <Upload className={rep ? 'h-9 w-9 text-harx-300' : 'h-12 w-12 text-gray-400'} />
+                  <Sparkles className={`absolute animate-pulse ${rep ? '-right-1 -top-1 h-4 w-4 text-harx-500' : '-right-2 -top-2 h-5 w-5 text-purple-500'}`} />
                 </div>
               </div>
 
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Drop Your Files Here
+              <h3 className={rep ? 'mb-1 text-sm font-bold text-gray-900' : 'mb-2 text-xl font-semibold text-gray-900'}>
+                Drop your files here
               </h3>
-              <p className="text-gray-600 mb-4 text-base">
+              <p className={rep ? 'mb-3 text-[11px] text-gray-500' : 'mb-4 text-base text-gray-600'}>
                 or click to browse and select files from your computer
               </p>
 
@@ -1049,68 +1081,92 @@ export default function ContentUploader(props: ContentUploaderProps) {
               />
               <label
                 htmlFor="file-upload"
-                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-xl hover:from-rose-600 hover:to-purple-700 cursor-pointer transition-all shadow-lg hover:-translate-y-0.5 font-medium text-lg"
+                className={
+                  rep
+                    ? 'inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gradient-harx px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:brightness-105'
+                    : 'inline-flex items-center px-8 py-4 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-xl hover:from-rose-600 hover:to-purple-700 cursor-pointer transition-all shadow-lg hover:-translate-y-0.5 font-medium text-lg'
+                }
               >
-                <Upload className="h-5 w-5 mr-3" />
-                Choose Files
+                <Upload className={rep ? 'h-4 w-4' : 'mr-3 h-5 w-5'} />
+                Choose files
               </label>
 
-              <div className="mt-6 flex flex-wrap justify-center gap-2">
-                <span className="px-3 py-1 bg-purple-50 text-purple-600 border border-purple-100 text-sm rounded-full font-medium">PDF</span>
-                <span className="px-3 py-1 bg-purple-50 text-purple-600 border border-purple-100 text-sm rounded-full font-medium">Word</span>
-                <span className="px-3 py-1 bg-purple-50 text-purple-600 border border-purple-100 text-sm rounded-full font-medium">PowerPoint</span>
-                <span className="px-3 py-1 bg-purple-50 text-purple-600 border border-purple-100 text-sm rounded-full font-medium">Videos</span>
-                <span className="px-3 py-1 bg-purple-50 text-purple-600 border border-purple-100 text-sm rounded-full font-medium">Audio</span>
-                <span className="px-3 py-1 bg-purple-50 text-purple-600 border border-purple-100 text-sm rounded-full font-medium">Images</span>
+              <div className={rep ? 'mt-3 flex flex-wrap justify-center gap-1.5' : 'mt-6 flex flex-wrap justify-center gap-2'}>
+                {(['PDF', 'Word', 'PowerPoint', 'Videos', 'Audio', 'Images'] as const).map((label) => (
+                  <span
+                    key={label}
+                    className={
+                      rep
+                        ? 'rounded-full border border-harx-100 bg-harx-50/90 px-2 py-0.5 text-[10px] font-semibold text-harx-700'
+                        : 'rounded-full border border-purple-100 bg-purple-50 px-3 py-1 text-sm font-medium text-purple-600'
+                    }
+                  >
+                    {label}
+                  </span>
+                ))}
               </div>
             </div>
           </div>
 
           {/* URL Input Section */}
-          <div className="pt-6 border-t border-gray-100/50 mb-4">
-            <div className="flex items-center mb-3">
-              <Sparkles className="h-5 w-5 text-purple-500 mr-2" />
-              <h3 className="text-lg font-bold text-gray-800">Or Add Content from URL</h3>
+          <div className={rep ? 'mb-2 border-t border-harx-100/80 pt-3' : 'mb-4 border-t border-gray-100/50 pt-6'}>
+            <div className={rep ? 'mb-1.5 flex items-center gap-1.5' : 'mb-3 flex items-center'}>
+              <Sparkles className={rep ? 'h-3.5 w-3.5 text-harx-500' : 'mr-2 h-5 w-5 text-purple-500'} />
+              <h3 className={rep ? 'text-xs font-extrabold text-gray-900' : 'text-lg font-bold text-gray-800'}>Or add content from URL</h3>
             </div>
-            <p className="text-sm text-gray-500 font-medium mb-3">
-              Enter a YouTube video URL or a web page URL to analyze and extract content
+            <p className={rep ? 'mb-2 text-[10px] text-gray-500' : 'mb-3 text-sm font-medium text-gray-500'}>
+              YouTube or web page URL — we analyze and extract content
             </p>
-            <div className="flex gap-2">
+            <div className={rep ? 'flex flex-col gap-2 sm:flex-row' : 'flex gap-2'}>
               <input
                 type="url"
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleUrlSubmit()}
-                placeholder="https://www.youtube.com/watch?v=... or https://example.com/article"
-                className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-gray-800 text-sm transition-all shadow-sm"
+                placeholder="https://youtube.com/... or https://..."
+                className={
+                  rep
+                    ? 'min-w-0 flex-1 rounded-lg border border-harx-100 px-3 py-2 text-xs text-gray-800 outline-none transition-all focus:border-harx-300 focus:ring-2 focus:ring-harx-500/15'
+                    : 'flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 shadow-sm outline-none transition-all focus:border-purple-500 focus:ring-2 focus:ring-purple-500'
+                }
                 disabled={isProcessing}
               />
               <button
                 onClick={handleUrlSubmit}
                 disabled={!urlInput.trim() || isProcessing}
-                className="px-6 py-3 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-xl hover:from-rose-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg hover:-translate-y-0.5"
+                className={
+                  rep
+                    ? 'inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gradient-harx px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50'
+                    : 'rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 px-6 py-3 font-medium text-white shadow-lg transition-all hover:-translate-y-0.5 hover:from-rose-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-50'
+                }
               >
-                <Zap className="h-5 w-5 inline mr-2" />
+                <Zap className={rep ? 'h-3.5 w-3.5' : 'mr-2 inline h-5 w-5'} />
                 Analyze URL
               </button>
             </div>
-            <div className="mt-3 flex gap-2 text-sm text-gray-400 font-medium font-medium">
-              <Video className="h-4 w-4 text-purple-400" />
-              <span>YouTube videos</span>
-              <span className="mx-2">•</span>
-              <FileText className="h-4 w-4 text-purple-400" />
-              <span>Web pages & articles</span>
+            <div className={rep ? 'mt-2 flex flex-wrap items-center gap-1 text-[10px] text-gray-400' : 'mt-3 flex gap-2 text-sm font-medium text-gray-400'}>
+              <Video className={rep ? 'h-3 w-3 text-harx-400' : 'h-4 w-4 text-purple-400'} />
+              <span>YouTube</span>
+              <span className="mx-1">·</span>
+              <FileText className={rep ? 'h-3 w-3 text-harx-400' : 'h-4 w-4 text-purple-400'} />
+              <span>Web pages</span>
             </div>
           </div>
 
           {/* Processing Status */}
           {isProcessing && (
-            <div className="bg-white/40 backdrop-blur-sm rounded-xl border border-purple-100 p-4 mb-4">
-              <div className="flex items-center justify-center space-x-3">
-                <Wand2 className="h-6 w-6 text-purple-500 animate-spin" />
-                <div>
-                  <h3 className="text-base font-semibold text-gray-900">AI is Analyzing Your Content</h3>
-                  <p className="text-sm text-gray-600">Extracting key concepts, learning objectives, and structure...</p>
+            <div
+              className={
+                rep
+                  ? 'mb-2 rounded-lg border border-harx-100 bg-harx-50/50 p-3'
+                  : 'mb-4 rounded-xl border border-purple-100 bg-white/40 p-4 backdrop-blur-sm'
+              }
+            >
+              <div className="flex items-center justify-center gap-2 sm:gap-3">
+                <Wand2 className={rep ? 'h-5 w-5 animate-spin text-harx-500' : 'h-6 w-6 animate-spin text-purple-500'} />
+                <div className="text-left">
+                  <h3 className={rep ? 'text-xs font-bold text-gray-900' : 'text-base font-semibold text-gray-900'}>AI is analyzing your content</h3>
+                  <p className={rep ? 'text-[10px] text-gray-600' : 'text-sm text-gray-600'}>Extracting concepts, objectives, and structure…</p>
                 </div>
               </div>
             </div>
@@ -1118,50 +1174,72 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
           {/* Uploaded Files */}
           {uploads.length > 0 && (
-            <div className="pt-6 border-t border-gray-100/50 mb-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-800">
-                  Uploaded Files ({uploads.length})
+            <div className={rep ? 'mb-2 border-t border-harx-100/80 pt-3' : 'mb-4 border-t border-gray-100/50 pt-6'}>
+              <div className={rep ? 'mb-2 flex items-center justify-between gap-2' : 'mb-4 flex items-center justify-between'}>
+                <h3 className={rep ? 'text-xs font-extrabold text-gray-900' : 'text-xl font-bold text-gray-800'}>
+                  Uploaded files ({uploads.length})
                 </h3>
                 {totalAnalyzed > 0 && (
-                  <div className="flex items-center space-x-2 bg-green-50 px-4 py-2 rounded-full border border-green-100">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span className="text-green-700 font-bold text-sm">{totalAnalyzed} files analyzed</span>
+                  <div
+                    className={
+                      rep
+                        ? 'flex items-center gap-1 rounded-full border border-emerald-100 bg-emerald-50/90 px-2 py-1'
+                        : 'flex items-center space-x-2 rounded-full border border-green-100 bg-green-50 px-4 py-2'
+                    }
+                  >
+                    <CheckCircle className={rep ? 'h-3.5 w-3.5 text-emerald-600' : 'h-5 w-5 text-green-500'} />
+                    <span className={rep ? 'text-[10px] font-bold text-emerald-800' : 'text-sm font-bold text-green-700'}>
+                      {totalAnalyzed} analyzed
+                    </span>
                   </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className={rep ? 'grid grid-cols-1 gap-2 lg:grid-cols-2' : 'grid grid-cols-1 gap-6 lg:grid-cols-2'}>
                 {uploads.map((upload) => (
-                  <div key={upload.id} className={`border border-gray-100/50 rounded-2xl p-5 hover:border-purple-200 transition-all duration-300 group ${upload.status === 'analyzed' ? 'bg-white/60' :
-                    upload.status === 'processing' ? 'bg-purple-50/50' :
-                      upload.status === 'error' ? 'bg-red-50/50' :
-                        'bg-white/40'
-                    }`}>
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-start space-x-4">
-                        {getFileIcon(upload.type)}
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900 mb-1">{upload.name}</h4>
-                          <p className="text-sm text-gray-500">
-                            {(upload.size / 1024 / 1024).toFixed(2)} MB • {upload.type}
+                  <div
+                    key={upload.id}
+                    className={`border transition-all duration-300 group ${rep ? 'rounded-xl p-3' : 'rounded-2xl p-5'} ${
+                      upload.status === 'analyzed'
+                        ? rep
+                          ? 'border-harx-100/80 bg-white hover:border-harx-200'
+                          : 'border-gray-100/50 bg-white/60 hover:border-purple-200'
+                        : upload.status === 'processing'
+                          ? rep
+                            ? 'border-harx-100 bg-harx-50/40'
+                            : 'border-purple-100/50 bg-purple-50/50'
+                          : upload.status === 'error'
+                            ? 'border-red-100 bg-red-50/50'
+                            : rep
+                              ? 'border-gray-100 bg-white'
+                              : 'border-gray-100/50 bg-white/40'
+                    }`}
+                  >
+                    <div className={rep ? 'mb-2 flex items-start justify-between' : 'mb-4 flex items-start justify-between'}>
+                      <div className={rep ? 'flex items-start gap-2' : 'flex items-start space-x-4'}>
+                        {getFileIcon(upload.type, rep)}
+                        <div className="min-w-0 flex-1">
+                          <h4 className={rep ? 'mb-0.5 truncate text-xs font-bold text-gray-900' : 'mb-1 font-semibold text-gray-900'}>{upload.name}</h4>
+                          <p className={rep ? 'text-[10px] text-gray-500' : 'text-sm text-gray-500'}>
+                            {(upload.size / 1024 / 1024).toFixed(2)} MB · {upload.type}
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2">
+                      <div className="flex shrink-0 items-center gap-1">
                         {getStatusIcon(upload.status)}
                         <button
+                          type="button"
                           onClick={() => removeUpload(upload.id)}
-                          className="text-gray-400 hover:text-red-500 transition-colors"
+                          className="text-gray-400 transition-colors hover:text-harx-500"
                         >
-                          <X className="h-4 w-4" />
+                          <X className={rep ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
                         </button>
                       </div>
                     </div>
 
                     {upload.status === 'error' && upload.error && (
-                      <div className="mt-4 p-4 bg-red-100 border border-red-300 rounded-lg">
+                      <div className={rep ? 'mt-2 rounded-lg border border-red-200 bg-red-50 p-2' : 'mt-4 rounded-lg border border-red-300 bg-red-100 p-4'}>
                         <div className="flex items-start space-x-2">
                           <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
                           <div className="flex-1">
@@ -1179,25 +1257,36 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     )}
 
                     {upload.status === 'analyzed' && upload.aiAnalysis && (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="text-center p-3 bg-white rounded-lg border border-green-200">
-                            <BarChart3 className="h-6 w-6 text-green-600 mx-auto mb-1" />
-                            <div className="text-lg font-bold text-green-600">{(upload.aiAnalysis.difficulty as number) || 0}/10</div>
-                            <div className="text-xs text-gray-600">Difficulty</div>
+                      <div className={rep ? 'space-y-2' : 'space-y-4'}>
+                        <div className={rep ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-2 gap-4'}>
+                          <div className={rep ? 'rounded-lg border border-emerald-100 bg-white p-2 text-center' : 'rounded-lg border border-green-200 bg-white p-3 text-center'}>
+                            <BarChart3 className={rep ? 'mx-auto mb-0.5 h-4 w-4 text-emerald-600' : 'mx-auto mb-1 h-6 w-6 text-green-600'} />
+                            <div className={rep ? 'text-sm font-bold text-emerald-700' : 'text-lg font-bold text-green-600'}>
+                              {(upload.aiAnalysis.difficulty as number) || 0}/10
+                            </div>
+                            <div className={rep ? 'text-[9px] text-gray-500' : 'text-xs text-gray-600'}>Difficulty</div>
                           </div>
-                          <div className="text-center p-3 bg-white rounded-lg border border-green-200">
-                            <Clock className="h-6 w-6 text-green-600 mx-auto mb-1" />
-                            <div className="text-lg font-bold text-green-600">{(upload.aiAnalysis.estimatedReadTime as number) || 0}m</div>
-                            <div className="text-xs text-gray-600">Duration</div>
+                          <div className={rep ? 'rounded-lg border border-emerald-100 bg-white p-2 text-center' : 'rounded-lg border border-green-200 bg-white p-3 text-center'}>
+                            <Clock className={rep ? 'mx-auto mb-0.5 h-4 w-4 text-emerald-600' : 'mx-auto mb-1 h-6 w-6 text-green-600'} />
+                            <div className={rep ? 'text-sm font-bold text-emerald-700' : 'text-lg font-bold text-green-600'}>
+                              {(upload.aiAnalysis.estimatedReadTime as number) || 0}m
+                            </div>
+                            <div className={rep ? 'text-[9px] text-gray-500' : 'text-xs text-gray-600'}>Duration</div>
                           </div>
                         </div>
 
                         <div>
-                          <h5 className="font-medium text-gray-900 mb-2">Key Topics Identified:</h5>
-                          <div className="flex flex-wrap gap-2">
-                            {upload.aiAnalysis.keyTopics?.map((topic: any, index: number) => (
-                              <span key={index} className="px-3 py-1 bg-purple-50 text-purple-600 text-sm font-medium rounded-full border border-purple-100">
+                          <h5 className={rep ? 'mb-1 text-[10px] font-bold text-gray-800' : 'mb-2 font-medium text-gray-900'}>Key topics</h5>
+                          <div className={rep ? 'flex max-h-16 flex-wrap gap-1 overflow-y-auto' : 'flex flex-wrap gap-2'}>
+                            {upload.aiAnalysis.keyTopics?.map((topic: string, index: number) => (
+                              <span
+                                key={index}
+                                className={
+                                  rep
+                                    ? 'rounded-full border border-harx-100 bg-harx-50/90 px-1.5 py-0.5 text-[9px] font-semibold text-harx-700'
+                                    : 'rounded-full border border-purple-100 bg-purple-50 px-3 py-1 text-sm font-medium text-purple-600'
+                                }
+                              >
                                 {topic}
                               </span>
                             ))}
@@ -1205,8 +1294,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         </div>
 
                         <div>
-                          <h5 className="font-medium text-gray-900 mb-2">AI will create {upload.aiAnalysis.suggestedModules?.length || 0} modules:</h5>
-                          <div className="text-sm text-gray-600">
+                          <h5 className={rep ? 'mb-0.5 text-[10px] font-bold text-gray-800' : 'mb-2 font-medium text-gray-900'}>
+                            AI modules ({upload.aiAnalysis.suggestedModules?.length || 0})
+                          </h5>
+                          <div className={rep ? 'line-clamp-2 text-[10px] leading-snug text-gray-600' : 'text-sm text-gray-600'}>
                             {upload.aiAnalysis.suggestedModules?.join(' → ') || 'Modular structure pending'}
                           </div>
                         </div>
@@ -1214,14 +1305,20 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     )}
 
                     {(upload.status === 'uploading' || upload.status === 'processing') && (
-                      <div className="flex items-center justify-center space-x-3 p-3 bg-purple-50/70 rounded-xl border border-purple-100 mt-4">
-                        <Wand2 className="h-5 w-5 text-purple-500 animate-spin" />
-                        <div className="flex-1">
-                          <span className="text-sm text-purple-700 font-medium block">
-                            {upload.status === 'uploading' ? 'Uploading document...' : 'AI is analyzing this file...'}
+                      <div
+                        className={
+                          rep
+                            ? 'mt-2 flex items-center gap-2 rounded-lg border border-harx-100 bg-harx-50/60 p-2'
+                            : 'mt-4 flex items-center justify-center space-x-3 rounded-xl border border-purple-100 bg-purple-50/70 p-3'
+                        }
+                      >
+                        <Wand2 className={rep ? 'h-4 w-4 animate-spin text-harx-500' : 'h-5 w-5 animate-spin text-purple-500'} />
+                        <div className="min-w-0 flex-1">
+                          <span className={rep ? 'block text-[10px] font-bold text-harx-800' : 'block text-sm font-medium text-purple-700'}>
+                            {upload.status === 'uploading' ? 'Uploading…' : 'Analyzing…'}
                           </span>
-                          <span className="text-xs text-purple-500 block mt-0.5">
-                            {upload.status === 'uploading' ? 'Please wait while we upload your file' : 'Extracting key concepts and structure...'}
+                          <span className={rep ? 'mt-0.5 block text-[9px] text-harx-600/90' : 'mt-0.5 block text-xs text-purple-500'}>
+                            {upload.status === 'uploading' ? 'Sending file' : 'Extracting structure'}
                           </span>
                         </div>
                       </div>
@@ -1269,24 +1366,36 @@ export default function ContentUploader(props: ContentUploaderProps) {
           )} */}
 
           {isGigOnly && (
-            <div className="mt-6 rounded-2xl border border-rose-100 bg-rose-50/40 px-4 py-4">
-              <label className="flex cursor-pointer items-start gap-3">
+            <div
+              className={
+                rep
+                  ? 'mt-3 rounded-xl border border-harx-100 bg-harx-50/50 px-3 py-2.5'
+                  : 'mt-6 rounded-2xl border border-rose-100 bg-rose-50/40 px-4 py-4'
+              }
+            >
+              <label className={rep ? 'flex cursor-pointer items-start gap-2' : 'flex cursor-pointer items-start gap-3'}>
                 <input
                   type="checkbox"
-                  className="mt-1 h-4 w-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500"
+                  className={
+                    rep
+                      ? 'mt-0.5 h-3.5 w-3.5 rounded border-harx-300 text-harx-600 focus:ring-harx-500'
+                      : 'mt-1 h-4 w-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500'
+                  }
                   checked={useKbForPresentation}
                   onChange={(e) => setUseKbForPresentation(e.target.checked)}
                 />
-                <span className="text-sm font-medium text-gray-800">
+                <span className={rep ? 'text-xs font-semibold text-gray-800' : 'text-sm font-medium text-gray-800'}>
                   Use KB for generate presentation
-                  <span className="mt-1 block text-xs font-normal text-gray-600">
+                  <span className={rep ? 'mt-0.5 block text-[10px] font-normal text-gray-600' : 'mt-1 block text-xs font-normal text-gray-600'}>
                     La présentation sera ancrée sur les documents KB de ce Job lorsque vous cliquez sur Générer.
                   </span>
                 </span>
               </label>
               {useKbForPresentation && (
-                <div className="mt-4 border-t border-rose-100/80 pt-4">
-                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-rose-700">Documents liés au Job</p>
+                <div className={rep ? 'mt-2 border-t border-harx-100/80 pt-2' : 'mt-4 border-t border-rose-100/80 pt-4'}>
+                  <p className={rep ? 'mb-1 text-[10px] font-bold uppercase tracking-wide text-harx-600' : 'mb-2 text-xs font-bold uppercase tracking-wide text-rose-700'}>
+                    Documents liés au Job
+                  </p>
                   {isLoadingGigKbDocs ? (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -1320,23 +1429,34 @@ export default function ContentUploader(props: ContentUploaderProps) {
           )}
 
           {/* Navigation */}
-          <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mt-8 pt-6 border-t border-gray-200">
+          <div
+            className={
+              rep
+                ? 'sticky bottom-0 z-10 -mx-3 mt-3 flex shrink-0 flex-col gap-2 border-t border-harx-100 bg-white px-3 pt-3 pb-1 sm:flex-row sm:items-center sm:justify-between'
+                : 'mt-8 flex flex-col gap-4 border-t border-gray-200 pt-6 md:flex-row md:items-center md:justify-between'
+            }
+          >
             <button
+              type="button"
               onClick={onBack}
-              className="px-6 py-2 bg-white text-gray-700 font-medium rounded-xl border border-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
+              className={
+                rep
+                  ? 'rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 shadow-sm transition-colors hover:border-harx-200 hover:text-harx-600'
+                  : 'rounded-xl border border-gray-300 bg-white px-6 py-2 font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50'
+              }
             >
-              Back to Setup
+              Back to setup
             </button>
 
-            <div className="flex-1 flex justify-center order-3 md:order-none">
+            <div className={rep ? 'order-3 flex flex-1 justify-center sm:order-none' : 'order-3 flex flex-1 justify-center md:order-none'}>
               {uploads.length > 0 && (
                 <div className="text-center">
-                  <div className="text-sm text-gray-500 mb-2">
+                  <div className={rep ? 'mb-1 text-[10px] font-semibold text-gray-500' : 'mb-2 text-sm text-gray-500'}>
                     {totalAnalyzed} of {uploads.length} files analyzed
                   </div>
-                  <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden mx-auto">
+                  <div className={rep ? 'mx-auto h-1.5 w-36 overflow-hidden rounded-full bg-gray-200' : 'mx-auto h-2 w-48 overflow-hidden rounded-full bg-gray-200'}>
                     <div
-                      className="h-full bg-green-500 transition-all duration-500"
+                      className="h-full bg-emerald-500 transition-all duration-500"
                       style={{ width: `${(totalAnalyzed / uploads.length) * 100}%` }}
                     />
                   </div>
@@ -1344,12 +1464,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
               )}
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+            <div className={rep ? 'flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center' : 'flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center md:w-auto'}>
 
               <button
+                type="button"
                 onClick={handleGeneratePresentation}
                 disabled={!canProceed || isProcessing}
-                className="px-6 py-3 bg-white text-rose-600 rounded-xl border border-rose-200 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-sm flex items-center justify-center space-x-2"
+                className={
+                  rep
+                    ? 'inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-harx px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50'
+                    : 'flex items-center justify-center space-x-2 rounded-xl border border-rose-200 bg-white px-6 py-3 font-medium text-rose-600 shadow-sm transition-all hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50'
+                }
               >
                 {isGeneratingPresentation ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -1368,6 +1493,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 <Wand2 className="h-5 w-5" />
               </button> */}
             </div>
+          </div>
           </div>
         </div>
       </div>
