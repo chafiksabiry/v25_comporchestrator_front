@@ -27,6 +27,11 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const [loadingCompany, setLoadingCompany] = useState(true);
   const [selectedGig, setSelectedGig] = useState<GigFromApi | null>(null);
   const [trainingDetails, setTrainingDetails] = useState<{ trainingName: string; trainingDescription: string; estimatedDuration: string } | null>(null);
+  const [visionSubStep, setVisionSubStep] = useState(0);
+  const [visionName, setVisionName] = useState('');
+  const [visionDesc, setVisionDesc] = useState('');
+  const [visionDuration, setVisionDuration] = useState('');
+  const prevWizardStepRef = useRef(currentStep);
   const [showAllComponents, setShowAllComponents] = useState(false);
   const [industryOpen, setIndustryOpen] = useState(false);
   const [industrySearch, setIndustrySearch] = useState('');
@@ -101,6 +106,28 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     if (el instanceof HTMLElement) el.scrollTo({ top: 0, behavior: 'auto' });
   }, [currentStep]);
 
+  useEffect(() => {
+    const prev = prevWizardStepRef.current;
+    if (currentStep === 2 && prev === 1) {
+      setVisionSubStep(0);
+      setVisionName('');
+      setVisionDesc('');
+      setVisionDuration('');
+    } else if (currentStep === 2 && prev === 3 && trainingDetails) {
+      setVisionSubStep(2);
+      setVisionName(trainingDetails.trainingName);
+      setVisionDesc(trainingDetails.trainingDescription);
+      setVisionDuration(trainingDetails.estimatedDuration);
+    }
+    prevWizardStepRef.current = currentStep;
+  }, [currentStep, trainingDetails]);
+
+  useEffect(() => {
+    if (currentStep !== 2) return;
+    const el = document.querySelector('[data-journey-main-scroll]');
+    if (el instanceof HTMLElement) el.scrollTo({ top: 0, behavior: 'auto' });
+  }, [currentStep, visionSubStep]);
+
   const steps = [
     { id: 1, label: 'Industry' },
     { id: 2, label: 'Vision' },
@@ -137,12 +164,31 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     }
   };
 
-  const handleTrainingDetailsComplete = (details: { trainingName: string; trainingDescription: string; estimatedDuration: string }) => {
-    setTrainingDetails(details);
-    setCurrentStep(3);
+  const handleGigSelect = (gig: GigFromApi) => { setSelectedGig(gig); };
+
+  const visionContinueDisabled =
+    visionSubStep === 0 ? !visionName.trim() : visionSubStep === 2 ? !visionDuration : false;
+  const visionContinueLabel = visionSubStep === 2 ? 'Continue' : 'Next';
+
+  const handleVisionFooterBack = () => {
+    if (visionSubStep > 0) setVisionSubStep(visionSubStep - 1);
+    else setCurrentStep(1);
   };
 
-  const handleGigSelect = (gig: GigFromApi) => { setSelectedGig(gig); };
+  const handleVisionFooterContinue = () => {
+    if (visionSubStep === 0) {
+      if (visionName.trim()) setVisionSubStep(1);
+    } else if (visionSubStep === 1) {
+      setVisionSubStep(2);
+    } else if (visionDuration) {
+      setTrainingDetails({
+        trainingName: visionName,
+        trainingDescription: visionDesc,
+        estimatedDuration: visionDuration,
+      });
+      setCurrentStep(3);
+    }
+  };
 
   const handleMethodologySelect = (m: TrainingMethodology) => { setSelectedMethodology(m); setShowMethodologySelector(false); setCurrentStep(5); };
   const handleMethodologyApply = (m: TrainingMethodology) => { setSelectedMethodology(m); setShowMethodologyBuilder(false); setCurrentStep(5); };
@@ -364,8 +410,13 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
           {isStep2 && (
             <TrainingDetailsForm
-              onComplete={handleTrainingDetailsComplete}
-              onBack={() => setCurrentStep(1)}
+              subStep={visionSubStep}
+              trainingName={visionName}
+              trainingDescription={visionDesc}
+              estimatedDuration={visionDuration}
+              onTrainingNameChange={setVisionName}
+              onTrainingDescriptionChange={setVisionDesc}
+              onEstimatedDurationChange={setVisionDuration}
               gigData={selectedGig}
             />
           )}
@@ -474,44 +525,88 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         </div>
       </div>
 
-      {/* ── Footer ── */}
-      {!isStep2 && (
-        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 28px' }}>
-          <button
-            type="button"
-            onClick={() => { if (currentStep === 5) setCurrentStep(4); else if (currentStep > 1) setCurrentStep(currentStep - 1); }}
-            disabled={currentStep === 1}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
-              border: currentStep === 1 ? 'none' : '1px solid #d1d5db',
-              background: 'transparent', color: currentStep === 1 ? '#d1d5db' : '#374151',
-              cursor: currentStep === 1 ? 'not-allowed' : 'pointer',
-            }}
-          >
-            <ArrowLeft style={{ width: 14, height: 14 }} />
-            Back
-          </button>
+      {/* ── Footer (always bottom of wizard — same bar for all steps) ── */}
+      <div
+        style={{
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 28px',
+          borderTop: '1px solid #f3f4f6',
+          background: '#fff',
+        }}
+      >
+        {isStep2 ? (
+          <>
+            <button
+              type="button"
+              onClick={handleVisionFooterBack}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                border: '1px solid #d1d5db', background: 'transparent', color: '#374151',
+                cursor: 'pointer',
+              }}
+            >
+              <ArrowLeft style={{ width: 14, height: 14 }} />
+              Back
+            </button>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Vision {visionSubStep + 1}/3 · Step 2 of 4</span>
+            <button
+              type="button"
+              onClick={handleVisionFooterContinue}
+              disabled={visionContinueDisabled}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                border: 'none', color: '#fff', cursor: visionContinueDisabled ? 'not-allowed' : 'pointer',
+                background: visionContinueDisabled ? '#d1d5db' : HARX_GRADIENT,
+                boxShadow: visionContinueDisabled ? 'none' : '0 2px 8px rgba(255,77,77,0.25)',
+              }}
+            >
+              {visionContinueLabel}
+              <ArrowRight style={{ width: 14, height: 14 }} />
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => { if (currentStep === 5) setCurrentStep(4); else if (currentStep > 1) setCurrentStep(currentStep - 1); }}
+              disabled={currentStep === 1}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                border: currentStep === 1 ? 'none' : '1px solid #d1d5db',
+                background: 'transparent', color: currentStep === 1 ? '#d1d5db' : '#374151',
+                cursor: currentStep === 1 ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <ArrowLeft style={{ width: 14, height: 14 }} />
+              Back
+            </button>
 
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Step {stepNum} of {steps.length}</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Step {stepNum} of {steps.length}</span>
 
-          <button
-            type="button"
-            onClick={handleNext}
-            disabled={!isStepValid()}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700,
-              border: 'none', color: '#fff', cursor: isStepValid() ? 'pointer' : 'not-allowed',
-              background: isStepValid() ? HARX_GRADIENT : '#d1d5db',
-              boxShadow: isStepValid() ? '0 2px 8px rgba(255,77,77,0.25)' : 'none',
-            }}
-          >
-            {currentStep === 5 ? 'Start building' : 'Continue'}
-            <ArrowRight style={{ width: 14, height: 14 }} />
-          </button>
-        </div>
-      )}
+            <button
+              type="button"
+              onClick={handleNext}
+              disabled={!isStepValid()}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                border: 'none', color: '#fff', cursor: isStepValid() ? 'pointer' : 'not-allowed',
+                background: isStepValid() ? HARX_GRADIENT : '#d1d5db',
+                boxShadow: isStepValid() ? '0 2px 8px rgba(255,77,77,0.25)' : 'none',
+              }}
+            >
+              {currentStep === 5 ? 'Start building' : 'Continue'}
+              <ArrowRight style={{ width: 14, height: 14 }} />
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 }
