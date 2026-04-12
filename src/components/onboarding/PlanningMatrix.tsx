@@ -1,8 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { TimeSlot, Rep } from '../../types/scheduler';
 import { Clock, Calendar, Save } from 'lucide-react';
 import { schedulerApi } from '../../services/schedulerService';
-import React from 'react';
 
 interface PlanningMatrixProps {
     selectedDate: Date;
