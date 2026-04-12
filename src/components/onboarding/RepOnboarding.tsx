@@ -360,9 +360,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   if (showTraining.isOpen && showTraining.newJourney) {
     return (
-      <div className="px-4 pt-2 pb-4 md:px-8 md:pt-3 md:pb-6">
-        <div className="mx-auto max-w-6xl">
-          <header className="mb-3 overflow-hidden rounded-xl border border-harx-100 px-5 py-3">
+      <div className="flex min-h-[calc(100dvh-5.5rem)] flex-col px-4 pt-2 pb-4 md:px-8 md:pt-3 md:pb-6">
+        <div className="mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col">
+          <header className="mb-3 shrink-0 overflow-hidden rounded-xl border border-harx-100 px-5 py-3">
             <div className="h-0.5 w-full -mx-5 -mt-3 mb-3 rounded-t-xl bg-gradient-harx" aria-hidden />
             <div className="flex items-center justify-between">
               <div className="min-w-0">
@@ -380,17 +380,19 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               </button>
             </div>
           </header>
-          <div className="overflow-hidden rounded-xl border border-harx-100" style={{ minHeight: 380 }}>
-            <div className="h-0.5 w-full bg-gradient-harx" aria-hidden />
-            <MemoryRouter>
-              <AppContent
-                initialJourneyId={showTraining.journeyId}
-                isEmbedded={true}
-                startWithJourneyBuilder={true}
-                repOnboardingLayout={true}
-                onJourneyLaunch={handleEmbeddedJourneyComplete}
-              />
-            </MemoryRouter>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-harx-100 bg-white">
+            <div className="h-0.5 w-full shrink-0 bg-gradient-harx" aria-hidden />
+            <div className="min-h-0 flex-1 flex flex-col">
+              <MemoryRouter>
+                <AppContent
+                  initialJourneyId={showTraining.journeyId}
+                  isEmbedded={true}
+                  startWithJourneyBuilder={true}
+                  repOnboardingLayout={true}
+                  onJourneyLaunch={handleEmbeddedJourneyComplete}
+                />
+              </MemoryRouter>
+            </div>
           </div>
         </div>
       </div>
