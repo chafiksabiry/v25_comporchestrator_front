@@ -1003,17 +1003,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const rep = repOnboardingLayout;
 
     return (
-    <div className={rep ? 'flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-white' : 'min-h-full p-2 md:p-4'}>
-      <div className={rep ? 'mx-auto flex h-full min-h-0 w-full max-w-5xl flex-1 flex-col px-3 pb-2 pt-1 md:px-5' : 'container mx-auto max-w-6xl'}>
+    <div className={rep ? 'flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden' : 'min-h-full p-2 md:p-4'}>
+      <div className={rep ? 'mx-auto flex h-full min-h-0 w-full max-w-5xl flex-1 flex-col' : 'container mx-auto max-w-6xl'}>
         <div
           className={
             rep
-              ? 'flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-harx-100 bg-white shadow-sm'
+              ? 'flex min-h-0 flex-1 flex-col overflow-hidden'
               : 'w-full flex-1 flex flex-col p-6 md:p-10 bg-white/60 backdrop-blur-xl rounded-3xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
           }
         >
-          {rep && <div className="h-0.5 w-full shrink-0 bg-gradient-harx" aria-hidden />}
-          <div className={rep ? 'flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-3 py-2 [scrollbar-width:thin]' : 'contents'}>
+          <div className={rep ? 'flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-5 py-3 md:px-7 [scrollbar-width:thin]' : 'contents'}>
           {/* Header */}
           <div className={rep ? 'mb-3 shrink-0 text-center px-1' : 'text-center mb-8'}>
             <div
@@ -1432,7 +1431,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           <div
             className={
               rep
-                ? 'sticky bottom-0 z-10 -mx-3 mt-3 flex shrink-0 flex-col gap-2 border-t border-harx-100 bg-white px-3 pt-3 pb-1 sm:flex-row sm:items-center sm:justify-between'
+                ? 'sticky bottom-0 z-10 -mx-5 mt-3 flex shrink-0 flex-col gap-2 border-t border-gray-100 bg-white px-5 pt-3 pb-2 md:-mx-7 md:px-7 sm:flex-row sm:items-center sm:justify-between'
                 : 'mt-8 flex flex-col gap-4 border-t border-gray-200 pt-6 md:flex-row md:items-center md:justify-between'
             }
           >
