@@ -1,16 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Target, ArrowLeft, ArrowRight } from 'lucide-react';
+import React from 'react';
+import { Target } from 'lucide-react';
 
 const HARX = '#ff4d4d';
-const HARX_GRADIENT = 'linear-gradient(to right, #ff4d4d, #ec4899)';
 
-interface TrainingDetailsFormProps {
-  onComplete: (data: { trainingName: string; trainingDescription: string; estimatedDuration: string }) => void;
-  onBack: () => void;
-  gigData?: { title?: string } | null;
-}
-
-const DURATIONS = [
+export const VISION_DURATIONS = [
   { value: '120', label: 'Quick Start', desc: '1-2 hours' },
   { value: '240', label: 'Half Day', desc: '3-4 hours' },
   { value: '480', label: 'Full Day', desc: '6-8 hours' },
@@ -19,40 +12,27 @@ const DURATIONS = [
   { value: '9600', label: 'One Month', desc: 'Deep Learning' },
 ] as const;
 
-export default function TrainingDetailsForm({ onComplete, onBack, gigData }: TrainingDetailsFormProps) {
-  const [subStep, setSubStep] = useState(0);
-  const [trainingName, setTrainingName] = useState('');
-  const [trainingDescription, setTrainingDescription] = useState('');
-  const [estimatedDuration, setEstimatedDuration] = useState('');
+interface TrainingDetailsFormProps {
+  subStep: number;
+  trainingName: string;
+  trainingDescription: string;
+  estimatedDuration: string;
+  onTrainingNameChange: (v: string) => void;
+  onTrainingDescriptionChange: (v: string) => void;
+  onEstimatedDurationChange: (v: string) => void;
+  gigData?: { title?: string } | null;
+}
 
-  useEffect(() => {
-    const el = document.querySelector('[data-journey-main-scroll]');
-    if (el instanceof HTMLElement) el.scrollTo({ top: 0, behavior: 'auto' });
-  }, [subStep]);
-
-  const canNextFromName = trainingName.trim().length > 0;
-  const canFinish = estimatedDuration.length > 0;
-
-  const handleFooterContinue = () => {
-    if (subStep === 0) {
-      if (canNextFromName) setSubStep(1);
-    } else if (subStep === 1) {
-      setSubStep(2);
-    } else {
-      if (canFinish) onComplete({ trainingName, trainingDescription, estimatedDuration });
-    }
-  };
-
-  const handleFooterBack = () => {
-    if (subStep === 0) onBack();
-    else setSubStep(subStep - 1);
-  };
-
-  const continueDisabled =
-    subStep === 0 ? !canNextFromName : subStep === 2 ? !canFinish : false;
-
-  const continueLabel = subStep === 2 ? 'Continue' : 'Next';
-
+export default function TrainingDetailsForm({
+  subStep,
+  trainingName,
+  trainingDescription,
+  estimatedDuration,
+  onTrainingNameChange,
+  onTrainingDescriptionChange,
+  onEstimatedDurationChange,
+  gigData,
+}: TrainingDetailsFormProps) {
   return (
     <div
       style={{
@@ -65,14 +45,7 @@ export default function TrainingDetailsForm({ onComplete, onBack, gigData }: Tra
         margin: '0 auto',
       }}
     >
-      <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: 'auto',
-          paddingBottom: 8,
-        }}
-      >
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 8 }}>
         <div style={{ textAlign: 'center', marginBottom: 16 }}>
           <h3
             style={{
@@ -118,7 +91,7 @@ export default function TrainingDetailsForm({ onComplete, onBack, gigData }: Tra
             <input
               type="text"
               value={trainingName}
-              onChange={(e) => setTrainingName(e.target.value)}
+              onChange={(e) => onTrainingNameChange(e.target.value)}
               placeholder={gigData?.title ? `e.g., ${gigData.title}` : 'e.g., Customer Success Mastery Program'}
               autoFocus
               style={{
@@ -142,7 +115,7 @@ export default function TrainingDetailsForm({ onComplete, onBack, gigData }: Tra
             </label>
             <textarea
               value={trainingDescription}
-              onChange={(e) => setTrainingDescription(e.target.value)}
+              onChange={(e) => onTrainingDescriptionChange(e.target.value)}
               rows={5}
               placeholder="Describe the goals, outcomes, and key benefits of this training program..."
               autoFocus
@@ -169,13 +142,13 @@ export default function TrainingDetailsForm({ onComplete, onBack, gigData }: Tra
               Expected Program Duration <span style={{ color: HARX }}>*</span>
             </label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-              {DURATIONS.map((d) => {
+              {VISION_DURATIONS.map((d) => {
                 const selected = estimatedDuration === d.value;
                 return (
                   <button
                     key={d.value}
                     type="button"
-                    onClick={() => setEstimatedDuration(d.value)}
+                    onClick={() => onEstimatedDurationChange(d.value)}
                     style={{
                       padding: '9px 6px',
                       border: `1.5px solid ${selected ? HARX : '#e5e7eb'}`,
@@ -194,65 +167,6 @@ export default function TrainingDetailsForm({ onComplete, onBack, gigData }: Tra
             </div>
           </div>
         )}
-      </div>
-
-      <div
-        style={{
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 8,
-          paddingTop: 12,
-          marginTop: 'auto',
-          borderTop: '1px solid #f3f4f6',
-        }}
-      >
-        <button
-          type="button"
-          onClick={handleFooterBack}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            padding: '7px 14px',
-            borderRadius: 8,
-            fontSize: 12,
-            fontWeight: 700,
-            border: '1px solid #d1d5db',
-            background: 'transparent',
-            color: '#374151',
-            cursor: 'pointer',
-          }}
-        >
-          <ArrowLeft style={{ width: 14, height: 14 }} />
-          Back
-        </button>
-
-        <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Vision {subStep + 1}/3</span>
-
-        <button
-          type="button"
-          onClick={handleFooterContinue}
-          disabled={continueDisabled}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            padding: '7px 16px',
-            borderRadius: 8,
-            fontSize: 12,
-            fontWeight: 700,
-            border: 'none',
-            color: '#fff',
-            cursor: continueDisabled ? 'not-allowed' : 'pointer',
-            background: continueDisabled ? '#d1d5db' : HARX_GRADIENT,
-            boxShadow: continueDisabled ? 'none' : '0 2px 8px rgba(255,77,77,0.25)',
-          }}
-        >
-          {continueLabel}
-          <ArrowRight style={{ width: 14, height: 14 }} />
-        </button>
       </div>
     </div>
   );
