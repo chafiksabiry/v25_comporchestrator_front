@@ -360,28 +360,28 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   if (showTraining.isOpen && showTraining.newJourney) {
     return (
-      <div className="p-4 md:p-8">
+      <div className="px-4 pt-2 pb-4 md:px-8 md:pt-3 md:pb-6">
         <div className="mx-auto max-w-6xl">
-          <header className="mb-6 overflow-hidden rounded-2xl border border-harx-100 px-6 py-5">
-            <div className="h-1 w-full -mx-6 -mt-5 mb-5 rounded-t-2xl bg-gradient-harx" aria-hidden />
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <header className="mb-3 overflow-hidden rounded-xl border border-harx-100 px-5 py-3">
+            <div className="h-0.5 w-full -mx-5 -mt-3 mb-3 rounded-t-xl bg-gradient-harx" aria-hidden />
+            <div className="flex items-center justify-between">
               <div className="min-w-0">
-                <h1 className="text-2xl font-extrabold tracking-tight text-harx-600 md:text-3xl">
+                <h1 className="text-lg font-extrabold tracking-tight text-harx-600">
                   REP Onboarding
                 </h1>
-                <p className="mt-1 text-sm text-gray-500">Complete your setup and start your journey</p>
+                <p className="text-xs text-gray-500">Complete your setup and start your journey</p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowTraining({ isOpen: false })}
-                className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-700 transition-all hover:border-harx-200 hover:text-harx-600 sm:w-auto"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-600 transition-all hover:border-harx-200 hover:text-harx-600"
               >
                 ← Back to list
               </button>
             </div>
           </header>
-          <div className="overflow-hidden rounded-2xl border border-harx-100" style={{ minHeight: 420 }}>
-            <div className="h-1 w-full bg-gradient-harx" aria-hidden />
+          <div className="overflow-hidden rounded-xl border border-harx-100" style={{ minHeight: 380 }}>
+            <div className="h-0.5 w-full bg-gradient-harx" aria-hidden />
             <MemoryRouter>
               <AppContent
                 initialJourneyId={showTraining.journeyId}
