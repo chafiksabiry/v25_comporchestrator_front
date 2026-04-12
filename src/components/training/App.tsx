@@ -933,7 +933,7 @@ export function AppContent({
       return null;
     }
     return (
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
         <JourneyBuilder
           onComplete={handleJourneyComplete}
           forceNew={startWithJourneyBuilder}

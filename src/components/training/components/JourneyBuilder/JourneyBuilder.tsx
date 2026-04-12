@@ -310,7 +310,7 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
         flex: 1,
         minHeight: 0,
         height: '100%',
-        overflow: currentStep === 0 || (repOnboardingLayout && currentStep === 1) ? 'hidden' : 'auto',
+        overflow: currentStep === 0 ? 'hidden' : 'auto',
       }}
     >
       {renderCurrentStep()}
