@@ -1,5 +1,5 @@
-import React, { useState, useEffect, Fragment } from 'react';
-import { Building2, Loader2, Target, Users, Sparkles, Briefcase, AlertCircle, CheckCircle, ArrowRight, ArrowLeft, ChevronDown, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef, Fragment } from 'react';
+import { Building2, Loader2, Target, Users, Sparkles, Briefcase, AlertCircle, CheckCircle, ArrowRight, ArrowLeft, ChevronDown, Check, Search } from 'lucide-react';
 import { Company, TrainingJourney } from '../../types/core';
 import { Industry, GigFromApi } from '../../types';
 import { TrainingMethodology } from '../../types/methodology';
@@ -27,6 +27,17 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const [selectedGig, setSelectedGig] = useState<GigFromApi | null>(null);
   const [trainingDetails, setTrainingDetails] = useState<{ trainingName: string; trainingDescription: string; estimatedDuration: string } | null>(null);
   const [showAllComponents, setShowAllComponents] = useState(false);
+  const [industryOpen, setIndustryOpen] = useState(false);
+  const [industrySearch, setIndustrySearch] = useState('');
+  const industryRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (industryRef.current && !industryRef.current.contains(e.target as Node)) setIndustryOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   useEffect(() => {
     const fetchCompanyData = async () => {
@@ -221,16 +232,68 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                         <span style={{ fontSize: 13, color: '#6b7280' }}>Loading...</span>
                       </div>
                     ) : (
-                      <div style={{ position: 'relative' }}>
-                        <select
-                          value={company.industry || ''}
-                          onChange={(e) => setCompany({ ...company, industry: e.target.value })}
-                          style={{ width: '100%', appearance: 'none', border: '1px solid #d1d5db', borderRadius: 10, padding: '11px 40px 11px 14px', fontSize: 14, color: company.industry ? '#111827' : '#9ca3af', outline: 'none', cursor: 'pointer' }}
+                      <div ref={industryRef} style={{ position: 'relative' }}>
+                        <button
+                          type="button"
+                          onClick={() => { setIndustryOpen(!industryOpen); setIndustrySearch(''); }}
+                          style={{
+                            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            border: industryOpen ? `1.5px solid ${HARX}` : '1px solid #d1d5db',
+                            borderRadius: 10, padding: '11px 14px', fontSize: 14, background: '#fff',
+                            color: company.industry ? '#111827' : '#9ca3af', cursor: 'pointer',
+                            boxShadow: industryOpen ? '0 0 0 3px rgba(255,77,77,0.1)' : 'none',
+                            transition: 'all 150ms',
+                          }}
                         >
-                          <option value="">Select industry...</option>
-                          {industries.map(ind => <option key={ind._id} value={ind._id}>{ind.name}</option>)}
-                        </select>
-                        <ChevronDown style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: '#9ca3af', pointerEvents: 'none' }} />
+                          <span>{company.industry ? (industries.find(i => i._id === company.industry)?.name || 'Select industry...') : 'Select industry...'}</span>
+                          <ChevronDown style={{ width: 16, height: 16, color: '#9ca3af', transition: 'transform 200ms', transform: industryOpen ? 'rotate(180deg)' : 'none' }} />
+                        </button>
+                        {industryOpen && (
+                          <div style={{
+                            position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 50,
+                            background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb',
+                            boxShadow: '0 12px 32px rgba(0,0,0,0.12)', overflow: 'hidden',
+                          }}>
+                            <div style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f9fafb', borderRadius: 8, padding: '7px 10px' }}>
+                                <Search style={{ width: 14, height: 14, color: '#9ca3af', flexShrink: 0 }} />
+                                <input
+                                  autoFocus
+                                  value={industrySearch}
+                                  onChange={(e) => setIndustrySearch(e.target.value)}
+                                  placeholder="Search industries..."
+                                  style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: 13, color: '#111827', width: '100%' }}
+                                />
+                              </div>
+                            </div>
+                            <div style={{ maxHeight: 220, overflowY: 'auto', padding: '4px 0' }}>
+                              {industries.filter(ind => ind.name.toLowerCase().includes(industrySearch.toLowerCase())).map(ind => {
+                                const selected = company.industry === ind._id;
+                                return (
+                                  <button
+                                    key={ind._id}
+                                    type="button"
+                                    onClick={() => { setCompany({ ...company, industry: ind._id }); setIndustryOpen(false); }}
+                                    style={{
+                                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                      padding: '9px 14px', border: 'none', background: selected ? '#fff5f5' : 'transparent',
+                                      fontSize: 13, color: selected ? HARX : '#374151', fontWeight: selected ? 600 : 400,
+                                      cursor: 'pointer', transition: 'background 100ms',
+                                    }}
+                                    onMouseEnter={(e) => { if (!selected) (e.currentTarget.style.background = '#f9fafb'); }}
+                                    onMouseLeave={(e) => { if (!selected) (e.currentTarget.style.background = 'transparent'); }}
+                                  >
+                                    <span>{ind.name}</span>
+                                    {selected && <Check style={{ width: 14, height: 14, color: HARX }} />}
+                                  </button>
+                                );
+                              })}
+                              {industries.filter(ind => ind.name.toLowerCase().includes(industrySearch.toLowerCase())).length === 0 && (
+                                <div style={{ padding: '14px', textAlign: 'center', fontSize: 13, color: '#9ca3af' }}>No results</div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
