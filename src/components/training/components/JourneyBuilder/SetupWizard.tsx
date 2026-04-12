@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Building2, Loader2, Target, Users, Sparkles, Briefcase, AlertCircle, CheckCircle, ArrowRight, ArrowLeft, ChevronDown, Check, Search } from 'lucide-react';
 import { Company, TrainingJourney } from '../../types/core';
 import { Industry, GigFromApi } from '../../types';
-import { TrainingMethodology } from '../../types/methodology';
+import { TrainingMethodology, MethodologyComponent } from '../../types/methodology';
 import MethodologySelector from './MethodologySelector';
 import MethodologyBuilder from '../Methodology/MethodologyBuilder';
 import { OnboardingService } from '../../infrastructure/services/OnboardingService';
@@ -31,7 +31,6 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const [visionDesc, setVisionDesc] = useState('');
   const [visionDuration, setVisionDuration] = useState('');
   const prevWizardStepRef = useRef(currentStep);
-  const [showAllComponents, setShowAllComponents] = useState(false);
   const [industryOpen, setIndustryOpen] = useState(false);
   const [industrySearch, setIndustrySearch] = useState('');
   const industryBtnRef = useRef<HTMLButtonElement>(null);
@@ -211,6 +210,16 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const stepNum = currentStep > 4 ? 4 : currentStep;
   const isStep2 = currentStep === 2;
   const isStep4 = currentStep === 4;
+  const isStep5 = currentStep === 5;
+
+  const formatVisionDuration = (raw: string | undefined) => {
+    if (!raw) return null;
+    const m = parseInt(raw, 10);
+    if (Number.isNaN(m)) return raw;
+    if (m >= 1440) return `${Math.round(m / 1440)} day(s)`;
+    if (m >= 60) return `${Math.round(m / 60)} hour(s)`;
+    return `${m} minute(s)`;
+  };
 
   const HARX = '#ff4d4d';
   const HARX_GRADIENT = 'linear-gradient(to right, #ff4d4d, #ec4899)';
@@ -261,19 +270,19 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', width: '100%' }}>
         <div style={{
           flex: 1, minHeight: 0,
-          overflowY: isStep2 || isStep4 ? 'hidden' : 'auto',
-          display: currentStep === 1 || isStep2 || isStep4 ? 'flex' : 'block',
+          overflowY: isStep2 || isStep4 || isStep5 ? 'hidden' : 'auto',
+          display: currentStep === 1 || isStep2 || isStep4 || isStep5 ? 'flex' : 'block',
           flexDirection: 'column',
-          alignItems: currentStep === 1 || isStep2 ? 'center' : isStep4 ? 'stretch' : undefined,
-          justifyContent: currentStep === 1 ? 'flex-start' : isStep2 || isStep4 ? 'stretch' : undefined,
-          padding: currentStep === 1 ? '12px 28px 8px' : isStep2 ? '12px 28px 8px' : isStep4 ? '12px 28px 8px' : '16px 28px',
+          alignItems: currentStep === 1 || isStep2 ? 'center' : isStep4 || isStep5 ? 'stretch' : undefined,
+          justifyContent: currentStep === 1 ? 'flex-start' : isStep2 || isStep4 || isStep5 ? 'stretch' : undefined,
+          padding: currentStep === 1 ? '12px 28px 8px' : isStep2 ? '12px 28px 8px' : isStep4 ? '12px 28px 8px' : isStep5 ? '8px 24px 6px' : '16px 28px',
           width: '100%',
         }}>
         <div style={{
           maxWidth: isStep4 ? 1120 : 500,
           margin: '0 auto',
           width: '100%',
-          ...(isStep2 || isStep4 ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } : {}),
+          ...(isStep2 || isStep4 || isStep5 ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } : {}),
         }}>
 
           {currentStep === 1 && (
@@ -476,55 +485,154 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             />
           )}
 
-          {currentStep === 5 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <div style={{ textAlign: 'center' }}>
-                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                  <CheckCircle style={{ width: 22, height: 22, color: '#059669' }} />
+          {isStep5 && (
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                overflow: 'hidden',
+                width: '100%',
+              }}
+            >
+              <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                <h3
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 800,
+                    color: '#111827',
+                    margin: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <CheckCircle style={{ width: 18, height: 18, color: '#059669' }} />
                   Setup complete
                 </h3>
-                <p style={{ fontSize: 13, color: '#6b7280', marginTop: 6 }}>360° methodology applied. Upload and transform content next.</p>
+                <p style={{ fontSize: 11, color: '#6b7280', marginTop: 3, lineHeight: 1.35 }}>
+                  360° methodology applied. Upload and transform content next.
+                </p>
               </div>
-              <div style={{ border: '1px solid #e5e7eb', borderRadius: 14, overflow: 'hidden' }}>
-                <div style={{ padding: '14px 18px', borderBottom: '1px solid #f3f4f6' }}>
-                  <h5 style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9ca3af', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Building2 style={{ width: 14, height: 14, color: HARX }} /> Industry & gig
+
+              <div
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  border: '1px solid rgba(255, 77, 77, 0.22)',
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  background: 'linear-gradient(180deg, #fffafa 0%, #ffffff 48px)',
+                  boxShadow: '0 2px 12px rgba(255, 77, 77, 0.08)',
+                }}
+              >
+                <div style={{ padding: '8px 12px', borderBottom: '1px solid #fce8e8', flexShrink: 0 }}>
+                  <h5
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      color: HARX,
+                      marginBottom: 4,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                    }}
+                  >
+                    <Building2 style={{ width: 12, height: 12, color: HARX }} />
+                    Industry & gig
                   </h5>
-                  <p style={{ fontSize: 14, color: '#374151', margin: 0, fontWeight: 500 }}>
-                    {company.industry ? (industries.find(i => i._id === company.industry)?.name || company.industry) : 'N/A'}
+                  <p style={{ fontSize: 13, color: '#111827', margin: 0, fontWeight: 600, lineHeight: 1.25 }}>
+                    {company.industry ? industries.find(i => i._id === company.industry)?.name || company.industry : 'N/A'}
                   </p>
-                  <p style={{ fontSize: 13, color: '#6b7280', margin: '2px 0 0' }}>{selectedGig?.title || 'No gig selected'}</p>
+                  <p style={{ fontSize: 11, color: '#6b7280', margin: '2px 0 0', lineHeight: 1.3 }}>{selectedGig?.title || 'No gig selected'}</p>
                 </div>
-                <div style={{ padding: '14px 18px', borderBottom: '1px solid #f3f4f6' }}>
-                  <h5 style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9ca3af', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Target style={{ width: 14, height: 14, color: HARX }} /> Training program
+
+                <div style={{ padding: '8px 12px', borderBottom: '1px solid #fce8e8', flexShrink: 0 }}>
+                  <h5
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      color: HARX,
+                      marginBottom: 4,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                    }}
+                  >
+                    <Target style={{ width: 12, height: 12, color: HARX }} />
+                    Training program
                   </h5>
-                  <p style={{ fontSize: 14, color: '#374151', margin: 0, fontWeight: 500 }}>{trainingDetails?.trainingName || selectedGig?.title || 'N/A'}</p>
-                  <p style={{ fontSize: 13, color: '#6b7280', margin: '2px 0 0' }}>
-                    {trainingDetails?.estimatedDuration ? (() => { const m = parseInt(trainingDetails.estimatedDuration); if (m >= 1440) return `${Math.round(m / 1440)} day(s)`; if (m >= 60) return `${Math.round(m / 60)} hour(s)`; return `${m} minute(s)`; })() : journey.estimatedDuration || 'N/A'}
-                    {' · '}{journey.targetRoles?.length || 0} target roles
+                  <p style={{ fontSize: 13, color: '#111827', margin: 0, fontWeight: 600, lineHeight: 1.25 }}>
+                    {trainingDetails?.trainingName || selectedGig?.title || 'N/A'}
+                  </p>
+                  {trainingDetails?.trainingDescription?.trim() ? (
+                    <p
+                      style={{
+                        fontSize: 10,
+                        color: '#6b7280',
+                        margin: '4px 0 0',
+                        lineHeight: 1.35,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {trainingDetails.trainingDescription.trim()}
+                    </p>
+                  ) : null}
+                  <p style={{ fontSize: 10, color: '#9ca3af', margin: '4px 0 0', fontWeight: 600 }}>
+                    {formatVisionDuration(trainingDetails?.estimatedDuration) || journey.estimatedDuration || 'N/A'}
+                    {' · '}
+                    {journey.targetRoles?.length || 0} target roles
                   </p>
                 </div>
-                {selectedMethodology && (
-                  <div style={{ padding: '14px 18px' }}>
-                    <h5 style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9ca3af', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Sparkles style={{ width: 14, height: 14, color: HARX }} /> Methodology
+
+                {selectedMethodology ? (
+                  <div style={{ padding: '8px 12px', flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                    <h5
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        color: HARX,
+                        marginBottom: 6,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Sparkles style={{ width: 12, height: 12, color: HARX }} />
+                      Methodology
                     </h5>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                      {selectedMethodology.components?.slice(0, showAllComponents ? undefined : 6).map((c: any, i: number) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#374151' }}>
-                          <CheckCircle style={{ width: 14, height: 14, color: '#059669', flexShrink: 0 }} />
-                          <span>{c.title}</span>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, flex: 1, minHeight: 0, alignContent: 'start' }}>
+                      {selectedMethodology.components?.slice(0, 4).map((c: MethodologyComponent, i: number) => (
+                        <div key={c.id || i} style={{ display: 'flex', alignItems: 'flex-start', gap: 4, minWidth: 0 }}>
+                          <CheckCircle style={{ width: 11, height: 11, color: '#059669', flexShrink: 0, marginTop: 2 }} />
+                          <span style={{ fontSize: 10, color: '#374151', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                            {c.title}
+                          </span>
                         </div>
                       ))}
                     </div>
-                    {selectedMethodology.components && selectedMethodology.components.length > 6 && (
-                      <button type="button" onClick={() => setShowAllComponents(!showAllComponents)} style={{ marginTop: 8, fontSize: 12, fontWeight: 700, color: HARX, background: 'none', border: 'none', cursor: 'pointer' }}>
-                        {showAllComponents ? 'Show less' : `+${selectedMethodology.components.length - 6} more`}
-                      </button>
-                    )}
+                    {selectedMethodology.components && selectedMethodology.components.length > 4 ? (
+                      <p style={{ margin: '6px 0 0', fontSize: 10, fontWeight: 700, color: HARX, flexShrink: 0 }}>
+                        +{selectedMethodology.components.length - 4} more modules
+                      </p>
+                    ) : null}
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           )}
