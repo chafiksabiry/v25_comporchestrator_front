@@ -37,14 +37,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const updateMenuPos = useCallback(() => {
     if (industryBtnRef.current) {
       const r = industryBtnRef.current.getBoundingClientRect();
-      const menuH = 280;
-      const spaceBelow = window.innerHeight - r.bottom;
-      const openUp = spaceBelow < menuH && r.top > menuH;
-      setMenuPos({
-        top: openUp ? r.top - menuH - 4 : r.bottom + 2,
-        left: r.left,
-        width: r.width,
-      });
+      setMenuPos({ top: r.bottom + 4, left: r.left, width: r.width });
     }
   }, []);
 
@@ -185,8 +178,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
 
       {/* ── Stepper ── */}
-      <div style={{ flexShrink: 0, padding: '12px 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+      <div style={{ flexShrink: 0, padding: '8px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
           {steps.map((step, i) => {
             const done = currentStep > step.id;
             const active = currentStep === step.id || (currentStep === 5 && step.id === 4);
@@ -196,9 +189,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                   type="button"
                   onClick={() => { if (done) setCurrentStep(step.id); }}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    padding: '4px 10px', borderRadius: 9999, border: 'none',
-                    fontSize: 12, fontWeight: 600, cursor: done ? 'pointer' : 'default',
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    padding: '3px 8px', borderRadius: 9999, border: 'none',
+                    fontSize: 11, fontWeight: 600, cursor: done ? 'pointer' : 'default',
                     background: 'transparent',
                     color: done ? '#059669' : active ? HARX : '#9ca3af',
                     transition: 'all 150ms',
@@ -206,16 +199,16 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 >
                   <span style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    width: 22, height: 22, borderRadius: '50%', fontSize: 11, fontWeight: 700,
+                    width: 20, height: 20, borderRadius: '50%', fontSize: 10, fontWeight: 700,
                     background: done ? '#059669' : active ? HARX : '#d1d5db',
                     color: '#fff',
                   }}>
-                    {done ? <Check style={{ width: 12, height: 12 }} /> : step.id}
+                    {done ? <Check style={{ width: 11, height: 11 }} /> : step.id}
                   </span>
                   <span>{step.label}</span>
                 </button>
                 {i < steps.length - 1 && (
-                  <div style={{ width: 24, height: 2, borderRadius: 1, background: done ? '#059669' : '#e5e7eb' }} />
+                  <div style={{ width: 20, height: 2, borderRadius: 1, background: done ? '#059669' : '#e5e7eb' }} />
                 )}
               </Fragment>
             );
@@ -229,17 +222,17 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         display: currentStep === 1 ? 'flex' : 'block',
         alignItems: currentStep === 1 ? 'center' : undefined,
         justifyContent: currentStep === 1 ? 'center' : undefined,
-        padding: currentStep === 1 ? '0 32px' : '20px 32px',
+        padding: currentStep === 1 ? '0 28px' : '16px 28px',
       }}>
-        <div style={{ maxWidth: 520, margin: '0 auto', width: '100%' }}>
+        <div style={{ maxWidth: 500, margin: '0 auto', width: '100%' }}>
 
           {currentStep === 1 && (
             <>
-              <div style={{ textAlign: 'center', marginBottom: 28 }}>
-                <h3 style={{ fontSize: 20, fontWeight: 800, color: '#111827', margin: 0, letterSpacing: '-0.01em' }}>
+              <div style={{ textAlign: 'center', marginBottom: 18 }}>
+                <h3 style={{ fontSize: 17, fontWeight: 800, color: '#111827', margin: 0, letterSpacing: '-0.01em' }}>
                   Welcome to your training journey
                 </h3>
-                <p style={{ fontSize: 13, color: '#6b7280', marginTop: 6 }}>
+                <p style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
                   Industry templates · Smart defaults · Compliance
                 </p>
               </div>
@@ -250,9 +243,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                   <p style={{ fontSize: 13, color: '#6b7280' }}>Loading company information...</p>
                 </div>
               ) : companyData ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#1f2937', marginBottom: 8 }}>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
                       Training industry <span style={{ color: HARX }}>*</span>
                     </label>
                     {loadingIndustries ? (
@@ -269,7 +262,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                           style={{
                             width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                             border: industryOpen ? `1.5px solid ${HARX}` : '1px solid #d1d5db',
-                            borderRadius: 10, padding: '10px 14px', fontSize: 14, background: '#fff',
+                            borderRadius: 8, padding: '9px 12px', fontSize: 13, background: '#fff',
                             color: company.industry ? '#111827' : '#9ca3af', cursor: 'pointer',
                             boxShadow: industryOpen ? `0 0 0 3px rgba(255,77,77,0.08)` : 'none',
                             transition: 'all 150ms',
@@ -300,7 +293,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                                 />
                               </div>
                             </div>
-                            <div style={{ maxHeight: 200, overflowY: 'auto', padding: '4px 0' }}>
+                            <div style={{ maxHeight: 240, overflowY: 'auto', padding: '4px 0' }}>
                               {industries.filter(ind => ind.name.toLowerCase().includes(industrySearch.toLowerCase())).map(ind => {
                                 const sel = company.industry === ind._id;
                                 return (
@@ -334,8 +327,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                   </div>
 
                   <div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: '#1f2937', marginBottom: 8 }}>
-                      <Briefcase style={{ width: 14, height: 14, color: HARX }} />
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
+                      <Briefcase style={{ width: 13, height: 13, color: HARX }} />
                       Your gig <span style={{ color: HARX }}>*</span>
                     </label>
                     <GigSelector
@@ -347,8 +340,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                   </div>
 
                   {selectedGig && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#065f46', border: '1px solid #d1fae5' }}>
-                      <CheckCircle style={{ width: 16, height: 16, color: '#059669', flexShrink: 0 }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#065f46', border: '1px solid #d1fae5' }}>
+                      <CheckCircle style={{ width: 14, height: 14, color: '#059669', flexShrink: 0 }} />
                       <span style={{ fontWeight: 600 }}>{selectedGig.title}</span>
                     </div>
                   )}
@@ -476,39 +469,39 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
       {/* ── Footer ── */}
       {!isStep2 && (
-        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 32px' }}>
+        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 28px' }}>
           <button
             type="button"
             onClick={() => { if (currentStep === 5) setCurrentStep(4); else if (currentStep > 1) setCurrentStep(currentStep - 1); }}
             disabled={currentStep === 1}
             style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '8px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700,
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
               border: currentStep === 1 ? 'none' : '1px solid #d1d5db',
               background: 'transparent', color: currentStep === 1 ? '#d1d5db' : '#374151',
               cursor: currentStep === 1 ? 'not-allowed' : 'pointer',
             }}
           >
-            <ArrowLeft style={{ width: 16, height: 16 }} />
+            <ArrowLeft style={{ width: 14, height: 14 }} />
             Back
           </button>
 
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af' }}>Step {stepNum} of {steps.length}</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Step {stepNum} of {steps.length}</span>
 
           <button
             type="button"
             onClick={handleNext}
             disabled={!isStepValid()}
             style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '8px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700,
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700,
               border: 'none', color: '#fff', cursor: isStepValid() ? 'pointer' : 'not-allowed',
               background: isStepValid() ? HARX_GRADIENT : '#d1d5db',
               boxShadow: isStepValid() ? '0 2px 8px rgba(255,77,77,0.25)' : 'none',
             }}
           >
             {currentStep === 5 ? 'Start building' : 'Continue'}
-            <ArrowRight style={{ width: 16, height: 16 }} />
+            <ArrowRight style={{ width: 14, height: 14 }} />
           </button>
         </div>
       )}

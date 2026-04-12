@@ -25,14 +25,7 @@ export default function GigSelector({ companyId, industryFilter, industryName, o
   const updatePos = useCallback(() => {
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
-      const menuH = 300;
-      const spaceBelow = window.innerHeight - r.bottom;
-      const openUp = spaceBelow < menuH && r.top > menuH;
-      setPos({
-        top: openUp ? r.top - menuH - 4 : r.bottom + 2,
-        left: r.left,
-        width: r.width,
-      });
+      setPos({ top: r.bottom + 4, left: r.left, width: r.width });
     }
   }, []);
 
@@ -105,7 +98,7 @@ export default function GigSelector({ companyId, industryFilter, industryName, o
         style={{
           width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           border: open ? `1.5px solid ${HARX}` : '1px solid #d1d5db',
-          borderRadius: 10, padding: '10px 14px', fontSize: 14, background: '#fff',
+          borderRadius: 8, padding: '9px 12px', fontSize: 13, background: '#fff',
           color: selected ? '#111827' : '#9ca3af', cursor: 'pointer',
           boxShadow: open ? '0 0 0 3px rgba(255,77,77,0.08)' : 'none',
           transition: 'all 150ms',
@@ -140,7 +133,7 @@ export default function GigSelector({ companyId, industryFilter, industryName, o
               {gigs.length} gig{gigs.length > 1 ? 's' : ''} available
             </span>
           </div>
-          <div style={{ maxHeight: 220, overflowY: 'auto', padding: '4px 0' }}>
+          <div style={{ maxHeight: 260, overflowY: 'auto', padding: '4px 0' }}>
             {gigs.map(gig => {
               const isSel = selectedGigId === gig._id;
               return (
