@@ -218,13 +218,20 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
       {/* ── Content ── */}
       <div style={{
-        flex: 1, minHeight: 0, overflowY: 'auto',
-        display: currentStep === 1 ? 'flex' : 'block',
+        flex: 1, minHeight: 0,
+        overflowY: isStep2 ? 'hidden' : 'auto',
+        display: currentStep === 1 || isStep2 ? 'flex' : 'block',
+        flexDirection: 'column',
         alignItems: currentStep === 1 ? 'center' : undefined,
         justifyContent: currentStep === 1 ? 'center' : undefined,
-        padding: currentStep === 1 ? '0 28px' : '16px 28px',
+        padding: currentStep === 1 ? '0 28px' : isStep2 ? '12px 28px 0' : '16px 28px',
       }}>
-        <div style={{ maxWidth: 500, margin: '0 auto', width: '100%' }}>
+        <div style={{
+          maxWidth: 500,
+          margin: '0 auto',
+          width: '100%',
+          ...(isStep2 ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } : {}),
+        }}>
 
           {currentStep === 1 && (
             <>
