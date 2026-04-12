@@ -37,7 +37,14 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const updateMenuPos = useCallback(() => {
     if (industryBtnRef.current) {
       const r = industryBtnRef.current.getBoundingClientRect();
-      setMenuPos({ top: r.bottom + 4, left: r.left, width: r.width });
+      const menuH = 280;
+      const spaceBelow = window.innerHeight - r.bottom;
+      const openUp = spaceBelow < menuH && r.top > menuH;
+      setMenuPos({
+        top: openUp ? r.top - menuH - 4 : r.bottom + 2,
+        left: r.left,
+        width: r.width,
+      });
     }
   }, []);
 
@@ -293,7 +300,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                                 />
                               </div>
                             </div>
-                            <div style={{ maxHeight: 240, overflowY: 'auto', padding: '4px 0' }}>
+                            <div style={{ maxHeight: 200, overflowY: 'auto', padding: '4px 0' }}>
                               {industries.filter(ind => ind.name.toLowerCase().includes(industrySearch.toLowerCase())).map(ind => {
                                 const sel = company.industry === ind._id;
                                 return (
