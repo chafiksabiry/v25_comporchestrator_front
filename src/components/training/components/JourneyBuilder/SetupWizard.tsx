@@ -20,7 +20,6 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const [companyData, setCompanyData] = useState<any>(null);
   const [journey, setJourney] = useState<Partial<TrainingJourney>>({});
   const [selectedMethodology, setSelectedMethodology] = useState<TrainingMethodology | null>(null);
-  const [showMethodologySelector, setShowMethodologySelector] = useState(false);
   const [showMethodologyBuilder, setShowMethodologyBuilder] = useState(false);
   const [industries, setIndustries] = useState<Industry[]>([]);
   const [loadingIndustries, setLoadingIndustries] = useState(true);
@@ -157,8 +156,10 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         targetRoles: journey.targetRoles || [],
       };
       onComplete(completeCompany, completeJourney, selectedMethodology || undefined, selectedGig?._id);
+    } else if (currentStep === 4 && selectedMethodology) {
+      setCurrentStep(5);
     } else if (currentStep === 3) {
-      setShowMethodologySelector(true);
+      setCurrentStep(4);
     } else if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1);
     }
@@ -188,13 +189,10 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     }
   };
 
-  const handleMethodologySelect = (m: TrainingMethodology) => { setSelectedMethodology(m); setShowMethodologySelector(false); setCurrentStep(5); };
+  const handleMethodologySelect = (m: TrainingMethodology) => { setSelectedMethodology(m); setCurrentStep(5); };
   const handleMethodologyApply = (m: TrainingMethodology) => { setSelectedMethodology(m); setShowMethodologyBuilder(false); setCurrentStep(5); };
-  const handleCustomMethodology = () => { setShowMethodologySelector(false); setCurrentStep(5); };
+  const handleCustomMethodology = () => { setCurrentStep(5); };
 
-  if (showMethodologySelector) {
-    return <MethodologySelector onMethodologySelect={handleMethodologySelect} onCustomMethodology={handleCustomMethodology} onBack={() => { setShowMethodologySelector(false); setCurrentStep(3); }} />;
-  }
   if (showMethodologyBuilder) {
     return <MethodologyBuilder onApplyMethodology={handleMethodologyApply} selectedIndustry={company.industry} />;
   }
@@ -210,10 +208,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     }
   };
 
-  if (currentStep === 4) return null;
-
   const stepNum = currentStep > 4 ? 4 : currentStep;
   const isStep2 = currentStep === 2;
+  const isStep4 = currentStep === 4;
 
   const HARX = '#ff4d4d';
   const HARX_GRADIENT = 'linear-gradient(to right, #ff4d4d, #ec4899)';
@@ -264,19 +261,19 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', width: '100%' }}>
         <div style={{
           flex: 1, minHeight: 0,
-          overflowY: isStep2 ? 'hidden' : 'auto',
-          display: currentStep === 1 || isStep2 ? 'flex' : 'block',
+          overflowY: isStep2 || isStep4 ? 'hidden' : 'auto',
+          display: currentStep === 1 || isStep2 || isStep4 ? 'flex' : 'block',
           flexDirection: 'column',
-          alignItems: currentStep === 1 || isStep2 ? 'center' : undefined,
-          justifyContent: currentStep === 1 ? 'flex-start' : isStep2 ? 'stretch' : undefined,
-          padding: currentStep === 1 ? '12px 28px 8px' : isStep2 ? '12px 28px 8px' : '16px 28px',
+          alignItems: currentStep === 1 || isStep2 ? 'center' : isStep4 ? 'stretch' : undefined,
+          justifyContent: currentStep === 1 ? 'flex-start' : isStep2 || isStep4 ? 'stretch' : undefined,
+          padding: currentStep === 1 ? '12px 28px 8px' : isStep2 ? '12px 28px 8px' : isStep4 ? '12px 28px 8px' : '16px 28px',
           width: '100%',
         }}>
         <div style={{
-          maxWidth: 500,
+          maxWidth: isStep4 ? 1120 : 500,
           margin: '0 auto',
           width: '100%',
-          ...(isStep2 ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } : {}),
+          ...(isStep2 || isStep4 ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } : {}),
         }}>
 
           {currentStep === 1 && (
@@ -468,6 +465,15 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 </div>
               </div>
             </div>
+          )}
+
+          {isStep4 && (
+            <MethodologySelector
+              onMethodologySelect={handleMethodologySelect}
+              onCustomMethodology={handleCustomMethodology}
+              onBack={() => setCurrentStep(3)}
+              hideBackButton
+            />
           )}
 
           {currentStep === 5 && (
