@@ -1,5 +1,4 @@
-import React from 'react'
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { format } from 'date-fns';
 import { TimeSlot, Gig, Rep } from '../../types/scheduler';
 import { Building, Clock } from 'lucide-react';
