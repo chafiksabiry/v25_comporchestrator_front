@@ -63,12 +63,11 @@ export default function TrainingDetailsForm({
             Define your training vision
           </h3>
           <p style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-            {subStep === 0 && 'Step 1 of 3 — Name your program'}
-            {subStep === 1 && 'Step 2 of 3 — Add context (optional)'}
-            {subStep === 2 && 'Step 3 of 3 — How long should it run?'}
+            {subStep === 0 && 'Step 1 of 2 — Name & description'}
+            {subStep === 1 && 'Step 2 of 2 — How long should it run?'}
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 10 }}>
-            {[0, 1, 2].map((i) => (
+            {[0, 1].map((i) => (
               <div
                 key={i}
                 style={{
@@ -84,59 +83,57 @@ export default function TrainingDetailsForm({
         </div>
 
         {subStep === 0 && (
-          <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
-              Training Program Name <span style={{ color: HARX }}>*</span>
-            </label>
-            <input
-              type="text"
-              value={trainingName}
-              onChange={(e) => onTrainingNameChange(e.target.value)}
-              placeholder={gigData?.title ? `e.g., ${gigData.title}` : 'e.g., Customer Success Mastery Program'}
-              autoFocus
-              style={{
-                width: '100%',
-                border: '1px solid #d1d5db',
-                borderRadius: 8,
-                padding: '10px 12px',
-                fontSize: 14,
-                color: '#111827',
-                outline: 'none',
-                boxSizing: 'border-box',
-              }}
-            />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
+                Training Program Name <span style={{ color: HARX }}>*</span>
+              </label>
+              <input
+                type="text"
+                value={trainingName}
+                onChange={(e) => onTrainingNameChange(e.target.value)}
+                placeholder={gigData?.title ? `e.g., ${gigData.title}` : 'e.g., Customer Success Mastery Program'}
+                autoFocus
+                style={{
+                  width: '100%',
+                  border: '1px solid #d1d5db',
+                  borderRadius: 8,
+                  padding: '10px 12px',
+                  fontSize: 14,
+                  color: '#111827',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
+                Program Description <span style={{ fontWeight: 400, color: '#9ca3af' }}>(optional)</span>
+              </label>
+              <textarea
+                value={trainingDescription}
+                onChange={(e) => onTrainingDescriptionChange(e.target.value)}
+                rows={5}
+                placeholder="Describe the goals, outcomes, and key benefits of this training program..."
+                style={{
+                  width: '100%',
+                  border: '1px solid #d1d5db',
+                  borderRadius: 8,
+                  padding: '10px 12px',
+                  fontSize: 14,
+                  color: '#111827',
+                  outline: 'none',
+                  resize: 'vertical',
+                  fontFamily: 'inherit',
+                  boxSizing: 'border-box',
+                  minHeight: 120,
+                }}
+              />
+            </div>
           </div>
         )}
 
         {subStep === 1 && (
-          <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
-              Program Description <span style={{ fontWeight: 400, color: '#9ca3af' }}>(optional)</span>
-            </label>
-            <textarea
-              value={trainingDescription}
-              onChange={(e) => onTrainingDescriptionChange(e.target.value)}
-              rows={5}
-              placeholder="Describe the goals, outcomes, and key benefits of this training program..."
-              autoFocus
-              style={{
-                width: '100%',
-                border: '1px solid #d1d5db',
-                borderRadius: 8,
-                padding: '10px 12px',
-                fontSize: 14,
-                color: '#111827',
-                outline: 'none',
-                resize: 'vertical',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box',
-                minHeight: 120,
-              }}
-            />
-          </div>
-        )}
-
-        {subStep === 2 && (
           <div>
             <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 8 }}>
               Expected Program Duration <span style={{ color: HARX }}>*</span>
