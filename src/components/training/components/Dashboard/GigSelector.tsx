@@ -25,7 +25,14 @@ export default function GigSelector({ companyId, industryFilter, industryName, o
   const updatePos = useCallback(() => {
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
-      setPos({ top: r.bottom + 4, left: r.left, width: r.width });
+      const menuH = 300;
+      const spaceBelow = window.innerHeight - r.bottom;
+      const openUp = spaceBelow < menuH && r.top > menuH;
+      setPos({
+        top: openUp ? r.top - menuH - 4 : r.bottom + 2,
+        left: r.left,
+        width: r.width,
+      });
     }
   }, []);
 
@@ -133,7 +140,7 @@ export default function GigSelector({ companyId, industryFilter, industryName, o
               {gigs.length} gig{gigs.length > 1 ? 's' : ''} available
             </span>
           </div>
-          <div style={{ maxHeight: 260, overflowY: 'auto', padding: '4px 0' }}>
+          <div style={{ maxHeight: 220, overflowY: 'auto', padding: '4px 0' }}>
             {gigs.map(gig => {
               const isSel = selectedGigId === gig._id;
               return (
