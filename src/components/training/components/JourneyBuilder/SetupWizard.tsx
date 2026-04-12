@@ -114,7 +114,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       setVisionDesc('');
       setVisionDuration('');
     } else if (currentStep === 2 && prev === 3 && trainingDetails) {
-      setVisionSubStep(2);
+      setVisionSubStep(1);
       setVisionName(trainingDetails.trainingName);
       setVisionDesc(trainingDetails.trainingDescription);
       setVisionDuration(trainingDetails.estimatedDuration);
@@ -167,8 +167,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const handleGigSelect = (gig: GigFromApi) => { setSelectedGig(gig); };
 
   const visionContinueDisabled =
-    visionSubStep === 0 ? !visionName.trim() : visionSubStep === 2 ? !visionDuration : false;
-  const visionContinueLabel = visionSubStep === 2 ? 'Continue' : 'Next';
+    visionSubStep === 0 ? !visionName.trim() : !visionDuration;
+  const visionContinueLabel = visionSubStep === 1 ? 'Continue' : 'Next';
 
   const handleVisionFooterBack = () => {
     if (visionSubStep > 0) setVisionSubStep(visionSubStep - 1);
@@ -178,8 +178,6 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const handleVisionFooterContinue = () => {
     if (visionSubStep === 0) {
       if (visionName.trim()) setVisionSubStep(1);
-    } else if (visionSubStep === 1) {
-      setVisionSubStep(2);
     } else if (visionDuration) {
       setTrainingDetails({
         trainingName: visionName,
@@ -554,7 +552,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               <ArrowLeft style={{ width: 14, height: 14 }} />
               Back
             </button>
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Vision {visionSubStep + 1}/3 · Step 2 of 4</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Vision {visionSubStep + 1}/2 · Step 2 of 4</span>
             <button
               type="button"
               onClick={handleVisionFooterContinue}
