@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, Fragment } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Fragment } from 'react';
+import { createPortal } from 'react-dom';
 import { Building2, Loader2, Target, Users, Sparkles, Briefcase, AlertCircle, CheckCircle, ArrowRight, ArrowLeft, ChevronDown, Check, Search } from 'lucide-react';
 import { Company, TrainingJourney } from '../../types/core';
 import { Industry, GigFromApi } from '../../types';
@@ -29,15 +30,36 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const [showAllComponents, setShowAllComponents] = useState(false);
   const [industryOpen, setIndustryOpen] = useState(false);
   const [industrySearch, setIndustrySearch] = useState('');
-  const industryRef = useRef<HTMLDivElement>(null);
+  const industryBtnRef = useRef<HTMLButtonElement>(null);
+  const industryMenuRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 0 });
+
+  const updateMenuPos = useCallback(() => {
+    if (industryBtnRef.current) {
+      const r = industryBtnRef.current.getBoundingClientRect();
+      setMenuPos({ top: r.bottom + 4, left: r.left, width: r.width });
+    }
+  }, []);
 
   useEffect(() => {
+    if (industryOpen) {
+      updateMenuPos();
+      window.addEventListener('scroll', updateMenuPos, true);
+      window.addEventListener('resize', updateMenuPos);
+      return () => { window.removeEventListener('scroll', updateMenuPos, true); window.removeEventListener('resize', updateMenuPos); };
+    }
+  }, [industryOpen, updateMenuPos]);
+
+  useEffect(() => {
+    if (!industryOpen) return;
     const handler = (e: MouseEvent) => {
-      if (industryRef.current && !industryRef.current.contains(e.target as Node)) setIndustryOpen(false);
+      const t = e.target as Node;
+      if (industryBtnRef.current?.contains(t) || industryMenuRef.current?.contains(t)) return;
+      setIndustryOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  }, [industryOpen]);
 
   useEffect(() => {
     const fetchCompanyData = async () => {
@@ -232,28 +254,33 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                         <span style={{ fontSize: 13, color: '#6b7280' }}>Loading...</span>
                       </div>
                     ) : (
-                      <div ref={industryRef} style={{ position: 'relative' }}>
+                      <div>
                         <button
+                          ref={industryBtnRef}
                           type="button"
                           onClick={() => { setIndustryOpen(!industryOpen); setIndustrySearch(''); }}
                           style={{
                             width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                             border: industryOpen ? `1.5px solid ${HARX}` : '1px solid #d1d5db',
-                            borderRadius: 10, padding: '11px 14px', fontSize: 14, background: '#fff',
+                            borderRadius: 10, padding: '10px 14px', fontSize: 14, background: '#fff',
                             color: company.industry ? '#111827' : '#9ca3af', cursor: 'pointer',
-                            boxShadow: industryOpen ? '0 0 0 3px rgba(255,77,77,0.1)' : 'none',
+                            boxShadow: industryOpen ? `0 0 0 3px rgba(255,77,77,0.08)` : 'none',
                             transition: 'all 150ms',
                           }}
                         >
                           <span>{company.industry ? (industries.find(i => i._id === company.industry)?.name || 'Select industry...') : 'Select industry...'}</span>
                           <ChevronDown style={{ width: 16, height: 16, color: '#9ca3af', transition: 'transform 200ms', transform: industryOpen ? 'rotate(180deg)' : 'none' }} />
                         </button>
-                        {industryOpen && (
-                          <div style={{
-                            position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 50,
-                            background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb',
-                            boxShadow: '0 12px 32px rgba(0,0,0,0.12)', overflow: 'hidden',
-                          }}>
+                        {industryOpen && createPortal(
+                          <div
+                            ref={industryMenuRef}
+                            style={{
+                              position: 'fixed', top: menuPos.top, left: menuPos.left, width: menuPos.width, zIndex: 99999,
+                              background: '#fff', borderRadius: 12, border: '1px solid #e5e7eb',
+                              boxShadow: '0 8px 30px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
+                              overflow: 'hidden',
+                            }}
+                          >
                             <div style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f9fafb', borderRadius: 8, padding: '7px 10px' }}>
                                 <Search style={{ width: 14, height: 14, color: '#9ca3af', flexShrink: 0 }} />
@@ -266,9 +293,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                                 />
                               </div>
                             </div>
-                            <div style={{ maxHeight: 220, overflowY: 'auto', padding: '4px 0' }}>
+                            <div style={{ maxHeight: 240, overflowY: 'auto', padding: '4px 0' }}>
                               {industries.filter(ind => ind.name.toLowerCase().includes(industrySearch.toLowerCase())).map(ind => {
-                                const selected = company.industry === ind._id;
+                                const sel = company.industry === ind._id;
                                 return (
                                   <button
                                     key={ind._id}
@@ -276,15 +303,15 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                                     onClick={() => { setCompany({ ...company, industry: ind._id }); setIndustryOpen(false); }}
                                     style={{
                                       width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                      padding: '9px 14px', border: 'none', background: selected ? '#fff5f5' : 'transparent',
-                                      fontSize: 13, color: selected ? HARX : '#374151', fontWeight: selected ? 600 : 400,
+                                      padding: '9px 14px', border: 'none', background: sel ? '#fff5f5' : 'transparent',
+                                      fontSize: 13, color: sel ? HARX : '#374151', fontWeight: sel ? 600 : 400,
                                       cursor: 'pointer', transition: 'background 100ms',
                                     }}
-                                    onMouseEnter={(e) => { if (!selected) (e.currentTarget.style.background = '#f9fafb'); }}
-                                    onMouseLeave={(e) => { if (!selected) (e.currentTarget.style.background = 'transparent'); }}
+                                    onMouseEnter={(e) => { if (!sel) (e.currentTarget.style.background = '#f9fafb'); }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = sel ? '#fff5f5' : 'transparent'; }}
                                   >
                                     <span>{ind.name}</span>
-                                    {selected && <Check style={{ width: 14, height: 14, color: HARX }} />}
+                                    {sel && <Check style={{ width: 14, height: 14, color: HARX }} />}
                                   </button>
                                 );
                               })}
@@ -292,7 +319,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                                 <div style={{ padding: '14px', textAlign: 'center', fontSize: 13, color: '#9ca3af' }}>No results</div>
                               )}
                             </div>
-                          </div>
+                          </div>,
+                          document.body
                         )}
                       </div>
                     )}
