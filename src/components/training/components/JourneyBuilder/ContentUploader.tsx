@@ -3,6 +3,7 @@ import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, C
 import { ContentUpload } from '../../types/core';
 import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef } from '../../infrastructure/services/AIService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
+import { DraftService } from '../../infrastructure/services/DraftService';
 import { cloudinaryService } from '../../lib/cloudinaryService';
 import PresentationPreview from '../Training/PresentationPreview';
 import { scrollJourneyMainToTop } from './journeyScroll';
@@ -12,7 +13,14 @@ interface ContentUploaderProps {
   onBack: () => void;
   company?: any;
   gigId?: string | null;
-  onFinishEarly?: (uploads: ContentUpload[], curriculum?: any, presentationData?: any, filetraining?: string) => void;
+  /** `persistedJourneyId` : id Mongo renvoyé après save cloud — évite un 2e POST dans JourneyBuilder. */
+  onFinishEarly?: (
+    uploads: ContentUpload[],
+    curriculum?: any,
+    presentationData?: any,
+    filetraining?: string,
+    persistedJourneyId?: string
+  ) => void;
   /** REP company onboarding: modules sidebar + slides only, no PPTX/fullscreen/continue CTA */
   repOnboardingLayout?: boolean;
 }
@@ -465,7 +473,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         (generatedCurriculum as any)?._id ||
         (generatedCurriculum as any)?.id;
 
-      await JourneyService.saveJourney(
+      const saveResult = await JourneyService.saveJourney(
         journeyToSave,
         modulesToSave,
         company?.id || '',
@@ -476,9 +484,18 @@ export default function ContentUploader(props: ContentUploaderProps) {
         fileTrainingUrl
       );
 
+      const persistedId =
+        (saveResult?.journeyId as string | undefined) ||
+        (saveResult?.journey?._id as string | undefined) ||
+        (saveResult?.journey?.id as string | undefined);
+      if (persistedId && /^[0-9a-fA-F]{24}$/.test(persistedId)) {
+        const d = DraftService.getDraft();
+        DraftService.saveDraftLocally({ ...d, draftId: persistedId });
+      }
+
       // On revient à la liste des formations
       if (props.onFinishEarly) {
-        props.onFinishEarly(uploads, generatedCurriculum, generatedPresentation, fileTrainingUrl);
+        props.onFinishEarly(uploads, generatedCurriculum, generatedPresentation, fileTrainingUrl, persistedId);
       } else if (onBack) {
         onBack();
       }
