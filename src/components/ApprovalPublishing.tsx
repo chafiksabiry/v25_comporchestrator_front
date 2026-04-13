@@ -147,7 +147,12 @@ const ApprovalPublishing = () => {
     window.dispatchEvent(new CustomEvent('setGlobalBack', {
       detail: {
         label: 'Back to Onboarding',
-        action: () => window.dispatchEvent(new CustomEvent('tabChange', { detail: 'company-onboarding' }))
+        action: () => {
+          localStorage.setItem('activeTab', 'company-onboarding');
+          window.dispatchEvent(
+            new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } })
+          );
+        }
       }
     }));
 
