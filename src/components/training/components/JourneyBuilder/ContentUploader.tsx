@@ -1014,18 +1014,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
           <div className={rep ? 'flex w-full flex-col' : 'contents'}>
           {/* Header */}
           <div className={rep ? 'mb-3 shrink-0 text-center px-1' : 'text-center mb-8'}>
-            <div
-              className={
-                rep
-                  ? 'mb-2 inline-flex items-center gap-1.5 rounded-full border border-harx-200 bg-harx-50/90 px-2.5 py-1'
-                  : 'inline-flex items-center space-x-2 bg-purple-50 px-3 py-1.5 rounded-full shadow-inner border border-purple-100 mb-3'
-              }
-            >
-              <Upload className={rep ? 'h-3.5 w-3.5 text-harx-500' : 'h-4 w-4 text-purple-500'} />
-              <span className={rep ? 'text-[10px] font-bold uppercase tracking-wide text-harx-600' : 'text-xs font-medium text-purple-700'}>
-                Step 1: Content Upload & AI Analysis
-              </span>
-            </div>
             <h2
               className={
                 rep
