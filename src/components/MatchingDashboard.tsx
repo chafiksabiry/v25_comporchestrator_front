@@ -34,7 +34,12 @@ import {
 import Cookies from 'js-cookie';
 import axios from 'axios';
 
-export const MatchingDashboard = () => {
+export type MatchingDashboardProps = {
+  /** When opened inside Company Onboarding (step 13), close embedded step instead of relying on tab change only. */
+  onBackToOnboarding?: () => void;
+};
+
+export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps) => {
     const [reps, setReps] = useState<Rep[]>([]);
     const [gigs, setGigs] = useState<Gig[]>([]);
     const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
@@ -177,15 +182,19 @@ export const MatchingDashboard = () => {
 
         fetchData();
 
-        // App header listens for detail.action + tabChange with detail.tab (not switchTab / onClick).
+        // App header expects detail.action. If we're embedded in onboarding (step 13), onBackToOnboarding clears activeStep; tab may already be company-onboarding.
         window.dispatchEvent(new CustomEvent('setGlobalBack', {
             detail: {
                 label: 'Back to Onboarding',
                 action: () => {
                     localStorage.setItem('activeTab', 'company-onboarding');
-                    window.dispatchEvent(
-                        new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } })
-                    );
+                    if (onBackToOnboarding) {
+                        onBackToOnboarding();
+                    } else {
+                        window.dispatchEvent(
+                            new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } })
+                        );
+                    }
                 }
             }
         }));
@@ -193,7 +202,7 @@ export const MatchingDashboard = () => {
         return () => {
             window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
         };
-    }, []);
+    }, [onBackToOnboarding]);
 
     // Restore selected gig from localStorage when gigs are available
     useEffect(() => {
