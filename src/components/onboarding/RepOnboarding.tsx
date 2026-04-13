@@ -9,7 +9,9 @@ import {
   Clock,
   Play,
   RefreshCw,
-  Plus
+  Plus,
+  Pencil,
+  Trash2
 } from 'lucide-react';
 
 import { AppContent } from '../training/App';
@@ -34,6 +36,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   /** Journey used for module sidebar when previewing slides */
   const [previewJourney, setPreviewJourney] = useState<any | null>(null);
   const [loadingPresentation, setLoadingPresentation] = useState(false);
+  const [editingJourneyId, setEditingJourneyId] = useState<string | null>(null);
+  const [deletingJourneyId, setDeletingJourneyId] = useState<string | null>(null);
 
   // Helper function to format training journey data for display
   const asUiString = (v: unknown, fallback: string): string => {
@@ -132,6 +136,79 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     return isLocal 
       ? 'http://localhost:5010' 
       : 'https://v25platformtrainingbackend-production.up.railway.app';
+  };
+
+  const handleEditJourneyWithPrompts = async (journey: any) => {
+    const journeyId = String(journey?._id || journey?.id || '');
+    if (!journeyId) return;
+
+    const currentTitle = asUiString(journey?.title ?? journey?.name, 'Untitled Training');
+    const currentDescription = asUiString(journey?.description, '');
+
+    const nextTitle = window.prompt('Edit training title', currentTitle);
+    if (nextTitle == null) return;
+    const normalizedTitle = nextTitle.trim();
+    if (!normalizedTitle) {
+      window.alert('Title cannot be empty.');
+      return;
+    }
+
+    const nextDescription = window.prompt('Edit training description', currentDescription);
+    if (nextDescription == null) return;
+
+    try {
+      setEditingJourneyId(journeyId);
+      const trainingBackendUrl = getTrainingBackendUrl();
+      const baseUrl = trainingBackendUrl.endsWith('/api')
+        ? trainingBackendUrl
+        : `${trainingBackendUrl}/api`;
+
+      const payload = {
+        ...journey,
+        title: normalizedTitle,
+        name: normalizedTitle,
+        description: nextDescription.trim()
+      };
+
+      await axios.put(`${baseUrl}/training_journeys/${journeyId}`, payload);
+      await fetchCompanyTrainings();
+    } catch (error) {
+      console.error('[RepOnboarding] Failed to edit training:', error);
+      window.alert('Could not update this training. Please try again.');
+    } finally {
+      setEditingJourneyId(null);
+    }
+  };
+
+  const handleDeleteJourney = async (journey: any) => {
+    const journeyId = String(journey?._id || journey?.id || '');
+    if (!journeyId) return;
+
+    const journeyTitle = asUiString(journey?.title ?? journey?.name, 'this training');
+    const confirmed = window.confirm(`Delete "${journeyTitle}"? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    try {
+      setDeletingJourneyId(journeyId);
+      const trainingBackendUrl = getTrainingBackendUrl();
+      const baseUrl = trainingBackendUrl.endsWith('/api')
+        ? trainingBackendUrl
+        : `${trainingBackendUrl}/api`;
+
+      await axios.delete(`${baseUrl}/training_journeys/${journeyId}`);
+
+      if (previewJourney && String(previewJourney?._id || previewJourney?.id || '') === journeyId) {
+        setSelectedPresentation(null);
+        setPreviewJourney(null);
+      }
+
+      await fetchCompanyTrainings();
+    } catch (error) {
+      console.error('[RepOnboarding] Failed to delete training:', error);
+      window.alert('Could not delete this training. Please try again.');
+    } finally {
+      setDeletingJourneyId(null);
+    }
   };
 
   // Function to update onboarding progress in the main company platform
@@ -580,7 +657,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               <button
                                 type="button"
                                 onClick={() => handleViewPresentation(formatted.presentationUrl, formatted.id, journey)}
-                                disabled={loadingPresentation}
+                                disabled={loadingPresentation || editingJourneyId === formatted.id || deletingJourneyId === formatted.id}
                                 className={`inline-flex items-center space-x-2 rounded-xl px-4 py-2 text-sm font-bold transition-all ${formatted.status === 'completed'
                                   ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100 hover:bg-emerald-100'
                                   : 'bg-gradient-harx text-white shadow-sm hover:shadow-md'
@@ -595,6 +672,37 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                   {formatted.status === 'completed' ? 'Review' : formatted.status === 'in_progress' ? 'Continue' : 'Start'}
                                 </span>
                               </button>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleEditJourneyWithPrompts(journey)}
+                                  disabled={loadingPresentation || deletingJourneyId === formatted.id || editingJourneyId === formatted.id}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-2 text-xs font-semibold text-gray-600 hover:border-harx-200 hover:text-harx-600 disabled:opacity-50"
+                                  title="Edit training"
+                                >
+                                  {editingJourneyId === formatted.id ? (
+                                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  )}
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteJourney(journey)}
+                                  disabled={loadingPresentation || editingJourneyId === formatted.id || deletingJourneyId === formatted.id}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-2.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                                  title="Delete training"
+                                >
+                                  {deletingJourneyId === formatted.id ? (
+                                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  )}
+                                  <span>Delete</span>
+                                </button>
+                              </div>
                             </div>
                           </div>
                           </div>
