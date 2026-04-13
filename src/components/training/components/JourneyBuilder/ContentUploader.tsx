@@ -5,6 +5,7 @@ import { AIService, normalizePresentationFromApi } from '../../infrastructure/se
 import { JourneyService } from '../../infrastructure/services/JourneyService';
 import { cloudinaryService } from '../../lib/cloudinaryService';
 import PresentationPreview from '../Training/PresentationPreview';
+import { scrollJourneyMainToTop } from './journeyScroll';
 
 interface ContentUploaderProps {
   onComplete: (uploads: ContentUpload[], fileTrainingUrl?: string) => void;
@@ -45,9 +46,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [isLoadingGigKbDocs, setIsLoadingGigKbDocs] = useState(false);
 
   useEffect(() => {
-    const el = document.querySelector('[data-journey-main-scroll]');
-    if (el instanceof HTMLElement) el.scrollTo({ top: 0, behavior: 'auto' });
-    else window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollJourneyMainToTop();
   }, []);
 
   useEffect(() => {
@@ -925,7 +924,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           No KB documents for this job — generation will rely mainly on the job profile.
                         </p>
                       ) : (
-                        <ul className="max-h-48 space-y-2 overflow-y-auto text-sm">
+                        <ul className="space-y-2 text-sm">
                           {gigKbDocuments.map((doc) => (
                             <li
                               key={doc._id}
@@ -1405,7 +1404,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       No KB documents for this job — generation will rely mainly on the job profile.
                     </p>
                   ) : (
-                    <ul className="max-h-48 space-y-2 overflow-y-auto text-sm">
+                    <ul className="space-y-2 text-sm">
                       {gigKbDocuments.map((doc) => (
                         <li
                           key={doc._id}

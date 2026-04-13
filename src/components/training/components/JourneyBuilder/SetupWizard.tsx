@@ -9,6 +9,7 @@ import MethodologyBuilder from '../Methodology/MethodologyBuilder';
 import { OnboardingService } from '../../infrastructure/services/OnboardingService';
 import GigSelector from '../Dashboard/GigSelector';
 import TrainingDetailsForm from './TrainingDetailsForm';
+import { scrollJourneyMainToTop } from './journeyScroll';
 
 interface SetupWizardProps {
   onComplete: (company: Company, journey: TrainingJourney, methodology?: TrainingMethodology, gigId?: string) => void;
@@ -105,8 +106,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   }, []);
 
   useEffect(() => {
-    const el = document.querySelector('[data-journey-main-scroll]');
-    if (el instanceof HTMLElement) el.scrollTo({ top: 0, behavior: 'auto' });
+    scrollJourneyMainToTop();
   }, [currentStep]);
 
   useEffect(() => {
@@ -127,8 +127,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
   useEffect(() => {
     if (currentStep !== 2) return;
-    const el = document.querySelector('[data-journey-main-scroll]');
-    if (el instanceof HTMLElement) el.scrollTo({ top: 0, behavior: 'auto' });
+    scrollJourneyMainToTop();
   }, [currentStep, visionSubStep]);
 
   const steps = [
