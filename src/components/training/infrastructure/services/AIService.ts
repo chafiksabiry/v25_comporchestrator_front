@@ -79,6 +79,30 @@ export interface UploadCurriculumContext {
   extractedText?: string;
 }
 
+export interface KnowledgeDocumentRef {
+  _id: string;
+  name: string;
+  fileType?: string;
+  summary?: string;
+  keyTerms?: string[];
+}
+
+export interface CallRecordingRef {
+  _id: string;
+  recordingUrl?: string;
+  duration?: number;
+  summaryText?: string;
+  keyIdeas?: Array<{ title: string; description?: string }>;
+  transcriptionStatus?: string;
+}
+
+export interface PresentationGenerationContext {
+  sourceMode?: 'uploads' | 'kb' | 'uploads+kb' | 'gig';
+  uploadAnalyses?: UploadCurriculumContext[];
+  knowledgeDocuments?: KnowledgeDocumentRef[];
+  callRecordings?: CallRecordingRef[];
+}
+
 export interface AiBaseResponse {
   success: boolean;
   error?: string;
@@ -396,14 +420,17 @@ export class AIService {
    */
   static async generateTrainingFromGig(
     gigId: string,
-    options?: { useKnowledgeBase?: boolean }
+    options?: { useKnowledgeBase?: boolean; includeCallRecordings?: boolean; sourceContext?: PresentationGenerationContext }
   ): Promise<Curriculum> {
-    const body =
-      options != null && options.useKnowledgeBase !== undefined
-        ? { useKnowledgeBase: options.useKnowledgeBase }
-        : undefined;
+    const body: Record<string, unknown> = {};
+    if (options?.useKnowledgeBase !== undefined) body.useKnowledgeBase = options.useKnowledgeBase;
+    if (options?.includeCallRecordings !== undefined) body.includeCallRecordings = options.includeCallRecordings;
+    if (options?.sourceContext) body.sourceContext = options.sourceContext;
 
-    const response = await ApiClient.post<AiResponse<any>>(`/api/ai/generate-training/${gigId}`, body);
+    const response = await ApiClient.post<AiResponse<any>>(
+      `/api/ai/generate-training/${gigId}`,
+      Object.keys(body).length > 0 ? body : undefined
+    );
 
     if (!response.data.success && !response.data.journey) {
       throw new Error(response.data.error || 'Gig training generation failed');
@@ -456,6 +483,37 @@ export class AIService {
     const raw = response.data as any;
     const list = raw.documents ?? raw.data?.documents ?? [];
     return Array.isArray(list) ? list : [];
+  }
+
+  static async listGigCallRecordings(gigId: string): Promise<CallRecordingRef[]> {
+    const normalize = (items: any[]): CallRecordingRef[] =>
+      items.map((call: any) => ({
+        _id: String(call._id || call.id || ''),
+        recordingUrl: call.recordingUrl,
+        duration: call.duration,
+        summaryText: call.summary || call.analysis?.summaryText || '',
+        keyIdeas: call.analysis?.summary?.keyIdeas || [],
+        transcriptionStatus: call.analysis?.transcription?.status || call.transcription?.status || 'unknown',
+      }));
+
+    try {
+      const response = await ApiClient.get<any>(`/api/ai/gig/${gigId}/call-recordings`);
+      const raw = response.data;
+      const list = raw.callRecordings ?? raw.data?.callRecordings ?? raw.recordings ?? raw.data?.recordings ?? [];
+      if (Array.isArray(list)) return normalize(list);
+    } catch (error) {
+      console.warn('[AIService] Could not load call recordings from /api/ai/gig/:gigId/call-recordings, trying fallback.', error);
+    }
+
+    try {
+      const response = await ApiClient.get<any>(`/call-recordings?gigId=${encodeURIComponent(gigId)}`);
+      const raw = response.data;
+      const list = raw.callRecordings ?? raw.data?.callRecordings ?? [];
+      return Array.isArray(list) ? normalize(list) : [];
+    } catch (error) {
+      console.warn('[AIService] Could not load call recordings from /call-recordings fallback.', error);
+      return [];
+    }
   }
 
   /**
@@ -654,12 +712,27 @@ export class AIService {
    */
   static async generatePresentation(
     curriculum: any,
-    kb?: { gigId?: string | null; useKnowledgeBase?: boolean }
+    kb?: {
+      gigId?: string | null;
+      useKnowledgeBase?: boolean;
+      includeCallRecordings?: boolean;
+      sourceContext?: PresentationGenerationContext;
+      sourceMode?: 'uploads' | 'kb' | 'uploads+kb' | 'gig';
+    }
   ): Promise<any> {
     const body: Record<string, unknown> = { curriculum };
     if (kb?.gigId && kb.useKnowledgeBase === true) {
       body.gigId = kb.gigId;
       body.useKnowledgeBase = true;
+    }
+    if (kb?.includeCallRecordings === true) {
+      body.includeCallRecordings = true;
+    }
+    if (kb?.sourceMode) {
+      body.sourceMode = kb.sourceMode;
+    }
+    if (kb?.sourceContext) {
+      body.sourceContext = kb.sourceContext;
     }
 
     const response = await ApiClient.post<AiResponse<any>>('/api/ai/generate-presentation', body);

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, BookOpen } from 'lucide-react';
 import { ContentUpload } from '../../types/core';
-import { AIService, normalizePresentationFromApi } from '../../infrastructure/services/AIService';
+import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext } from '../../infrastructure/services/AIService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
 import { cloudinaryService } from '../../lib/cloudinaryService';
 import PresentationPreview from '../Training/PresentationPreview';
@@ -44,6 +44,65 @@ export default function ContentUploader(props: ContentUploaderProps) {
     Array<{ _id: string; name: string; fileType?: string; summary?: string; createdAt?: string }>
   >([]);
   const [isLoadingGigKbDocs, setIsLoadingGigKbDocs] = useState(false);
+
+  const getAnalyzedUploads = useCallback(
+    () => uploads.filter((u) => u.status === 'analyzed' && !!u.aiAnalysis),
+    [uploads]
+  );
+
+  const getUploadContext = useCallback((): UploadCurriculumContext[] => {
+    return getAnalyzedUploads().map((u) => ({
+      fileName: u.name,
+      fileType: u.type,
+      keyTopics: u.aiAnalysis?.keyTopics || [],
+      learningObjectives: u.aiAnalysis?.learningObjectives || [],
+    }));
+  }, [getAnalyzedUploads]);
+
+  const getGenerationSourceMode = useCallback(
+    (hasUploadSource: boolean, includeKbSource: boolean): 'uploads' | 'kb' | 'uploads+kb' | 'gig' => {
+      if (hasUploadSource && includeKbSource) return 'uploads+kb';
+      if (hasUploadSource) return 'uploads';
+      if (includeKbSource) return 'kb';
+      return 'gig';
+    },
+    []
+  );
+
+  const buildPresentationSourceContext = useCallback(
+    async (includeKbSource: boolean): Promise<PresentationGenerationContext> => {
+      const uploadContext = getUploadContext();
+      const hasUploadSource = uploadContext.length > 0;
+
+      if (!includeKbSource || !gigId) {
+        return {
+          sourceMode: getGenerationSourceMode(hasUploadSource, false),
+          uploadAnalyses: uploadContext,
+          knowledgeDocuments: [],
+          callRecordings: [],
+        };
+      }
+
+      const [docs, calls] = await Promise.all([
+        AIService.listGigKnowledgeDocuments(gigId).catch((error) => {
+          console.warn('[ContentUploader] Unable to fetch KB docs for generation context:', error);
+          return [];
+        }),
+        AIService.listGigCallRecordings(gigId).catch((error) => {
+          console.warn('[ContentUploader] Unable to fetch call recordings for generation context:', error);
+          return [];
+        }),
+      ]);
+
+      return {
+        sourceMode: getGenerationSourceMode(hasUploadSource, true),
+        uploadAnalyses: uploadContext,
+        knowledgeDocuments: docs,
+        callRecordings: calls,
+      };
+    },
+    [getUploadContext, gigId, getGenerationSourceMode]
+  );
 
   useEffect(() => {
     scrollJourneyMainToTop();
@@ -298,12 +357,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
     setIsProcessing(true);
     try {
       let curriculum;
+      const analyzedUploads = getAnalyzedUploads();
+      const hasUploadSource = analyzedUploads.length > 0;
+      const includeKbSource = !!gigId && useKbForPresentation;
 
-      if (uploads.length > 0) {
+      if (hasUploadSource) {
         // Collect all successful analyses
-        const allAnalyses = uploads
-          .filter(u => u.status === 'analyzed' && u.aiAnalysis)
-          .map(u => u.aiAnalysis);
+        const allAnalyses = analyzedUploads.map((u) => u.aiAnalysis);
 
         if (allAnalyses.length === 0) throw new Error('No analyzed content available');
 
@@ -312,12 +372,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
           curriculum = await AIService.synthesizeAnalyses(allAnalyses as any);
         } else {
           const mainAnalysis = allAnalyses[0];
-          const uploadContext = uploads.map(u => ({
-            fileName: u.name,
-            fileType: u.type,
-            keyTopics: u.aiAnalysis?.keyTopics || [],
-            learningObjectives: u.aiAnalysis?.learningObjectives || []
-          }));
+          if (!mainAnalysis) throw new Error('No analysis found');
+          const uploadContext = getUploadContext();
 
           curriculum = await AIService.generateCurriculum(
             mainAnalysis,
@@ -327,37 +383,27 @@ export default function ContentUploader(props: ContentUploaderProps) {
           );
         }
       } else {
-        // Generate from Gig KB directly
-        curriculum = await fetchCurriculumFromGig();
+        // Generate from Gig context (optionally grounded with KB docs + call recordings)
+        curriculum = await fetchCurriculumFromGig(includeKbSource);
       }
 
       setGeneratedCurriculum(curriculum);
 
-      let presentation =
-        normalizePresentationFromApi(curriculum?.data?.presentation) ||
-        normalizePresentationFromApi((curriculum as any)?.presentation) ||
-        null;
-
-      const gigOnlyCurriculum = uploads.length === 0 && !!gigId;
-      if (gigOnlyCurriculum && useKbForPresentation) {
-        try {
-          console.warn('[ContentUploader] Rebuilding presentation with Job KB context (generate-presentation)');
-          presentation =
-            normalizePresentationFromApi(
-              await AIService.generatePresentation(curriculum, { gigId: gigId!, useKnowledgeBase: true })
-            ) || presentation;
-        } catch (fallbackErr) {
-          console.error('[ContentUploader] KB presentation generation failed:', fallbackErr);
-        }
-      } else if (!presentation?.slides?.length) {
-        try {
-          console.warn('[ContentUploader] Bundled presentation missing or empty slides — fetching via generate-presentation');
-          presentation =
-            normalizePresentationFromApi(await AIService.generatePresentation(curriculum)) || presentation;
-        } catch (fallbackErr) {
-          console.error('[ContentUploader] Fallback presentation generation failed:', fallbackErr);
-        }
-      }
+      const generationContext = await buildPresentationSourceContext(includeKbSource);
+      console.log('[ContentUploader] Generating presentation with source mode:', generationContext.sourceMode, {
+        uploads: generationContext.uploadAnalyses?.length || 0,
+        kbDocs: generationContext.knowledgeDocuments?.length || 0,
+        callRecordings: generationContext.callRecordings?.length || 0,
+      });
+      const presentation = normalizePresentationFromApi(
+        await AIService.generatePresentation(curriculum, {
+          gigId: gigId || undefined,
+          useKnowledgeBase: includeKbSource,
+          includeCallRecordings: includeKbSource,
+          sourceMode: generationContext.sourceMode,
+          sourceContext: generationContext,
+        })
+      );
 
       if (presentation?.slides?.length) {
         setGeneratedPresentation(presentation);
@@ -460,21 +506,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
       console.log('🤖 Génération de la présentation en cours...');
 
       let curriculum = generatedCurriculum;
-      const gigOnly = uploads.length === 0 && !!gigId;
+      const analyzedUploads = getAnalyzedUploads();
+      const hasUploadSource = analyzedUploads.length > 0;
+      const includeKbSource = !!gigId && useKbForPresentation;
+      const gigOnly = !hasUploadSource && !!gigId;
 
       if (!curriculum) {
         setIsProcessing(true);
 
-        if (uploads.length > 0) {
-          const mainAnalysis = uploads[0].aiAnalysis;
+        if (hasUploadSource) {
+          const mainAnalysis = analyzedUploads[0]?.aiAnalysis;
           if (!mainAnalysis) throw new Error('No analysis found');
 
-          const uploadContext = uploads.map(u => ({
-            fileName: u.name,
-            fileType: u.type,
-            keyTopics: u.aiAnalysis?.keyTopics || [],
-            learningObjectives: u.aiAnalysis?.learningObjectives || []
-          }));
+          const uploadContext = getUploadContext();
 
           curriculum = await AIService.generateCurriculum(
             mainAnalysis,
@@ -483,31 +527,26 @@ export default function ContentUploader(props: ContentUploaderProps) {
             uploadContext as any
           );
         } else {
-          curriculum = await fetchCurriculumFromGig();
+          curriculum = await fetchCurriculumFromGig(includeKbSource);
         }
 
         setGeneratedCurriculum(curriculum);
         setIsProcessing(false);
       } else if (regenerate && gigOnly) {
         setIsProcessing(true);
-        curriculum = await fetchCurriculumFromGig();
+        curriculum = await fetchCurriculumFromGig(includeKbSource);
         setGeneratedCurriculum(curriculum);
         setIsProcessing(false);
       }
 
-      let presentation =
-        normalizePresentationFromApi(curriculum?.data?.presentation) ||
-        curriculum?.data?.presentation ||
-        null;
-
-      if (gigOnly && useKbForPresentation) {
-        presentation = await AIService.generatePresentation(curriculum, {
-          gigId: gigId!,
-          useKnowledgeBase: true
-        });
-      } else if (!presentation?.slides?.length) {
-        presentation = await AIService.generatePresentation(curriculum);
-      }
+      const generationContext = await buildPresentationSourceContext(includeKbSource);
+      const presentation = await AIService.generatePresentation(curriculum, {
+        gigId: gigId || undefined,
+        useKnowledgeBase: includeKbSource,
+        includeCallRecordings: includeKbSource,
+        sourceMode: generationContext.sourceMode,
+        sourceContext: generationContext,
+      });
 
       setGeneratedPresentation(normalizePresentationFromApi(presentation) || presentation);
       setIsPreviewOpen(false);
@@ -551,10 +590,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
   /**
    * Helper to fetch curriculum from Gig KB if no uploads are present
    */
-  const fetchCurriculumFromGig = async () => {
+  const fetchCurriculumFromGig = async (includeKbSource: boolean) => {
     if (!gigId) throw new Error('No Gig selected');
-    console.log('🎯 Generating from Gig:', gigId, 'useKnowledgeBase:', useKbForPresentation);
-    return await AIService.generateTrainingFromGig(gigId, { useKnowledgeBase: useKbForPresentation });
+    console.log('🎯 Generating from Gig:', gigId, 'useKnowledgeBase:', includeKbSource);
+    return await AIService.generateTrainingFromGig(gigId, {
+      useKnowledgeBase: includeKbSource,
+      includeCallRecordings: includeKbSource,
+    });
   };
 
   const getStatusIcon = (status: ContentUpload['status']) => {
