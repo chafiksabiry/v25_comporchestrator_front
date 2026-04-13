@@ -330,9 +330,14 @@ export default function PresentationPreview({
       ? 'rounded-2xl border border-white/15 bg-white/5'
       : 'rounded-2xl border border-slate-200/90 bg-slate-50/90';
 
+    const isSplit = layout === 'split';
+    const contentPanelClass = isDarkFallback
+      ? 'bg-white/[0.04] border border-white/12 backdrop-blur-sm'
+      : 'bg-white/80 border border-slate-200/80';
+
     return (
       <div
-        className={`w-full max-w-5xl aspect-[16/9] rounded-[2.5rem] print:rounded-none print:shadow-none shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-white/10 overflow-hidden flex relative animate-in fade-in duration-500 page-break-inside-avoid print:w-full print:h-full print:max-w-none print:border-none print:m-0 print:flex print:items-center print:justify-center`}
+        className={`w-full max-w-5xl aspect-[16/9] rounded-[2.5rem] print:rounded-none print:shadow-none shadow-[0_32px_64px_-16px_rgba(0,0,0,0.12)] border border-white/10 overflow-hidden flex relative animate-in fade-in duration-500 page-break-inside-avoid print:w-full print:h-full print:max-w-none print:border-none print:m-0 print:flex print:items-center print:justify-center`}
         style={{
           pageBreakAfter: 'always',
           backgroundColor: bgColor,
@@ -353,62 +358,67 @@ export default function PresentationPreview({
         )}
 
         {layout === 'split' && (
-          <div className="flex h-full min-h-0 w-1/3 shrink-0 flex-col items-center justify-start overflow-y-auto p-8 pt-10 text-white relative" style={{ background: `linear-gradient(180deg, ${accentColor}, ${secondaryColor})`, color: '#ffffff' }}>
+          <div className="relative flex h-full min-h-0 w-[38%] shrink-0 flex-col items-start justify-center overflow-hidden p-10 text-white md:p-12" style={{ background: `linear-gradient(180deg, ${accentColor}, ${secondaryColor})`, color: '#ffffff' }}>
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-16 -mt-16 print:hidden" />
-            <h1 className="text-3xl font-black text-center relative z-10 leading-tight drop-shadow-md">
+            <p className="relative z-10 mb-3 text-[10px] font-black uppercase tracking-[0.24em] text-white/80">Slide headline</p>
+            <h1 className="relative z-10 text-3xl font-black leading-[1.1] drop-shadow-md md:text-4xl">
               {toSlideText(slide.title)}
             </h1>
+            {slide.subtitle && (
+              <p className="relative z-10 mt-4 max-w-sm text-sm leading-relaxed text-white/85 md:text-base">
+                {toSlideText(slide.subtitle)}
+              </p>
+            )}
           </div>
         )}
 
         {/* Content Area */}
-        <div className={`relative z-10 flex min-h-0 flex-1 flex-col justify-start overflow-y-auto p-8 md:p-12 lg:p-14 custom-scrollbar ${layout === 'split' ? '' : 'w-full'}`}>
+        <div className={`relative z-10 flex min-h-0 flex-1 flex-col justify-start overflow-hidden p-8 md:p-12 lg:p-14 ${layout === 'split' ? '' : 'w-full'}`}>
           {layout !== 'split' && (
-            <h1 className="text-3xl md:text-5xl font-black mb-6 leading-[1.2] tracking-tight"
-              style={{
-                background: `linear-gradient(90deg, ${accentColor}, ${secondaryColor})`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                color: accentColor
-              }}>
-              {toSlideText(slide.title)}
-            </h1>
+            <>
+              <p className="mb-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Key message</p>
+              <h1 className="mb-6 text-3xl font-black leading-[1.15] tracking-tight md:text-5xl" style={{ color: isDarkFallback ? '#fff' : '#0f172a' }}>
+                {toSlideText(slide.title)}
+              </h1>
+            </>
           )}
 
-          {slide.subtitle && (
-            <h2 className="text-lg md:text-xl font-bold mb-6 opacity-90" style={{ color: accentColor }}>
-              {toSlideText(slide.subtitle)}
-            </h2>
-          )}
+          <div className={`rounded-3xl p-5 md:p-7 ${contentPanelClass}`}>
+            {slide.subtitle && !isSplit && (
+              <h2 className="mb-5 text-lg font-bold opacity-95 md:text-xl" style={{ color: accentColor }}>
+                {toSlideText(slide.subtitle)}
+              </h2>
+            )}
 
-          {slide.content && (
-            <div className="mb-4 opacity-90 text-base md:text-lg leading-relaxed max-w-5xl" style={{ color: 'inherit' }}>
-              {Array.isArray(slide.content) ? (
-                <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-x-8 md:gap-y-3">
-                  {slide.content.map((bullet: unknown, i: number) => (
-                    <li key={i} className={`flex items-start gap-3 p-3 md:p-4 ${bulletTileClass}`}>
-                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full shadow-sm" style={{ background: accentColor }} />
-                      <span className="font-medium" dangerouslySetInnerHTML={{ __html: parseMarkdown(toSlideText(bullet)) }} />
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p dangerouslySetInnerHTML={{ __html: parseMarkdown(slide.content) }} />
-              )}
-            </div>
-          )}
+            {slide.content && (
+              <div className="mb-4 max-w-5xl text-base leading-relaxed opacity-95 md:text-lg" style={{ color: 'inherit' }}>
+                {Array.isArray(slide.content) ? (
+                  <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-x-8 md:gap-y-3">
+                    {slide.content.map((bullet: unknown, i: number) => (
+                      <li key={i} className={`flex items-start gap-3 p-3 md:p-4 ${bulletTileClass}`}>
+                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full shadow-sm" style={{ background: accentColor }} />
+                        <span className="font-medium" dangerouslySetInnerHTML={{ __html: parseMarkdown(toSlideText(bullet)) }} />
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p dangerouslySetInnerHTML={{ __html: parseMarkdown(slide.content) }} />
+                )}
+              </div>
+            )}
 
-          {/* Support for bullets field */}
-          {Array.isArray(slide.bullets) && slide.bullets.length > 0 && (
-            <ul className={`grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-x-8 md:gap-y-3 max-w-5xl ${slide.content ? 'border-t border-current/10 pt-5 mt-5' : ''}`}>
-              {slide.bullets.map((bullet: unknown, i: number) => (
-                <li key={i} className={`flex items-start gap-3 p-3 text-base md:text-lg ${bulletTileClass}`}>
-                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full shadow-sm" style={{ background: accentColor }} />
-                  <span className="opacity-90" dangerouslySetInnerHTML={{ __html: parseMarkdown(toSlideText(bullet)) }} />
-                </li>
-              ))}
-            </ul>
-          )}
+            {/* Support for bullets field */}
+            {Array.isArray(slide.bullets) && slide.bullets.length > 0 && (
+              <ul className={`grid max-w-5xl grid-cols-1 gap-3 md:grid-cols-2 md:gap-x-8 md:gap-y-3 ${slide.content ? 'mt-5 border-t border-current/10 pt-5' : ''}`}>
+                {slide.bullets.map((bullet: unknown, i: number) => (
+                  <li key={i} className={`flex items-start gap-3 p-3 text-base md:text-lg ${bulletTileClass}`}>
+                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full shadow-sm" style={{ background: accentColor }} />
+                    <span className="opacity-90" dangerouslySetInnerHTML={{ __html: parseMarkdown(toSlideText(bullet)) }} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
           {(slide.illustrationUrl || slide.imageDescription) && (
             <div className="mt-4 w-full max-w-3xl shrink-0 overflow-hidden rounded-2xl border border-current/10 bg-black/[0.04]">
