@@ -274,11 +274,11 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', width: '100%' }}>
         <div style={{
           flex: 1, minHeight: 0,
-          overflowY: isStep2 || isStep4 || isStep5 ? 'hidden' : 'auto',
-          display: currentStep === 1 || isStep2 || isStep4 || isStep5 ? 'flex' : 'block',
+          overflowY: 'auto',
+          display: 'flex',
           flexDirection: 'column',
-          alignItems: currentStep === 1 || isStep2 ? 'center' : isStep4 || isStep5 ? 'stretch' : undefined,
-          justifyContent: currentStep === 1 ? 'center' : isStep2 || isStep4 || isStep5 ? 'stretch' : undefined,
+          alignItems: 'center',
+          justifyContent: 'center',
           padding: currentStep === 1 ? '12px 28px 8px' : isStep2 ? '12px 28px 8px' : isStep4 ? '12px 28px 8px' : isStep5 ? '8px 24px 6px' : '16px 28px',
           width: '100%',
         }}>
@@ -286,7 +286,6 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           maxWidth: isStep4 ? 1120 : 500,
           margin: '0 auto',
           width: '100%',
-          ...(isStep2 || isStep4 || isStep5 ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } : {}),
         }}>
 
           {currentStep === 1 && (
