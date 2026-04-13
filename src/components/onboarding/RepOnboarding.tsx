@@ -35,8 +35,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [selectedPresentation, setSelectedPresentation] = useState<any | null>(null);
   /** Journey used for module sidebar when previewing slides */
   const [previewJourney, setPreviewJourney] = useState<any | null>(null);
+  const [openClaudeEditorOnPreview, setOpenClaudeEditorOnPreview] = useState(false);
   const [loadingPresentation, setLoadingPresentation] = useState(false);
-  const [editingJourneyId, setEditingJourneyId] = useState<string | null>(null);
   const [deletingJourneyId, setDeletingJourneyId] = useState<string | null>(null);
 
   // Helper function to format training journey data for display
@@ -89,8 +89,14 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     };
   };
 
-  const handleViewPresentation = async (url: string | null, _journeyId: string, journey: any) => {
+  const handleViewPresentation = async (
+    url: string | null,
+    _journeyId: string,
+    journey: any,
+    openEditor: boolean = false
+  ) => {
     setPreviewJourney(journey || null);
+    setOpenClaudeEditorOnPreview(openEditor);
 
     if (url) {
       setLoadingPresentation(true);
@@ -136,33 +142,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     return isLocal 
       ? 'http://localhost:5010' 
       : 'https://v25platformtrainingbackend-production.up.railway.app';
-  };
-
-  const handleEditJourneyWithPrompts = async (journey: any) => {
-    const journeyId = String(journey?._id || journey?.id || '');
-    if (!journeyId) return;
-
-    const userPrompt = window.prompt(
-      'Describe what you want to edit (title/description). Example: "Make the title more sales-oriented and shorten the description in French."'
-    );
-    if (userPrompt == null || !userPrompt.trim()) return;
-
-    try {
-      setEditingJourneyId(journeyId);
-      const trainingBackendUrl = getTrainingBackendUrl();
-      const baseUrl = trainingBackendUrl.endsWith('/api')
-        ? trainingBackendUrl
-        : `${trainingBackendUrl}/api`;
-      await axios.post(`${baseUrl}/training_journeys/${journeyId}/edit-with-prompt`, {
-        prompt: userPrompt.trim()
-      });
-      await fetchCompanyTrainings();
-    } catch (error) {
-      console.error('[RepOnboarding] Failed to edit training:', error);
-      window.alert('Could not edit this training with AI prompt. Please try again.');
-    } finally {
-      setEditingJourneyId(null);
-    }
   };
 
   const handleDeleteJourney = async (journey: any) => {
@@ -499,12 +478,14 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   onClose={() => {
                     setSelectedPresentation(null);
                     setPreviewJourney(null);
+                    setOpenClaudeEditorOnPreview(false);
                   }}
                   isEmbedded={true}
                   showPagination={false}
                   hideExportPptx={true}
                   embedLightCanvas={true}
                   backLabel="Back to list"
+                  openClaudeEditor={openClaudeEditorOnPreview}
                 />
               </div>
             </div>
@@ -642,7 +623,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               <button
                                 type="button"
                                 onClick={() => handleViewPresentation(formatted.presentationUrl, formatted.id, journey)}
-                                disabled={loadingPresentation || editingJourneyId === formatted.id || deletingJourneyId === formatted.id}
+                                disabled={loadingPresentation || deletingJourneyId === formatted.id}
                                 className={`inline-flex items-center space-x-2 rounded-xl px-4 py-2 text-sm font-bold transition-all ${formatted.status === 'completed'
                                   ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100 hover:bg-emerald-100'
                                   : 'bg-gradient-harx text-white shadow-sm hover:shadow-md'
@@ -661,22 +642,18 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               <div className="flex items-center gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => handleEditJourneyWithPrompts(journey)}
-                                  disabled={loadingPresentation || deletingJourneyId === formatted.id || editingJourneyId === formatted.id}
+                                  onClick={() => handleViewPresentation(formatted.presentationUrl, formatted.id, journey, true)}
+                                  disabled={loadingPresentation || deletingJourneyId === formatted.id}
                                   className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-2 text-xs font-semibold text-gray-600 hover:border-harx-200 hover:text-harx-600 disabled:opacity-50"
                                   title="Edit training"
                                 >
-                                  {editingJourneyId === formatted.id ? (
-                                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                                  ) : (
-                                    <Pencil className="h-3.5 w-3.5" />
-                                  )}
+                                  <Pencil className="h-3.5 w-3.5" />
                                   <span>Edit</span>
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteJourney(journey)}
-                                  disabled={loadingPresentation || editingJourneyId === formatted.id || deletingJourneyId === formatted.id}
+                                  disabled={loadingPresentation || deletingJourneyId === formatted.id}
                                   className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-2.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"
                                   title="Delete training"
                                 >

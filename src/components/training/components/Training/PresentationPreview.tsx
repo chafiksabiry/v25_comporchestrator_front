@@ -31,6 +31,8 @@ interface PresentationPreviewProps {
   embedLightCanvas?: boolean;
   /** Optional label for the back control (default: Back to trainings) */
   backLabel?: string;
+  /** Open Claude prompt UI immediately */
+  openClaudeEditor?: boolean;
 }
 
 /** Texte affichable pour une puce / ligne issue de l’API (string, objet { text }, etc.) */
@@ -219,7 +221,8 @@ export default function PresentationPreview({
   showPagination = false,
   hideExportPptx = false,
   embedLightCanvas = false,
-  backLabel
+  backLabel,
+  openClaudeEditor = false
 }: PresentationPreviewProps) {
   const [activeSlide, setActiveSlide] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
@@ -233,6 +236,10 @@ export default function PresentationPreview({
     setLocalPresentation(presentation);
     setActiveSlide(0);
   }, [presentation]);
+
+  React.useEffect(() => {
+    setShowFloatingPrompt(openClaudeEditor);
+  }, [openClaudeEditor]);
 
   const slides = localPresentation.slides ?? [];
 
@@ -358,7 +365,7 @@ export default function PresentationPreview({
         )}
 
         {layout === 'split' && (
-          <div className="relative flex h-full min-h-0 w-[38%] shrink-0 flex-col items-start justify-center overflow-hidden p-10 text-white md:p-12" style={{ background: `linear-gradient(180deg, ${accentColor}, ${secondaryColor})`, color: '#ffffff' }}>
+          <div className="relative flex h-full min-h-0 w-[38%] shrink-0 flex-col items-start justify-center overflow-y-auto p-10 text-white md:p-12 custom-scrollbar" style={{ background: `linear-gradient(180deg, ${accentColor}, ${secondaryColor})`, color: '#ffffff' }}>
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-3xl -mr-16 -mt-16 print:hidden" />
             <p className="relative z-10 mb-3 text-[10px] font-black uppercase tracking-[0.24em] text-white/80">Slide headline</p>
             <h1 className="relative z-10 text-3xl font-black leading-[1.1] drop-shadow-md md:text-4xl">
@@ -373,7 +380,7 @@ export default function PresentationPreview({
         )}
 
         {/* Content Area */}
-        <div className={`relative z-10 flex min-h-0 flex-1 flex-col justify-start overflow-hidden p-8 md:p-12 lg:p-14 ${layout === 'split' ? '' : 'w-full'}`}>
+        <div className={`relative z-10 flex min-h-0 flex-1 flex-col justify-start overflow-y-auto p-8 md:p-12 lg:p-14 custom-scrollbar ${layout === 'split' ? '' : 'w-full'}`}>
           {layout !== 'split' && (
             <>
               <p className="mb-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Key message</p>
