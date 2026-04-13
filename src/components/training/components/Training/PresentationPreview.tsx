@@ -636,6 +636,31 @@ export default function PresentationPreview({
                   </div>
                 </div>
 
+                {/* Bottom pagination controls (always visible) */}
+                <div className="absolute bottom-4 right-4 z-10 flex items-center gap-2 rounded-full border border-rose-100 bg-white/95 px-2 py-1 shadow-lg backdrop-blur sm:bottom-5">
+                  <button
+                    type="button"
+                    onClick={() => setActiveSlide(Math.max(0, activeSlide - 1))}
+                    disabled={slides.length === 0 || activeSlide === 0}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full text-fuchsia-600 transition-colors hover:bg-rose-50 disabled:opacity-40"
+                    aria-label="Previous slide"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <span className="px-2 text-xs font-bold text-slate-700">
+                    {slides.length ? `${activeSlide + 1}/${slides.length}` : '0/0'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveSlide(Math.min(slides.length - 1, activeSlide + 1))}
+                    disabled={slides.length === 0 || activeSlide === slides.length - 1}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full text-fuchsia-600 transition-colors hover:bg-rose-50 disabled:opacity-40"
+                    aria-label="Next slide"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+
                 {/* Claude : en embarqué, coin haut-droit pour ne pas recouvrir le compteur / bord bas */}
                 <div className={`absolute z-20 ${isEmbedded ? 'right-3 top-3 md:right-4 md:top-4' : 'right-6 top-6'}`}>
                   {!showFloatingPrompt ? (
