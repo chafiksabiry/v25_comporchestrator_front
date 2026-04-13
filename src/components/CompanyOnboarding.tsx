@@ -531,6 +531,28 @@ const CompanyOnboarding = () => {
     }
   }, [companyId]);
 
+  const checkSubscriptionStatus = useCallback(async () => {
+    try {
+      if (!companyId) return;
+      const response = await axios.get(
+        `${import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL}/api/subscriptions/current/${companyId}`
+      );
+      const subData = (response.data as any)?.data;
+      const status = String(subData?.status || "").toLowerCase();
+      const hasActiveSubscription = status === "active" || status === "trialing";
+
+      if (hasActiveSubscription) {
+        await axios.put(
+          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/11`,
+          { status: "completed" }
+        );
+        setCompletedSteps((prev: number[]) => (prev.includes(11) ? prev : [...prev, 11]));
+      }
+    } catch (error) {
+      console.error("Error checking subscription status:", error);
+    }
+  }, [companyId]);
+
   const checkActiveGigs = useCallback(async () => {
     try {
       if (!companyId) return;
@@ -581,6 +603,7 @@ const CompanyOnboarding = () => {
       await Promise.all([
         checkCompanyLeads(),
         checkActiveGigs(),
+        checkSubscriptionStatus(),
         checkCompanyGigs(),
         checkZohoConnection(),
       ]);
