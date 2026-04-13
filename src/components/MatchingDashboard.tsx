@@ -35,11 +35,13 @@ import Cookies from 'js-cookie';
 import axios from 'axios';
 
 export type MatchingDashboardProps = {
-  /** When opened inside Company Onboarding (step 13), close embedded step instead of relying on tab change only. */
-  onBackToOnboarding?: () => void;
+  /** When embedded in Company Onboarding (step 13), closes the step — tab is already company-onboarding. */
+  onBackToOnboarding?: () => void | Promise<void>;
 };
 
-export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps) => {
+export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps = {}) => {
+    const onBackToOnboardingRef = React.useRef(onBackToOnboarding);
+    onBackToOnboardingRef.current = onBackToOnboarding;
     const [reps, setReps] = useState<Rep[]>([]);
     const [gigs, setGigs] = useState<Gig[]>([]);
     const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
@@ -182,19 +184,16 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
         fetchData();
 
-        // App header expects detail.action. If we're embedded in onboarding (step 13), onBackToOnboarding clears activeStep; tab may already be company-onboarding.
+        // Embedded in onboarding: parent must clear activeStep. Standalone Matching tab: tabChange only.
         window.dispatchEvent(new CustomEvent('setGlobalBack', {
             detail: {
                 label: 'Back to Onboarding',
                 action: () => {
+                    void onBackToOnboardingRef.current?.();
                     localStorage.setItem('activeTab', 'company-onboarding');
-                    if (onBackToOnboarding) {
-                        onBackToOnboarding();
-                    } else {
-                        window.dispatchEvent(
-                            new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } })
-                        );
-                    }
+                    window.dispatchEvent(
+                        new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } })
+                    );
                 }
             }
         }));
@@ -202,7 +201,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         return () => {
             window.dispatchEvent(new CustomEvent('setGlobalBack', { detail: null }));
         };
-    }, [onBackToOnboarding]);
+    }, []);
 
     // Restore selected gig from localStorage when gigs are available
     useEffect(() => {
