@@ -455,6 +455,7 @@ export class AIService {
       })),
       // Store full data for presentation access
       data: {
+        journeyId: journey._id || journey.id,
         presentation: (() => {
           const raw = journey.methodologyData?.presentation || journey.presentation;
           return normalizePresentationFromApi(raw) || raw;
