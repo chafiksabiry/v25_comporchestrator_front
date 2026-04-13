@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, BookOpen } from 'lucide-react';
 import { ContentUpload } from '../../types/core';
-import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext } from '../../infrastructure/services/AIService';
+import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef } from '../../infrastructure/services/AIService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
 import { cloudinaryService } from '../../lib/cloudinaryService';
 import PresentationPreview from '../Training/PresentationPreview';
@@ -43,6 +43,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [gigKbDocuments, setGigKbDocuments] = useState<
     Array<{ _id: string; name: string; fileType?: string; summary?: string; createdAt?: string }>
   >([]);
+  const [gigCallRecordings, setGigCallRecordings] = useState<CallRecordingRef[]>([]);
   const [isLoadingGigKbDocs, setIsLoadingGigKbDocs] = useState(false);
 
   const getAnalyzedUploads = useCallback(
@@ -111,17 +112,26 @@ export default function ContentUploader(props: ContentUploaderProps) {
   useEffect(() => {
     if (!gigId || !useKbForPresentation) {
       setGigKbDocuments([]);
+      setGigCallRecordings([]);
       return;
     }
     let cancelled = false;
     setIsLoadingGigKbDocs(true);
-    AIService.listGigKnowledgeDocuments(gigId)
-      .then((docs) => {
-        if (!cancelled) setGigKbDocuments(docs as any);
-      })
-      .catch((err) => {
+    Promise.all([
+      AIService.listGigKnowledgeDocuments(gigId).catch((err) => {
         console.error('[ContentUploader] KB documents list failed:', err);
-        if (!cancelled) setGigKbDocuments([]);
+        return [];
+      }),
+      AIService.listGigCallRecordings(gigId).catch((err) => {
+        console.error('[ContentUploader] Call recordings list failed:', err);
+        return [];
+      }),
+    ])
+      .then(([docs, calls]) => {
+        if (!cancelled) {
+          setGigKbDocuments(docs as any);
+          setGigCallRecordings(calls as CallRecordingRef[]);
+        }
       })
       .finally(() => {
         if (!cancelled) setIsLoadingGigKbDocs(false);
@@ -961,27 +971,55 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           <Loader2 className="h-4 w-4 animate-spin" />
                           Loading…
                         </div>
-                      ) : gigKbDocuments.length === 0 ? (
+                      ) : gigKbDocuments.length === 0 && gigCallRecordings.length === 0 ? (
                         <p className="text-sm text-amber-800">
-                          No KB documents for this job — generation will rely mainly on the job profile.
+                          No KB documents or call recordings for this job — generation will rely mainly on the job profile.
                         </p>
                       ) : (
-                        <ul className="space-y-2 text-sm">
-                          {gigKbDocuments.map((doc) => (
-                            <li
-                              key={doc._id}
-                              className="flex items-start gap-2 rounded-lg bg-white/90 px-3 py-2 shadow-sm"
-                            >
-                              <FileText className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
-                              <div className="min-w-0">
-                                <div className="font-medium text-gray-900">{doc.name}</div>
-                                {doc.summary ? (
-                                  <p className="line-clamp-2 text-xs text-gray-600">{doc.summary}</p>
-                                ) : null}
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
+                        <div className="space-y-3 text-sm">
+                          {gigKbDocuments.length > 0 && (
+                            <ul className="space-y-2">
+                              {gigKbDocuments.map((doc) => (
+                                <li
+                                  key={doc._id}
+                                  className="flex items-start gap-2 rounded-lg bg-white/90 px-3 py-2 shadow-sm"
+                                >
+                                  <FileText className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
+                                  <div className="min-w-0">
+                                    <div className="font-medium text-gray-900">{doc.name}</div>
+                                    {doc.summary ? (
+                                      <p className="line-clamp-2 text-xs text-gray-600">{doc.summary}</p>
+                                    ) : null}
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+
+                          {gigCallRecordings.length > 0 && (
+                            <>
+                              <p className="text-xs font-bold uppercase tracking-wide text-rose-700">Call recordings linked to this job</p>
+                              <ul className="space-y-2">
+                                {gigCallRecordings.map((call) => (
+                                  <li
+                                    key={call._id}
+                                    className="flex items-start gap-2 rounded-lg bg-white/90 px-3 py-2 shadow-sm"
+                                  >
+                                    <Music className="mt-0.5 h-4 w-4 shrink-0 text-fuchsia-600" />
+                                    <div className="min-w-0">
+                                      <div className="font-medium text-gray-900">{call._id}</div>
+                                      {call.summaryText ? (
+                                        <p className="line-clamp-2 text-xs text-gray-600">{call.summaryText}</p>
+                                      ) : (
+                                        <p className="text-xs text-gray-500">No summary available</p>
+                                      )}
+                                    </div>
+                                  </li>
+                                ))}
+                              </ul>
+                            </>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
@@ -1429,27 +1467,57 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Loading…
                     </div>
-                  ) : gigKbDocuments.length === 0 ? (
+                  ) : gigKbDocuments.length === 0 && gigCallRecordings.length === 0 ? (
                     <p className="text-sm text-amber-800">
-                      No KB documents for this job — generation will rely mainly on the job profile.
+                      No KB documents or call recordings for this job — generation will rely mainly on the job profile.
                     </p>
                   ) : (
-                    <ul className="space-y-2 text-sm">
-                      {gigKbDocuments.map((doc) => (
-                        <li
-                          key={doc._id}
-                          className="flex items-start gap-2 rounded-lg bg-white/90 px-3 py-2 shadow-sm"
-                        >
-                          <FileText className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
-                          <div className="min-w-0">
-                            <div className="font-medium text-gray-900">{doc.name}</div>
-                            {doc.summary ? (
-                              <p className="line-clamp-2 text-xs text-gray-600">{doc.summary}</p>
-                            ) : null}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
+                    <div className="space-y-3 text-sm">
+                      {gigKbDocuments.length > 0 && (
+                        <ul className="space-y-2">
+                          {gigKbDocuments.map((doc) => (
+                            <li
+                              key={doc._id}
+                              className="flex items-start gap-2 rounded-lg bg-white/90 px-3 py-2 shadow-sm"
+                            >
+                              <FileText className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
+                              <div className="min-w-0">
+                                <div className="font-medium text-gray-900">{doc.name}</div>
+                                {doc.summary ? (
+                                  <p className="line-clamp-2 text-xs text-gray-600">{doc.summary}</p>
+                                ) : null}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+                      {gigCallRecordings.length > 0 && (
+                        <>
+                          <p className={rep ? 'text-[10px] font-bold uppercase tracking-wide text-harx-600' : 'text-xs font-bold uppercase tracking-wide text-rose-700'}>
+                            Call recordings linked to this job
+                          </p>
+                          <ul className="space-y-2">
+                            {gigCallRecordings.map((call) => (
+                              <li
+                                key={call._id}
+                                className="flex items-start gap-2 rounded-lg bg-white/90 px-3 py-2 shadow-sm"
+                              >
+                                <Music className="mt-0.5 h-4 w-4 shrink-0 text-fuchsia-600" />
+                                <div className="min-w-0">
+                                  <div className="font-medium text-gray-900">{call._id}</div>
+                                  {call.summaryText ? (
+                                    <p className="line-clamp-2 text-xs text-gray-600">{call.summaryText}</p>
+                                  ) : (
+                                    <p className="text-xs text-gray-500">No summary available</p>
+                                  )}
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
