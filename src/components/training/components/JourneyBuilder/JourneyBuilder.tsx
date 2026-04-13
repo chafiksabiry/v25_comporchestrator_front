@@ -138,7 +138,13 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
     });
   };
 
-  const handleFinishEarly = async (finalUploads: ContentUpload[], curriculum: any, presentationData?: any, filetraining?: string) => {
+  const handleFinishEarly = async (
+    finalUploads: ContentUpload[],
+    curriculum: any,
+    presentationData?: any,
+    filetraining?: string,
+    persistedJourneyId?: string
+  ) => {
     try {
       setIsFinishing(true); // Stop auto-save from interfering
       setUploads(finalUploads);
@@ -162,27 +168,37 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
         setModules(parsedModules);
       }
       
-      // Save draft immediately to ensure database has it
       if (journey) {
-        const activeJourney = { 
-          ...journey, 
+        const activeJourney = {
+          ...journey,
+          ...(persistedJourneyId
+            ? { _id: persistedJourneyId, id: persistedJourneyId }
+            : {}),
           status: 'active' as const,
-          // Explicitly pass AI generation artifacts
           filetraining,
-          presentation: presentationData 
+          presentation: presentationData
         };
-        
-        console.log('[JourneyBuilder] Finalizing journey with PPTX/Presentation:', { filetraining, hasPresentation: !!presentationData });
-        
-        await DraftService.saveDraftImmediately({
-          uploads: finalUploads,
-          modules: parsedModules,
-          journey: activeJourney,
-          presentationData,
-          filetraining
+
+        console.log('[JourneyBuilder] Finalizing journey with PPTX/Presentation:', {
+          filetraining,
+          hasPresentation: !!presentationData,
+          persistedJourneyId: persistedJourneyId || null
         });
-        
-        // Clear draft since it's fully finished and call onComplete to return to onboarding main page
+
+        // ContentUploader a déjà fait POST/PUT via JourneyService : ne pas refaire saveDraftImmediately
+        // sans draftId (sinon 2e POST = doublon liste REP onboarding).
+        if (persistedJourneyId && /^[0-9a-fA-F]{24}$/.test(persistedJourneyId)) {
+          console.log('[JourneyBuilder] Skipping duplicate backend save — journey already persisted from ContentUploader');
+        } else {
+          await DraftService.saveDraftImmediately({
+            uploads: finalUploads,
+            modules: parsedModules,
+            journey: activeJourney,
+            presentationData,
+            filetraining
+          });
+        }
+
         DraftService.clearDraft();
         onComplete(activeJourney, parsedModules, []);
       }
