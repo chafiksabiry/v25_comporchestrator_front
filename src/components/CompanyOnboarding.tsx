@@ -531,28 +531,6 @@ const CompanyOnboarding = () => {
     }
   }, [companyId]);
 
-  const checkSubscriptionStatus = useCallback(async () => {
-    try {
-      if (!companyId) return;
-      const response = await axios.get(
-        `${import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL}/api/subscriptions/current/${companyId}`
-      );
-      const subData = (response.data as any)?.data;
-      const status = String(subData?.status || "").toLowerCase();
-      const hasActiveSubscription = status === "active" || status === "trialing";
-
-      if (hasActiveSubscription) {
-        await axios.put(
-          `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/11`,
-          { status: "completed" }
-        );
-        setCompletedSteps((prev: number[]) => (prev.includes(11) ? prev : [...prev, 11]));
-      }
-    } catch (error) {
-      console.error("Error checking subscription status:", error);
-    }
-  }, [companyId]);
-
   const checkActiveGigs = useCallback(async () => {
     try {
       if (!companyId) return;
@@ -603,7 +581,6 @@ const CompanyOnboarding = () => {
       await Promise.all([
         checkCompanyLeads(),
         checkActiveGigs(),
-        checkSubscriptionStatus(),
         checkCompanyGigs(),
         checkZohoConnection(),
       ]);
@@ -626,11 +603,35 @@ const CompanyOnboarding = () => {
       );
       
       const progress = response.data;
-      Cookies.set("companyOnboardingProgress", JSON.stringify(progress));
+
+      let completedStepsState = [...progress.completedSteps];
+
+      // Stripe checkout success can land before onboarding GET reflects step 11; merge after subscription truth.
+      try {
+        const backUrl = import.meta.env.VITE_COMPORCHESTRATOR_BACK_URL;
+        const apiUrl = import.meta.env.VITE_COMPANY_API_URL;
+        if (backUrl && apiUrl) {
+          const { data } = await axios.get(
+            `${backUrl}/api/subscriptions/current/${companyId}`
+          );
+          const subData = (data as any)?.data;
+          const ok = (data as any)?.success !== false && subData;
+          const st = String(subData?.status || "").toLowerCase();
+          if (ok && (st === "active" || st === "trialing") && !completedStepsState.includes(11)) {
+            await axios.put(
+              `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/4/steps/11`,
+              { status: "completed" }
+            );
+            completedStepsState = [...completedStepsState, 11];
+          }
+        }
+      } catch (subErr) {
+        console.error("Subscription sync during loadCompanyProgress:", subErr);
+      }
 
       // Auto-fix Phase 1 status if Step 1 is done
       if (progress.phases?.[0]) {
-        const step1Completed = progress.completedSteps.includes(1);
+        const step1Completed = completedStepsState.includes(1);
         if (step1Completed && progress.phases[0].status !== 'completed') {
           try {
             await axios.put(
@@ -648,7 +649,7 @@ const CompanyOnboarding = () => {
         const phase = phases[phaseId - 1];
         if (!phase) return false;
         const nonDisabledSteps = phase.steps.filter((step) => !step.disabled);
-        return nonDisabledSteps.every((step) => progress.completedSteps.includes(step.id));
+        return nonDisabledSteps.every((step) => completedStepsState.includes(step.id));
       };
 
       // Determine valid phase based on dependencies
@@ -666,14 +667,19 @@ const CompanyOnboarding = () => {
       }
 
       // Manual overrides for step completions
-      if (progress.completedSteps.includes(6) && validPhase < 3 && isPhaseFullyCompleted(2)) validPhase = 3;
-      if (progress.completedSteps.includes(10) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
-      if (progress.completedSteps.includes(12) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
-      if (progress.completedSteps.includes(13) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
+      if (completedStepsState.includes(6) && validPhase < 3 && isPhaseFullyCompleted(2)) validPhase = 3;
+      if (completedStepsState.includes(10) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
+      if (completedStepsState.includes(12) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
+      if (completedStepsState.includes(13) && validPhase < 4 && isPhaseFullyCompleted(3)) validPhase = 4;
 
       setCurrentPhase(validPhase);
       setDisplayedPhase(validPhase);
-      setCompletedSteps(progress.completedSteps);
+      setCompletedSteps(completedStepsState);
+
+      Cookies.set(
+        "companyOnboardingProgress",
+        JSON.stringify({ ...progress, completedSteps: completedStepsState })
+      );
 
     } catch (error) {
       console.error("❌ Error loading company progress:", error);
@@ -684,6 +690,25 @@ const CompanyOnboarding = () => {
       setIsInitialLoad(false);
     }
   }, [companyId]);
+
+  // After Stripe redirect, subscription row may appear slightly after the first GET; re-sync progress.
+  useEffect(() => {
+    if (!companyId) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("success") !== "true") return;
+
+    const t1 = window.setTimeout(() => {
+      loadCompanyProgress();
+    }, 1500);
+    const t2 = window.setTimeout(() => {
+      loadCompanyProgress();
+    }, 4000);
+
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [companyId, loadCompanyProgress]);
 
 
   // Dispatch step guide to sidebar
