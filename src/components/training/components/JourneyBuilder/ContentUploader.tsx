@@ -436,24 +436,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
     if (!generatedCurriculum) return;
     try {
       setIsSavingCloud(true);
-      console.log('💾 Sauvegarde du parcours de formation généré par IA...');
-
-      let fileTrainingUrl: string | undefined = undefined;
-      // 1. Generate PPTX & Upload (non-blocking - save journey even if Cloudinary fails)
-      if (generatedPresentation) {
-        try {
-          console.log('📦 Génération du PPTX pour sauvegarde...');
-          const pptxBlob = await AIService.exportToPowerPoint(generatedPresentation);
-          const file = new File([pptxBlob], `${generatedCurriculum.title || 'Training'}.pptx`, { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
-          const uploadResult = await cloudinaryService.uploadDocument(file, 'trainings/pptx');
-          fileTrainingUrl = uploadResult.secureUrl || uploadResult.url;
-          setFileTrainingUrl(fileTrainingUrl);
-          console.log('✅ PPTX enregistré dans Cloudinary:', fileTrainingUrl);
-        } catch (e: any) {
-          // Cloudinary may be disabled or credentials invalid — log warning but don't block save
-          console.warn('⚠️ PPTX Cloudinary upload skipped:', e?.message || e);
-        }
-      }
+      console.log('💾 Saving generated training journey...');
+      const fileTrainingUrl: string | undefined = undefined;
+      setFileTrainingUrl(undefined);
 
       const journeyToSave: any = {
         title: generatedCurriculum.title || 'AI-generated training',
@@ -474,13 +459,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
         order: idx
       }));
 
+      const existingJourneyId =
+        (generatedCurriculum as any)?.data?.journeyId ||
+        (generatedCurriculum as any)?.journeyId ||
+        (generatedCurriculum as any)?._id ||
+        (generatedCurriculum as any)?.id;
+
       await JourneyService.saveJourney(
         journeyToSave,
         modulesToSave,
         company?.id || '',
         gigId || '',
         undefined, // finalExam
-        undefined, // journeyId
+        existingJourneyId, // journeyId (update existing when available)
         generatedPresentation, // Pass presentation data to be saved in Cloudinary/DB
         fileTrainingUrl
       );
