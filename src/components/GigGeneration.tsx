@@ -22,8 +22,11 @@ const GigGeneration = () => {
     window.dispatchEvent(new CustomEvent('setGlobalBack', {
       detail: {
         label: 'Back to Onboarding',
-        onClick: () => {
-          window.dispatchEvent(new CustomEvent('switchTab', { detail: 'company-onboarding' }));
+        action: () => {
+          localStorage.setItem('activeTab', 'company-onboarding');
+          window.dispatchEvent(
+            new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } })
+          );
         }
       }
     }));

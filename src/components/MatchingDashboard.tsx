@@ -177,12 +177,15 @@ export const MatchingDashboard = () => {
 
         fetchData();
 
-        // Dispatch global back navigation
+        // App header listens for detail.action + tabChange with detail.tab (not switchTab / onClick).
         window.dispatchEvent(new CustomEvent('setGlobalBack', {
             detail: {
                 label: 'Back to Onboarding',
-                onClick: () => {
-                    window.dispatchEvent(new CustomEvent('switchTab', { detail: 'company-onboarding' }));
+                action: () => {
+                    localStorage.setItem('activeTab', 'company-onboarding');
+                    window.dispatchEvent(
+                        new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } })
+                    );
                 }
             }
         }));
