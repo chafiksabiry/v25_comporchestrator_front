@@ -383,7 +383,6 @@ export default function PresentationPreview({
         <div className={`relative z-10 flex min-h-0 flex-1 flex-col justify-start overflow-y-auto p-8 md:p-12 lg:p-14 custom-scrollbar ${layout === 'split' ? '' : 'w-full'}`}>
           {layout !== 'split' && (
             <>
-              <p className="mb-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Key message</p>
               <h1 className="mb-6 text-3xl font-black leading-[1.15] tracking-tight md:text-5xl" style={{ color: isDarkFallback ? '#fff' : '#0f172a' }}>
                 {toSlideText(slide.title)}
               </h1>
