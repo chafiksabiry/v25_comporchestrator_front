@@ -142,19 +142,10 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     const journeyId = String(journey?._id || journey?.id || '');
     if (!journeyId) return;
 
-    const currentTitle = asUiString(journey?.title ?? journey?.name, 'Untitled Training');
-    const currentDescription = asUiString(journey?.description, '');
-
-    const nextTitle = window.prompt('Edit training title', currentTitle);
-    if (nextTitle == null) return;
-    const normalizedTitle = nextTitle.trim();
-    if (!normalizedTitle) {
-      window.alert('Title cannot be empty.');
-      return;
-    }
-
-    const nextDescription = window.prompt('Edit training description', currentDescription);
-    if (nextDescription == null) return;
+    const userPrompt = window.prompt(
+      'Describe what you want to edit (title/description). Example: "Make the title more sales-oriented and shorten the description in French."'
+    );
+    if (userPrompt == null || !userPrompt.trim()) return;
 
     try {
       setEditingJourneyId(journeyId);
@@ -162,19 +153,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       const baseUrl = trainingBackendUrl.endsWith('/api')
         ? trainingBackendUrl
         : `${trainingBackendUrl}/api`;
-
-      const payload = {
-        ...journey,
-        title: normalizedTitle,
-        name: normalizedTitle,
-        description: nextDescription.trim()
-      };
-
-      await axios.put(`${baseUrl}/training_journeys/${journeyId}`, payload);
+      await axios.post(`${baseUrl}/training_journeys/${journeyId}/edit-with-prompt`, {
+        prompt: userPrompt.trim()
+      });
       await fetchCompanyTrainings();
     } catch (error) {
       console.error('[RepOnboarding] Failed to edit training:', error);
-      window.alert('Could not update this training. Please try again.');
+      window.alert('Could not edit this training with AI prompt. Please try again.');
     } finally {
       setEditingJourneyId(null);
     }
