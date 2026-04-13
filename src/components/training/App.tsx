@@ -936,7 +936,7 @@ export function AppContent({
       <div
         className={
           repOnboardingLayout
-            ? 'flex w-full min-w-0 flex-col'
+            ? 'flex h-full min-h-0 w-full flex-1 min-w-0 flex-col'
             : 'flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden'
         }
       >
