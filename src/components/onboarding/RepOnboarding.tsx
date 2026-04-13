@@ -360,8 +360,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
   if (showTraining.isOpen && showTraining.newJourney) {
     return (
-      <div className="flex h-[calc(100dvh-5.5rem)] min-h-0 flex-col overflow-hidden px-4 pt-2 pb-4 md:px-8 md:pt-3 md:pb-6">
-        <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-1 flex-col">
+      <div className="flex w-full min-w-0 flex-col px-4 pt-2 pb-4 md:px-8 md:pt-3 md:pb-6">
+        <div className="mx-auto flex w-full max-w-6xl flex-col">
           <header className="mb-3 shrink-0 overflow-hidden rounded-xl border border-harx-100 px-5 py-3">
             <div className="h-0.5 w-full -mx-5 -mt-3 mb-3 rounded-t-xl bg-gradient-harx" aria-hidden />
             <div className="flex items-center justify-between">
@@ -380,9 +380,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               </button>
             </div>
           </header>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-harx-100 bg-white">
+          <div className="flex w-full flex-col rounded-xl border border-harx-100 bg-white">
             <div className="h-0.5 w-full shrink-0 bg-gradient-harx" aria-hidden />
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="flex w-full flex-col">
               <MemoryRouter>
                 <AppContent
                   initialJourneyId={showTraining.journeyId}

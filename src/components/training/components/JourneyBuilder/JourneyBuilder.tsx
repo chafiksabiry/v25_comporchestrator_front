@@ -7,6 +7,7 @@ import LaunchApproval from './LaunchApproval';
 import { Company, TrainingJourney, ContentUpload, TrainingModule, Rep, RehearsalFeedback } from '../../types';
 import { TrainingMethodology } from '../../types/methodology';
 import { DraftService } from '../../infrastructure/services/DraftService';
+import { scrollJourneyMainToTop } from './journeyScroll';
 
 interface JourneyBuilderProps {
   onComplete: (journey: TrainingJourney, modules: TrainingModule[], enrolledReps: Rep[]) => void;
@@ -30,7 +31,7 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
   const mainScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    mainScrollRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+    scrollJourneyMainToTop();
   }, [currentStep]);
 
   // Restaurer le brouillon au chargement
@@ -300,18 +301,31 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
     }
   };
 
+  const documentScroll = repOnboardingLayout;
+
   return (
     <div
       ref={mainScrollRef}
       data-journey-main-scroll
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        flex: 1,
-        minHeight: 0,
-        height: '100%',
-        overflow: currentStep === 0 ? 'hidden' : 'auto',
-      }}
+      {...(documentScroll ? { 'data-journey-document-scroll': '' } : {})}
+      style={
+        documentScroll
+          ? {
+              display: 'flex',
+              flexDirection: 'column',
+              width: '100%',
+              minHeight: 0,
+              overflow: 'visible',
+            }
+          : {
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1,
+              minHeight: 0,
+              height: '100%',
+              overflow: currentStep === 0 ? 'hidden' : 'auto',
+            }
+      }
     >
       {renderCurrentStep()}
     </div>

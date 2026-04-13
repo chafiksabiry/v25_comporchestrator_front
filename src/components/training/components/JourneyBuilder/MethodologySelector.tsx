@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { TrainingMethodology } from '../../types/methodology';
 import { healthInsuranceMethodology } from '../../data/healthInsuranceMethodology';
+import { scrollJourneyMainToTop } from './journeyScroll';
 
 interface MethodologySelectorProps {
   onMethodologySelect: (methodology: TrainingMethodology) => void;
@@ -148,8 +149,7 @@ export default function MethodologySelector({ onMethodologySelect, onCustomMetho
   };
 
   useEffect(() => {
-    const el = document.querySelector('[data-journey-main-scroll]');
-    if (el instanceof HTMLElement) el.scrollTo({ top: 0, behavior: 'auto' });
+    scrollJourneyMainToTop();
   }, []);
 
   const featureItems = [
