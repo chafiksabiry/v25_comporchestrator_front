@@ -278,7 +278,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           display: currentStep === 1 || isStep2 || isStep4 || isStep5 ? 'flex' : 'block',
           flexDirection: 'column',
           alignItems: currentStep === 1 || isStep2 ? 'center' : isStep4 || isStep5 ? 'stretch' : undefined,
-          justifyContent: currentStep === 1 ? 'flex-start' : isStep2 || isStep4 || isStep5 ? 'stretch' : undefined,
+          justifyContent: currentStep === 1 ? 'center' : isStep2 || isStep4 || isStep5 ? 'stretch' : undefined,
           padding: currentStep === 1 ? '12px 28px 8px' : isStep2 ? '12px 28px 8px' : isStep4 ? '12px 28px 8px' : isStep5 ? '8px 24px 6px' : '16px 28px',
           width: '100%',
         }}>
