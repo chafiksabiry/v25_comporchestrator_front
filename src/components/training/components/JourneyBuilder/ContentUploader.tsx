@@ -37,7 +37,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [isGeneratingPresentation, setIsGeneratingPresentation] = useState(false);
   const [generatedPresentation, setGeneratedPresentation] = useState<any>(null);
   const [fileTrainingUrl, setFileTrainingUrl] = useState<string | undefined>(undefined);
-  /** Gig-only: si coché, la génération s’appuie sur les documents KB du Job */
+  /** Gig-only: when checked, generation uses this job’s knowledge base documents */
   const [useKbForPresentation, setUseKbForPresentation] = useState(false);
   const [gigKbDocuments, setGigKbDocuments] = useState<
     Array<{ _id: string; name: string; fileType?: string; summary?: string; createdAt?: string }>
@@ -370,7 +370,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setViewMode('curriculum');
     } catch (error: any) {
       console.error('Failed to generate curriculum/synthesis:', error);
-      alert('Erreur: ' + error.message);
+      alert('Error: ' + error.message);
     } finally {
       setIsProcessing(false);
     }
@@ -389,7 +389,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         try {
           console.log('📦 Génération du PPTX pour sauvegarde...');
           const pptxBlob = await AIService.exportToPowerPoint(generatedPresentation);
-          const file = new File([pptxBlob], `${generatedCurriculum.title || 'Formation'}.pptx`, { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
+          const file = new File([pptxBlob], `${generatedCurriculum.title || 'Training'}.pptx`, { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
           const uploadResult = await cloudinaryService.uploadDocument(file, 'trainings/pptx');
           fileTrainingUrl = uploadResult.secureUrl || uploadResult.url;
           setFileTrainingUrl(fileTrainingUrl);
@@ -401,8 +401,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
 
       const journeyToSave: any = {
-        title: generatedCurriculum.title || 'Formation Générée par IA',
-        description: generatedCurriculum.description || 'Description générée par IA',
+        title: generatedCurriculum.title || 'AI-generated training',
+        description: generatedCurriculum.description || 'AI-generated description',
         status: 'active',
         industry: company?.industry || 'General',
         company: company?.name || 'My Company',
@@ -438,7 +438,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
     } catch (error: any) {
       console.error('Failed to save journey:', error);
-      alert('Erreur lors de l\'enregistrement: ' + (error.message || 'Erreur inconnue'));
+      alert('Error saving: ' + (error.message || 'Unknown error'));
     } finally {
       setIsSavingCloud(false);
     }
@@ -517,7 +517,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       console.log('✅ Présentation générée avec succès !');
     } catch (error: any) {
       console.error('Failed to generate presentation:', error);
-      alert('Erreur lors de la génération: ' + (error.message || 'Erreur inconnue'));
+      alert('Error generating presentation: ' + (error.message || 'Unknown error'));
       setIsProcessing(false);
     } finally {
       setIsGeneratingPresentation(false);
@@ -822,7 +822,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             onClick={() => setViewMode('upload')}
             className="flex items-center text-purple-600 font-medium mb-6 hover:text-purple-800 transition-colors"
           >
-            <X className="h-5 w-5 mr-1" /> Retour aux fichiers
+            <X className="h-5 w-5 mr-1" /> Back to files
           </button>
 
           <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
@@ -835,7 +835,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               <div className="mt-6 flex items-center space-x-6 text-sm font-medium">
                 <div className="flex items-center">
                   <Clock className="h-5 w-5 mr-2 opacity-80" />
-                  {generatedCurriculum.totalDuration / 60} heures total
+                  {generatedCurriculum.totalDuration / 60} hours total
                 </div>
                 <div className="flex items-center">
                   <BarChart3 className="h-5 w-5 mr-2 opacity-80" />
@@ -844,7 +844,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 {generatedPresentation && (
                   <div className="flex items-center text-yellow-300">
                     <FileIcon className="h-5 w-5 mr-2" />
-                    Présentation Disponible
+                    Presentation available
                   </div>
                 )}
               </div>
@@ -852,7 +852,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
             <div className="p-8">
               <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
-                <FileText className="h-6 w-6 mr-2 text-purple-500" /> Structure du Programme
+                <FileText className="h-6 w-6 mr-2 text-purple-500" /> Program structure
               </h3>
 
               <div className="space-y-6">
@@ -873,13 +873,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             <Clock className="h-4 w-4 mr-1.5 text-purple-500" /> {module.duration} min
                           </div>
                           <div className="flex items-center text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200">
-                            <Zap className="h-4 w-4 mr-1.5 text-orange-500" /> {module.difficulty || 'Moyen'}
+                            <Zap className="h-4 w-4 mr-1.5 text-orange-500" /> {module.difficulty || 'Medium'}
                           </div>
                         </div>
 
                         {module.learningObjectives?.length > 0 && (
                           <div className="mt-4 ml-11">
-                            <h5 className="text-sm font-semibold text-gray-700 mb-2">Objectifs d'apprentissage :</h5>
+                            <h5 className="text-sm font-semibold text-gray-700 mb-2">Learning objectives</h5>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                               {module.learningObjectives.map((obj: string, i: number) => (
                                 <div key={i} className="flex items-start text-sm text-gray-600">
@@ -906,23 +906,23 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       onChange={(e) => setUseKbForPresentation(e.target.checked)}
                     />
                     <span className="text-sm font-medium text-gray-800">
-                      Use KB for generate presentation
+                      Use knowledge base to generate the presentation
                       <span className="mt-1 block text-xs font-normal text-gray-600">
-                        La présentation sera ancrée sur les documents de la base de connaissances de ce Job.
+                        The presentation will be grounded in this job’s knowledge base documents.
                       </span>
                     </span>
                   </label>
                   {useKbForPresentation && (
                     <div className="mt-4 border-t border-rose-100/80 pt-4">
-                      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-rose-700">Documents liés au Job</p>
+                      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-rose-700">Documents linked to this job</p>
                       {isLoadingGigKbDocs ? (
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          Chargement…
+                          Loading…
                         </div>
                       ) : gigKbDocuments.length === 0 ? (
                         <p className="text-sm text-amber-800">
-                          Aucun document KB pour ce Job — la génération s&apos;appuiera surtout sur la fiche Job.
+                          No KB documents for this job — generation will rely mainly on the job profile.
                         </p>
                       ) : (
                         <ul className="max-h-48 space-y-2 overflow-y-auto text-sm">
@@ -959,17 +959,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   {isGeneratingPresentation ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Génération en cours...
+                      Generating…
                     </>
                   ) : generatedPresentation ? (
                     <>
                       <Presentation className="mr-2 h-5 w-5" />
-                      Visualiser la Présentation
+                      View presentation
                     </>
                   ) : (
                     <>
                       <FileIcon className="mr-2 h-5 w-5" />
-                      Générer la présentation
+                      Generate presentation
                     </>
                   )}
                 </button>
@@ -982,12 +982,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   {isSavingCloud ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Enregistrement...
+                      Saving…
                     </>
                   ) : (
                     <>
                       <Save className="mr-2 h-5 w-5" />
-                      Approuver le Programme
+                      Approve program
                     </>
                   )}
                 </button>
@@ -1384,25 +1384,25 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   onChange={(e) => setUseKbForPresentation(e.target.checked)}
                 />
                 <span className={rep ? 'text-xs font-semibold text-gray-800' : 'text-sm font-medium text-gray-800'}>
-                  Use KB for generate presentation
+                  Use knowledge base to generate the presentation
                   <span className={rep ? 'mt-0.5 block text-[10px] font-normal text-gray-600' : 'mt-1 block text-xs font-normal text-gray-600'}>
-                    La présentation sera ancrée sur les documents KB de ce Job lorsque vous cliquez sur Générer.
+                    The presentation will be grounded in this job’s KB documents when you click Generate.
                   </span>
                 </span>
               </label>
               {useKbForPresentation && (
                 <div className={rep ? 'mt-2 border-t border-harx-100/80 pt-2' : 'mt-4 border-t border-rose-100/80 pt-4'}>
                   <p className={rep ? 'mb-1 text-[10px] font-bold uppercase tracking-wide text-harx-600' : 'mb-2 text-xs font-bold uppercase tracking-wide text-rose-700'}>
-                    Documents liés au Job
+                    Documents linked to this job
                   </p>
                   {isLoadingGigKbDocs ? (
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Chargement…
+                      Loading…
                     </div>
                   ) : gigKbDocuments.length === 0 ? (
                     <p className="text-sm text-amber-800">
-                      Aucun document KB pour ce Job — la génération s&apos;appuiera surtout sur la fiche Job.
+                      No KB documents for this job — generation will rely mainly on the job profile.
                     </p>
                   ) : (
                     <ul className="max-h-48 space-y-2 overflow-y-auto text-sm">
@@ -1480,7 +1480,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 ) : (
                   <FileIcon className="h-5 w-5" />
                 )}
-                <span>Générer la présentation</span>
+                <span>{isGeneratingPresentation ? 'Generating…' : 'Generate presentation'}</span>
               </button>
 
               {/* <button
