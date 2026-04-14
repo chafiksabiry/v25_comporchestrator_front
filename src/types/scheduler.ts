@@ -13,6 +13,8 @@ export interface TimeSlot {
     reservations?: {
         agentId: any;
         notes?: string;
+        /** yyyy-MM-dd — jour calendaire réservé (créneaux récurrents) */
+        reservationDate?: string;
         reservedAt?: string;
     }[];
     attended?: boolean;

@@ -330,6 +330,7 @@ export default function SessionPlanning() {
             _id: r._id,
             agentId: r.agentId,
             notes: r.notes,
+            reservationDate: r.reservationDate || (typeof r.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.date) ? r.date : undefined),
             reservedAt: r.reservationDate || r.date || r.createdAt
           }));
 
