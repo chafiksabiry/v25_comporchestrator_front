@@ -39,6 +39,8 @@ const stringToColor = (str: string) => {
   return '#' + '00000'.substring(0, 6 - c.length) + c;
 };
 
+const isMongoObjectId = (raw: unknown): boolean => /^[a-f\d]{24}$/i.test(String(raw || '').trim());
+
 // Map Slot from backend to frontend TimeSlot type
 const mapBackendSlotToSlot = (slot: any): TimeSlot => {
   const agentData = slot.agentId && typeof slot.agentId === 'object' ? slot.agentId : null;
@@ -212,11 +214,11 @@ export default function SessionPlanning() {
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [userRole] = useState<UserRole>('company');
-  const [selectedRepId, setSelectedRepId] = useState<string>(sampleReps[0].id);
+  const [selectedRepId, setSelectedRepId] = useState<string>('');
   const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
   const [showAIPanel] = useState<boolean>(false);
   const [showAttendancePanel] = useState<boolean>(false);
-  const [reps, setReps] = useState<Rep[]>(sampleReps);
+  const [reps, setReps] = useState<Rep[]>([]);
   const [aiInitialized, setAiInitialized] = useState<boolean>(false);
 
 
@@ -271,8 +273,9 @@ export default function SessionPlanning() {
     try {
       // Fetch Agents for this Gig
       const agents = await schedulerApi.getGigAgents(selectedGigId);
+      let mappedReps: Rep[] = [];
       if (agents && agents.length > 0) {
-        const mappedReps: Rep[] = agents.map(a => {
+        mappedReps = agents.map(a => {
           // Some APIs return { agentId: { ...agentData } }, others return { ...agentData }
           const agentData = a.agentId && typeof a.agentId === 'object' ? a.agentId : a;
 
@@ -304,6 +307,7 @@ export default function SessionPlanning() {
         }
       } else {
         setCreateSlotRepId('');
+        setSelectedRepId('');
       }
 
       // Fetch all slots and reservations for this gig
@@ -389,6 +393,13 @@ export default function SessionPlanning() {
           });
           return newReps;
         });
+      }
+      if (!isMongoObjectId(selectedRepId)) {
+        const firstValid =
+          mappedReps.find((r) => isMongoObjectId(r.id))?.id ||
+          populatedAgents.find((r) => isMongoObjectId(r.id))?.id ||
+          '';
+        if (firstValid) setSelectedRepId(firstValid);
       }
 
     } catch (error) {
@@ -689,7 +700,7 @@ export default function SessionPlanning() {
         <main className="space-y-6">
           {userRole === 'company' ? (
             <div className="grid grid-cols-1 gap-10">
-              {selectedGigId && selectedRepId && (
+              {selectedGigId && isMongoObjectId(selectedRepId) && (
                 <div className="rounded-2xl bg-white shadow-xl border border-harx-100/50 p-6 overflow-hidden relative">
                   <TypicalWeekPanel
                     gigId={selectedGigId}
