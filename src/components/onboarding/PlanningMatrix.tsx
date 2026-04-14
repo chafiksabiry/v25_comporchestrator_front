@@ -333,56 +333,6 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                             </tr>
                         ))}
                     </tbody>
-                    <tfoot>
-                        <tr className="bg-gray-50/80">
-                            <td className="p-1.5 font-black text-gray-900 text-xs">
-                                <div className="flex items-center gap-1">
-                                    <span className="text-sm">Σ</span>
-                                    <span>Total</span>
-                                </div>
-                            </td>
-                            {dayTotals.map((total, idx) => {
-                                const d = DAYS[idx];
-                                const isTodayCol = d === todayWeekdayEnglish;
-                                const isSelectedCol = d === selectedWeekdayEnglish;
-                                return (
-                                    <td
-                                        key={idx}
-                                        className={`p-0 text-center ${
-                                            isSelectedCol && onSelectDay
-                                                ? 'bg-harx-50/95 border-t-2 border-harx-400'
-                                                : isTodayCol
-                                                  ? 'bg-harx-50/90 border-t border-harx-200'
-                                                  : ''
-                                        }`}
-                                    >
-                                        {onSelectDay ? (
-                                            <button
-                                                type="button"
-                                                onClick={() => handleDayHeaderClick(d)}
-                                                className={`w-full py-1.5 px-0.5 rounded-b-lg transition-colors ${
-                                                    isSelectedCol ? 'cursor-default' : 'hover:bg-harx-100/50 cursor-pointer'
-                                                }`}
-                                                title={`Réservations du ${format(getDateForDayInWeek(selectedDate, d), 'd MMM yyyy', { locale: enUS })}`}
-                                            >
-                                                <div className={`text-base font-black ${total > 0 ? 'text-harx-700' : 'text-gray-300'}`}>
-                                                    {total}
-                                                </div>
-                                                <div className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">REPS</div>
-                                            </button>
-                                        ) : (
-                                            <>
-                                                <div className={`text-base font-black ${total > 0 ? 'text-harx-700' : 'text-gray-300'}`}>
-                                                    {total}
-                                                </div>
-                                                <div className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">REPS</div>
-                                            </>
-                                        )}
-                                    </td>
-                                );
-                            })}
-                        </tr>
-                    </tfoot>
                 </table>
             </div>
         </div>
