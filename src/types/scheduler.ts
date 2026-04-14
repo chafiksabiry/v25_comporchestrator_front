@@ -33,6 +33,11 @@ export interface Gig {
     color: string; // for visual identification
     skills: string[]; // Skills required for this gig
     priority: 'low' | 'medium' | 'high';
+    availabilitySchedule?: {
+        day: string;
+        start: string;
+        end: string;
+    }[];
 }
 
 export interface Rep {

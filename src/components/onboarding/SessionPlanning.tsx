@@ -103,7 +103,16 @@ const mapBackendGigToGig = (gig: any): Gig => {
     company: companyName,
     color: stringToColor(id),
     skills: gig.requiredSkills?.map((s: any) => typeof s === 'string' ? s : s.name) || [],
-    priority: 'medium'
+    priority: 'medium',
+    availabilitySchedule: Array.isArray(gig?.availability?.schedule)
+      ? gig.availability.schedule
+        .map((entry: any) => ({
+          day: String(entry?.day || '').trim(),
+          start: String(entry?.hours?.start || '').trim(),
+          end: String(entry?.hours?.end || '').trim()
+        }))
+        .filter((entry: any) => entry.day && entry.start && entry.end)
+      : []
   };
 };
 
@@ -415,6 +424,11 @@ export default function SessionPlanning() {
     return reps.find(rep => rep.id === selectedRepId) || reps[0];
   }, [selectedRepId, reps]);
 
+  const selectedGigAvailabilitySchedule = useMemo(() => {
+    if (!selectedGigId) return [];
+    return projects.find((p) => p.id === selectedGigId)?.availabilitySchedule || [];
+  }, [projects, selectedGigId]);
+
   const weeklyStats = useMemo<WeeklyStats>(() => {
     const stats: WeeklyStats = {
       totalHours: 0,
@@ -709,6 +723,7 @@ export default function SessionPlanning() {
                     reps={reps}
                     onRefresh={fetchData}
                     onSelectDay={setSelectedDate}
+                    availabilitySchedule={selectedGigAvailabilitySchedule}
                   />
                 </div>
               )}
