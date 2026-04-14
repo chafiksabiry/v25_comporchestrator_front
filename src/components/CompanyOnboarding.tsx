@@ -32,6 +32,7 @@ import GigDetails from "./onboarding/GigDetails";
 import KnowledgeBase from "./onboarding/KnowledgeBase";
 import ApprovalPublishing from "./ApprovalPublishing";
 import ZohoService from "../services/zohoService";
+import PrompAI from "./gigsaicreation/components/PrompAI";
 
 interface BaseStep {
   id: number;
@@ -248,6 +249,7 @@ const CompanyOnboarding = () => {
   const [showUploadContacts, setShowUploadContacts] = useState(false);
   const [showKnowledgeBase, setShowKnowledgeBase] = useState(false);
   const [showGigDetails, setShowGigDetails] = useState(false);
+  const [showGigCreation, setShowGigCreation] = useState(false);
   const [hasGigs, setHasGigs] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
 
@@ -823,11 +825,7 @@ const CompanyOnboarding = () => {
       }
 
       if (stepId === 3) {
-        if (hasGigs || completedSteps.includes(3)) {
-          window.location.href = "/app11";
-        } else {
-          window.location.href = "/app6";
-        }
+        setShowGigCreation(true);
         return;
       }
 
@@ -1147,6 +1145,9 @@ const CompanyOnboarding = () => {
     }
 
     // For other cases, just close the active step
+    setShowTelephonySetup(false);
+    setShowGigCreation(false);
+    setShowKnowledgeBase(false);
     setActiveStep(null);
 
     // Refresh progress
@@ -1171,13 +1172,7 @@ const CompanyOnboarding = () => {
 
     // Redirection spéciale pour Create Gigs
     if (stepId === 3) {
-      if (completedSteps.includes(stepId)) {
-        setShowGigDetails(true);
-      } else if (hasGigs) {
-        window.location.href = "/app11";
-      } else {
-        window.location.href = "/app6";
-      }
+      setShowGigCreation(true);
       return;
     }
 
@@ -1264,6 +1259,8 @@ const CompanyOnboarding = () => {
   let activeComponent = null;
   if (showGigDetails) {
     activeComponent = <GigDetails />;
+  } else if (showGigCreation) {
+    activeComponent = <PrompAI onBack={handleBackToOnboarding} />;
   } else if (showTelephonySetup) {
     activeComponent = (
       <TelephonySetup companyId={companyId} />
