@@ -698,9 +698,9 @@ export default function SessionPlanning() {
 
         <main className="space-y-6">
           {userRole === 'company' ? (
-            <div className="grid grid-cols-1 gap-10">
+            <div className="grid grid-cols-1 gap-4">
               {selectedGigId && (
-                <div className="rounded-2xl bg-white shadow-xl border border-harx-100/50 p-4 overflow-hidden relative">
+                <div className="rounded-2xl bg-white shadow-xl border border-harx-100/50 p-3 overflow-hidden relative">
                   <PlanningMatrix
                     selectedDate={selectedDate}
                     gigId={selectedGigId}
@@ -712,13 +712,13 @@ export default function SessionPlanning() {
               )}
 
               {selectedGigId && (
-                <div className="rounded-2xl bg-gray-900 p-4 shadow-xl border border-harx-500/10 overflow-hidden relative">
+                <div className="rounded-2xl bg-gray-900 p-2.5 shadow-xl border border-harx-500/20 overflow-hidden relative">
                   <div className="absolute top-0 right-0 w-96 h-96 bg-harx-600/5 rounded-full blur-[100px]"></div>
                   <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-4 px-4">
-                      <h2 className="text-xl font-black text-white italic uppercase tracking-wider">Operational Overview</h2>
-                      <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl text-xs font-black text-gray-400 uppercase tracking-widest">
-                        <Users className="w-4 h-4 text-harx-400" />
+                    <div className="flex items-center justify-between mb-2 px-1.5">
+                      <h2 className="text-base sm:text-lg font-black text-white italic uppercase tracking-wider">Operational Overview</h2>
+                      <div className="flex items-center gap-1.5 bg-harx-600/15 px-2.5 py-1 rounded-lg text-[10px] font-black text-harx-100 uppercase tracking-widest border border-harx-500/35">
+                        <Users className="w-3.5 h-3.5 text-harx-400 shrink-0" />
                         Live Field Status
                       </div>
                     </div>
