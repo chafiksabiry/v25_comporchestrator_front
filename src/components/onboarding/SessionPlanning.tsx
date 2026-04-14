@@ -331,7 +331,7 @@ export default function SessionPlanning() {
             _id: r._id,
             agentId: r.agentId,
             notes: r.notes,
-            reservedAt: r.createdAt
+            reservedAt: r.reservationDate || r.date || r.createdAt
           }));
 
         return {
