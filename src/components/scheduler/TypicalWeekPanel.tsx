@@ -68,8 +68,19 @@ export function TypicalWeekPanel({ gigId, repId, selectedDate, onSelectedDateCha
   const [draftCapMap, setDraftCapMap] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragValue, setDragValue] = useState<number | null>(null);
 
   const mondayStr = useMemo(() => mondayKey(selectedDate), [selectedDate]);
+
+  useEffect(() => {
+    const onPointerUp = () => {
+      setIsDragging(false);
+      setDragValue(null);
+    };
+    window.addEventListener('pointerup', onPointerUp);
+    return () => window.removeEventListener('pointerup', onPointerUp);
+  }, []);
 
   const fetchPlan = useCallback(async () => {
     if (!base || !gigId || !repId) return;
@@ -113,6 +124,17 @@ export function TypicalWeekPanel({ gigId, repId, selectedDate, onSelectedDateCha
       const next = { ...prev };
       if (n <= 0) delete next[k];
       else next[k] = n;
+      return next;
+    });
+  };
+
+  const applyCellCapacity = (isoDay: number, hour: number, n: number) => {
+    const k = blockKey(isoDay, hour);
+    setDraftCapMap((prev) => {
+      const next = { ...prev };
+      const safe = Math.max(0, Math.floor(Number(n) || 0));
+      if (safe <= 0) delete next[k];
+      else next[k] = safe;
       return next;
     });
   };
@@ -271,7 +293,16 @@ export function TypicalWeekPanel({ gigId, repId, selectedDate, onSelectedDateCha
                           step={1}
                           value={val}
                           onChange={(e) => setCellCapacity(isoDay, hour, e.target.value)}
-                          className={`w-full min-h-[28px] rounded-md border text-center text-xs font-black tabular-nums focus:outline-none focus:ring-2 focus:ring-harx-500/20 ${
+                          onPointerDown={() => {
+                            setIsDragging(true);
+                            setDragValue(val);
+                            applyCellCapacity(isoDay, hour, val);
+                          }}
+                          onPointerEnter={() => {
+                            if (!isDragging || dragValue == null) return;
+                            if (val !== dragValue) applyCellCapacity(isoDay, hour, dragValue);
+                          }}
+                          className={`w-full min-h-[28px] rounded-md border text-center text-xs font-black tabular-nums select-none focus:outline-none focus:ring-2 focus:ring-harx-500/20 ${
                             val > 0
                               ? 'bg-harx-50 border-harx-200 text-harx-700'
                               : 'bg-gray-50 border-gray-100 text-gray-400'
