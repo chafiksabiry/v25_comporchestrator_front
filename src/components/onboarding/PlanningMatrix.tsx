@@ -13,6 +13,7 @@ interface PlanningMatrixProps {
     onRefresh: () => void;
     /** Clic sur un jour → date concrète (même semaine que `selectedDate`) pour l’aperçu des réservations */
     onSelectDay?: (date: Date) => void;
+    availabilitySchedule?: { day: string; start: string; end: string }[];
 }
 
 const HOURS = Array.from({ length: 11 }, (_, i) => i + 9); // 9:00 to 19:00
@@ -25,7 +26,7 @@ function getDateForDayInWeek(anchor: Date, dayName: (typeof DAYS)[number]): Date
     return addDays(monday, dayIndex);
 }
 
-export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelectDay }: PlanningMatrixProps) {
+export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelectDay, availabilitySchedule = [] }: PlanningMatrixProps) {
     const [localMatrix, setLocalMatrix] = useState<Record<string, Record<number, number>>>({});
     const [isSaving, setIsSaving] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
@@ -49,8 +50,9 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
             HOURS.forEach(hour => {
                 const timeStr = `${hour.toString().padStart(2, '0')}:00`;
                 const slot = slots.find(s => s.date === dayName && s.startTime === timeStr && s.gigId === gigId);
+                const available = isHourAvailable(dayName, hour);
                 // Important: Use + here to ensure it's a number
-                matrix[dayName][hour] = slot ? (Number(slot.capacity) || 0) : 0;
+                matrix[dayName][hour] = available && slot ? (Number(slot.capacity) || 0) : 0;
             });
         });
 
@@ -64,7 +66,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
             });
             return next;
         });
-    }, [slots, gigId]);
+    }, [slots, gigId, availabilitySchedule]);
     // Removed old sync logic
 
     const handleCellChange = (dateStr: string, hour: number, value: string) => {
@@ -93,7 +95,7 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                         date: dayName,
                         startTime: timeStr,
                         endTime: endTimeStr,
-                        capacity: capacity,
+                        capacity: isHourAvailable(dayName, hour) ? capacity : 0,
                         duration: 1,
                         notes: ''
                     });
@@ -114,17 +116,40 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
         }
     };
 
+    const availabilityByDay = useMemo(() => {
+        const map: Record<string, { start: string; end: string }> = {};
+        availabilitySchedule.forEach((entry: any) => {
+            const key = String(entry?.day || '').trim().toLowerCase();
+            if (!key) return;
+            map[key] = {
+                start: String(entry?.start || '').trim(),
+                end: String(entry?.end || '').trim()
+            };
+        });
+        return map;
+    }, [availabilitySchedule]);
+
+    const isHourAvailable = (dayName: string, hour: number) => {
+        const row = availabilityByDay[String(dayName || '').toLowerCase()];
+        if (!row?.start || !row?.end) return false;
+        const startHour = Number.parseInt(row.start.slice(0, 2), 10);
+        const endHour = Number.parseInt(row.end.slice(0, 2), 10);
+        if (Number.isNaN(startHour) || Number.isNaN(endHour)) return false;
+        return hour >= startHour && hour < endHour;
+    };
+
     // Calculate totals with explicit casting and memoization
     const dayTotals = useMemo(() => {
         return DAYS.map(dayName => {
             const dayData = localMatrix[dayName] || {};
             // Sum all hours for this day
             return HOURS.reduce((sum, hour) => {
+                if (!isHourAvailable(dayName, hour)) return sum;
                 const val = Number(dayData[hour]) || 0;
                 return sum + val;
             }, 0);
         });
-    }, [localMatrix]);
+    }, [localMatrix, availabilitySchedule]);
 
     const todayWeekdayEnglish = useMemo(
         () => format(new Date(), 'EEEE', { locale: enUS }),
@@ -262,20 +287,25 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                                     const value = Number(localMatrix[dayName]?.[hour]) || 0;
                                     const isTodayCol = dayName === todayWeekdayEnglish;
                                     const isSelectedCol = dayName === selectedWeekdayEnglish;
+                                    const isAvailable = isHourAvailable(dayName, hour);
                                     return (
                                         <td key={dayName} 
                                             className={`p-0.5 border-b text-center select-none ${
-                                                isSelectedCol && onSelectDay
+                                                !isAvailable
+                                                    ? 'bg-gray-100/80 border-gray-200'
+                                                    : isSelectedCol && onSelectDay
                                                     ? 'bg-harx-50/95 border-harx-200'
                                                     : isTodayCol
                                                       ? 'bg-harx-50/90 border-harx-100'
                                                       : 'border-gray-50'
                                             }`}
                                             onPointerDown={() => {
+                                                if (!isAvailable) return;
                                                 setIsDragging(true);
                                                 setDragValue(value);
                                             }}
                                             onPointerEnter={() => {
+                                                if (!isAvailable) return;
                                                 if (isDragging && dragValue !== null && value !== dragValue) {
                                                     handleCellChange(dayName, hour, dragValue.toString());
                                                 }
@@ -284,15 +314,18 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
                                             <input
                                                 type="number"
                                                 min="0"
-                                                value={value === 0 ? '' : value}
+                                                value={isAvailable && value > 0 ? value : ''}
                                                 placeholder=""
+                                                disabled={!isAvailable}
                                                 onChange={(e) => handleCellChange(dayName, hour, e.target.value)}
                                                 className={`w-11 h-8 text-center rounded-lg font-black text-sm transition-all border-2 
-                                                    ${value > 0
+                                                    ${!isAvailable
+                                                        ? 'bg-gray-100 border-gray-200 text-gray-300 cursor-not-allowed'
+                                                        : value > 0
                                                         ? 'bg-harx-50 border-harx-200 text-harx-700 focus:ring-2 focus:ring-harx-100'
                                                         : 'bg-gray-50/50 border-transparent text-gray-400 hover:border-gray-200 focus:bg-white focus:border-harx-400'
                                                     }
-                                                    outline-none appearance-none cursor-crosshair`}
+                                                    outline-none appearance-none ${isAvailable ? 'cursor-crosshair' : 'cursor-not-allowed'}`}
                                             />
                                         </td>
                                     );
