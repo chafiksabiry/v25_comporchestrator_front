@@ -27,6 +27,7 @@ import { format } from 'date-fns';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { PlanningMatrix } from './PlanningMatrix';
+import { TypicalWeekPanel } from '../../components/scheduler/TypicalWeekPanel';
 
 // Helper to generate a consistent color from a string
 const stringToColor = (str: string) => {
@@ -688,6 +689,29 @@ export default function SessionPlanning() {
         <main className="space-y-6">
           {userRole === 'company' ? (
             <div className="grid grid-cols-1 gap-10">
+              {selectedGigId && (
+                <div className="rounded-2xl bg-white shadow-xl border border-harx-100/50 p-6 overflow-hidden relative space-y-6">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">
+                      Rep — typical week (session planning)
+                    </p>
+                    <RepSelector reps={reps} selectedRepId={selectedRepId} onSelectRep={setSelectedRepId} />
+                  </div>
+                  {selectedRepId ? (
+                    <TypicalWeekPanel
+                      gigId={selectedGigId}
+                      repId={selectedRepId}
+                      selectedDate={selectedDate}
+                      onSelectedDateChange={setSelectedDate}
+                      onNotify={(message, type) => {
+                        setNotification({ message, type });
+                        setTimeout(() => setNotification(null), 4000);
+                      }}
+                    />
+                  ) : null}
+                </div>
+              )}
+
               {selectedGigId && (
                 <div className="rounded-2xl bg-white shadow-xl border border-harx-100/50 p-4 overflow-hidden relative">
                   <PlanningMatrix
