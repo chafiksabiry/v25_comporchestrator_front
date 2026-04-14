@@ -1,7 +1,30 @@
 import React, { useMemo } from 'react';
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 import { TimeSlot, Gig, Rep } from '../../types/scheduler';
 import { Building, Clock } from 'lucide-react';
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function slotAppliesToSelectedDate(slot: TimeSlot, dateStr: string, weekdayEnglish: string): boolean {
+    const d = String(slot.date || '').trim();
+    if (!d) return false;
+    if (ISO_DATE_RE.test(d)) return d === dateStr;
+    return d.toLowerCase() === weekdayEnglish.toLowerCase();
+}
+
+function reservationMatchesDay(
+    res: NonNullable<TimeSlot['reservations']>[number],
+    slot: TimeSlot,
+    dateStr: string,
+    weekdayEnglish: string
+): boolean {
+    const raw = res.reservationDate ?? res.reservedAt ?? (res as any).date;
+    if (raw != null && ISO_DATE_RE.test(String(raw).trim())) {
+        return String(raw).trim().slice(0, 10) === dateStr;
+    }
+    return slotAppliesToSelectedDate(slot, dateStr, weekdayEnglish);
+}
 
 interface CompanyViewProps {
     company: string;
@@ -12,14 +35,35 @@ interface CompanyViewProps {
 }
 
 export function CompanyView({ company, slots, projects, reps, selectedDate }: CompanyViewProps) {
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const weekdayEnglish = format(selectedDate, 'EEEE', { locale: enUS });
+    const isViewingToday = isSameDay(selectedDate, new Date());
+
     const relevantSlots = useMemo(() => {
-        return slots.filter(slot => {
-            const project = projects.find(p => p.id === slot.gigId);
-            return project?.company === company &&
-                slot.date === format(selectedDate, 'yyyy-MM-dd') &&
-                (slot.status === 'reserved' || (slot.reservedCount && slot.reservedCount > 0));
-        });
-    }, [slots, projects, company, selectedDate]);
+        return slots
+            .filter(slot => {
+                const project = projects.find(p => p.id === slot.gigId);
+                if (project?.company !== company) return false;
+                if (!slotAppliesToSelectedDate(slot, dateStr, weekdayEnglish)) return false;
+                const list = slot.reservations || [];
+                if (list.length === 0) {
+                    return slot.status === 'reserved' || (slot.reservedCount ?? 0) > 0;
+                }
+                return list.some(res => reservationMatchesDay(res, slot, dateStr, weekdayEnglish));
+            })
+            .map(slot => {
+                const list = slot.reservations || [];
+                const filtered =
+                    list.length === 0
+                        ? list
+                        : list.filter(res => reservationMatchesDay(res, slot, dateStr, weekdayEnglish));
+                return { ...slot, reservations: filtered };
+            })
+            .filter(slot => {
+                if ((slot.reservations?.length ?? 0) > 0) return true;
+                return slot.status === 'reserved' || (slot.reservedCount ?? 0) > 0;
+            });
+    }, [slots, projects, company, dateStr, weekdayEnglish]);
 
     const repHours = useMemo(() => {
         const hours: Record<string, number> = {};
@@ -27,10 +71,8 @@ export function CompanyView({ company, slots, projects, reps, selectedDate }: Co
         relevantSlots.forEach(slot => {
             const duration = slot.duration || 1;
 
-            // If the slot has a reservations array, iterate through it
             if (slot.reservations && slot.reservations.length > 0) {
                 slot.reservations.forEach(res => {
-                    // agentId might be populated or just an ID
                     const rId = typeof res.agentId === 'object'
                         ? (res.agentId?._id || res.agentId?.$oid)
                         : res.agentId;
@@ -41,7 +83,6 @@ export function CompanyView({ company, slots, projects, reps, selectedDate }: Co
                     }
                 });
             } else if (slot.repId) {
-                // Fallback for legacy format
                 hours[slot.repId] = (hours[slot.repId] || 0) + duration;
             }
         });
@@ -63,8 +104,13 @@ export function CompanyView({ company, slots, projects, reps, selectedDate }: Co
             </div>
 
             <div className="mb-0">
-                <h3 className="text-sm font-bold text-gray-800 mb-2">
-                    Schedule for {format(selectedDate, 'MMMM d, yyyy')}
+                <h3 className="text-sm font-bold text-gray-800 mb-2 flex flex-wrap items-center gap-2">
+                    <span>Schedule for {format(selectedDate, 'MMMM d, yyyy')}</span>
+                    {isViewingToday && (
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-gradient-harx text-white px-2 py-0.5 rounded-md shadow-sm">
+                            Today
+                        </span>
+                    )}
                 </h3>
 
                 <div className="flex items-center justify-between bg-harx-50/70 border border-harx-100 px-3 py-2 rounded-lg mb-3">

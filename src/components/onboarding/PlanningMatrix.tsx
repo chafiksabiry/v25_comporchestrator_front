@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { format } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 import { TimeSlot, Rep } from '../../types/scheduler';
 import { Clock, Calendar, Save } from 'lucide-react';
 import { schedulerApi } from '../../services/schedulerService';
@@ -151,11 +153,34 @@ export function PlanningMatrix({ gigId, slots, onRefresh }: PlanningMatrixProps)
                     <thead>
                         <tr>
                             <th className="p-1.5 text-left text-gray-400 font-semibold text-[10px] border-b border-gray-100 w-16">Time</th>
-                            {DAYS.map((day, idx) => (
-                                <th key={day} className="p-1 text-center border-b border-gray-100 min-w-[70px]">
-                                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{day.slice(0, 3)}</div>
-                                </th>
-                            ))}
+                            {DAYS.map(day => {
+                                const isTodayCol = day === todayWeekdayEnglish;
+                                return (
+                                    <th
+                                        key={day}
+                                        className={`p-1 text-center border-b min-w-[70px] ${
+                                            isTodayCol
+                                                ? 'bg-harx-100/90 border-harx-200 ring-1 ring-harx-300/60'
+                                                : 'border-gray-100'
+                                        }`}
+                                    >
+                                        <div className="flex flex-col items-center gap-0.5">
+                                            {isTodayCol && (
+                                                <span className="text-[8px] font-black uppercase tracking-tight text-harx-700 leading-none">
+                                                    Today
+                                                </span>
+                                            )}
+                                            <div
+                                                className={`text-[10px] uppercase tracking-wider font-bold ${
+                                                    isTodayCol ? 'text-harx-800' : 'text-gray-500'
+                                                }`}
+                                            >
+                                                {day.slice(0, 3)}
+                                            </div>
+                                        </div>
+                                    </th>
+                                );
+                            })}
                         </tr>
                     </thead>
                     <tbody>
@@ -209,14 +234,20 @@ export function PlanningMatrix({ gigId, slots, onRefresh }: PlanningMatrixProps)
                                     <span>Total</span>
                                 </div>
                             </td>
-                            {dayTotals.map((total, idx) => (
-                                <td key={idx} className="p-1.5 text-center">
-                                    <div className={`text-base font-black ${total > 0 ? 'text-harx-700' : 'text-gray-300'}`}>
-                                        {total}
-                                    </div>
-                                    <div className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">REPS</div>
-                                </td>
-                            ))}
+                            {dayTotals.map((total, idx) => {
+                                const isTodayCol = DAYS[idx] === todayWeekdayEnglish;
+                                return (
+                                    <td
+                                        key={idx}
+                                        className={`p-1.5 text-center ${isTodayCol ? 'bg-harx-50/90 border-t border-harx-200' : ''}`}
+                                    >
+                                        <div className={`text-base font-black ${total > 0 ? 'text-harx-700' : 'text-gray-300'}`}>
+                                            {total}
+                                        </div>
+                                        <div className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">REPS</div>
+                                    </td>
+                                );
+                            })}
                         </tr>
                     </tfoot>
                 </table>
