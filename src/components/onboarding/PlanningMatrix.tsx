@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { format } from 'date-fns';
+import { format, startOfWeek, addDays } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { TimeSlot, Rep } from '../../types/scheduler';
 import { Clock, Calendar, Save } from 'lucide-react';
@@ -11,12 +11,21 @@ interface PlanningMatrixProps {
     slots: TimeSlot[];
     reps: Rep[];
     onRefresh: () => void;
+    /** Clic sur un jour → date concrète (même semaine que `selectedDate`) pour l’aperçu des réservations */
+    onSelectDay?: (date: Date) => void;
 }
 
 const HOURS = Array.from({ length: 11 }, (_, i) => i + 9); // 9:00 to 19:00
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 
-export function PlanningMatrix({ gigId, slots, onRefresh }: PlanningMatrixProps) {
+/** Lundi … dimanche de la semaine calendaire qui contient `anchor` (semaine ISO lundi) */
+function getDateForDayInWeek(anchor: Date, dayName: (typeof DAYS)[number]): Date {
+    const dayIndex = DAYS.indexOf(dayName);
+    const monday = startOfWeek(anchor, { weekStartsOn: 1 });
+    return addDays(monday, dayIndex);
+}
+
+export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelectDay }: PlanningMatrixProps) {
     const [localMatrix, setLocalMatrix] = useState<Record<string, Record<number, number>>>({});
     const [isSaving, setIsSaving] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
@@ -122,6 +131,16 @@ export function PlanningMatrix({ gigId, slots, onRefresh }: PlanningMatrixProps)
         []
     );
 
+    const selectedWeekdayEnglish = useMemo(
+        () => format(selectedDate, 'EEEE', { locale: enUS }),
+        [selectedDate]
+    );
+
+    const handleDayHeaderClick = (day: (typeof DAYS)[number]) => {
+        if (!onSelectDay) return;
+        onSelectDay(getDateForDayInWeek(selectedDate, day));
+    };
+
     return (
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
             {/* Header */}
@@ -135,6 +154,13 @@ export function PlanningMatrix({ gigId, slots, onRefresh }: PlanningMatrixProps)
                         <p className="text-harx-100 text-sm opacity-90">
                             General Weekly Schedule
                         </p>
+                        {onSelectDay && (
+                            <p className="text-[11px] text-white/85 font-semibold mt-0.5">
+                                Reservations:{' '}
+                                <span className="font-black">{format(selectedDate, 'EEE d MMM yyyy', { locale: enUS })}</span>
+                                <span className="text-white/70 font-normal"> — click a day below</span>
+                            </p>
+                        )}
                     </div>
                 </div>
 
@@ -160,29 +186,64 @@ export function PlanningMatrix({ gigId, slots, onRefresh }: PlanningMatrixProps)
                             <th className="p-1.5 text-left text-gray-400 font-semibold text-[10px] border-b border-gray-100 w-16">Time</th>
                             {DAYS.map(day => {
                                 const isTodayCol = day === todayWeekdayEnglish;
+                                const isSelectedCol = day === selectedWeekdayEnglish;
                                 return (
                                     <th
                                         key={day}
-                                        className={`p-1 text-center border-b min-w-[70px] ${
-                                            isTodayCol
-                                                ? 'bg-harx-100/90 border-harx-200 ring-1 ring-harx-300/60'
-                                                : 'border-gray-100'
+                                        className={`p-0.5 text-center border-b min-w-[72px] ${
+                                            isSelectedCol && onSelectDay
+                                                ? 'bg-harx-50 border-harx-400 ring-2 ring-harx-500/50'
+                                                : isTodayCol
+                                                  ? 'bg-harx-100/90 border-harx-200 ring-1 ring-harx-300/60'
+                                                  : 'border-gray-100'
                                         }`}
                                     >
-                                        <div className="flex flex-col items-center gap-0.5">
-                                            {isTodayCol && (
-                                                <span className="text-[8px] font-black uppercase tracking-tight text-harx-700 leading-none">
-                                                    Today
-                                                </span>
-                                            )}
-                                            <div
-                                                className={`text-[10px] uppercase tracking-wider font-bold ${
-                                                    isTodayCol ? 'text-harx-800' : 'text-gray-500'
+                                        {onSelectDay ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDayHeaderClick(day)}
+                                                className={`w-full rounded-lg py-1.5 px-0.5 flex flex-col items-center gap-0.5 transition-colors ${
+                                                    isSelectedCol
+                                                        ? 'bg-white/90 shadow-sm'
+                                                        : 'hover:bg-white/40'
                                                 }`}
+                                                aria-pressed={isSelectedCol}
+                                                title={`Voir les réservations du ${format(getDateForDayInWeek(selectedDate, day), 'd MMM yyyy', { locale: enUS })}`}
                                             >
-                                                {day.slice(0, 3)}
+                                                {isTodayCol && (
+                                                    <span className="text-[8px] font-black uppercase tracking-tight text-harx-700 leading-none">
+                                                        Today
+                                                    </span>
+                                                )}
+                                                {isSelectedCol && !isTodayCol && (
+                                                    <span className="text-[8px] font-black uppercase tracking-tight text-harx-600 leading-none">
+                                                        Selected
+                                                    </span>
+                                                )}
+                                                <div
+                                                    className={`text-[10px] uppercase tracking-wider font-bold ${
+                                                        isSelectedCol ? 'text-harx-800' : isTodayCol ? 'text-harx-800' : 'text-gray-500'
+                                                    }`}
+                                                >
+                                                    {day.slice(0, 3)}
+                                                </div>
+                                            </button>
+                                        ) : (
+                                            <div className="flex flex-col items-center gap-0.5 py-1">
+                                                {isTodayCol && (
+                                                    <span className="text-[8px] font-black uppercase tracking-tight text-harx-700 leading-none">
+                                                        Today
+                                                    </span>
+                                                )}
+                                                <div
+                                                    className={`text-[10px] uppercase tracking-wider font-bold ${
+                                                        isTodayCol ? 'text-harx-800' : 'text-gray-500'
+                                                    }`}
+                                                >
+                                                    {day.slice(0, 3)}
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
                                     </th>
                                 );
                             })}
@@ -200,10 +261,15 @@ export function PlanningMatrix({ gigId, slots, onRefresh }: PlanningMatrixProps)
                                 {DAYS.map(dayName => {
                                     const value = Number(localMatrix[dayName]?.[hour]) || 0;
                                     const isTodayCol = dayName === todayWeekdayEnglish;
+                                    const isSelectedCol = dayName === selectedWeekdayEnglish;
                                     return (
                                         <td key={dayName} 
                                             className={`p-0.5 border-b text-center select-none ${
-                                                isTodayCol ? 'bg-harx-50/90 border-harx-100' : 'border-gray-50'
+                                                isSelectedCol && onSelectDay
+                                                    ? 'bg-harx-50/95 border-harx-200'
+                                                    : isTodayCol
+                                                      ? 'bg-harx-50/90 border-harx-100'
+                                                      : 'border-gray-50'
                                             }`}
                                             onPointerDown={() => {
                                                 setIsDragging(true);
@@ -243,16 +309,42 @@ export function PlanningMatrix({ gigId, slots, onRefresh }: PlanningMatrixProps)
                                 </div>
                             </td>
                             {dayTotals.map((total, idx) => {
-                                const isTodayCol = DAYS[idx] === todayWeekdayEnglish;
+                                const d = DAYS[idx];
+                                const isTodayCol = d === todayWeekdayEnglish;
+                                const isSelectedCol = d === selectedWeekdayEnglish;
                                 return (
                                     <td
                                         key={idx}
-                                        className={`p-1.5 text-center ${isTodayCol ? 'bg-harx-50/90 border-t border-harx-200' : ''}`}
+                                        className={`p-0 text-center ${
+                                            isSelectedCol && onSelectDay
+                                                ? 'bg-harx-50/95 border-t-2 border-harx-400'
+                                                : isTodayCol
+                                                  ? 'bg-harx-50/90 border-t border-harx-200'
+                                                  : ''
+                                        }`}
                                     >
-                                        <div className={`text-base font-black ${total > 0 ? 'text-harx-700' : 'text-gray-300'}`}>
-                                            {total}
-                                        </div>
-                                        <div className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">REPS</div>
+                                        {onSelectDay ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDayHeaderClick(d)}
+                                                className={`w-full py-1.5 px-0.5 rounded-b-lg transition-colors ${
+                                                    isSelectedCol ? 'cursor-default' : 'hover:bg-harx-100/50 cursor-pointer'
+                                                }`}
+                                                title={`Réservations du ${format(getDateForDayInWeek(selectedDate, d), 'd MMM yyyy', { locale: enUS })}`}
+                                            >
+                                                <div className={`text-base font-black ${total > 0 ? 'text-harx-700' : 'text-gray-300'}`}>
+                                                    {total}
+                                                </div>
+                                                <div className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">REPS</div>
+                                            </button>
+                                        ) : (
+                                            <>
+                                                <div className={`text-base font-black ${total > 0 ? 'text-harx-700' : 'text-gray-300'}`}>
+                                                    {total}
+                                                </div>
+                                                <div className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">REPS</div>
+                                            </>
+                                        )}
                                     </td>
                                 );
                             })}
