@@ -8,6 +8,7 @@ export type WeekPlanBlock = {
   startTime: string;
   endTime: string;
   duration?: number;
+  capacity?: number;
 };
 
 const HOURS = Array.from({ length: 12 }, (_, i) => i + 8);
@@ -19,25 +20,30 @@ function blockKey(isoDay: number, hour: number) {
   return `${isoDay}-${t}`;
 }
 
-function blocksToKeys(blocks: WeekPlanBlock[]): Set<string> {
-  const s = new Set<string>();
+function blocksToCapMap(blocks: WeekPlanBlock[]): Record<string, number> {
+  const map: Record<string, number> = {};
   for (const b of blocks) {
     const h = parseInt(String(b.startTime).split(':')[0], 10);
-    if (!Number.isNaN(h)) s.add(blockKey(b.isoDay, h));
+    if (!Number.isNaN(h)) {
+      const k = blockKey(b.isoDay, h);
+      map[k] = Math.max(1, Number(b.capacity || 1));
+    }
   }
-  return s;
+  return map;
 }
 
-function keysToBlocks(keys: Set<string>): WeekPlanBlock[] {
+function capMapToBlocks(map: Record<string, number>): WeekPlanBlock[] {
   const out: WeekPlanBlock[] = [];
-  keys.forEach((k) => {
+  Object.entries(map).forEach(([k, cap]) => {
     const [d, t] = k.split('-');
     const isoDay = parseInt(d, 10);
     const hour = parseInt(t.split(':')[0], 10);
     if (Number.isNaN(isoDay) || Number.isNaN(hour)) return;
+    const capacity = Math.max(0, Math.floor(Number(cap) || 0));
+    if (capacity <= 0) return;
     const st = `${hour.toString().padStart(2, '0')}:00`;
     const en = `${(hour + 1).toString().padStart(2, '0')}:00`;
-    out.push({ isoDay, startTime: st, endTime: en, duration: 1 });
+    out.push({ isoDay, startTime: st, endTime: en, duration: 1, capacity });
   });
   return out.sort((a, b) => a.isoDay - b.isoDay || a.startTime.localeCompare(b.startTime));
 }
@@ -59,7 +65,7 @@ export function TypicalWeekPanel({ gigId, repId, selectedDate, onSelectedDateCha
   const [scope, setScope] = useState<'template' | 'week'>('template');
   const [templateWeek, setTemplateWeek] = useState<WeekPlanBlock[]>([]);
   const [weekOverrides, setWeekOverrides] = useState<{ weekStart: string; blocks: WeekPlanBlock[] }[]>([]);
-  const [draftKeys, setDraftKeys] = useState<Set<string>>(() => new Set());
+  const [draftCapMap, setDraftCapMap] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -97,22 +103,23 @@ export function TypicalWeekPanel({ gigId, repId, selectedDate, onSelectedDateCha
 
   useEffect(() => {
     if (loading) return;
-    setDraftKeys(blocksToKeys(effectiveBlocks));
+    setDraftCapMap(blocksToCapMap(effectiveBlocks));
   }, [scope, mondayStr, loading, effectiveBlocks]);
 
-  const toggleCell = (isoDay: number, hour: number) => {
+  const setCellCapacity = (isoDay: number, hour: number, rawValue: string) => {
     const k = blockKey(isoDay, hour);
-    setDraftKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(k)) next.delete(k);
-      else next.add(k);
+    const n = Math.max(0, Math.floor(Number(rawValue) || 0));
+    setDraftCapMap((prev) => {
+      const next = { ...prev };
+      if (n <= 0) delete next[k];
+      else next[k] = n;
       return next;
     });
   };
 
   const handleSave = async () => {
     if (!base || !gigId || !repId) return;
-    const blocks = keysToBlocks(draftKeys);
+    const blocks = capMapToBlocks(draftCapMap);
     setSaving(true);
     try {
       if (scope === 'template') {
@@ -180,6 +187,9 @@ export function TypicalWeekPanel({ gigId, repId, selectedDate, onSelectedDateCha
             <h3 className="text-sm font-black uppercase tracking-tight text-gray-900 italic">Typical week & exceptions</h3>
             <p className="text-[11px] font-semibold text-gray-500 mt-0.5">
               <span className="text-harx-700">Typical week</span> applies every week. Adjust <span className="text-harx-700">one calendar week</span> without changing the template.
+            </p>
+            <p className="text-[10px] font-semibold text-gray-400 mt-1">
+              Enter a number per slot: <span className="text-gray-700 font-bold">0 = no reps</span>, <span className="text-gray-700 font-bold">1..N = reps needed</span>.
             </p>
           </div>
         </div>
@@ -251,19 +261,23 @@ export function TypicalWeekPanel({ gigId, repId, selectedDate, onSelectedDateCha
                 <tr key={hour} className="border-t border-gray-100">
                   <td className="p-1.5 text-gray-500 font-bold tabular-nums">{hour}:00</td>
                   {ISO_DAYS.map((isoDay) => {
-                    const on = draftKeys.has(blockKey(isoDay, hour));
+                    const k = blockKey(isoDay, hour);
+                    const val = Number(draftCapMap[k] || 0);
                     return (
                       <td key={`${isoDay}-${hour}`} className="p-0.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => toggleCell(isoDay, hour)}
-                          className={`w-full min-h-[28px] rounded-md transition-colors ${
-                            on ? 'bg-harx-500 text-white shadow-sm' : 'bg-gray-50 hover:bg-gray-100 text-transparent'
+                        <input
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={val}
+                          onChange={(e) => setCellCapacity(isoDay, hour, e.target.value)}
+                          className={`w-full min-h-[28px] rounded-md border text-center text-xs font-black tabular-nums focus:outline-none focus:ring-2 focus:ring-harx-500/20 ${
+                            val > 0
+                              ? 'bg-harx-50 border-harx-200 text-harx-700'
+                              : 'bg-gray-50 border-gray-100 text-gray-400'
                           }`}
                           aria-label={`${ISO_LABELS[isoDay - 1]} ${hour}`}
-                        >
-                          {on ? '●' : ''}
-                        </button>
+                        />
                       </td>
                     );
                   })}
