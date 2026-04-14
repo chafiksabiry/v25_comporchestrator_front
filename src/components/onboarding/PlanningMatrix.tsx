@@ -117,6 +117,11 @@ export function PlanningMatrix({ gigId, slots, onRefresh }: PlanningMatrixProps)
         });
     }, [localMatrix]);
 
+    const todayWeekdayEnglish = useMemo(
+        () => format(new Date(), 'EEEE', { locale: enUS }),
+        []
+    );
+
     return (
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
             {/* Header */}
@@ -194,9 +199,12 @@ export function PlanningMatrix({ gigId, slots, onRefresh }: PlanningMatrixProps)
                                 </td>
                                 {DAYS.map(dayName => {
                                     const value = Number(localMatrix[dayName]?.[hour]) || 0;
+                                    const isTodayCol = dayName === todayWeekdayEnglish;
                                     return (
                                         <td key={dayName} 
-                                            className="p-0.5 border-b border-gray-50 text-center select-none"
+                                            className={`p-0.5 border-b text-center select-none ${
+                                                isTodayCol ? 'bg-harx-50/90 border-harx-100' : 'border-gray-50'
+                                            }`}
                                             onPointerDown={() => {
                                                 setIsDragging(true);
                                                 setDragValue(value);
