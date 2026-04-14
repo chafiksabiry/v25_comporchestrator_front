@@ -1147,6 +1147,7 @@ const CompanyOnboarding = () => {
     // For other cases, just close the active step
     setShowTelephonySetup(false);
     setShowGigCreation(false);
+    setShowGigDetails(false);
     setShowKnowledgeBase(false);
     setActiveStep(null);
 
@@ -1258,7 +1259,14 @@ const CompanyOnboarding = () => {
   // Déterminer quel composant afficher
   let activeComponent = null;
   if (showGigDetails) {
-    activeComponent = <GigDetails />;
+    activeComponent = (
+      <GigDetails
+        onAddNew={() => {
+          setShowGigDetails(false);
+          setShowGigCreation(true);
+        }}
+      />
+    );
   } else if (showGigCreation) {
     activeComponent = <PrompAI onBack={handleBackToOnboarding} />;
   } else if (showTelephonySetup) {

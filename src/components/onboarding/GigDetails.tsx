@@ -119,7 +119,11 @@ interface GigResponse {
   data: Gig[];
 }
 
-const GigDetails = () => {
+interface GigDetailsProps {
+  onAddNew?: () => void;
+}
+
+const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -281,7 +285,13 @@ const GigDetails = () => {
           </div>
           <button
             className="flex items-center gap-2 bg-white/10 backdrop-blur-md hover:bg-white/20 text-white font-black px-5 py-2.5 rounded-2xl shadow-xl border border-white/20 transition-all duration-200 uppercase tracking-widest text-[10px]"
-            onClick={() => { window.location.href = '/app6'; }}
+            onClick={() => {
+              if (onAddNew) {
+                onAddNew();
+              } else {
+                window.location.href = '/app6';
+              }
+            }}
           >
             <Plus className="w-5 h-5" />
             Add New Gig
