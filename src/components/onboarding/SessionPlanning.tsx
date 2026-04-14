@@ -708,6 +708,7 @@ export default function SessionPlanning() {
                     slots={slots}
                     reps={reps}
                     onRefresh={fetchData}
+                    onSelectDay={setSelectedDate}
                   />
                 </div>
               )}
