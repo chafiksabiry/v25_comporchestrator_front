@@ -406,11 +406,22 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
       const response = await axios.get<CompanyResponse>(
         `${API_BASE_URL}/companies/${companyId}/details`
       );
-      setCompany(response.data.data);
-      if ((response.data.data as any).logo) {
-        setLogoUrl((response.data.data as any).logo);
-      } else if (response.data.data.logoUrl) {
-        setLogoUrl(response.data.data.logoUrl);
+      const rawData = response.data.data as any;
+      const normalizedCompany = {
+        ...rawData,
+        founded:
+          rawData?.founded ??
+          rawData?.foundedYear ??
+          rawData?.yearFounded ??
+          rawData?.establishedYear ??
+          rawData?.year ??
+          "",
+      };
+      setCompany(normalizedCompany);
+      if (normalizedCompany.logo) {
+        setLogoUrl(normalizedCompany.logo);
+      } else if (normalizedCompany.logoUrl) {
+        setLogoUrl(normalizedCompany.logoUrl);
       }
     } catch (err) {
       setError("Erreur lors du chargement des détails de l'entreprise.");
@@ -658,7 +669,13 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
     industry: company.industry || '',
     overview: company.overview || '',
     mission: company.mission || '',
-    founded: company.founded || '',
+    founded:
+      company.founded ||
+      company.foundedYear ||
+      company.yearFounded ||
+      company.establishedYear ||
+      company.year ||
+      '',
     headquarters: company.headquarters || '',
     logoUrl: company.logo || company.logoUrl || '',
     contact: company.contact || {},
