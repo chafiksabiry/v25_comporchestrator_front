@@ -470,10 +470,50 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
       console.log('🔍 Has basic info:', hasBasicInfo());
       console.log('📝 Is step completed:', isStepCompleted);
 
+      const cleanData = (obj: any): any => {
+        if (Array.isArray(obj)) {
+          const arr = obj
+            .map((item) => cleanData(item))
+            .filter((item) => item !== undefined && item !== null && item !== "");
+          return arr.length > 0 ? arr : undefined;
+        }
+        if (obj && typeof obj === "object") {
+          const result: any = {};
+          let hasValues = false;
+          Object.entries(obj).forEach(([k, v]) => {
+            const cleaned = cleanData(v);
+            if (cleaned !== undefined) {
+              result[k] = cleaned;
+              hasValues = true;
+            }
+          });
+          return hasValues ? result : undefined;
+        }
+        return obj === "" || obj === null ? undefined : obj;
+      };
+
+      // Send only editable company fields to avoid backend validation errors (400)
+      const rawPayload = {
+        userId: company.userId,
+        name: company.name,
+        logo: company.logo || logoUrl,
+        industry: company.industry,
+        founded: company.founded,
+        headquarters: company.headquarters,
+        overview: company.overview,
+        mission: company.mission,
+        culture: company.culture,
+        opportunities: company.opportunities,
+        technology: company.technology,
+        contact: company.contact,
+        socialMedia: company.socialMedia,
+      };
+      const payload = cleanData(rawPayload) || {};
+
       // Sauvegarder les informations de l'entreprise
       await axios.put(
         `${API_BASE_URL}/companies/${companyId}`,
-        company
+        payload
       );
 
       console.log('✅ Company data saved successfully');
@@ -543,9 +583,13 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
       console.error("Erreur lors de la sauvegarde :", err);
+      const errorMessage =
+        (err as any)?.response?.data?.message ||
+        (err as any)?.response?.data?.error ||
+        "There was an error updating the company profile.";
       Swal.fire({
         title: "Error!",
-        text: "There was an error updating the company profile.",
+        text: errorMessage,
         icon: "error",
         confirmButtonText: "Try Again",
       });
