@@ -134,6 +134,7 @@ const EditableField = ({
 
   const isEditing = editingField === field && editMode;
   const isHeroField = className.includes('text-white') || className.includes('text-5xl');
+  const isLongTextField = field.includes("overview") || field.includes("mission") || field.includes("address");
 
   const handleFieldEdit = () => {
     if (editMode) {
@@ -160,59 +161,83 @@ const EditableField = ({
   };
 
   return (
-    <div className={`relative group ${className}`} onClick={handleFieldEdit}>
-      {Icon && !isEditing && <Icon size={18} className="flex-shrink-0" />}
+    <div className={`relative group ${className}`}>
+      {Icon && <Icon size={18} className="flex-shrink-0" />}
 
-      {isEditing ? (
-        <div className="mt-2 w-full">
-          <input
-            type="text"
-            value={tempValues[field] || ""}
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) =>
-              setTempValues((prev: any) => ({
-                ...prev,
-                [field]: e.target.value,
-              }))
-            }
-            className={`w-full px-4 py-3 border-2 rounded-2xl focus:ring-4 focus:ring-harx-500/20 focus:border-harx-500 outline-none transition-all ${isHeroField
-              ? 'border-white/30 bg-white/10 backdrop-blur-md text-white placeholder-white/70'
-              : 'border-harx-100 bg-white !text-black shadow-sm'
-              }`}
+      <span className={isHeroField ? "" : "text-gray-800"}>{value || "Not set"}</span>
 
-            placeholder={isHeroField ? value || "Enter text..." : ""}
-          />
-          <div className="absolute right-0 top-full mt-2 flex gap-2 z-50">
-            <button
-              onClick={handleFieldSave}
-              className="p-1.5 bg-green-500 text-white rounded-md hover:bg-green-600 shadow-lg"
-            >
-              <CheckCircle2 size={14} />
-            </button>
-            <button
-              onClick={handleFieldCancel}
-              className="p-1.5 bg-red-500 text-white rounded-md hover:bg-red-600 shadow-lg"
-            >
-              <X size={14} />
-            </button>
+      {editMode && (
+        <button
+          className={`ml-2 inline-flex items-center justify-center rounded-full p-1.5 shadow-sm transition-all ${isHeroField
+            ? 'bg-white/20 text-white hover:bg-white/30'
+            : 'bg-white text-harx-600 ring-1 ring-harx-100 hover:bg-harx-50'
+            }`}
+          onClick={handleFieldEdit}
+          title="Edit field"
+        >
+          <Pencil size={12} />
+        </button>
+      )}
+
+      {isEditing && (
+        <div className="fixed inset-0 z-[120] flex items-end justify-center bg-black/30 p-4 md:items-center">
+          <div className="w-full max-w-2xl rounded-2xl border border-harx-100 bg-white p-5 shadow-2xl">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-black uppercase tracking-wider text-harx-600">
+                Edit Field
+              </h3>
+              <button
+                onClick={handleFieldCancel}
+                className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {isLongTextField ? (
+              <textarea
+                value={tempValues[field] || ""}
+                onChange={(e) =>
+                  setTempValues((prev: any) => ({
+                    ...prev,
+                    [field]: e.target.value,
+                  }))
+                }
+                rows={5}
+                className="w-full rounded-xl border border-harx-100 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+              />
+            ) : (
+              <input
+                type="text"
+                value={tempValues[field] || ""}
+                onChange={(e) =>
+                  setTempValues((prev: any) => ({
+                    ...prev,
+                    [field]: e.target.value,
+                  }))
+                }
+                className="w-full rounded-xl border border-harx-100 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+              />
+            )}
+
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                onClick={handleFieldCancel}
+                className="inline-flex items-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-xs font-bold uppercase tracking-wider text-gray-600 hover:bg-gray-50"
+              >
+                <X size={14} />
+                Cancel
+              </button>
+              <button
+                onClick={handleFieldSave}
+                className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-sm"
+              >
+                <CheckCircle2 size={14} />
+                Save
+              </button>
+            </div>
           </div>
         </div>
-      ) : (
-        <>
-          <span className={isHeroField ? "" : "text-gray-800"}>{value || "Not set"}</span>
-          {editMode && (
-            <button
-              className={`absolute -right-3 -top-3 opacity-0 group-hover:opacity-100 p-1.5 rounded-full shadow-lg transition-all ${isHeroField
-                ? 'bg-gradient-harx text-white hover:scale-110'
-                : 'bg-white text-harx-600 hover:bg-harx-50 hover:scale-110'
-                }`}
-
-              onClick={() => handleFieldEdit()}
-            >
-              <Pencil size={12} />
-            </button>
-          )}
-        </>
       )}
     </div>
   );
