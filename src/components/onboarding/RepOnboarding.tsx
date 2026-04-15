@@ -11,8 +11,7 @@ import {
   RefreshCw,
   Plus,
   Pencil,
-  Trash2,
-  Search
+  Trash2
 } from 'lucide-react';
 
 import { AppContent } from '../training/App';
@@ -39,7 +38,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [openClaudeEditorOnPreview, setOpenClaudeEditorOnPreview] = useState(false);
   const [loadingPresentation, setLoadingPresentation] = useState(false);
   const [deletingJourneyId, setDeletingJourneyId] = useState<string | null>(null);
-  const [showSearchCompanyWizard, setShowSearchCompanyWizard] = useState(false);
 
   // Helper function to format training journey data for display
   const asUiString = (v: unknown, fallback: string): string => {
@@ -442,41 +440,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     );
   }
 
-  if (showSearchCompanyWizard) {
-    return (
-      <div className="flex min-h-[calc(100dvh-5.5rem)] w-full min-w-0 flex-col px-4 pt-2 pb-4 md:px-8 md:pt-3 md:pb-6">
-        <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col">
-          <header className="mb-3 shrink-0 overflow-hidden rounded-xl border border-harx-100 px-5 py-3">
-            <div className="h-0.5 w-full -mx-5 -mt-3 mb-3 rounded-t-xl bg-gradient-harx" aria-hidden />
-            <div className="flex items-center justify-between">
-              <div className="min-w-0">
-                <h1 className="text-lg font-extrabold tracking-tight text-harx-600">
-                  Company Search Training
-                </h1>
-                <p className="text-xs text-gray-500">Practice company discovery workflow in onboarding</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowSearchCompanyWizard(false)}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-600 transition-all hover:border-harx-200 hover:text-harx-600"
-              >
-                ← Back to list
-              </button>
-            </div>
-          </header>
-          <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-harx-100 bg-white">
-            <div className="h-0.5 w-full shrink-0 bg-gradient-harx" aria-hidden />
-            <iframe
-              title="Search Company Wizard"
-              src="/app1"
-              className="h-full w-full border-0"
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="p-4 md:p-8">
       <div className="mx-auto max-w-6xl">
@@ -550,31 +513,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         </header>
 
         <div className="space-y-8">
-          <section className="overflow-hidden rounded-2xl border border-harx-100">
-            <div className="h-1 w-full bg-gradient-harx" aria-hidden />
-            <div className="p-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-harx-50 text-harx-500 ring-1 ring-harx-100">
-                    <Search className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-900">Search Company Wizard</h2>
-                    <p className="text-sm text-harx-500/80">Integrated as a training module for REP onboarding</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowSearchCompanyWizard(true)}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-harx px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md sm:w-auto"
-                >
-                  <Search className="h-4 w-4" />
-                  <span>Open company search training</span>
-                </button>
-              </div>
-            </div>
-          </section>
-
           {/* Main Content */}
           <div className="space-y-6">
             {/* Training Section — HARX brand (rose / purple) aligned with Journey Builder */}
