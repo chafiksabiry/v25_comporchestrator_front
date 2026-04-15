@@ -268,7 +268,7 @@ interface GigData {
   };
 }
 
-const API_URL = import.meta.env.VITE_GIGS_API || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL_GIGS || 'http://localhost:3000';
 
 export function GigForm() {
   const { register, control, handleSubmit, formState: { errors } } = useForm<GigFormData>();

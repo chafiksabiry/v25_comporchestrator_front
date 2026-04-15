@@ -3,7 +3,7 @@ import { GigData } from '../types';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_GIGS_API || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL_GIGS || 'http://localhost:3000';
 
 // Types for countries API
 export interface Country {
@@ -1022,7 +1022,7 @@ export async function fetchLanguages(): Promise<{ data: Language[]; error?: Erro
 export async function fetchAllCurrencies(): Promise<Currency[]> {
   try {
     console.log('💰 Fetching all currencies from API...');
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
+    const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
     const response = await fetch(`${apiUrl}/currencies`);
 
     if (!response.ok) {
@@ -1046,7 +1046,7 @@ export async function fetchAllCurrencies(): Promise<Currency[]> {
 export async function fetchCurrencyById(currencyId: string): Promise<Currency | null> {
   try {
     console.log(`💰 Fetching currency by ID: ${currencyId}`);
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
+    const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
     const response = await fetch(`${apiUrl}/currencies/id/${currencyId}`);
 
     if (!response.ok) {

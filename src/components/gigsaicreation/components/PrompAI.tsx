@@ -26,10 +26,12 @@ const sections = [
 ];
 
 interface PrompAIProps {
-  onBack?: () => void;
+  onBack?: () => void; // Existing back (Back to AI Assistant or original onBack)
+  onBackToGigs?: () => void;
+  onBackToOnboarding?: () => void;
 }
 
-const PrompAI: React.FC<PrompAIProps> = ({ onBack }) => {
+const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboarding }) => {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState("");
   const [showAIDialog, setShowAIDialog] = useState(false);
@@ -168,8 +170,8 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack }) => {
   const loadGigForEdit = async (gigId: string) => {
     setIsLoadingGig(true);
     try {
-      console.log('🔄 EDIT MODE - Fetching gig data from:', `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`);
-      const response = await fetch(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`);
+      console.log('🔄 EDIT MODE - Fetching gig data from:', `${import.meta.env.VITE_API_URL_GIGS}/gigs/${gigId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL_GIGS}/gigs/${gigId}`);
 
       if (!response.ok) {
         console.error('🔄 EDIT MODE - API Error:', response.status, response.statusText);
@@ -665,6 +667,30 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack }) => {
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       <div className="w-full h-full py-6 px-4 mx-auto max-w-5xl">
+        {/* Navigation Buttons */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex gap-4">
+            {onBackToGigs && (
+              <button
+                onClick={onBackToGigs}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm"
+              >
+                <Briefcase className="w-4 h-4" />
+                Back to Gigs
+              </button>
+            )}
+            {onBackToOnboarding && (
+              <button
+                onClick={onBackToOnboarding}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm"
+              >
+                <ArrowUp className="w-4 h-4 -rotate-90" />
+                Back to Onboarding
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="text-center mb-12 relative">
           <Logo className="mb-4" />
           <div className="flex items-center justify-center space-x-4 mb-2">

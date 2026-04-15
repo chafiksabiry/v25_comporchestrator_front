@@ -141,7 +141,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
       }
 
       try {
-        const response = await axios.get<GigResponse>(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}?populate=companyId`);
+        const response = await axios.get<GigResponse>(`${import.meta.env.VITE_API_URL_GIGS}/gigs/company/${companyId}?populate=companyId`);
         setGigs(response.data.data);
       } catch (err) {
         setError('Failed to fetch gigs');
@@ -244,7 +244,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
     e.stopPropagation();
 
     try {
-      await axios.delete(`${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`);
+      await axios.delete(`${import.meta.env.VITE_API_URL_GIGS}/gigs/${gigId}`);
       setGigs((prev: any[]) => prev.filter(g => g._id !== gigId));
 
       const Toast = Swal.mixin({

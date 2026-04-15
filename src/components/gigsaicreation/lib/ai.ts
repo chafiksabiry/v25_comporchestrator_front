@@ -1,7 +1,7 @@
 import { GigData, GigSuggestion } from '../types';
 import { generateMockGigSuggestions } from './mockData';
 
-const API_BASE_URL = import.meta.env.VITE_GIGS_API || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
 
 // Configuration pour activer/désactiver le mode mock
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true' || false;

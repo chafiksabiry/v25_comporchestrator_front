@@ -143,7 +143,7 @@ interface GigCreatorProps {
   }) => React.ReactNode;
 }
 
-const API_URL = import.meta.env.VITE_GIGS_API || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL_GIGS || 'http://localhost:3000';
 
 export function GigCreator({ children }: GigCreatorProps) {
   const [currentSection, setCurrentSection] = useState(sections[0].id);
