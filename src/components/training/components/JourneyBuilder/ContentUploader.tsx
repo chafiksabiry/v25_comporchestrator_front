@@ -1055,6 +1055,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
           gigId: gigId || null,
           analyzedUploadsCount: analyzedUploads.length,
           analyzedUploads,
+          conversationHistory: chatMessages.slice(-8).map((m) => ({
+            role: m.role,
+            text: m.text,
+          })),
           canGenerateTraining: canProceed,
         });
 
@@ -1181,8 +1185,49 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     <div key={msg.id} className={msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
                       {msg.role === 'assistant' ? (
                         <div className="max-w-[88%]">
-                          <div className="prose prose-sm max-w-none text-harx-800 prose-headings:text-harx-800 prose-p:my-2 prose-li:my-0.5 prose-strong:text-harx-800">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          <div className="max-w-none text-[#1f1d18]">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                h1: ({ children }) => (
+                                  <h3 className="mb-3 mt-1 text-[28px] font-semibold tracking-tight text-[#13110d]">
+                                    {children}
+                                  </h3>
+                                ),
+                                h2: ({ children }) => (
+                                  <h4 className="mb-2 mt-3 text-[22px] font-semibold text-[#181611]">
+                                    {children}
+                                  </h4>
+                                ),
+                                h3: ({ children }) => (
+                                  <h5 className="mb-2 mt-2 text-[18px] font-semibold text-[#1f1d18]">
+                                    {children}
+                                  </h5>
+                                ),
+                                p: ({ children }) => (
+                                  <p className="my-2 text-[18px] leading-8 text-[#1f1d18]">{children}</p>
+                                ),
+                                ul: ({ children }) => (
+                                  <ul className="my-2 list-disc space-y-1 pl-6 text-[17px] leading-7 text-[#1f1d18]">
+                                    {children}
+                                  </ul>
+                                ),
+                                ol: ({ children }) => (
+                                  <ol className="my-2 list-decimal space-y-1 pl-6 text-[17px] leading-7 text-[#1f1d18]">
+                                    {children}
+                                  </ol>
+                                ),
+                                li: ({ children }) => <li>{children}</li>,
+                                strong: ({ children }) => (
+                                  <strong className="font-semibold text-[#12100c]">{children}</strong>
+                                ),
+                                code: ({ children }) => (
+                                  <code className="rounded bg-[#f3f2ec] px-1 py-0.5 text-[14px] text-[#2b271f]">
+                                    {children}
+                                  </code>
+                                ),
+                              }}
+                            >
                               {msg.text}
                             </ReactMarkdown>
                           </div>
