@@ -417,6 +417,15 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
     setLogoUrl(e.target.value);
   };
 
+  const getDomainFromWebsite = (website?: string): string | null => {
+    if (!website) return null;
+    try {
+      return new URL(website).hostname;
+    } catch {
+      return null;
+    }
+  };
+
 
 
   // Original functions from the existing component
@@ -747,8 +756,19 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
                           src={logoUrl}
                           alt={profile.name}
                           className="w-full h-full object-contain"
-                          onError={(e) => {
-                            e.currentTarget.src = "";
+                          onError={() => {
+                            const domain = getDomainFromWebsite(profile.contact?.website);
+                            if (domain) {
+                              // Try stable favicon first, then Clearbit fallback.
+                              if (!logoUrl.includes("google.com/s2/favicons")) {
+                                setLogoUrl(`https://www.google.com/s2/favicons?domain=${domain}&sz=64`);
+                                return;
+                              }
+                              if (!logoUrl.includes("logo.clearbit.com")) {
+                                setLogoUrl(`https://logo.clearbit.com/${domain}`);
+                                return;
+                              }
+                            }
                             setLogoUrl("");
                           }}
                         />
