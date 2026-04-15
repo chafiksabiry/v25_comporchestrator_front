@@ -6188,6 +6188,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         </div>
       </div>
     </div>
+  </div>
   );
 };
 
