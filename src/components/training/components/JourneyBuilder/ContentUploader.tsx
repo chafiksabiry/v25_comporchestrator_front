@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase } from 'lucide-react';
+import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, MessageSquareText } from 'lucide-react';
 import { ContentUpload } from '../../types/core';
 import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef } from '../../infrastructure/services/AIService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
@@ -1049,86 +1049,103 @@ export default function ContentUploader(props: ContentUploaderProps) {
     };
 
     return (
-    <div className={rep ? 'flex w-full min-w-0 flex-col' : 'min-h-full p-2 md:p-4'}>
-      <div className={rep ? 'mx-auto flex w-full max-w-5xl flex-col px-5 py-3 md:px-7' : 'container mx-auto max-w-6xl'}>
+    <div className={rep ? 'flex w-full min-w-0 flex-col bg-[#f7f7f3]' : 'min-h-full bg-[#f7f7f3] p-2 md:p-4'}>
+      <div className={rep ? 'mx-auto flex w-full max-w-6xl flex-col px-5 py-3 md:px-7' : 'container mx-auto max-w-7xl'}>
         <div
           className={
             rep
               ? 'flex w-full flex-col'
-              : 'w-full flex-1 flex flex-col p-6 md:p-10 bg-white/60 backdrop-blur-xl rounded-3xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
+              : 'w-full flex-1 rounded-3xl border border-[#ebe9df] bg-[#f7f7f3] p-2 md:p-3'
           }
         >
-          <div className={rep ? 'flex w-full flex-col' : 'contents'}>
-          {/* Header */}
-          <div className={rep ? 'mb-3 shrink-0 text-center px-1' : 'text-center mb-8'}>
-            <h2
-              className={
-                rep
-                  ? 'mb-1 text-[17px] font-extrabold tracking-tight text-harx-600 md:text-lg'
-                  : 'text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-purple-500 to-pink-500 mb-2'
-              }
-            >
-              Upload your training materials
-            </h2>
-            <p className={rep ? 'mx-auto max-w-xl text-[11px] leading-snug text-gray-500' : 'text-base text-gray-600 font-medium max-w-3xl mx-auto'}>
-              Upload documents, videos, presentations, and media. Our AI analyzes and transforms them into training content.
-            </p>
-          </div>
+          <div className={rep ? 'flex w-full flex-col' : 'grid gap-3 lg:grid-cols-[260px_minmax(0,1fr)]'}>
+          {!rep && (
+            <aside className="rounded-2xl border border-[#ebe9df] bg-[#f3f2eb] p-3">
+              <button
+                type="button"
+                className="mb-3 inline-flex w-full items-center gap-2 rounded-xl border border-[#e4e2d7] bg-white px-3 py-2 text-sm font-semibold text-[#4f4a3f]"
+              >
+                <Plus className="h-4 w-4 text-harx-600" />
+                Nouvelle conversation
+              </button>
+              <button
+                type="button"
+                className="mb-4 inline-flex w-full items-center gap-2 rounded-xl border border-transparent px-2 py-2 text-sm text-[#5f5a4f] hover:bg-white/70"
+              >
+                <Search className="h-4 w-4 text-harx-500" />
+                Rechercher
+              </button>
 
-          <div className={rep ? 'mb-2 grid gap-3 lg:grid-cols-[260px_minmax(0,1fr)]' : 'mb-4 grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]'}>
-            <aside className={rep ? 'rounded-xl border border-harx-100 bg-white p-3' : 'rounded-2xl border border-gray-200 bg-white p-4'}>
-              <div className={rep ? 'mb-2 flex items-center gap-1.5 text-xs font-extrabold text-gray-900' : 'mb-3 flex items-center gap-2 text-sm font-bold text-gray-900'}>
-                <Briefcase className={rep ? 'h-3.5 w-3.5 text-harx-600' : 'h-4 w-4 text-fuchsia-600'} />
-                Projects / Gigs
+              <div className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wide text-[#7d786b]">
+                Projects
               </div>
-              {isLoadingCompanyGigs ? (
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading projects...
-                </div>
-              ) : companyGigs.length === 0 ? (
-                <p className={rep ? 'text-[10px] text-gray-500' : 'text-xs text-gray-500'}>
-                  Aucun gig disponible pour cette company.
-                </p>
-              ) : (
-                <div className={rep ? 'max-h-56 space-y-1.5 overflow-y-auto pr-1' : 'max-h-72 space-y-2 overflow-y-auto pr-1'}>
-                  {companyGigs.map((gig: any) => {
+              <div className="max-h-[50vh] space-y-1 overflow-y-auto pr-1">
+                {isLoadingCompanyGigs ? (
+                  <div className="flex items-center gap-2 rounded-lg px-2 py-2 text-xs text-[#6c675b]">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Chargement...
+                  </div>
+                ) : companyGigs.length === 0 ? (
+                  <div className="rounded-lg bg-white/60 px-2 py-2 text-xs text-[#6c675b]">
+                    Aucun project disponible.
+                  </div>
+                ) : (
+                  companyGigs.map((gig: any) => {
                     const id = String(gig?._id || gig?.id || '');
-                    const isSelected = !!gigId && id === String(gigId);
+                    const active = !!gigId && id === String(gigId);
                     return (
                       <div
                         key={id || gig?.title}
                         className={`rounded-lg border px-2.5 py-2 ${
-                          isSelected ? 'border-fuchsia-300 bg-fuchsia-50' : 'border-gray-200 bg-gray-50/50'
+                          active
+                            ? 'border-harx-200 bg-harx-50 text-harx-800'
+                            : 'border-transparent bg-white/60 text-[#4f4a3f]'
                         }`}
                       >
-                        <div className={rep ? 'truncate text-xs font-bold text-gray-900' : 'truncate text-sm font-semibold text-gray-900'}>
-                          {gig?.title || 'Untitled project'}
-                        </div>
-                        {gig?.category && (
-                          <div className={rep ? 'mt-0.5 text-[10px] text-gray-500' : 'mt-1 text-xs text-gray-500'}>
-                            {gig.category}
-                          </div>
-                        )}
+                        <div className="truncate text-sm font-semibold">{gig?.title || 'Untitled project'}</div>
+                        {gig?.category ? (
+                          <div className="truncate text-[11px] text-[#7d786b]">{gig.category}</div>
+                        ) : null}
                       </div>
                     );
-                  })}
-                </div>
-              )}
-            </aside>
-
-            <div className={rep ? 'rounded-xl border border-harx-100 bg-white p-3' : 'rounded-2xl border border-gray-200 bg-white p-4'}>
-              <div className={rep ? 'mb-2 text-xs font-bold text-gray-900' : 'mb-3 text-sm font-semibold text-gray-900'}>
-                Chat formation interactive
+                  })
+                )}
               </div>
-              <div className={rep ? 'mb-3 max-h-56 space-y-2 overflow-y-auto rounded-lg bg-slate-50 p-2' : 'mb-3 max-h-72 space-y-2 overflow-y-auto rounded-xl bg-slate-50 p-3'}>
+            </aside>
+          )}
+          <div className={rep ? 'flex w-full flex-col' : 'rounded-2xl border border-[#ebe9df] bg-[#f7f7f3] p-4 md:p-6'}>
+          {/* Header */}
+          <div className={rep ? 'mb-3 shrink-0 px-1 text-center' : 'mb-10 text-center'}>
+            <h2
+              className={
+                rep
+                  ? 'mb-1 text-[17px] font-extrabold tracking-tight text-harx-600 md:text-lg'
+                  : 'mb-2 text-5xl font-extrabold tracking-tight text-[#2f2b24]'
+              }
+            >
+              Bonsoir, construisons votre formation.
+            </h2>
+            <p className={rep ? 'mx-auto max-w-xl text-[11px] leading-snug text-gray-500' : 'mx-auto max-w-3xl text-sm font-medium text-[#6b665b]'}>
+              Chat interactif style Claude, adapte a HARX.
+            </p>
+          </div>
+
+          <div className={rep ? 'mb-2' : 'mx-auto mb-4 w-full max-w-3xl'}>
+            <div className={rep ? 'rounded-xl border border-harx-100 bg-white p-3' : 'rounded-3xl border border-[#e5e1d6] bg-white p-4 shadow-sm'}>
+              <div className={rep ? 'mb-2 text-xs font-bold text-gray-900' : 'mb-3 text-sm font-semibold text-gray-900'}>
+                <span className="inline-flex items-center gap-1.5 text-[#5c574a]">
+                  <MessageSquareText className="h-4 w-4 text-harx-600" />
+                  Chat formation interactif
+                </span>
+              </div>
+              <div className={rep ? 'mb-3 max-h-56 space-y-2 overflow-y-auto rounded-lg bg-slate-50 p-2' : 'mb-3 max-h-72 space-y-2 overflow-y-auto rounded-2xl bg-[#f8f7f2] p-3'}>
                 {chatMessages.map((msg) => (
                   <div
                     key={msg.id}
                     className={`w-fit max-w-[90%] rounded-2xl px-3 py-2 text-sm ${
                       msg.role === 'assistant'
-                        ? 'bg-white text-gray-800 border border-gray-200'
-                        : 'ml-auto bg-gradient-to-r from-rose-500 to-purple-600 text-white'
+                        ? 'border border-[#e6e2d7] bg-white text-[#3f3a31]'
+                        : 'ml-auto bg-gradient-harx text-white'
                     }`}
                   >
                     {msg.text}
@@ -1147,7 +1164,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   className={
                     rep
                       ? 'min-w-0 flex-1 rounded-lg border border-harx-100 px-3 py-2 text-xs text-gray-800 outline-none focus:border-harx-300'
-                      : 'min-w-0 flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 outline-none focus:border-purple-400'
+                      : 'min-w-0 flex-1 rounded-2xl border border-[#ddd8ca] px-4 py-3 text-sm text-[#3f3a31] outline-none focus:border-harx-400'
                   }
                 />
                 <button
@@ -1157,11 +1174,25 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   className={
                     rep
                       ? 'rounded-lg bg-gradient-harx px-4 py-2 text-xs font-bold text-white disabled:opacity-50'
-                      : 'rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50'
+                      : 'rounded-2xl bg-gradient-harx px-5 py-3 text-sm font-semibold text-white disabled:opacity-50'
                   }
                 >
                   Envoyer
                 </button>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {['Plan rapide', 'Modules experts', 'Quiz final', 'Version courte'].map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => {
+                      setChatInput(chip);
+                    }}
+                    className="rounded-full border border-[#e2ddce] bg-[#f5f4ed] px-3 py-1.5 text-xs font-semibold text-[#5f5a4f] hover:border-harx-300 hover:text-harx-700"
+                  >
+                    {chip}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -1445,6 +1476,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 <Wand2 className="h-5 w-5" />
               </button> */}
             </div>
+          </div>
           </div>
           </div>
         </div>
