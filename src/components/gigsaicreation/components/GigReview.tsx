@@ -297,7 +297,13 @@ export function GigReview({
       } else if (onPublishSuccess) {
         await onPublishSuccess();
       } else {
-        window.location.href = "/app11";
+        // Fallback without full page refresh: switch to onboarding tab
+        // and let listeners decide how to refresh progress/state.
+        localStorage.setItem('activeTab', 'company-onboarding');
+        window.dispatchEvent(
+          new CustomEvent('tabChange', { detail: { tab: 'company-onboarding' } })
+        );
+        window.dispatchEvent(new CustomEvent('refreshOnboardingProgress'));
       }
 
     } catch (error) {
