@@ -18,6 +18,7 @@ import {
   Edit2,
   Check,
   ArrowRight,
+  ArrowLeft,
   Upload,
 } from "lucide-react";
 import type { CompanyProfile as CompanyProfileType } from "./api/openai";
@@ -274,6 +275,14 @@ export function CompanyProfile({ profile: initialProfile, onClose }: Props) {
 
   return (
     <div className="w-full h-full bg-white rounded-3xl shadow-2xl border border-harx-100 overflow-hidden flex relative min-h-[800px] animate-fade-in">
+      <button
+        onClick={onClose}
+        className="absolute left-6 top-6 z-20 inline-flex items-center gap-2 rounded-xl border border-harx-100 bg-white/95 px-3 py-2 text-xs font-black uppercase tracking-wider text-harx-600 shadow-sm transition-all hover:bg-white hover:border-harx-200"
+      >
+        <ArrowLeft size={14} />
+        Back to onboarding
+      </button>
+
       <div className="w-80 flex-shrink-0 bg-gradient-to-b from-gray-50 to-white border-r border-gray-200 overflow-y-auto">
         <div className="p-6 space-y-8">
           {hasContactInfo && (
