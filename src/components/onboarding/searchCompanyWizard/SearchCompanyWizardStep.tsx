@@ -1,20 +1,68 @@
 import React, { useState } from "react";
+import { useEffect } from "react";
+import axios from "axios";
+import Cookies from "js-cookie";
 import { Search } from "lucide-react";
 import { googleApi, type GoogleSearchResult } from "./api/google";
 import { generateCompanyProfile, type CompanyProfileData } from "./api/openai";
 import { CompanyLogo } from "./CompanyLogo";
 import { CompanyProfile } from "./CompanyProfile";
+import ExistingCompanyProfile from "../CompanyProfile";
 
 interface Props {
   onBack?: () => void;
+  companyId?: string | null;
 }
 
-export default function SearchCompanyWizardStep({ onBack }: Props) {
+export default function SearchCompanyWizardStep({ onBack, companyId }: Props) {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<GoogleSearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<CompanyProfileData | null>(null);
+  const [checkingExisting, setCheckingExisting] = useState(true);
+  const [existingCompanyId, setExistingCompanyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkExistingCompany = async () => {
+      const fallbackCompanyId =
+        companyId || Cookies.get("companyId") || localStorage.getItem("companyId");
+
+      if (!fallbackCompanyId) {
+        setExistingCompanyId(null);
+        setCheckingExisting(false);
+        return;
+      }
+
+      try {
+        const apiBase =
+          import.meta.env.VITE_COMPANY_API_URL ||
+          "https://v25searchcompanywizardbackend-production.up.railway.app/api";
+        await axios.get(`${apiBase}/companies/${fallbackCompanyId}/details`);
+        setExistingCompanyId(fallbackCompanyId);
+      } catch {
+        setExistingCompanyId(null);
+      } finally {
+        setCheckingExisting(false);
+      }
+    };
+
+    checkExistingCompany();
+  }, [companyId]);
+
+  if (checkingExisting) {
+    return (
+      <div className="mx-auto max-w-5xl p-6">
+        <div className="rounded-2xl border border-harx-100 bg-white p-6 text-sm text-gray-500">
+          Loading company profile...
+        </div>
+      </div>
+    );
+  }
+
+  if (existingCompanyId) {
+    return <ExistingCompanyProfile companyId={existingCompanyId} />;
+  }
 
   const handleSearch = async () => {
     if (!query.trim()) return;
