@@ -17,7 +17,7 @@ import {
   Rocket,
 } from "lucide-react";
 import TelephonySetup from "./TelephonySetup";
-import CompanyProfile from "./onboarding/CompanyProfile";
+import SearchCompanyWizardStep from "./onboarding/searchCompanyWizard/SearchCompanyWizardStep";
 import KYCVerification from "./onboarding/KYCVerification";
 import SubscriptionPlan from "./onboarding/SubscriptionPlan";
 import CallScript from "./onboarding/CallScript";
@@ -73,7 +73,7 @@ const phases: Phase[] = [
         description:
           "Legal and commercial details, key contacts, terms agreement",
         status: "completed",
-        component: CompanyProfile,
+        component: SearchCompanyWizardStep,
       },
       {
         id: 2,
