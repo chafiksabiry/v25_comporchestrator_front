@@ -714,6 +714,28 @@ const CompanyOnboarding = () => {
     };
   }, [companyId, loadCompanyProgress]);
 
+  // Allow children (e.g. Gig publish flow) to request a safe progress refresh
+  // without reloading the full app.
+  useEffect(() => {
+    const handleRefreshOnboardingProgress = async () => {
+      if (!companyId) return;
+      console.log("🔄 refreshOnboardingProgress event received");
+      await loadCompanyProgress();
+    };
+
+    window.addEventListener(
+      "refreshOnboardingProgress",
+      handleRefreshOnboardingProgress as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "refreshOnboardingProgress",
+        handleRefreshOnboardingProgress as EventListener
+      );
+    };
+  }, [companyId, loadCompanyProgress]);
+
 
   // Dispatch step guide to sidebar
   useEffect(() => {
