@@ -391,92 +391,6 @@ const CompanyOnboarding = () => {
     fetchCompanyId();
   }, [userId]);
 
-
-
-  // Add listener for step completion messages from child components
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === "STEP_COMPLETED") {
-        console.log("Received step completion message:", event.data);
-        const { stepId } = event.data;
-
-        // Update local state
-        setCompletedSteps((prev: number[]) => {
-          if (!prev.includes(stepId)) {
-            return [...prev, stepId];
-          }
-          return prev;
-        });
-
-        // Refresh onboarding progress
-        loadCompanyProgress();
-
-        // Show success message
-        console.log(`✅ Step ${stepId} completed successfully`);
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-
-    return () => {
-      window.removeEventListener("message", handleMessage);
-    };
-  }, [loadCompanyProgress]);
-
-  // Add listener for custom step completion events from child components
-  useEffect(() => {
-    const handleStepCompleted = (event: CustomEvent) => {
-      const { stepId, phaseId, status, completedSteps } = event.detail;
-      console.log('🎯 Step completion event received:', { stepId, phaseId, status, completedSteps });
-
-      // Mettre à jour l'état local des étapes complétées
-      if (completedSteps && Array.isArray(completedSteps)) {
-        setCompletedSteps(completedSteps);
-
-        // Mettre à jour le localStorage
-        const currentProgress = {
-          currentPhase: phaseId,
-          completedSteps: completedSteps,
-          lastUpdated: new Date().toISOString()
-        };
-        localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
-
-        console.log('💾 Local state updated from step completion event');
-
-        // Force reload onboarding progress to get fresh data from API
-        setTimeout(() => {
-          console.log('🔄 Reloading onboarding progress after step completion');
-          loadCompanyProgress();
-        }, 500);
-      }
-    };
-
-    // Add listener for contacts upload completion
-    const handleContactsUploadCompleted = () => {
-      console.log('📞 Contacts upload completed - refreshing onboarding state');
-      // Close UploadContacts and refresh progress
-      setShowUploadContacts(false);
-      // Clear manual close flag to allow future auto-restoration if needed
-      sessionStorage.removeItem("uploadContactsManuallyClosed");
-      // Immediately check for leads and auto-complete step 5
-      checkCompanyLeads();
-      // Also reload progress after a short delay
-      setTimeout(() => {
-        loadCompanyProgress();
-      }, 1000);
-    };
-
-    // Ajouter l'écouteur d'événement
-    window.addEventListener('stepCompleted', handleStepCompleted as EventListener);
-    window.addEventListener('contactsUploadCompleted', handleContactsUploadCompleted);
-
-    // Nettoyer l'écouteur d'événement
-    return () => {
-      window.removeEventListener('stepCompleted', handleStepCompleted as EventListener);
-      window.removeEventListener('contactsUploadCompleted', handleContactsUploadCompleted);
-    };
-  }, [loadCompanyProgress, checkCompanyLeads]);
-
   // Recharger les données périodiquement pour détecter les changements
   // Désactivé car cause trop de rafraîchissements
   // useEffect(() => {
@@ -709,6 +623,74 @@ const CompanyOnboarding = () => {
       await loadCompanyProgress();
     }
   }, [loadCompanyProgress]);
+
+  // postMessage + CustomEvent listeners (deps reference loadCompanyProgress; must appear after its useCallback)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === "STEP_COMPLETED") {
+        console.log("Received step completion message:", event.data);
+        const { stepId } = event.data;
+
+        setCompletedSteps((prev: number[]) => {
+          if (!prev.includes(stepId)) {
+            return [...prev, stepId];
+          }
+          return prev;
+        });
+
+        loadCompanyProgress();
+        console.log("Step", stepId, "completed successfully");
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, [loadCompanyProgress]);
+
+  useEffect(() => {
+    const handleStepCompleted = (event: CustomEvent) => {
+      const { stepId, phaseId, status, completedSteps } = event.detail;
+      console.log("Step completion event received:", { stepId, phaseId, status, completedSteps });
+
+      if (completedSteps && Array.isArray(completedSteps)) {
+        setCompletedSteps(completedSteps);
+
+        const currentProgress = {
+          currentPhase: phaseId,
+          completedSteps: completedSteps,
+          lastUpdated: new Date().toISOString()
+        };
+        localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
+
+        console.log("Local state updated from step completion event");
+
+        setTimeout(() => {
+          console.log("Reloading onboarding progress after step completion");
+          loadCompanyProgress();
+        }, 500);
+      }
+    };
+
+    const handleContactsUploadCompleted = () => {
+      console.log("Contacts upload completed - refreshing onboarding state");
+      setShowUploadContacts(false);
+      sessionStorage.removeItem("uploadContactsManuallyClosed");
+      checkCompanyLeads();
+      setTimeout(() => {
+        loadCompanyProgress();
+      }, 1000);
+    };
+
+    window.addEventListener('stepCompleted', handleStepCompleted as EventListener);
+    window.addEventListener('contactsUploadCompleted', handleContactsUploadCompleted);
+
+    return () => {
+      window.removeEventListener('stepCompleted', handleStepCompleted as EventListener);
+      window.removeEventListener('contactsUploadCompleted', handleContactsUploadCompleted);
+    };
+  }, [loadCompanyProgress, checkCompanyLeads]);
 
   // After Stripe redirect, subscription row may appear slightly after the first GET; re-sync progress.
   useEffect(() => {
@@ -1638,4 +1620,5 @@ const CompanyOnboarding = () => {
 };
 
 export default CompanyOnboarding;
+
 
