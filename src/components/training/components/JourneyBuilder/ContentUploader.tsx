@@ -1020,6 +1020,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   function renderSourcesUploadUI() {
     const rep = repOnboardingLayout;
     const displayName = String(company?.name || 'QARA EL HOUCINE').toUpperCase();
+    const hasStartedChat = chatMessages.some((msg) => msg.role === 'user');
     const appendChatMessage = (role: 'user' | 'assistant', text: string) => {
       setChatMessages((prev) => [
         ...prev,
@@ -1050,13 +1051,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
     };
 
     return (
-    <div className={rep ? 'flex w-full min-w-0 flex-col bg-[#fcfcf8]' : 'min-h-[92vh] bg-[#fcfcf8] p-2'}>
+    <div className={rep ? 'flex w-full min-w-0 flex-col bg-harx-50/30' : 'min-h-[92vh] bg-harx-50/30 p-2'}>
       <div className={rep ? 'mx-auto flex w-full max-w-5xl flex-col px-4 py-6 md:px-6' : 'mx-auto w-full max-w-[1400px]'}>
         <div
           className={
             rep
               ? 'flex w-full flex-col'
-              : 'w-full flex-1 rounded-3xl border border-[#ece8dc] bg-[#fcfcf8] p-2 md:p-3'
+              : 'w-full flex-1 rounded-3xl border border-harx-100 bg-harx-50/20 p-2 md:p-3'
           }
         >
           <div className={rep ? 'flex min-h-[72vh] w-full flex-col' : 'grid min-h-[88vh] gap-3 lg:grid-cols-[265px_minmax(0,1fr)]'}>
@@ -1123,58 +1124,48 @@ export default function ContentUploader(props: ContentUploaderProps) {
               </div>
             </aside>
           )}
-          <div className={rep ? 'flex w-full flex-col rounded-2xl border border-[#ebe9df] bg-[#fcfcf8] px-4 py-6 md:px-8 md:py-8' : 'rounded-2xl border border-[#ebe9df] bg-[#fcfcf8] px-4 py-6 md:px-8 md:py-8'}>
+          <div className={rep ? 'flex w-full flex-col rounded-2xl border border-harx-100 bg-harx-50/20 px-4 py-6 md:px-8 md:py-8' : 'rounded-2xl border border-harx-100 bg-harx-50/20 px-4 py-6 md:px-8 md:py-8'}>
           {/* Header */}
-          <div className={rep ? 'mb-10 shrink-0 px-1 text-center' : 'mb-10 text-center'}>
-            {!rep && (
+          {!hasStartedChat && (
+            <div className={rep ? 'mb-10 shrink-0 px-1 text-center' : 'mb-10 text-center'}>
               <div className="mb-8 flex items-center justify-center gap-2">
-                <button type="button" className="rounded-md border border-[#e4dece] bg-[#f5f2e8] px-2.5 py-1 text-xs font-medium text-[#565146]">Forfait Free</button>
-                <button type="button" className="rounded-md border border-[#e4dece] bg-[#fcfcf8] px-2.5 py-1 text-xs font-medium text-[#565146]">Mettre a niveau</button>
+                <button type="button" className="rounded-md border border-harx-200 bg-harx-100/70 px-2.5 py-1 text-xs font-medium text-harx-700">Forfait Free</button>
+                <button type="button" className="rounded-md border border-harx-200 bg-white px-2.5 py-1 text-xs font-medium text-harx-700">Mettre a niveau</button>
               </div>
-            )}
-            {rep && (
-              <div className="mb-8 flex items-center justify-center gap-2">
-                <button type="button" className="rounded-md border border-[#e4dece] bg-[#f5f2e8] px-2.5 py-1 text-xs font-medium text-[#565146]">Forfait Free</button>
-                <button type="button" className="rounded-md border border-[#e4dece] bg-[#fcfcf8] px-2.5 py-1 text-xs font-medium text-[#565146]">Mettre a niveau</button>
-              </div>
-            )}
-            <h2
-              className={
-                rep
-                  ? 'mb-2 text-5xl font-serif font-semibold tracking-tight text-[#2b2a26]'
-                  : 'mb-2 text-6xl font-serif font-semibold tracking-tight text-[#2b2a26]'
-              }
-            >
-              {`Bonsoir, ${displayName}.`}
-            </h2>
-            <p className={rep ? 'mx-auto max-w-xl text-[11px] leading-snug text-gray-500' : 'mx-auto max-w-3xl text-sm font-medium text-[#6b665b]'}>
-              Comment puis-je vous aider ?
-            </p>
-          </div>
+              <h2
+                className={
+                  rep
+                    ? 'mb-2 text-5xl font-serif font-semibold tracking-tight text-harx-700'
+                    : 'mb-2 text-6xl font-serif font-semibold tracking-tight text-harx-700'
+                }
+              >
+                {`Bonsoir, ${displayName}.`}
+              </h2>
+              <p className={rep ? 'mx-auto max-w-xl text-[11px] leading-snug text-harx-600/80' : 'mx-auto max-w-3xl text-sm font-medium text-harx-600/80'}>
+                Comment puis-je vous aider ?
+              </p>
+            </div>
+          )}
 
           <div className={rep ? 'mb-2' : 'mx-auto mb-4 w-full max-w-3xl'}>
-            <div className={rep ? 'rounded-3xl border border-[#e5e1d6] bg-white p-4 shadow-sm' : 'rounded-3xl border border-[#e5e1d6] bg-white p-4 shadow-sm'}>
-              <div className={rep ? 'mb-3 hidden text-sm font-semibold text-gray-900' : 'mb-3 hidden text-sm font-semibold text-gray-900'}>
-                <span className="inline-flex items-center gap-1.5 text-[#5c574a]">
-                  <MessageSquareText className="h-4 w-4 text-harx-600" />
-                  {rep ? 'Chat formation interactif' : 'Assistant formation'}
-                </span>
-              </div>
-              <div className={rep ? 'mb-0 hidden max-h-72 space-y-2 overflow-y-auto rounded-2xl bg-[#fcfcf8] p-3' : 'mb-0 hidden max-h-72 space-y-2 overflow-y-auto rounded-2xl bg-[#fcfcf8] p-3'}>
-                {chatMessages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`w-fit max-w-[90%] rounded-2xl px-3 py-2 text-sm ${
-                      msg.role === 'assistant'
-                        ? 'border border-[#e6e2d7] bg-[#fffef9] text-[#3f3a31]'
-                        : 'ml-auto bg-[#f36f8f] text-white'
-                    }`}
-                  >
-                    {msg.text}
-                  </div>
-                ))}
-              </div>
-              <div className="rounded-[28px] border border-[#ddd8ca] bg-white px-5 py-4">
+            <div className={rep ? 'rounded-3xl border border-harx-100 bg-white p-4 shadow-sm' : 'rounded-3xl border border-harx-100 bg-white p-4 shadow-sm'}>
+              {hasStartedChat && (
+                <div className="mb-4 max-h-[46vh] min-h-[34vh] space-y-4 overflow-y-auto rounded-2xl bg-harx-50/30 p-4">
+                  {chatMessages.map((msg) => (
+                    <div key={msg.id} className={msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
+                      {msg.role === 'assistant' ? (
+                        <div className="max-w-[85%] text-[15px] leading-7 text-harx-800">{msg.text}</div>
+                      ) : (
+                        <div className="max-w-[60%] rounded-xl border border-harx-200 bg-white px-3 py-2 text-sm font-medium text-harx-700 shadow-sm">
+                          {msg.text}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="rounded-[28px] border border-harx-200 bg-white px-5 py-4">
                 <input
                   type="text"
                   value={chatInput}
@@ -1182,29 +1173,32 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleChatSubmit();
                   }}
-                  placeholder="Comment puis-je vous aider ?"
-                  className="mb-3 w-full bg-transparent text-[15px] text-[#3f3a31] outline-none placeholder:text-[#7a7568]"
+                  placeholder={hasStartedChat ? 'Repondre...' : 'Comment puis-je vous aider ?'}
+                  className="mb-3 w-full bg-transparent text-[15px] text-harx-800 outline-none placeholder:text-harx-600/70"
                 />
                 <div className="flex items-center justify-between">
-                  <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#dfd9ca] text-[#5c574a]">+</button>
-                  <div className="inline-flex items-center gap-2 rounded-xl border border-[#dfd9ca] px-2.5 py-1.5 text-xs font-medium text-[#5c574a]">
+                  <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-harx-200 text-harx-700 hover:bg-harx-50">+</button>
+                  <div className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-harx-50/60 px-2.5 py-1.5 text-xs font-medium text-harx-700">
                     Sonnet 4.6
                     <span className="text-[10px]">▼</span>
                   </div>
                 </div>
               </div>
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                {['Code', 'Ecrire', 'Apprendre', 'Vie quotidienne', 'Choix de Claude'].map((chip) => (
-                  <button
-                    key={chip}
-                    type="button"
-                    onClick={() => setChatInput(chip)}
-                    className="rounded-xl border border-[#ddd8ca] bg-[#fcfcf8] px-3 py-1.5 text-xs font-semibold text-[#5f5a4f] hover:border-[#c9c2b0]"
-                  >
-                    {chip}
-                  </button>
-                ))}
-              </div>
+
+              {!hasStartedChat && (
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                  {['Code', 'Ecrire', 'Apprendre', 'Vie quotidienne', 'Choix de Claude'].map((chip) => (
+                    <button
+                      key={chip}
+                      type="button"
+                      onClick={() => setChatInput(chip)}
+                      className="rounded-xl border border-harx-200 bg-harx-50/40 px-3 py-1.5 text-xs font-semibold text-harx-700 hover:border-harx-300 hover:bg-harx-100/60"
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
