@@ -3,7 +3,7 @@ import { Search } from "lucide-react";
 import { googleApi, type GoogleSearchResult } from "./api/google";
 import { generateCompanyProfile, type CompanyProfileData } from "./api/openai";
 import { CompanyLogo } from "./CompanyLogo";
-import SearchWizardCompanyProfile from "./SearchWizardCompanyProfile";
+import { CompanyProfile } from "./CompanyProfile";
 
 interface Props {
   onBack?: () => void;
@@ -63,10 +63,12 @@ export default function SearchCompanyWizardStep({ onBack }: Props) {
 
   if (profile) {
     return (
-      <SearchWizardCompanyProfile
+      <CompanyProfile
         profile={profile}
-        onBack={() => setProfile(null)}
-        onDone={onBack}
+        onClose={() => {
+          setProfile(null);
+          onBack?.();
+        }}
       />
     );
   }

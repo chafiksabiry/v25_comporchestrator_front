@@ -3,7 +3,7 @@ import Cookies from "js-cookie";
 
 const API_URL = import.meta.env.VITE_COMPANY_API_URL;
 
-export interface CompanyProfileData {
+export interface CompanyProfile {
   userId: string;
   name: string;
   logo?: string;
@@ -43,7 +43,7 @@ export interface CompanyProfileData {
 export async function generateCompanyProfile(
   companyInfo: string,
   logoUrl?: string
-): Promise<CompanyProfileData> {
+): Promise<CompanyProfile> {
   const userId = Cookies.get("userId");
   if (!userId) {
     throw new Error("User ID not found in cookies");
@@ -59,5 +59,7 @@ export async function generateCompanyProfile(
     throw new Error(response.data?.message || "Failed to generate company profile");
   }
 
-  return response.data.data as CompanyProfileData;
+  return response.data.data as CompanyProfile;
 }
+
+export type CompanyProfileData = CompanyProfile;
