@@ -103,6 +103,15 @@ export interface PresentationGenerationContext {
   callRecordings?: CallRecordingRef[];
 }
 
+export interface TrainingGenerationPreferences {
+  selectedDuration?: string;
+  methodologyName?: string;
+  methodologyDescription?: string;
+  methodologyComponents?: string[];
+  trainingTitle?: string;
+  trainingDescription?: string;
+}
+
 export interface AiBaseResponse {
   success: boolean;
   error?: string;
@@ -407,13 +416,15 @@ export class AIService {
     analysis: DocumentAnalysis,
     industry: string = 'General',
     gig?: string,
-    uploadContext: UploadCurriculumContext[] = []
+    uploadContext: UploadCurriculumContext[] = [],
+    generationPreferences?: TrainingGenerationPreferences
   ): Promise<Curriculum> {
     const response = await ApiClient.post<Curriculum & AiBaseResponse>('/api/ai/generate-curriculum', {
       analysis,
       industry,
       gig,
-      uploadContext
+      uploadContext,
+      generationPreferences
     });
 
     // Check if response indicates failure

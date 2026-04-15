@@ -271,6 +271,8 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
             onBack={() => setCurrentStep(0)}
             company={company}
             gigId={selectedGigId}
+            journey={journey}
+            methodology={methodology}
             repOnboardingLayout={repOnboardingLayout}
           />
         );
