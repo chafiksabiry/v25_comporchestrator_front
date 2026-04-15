@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Send, Bot, User, MessageSquareText } from 'lucide-react';
+import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen } from 'lucide-react';
 import { ContentUpload } from '../../types/core';
 import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef } from '../../infrastructure/services/AIService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
@@ -23,12 +23,6 @@ interface ContentUploaderProps {
   ) => void;
   /** REP company onboarding: modules sidebar + slides only, no PPTX/fullscreen/continue CTA */
   repOnboardingLayout?: boolean;
-}
-
-interface PlanningChatMessage {
-  id: string;
-  role: 'assistant' | 'user';
-  content: string;
 }
 
 export default function ContentUploader(props: ContentUploaderProps) {
@@ -59,17 +53,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
   >([]);
   const [gigCallRecordings, setGigCallRecordings] = useState<CallRecordingRef[]>([]);
   const [isLoadingGigKbDocs, setIsLoadingGigKbDocs] = useState(false);
-  const [chatInput, setChatInput] = useState('');
-  const [isChatting, setIsChatting] = useState(false);
-  const [planValidated, setPlanValidated] = useState(false);
-  const [planningMessages, setPlanningMessages] = useState<PlanningChatMessage[]>([
+  const [chatMessages, setChatMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; text: string }>>([
     {
-      id: 'welcome',
+      id: `assistant-${Date.now()}`,
       role: 'assistant',
-      content:
-        'Hi! Let us build your training plan together. Tell me your target audience, desired outcomes, and preferred format. When the plan looks right, click "Validate plan" to unlock generation.',
+      text: 'Bonjour, je peux vous aider a construire votre formation. Ecrivez vos objectifs, public cible, duree ou contraintes.',
     },
   ]);
+  const [chatInput, setChatInput] = useState('');
 
   const getAnalyzedUploads = useCallback(
     () => uploads.filter((u) => u.status === 'analyzed' && !!u.aiAnalysis),
@@ -622,78 +613,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
   const handleOpenFullscreenPreview = () => setIsPreviewOpen(true);
 
-  const buildPlanningContext = useCallback((): string => {
-    const analyzedUploads = getAnalyzedUploads();
-    const analyzedSummary = analyzedUploads.map((upload) => {
-      const topics = upload.aiAnalysis?.keyTopics?.slice(0, 8)?.join(', ') || 'no key topics';
-      const objectives = upload.aiAnalysis?.learningObjectives?.slice(0, 5)?.join(' | ') || 'no objectives';
-      return `- ${upload.name}: topics [${topics}], objectives [${objectives}]`;
-    });
-
-    const kbContext = gigId && useKbForPresentation
-      ? `Knowledge base enabled. KB docs: ${gigKbDocuments.length}, call recordings: ${gigCallRecordings.length}.`
-      : 'Knowledge base grounding disabled.';
-
-    return [
-      'You are helping create a training plan before generation.',
-      'Ask concise follow-up questions when information is missing.',
-      'Provide a structured plan (title, audience, objectives, modules, evaluation) when possible.',
-      `Gig id: ${gigId || 'none'}.`,
-      kbContext,
-      analyzedSummary.length > 0 ? `Analyzed sources:\n${analyzedSummary.join('\n')}` : 'No analyzed uploads yet.',
-    ].join('\n');
-  }, [getAnalyzedUploads, gigId, useKbForPresentation, gigKbDocuments.length, gigCallRecordings.length]);
-
-  const handleSendPlanningMessage = useCallback(async () => {
-    const trimmed = chatInput.trim();
-    if (!trimmed || isChatting) return;
-
-    const userMessage: PlanningChatMessage = {
-      id: `${Date.now()}-u`,
-      role: 'user',
-      content: trimmed,
-    };
-
-    const nextMessages = [...planningMessages, userMessage];
-    setPlanningMessages(nextMessages);
-    setChatInput('');
-    setPlanValidated(false);
-    setIsChatting(true);
-
-    try {
-      const conversationContext = nextMessages
-        .slice(-12)
-        .map((msg) => `${msg.role === 'assistant' ? 'Assistant' : 'User'}: ${msg.content}`)
-        .join('\n');
-
-      const aiReply = await AIService.chat(
-        trimmed,
-        `${buildPlanningContext()}\n\nConversation:\n${conversationContext}`
-      );
-
-      setPlanningMessages((prev) => [
-        ...prev,
-        {
-          id: `${Date.now()}-a`,
-          role: 'assistant',
-          content: aiReply || 'I could not generate a plan response. Please try again.',
-        },
-      ]);
-    } catch (error: any) {
-      console.error('[ContentUploader] Planning chat failed:', error);
-      setPlanningMessages((prev) => [
-        ...prev,
-        {
-          id: `${Date.now()}-a-error`,
-          role: 'assistant',
-          content: `I could not answer right now (${error?.message || 'unknown error'}). Please try again.`,
-        },
-      ]);
-    } finally {
-      setIsChatting(false);
-    }
-  }, [chatInput, isChatting, planningMessages, buildPlanningContext]);
-
   /**
    * Helper to fetch curriculum from Gig KB if no uploads are present
    */
@@ -724,7 +643,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const canProceed = (uploads.length > 0 && uploads.every(u => u.status === 'analyzed')) || (uploads.length === 0 && !!gigId);
   const totalAnalyzed = uploads.filter(u => u.status === 'analyzed').length;
   const isGigOnly = uploads.length === 0 && !!gigId;
-  const canGenerateAfterValidation = canProceed && planValidated;
 
   if (isPreviewOpen && generatedPresentation && !repOnboardingLayout) {
     return (
@@ -1016,84 +934,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 ))}
               </div>
 
-              {isGigOnly && (
-                <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-rose-100 bg-rose-50/50 px-4 py-4">
-                  <label className="flex cursor-pointer items-start gap-3">
-                    <input
-                      type="checkbox"
-                      className="mt-1 h-4 w-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500"
-                      checked={useKbForPresentation}
-                      onChange={(e) => setUseKbForPresentation(e.target.checked)}
-                    />
-                    <span className="text-sm font-medium text-gray-800">
-                      Use knowledge base to generate the presentation
-                      <span className="mt-1 block text-xs font-normal text-gray-600">
-                        The presentation will be grounded in this job’s knowledge base documents.
-                      </span>
-                    </span>
-                  </label>
-                  {useKbForPresentation && (
-                    <div className="mt-4 border-t border-rose-100/80 pt-4">
-                      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-rose-700">Documents linked to this job</p>
-                      {isLoadingGigKbDocs ? (
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Loading…
-                        </div>
-                      ) : gigKbDocuments.length === 0 && gigCallRecordings.length === 0 ? (
-                        <p className="text-sm text-amber-800">
-                          No KB documents or call recordings for this job — generation will rely mainly on the job profile.
-                        </p>
-                      ) : (
-                        <div className="space-y-3 text-sm">
-                          {gigKbDocuments.length > 0 && (
-                            <ul className="space-y-2">
-                              {gigKbDocuments.map((doc) => (
-                                <li
-                                  key={doc._id}
-                                  className="flex items-start gap-2 rounded-lg bg-white/90 px-3 py-2 shadow-sm"
-                                >
-                                  <FileText className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
-                                  <div className="min-w-0">
-                                    <div className="font-medium text-gray-900">{doc.name}</div>
-                                    {doc.summary ? (
-                                      <p className="line-clamp-2 text-xs text-gray-600">{doc.summary}</p>
-                                    ) : null}
-                                  </div>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-
-                          {gigCallRecordings.length > 0 && (
-                            <>
-                              <p className="text-xs font-bold uppercase tracking-wide text-rose-700">Call recordings linked to this job</p>
-                              <ul className="space-y-2">
-                                {gigCallRecordings.map((call) => (
-                                  <li
-                                    key={call._id}
-                                    className="flex items-start gap-2 rounded-lg bg-white/90 px-3 py-2 shadow-sm"
-                                  >
-                                    <Music className="mt-0.5 h-4 w-4 shrink-0 text-fuchsia-600" />
-                                    <div className="min-w-0">
-                                      <div className="font-medium text-gray-900">{call._id}</div>
-                                      {call.summaryText ? (
-                                        <p className="line-clamp-2 text-xs text-gray-600">{call.summaryText}</p>
-                                      ) : (
-                                        <p className="text-xs text-gray-500">No summary available</p>
-                                      )}
-                                    </div>
-                                  </li>
-                                ))}
-                              </ul>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+              {isGigOnly && null}
 
               <div className="mt-10 flex flex-col md:flex-row justify-center gap-4">
                 <button
@@ -1149,6 +990,34 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
   function renderSourcesUploadUI() {
     const rep = repOnboardingLayout;
+    const appendChatMessage = (role: 'user' | 'assistant', text: string) => {
+      setChatMessages((prev) => [
+        ...prev,
+        { id: `${role}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, role, text },
+      ]);
+    };
+
+    const handleChatSubmit = () => {
+      const message = chatInput.trim();
+      if (!message) return;
+      appendChatMessage('user', message);
+      setChatInput('');
+
+      const analyzedCount = uploads.filter((u) => u.status === 'analyzed').length;
+      if (canProceed) {
+        appendChatMessage(
+          'assistant',
+          analyzedCount > 0
+            ? `Parfait. J'ai bien compris votre besoin. Vous pouvez valider pour generer la formation a partir de ${analyzedCount} source(s).`
+            : 'Parfait. J ai bien compris votre besoin. Vous pouvez valider pour generer la formation a partir du contexte gig.'
+        );
+      } else {
+        appendChatMessage(
+          'assistant',
+          'Je suis pret a generer des que vous avez au moins une source analysee ou un gig selectionne. Continuez le chat librement.'
+        );
+      }
+    };
 
     return (
     <div className={rep ? 'flex w-full min-w-0 flex-col' : 'min-h-full p-2 md:p-4'}>
@@ -1177,114 +1046,53 @@ export default function ContentUploader(props: ContentUploaderProps) {
             </p>
           </div>
 
-          {/* Upload Area */}
           <div className={rep ? 'mb-2 shrink-0' : 'mb-4'}>
-            <div
-              className={`border-2 border-dashed text-center transition-all duration-300 ${rep ? 'rounded-xl p-4' : 'rounded-2xl p-8'} ${dragOver
-                ? rep
-                  ? 'scale-[1.01] border-harx-400 bg-harx-50/50'
-                  : 'border-purple-500 bg-purple-50 scale-105'
-                : rep
-                  ? 'border-harx-200 hover:border-harx-300 hover:bg-harx-50/40'
-                  : 'border-gray-200 hover:border-purple-400 hover:bg-white/50'
-                }`}
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-            >
-              <div className={rep ? 'mb-2 flex justify-center' : 'mb-4 flex justify-center'}>
-                <div className="relative">
-                  <Upload className={rep ? 'h-9 w-9 text-harx-300' : 'h-12 w-12 text-gray-400'} />
-                  <Sparkles className={`absolute animate-pulse ${rep ? '-right-1 -top-1 h-4 w-4 text-harx-500' : '-right-2 -top-2 h-5 w-5 text-purple-500'}`} />
-                </div>
+            <div className={rep ? 'rounded-xl border border-harx-100 bg-white p-3' : 'rounded-2xl border border-gray-200 bg-white p-4'}>
+              <div className={rep ? 'mb-2 text-xs font-bold text-gray-900' : 'mb-3 text-sm font-semibold text-gray-900'}>
+                Chat formation interactive
               </div>
-
-              <h3 className={rep ? 'mb-1 text-sm font-bold text-gray-900' : 'mb-2 text-xl font-semibold text-gray-900'}>
-                Drop your files here
-              </h3>
-              <p className={rep ? 'mb-3 text-[11px] text-gray-500' : 'mb-4 text-base text-gray-600'}>
-                or click to browse and select files from your computer
-              </p>
-
-              <input
-                type="file"
-                multiple
-                className="hidden"
-                id="file-upload"
-                accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.mp4,.avi,.mov,.wmv,.webm,.mp3,.wav,.aac,.m4a,.jpg,.jpeg,.png,.gif,.webp"
-                onChange={(e) => e.target.files && handleFileUpload(Array.from(e.target.files))}
-              />
-              <label
-                htmlFor="file-upload"
-                className={
-                  rep
-                    ? 'inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gradient-harx px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:brightness-105'
-                    : 'inline-flex items-center px-8 py-4 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-xl hover:from-rose-600 hover:to-purple-700 cursor-pointer transition-all shadow-lg hover:-translate-y-0.5 font-medium text-lg'
-                }
-              >
-                <Upload className={rep ? 'h-4 w-4' : 'mr-3 h-5 w-5'} />
-                Choose files
-              </label>
-
-              <div className={rep ? 'mt-3 flex flex-wrap justify-center gap-1.5' : 'mt-6 flex flex-wrap justify-center gap-2'}>
-                {(['PDF', 'Word', 'PowerPoint', 'Videos', 'Audio', 'Images'] as const).map((label) => (
-                  <span
-                    key={label}
-                    className={
-                      rep
-                        ? 'rounded-full border border-harx-100 bg-harx-50/90 px-2 py-0.5 text-[10px] font-semibold text-harx-700'
-                        : 'rounded-full border border-purple-100 bg-purple-50 px-3 py-1 text-sm font-medium text-purple-600'
-                    }
+              <div className={rep ? 'mb-3 max-h-56 space-y-2 overflow-y-auto rounded-lg bg-slate-50 p-2' : 'mb-3 max-h-72 space-y-2 overflow-y-auto rounded-xl bg-slate-50 p-3'}>
+                {chatMessages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`w-fit max-w-[90%] rounded-2xl px-3 py-2 text-sm ${
+                      msg.role === 'assistant'
+                        ? 'bg-white text-gray-800 border border-gray-200'
+                        : 'ml-auto bg-gradient-to-r from-rose-500 to-purple-600 text-white'
+                    }`}
                   >
-                    {label}
-                  </span>
+                    {msg.text}
+                  </div>
                 ))}
               </div>
-            </div>
-          </div>
-
-          {/* URL Input Section */}
-          <div className={rep ? 'mb-2 border-t border-harx-100/80 pt-3' : 'mb-4 border-t border-gray-100/50 pt-6'}>
-            <div className={rep ? 'mb-1.5 flex items-center gap-1.5' : 'mb-3 flex items-center'}>
-              <Sparkles className={rep ? 'h-3.5 w-3.5 text-harx-500' : 'mr-2 h-5 w-5 text-purple-500'} />
-              <h3 className={rep ? 'text-xs font-extrabold text-gray-900' : 'text-lg font-bold text-gray-800'}>Or add content from URL</h3>
-            </div>
-            <p className={rep ? 'mb-2 text-[10px] text-gray-500' : 'mb-3 text-sm font-medium text-gray-500'}>
-              YouTube or web page URL — we analyze and extract content
-            </p>
-            <div className={rep ? 'flex flex-col gap-2 sm:flex-row' : 'flex gap-2'}>
-              <input
-                type="url"
-                value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleUrlSubmit()}
-                placeholder="https://youtube.com/... or https://..."
-                className={
-                  rep
-                    ? 'min-w-0 flex-1 rounded-lg border border-harx-100 px-3 py-2 text-xs text-gray-800 outline-none transition-all focus:border-harx-300 focus:ring-2 focus:ring-harx-500/15'
-                    : 'flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 shadow-sm outline-none transition-all focus:border-purple-500 focus:ring-2 focus:ring-purple-500'
-                }
-                disabled={isProcessing}
-              />
-              <button
-                onClick={handleUrlSubmit}
-                disabled={!urlInput.trim() || isProcessing}
-                className={
-                  rep
-                    ? 'inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gradient-harx px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50'
-                    : 'rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 px-6 py-3 font-medium text-white shadow-lg transition-all hover:-translate-y-0.5 hover:from-rose-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-50'
-                }
-              >
-                <Zap className={rep ? 'h-3.5 w-3.5' : 'mr-2 inline h-5 w-5'} />
-                Analyze URL
-              </button>
-            </div>
-            <div className={rep ? 'mt-2 flex flex-wrap items-center gap-1 text-[10px] text-gray-400' : 'mt-3 flex gap-2 text-sm font-medium text-gray-400'}>
-              <Video className={rep ? 'h-3 w-3 text-harx-400' : 'h-4 w-4 text-purple-400'} />
-              <span>YouTube</span>
-              <span className="mx-1">·</span>
-              <FileText className={rep ? 'h-3 w-3 text-harx-400' : 'h-4 w-4 text-purple-400'} />
-              <span>Web pages</span>
+              <div className={rep ? 'flex flex-col gap-2 sm:flex-row' : 'flex flex-col gap-2 sm:flex-row'}>
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleChatSubmit();
+                  }}
+                  placeholder="Decrivez la formation que vous voulez..."
+                  className={
+                    rep
+                      ? 'min-w-0 flex-1 rounded-lg border border-harx-100 px-3 py-2 text-xs text-gray-800 outline-none focus:border-harx-300'
+                      : 'min-w-0 flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-800 outline-none focus:border-purple-400'
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={handleChatSubmit}
+                  disabled={!chatInput.trim()}
+                  className={
+                    rep
+                      ? 'rounded-lg bg-gradient-harx px-4 py-2 text-xs font-bold text-white disabled:opacity-50'
+                      : 'rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50'
+                  }
+                >
+                  Envoyer
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1500,179 +1308,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             </div>
           )} */}
 
-          {isGigOnly && (
-            <div
-              className={
-                rep
-                  ? 'mt-3 rounded-xl border border-harx-100 bg-harx-50/50 px-3 py-2.5'
-                  : 'mt-6 rounded-2xl border border-rose-100 bg-rose-50/40 px-4 py-4'
-              }
-            >
-              <label className={rep ? 'flex cursor-pointer items-start gap-2' : 'flex cursor-pointer items-start gap-3'}>
-                <input
-                  type="checkbox"
-                  className={
-                    rep
-                      ? 'mt-0.5 h-3.5 w-3.5 rounded border-harx-300 text-harx-600 focus:ring-harx-500'
-                      : 'mt-1 h-4 w-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500'
-                  }
-                  checked={useKbForPresentation}
-                  onChange={(e) => setUseKbForPresentation(e.target.checked)}
-                />
-                <span className={rep ? 'text-xs font-semibold text-gray-800' : 'text-sm font-medium text-gray-800'}>
-                  Use knowledge base to generate the presentation
-                  <span className={rep ? 'mt-0.5 block text-[10px] font-normal text-gray-600' : 'mt-1 block text-xs font-normal text-gray-600'}>
-                    The presentation will be grounded in this job’s KB documents when you click Generate.
-                  </span>
-                </span>
-              </label>
-              {useKbForPresentation && (
-                <div className={rep ? 'mt-2 border-t border-harx-100/80 pt-2' : 'mt-4 border-t border-rose-100/80 pt-4'}>
-                  <p className={rep ? 'mb-1 text-[10px] font-bold uppercase tracking-wide text-harx-600' : 'mb-2 text-xs font-bold uppercase tracking-wide text-rose-700'}>
-                    Documents linked to this job
-                  </p>
-                  {isLoadingGigKbDocs ? (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Loading…
-                    </div>
-                  ) : gigKbDocuments.length === 0 && gigCallRecordings.length === 0 ? (
-                    <p className="text-sm text-amber-800">
-                      No KB documents or call recordings for this job — generation will rely mainly on the job profile.
-                    </p>
-                  ) : (
-                    <div className="space-y-3 text-sm">
-                      {gigKbDocuments.length > 0 && (
-                        <ul className="space-y-2">
-                          {gigKbDocuments.map((doc) => (
-                            <li
-                              key={doc._id}
-                              className="flex items-start gap-2 rounded-lg bg-white/90 px-3 py-2 shadow-sm"
-                            >
-                              <FileText className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
-                              <div className="min-w-0">
-                                <div className="font-medium text-gray-900">{doc.name}</div>
-                                {doc.summary ? (
-                                  <p className="line-clamp-2 text-xs text-gray-600">{doc.summary}</p>
-                                ) : null}
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-
-                      {gigCallRecordings.length > 0 && (
-                        <>
-                          <p className={rep ? 'text-[10px] font-bold uppercase tracking-wide text-harx-600' : 'text-xs font-bold uppercase tracking-wide text-rose-700'}>
-                            Call recordings linked to this job
-                          </p>
-                          <ul className="space-y-2">
-                            {gigCallRecordings.map((call) => (
-                              <li
-                                key={call._id}
-                                className="flex items-start gap-2 rounded-lg bg-white/90 px-3 py-2 shadow-sm"
-                              >
-                                <Music className="mt-0.5 h-4 w-4 shrink-0 text-fuchsia-600" />
-                                <div className="min-w-0">
-                                  <div className="font-medium text-gray-900">{call._id}</div>
-                                  {call.summaryText ? (
-                                    <p className="line-clamp-2 text-xs text-gray-600">{call.summaryText}</p>
-                                  ) : (
-                                    <p className="text-xs text-gray-500">No summary available</p>
-                                  )}
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Interactive planning chat */}
-          <div
-            className={
-              rep
-                ? 'mt-3 rounded-xl border border-harx-100 bg-white p-3'
-                : 'mt-6 rounded-2xl border border-rose-100 bg-white/70 p-4'
-            }
-          >
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <MessageSquareText className={rep ? 'h-4 w-4 text-harx-600' : 'h-5 w-5 text-fuchsia-600'} />
-                <h4 className={rep ? 'text-xs font-extrabold text-gray-900' : 'text-sm font-extrabold text-gray-900'}>
-                  Interactive training planner
-                </h4>
-              </div>
-              <span
-                className={`rounded-full px-2 py-1 text-[10px] font-bold ${
-                  planValidated
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-amber-100 text-amber-700'
-                }`}
-              >
-                {planValidated ? 'Plan validated' : 'Validation required'}
-              </span>
-            </div>
-
-            <div className={rep ? 'max-h-44 space-y-2 overflow-y-auto pr-1' : 'max-h-56 space-y-2 overflow-y-auto pr-1'}>
-              {planningMessages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`rounded-xl border px-3 py-2 text-xs leading-relaxed ${
-                    msg.role === 'assistant'
-                      ? 'border-harx-100 bg-harx-50/60 text-gray-800'
-                      : 'border-fuchsia-100 bg-fuchsia-50/60 text-gray-800'
-                  }`}
-                >
-                  <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide">
-                    {msg.role === 'assistant' ? <Bot className="h-3.5 w-3.5 text-harx-600" /> : <User className="h-3.5 w-3.5 text-fuchsia-600" />}
-                    <span>{msg.role === 'assistant' ? 'Claude assistant' : 'You'}</span>
-                  </div>
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleSendPlanningMessage();
-                  }
-                }}
-                placeholder="Ask Claude to build your training plan..."
-                className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-800 outline-none transition-all focus:border-harx-300 focus:ring-2 focus:ring-harx-500/15"
-                disabled={isChatting}
-              />
-              <button
-                type="button"
-                onClick={handleSendPlanningMessage}
-                disabled={!chatInput.trim() || isChatting}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-harx-200 bg-white px-3 py-2 text-xs font-bold text-harx-700 hover:bg-harx-50 disabled:opacity-50"
-              >
-                {isChatting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                Send
-              </button>
-              <button
-                type="button"
-                onClick={() => setPlanValidated(true)}
-                disabled={planningMessages.length < 2 || isChatting}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
-              >
-                <CheckCircle className="h-4 w-4" />
-                Validate plan
-              </button>
-            </div>
-          </div>
+          {isGigOnly && null}
 
           {/* Navigation */}
           <div
@@ -1714,8 +1350,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
               <button
                 type="button"
-                onClick={handleGeneratePresentation}
-                disabled={!canGenerateAfterValidation || isProcessing}
+                onClick={handleGenerateCurriculum}
+                disabled={!canProceed || isProcessing}
                 className={
                   rep
                     ? 'inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-harx px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50'
@@ -1727,13 +1363,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 ) : (
                   <FileIcon className="h-5 w-5" />
                 )}
-                <span>{isGeneratingPresentation ? 'Generating…' : 'Generate presentation'}</span>
+                <span>{isGeneratingPresentation ? 'Generating…' : 'Valider et generer la formation'}</span>
               </button>
-              {!planValidated && (
-                <p className="text-center text-[10px] font-semibold text-amber-700 sm:ml-2 sm:text-left">
-                  Validate the AI plan in chat before generating the training.
-                </p>
-              )}
 
               {/* <button
                 onClick={() => onComplete(uploads, fileTrainingUrl)}

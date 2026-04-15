@@ -537,7 +537,7 @@ export default function RepTrainingJourneyWizard({
                   <Sparkles className="absolute -right-1 -top-1 h-6 w-6 animate-pulse text-sky-500" />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-slate-900">Drop your files here</h3>
+              <h3 className="text-xl font-semibold text-slate-900">Add your files</h3>
               <p className="mt-2 text-slate-600">or browse from your computer</p>
               <input
                 type="file"
