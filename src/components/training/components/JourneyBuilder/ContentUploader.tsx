@@ -1049,6 +1049,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
     const parseTrainingPlan = (rawText: string): {
       title?: string;
+      intro?: string;
       modules: Array<{ title: string; duration?: string; bullets: string[] }>;
     } => {
       const lines = String(rawText || '')
@@ -1064,6 +1065,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           .trim();
 
       const titleLine = lines.find((line) => /plan de formation/i.test(line));
+      const introLines: string[] = [];
       const modules: Array<{ title: string; duration?: string; bullets: string[] }> = [];
       let current: { title: string; duration?: string; bullets: string[] } | null = null;
 
@@ -1078,7 +1080,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
           };
           continue;
         }
-        if (!current) continue;
+        if (!current) {
+          if (
+            normalized &&
+            !/^plan de formation/i.test(normalized) &&
+            !/^module\s*\d+/i.test(normalized)
+          ) {
+            introLines.push(normalized);
+          }
+          continue;
+        }
 
         const durationMatch = normalized.match(/^dur[ée]e?\s*[:\-]\s*(.+)$/i);
         if (durationMatch) {
@@ -1094,6 +1105,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       if (current) modules.push(current);
       return {
         title: titleLine ? clean(titleLine) : undefined,
+        intro: introLines.slice(0, 2).join(' '),
         modules,
       };
     };
@@ -1265,53 +1277,59 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       {msg.role === 'assistant' ? (
                         <div className="max-w-[88%]">
                           <div className="max-w-none text-[#1f1d18]">
-                            <ReactMarkdown
-                              remarkPlugins={[remarkGfm]}
-                              components={{
-                                h1: ({ children }) => (
-                                  <h3 className="mb-3 mt-1 text-[28px] font-semibold tracking-tight text-[#13110d]">
-                                    {children}
-                                  </h3>
-                                ),
-                                h2: ({ children }) => (
-                                  <h4 className="mb-2 mt-3 text-[22px] font-semibold text-[#181611]">
-                                    {children}
-                                  </h4>
-                                ),
-                                h3: ({ children }) => (
-                                  <h5 className="mb-2 mt-2 text-[17px] font-semibold text-[#1f1d18]">
-                                    {children}
-                                  </h5>
-                                ),
-                                p: ({ children }) => (
-                                  <p className="my-2 text-[16px] leading-7 text-[#1f1d18]">{children}</p>
-                                ),
-                                ul: ({ children }) => (
-                                  <ul className="my-2 list-disc space-y-1 pl-6 text-[16px] leading-7 text-[#1f1d18]">
-                                    {children}
-                                  </ul>
-                                ),
-                                ol: ({ children }) => (
-                                  <ol className="my-2 list-decimal space-y-1 pl-6 text-[16px] leading-7 text-[#1f1d18]">
-                                    {children}
-                                  </ol>
-                                ),
-                                li: ({ children }) => <li>{children}</li>,
-                                strong: ({ children }) => (
-                                  <strong className="font-semibold text-[#12100c]">{children}</strong>
-                                ),
-                                code: ({ children }) => (
-                                  <code className="rounded bg-[#f3f2ec] px-1 py-0.5 text-[14px] text-[#2b271f]">
-                                    {children}
-                                  </code>
-                                ),
-                              }}
-                            >
-                              {msg.text}
-                            </ReactMarkdown>
                             {(() => {
                               const parsed = parseTrainingPlan(msg.text);
-                              if (parsed.modules.length < 2) return null;
+                              const hasDesignedPlan = parsed.modules.length >= 2;
+
+                              if (!hasDesignedPlan) {
+                                return (
+                                  <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                      h1: ({ children }) => (
+                                        <h3 className="mb-3 mt-1 text-[28px] font-semibold tracking-tight text-[#13110d]">
+                                          {children}
+                                        </h3>
+                                      ),
+                                      h2: ({ children }) => (
+                                        <h4 className="mb-2 mt-3 text-[22px] font-semibold text-[#181611]">
+                                          {children}
+                                        </h4>
+                                      ),
+                                      h3: ({ children }) => (
+                                        <h5 className="mb-2 mt-2 text-[17px] font-semibold text-[#1f1d18]">
+                                          {children}
+                                        </h5>
+                                      ),
+                                      p: ({ children }) => (
+                                        <p className="my-2 text-[16px] leading-7 text-[#1f1d18]">{children}</p>
+                                      ),
+                                      ul: ({ children }) => (
+                                        <ul className="my-2 list-disc space-y-1 pl-6 text-[16px] leading-7 text-[#1f1d18]">
+                                          {children}
+                                        </ul>
+                                      ),
+                                      ol: ({ children }) => (
+                                        <ol className="my-2 list-decimal space-y-1 pl-6 text-[16px] leading-7 text-[#1f1d18]">
+                                          {children}
+                                        </ol>
+                                      ),
+                                      li: ({ children }) => <li>{children}</li>,
+                                      strong: ({ children }) => (
+                                        <strong className="font-semibold text-[#12100c]">{children}</strong>
+                                      ),
+                                      code: ({ children }) => (
+                                        <code className="rounded bg-[#f3f2ec] px-1 py-0.5 text-[14px] text-[#2b271f]">
+                                          {children}
+                                        </code>
+                                      ),
+                                    }}
+                                  >
+                                    {msg.text}
+                                  </ReactMarkdown>
+                                );
+                              }
+
                               const cardThemes = [
                                 'border-[#98b9ea] bg-[#eaf3ff]',
                                 'border-[#95d7c8] bg-[#eafbf5]',
@@ -1320,6 +1338,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               ];
                               return (
                                 <div className="mt-4 space-y-3">
+                                  {parsed.intro && (
+                                    <p className="text-[16px] leading-7 text-[#1f1d18]">{parsed.intro}</p>
+                                  )}
                                   {parsed.title && (
                                     <div className="text-center text-[15px] font-semibold text-[#1b1914]">{parsed.title}</div>
                                   )}
