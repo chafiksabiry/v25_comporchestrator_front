@@ -37,6 +37,8 @@ interface GigReviewProps {
   onBack: () => void;
   isEditMode?: boolean;
   editGigId?: string | null;
+  /** When set (e.g. embedded in Company Onboarding), called instead of full page navigation to /app11 */
+  onPublishSuccess?: () => void | Promise<void>;
 }
 
 export function GigReview({
@@ -47,6 +49,7 @@ export function GigReview({
   onBack,
   isEditMode = false,
   editGigId = null,
+  onPublishSuccess,
 }: GigReviewProps) {
   // State for skills data
   const [softSkills, setSoftSkills] = useState<Array<{ _id: string, name: string, description: string, category: string }>>([]);
@@ -287,11 +290,12 @@ export function GigReview({
         title: isEditMode ? "Gig updated successfully" : "Gig published successfully"
       });
 
-      // Redirect after toast
       if (isEditMode && editGigId) {
         const gigUrl = `company#/gigs/${editGigId}`;
         console.log('Redirecting to:', gigUrl);
         window.location.href = gigUrl;
+      } else if (onPublishSuccess) {
+        await onPublishSuccess();
       } else {
         window.location.href = "/app11";
       }

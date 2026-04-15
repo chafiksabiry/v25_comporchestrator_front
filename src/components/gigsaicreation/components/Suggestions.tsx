@@ -6174,7 +6174,17 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
             <div className="p-6">
               {renderTeamSection()}
             </div>
-          </div>
+        </div>
+
+        {/* Bottom Actions */}
+        <div className="mt-12 flex justify-center pb-12">
+          <button
+            onClick={handleConfirm}
+            className="group inline-flex items-center px-12 py-4 text-lg font-bold text-white bg-harx-500 hover:bg-harx-600 border border-transparent rounded-2xl transition-all shadow-xl shadow-harx-500/25 hover:shadow-harx-500/40 hover:-translate-y-1"
+          >
+            Confirm & Continue
+            <ArrowRight className="w-5 h-5 ml-3 group-hover:translate-x-1 transition-transform duration-200" />
+          </button>
         </div>
       </div>
     </div>

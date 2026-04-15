@@ -20,6 +20,7 @@ interface SectionContentProps {
   isAIMode?: boolean;
   isEditMode?: boolean;
   editGigId?: string | null;
+  onPublishSuccess?: () => void | Promise<void>;
 }
 
 export function SectionContent({
@@ -30,6 +31,7 @@ export function SectionContent({
   onSectionChange,
   isEditMode = false,
   editGigId = null,
+  onPublishSuccess,
 }: SectionContentProps) {
 
   // Log section data when component renders
@@ -363,6 +365,7 @@ export function SectionContent({
             }}
             isEditMode={isEditMode}
             editGigId={editGigId}
+            onPublishSuccess={onPublishSuccess}
           />
         );
 
