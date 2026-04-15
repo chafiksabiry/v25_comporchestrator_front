@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, MessageSquareText } from 'lucide-react';
+import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search } from 'lucide-react';
 import { ContentUpload } from '../../types/core';
 import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef } from '../../infrastructure/services/AIService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
@@ -57,14 +57,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [isLoadingGigKbDocs, setIsLoadingGigKbDocs] = useState(false);
   const [companyGigs, setCompanyGigs] = useState<Gig[]>([]);
   const [isLoadingCompanyGigs, setIsLoadingCompanyGigs] = useState(false);
-  const [chatMessages, setChatMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; text: string }>>([
-    {
-      id: `assistant-${Date.now()}`,
-      role: 'assistant',
-      text: 'Bonjour, je peux vous aider a construire votre formation. Ecrivez vos objectifs, public cible, duree ou contraintes.',
-    },
-  ]);
+  const [chatMessages, setChatMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; text: string }>>([]);
   const [chatInput, setChatInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
 
   const getAnalyzedUploads = useCallback(
     () => uploads.filter((u) => u.status === 'analyzed' && !!u.aiAnalysis),
@@ -1028,25 +1023,47 @@ export default function ContentUploader(props: ContentUploaderProps) {
       ]);
     };
 
-    const handleChatSubmit = () => {
+    const handleChatSubmit = async () => {
       const message = chatInput.trim();
-      if (!message) return;
+      if (!message || isChatLoading) return;
       appendChatMessage('user', message);
       setChatInput('');
+      setIsChatLoading(true);
 
-      const analyzedCount = uploads.filter((u) => u.status === 'analyzed').length;
-      if (canProceed) {
+      try {
+        const analyzedUploads = uploads
+          .filter((u) => u.status === 'analyzed')
+          .map((u) => ({
+            name: u.name,
+            type: u.type,
+            keyTopics: u.aiAnalysis?.keyTopics || [],
+            objectives: u.aiAnalysis?.learningObjectives || [],
+          }));
+
+        const chatContext = JSON.stringify({
+          app: 'HARX Journey Builder',
+          companyName: company?.name || '',
+          gigId: gigId || null,
+          analyzedUploadsCount: analyzedUploads.length,
+          analyzedUploads,
+          canGenerateTraining: canProceed,
+        });
+
+        const assistantReply = await AIService.chat(message, chatContext);
         appendChatMessage(
           'assistant',
-          analyzedCount > 0
-            ? `Parfait. J'ai bien compris votre besoin. Vous pouvez valider pour generer la formation a partir de ${analyzedCount} source(s).`
-            : 'Parfait. J ai bien compris votre besoin. Vous pouvez valider pour generer la formation a partir du contexte gig.'
+          assistantReply?.trim() || "Je n'ai pas pu generer une reponse pour le moment."
         );
-      } else {
+      } catch (error: any) {
+        console.error('[ContentUploader] Chat backend call failed:', error);
         appendChatMessage(
           'assistant',
-          'Je suis pret a generer des que vous avez au moins une source analysee ou un gig selectionne. Continuez le chat librement.'
+          error?.message
+            ? `Erreur backend: ${error.message}`
+            : "Impossible de contacter le backend Claude pour l'instant."
         );
+      } finally {
+        setIsChatLoading(false);
       }
     };
 
@@ -1162,6 +1179,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       )}
                     </div>
                   ))}
+                  {isChatLoading && (
+                    <div className="flex justify-start">
+                      <div className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-white px-3 py-2 text-sm text-harx-700 shadow-sm">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Claude reflechit...
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1169,6 +1194,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 <input
                   type="text"
                   value={chatInput}
+                  disabled={isChatLoading}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleChatSubmit();
