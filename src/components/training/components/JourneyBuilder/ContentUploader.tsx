@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, Copy, ThumbsUp, ThumbsDown, RotateCcw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -62,6 +62,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [chatMessages, setChatMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; text: string; isStreaming?: boolean }>>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const chatScrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!chatScrollRef.current) return;
+    chatScrollRef.current.scrollTo({
+      top: chatScrollRef.current.scrollHeight,
+      behavior: 'smooth',
+    });
+  }, [chatMessages, isChatLoading]);
 
   const getAnalyzedUploads = useCallback(
     () => uploads.filter((u) => u.status === 'analyzed' && !!u.aiAnalysis),
@@ -1038,6 +1047,57 @@ export default function ContentUploader(props: ContentUploaderProps) {
       return id;
     };
 
+    const parseTrainingPlan = (rawText: string): {
+      title?: string;
+      modules: Array<{ title: string; duration?: string; bullets: string[] }>;
+    } => {
+      const lines = String(rawText || '')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      const clean = (v: string) =>
+        v
+          .replace(/^\*+|\*+$/g, '')
+          .replace(/^#+\s*/, '')
+          .replace(/^[-•*]\s*/, '')
+          .trim();
+
+      const titleLine = lines.find((line) => /plan de formation/i.test(line));
+      const modules: Array<{ title: string; duration?: string; bullets: string[] }> = [];
+      let current: { title: string; duration?: string; bullets: string[] } | null = null;
+
+      for (const line of lines) {
+        const normalized = clean(line);
+        const moduleMatch = normalized.match(/^module\s*\d+\s*[—:-]?\s*(.+)$/i);
+        if (moduleMatch) {
+          if (current) modules.push(current);
+          current = {
+            title: `Module ${modules.length + 1} - ${moduleMatch[1].trim()}`,
+            bullets: [],
+          };
+          continue;
+        }
+        if (!current) continue;
+
+        const durationMatch = normalized.match(/^dur[ée]e?\s*[:\-]\s*(.+)$/i);
+        if (durationMatch) {
+          current.duration = durationMatch[1].trim();
+          continue;
+        }
+
+        if (/^[-•*]\s+/.test(line) || normalized.includes(':')) {
+          current.bullets.push(normalized);
+        }
+      }
+
+      if (current) modules.push(current);
+      return {
+        title: titleLine ? clean(titleLine) : undefined,
+        modules,
+      };
+    };
+
     const handleChatSubmit = async () => {
       const message = chatInput.trim();
       if (!message || isChatLoading) return;
@@ -1196,10 +1256,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
             </div>
           )}
 
-          <div className={rep ? 'mb-2' : 'mx-auto mb-4 w-full max-w-3xl'}>
+          <div className={rep ? 'mx-auto mb-2 w-full max-w-[700px]' : 'mx-auto mb-4 w-full max-w-[700px]'}>
             <div className={rep ? 'rounded-3xl border border-harx-100 bg-white p-4 shadow-sm' : 'rounded-3xl border border-harx-100 bg-white p-4 shadow-sm'}>
               {hasStartedChat && (
-                <div className="mb-4 max-h-[46vh] min-h-[34vh] space-y-6 overflow-y-auto rounded-2xl bg-white/70 p-4">
+                <div ref={chatScrollRef} className="mb-4 max-h-[48vh] min-h-[34vh] space-y-6 overflow-y-auto rounded-2xl bg-white/70 p-4">
                   {chatMessages.map((msg) => (
                     <div key={msg.id} className={msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
                       {msg.role === 'assistant' ? (
@@ -1219,20 +1279,20 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   </h4>
                                 ),
                                 h3: ({ children }) => (
-                                  <h5 className="mb-2 mt-2 text-[18px] font-semibold text-[#1f1d18]">
+                                  <h5 className="mb-2 mt-2 text-[17px] font-semibold text-[#1f1d18]">
                                     {children}
                                   </h5>
                                 ),
                                 p: ({ children }) => (
-                                  <p className="my-2 text-[18px] leading-8 text-[#1f1d18]">{children}</p>
+                                  <p className="my-2 text-[16px] leading-7 text-[#1f1d18]">{children}</p>
                                 ),
                                 ul: ({ children }) => (
-                                  <ul className="my-2 list-disc space-y-1 pl-6 text-[17px] leading-7 text-[#1f1d18]">
+                                  <ul className="my-2 list-disc space-y-1 pl-6 text-[16px] leading-7 text-[#1f1d18]">
                                     {children}
                                   </ul>
                                 ),
                                 ol: ({ children }) => (
-                                  <ol className="my-2 list-decimal space-y-1 pl-6 text-[17px] leading-7 text-[#1f1d18]">
+                                  <ol className="my-2 list-decimal space-y-1 pl-6 text-[16px] leading-7 text-[#1f1d18]">
                                     {children}
                                   </ol>
                                 ),
@@ -1249,6 +1309,41 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             >
                               {msg.text}
                             </ReactMarkdown>
+                            {(() => {
+                              const parsed = parseTrainingPlan(msg.text);
+                              if (parsed.modules.length < 2) return null;
+                              const cardThemes = [
+                                'border-[#98b9ea] bg-[#eaf3ff]',
+                                'border-[#95d7c8] bg-[#eafbf5]',
+                                'border-[#b7b5ea] bg-[#f0efff]',
+                                'border-[#e8c79d] bg-[#fff7eb]',
+                              ];
+                              return (
+                                <div className="mt-4 space-y-3">
+                                  {parsed.title && (
+                                    <div className="text-center text-[15px] font-semibold text-[#1b1914]">{parsed.title}</div>
+                                  )}
+                                  {parsed.modules.map((module, idx) => (
+                                    <div
+                                      key={`${module.title}-${idx}`}
+                                      className={`rounded-xl border px-3 py-2 ${cardThemes[idx % cardThemes.length]}`}
+                                    >
+                                      <div className="text-[15px] font-semibold text-[#1f1d18]">{module.title}</div>
+                                      {module.duration && (
+                                        <div className="text-[13px] text-[#3f3b31]">Duree: {module.duration}</div>
+                                      )}
+                                      {module.bullets.length > 0 && (
+                                        <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[13px] leading-5 text-[#2d2a22]">
+                                          {module.bullets.slice(0, 5).map((bullet, bIdx) => (
+                                            <li key={`${idx}-${bIdx}`}>{bullet}</li>
+                                          ))}
+                                        </ul>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })()}
                             {msg.isStreaming && (
                               <span className="ml-1 inline-block h-4 w-1 animate-pulse rounded bg-harx-400 align-middle" />
                             )}
