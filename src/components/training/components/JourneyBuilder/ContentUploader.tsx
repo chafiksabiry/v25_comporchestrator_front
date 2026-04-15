@@ -11,12 +11,15 @@ import { getGigsByCompanyId } from '../../../../api/matching';
 import type { Gig } from '../../../../types/matching';
 import PresentationPreview from '../Training/PresentationPreview';
 import { scrollJourneyMainToTop } from './journeyScroll';
+import type { TrainingMethodology } from '../../types/methodology';
 
 interface ContentUploaderProps {
   onComplete: (uploads: ContentUpload[], fileTrainingUrl?: string) => void;
   onBack: () => void;
   company?: any;
   gigId?: string | null;
+  journey?: any;
+  methodology?: TrainingMethodology | null;
   /** `persistedJourneyId` : id Mongo renvoyé après save cloud — évite un 2e POST dans JourneyBuilder. */
   onFinishEarly?: (
     uploads: ContentUpload[],
@@ -30,7 +33,7 @@ interface ContentUploaderProps {
 }
 
 export default function ContentUploader(props: ContentUploaderProps) {
-  const { onComplete, onBack, company, gigId, repOnboardingLayout = false } = props;
+  const { onComplete, onBack, company, gigId, journey, methodology, repOnboardingLayout = false } = props;
   const analysisMetadata = {
     gigId: gigId || undefined,
     companyId: company?.id || company?._id || undefined
@@ -438,9 +441,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
           curriculum = await AIService.generateCurriculum(
             mainAnalysis,
-            'General',
+            methodology?.name || 'General',
             undefined,
-            uploadContext as any
+            uploadContext as any,
+            {
+              selectedDuration: journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined,
+              methodologyName: methodology?.name,
+              methodologyDescription: methodology?.description,
+              methodologyComponents: Array.isArray(methodology?.components)
+                ? methodology.components.map((c) => c.title).slice(0, 8)
+                : [],
+              trainingTitle: journey?.name,
+              trainingDescription: journey?.description,
+            }
           );
         }
       } else {
@@ -583,9 +596,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
           curriculum = await AIService.generateCurriculum(
             mainAnalysis,
-            'General',
+            methodology?.name || 'General',
             undefined,
-            uploadContext as any
+            uploadContext as any,
+            {
+              selectedDuration: journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined,
+              methodologyName: methodology?.name,
+              methodologyDescription: methodology?.description,
+              methodologyComponents: Array.isArray(methodology?.components)
+                ? methodology.components.map((c) => c.title).slice(0, 8)
+                : [],
+              trainingTitle: journey?.name,
+              trainingDescription: journey?.description,
+            }
           );
         } else {
           curriculum = await fetchCurriculumFromGig(includeKbSource);
@@ -657,6 +680,24 @@ export default function ContentUploader(props: ContentUploaderProps) {
     return await AIService.generateTrainingFromGig(gigId, {
       useKnowledgeBase: includeKbSource,
       includeCallRecordings: includeKbSource,
+      sourceContext: {
+        sourceMode: 'gig',
+        uploadAnalyses: [],
+        knowledgeDocuments: [],
+        callRecordings: [],
+        ...(journey?.estimatedDuration || methodology?.name
+          ? {
+              preferences: {
+                selectedDuration: journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined,
+                methodologyName: methodology?.name,
+                methodologyDescription: methodology?.description,
+                methodologyComponents: Array.isArray(methodology?.components)
+                  ? methodology.components.map((c) => c.title).slice(0, 8)
+                  : [],
+              },
+            }
+          : {}),
+      } as any,
     });
   };
 
@@ -1047,6 +1088,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
       return id;
     };
 
+    const generationPreferences = {
+      selectedDuration: journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined,
+      methodologyName: methodology?.name,
+      methodologyDescription: methodology?.description,
+      methodologyComponents: Array.isArray(methodology?.components)
+        ? methodology.components.map((c) => c.title).slice(0, 8)
+        : [],
+      trainingTitle: journey?.name,
+      trainingDescription: journey?.description,
+    };
+
     const parseTrainingPlan = (rawText: string): {
       title?: string;
       intro?: string;
@@ -1133,6 +1185,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
           // Intentionally avoid company/gig identity so AI doesn't anchor to gig metadata.
           analyzedUploadsCount: analyzedUploads.length,
           analyzedUploads,
+          selectedDuration: generationPreferences.selectedDuration,
+          selectedMethodology: generationPreferences.methodologyName,
           conversationHistory: chatMessages.slice(-8).map((m) => ({
             role: m.role,
             text: m.text,
