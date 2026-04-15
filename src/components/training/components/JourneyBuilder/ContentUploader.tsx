@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen } from 'lucide-react';
+import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Send, Bot, User, MessageSquareText } from 'lucide-react';
 import { ContentUpload } from '../../types/core';
 import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef } from '../../infrastructure/services/AIService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
@@ -23,6 +23,12 @@ interface ContentUploaderProps {
   ) => void;
   /** REP company onboarding: modules sidebar + slides only, no PPTX/fullscreen/continue CTA */
   repOnboardingLayout?: boolean;
+}
+
+interface PlanningChatMessage {
+  id: string;
+  role: 'assistant' | 'user';
+  content: string;
 }
 
 export default function ContentUploader(props: ContentUploaderProps) {
@@ -53,6 +59,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
   >([]);
   const [gigCallRecordings, setGigCallRecordings] = useState<CallRecordingRef[]>([]);
   const [isLoadingGigKbDocs, setIsLoadingGigKbDocs] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const [isChatting, setIsChatting] = useState(false);
+  const [planValidated, setPlanValidated] = useState(false);
+  const [planningMessages, setPlanningMessages] = useState<PlanningChatMessage[]>([
+    {
+      id: 'welcome',
+      role: 'assistant',
+      content:
+        'Hi! Let us build your training plan together. Tell me your target audience, desired outcomes, and preferred format. When the plan looks right, click "Validate plan" to unlock generation.',
+    },
+  ]);
 
   const getAnalyzedUploads = useCallback(
     () => uploads.filter((u) => u.status === 'analyzed' && !!u.aiAnalysis),
@@ -605,6 +622,78 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
   const handleOpenFullscreenPreview = () => setIsPreviewOpen(true);
 
+  const buildPlanningContext = useCallback((): string => {
+    const analyzedUploads = getAnalyzedUploads();
+    const analyzedSummary = analyzedUploads.map((upload) => {
+      const topics = upload.aiAnalysis?.keyTopics?.slice(0, 8)?.join(', ') || 'no key topics';
+      const objectives = upload.aiAnalysis?.learningObjectives?.slice(0, 5)?.join(' | ') || 'no objectives';
+      return `- ${upload.name}: topics [${topics}], objectives [${objectives}]`;
+    });
+
+    const kbContext = gigId && useKbForPresentation
+      ? `Knowledge base enabled. KB docs: ${gigKbDocuments.length}, call recordings: ${gigCallRecordings.length}.`
+      : 'Knowledge base grounding disabled.';
+
+    return [
+      'You are helping create a training plan before generation.',
+      'Ask concise follow-up questions when information is missing.',
+      'Provide a structured plan (title, audience, objectives, modules, evaluation) when possible.',
+      `Gig id: ${gigId || 'none'}.`,
+      kbContext,
+      analyzedSummary.length > 0 ? `Analyzed sources:\n${analyzedSummary.join('\n')}` : 'No analyzed uploads yet.',
+    ].join('\n');
+  }, [getAnalyzedUploads, gigId, useKbForPresentation, gigKbDocuments.length, gigCallRecordings.length]);
+
+  const handleSendPlanningMessage = useCallback(async () => {
+    const trimmed = chatInput.trim();
+    if (!trimmed || isChatting) return;
+
+    const userMessage: PlanningChatMessage = {
+      id: `${Date.now()}-u`,
+      role: 'user',
+      content: trimmed,
+    };
+
+    const nextMessages = [...planningMessages, userMessage];
+    setPlanningMessages(nextMessages);
+    setChatInput('');
+    setPlanValidated(false);
+    setIsChatting(true);
+
+    try {
+      const conversationContext = nextMessages
+        .slice(-12)
+        .map((msg) => `${msg.role === 'assistant' ? 'Assistant' : 'User'}: ${msg.content}`)
+        .join('\n');
+
+      const aiReply = await AIService.chat(
+        trimmed,
+        `${buildPlanningContext()}\n\nConversation:\n${conversationContext}`
+      );
+
+      setPlanningMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-a`,
+          role: 'assistant',
+          content: aiReply || 'I could not generate a plan response. Please try again.',
+        },
+      ]);
+    } catch (error: any) {
+      console.error('[ContentUploader] Planning chat failed:', error);
+      setPlanningMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-a-error`,
+          role: 'assistant',
+          content: `I could not answer right now (${error?.message || 'unknown error'}). Please try again.`,
+        },
+      ]);
+    } finally {
+      setIsChatting(false);
+    }
+  }, [chatInput, isChatting, planningMessages, buildPlanningContext]);
+
   /**
    * Helper to fetch curriculum from Gig KB if no uploads are present
    */
@@ -635,6 +724,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const canProceed = (uploads.length > 0 && uploads.every(u => u.status === 'analyzed')) || (uploads.length === 0 && !!gigId);
   const totalAnalyzed = uploads.filter(u => u.status === 'analyzed').length;
   const isGigOnly = uploads.length === 0 && !!gigId;
+  const canGenerateAfterValidation = canProceed && planValidated;
 
   if (isPreviewOpen && generatedPresentation && !repOnboardingLayout) {
     return (
@@ -1503,6 +1593,87 @@ export default function ContentUploader(props: ContentUploaderProps) {
             </div>
           )}
 
+          {/* Interactive planning chat */}
+          <div
+            className={
+              rep
+                ? 'mt-3 rounded-xl border border-harx-100 bg-white p-3'
+                : 'mt-6 rounded-2xl border border-rose-100 bg-white/70 p-4'
+            }
+          >
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <MessageSquareText className={rep ? 'h-4 w-4 text-harx-600' : 'h-5 w-5 text-fuchsia-600'} />
+                <h4 className={rep ? 'text-xs font-extrabold text-gray-900' : 'text-sm font-extrabold text-gray-900'}>
+                  Interactive training planner
+                </h4>
+              </div>
+              <span
+                className={`rounded-full px-2 py-1 text-[10px] font-bold ${
+                  planValidated
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-amber-100 text-amber-700'
+                }`}
+              >
+                {planValidated ? 'Plan validated' : 'Validation required'}
+              </span>
+            </div>
+
+            <div className={rep ? 'max-h-44 space-y-2 overflow-y-auto pr-1' : 'max-h-56 space-y-2 overflow-y-auto pr-1'}>
+              {planningMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`rounded-xl border px-3 py-2 text-xs leading-relaxed ${
+                    msg.role === 'assistant'
+                      ? 'border-harx-100 bg-harx-50/60 text-gray-800'
+                      : 'border-fuchsia-100 bg-fuchsia-50/60 text-gray-800'
+                  }`}
+                >
+                  <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide">
+                    {msg.role === 'assistant' ? <Bot className="h-3.5 w-3.5 text-harx-600" /> : <User className="h-3.5 w-3.5 text-fuchsia-600" />}
+                    <span>{msg.role === 'assistant' ? 'Claude assistant' : 'You'}</span>
+                  </div>
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSendPlanningMessage();
+                  }
+                }}
+                placeholder="Ask Claude to build your training plan..."
+                className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-800 outline-none transition-all focus:border-harx-300 focus:ring-2 focus:ring-harx-500/15"
+                disabled={isChatting}
+              />
+              <button
+                type="button"
+                onClick={handleSendPlanningMessage}
+                disabled={!chatInput.trim() || isChatting}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-harx-200 bg-white px-3 py-2 text-xs font-bold text-harx-700 hover:bg-harx-50 disabled:opacity-50"
+              >
+                {isChatting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                Send
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlanValidated(true)}
+                disabled={planningMessages.length < 2 || isChatting}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                <CheckCircle className="h-4 w-4" />
+                Validate plan
+              </button>
+            </div>
+          </div>
+
           {/* Navigation */}
           <div
             className={
@@ -1544,7 +1715,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               <button
                 type="button"
                 onClick={handleGeneratePresentation}
-                disabled={!canProceed || isProcessing}
+                disabled={!canGenerateAfterValidation || isProcessing}
                 className={
                   rep
                     ? 'inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-harx px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50'
@@ -1558,6 +1729,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 )}
                 <span>{isGeneratingPresentation ? 'Generating…' : 'Generate presentation'}</span>
               </button>
+              {!planValidated && (
+                <p className="text-center text-[10px] font-semibold text-amber-700 sm:ml-2 sm:text-left">
+                  Validate the AI plan in chat before generating the training.
+                </p>
+              )}
 
               {/* <button
                 onClick={() => onComplete(uploads, fileTrainingUrl)}
