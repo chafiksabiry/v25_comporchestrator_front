@@ -343,13 +343,61 @@ export class AIService {
    * Chat avec l'AI Tutor
    */
   static async chat(message: string, context: string = ''): Promise<string> {
-    const response = await ApiClient.post<AiResponse<any>>('/api/ai/chat', { message, context });
+    const response = await ApiClient.post<AiResponse<any>>('/api/ai/chat?stream=false', { message, context });
 
     if (!response.data.success) {
       throw new Error(response.data.error || 'Chat failed');
     }
 
     return response.data.response || '';
+  }
+
+  /**
+   * Stream chat response chunk-by-chunk from Claude backend.
+   */
+  static async chatStream(
+    message: string,
+    context: string,
+    onChunk: (chunk: string) => void
+  ): Promise<string> {
+    const token = ApiClient.getToken();
+    const apiUrl =
+      import.meta.env.VITE_API_TRAINING_URL ||
+      import.meta.env.VITE_API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      'https://v25platformtrainingbackend-production.up.railway.app';
+    const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
+
+    const response = await fetch(`${baseUrl}/api/ai/chat?stream=true`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify({ message, context }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Chat failed (${response.status})`);
+    }
+    if (!response.body) {
+      throw new Error('Streaming not supported by this response.');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let fullText = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      if (!chunk) continue;
+      fullText += chunk;
+      onChunk(chunk);
+    }
+
+    return fullText;
   }
 
   /**

@@ -59,7 +59,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [isLoadingGigKbDocs, setIsLoadingGigKbDocs] = useState(false);
   const [companyGigs, setCompanyGigs] = useState<Gig[]>([]);
   const [isLoadingCompanyGigs, setIsLoadingCompanyGigs] = useState(false);
-  const [chatMessages, setChatMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; text: string }>>([]);
+  const [chatMessages, setChatMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; text: string; isStreaming?: boolean }>>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
 
@@ -1025,11 +1025,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
         console.warn('[ContentUploader] Unable to copy message:', error);
       }
     };
-    const appendChatMessage = (role: 'user' | 'assistant', text: string) => {
+    const appendChatMessage = (
+      role: 'user' | 'assistant',
+      text: string,
+      extra: Partial<{ isStreaming: boolean }> = {}
+    ) => {
+      const id = `${role}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       setChatMessages((prev) => [
         ...prev,
-        { id: `${role}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, role, text },
+        { id, role, text, ...extra },
       ]);
+      return id;
     };
 
     const handleChatSubmit = async () => {
@@ -1043,16 +1049,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
         const analyzedUploads = uploads
           .filter((u) => u.status === 'analyzed')
           .map((u) => ({
-            name: u.name,
-            type: u.type,
             keyTopics: u.aiAnalysis?.keyTopics || [],
             objectives: u.aiAnalysis?.learningObjectives || [],
           }));
 
         const chatContext = JSON.stringify({
           app: 'HARX Journey Builder',
-          companyName: company?.name || '',
-          gigId: gigId || null,
+          // Intentionally avoid company/gig identity so AI doesn't anchor to gig metadata.
           analyzedUploadsCount: analyzedUploads.length,
           analyzedUploads,
           conversationHistory: chatMessages.slice(-8).map((m) => ({
@@ -1062,10 +1065,26 @@ export default function ContentUploader(props: ContentUploaderProps) {
           canGenerateTraining: canProceed,
         });
 
-        const assistantReply = await AIService.chat(message, chatContext);
-        appendChatMessage(
-          'assistant',
-          assistantReply?.trim() || "Je n'ai pas pu generer une reponse pour le moment."
+        const streamingAssistantId = appendChatMessage('assistant', '', { isStreaming: true });
+        const fullResponse = await AIService.chatStream(message, chatContext, (chunk) => {
+          setChatMessages((prev) =>
+            prev.map((m) =>
+              m.id === streamingAssistantId
+                ? { ...m, text: `${m.text}${chunk}` }
+                : m
+            )
+          );
+        });
+        setChatMessages((prev) =>
+          prev.map((m) =>
+            m.id === streamingAssistantId
+              ? {
+                ...m,
+                text: fullResponse?.trim() || "Je n'ai pas pu generer une reponse pour le moment.",
+                isStreaming: false,
+              }
+              : m
+          )
         );
       } catch (error: any) {
         console.error('[ContentUploader] Chat backend call failed:', error);
@@ -1230,8 +1249,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             >
                               {msg.text}
                             </ReactMarkdown>
+                            {msg.isStreaming && (
+                              <span className="ml-1 inline-block h-4 w-1 animate-pulse rounded bg-harx-400 align-middle" />
+                            )}
                           </div>
-                          <div className="mt-2 flex items-center gap-2 text-harx-500">
+                          <div className={`mt-2 flex items-center gap-2 text-harx-500 ${msg.isStreaming || !msg.text.trim() ? 'opacity-40 pointer-events-none' : ''}`}>
                             <button
                               type="button"
                               onClick={() => copyMessage(msg.text)}
@@ -1258,7 +1280,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       )}
                     </div>
                   ))}
-                  {isChatLoading && (
+                  {isChatLoading && !chatMessages.some((m) => m.isStreaming) && (
                     <div className="flex justify-start">
                       <div className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-white px-3 py-2 text-sm text-harx-700 shadow-sm">
                         <Loader2 className="h-4 w-4 animate-spin" />
