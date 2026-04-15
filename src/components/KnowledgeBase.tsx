@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, File, FileText, Plus, Trash2, Mic, Play, Clock, Pause, X, Eye, Brain, Loader2, RefreshCw, Languages, CheckCircle, ChevronRight, Sparkles } from 'lucide-react';
+import { Upload, File, FileText, Plus, Mic, Play, Clock, Pause, X, Eye, Brain, Loader2, RefreshCw, Languages, CheckCircle, ChevronRight, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types';
 import apiClient from '../api/knowledgeClient';
@@ -461,42 +461,6 @@ const KnowledgeBase: React.FC = () => {
       alert('There was an error uploading your files. Please try again.');
     } finally {
       setIsUploading(false);
-    }
-  };
-
-  // Handle item deletion
-  const handleDelete = async (id: string) => {
-    try {
-      const document = knowledgeItems.find(item => item.id === id);
-      const callRecording = callRecords.find(call => call.id === id);
-
-      if (document) {
-        await apiClient.delete(`/documents/${id}`);
-        setKnowledgeItems(prevItems => prevItems.filter(item => item.id !== id));
-      } else if (callRecording) {
-        await apiClient.delete(`/call-recordings/${id}`);
-        setCallRecords(prevCalls => {
-          const call = prevCalls.find(call => call.id === id);
-          if (call) {
-            cleanupAudioResources(call);
-          }
-          return prevCalls.filter(call => call.id !== id);
-        });
-
-        if (playingCallId === id) {
-          if (currentAudio) {
-            currentAudio.pause();
-          }
-          setCurrentAudio(null);
-          setIsPlaying(false);
-          setPlayingCallId(null);
-          setCurrentTime(0);
-          setDuration(0);
-        }
-      }
-    } catch (error: any) {
-      console.error('Error deleting item:', error);
-      alert('There was an error deleting the item. Please try again.');
     }
   };
 
@@ -1132,16 +1096,15 @@ const KnowledgeBase: React.FC = () => {
                             target="_blank" 
                             rel="noopener noreferrer" 
                             className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg" 
-                            title="View File"
+                            title="View file"
                           >
                             <Eye size={18} />
                           </a>
-                          <button onClick={() => handleView(item)} className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg" title="AI Analysis"><Brain size={18} /></button>
-                          <button onClick={() => handleDelete(item.id)} className="text-red-400 hover:bg-red-50 p-2 rounded-lg" title="Delete"><Trash2 size={18} /></button>
+                          <button type="button" onClick={() => handleView(item)} className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg" title="AI analysis"><Brain size={18} /></button>
                         </div>
                     </div>
                     <p className="text-xs text-gray-500 mb-4 font-medium italic leading-relaxed line-clamp-2">{item.description}</p>
-                    <div className="flex items-center justify-between border-t border-gray-50 pt-4">
+                    <div className="flex items-center border-t border-gray-50 pt-4">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1.5 text-[10px] font-black text-gray-300 uppercase">
                           <Clock size={12} className="text-gray-200" />
@@ -1161,18 +1124,6 @@ const KnowledgeBase: React.FC = () => {
                             {getGigTitle(item.gigId)}
                           </span>
                         )}
-                      </div>
-                      <div className="flex items-center gap-4 text-[10px] font-black text-harx-500 uppercase">
-                        <a 
-                          href={item.fileUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="hover:underline"
-                        >
-                          View File
-                        </a>
-                        <div className="w-1 h-1 bg-gray-200 rounded-full" />
-                        <button onClick={() => handleView(item)} className="hover:underline">AI Analysis</button>
                       </div>
                     </div>
                   </div>
