@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search } from 'lucide-react';
+import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, Copy, ThumbsUp, ThumbsDown, RotateCcw } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ContentUpload } from '../../types/core';
 import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef } from '../../infrastructure/services/AIService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
@@ -1016,6 +1018,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const rep = repOnboardingLayout;
     const displayName = String(company?.name || 'QARA EL HOUCINE').toUpperCase();
     const hasStartedChat = chatMessages.some((msg) => msg.role === 'user');
+    const copyMessage = async (text: string) => {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (error) {
+        console.warn('[ContentUploader] Unable to copy message:', error);
+      }
+    };
     const appendChatMessage = (role: 'user' | 'assistant', text: string) => {
       setChatMessages((prev) => [
         ...prev,
@@ -1167,13 +1176,38 @@ export default function ContentUploader(props: ContentUploaderProps) {
           <div className={rep ? 'mb-2' : 'mx-auto mb-4 w-full max-w-3xl'}>
             <div className={rep ? 'rounded-3xl border border-harx-100 bg-white p-4 shadow-sm' : 'rounded-3xl border border-harx-100 bg-white p-4 shadow-sm'}>
               {hasStartedChat && (
-                <div className="mb-4 max-h-[46vh] min-h-[34vh] space-y-4 overflow-y-auto rounded-2xl bg-harx-50/30 p-4">
+                <div className="mb-4 max-h-[46vh] min-h-[34vh] space-y-6 overflow-y-auto rounded-2xl bg-white/70 p-4">
                   {chatMessages.map((msg) => (
                     <div key={msg.id} className={msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
                       {msg.role === 'assistant' ? (
-                        <div className="max-w-[85%] text-[15px] leading-7 text-harx-800">{msg.text}</div>
+                        <div className="max-w-[88%]">
+                          <div className="prose prose-sm max-w-none text-harx-800 prose-headings:text-harx-800 prose-p:my-2 prose-li:my-0.5 prose-strong:text-harx-800">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {msg.text}
+                            </ReactMarkdown>
+                          </div>
+                          <div className="mt-2 flex items-center gap-2 text-harx-500">
+                            <button
+                              type="button"
+                              onClick={() => copyMessage(msg.text)}
+                              className="rounded-md p-1.5 hover:bg-harx-100/70"
+                              title="Copier"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </button>
+                            <button type="button" className="rounded-md p-1.5 hover:bg-harx-100/70" title="Utile">
+                              <ThumbsUp className="h-3.5 w-3.5" />
+                            </button>
+                            <button type="button" className="rounded-md p-1.5 hover:bg-harx-100/70" title="Pas utile">
+                              <ThumbsDown className="h-3.5 w-3.5" />
+                            </button>
+                            <button type="button" className="rounded-md p-1.5 hover:bg-harx-100/70" title="Regenerer">
+                              <RotateCcw className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
                       ) : (
-                        <div className="max-w-[60%] rounded-xl border border-harx-200 bg-white px-3 py-2 text-sm font-medium text-harx-700 shadow-sm">
+                        <div className="max-w-[60%] rounded-xl border border-harx-200 bg-[#f6f5ef] px-3 py-2 text-sm font-medium text-harx-700 shadow-sm">
                           {msg.text}
                         </div>
                       )}
