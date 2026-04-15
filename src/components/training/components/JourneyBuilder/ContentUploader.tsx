@@ -1019,6 +1019,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
   function renderSourcesUploadUI() {
     const rep = repOnboardingLayout;
+    const displayName = String(company?.name || 'QARA EL HOUCINE').toUpperCase();
     const appendChatMessage = (role: 'user' | 'assistant', text: string) => {
       setChatMessages((prev) => [
         ...prev,
@@ -1049,21 +1050,24 @@ export default function ContentUploader(props: ContentUploaderProps) {
     };
 
     return (
-    <div className={rep ? 'flex w-full min-w-0 flex-col bg-[#f7f7f3]' : 'min-h-full bg-[#f7f7f3] p-2 md:p-4'}>
-      <div className={rep ? 'mx-auto flex w-full max-w-6xl flex-col px-5 py-3 md:px-7' : 'container mx-auto max-w-7xl'}>
+    <div className={rep ? 'flex w-full min-w-0 flex-col bg-[#f7f7f3]' : 'min-h-full bg-[#fcfcf8] p-2 md:p-4'}>
+      <div className={rep ? 'mx-auto flex w-full max-w-6xl flex-col px-5 py-3 md:px-7' : 'mx-auto w-full max-w-[1280px]'}>
         <div
           className={
             rep
               ? 'flex w-full flex-col'
-              : 'w-full flex-1 rounded-3xl border border-[#ebe9df] bg-[#f7f7f3] p-2 md:p-3'
+              : 'w-full flex-1 rounded-3xl border border-[#ece8dc] bg-[#fcfcf8] p-2 md:p-3'
           }
         >
-          <div className={rep ? 'flex w-full flex-col' : 'grid gap-3 lg:grid-cols-[260px_minmax(0,1fr)]'}>
+          <div className={rep ? 'flex w-full flex-col' : 'grid gap-3 lg:grid-cols-[265px_minmax(0,1fr)]'}>
           {!rep && (
-            <aside className="rounded-2xl border border-[#ebe9df] bg-[#f3f2eb] p-3">
+            <aside className="rounded-2xl border border-[#ece8dc] bg-[#f6f4eb] p-3">
+              <div className="mb-4 px-2 text-xl font-semibold text-[#1f1f1d]">
+                Claude
+              </div>
               <button
                 type="button"
-                className="mb-3 inline-flex w-full items-center gap-2 rounded-xl border border-[#e4e2d7] bg-white px-3 py-2 text-sm font-semibold text-[#4f4a3f]"
+                className="mb-2 inline-flex w-full items-center gap-2 rounded-xl border border-[#e6e2d7] bg-white px-3 py-2 text-sm font-medium text-[#3f3a31]"
               >
                 <Plus className="h-4 w-4 text-harx-600" />
                 Nouvelle conversation
@@ -1075,10 +1079,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 <Search className="h-4 w-4 text-harx-500" />
                 Rechercher
               </button>
-
-              <div className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wide text-[#7d786b]">
-                Projects
+              <div className="mb-3 space-y-1 px-1 text-sm text-[#3f3a31]">
+                <div className="rounded-lg px-2 py-1.5 hover:bg-white/70">Discussions</div>
+                <div className="rounded-lg px-2 py-1.5 hover:bg-white/70">Projets</div>
+                <div className="rounded-lg px-2 py-1.5 hover:bg-white/70">Artefacts</div>
               </div>
+              <div className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wide text-[#7d786b]">Récents</div>
               <div className="max-h-[50vh] space-y-1 overflow-y-auto pr-1">
                 {isLoadingCompanyGigs ? (
                   <div className="flex items-center gap-2 rounded-lg px-2 py-2 text-xs text-[#6c675b]">
@@ -1115,18 +1121,18 @@ export default function ContentUploader(props: ContentUploaderProps) {
           )}
           <div className={rep ? 'flex w-full flex-col' : 'rounded-2xl border border-[#ebe9df] bg-[#f7f7f3] p-4 md:p-6'}>
           {/* Header */}
-          <div className={rep ? 'mb-3 shrink-0 px-1 text-center' : 'mb-10 text-center'}>
+          <div className={rep ? 'mb-3 shrink-0 px-1 text-center' : 'mb-8 text-center'}>
             <h2
               className={
                 rep
                   ? 'mb-1 text-[17px] font-extrabold tracking-tight text-harx-600 md:text-lg'
-                  : 'mb-2 text-5xl font-extrabold tracking-tight text-[#2f2b24]'
+                  : 'mb-2 text-5xl font-serif font-semibold tracking-tight text-[#2b2a26]'
               }
             >
-              Bonsoir, construisons votre formation.
+              {rep ? 'Bonsoir, construisons votre formation.' : `Bonsoir, ${displayName}.`}
             </h2>
             <p className={rep ? 'mx-auto max-w-xl text-[11px] leading-snug text-gray-500' : 'mx-auto max-w-3xl text-sm font-medium text-[#6b665b]'}>
-              Chat interactif style Claude, adapte a HARX.
+              {rep ? 'Chat interactif style Claude, adapte a HARX.' : 'Comment puis-je vous aider ?'}
             </p>
           </div>
 
@@ -1135,24 +1141,24 @@ export default function ContentUploader(props: ContentUploaderProps) {
               <div className={rep ? 'mb-2 text-xs font-bold text-gray-900' : 'mb-3 text-sm font-semibold text-gray-900'}>
                 <span className="inline-flex items-center gap-1.5 text-[#5c574a]">
                   <MessageSquareText className="h-4 w-4 text-harx-600" />
-                  Chat formation interactif
+                  {rep ? 'Chat formation interactif' : 'Assistant formation'}
                 </span>
               </div>
-              <div className={rep ? 'mb-3 max-h-56 space-y-2 overflow-y-auto rounded-lg bg-slate-50 p-2' : 'mb-3 max-h-72 space-y-2 overflow-y-auto rounded-2xl bg-[#f8f7f2] p-3'}>
+              <div className={rep ? 'mb-3 max-h-56 space-y-2 overflow-y-auto rounded-lg bg-slate-50 p-2' : 'mb-3 max-h-72 space-y-2 overflow-y-auto rounded-2xl bg-[#fcfcf8] p-3'}>
                 {chatMessages.map((msg) => (
                   <div
                     key={msg.id}
                     className={`w-fit max-w-[90%] rounded-2xl px-3 py-2 text-sm ${
                       msg.role === 'assistant'
-                        ? 'border border-[#e6e2d7] bg-white text-[#3f3a31]'
-                        : 'ml-auto bg-gradient-harx text-white'
+                        ? 'border border-[#e6e2d7] bg-[#fffef9] text-[#3f3a31]'
+                        : 'ml-auto bg-[#f36f8f] text-white'
                     }`}
                   >
                     {msg.text}
                   </div>
                 ))}
               </div>
-              <div className={rep ? 'flex flex-col gap-2 sm:flex-row' : 'flex flex-col gap-2 sm:flex-row'}>
+              <div className={rep ? 'flex flex-col gap-2 sm:flex-row' : 'flex flex-col gap-2'}>
                 <input
                   type="text"
                   value={chatInput}
@@ -1164,36 +1170,52 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   className={
                     rep
                       ? 'min-w-0 flex-1 rounded-lg border border-harx-100 px-3 py-2 text-xs text-gray-800 outline-none focus:border-harx-300'
-                      : 'min-w-0 flex-1 rounded-2xl border border-[#ddd8ca] px-4 py-3 text-sm text-[#3f3a31] outline-none focus:border-harx-400'
+                      : 'min-w-0 flex-1 rounded-2xl border border-[#ddd8ca] px-4 py-3 text-sm text-[#3f3a31] outline-none focus:border-[#b9b2a2]'
                   }
                 />
-                <button
-                  type="button"
-                  onClick={handleChatSubmit}
-                  disabled={!chatInput.trim()}
-                  className={
-                    rep
-                      ? 'rounded-lg bg-gradient-harx px-4 py-2 text-xs font-bold text-white disabled:opacity-50'
-                      : 'rounded-2xl bg-gradient-harx px-5 py-3 text-sm font-semibold text-white disabled:opacity-50'
-                  }
-                >
-                  Envoyer
-                </button>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {['Plan rapide', 'Modules experts', 'Quiz final', 'Version courte'].map((chip) => (
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    {['Code', 'Ecrire', 'Apprendre', 'Vie quotidienne', 'Choix de Claude'].map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => setChatInput(chip)}
+                        className="rounded-xl border border-[#ddd8ca] bg-[#fcfcf8] px-3 py-1.5 text-xs font-semibold text-[#5f5a4f] hover:border-[#c9c2b0]"
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
                   <button
-                    key={chip}
                     type="button"
-                    onClick={() => {
-                      setChatInput(chip);
-                    }}
-                    className="rounded-full border border-[#e2ddce] bg-[#f5f4ed] px-3 py-1.5 text-xs font-semibold text-[#5f5a4f] hover:border-harx-300 hover:text-harx-700"
+                    onClick={handleChatSubmit}
+                    disabled={!chatInput.trim()}
+                    className={
+                      rep
+                        ? 'rounded-lg bg-gradient-harx px-4 py-2 text-xs font-bold text-white disabled:opacity-50'
+                        : 'rounded-2xl bg-[#1f1f1d] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50'
+                    }
                   >
-                    {chip}
+                    Envoyer
                   </button>
-                ))}
+                </div>
               </div>
+              {rep && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {['Plan rapide', 'Modules experts', 'Quiz final', 'Version courte'].map((chip) => (
+                    <button
+                      key={chip}
+                      type="button"
+                      onClick={() => {
+                        setChatInput(chip);
+                      }}
+                      className="rounded-full border border-[#e2ddce] bg-[#f5f4ed] px-3 py-1.5 text-xs font-semibold text-[#5f5a4f] hover:border-harx-300 hover:text-harx-700"
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
