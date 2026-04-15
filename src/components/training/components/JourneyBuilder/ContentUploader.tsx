@@ -1059,6 +1059,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
       const clean = (v: string) =>
         v
+          .replace(/\*\*(.*?)\*\*/g, '$1')
+          .replace(/__(.*?)__/g, '$1')
+          .replace(/`([^`]+)`/g, '$1')
           .replace(/^\*+|\*+$/g, '')
           .replace(/^#+\s*/, '')
           .replace(/^[-•*]\s*/, '')
