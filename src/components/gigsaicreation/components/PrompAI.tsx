@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Brain, HelpCircle, PlusCircle, ArrowUp } from 'lucide-react';
 import { Suggestions } from './Suggestions';
 import { SectionContent } from './SectionContent';
-import Logo from './Logo';
 import { GigData, GigSuggestion } from '../types';
 import { predefinedOptions } from '../lib/guidance';
 import { mapGeneratedDataToGigData } from '../lib/ai';
@@ -544,9 +543,6 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
       return (
         <div className="min-h-screen bg-[#F8FAFC]">
           <div className="w-full h-full py-8 px-4">
-            <div className="w-full max-w-3xl mx-auto mb-8 flex justify-center">
-              <Logo />
-            </div>
             <div className="backdrop-blur-sm rounded-3xl shadow-2xl border border-white/30 overflow-hidden w-full h-full">
               <div>
                 <SectionContent
@@ -559,6 +555,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   isAIMode={!!confirmedSuggestions}
                   isEditMode={isEditMode}
                   editGigId={editGigId}
+                  onPublishSuccess={onBackToOnboarding}
                 />
               </div>
             </div>
@@ -574,17 +571,10 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
             ? 'w-full h-full py-8 px-4'
             : 'w-full h-full py-8 px-4 mx-auto max-w-5xl'
         }>
-          {/* Logo et Titre global en haut */}
-          <div className="w-full max-w-3xl mx-auto mb-8 flex justify-center">
-            {confirmedSuggestions && (
-              <Logo />
-            )}
-          </div>
-
-          {/* Header with back button and centered logo for manual mode */}
+          {/* Header with back button for manual mode */}
           {isManualMode && (
             <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center mb-4">
                 <button
                   onClick={() => {
                     if (isEditMode && onBack) {
@@ -600,10 +590,6 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   </svg>
                   {isEditMode ? 'Back' : 'Back to AI Assistant'}
                 </button>
-                <div className="flex-1 flex justify-center items-center">
-                  <Logo />
-                </div>
-                <div className="w-32"></div> {/* Spacer to balance the layout */}
               </div>
               <div className="text-center mt-2">
                 <div className="flex items-center justify-center space-x-3 mb-2">
@@ -656,6 +642,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                 isAIMode={!!confirmedSuggestions}
                 isEditMode={isEditMode}
                 editGigId={editGigId}
+                onPublishSuccess={onBackToOnboarding}
               />
             </div>
           </div>
