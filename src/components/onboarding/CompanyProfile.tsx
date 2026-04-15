@@ -8,9 +8,7 @@ import {
   Globe,
   Phone,
   Mail,
-  CheckCircle2,
   Pencil,
-  X,
   Save,
   AlertCircle,
   Target,
@@ -124,105 +122,66 @@ const EditableField = ({
 }) => {
   const {
     company,
-    editingField,
     editMode,
     tempValues,
-    setEditingField,
     setTempValues,
     handleApplyChanges
   } = useContext(CompanyContext)!;
 
-  const isEditing = editingField === field && editMode;
   const isHeroField = className.includes('text-white') || className.includes('text-5xl');
   const isLongTextField = field.includes("overview") || field.includes("mission") || field.includes("address");
-
-  const handleFieldEdit = () => {
-    if (editMode) {
-      setEditingField(field);
-      setTempValues((prev: any) => ({
-        ...prev,
-        [field]: getNestedValue(company, field) || "",
-      }));
-    }
-  };
 
   const handleFieldSave = (e: React.MouseEvent) => {
     e.stopPropagation();
     handleApplyChanges(field);
   };
 
-  const handleFieldCancel = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditingField(null);
-    setTempValues((prev: any) => ({
-      ...prev,
-      [field]: undefined,
-    }));
-  };
-
   return (
     <div className={`relative group ${className}`}>
       {Icon && <Icon size={18} className="flex-shrink-0" />}
 
-      <span className={isHeroField ? "" : "text-gray-800"}>{value || "Not set"}</span>
+      {!editMode && <span className={isHeroField ? "" : "text-gray-800"}>{value || "Not set"}</span>}
 
       {editMode && (
-        <button
-          className={`ml-2 inline-flex items-center justify-center rounded-full p-1.5 shadow-sm transition-all ${isHeroField
-            ? 'bg-white/20 text-white hover:bg-white/30'
-            : 'bg-white text-harx-600 ring-1 ring-harx-100 hover:bg-harx-50'
-            }`}
-          onClick={handleFieldEdit}
-          title="Edit field"
-        >
-          <Pencil size={12} />
-        </button>
-      )}
-
-      {isEditing && (
-        <div className="mt-2 w-full rounded-xl border border-harx-100 bg-white p-3 shadow-sm">
+        <div className={`w-full ${isHeroField ? "mt-1" : "mt-1"}`}>
           {isLongTextField ? (
             <textarea
-              value={tempValues[field] || ""}
+              value={(tempValues[field] ?? getNestedValue(company, field) ?? "") as string}
+              rows={4}
               onChange={(e) =>
                 setTempValues((prev: any) => ({
                   ...prev,
                   [field]: e.target.value,
                 }))
               }
-              rows={5}
-              className="w-full rounded-lg border border-harx-100 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+              onBlur={(e) => handleFieldSave(e as unknown as React.MouseEvent)}
+              className={`w-full rounded-xl border px-3 py-2 text-sm outline-none transition-all ${isHeroField
+                ? "border-white/30 bg-white/15 text-white placeholder-white/70 focus:border-white/70"
+                : "border-harx-100 bg-white text-gray-900 focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+                }`}
             />
           ) : (
             <input
               type="text"
-              value={tempValues[field] || ""}
+              value={(tempValues[field] ?? getNestedValue(company, field) ?? "") as string}
               onChange={(e) =>
                 setTempValues((prev: any) => ({
                   ...prev,
                   [field]: e.target.value,
                 }))
               }
-              className="w-full rounded-lg border border-harx-100 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+              onBlur={(e) => handleFieldSave(e as unknown as React.MouseEvent)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleFieldSave(e as unknown as React.MouseEvent);
+                }
+              }}
+              className={`w-full rounded-xl border px-3 py-2 text-sm outline-none transition-all ${isHeroField
+                ? "border-white/30 bg-white/15 text-white placeholder-white/70 focus:border-white/70"
+                : "border-harx-100 bg-white text-gray-900 focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+                }`}
             />
           )}
-
-          <div className="mt-3 flex items-center justify-end gap-2">
-            <button
-              onClick={handleFieldCancel}
-              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-600 hover:bg-gray-50"
-            >
-              <X size={12} />
-              Cancel
-            </button>
-            <button
-              onClick={handleFieldSave}
-              className="inline-flex items-center gap-1 rounded-lg bg-gradient-harx px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm"
-            >
-              <CheckCircle2 size={12} />
-              Save
-            </button>
-          </div>
         </div>
       )}
     </div>
