@@ -1306,10 +1306,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
           {/* Header */}
           {!hasStartedChat && (
             <div className={rep ? 'mb-10 shrink-0 px-1 text-center' : 'mb-10 text-center'}>
-              <div className="mb-8 flex items-center justify-center gap-2">
-                <button type="button" className="rounded-md border border-harx-200 bg-harx-100/70 px-2.5 py-1 text-xs font-medium text-harx-700">Forfait Free</button>
-                <button type="button" className="rounded-md border border-harx-200 bg-white px-2.5 py-1 text-xs font-medium text-harx-700">Mettre a niveau</button>
-              </div>
               <h2
                 className={
                   rep
@@ -1485,20 +1481,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 </div>
               </div>
 
-              {!hasStartedChat && (
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                  {['Code', 'Ecrire', 'Apprendre', 'Vie quotidienne', 'Choix de Claude'].map((chip) => (
-                    <button
-                      key={chip}
-                      type="button"
-                      onClick={() => setChatInput(chip)}
-                      className="rounded-xl border border-harx-200 bg-harx-50/40 px-3 py-1.5 text-xs font-semibold text-harx-700 hover:border-harx-300 hover:bg-harx-100/60"
-                    >
-                      {chip}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
