@@ -421,7 +421,7 @@ const CompanyOnboarding = () => {
     return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, []);
+  }, [loadCompanyProgress]);
 
   // Add listener for custom step completion events from child components
   useEffect(() => {
@@ -475,7 +475,7 @@ const CompanyOnboarding = () => {
       window.removeEventListener('stepCompleted', handleStepCompleted as EventListener);
       window.removeEventListener('contactsUploadCompleted', handleContactsUploadCompleted);
     };
-  }, []);
+  }, [loadCompanyProgress, checkCompanyLeads]);
 
   // Recharger les données périodiquement pour détecter les changements
   // Désactivé car cause trop de rafraîchissements
