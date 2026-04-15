@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, File, FileText, Plus, Mic, Play, Clock, Pause, X, Eye, Brain, Loader2, RefreshCw, Languages, CheckCircle, ChevronRight, Sparkles } from 'lucide-react';
+import { Upload, File, FileText, Plus, Mic, Play, Clock, Pause, X, Eye, Brain, Loader2, RefreshCw, Languages, CheckCircle, ChevronRight, Sparkles, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { KnowledgeItem, CallRecord } from '../types';
 import apiClient from '../api/knowledgeClient';
@@ -486,6 +486,44 @@ const KnowledgeBase: React.FC = () => {
       } catch (error: any) {
         console.error('Error revoking recording URL:', error);
       }
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const document = knowledgeItems.find(item => item.id === id);
+      const callRecording = callRecords.find(call => call.id === id);
+
+      if (document) {
+        await apiClient.delete(`/documents/${id}`);
+        setKnowledgeItems(prevItems => prevItems.filter(item => item.id !== id));
+      } else if (callRecording) {
+        await apiClient.delete(`/call-recordings/${id}`);
+        setCallRecords(prevCalls => {
+          const call = prevCalls.find(call => call.id === id);
+          if (call) {
+            cleanupAudioResources(call);
+          }
+          return prevCalls.filter(call => call.id !== id);
+        });
+
+        if (playingCallId === id) {
+          if (currentAudio) {
+            currentAudio.pause();
+          }
+          setCurrentAudio(null);
+          setIsPlaying(false);
+          setPlayingCallId(null);
+          setCurrentTime(0);
+          setDuration(0);
+        }
+      }
+
+      if (selectedItem?.id === id) setSelectedItem(null);
+      if (selectedDocumentForAnalysis?.id === id) setSelectedDocumentForAnalysis(null);
+    } catch (error: any) {
+      console.error('Error deleting item:', error);
+      alert('There was an error deleting the item. Please try again.');
     }
   };
 
@@ -1088,22 +1126,30 @@ const KnowledgeBase: React.FC = () => {
                     {getItemIcon(item.type)}
                   </div>
                   <div className="flex-grow min-w-0">
-                    <div className="flex justify-between items-start mb-2">
-                       <h3 className="text-lg font-black text-gray-900 truncate tracking-tight uppercase">{item.name}</h3>
-                        <div className="flex space-x-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                          <a 
-                            href={item.fileUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg" 
-                            title="View file"
-                          >
-                            <Eye size={18} />
-                          </a>
-                          <button type="button" onClick={() => handleView(item)} className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg" title="AI analysis"><Brain size={18} /></button>
-                        </div>
-                    </div>
+                    <h3 className="text-lg font-black text-gray-900 truncate tracking-tight uppercase mb-2">{item.name}</h3>
                     <p className="text-xs text-gray-500 mb-4 font-medium italic leading-relaxed line-clamp-2">{item.description}</p>
+                    <div className="flex justify-center items-center gap-2 mb-4 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                      <a
+                        href={item.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg inline-flex"
+                        title="View file"
+                      >
+                        <Eye size={18} />
+                      </a>
+                      <button type="button" onClick={() => handleView(item)} className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg inline-flex" title="AI analysis">
+                        <Brain size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(item.id)}
+                        className="text-red-400 hover:bg-red-50 p-2 rounded-lg inline-flex"
+                        title="Delete"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                     <div className="flex items-center border-t border-gray-50 pt-4">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1.5 text-[10px] font-black text-gray-300 uppercase">
