@@ -175,36 +175,50 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     }
   };
 
-  // Function to update onboarding progress in the main company platform
-  const updateOnboardingProgress = async () => {
+  /** Mark Phase 3 Step 9 (REP Onboarding) complete and notify CompanyOnboarding like other steps. */
+  const updateOnboardingProgress = useCallback(async () => {
     if (!companyId) return;
 
+    const apiUrl =
+      import.meta.env.VITE_COMPANY_API_URL ||
+      "https://v25searchcompanywizardbackend-production.up.railway.app/api";
+    const onboardingUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding`;
+    const stepUrl = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/9`;
+
     try {
-      const apiUrl = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
-      const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/9`;
+      await axios.put(stepUrl, { status: "completed" });
+    } catch (error) {
+      console.error("[RepOnboarding] Failed to mark step 9 completed:", error);
+      window.dispatchEvent(new Event("refreshOnboardingProgress"));
+      return;
+    }
 
-      console.log('[RepOnboarding] Marking Step 9 as completed:', endpoint);
-      const response = (await axios.put(endpoint, { status: "completed" })) as any;
-
-      if (response.data) {
-        // Update the cookie to keep frontend in sync
-        Cookies.set('companyOnboardingProgress', JSON.stringify(response.data), { expires: 7 });
-
-        // Notify parent component for real-time UI update
-        window.dispatchEvent(new CustomEvent('stepCompleted', {
+    try {
+      const { data: progress } = await axios.get(onboardingUrl);
+      const raw = progress as Record<string, unknown>;
+      const completedSteps = Array.isArray(raw?.completedSteps)
+        ? [...(raw.completedSteps as number[])]
+        : [];
+      if (!completedSteps.includes(9)) completedSteps.push(9);
+      const phaseId = typeof raw?.currentPhase === "number" ? (raw.currentPhase as number) : 3;
+      const cookiePayload = { ...raw, completedSteps };
+      Cookies.set("companyOnboardingProgress", JSON.stringify(cookiePayload), { expires: 7 });
+      window.dispatchEvent(
+        new CustomEvent("stepCompleted", {
           detail: {
             stepId: 9,
-            phaseId: 3,
-            status: 'completed',
-            completedSteps: response.data.completedSteps || []
-          }
-        }));
-        console.log('[RepOnboarding] Step 9 successfully marked as completed');
-      }
+            phaseId,
+            status: "completed",
+            completedSteps,
+          },
+        })
+      );
+      console.log("[RepOnboarding] Step 9 synced with onboarding API");
     } catch (error) {
-      console.error('[RepOnboarding] Failed to update onboarding progress:', error);
+      console.error("[RepOnboarding] Failed to reload onboarding after step 9:", error);
+      window.dispatchEvent(new Event("refreshOnboardingProgress"));
     }
-  };
+  }, [companyId]);
 
   // Function to fetch trainings for the company
   const fetchCompanyTrainings = useCallback(async () => {
@@ -302,9 +316,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       console.log('[RepOnboarding] Total unique trainings found:', journeysArray.length);
       setTrainings(journeysArray);
 
-      // Auto-complete step 9 if trainings exist
+      // Auto-complete step 9 if trainings already exist (e.g. returning user)
       if (journeysArray.length > 0) {
-        updateOnboardingProgress();
+        void updateOnboardingProgress();
         
         // --- DIAGNOSTIC: Log first journey structure ---
         console.log('[RepOnboarding] Sample journey from backend:', {
@@ -328,13 +342,16 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     } finally {
       setLoadingTrainings(false);
     }
-  }, [companyId, legacyCompanyId, filterGigId]);
+  }, [companyId, legacyCompanyId, filterGigId, updateOnboardingProgress]);
 
-  /** Ferme le Journey Builder embarqué et revient à la liste « Training & Certification » (évite l’écran JourneySuccess / déploiement). */
+  /** Après publish / launch du parcours : même flux que les autres étapes (step 9 + refresh UI parent). */
   const handleEmbeddedJourneyComplete = useCallback(() => {
     setShowTraining({ isOpen: false });
-    void fetchCompanyTrainings();
-  }, [fetchCompanyTrainings]);
+    void (async () => {
+      await updateOnboardingProgress();
+      await fetchCompanyTrainings();
+    })();
+  }, [updateOnboardingProgress, fetchCompanyTrainings]);
 
   // Load company ID on mount
   useEffect(() => {
