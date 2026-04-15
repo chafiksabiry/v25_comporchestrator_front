@@ -47,19 +47,6 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
   onSetSelectedNumber,
   onSetShowPurchaseModal
 }) => {
-  const [bundleSid, setBundleSid] = React.useState('');
-  const [addressSid, setAddressSid] = React.useState('');
-  const [showAdvanced, setShowAdvanced] = React.useState(false);
-
-  // Reset SIDs when modal closes or opens
-  React.useEffect(() => {
-    if (isOpen) {
-      setBundleSid('');
-      setAddressSid('');
-    }
-  }, [isOpen]);
-
-
   if (!isOpen) return null;
 
   return (
@@ -142,42 +129,6 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                     </div>
                   )}
 
-                  {provider === 'twilio' && (
-                    <div className="mt-4 space-y-3">
-                      <button
-                        onClick={() => setShowAdvanced(!showAdvanced)}
-                        className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
-                      >
-                        {showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options (Regulatory SIDs)'}
-                      </button>
-
-                      {showAdvanced && (
-                        <div className="rounded-lg bg-gray-50 p-4 space-y-3 border border-gray-200">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">Bundle SID (Optional)</label>
-                            <input
-                              type="text"
-                              value={bundleSid}
-                              onChange={(e) => setBundleSid(e.target.value)}
-                              placeholder="BUxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">Address SID (Optional)</label>
-                            <input
-                              type="text"
-                              value={addressSid}
-                              onChange={(e) => setAddressSid(e.target.value)}
-                              placeholder="ADxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            />
-                            <p className="mt-1 text-xs text-gray-400">If left empty, the system will use default or automated values.</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               ))}
             {purchaseStatus === 'purchasing' && (
@@ -249,7 +200,7 @@ export const PurchaseModal: React.FC<PurchaseModalProps> = ({
                     Cancel
                   </button>
                   <button
-                    onClick={() => onConfirmPurchase({ bundleSid, addressSid })}
+                    onClick={() => onConfirmPurchase()}
                     className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
                   >
                     Confirm Purchase
