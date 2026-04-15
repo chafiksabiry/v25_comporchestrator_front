@@ -670,15 +670,6 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
         {/* Navigation Buttons */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex gap-4">
-            {onBackToOnboarding && (
-              <button
-                onClick={onBackToOnboarding}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-harx text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-harx-500/20 hover:shadow-harx-500/40 hover:-translate-y-0.5 transition-all duration-300"
-              >
-                <ArrowUp className="w-4 h-4 -rotate-90" />
-                Back to Onboarding
-              </button>
-            )}
             {onBackToGigs && (
               <button
                 onClick={onBackToGigs}
