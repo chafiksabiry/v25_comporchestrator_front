@@ -1,10 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen } from 'lucide-react';
+import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase } from 'lucide-react';
 import { ContentUpload } from '../../types/core';
 import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef } from '../../infrastructure/services/AIService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
 import { DraftService } from '../../infrastructure/services/DraftService';
 import { cloudinaryService } from '../../lib/cloudinaryService';
+import { getGigsByCompanyId } from '../../../../api/matching';
+import type { Gig } from '../../../../types/matching';
 import PresentationPreview from '../Training/PresentationPreview';
 import { scrollJourneyMainToTop } from './journeyScroll';
 
@@ -53,6 +55,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
   >([]);
   const [gigCallRecordings, setGigCallRecordings] = useState<CallRecordingRef[]>([]);
   const [isLoadingGigKbDocs, setIsLoadingGigKbDocs] = useState(false);
+  const [companyGigs, setCompanyGigs] = useState<Gig[]>([]);
+  const [isLoadingCompanyGigs, setIsLoadingCompanyGigs] = useState(false);
   const [chatMessages, setChatMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; text: string }>>([
     {
       id: `assistant-${Date.now()}`,
@@ -156,6 +160,31 @@ export default function ContentUploader(props: ContentUploaderProps) {
       cancelled = true;
     };
   }, [gigId, useKbForPresentation]);
+
+  useEffect(() => {
+    const companyId = company?.id || company?._id;
+    if (!companyId) {
+      setCompanyGigs([]);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingCompanyGigs(true);
+    getGigsByCompanyId(String(companyId))
+      .then((rows) => {
+        if (!cancelled) setCompanyGigs(Array.isArray(rows) ? rows : []);
+      })
+      .catch(() => {
+        if (!cancelled) setCompanyGigs([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingCompanyGigs(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [company?.id, company?._id]);
 
   const getFileIcon = (type: ContentUpload['type'], harxLayout?: boolean) => {
     const sz = harxLayout ? 'h-6 w-6' : 'h-8 w-8';
@@ -1046,7 +1075,48 @@ export default function ContentUploader(props: ContentUploaderProps) {
             </p>
           </div>
 
-          <div className={rep ? 'mb-2 shrink-0' : 'mb-4'}>
+          <div className={rep ? 'mb-2 grid gap-3 lg:grid-cols-[260px_minmax(0,1fr)]' : 'mb-4 grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]'}>
+            <aside className={rep ? 'rounded-xl border border-harx-100 bg-white p-3' : 'rounded-2xl border border-gray-200 bg-white p-4'}>
+              <div className={rep ? 'mb-2 flex items-center gap-1.5 text-xs font-extrabold text-gray-900' : 'mb-3 flex items-center gap-2 text-sm font-bold text-gray-900'}>
+                <Briefcase className={rep ? 'h-3.5 w-3.5 text-harx-600' : 'h-4 w-4 text-fuchsia-600'} />
+                Projects / Gigs
+              </div>
+              {isLoadingCompanyGigs ? (
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading projects...
+                </div>
+              ) : companyGigs.length === 0 ? (
+                <p className={rep ? 'text-[10px] text-gray-500' : 'text-xs text-gray-500'}>
+                  Aucun gig disponible pour cette company.
+                </p>
+              ) : (
+                <div className={rep ? 'max-h-56 space-y-1.5 overflow-y-auto pr-1' : 'max-h-72 space-y-2 overflow-y-auto pr-1'}>
+                  {companyGigs.map((gig: any) => {
+                    const id = String(gig?._id || gig?.id || '');
+                    const isSelected = !!gigId && id === String(gigId);
+                    return (
+                      <div
+                        key={id || gig?.title}
+                        className={`rounded-lg border px-2.5 py-2 ${
+                          isSelected ? 'border-fuchsia-300 bg-fuchsia-50' : 'border-gray-200 bg-gray-50/50'
+                        }`}
+                      >
+                        <div className={rep ? 'truncate text-xs font-bold text-gray-900' : 'truncate text-sm font-semibold text-gray-900'}>
+                          {gig?.title || 'Untitled project'}
+                        </div>
+                        {gig?.category && (
+                          <div className={rep ? 'mt-0.5 text-[10px] text-gray-500' : 'mt-1 text-xs text-gray-500'}>
+                            {gig.category}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </aside>
+
             <div className={rep ? 'rounded-xl border border-harx-100 bg-white p-3' : 'rounded-2xl border border-gray-200 bg-white p-4'}>
               <div className={rep ? 'mb-2 text-xs font-bold text-gray-900' : 'mb-3 text-sm font-semibold text-gray-900'}>
                 Chat formation interactive
