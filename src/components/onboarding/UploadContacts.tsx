@@ -773,6 +773,34 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
     }
   };
 
+  /** Same pattern as TelephonySetup: parent listens for `stepCompleted` to merge progress without a full reload. */
+  const notifyUploadContactsStepSynced = async () => {
+    const companyId = propCompanyId || Cookies.get("companyId");
+    if (!companyId) return;
+    try {
+      const onboardingResponse = await axios.get(
+        `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
+      );
+      const d = onboardingResponse.data as { completedSteps?: number[]; currentPhase?: number };
+      const completedSteps = Array.isArray(d?.completedSteps) ? [...d.completedSteps] : [];
+      if (!completedSteps.includes(5)) completedSteps.push(5);
+      const phaseId = typeof d?.currentPhase === "number" ? d.currentPhase : 2;
+      window.dispatchEvent(
+        new CustomEvent("stepCompleted", {
+          detail: {
+            stepId: 5,
+            phaseId,
+            status: "completed",
+            completedSteps,
+          },
+        })
+      );
+    } catch (e) {
+      console.error("Failed to sync onboarding UI after Upload Contacts:", e);
+      window.dispatchEvent(new Event("refreshOnboardingProgress"));
+    }
+  };
+
   const handleSaveLeads = async () => {
     if (!parsedLeads || parsedLeads.length === 0) return;
 
@@ -890,6 +918,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
               phaseId: 2,
               data: { success: true, leadsSaved: savedCount }
             }));
+            await notifyUploadContactsStepSynced();
           }
         } catch (error) {
           console.error('Error updating onboarding progress:', error);
@@ -1229,6 +1258,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
               `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/5`,
               { status: 'completed' }
             );
+            await notifyUploadContactsStepSynced();
           }
         } catch (error) {
           console.error('Error updating onboarding progress after Zoho import:', error);
