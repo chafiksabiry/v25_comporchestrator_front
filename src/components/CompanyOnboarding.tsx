@@ -1268,7 +1268,16 @@ const CompanyOnboarding = () => {
       />
     );
   } else if (showGigCreation) {
-    activeComponent = <PrompAI onBack={handleBackToOnboarding} />;
+    activeComponent = (
+      <PrompAI
+        onBack={handleBackToOnboarding}
+        onBackToGigs={() => {
+          setShowGigCreation(false);
+          setShowGigDetails(true);
+        }}
+        onBackToOnboarding={handleBackToOnboarding}
+      />
+    );
   } else if (showTelephonySetup) {
     activeComponent = (
       <TelephonySetup companyId={companyId} />
