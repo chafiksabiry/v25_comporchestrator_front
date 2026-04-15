@@ -692,13 +692,23 @@ const CompanyOnboarding = () => {
 
     } catch (error) {
       console.error("❌ Error loading company progress:", error);
-      setCurrentPhase(1);
-      setDisplayedPhase(1);
-      setCompletedSteps([]);
+      // Keep the current UI state on transient API errors.
+      // Resetting to phase 1 causes false "locked" screens until manual refresh.
     } finally {
       setIsInitialLoad(false);
     }
   }, [companyId]);
+
+  const refreshProgressWithRetry = useCallback(async () => {
+    try {
+      await loadCompanyProgress();
+    } catch (e) {
+      console.error("First progress refresh failed, retrying...", e);
+      // Short retry helps after returning from embedded steps where backend state settles a bit later
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await loadCompanyProgress();
+    }
+  }, [loadCompanyProgress]);
 
   // After Stripe redirect, subscription row may appear slightly after the first GET; re-sync progress.
   useEffect(() => {
@@ -1164,7 +1174,7 @@ const CompanyOnboarding = () => {
 
       // Refresh progress
       if (companyId) {
-        await loadCompanyProgress();
+        await refreshProgressWithRetry();
       }
 
       // Simply close UploadContacts and return to normal CompanyOnboarding state
@@ -1183,7 +1193,7 @@ const CompanyOnboarding = () => {
 
     // Refresh progress
     if (companyId) {
-      await loadCompanyProgress();
+      await refreshProgressWithRetry();
     }
   };
 
