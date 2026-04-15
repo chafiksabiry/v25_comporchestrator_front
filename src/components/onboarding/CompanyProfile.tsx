@@ -180,62 +180,48 @@ const EditableField = ({
       )}
 
       {isEditing && (
-        <div className="fixed inset-0 z-[120] flex items-end justify-center bg-black/30 p-4 md:items-center">
-          <div className="w-full max-w-2xl rounded-2xl border border-harx-100 bg-white p-5 shadow-2xl">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-black uppercase tracking-wider text-harx-600">
-                Edit Field
-              </h3>
-              <button
-                onClick={handleFieldCancel}
-                className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-              >
-                <X size={16} />
-              </button>
-            </div>
+        <div className="mt-2 w-full rounded-xl border border-harx-100 bg-white p-3 shadow-sm">
+          {isLongTextField ? (
+            <textarea
+              value={tempValues[field] || ""}
+              onChange={(e) =>
+                setTempValues((prev: any) => ({
+                  ...prev,
+                  [field]: e.target.value,
+                }))
+              }
+              rows={5}
+              className="w-full rounded-lg border border-harx-100 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+            />
+          ) : (
+            <input
+              type="text"
+              value={tempValues[field] || ""}
+              onChange={(e) =>
+                setTempValues((prev: any) => ({
+                  ...prev,
+                  [field]: e.target.value,
+                }))
+              }
+              className="w-full rounded-lg border border-harx-100 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+            />
+          )}
 
-            {isLongTextField ? (
-              <textarea
-                value={tempValues[field] || ""}
-                onChange={(e) =>
-                  setTempValues((prev: any) => ({
-                    ...prev,
-                    [field]: e.target.value,
-                  }))
-                }
-                rows={5}
-                className="w-full rounded-xl border border-harx-100 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
-              />
-            ) : (
-              <input
-                type="text"
-                value={tempValues[field] || ""}
-                onChange={(e) =>
-                  setTempValues((prev: any) => ({
-                    ...prev,
-                    [field]: e.target.value,
-                  }))
-                }
-                className="w-full rounded-xl border border-harx-100 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
-              />
-            )}
-
-            <div className="mt-4 flex items-center justify-end gap-2">
-              <button
-                onClick={handleFieldCancel}
-                className="inline-flex items-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-xs font-bold uppercase tracking-wider text-gray-600 hover:bg-gray-50"
-              >
-                <X size={14} />
-                Cancel
-              </button>
-              <button
-                onClick={handleFieldSave}
-                className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-sm"
-              >
-                <CheckCircle2 size={14} />
-                Save
-              </button>
-            </div>
+          <div className="mt-3 flex items-center justify-end gap-2">
+            <button
+              onClick={handleFieldCancel}
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-600 hover:bg-gray-50"
+            >
+              <X size={12} />
+              Cancel
+            </button>
+            <button
+              onClick={handleFieldSave}
+              className="inline-flex items-center gap-1 rounded-lg bg-gradient-harx px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm"
+            >
+              <CheckCircle2 size={12} />
+              Save
+            </button>
           </div>
         </div>
       )}
