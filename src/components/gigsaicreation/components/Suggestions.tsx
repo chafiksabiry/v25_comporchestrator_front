@@ -5973,18 +5973,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     <div className="min-h-screen bg-gray-50">
       {/* Header Section */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center mb-8">
-            <Logo className="mb-6" />
-            <div className="space-y-4">
-              <h1 className="text-4xl font-bold bg-gradient-harx bg-clip-text text-transparent tracking-tight">
-                AI-Powered Gig Creation
-              </h1>
-              <p className="text-lg text-gray-600 max-w-4xl mx-auto leading-relaxed">
-                Review and refine the AI-generated suggestions for your gig. Customize each section to match your specific requirements.
-              </p>
-            </div>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
 
           {/* Navigation Bar */}
           <div className="flex items-center justify-between bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
