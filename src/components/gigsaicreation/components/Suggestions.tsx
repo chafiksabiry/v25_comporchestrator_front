@@ -5883,13 +5883,15 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
 
   if (loading && !props.initialSuggestions) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-8">
+      <div className="w-full flex-1 min-h-[70vh] flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center space-y-8 animate-in fade-in zoom-in duration-500">
           {/* Mascot Logo - Enhanced Central focus */}
           <div className="transform scale-150 transition-all duration-1000">
             <Logo />
           </div>
-          <p className="mt-8 text-2xl font-bold bg-gradient-harx bg-clip-text text-transparent animate-pulse tracking-widest drop-shadow-sm border-2 border-harx-200 px-6 py-2 rounded-full shadow-inner bg-white/50 backdrop-blur-md">generating...</p>
+          <p className="mt-8 text-2xl font-bold bg-gradient-harx bg-clip-text text-transparent animate-pulse tracking-widest drop-shadow-sm border-2 border-harx-200 px-8 py-3 rounded-full shadow-inner bg-white/50 backdrop-blur-md">
+            generating...
+          </p>
         </div>
       </div>
     );
