@@ -1126,30 +1126,32 @@ const KnowledgeBase: React.FC = () => {
                     {getItemIcon(item.type)}
                   </div>
                   <div className="flex-grow min-w-0">
-                    <h3 className="text-lg font-black text-gray-900 truncate tracking-tight uppercase mb-2">{item.name}</h3>
-                    <p className="text-xs text-gray-500 mb-4 font-medium italic leading-relaxed line-clamp-2">{item.description}</p>
-                    <div className="flex justify-center items-center gap-2 mb-4 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                      <a
-                        href={item.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg inline-flex"
-                        title="View file"
-                      >
-                        <Eye size={18} />
-                      </a>
-                      <button type="button" onClick={() => handleView(item)} className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg inline-flex" title="AI analysis">
-                        <Brain size={18} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(item.id)}
-                        className="text-red-400 hover:bg-red-50 p-2 rounded-lg inline-flex"
-                        title="Delete"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                    <div className="flex justify-between items-start gap-3 mb-2">
+                      <h3 className="text-lg font-black text-gray-900 truncate tracking-tight uppercase flex-1 min-w-0 pr-2">{item.name}</h3>
+                      <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                        <a
+                          href={item.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg inline-flex"
+                          title="View file"
+                        >
+                          <Eye size={18} />
+                        </a>
+                        <button type="button" onClick={() => handleView(item)} className="text-harx-500 hover:bg-harx-50 p-2 rounded-lg inline-flex" title="AI analysis">
+                          <Brain size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(item.id)}
+                          className="text-red-400 hover:bg-red-50 p-2 rounded-lg inline-flex"
+                          title="Delete"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </div>
+                    <p className="text-xs text-gray-500 mb-4 font-medium italic leading-relaxed line-clamp-2">{item.description}</p>
                     <div className="flex items-center border-t border-gray-50 pt-4">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1.5 text-[10px] font-black text-gray-300 uppercase">
