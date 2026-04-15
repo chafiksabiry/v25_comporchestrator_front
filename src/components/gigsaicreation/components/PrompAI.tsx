@@ -670,22 +670,22 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
         {/* Navigation Buttons */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex gap-4">
-            {onBackToGigs && (
-              <button
-                onClick={onBackToGigs}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm"
-              >
-                <Briefcase className="w-4 h-4" />
-                Back to Gigs
-              </button>
-            )}
             {onBackToOnboarding && (
               <button
                 onClick={onBackToOnboarding}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all shadow-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-harx text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-harx-500/20 hover:shadow-harx-500/40 hover:-translate-y-0.5 transition-all duration-300"
               >
                 <ArrowUp className="w-4 h-4 -rotate-90" />
                 Back to Onboarding
+              </button>
+            )}
+            {onBackToGigs && (
+              <button
+                onClick={onBackToGigs}
+                className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-md border border-white/40 rounded-xl text-xs font-black uppercase tracking-widest text-gray-600 hover:bg-white/80 hover:text-harx-500 transition-all duration-300 shadow-sm"
+              >
+                <Briefcase className="w-4 h-4" />
+                Back to Gigs
               </button>
             )}
           </div>

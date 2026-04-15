@@ -264,7 +264,7 @@ const CompanyOnboarding = () => {
 
   // Sync global back button with App.tsx header
   useEffect(() => {
-    const isAnyFocusedViewActive = showGigDetails || showTelephonySetup || showKnowledgeBase || showUploadContacts || activeStep !== null;
+    const isAnyFocusedViewActive = showGigDetails || showGigCreation || showTelephonySetup || showKnowledgeBase || showUploadContacts || activeStep !== null;
 
     if (isAnyFocusedViewActive) {
       let label = 'Back to onboarding';
@@ -272,6 +272,8 @@ const CompanyOnboarding = () => {
 
       if (showGigDetails) {
         action = () => setShowGigDetails(false);
+      } else if (showGigCreation) {
+        action = () => setShowGigCreation(false);
       } else if (showTelephonySetup) {
         action = () => setShowTelephonySetup(false);
       } else if (showKnowledgeBase) {
@@ -297,7 +299,7 @@ const CompanyOnboarding = () => {
         detail: { action: null }
       }));
     };
-  }, [showGigDetails, showTelephonySetup, showKnowledgeBase, showUploadContacts, activeStep]);
+  }, [showGigDetails, showGigCreation, showTelephonySetup, showKnowledgeBase, showUploadContacts, activeStep]);
 
   // Single useEffect to handle UploadContacts state and parsed leads cleanup
   useEffect(() => {
