@@ -665,10 +665,10 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
-      <div className="w-full h-full py-6 px-4 mx-auto max-w-5xl">
+    <div className="h-[calc(100vh-80px)] overflow-hidden flex flex-col bg-[#F8FAFC]">
+      <div className="w-full max-w-5xl mx-auto px-4 pt-6 shrink-0">
         {/* Navigation Buttons */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center">
           <div className="flex gap-4">
             {onBackToGigs && (
               <button
@@ -681,9 +681,10 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
             )}
           </div>
         </div>
+      </div>
 
-
-        <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/30 p-8">
+      <div className="flex-1 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-4xl bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/30 p-8 transform -translate-y-12">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -734,14 +735,14 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
                   onChange={(e) => setInput(e.target.value)}
                   rows={1}
                   placeholder="Example: I need a sales campaign targeting Spanish-speaking customers in Europe, with a focus on insurance products..."
-                  className="w-full min-h-[88px] max-h-[172px] pl-6 pr-14 py-4 bg-[#f4f4f4] border-none rounded-[26px] focus:ring-0 text-gray-900 placeholder-gray-500 text-lg resize-none shadow-sm overflow-y-auto"
+                  className="w-full min-h-[120px] max-h-[220px] pl-6 pr-14 py-5 bg-[#f4f4f4] border-none rounded-[26px] focus:ring-0 text-gray-900 placeholder-gray-500 text-xl resize-none shadow-sm overflow-y-auto"
                 />
                 <button
                   type="submit"
                   disabled={!input.trim()}
-                  className="absolute bottom-3 right-3 p-3 bg-gradient-harx text-white rounded-2xl hover:scale-105 disabled:bg-gray-200 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-xl shadow-harx-500/20"
+                  className="absolute bottom-4 right-4 p-4 bg-gradient-harx text-white rounded-2xl hover:scale-105 disabled:bg-gray-200 disabled:scale-100 disabled:cursor-not-allowed transition-all duration-300 shadow-xl shadow-harx-500/20"
                 >
-                  <ArrowUp className="w-6 h-6 stroke-[3]" />
+                  <ArrowUp className="w-7 h-7 stroke-[3]" />
                 </button>
               </div>
             </div>
