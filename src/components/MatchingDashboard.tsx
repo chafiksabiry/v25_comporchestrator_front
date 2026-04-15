@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Users,
     Briefcase,
-    Zap,
-    Settings
+    Zap
 } from 'lucide-react';
 import {
     Rep,
@@ -25,9 +24,7 @@ import {
     rejectEnrollmentRequest,
     getAllSkills,
     getLanguages,
-    saveGigWeights,
     getGigWeights,
-    resetGigWeights,
     Skill,
     Language
 } from '../api/matching';
@@ -48,7 +45,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
     const [matches, setMatches] = useState<Match[]>([]);
     const [loading, setLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(true);
-    const [showWeights, setShowWeights] = useState(true);
     const [weights, setWeights] = useState<MatchingWeights>({
         experience: 0,
         skills: 0,
@@ -71,9 +67,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         soft: Skill[];
     }>({ professional: [], technical: [], soft: [] });
     const [languages, setLanguages] = useState<Language[]>([]);
-    const [gigHasWeights, setGigHasWeights] = useState(false);
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-    const [originalWeights, setOriginalWeights] = useState<MatchingWeights | null>(null);
     const [activeSection, setActiveSection] = useState<'matching' | 'invited' | 'enrollment' | 'active'>('matching');
     const [expandedReps, setExpandedReps] = useState<Set<string>>(new Set());
     const [expandedGigs, setExpandedGigs] = useState<Set<string>>(new Set());
@@ -242,11 +235,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         setMatches([]);
         setSearchTerm(''); // Clear search when selecting a new gig
 
-        // Reset weights state
-        setGigHasWeights(false);
-        setHasUnsavedChanges(false);
-        setOriginalWeights(null);
-
         let currentWeights = weights;
 
         try {
@@ -254,9 +242,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             try {
                 const savedWeights = await getGigWeights(gig._id || '');
                 setWeights(savedWeights.matchingWeights);
-                setOriginalWeights(savedWeights.matchingWeights);
-                setGigHasWeights(true);
-                setHasUnsavedChanges(false);
                 currentWeights = savedWeights.matchingWeights;
                 console.log('✅ Gig has saved weights, loaded:', savedWeights.matchingWeights);
             } catch (error: any) {
@@ -268,7 +253,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                 } else {
                     console.error('❌ Unexpected error loading weights for gig:', gig._id, error);
                 }
-                setGigHasWeights(false);
                 // Keep current weights
             }
 
@@ -347,116 +331,6 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             console.error("Error getting matches:", error);
             setError("Failed to get matches. Please try again.");
             setMatches([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleWeightChange = (key: string, value: number) => {
-        const newWeights = {
-            ...weights,
-            [key]: value,
-        };
-
-        setWeights(newWeights);
-
-        // Check if weights have been modified from original
-        if (originalWeights && gigHasWeights) {
-            const hasChanges = Object.keys(newWeights).some(
-                k => Math.abs(newWeights[k as keyof MatchingWeights] - originalWeights[k as keyof MatchingWeights]) > 0.001
-            );
-            setHasUnsavedChanges(hasChanges);
-        }
-
-        // Auto-search when weights change if a gig is selected (without reloading saved weights)
-        if (selectedGig) {
-            searchWithCurrentWeights();
-        }
-    };
-
-    // New function to search with current weights without reloading from DB
-    const searchWithCurrentWeights = async () => {
-        if (!selectedGig) return;
-
-        setLoading(true);
-        setError(null);
-
-        try {
-            console.log("Searching with current weights (no DB reload):", weights);
-            const matchesData = await findMatchesForGig(selectedGig._id || '', weights);
-            console.log("=== MATCHES DATA WITH CURRENT WEIGHTS ===", matchesData);
-
-            setMatches(matchesData.preferedmatches || matchesData.matches || []);
-
-            // Fetch invited reps for this gig
-            const gigAgents = await getGigAgentsForGig(selectedGig._id || '');
-            const invitedAgentIds = new Set<string>(gigAgents.map((ga: any) => ga.agentId as string));
-            setInvitedAgents(invitedAgentIds);
-
-        } catch (error) {
-            console.error("Error searching with current weights:", error);
-            setError("Failed to get matches. Please try again.");
-            setMatches([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const resetWeights = () => {
-        const defaultWeights: MatchingWeights = {
-            experience: 0,
-            skills: 0,
-            industry: 0,
-            languages: 0,
-            availability: 0,
-            timezone: 0,
-            activities: 0,
-            region: 0,
-        };
-        setWeights(defaultWeights);
-
-        // Check if we have unsaved changes after reset
-        if (originalWeights && gigHasWeights) {
-            const hasChanges = Object.keys(defaultWeights).some(
-                k => Math.abs(defaultWeights[k as keyof MatchingWeights] - originalWeights[k as keyof MatchingWeights]) > 0.001
-            );
-            setHasUnsavedChanges(hasChanges);
-        }
-
-        // Auto-search when weights are reset if a gig is selected (without reloading saved weights)
-        if (selectedGig) {
-            searchWithCurrentWeights();
-        }
-    };
-
-    // Save weights for selected gig and search
-    const saveWeightsForGig = async () => {
-        console.log('🚨 SAVE WEIGHTS FOR GIG CALLED');
-
-        if (!selectedGig) {
-            console.error('No gig selected');
-            setError('No gig selected');
-            return;
-        }
-
-        console.log('🔄 MANUAL SAVE TRIGGERED - User clicked save button');
-        setLoading(true);
-        setError(null);
-
-        try {
-            // Save weights to backend
-            await saveGigWeights(selectedGig._id || '', weights);
-            console.log('✅ Weights saved successfully for gig:', selectedGig._id);
-            setGigHasWeights(true);
-            setOriginalWeights(weights);
-            setHasUnsavedChanges(false);
-
-            // Trigger new search with saved weights using the new function
-            await searchWithCurrentWeights();
-
-        } catch (error) {
-            console.error('❌ Error saving weights or searching:', error);
-            setError('Failed to save weights or search. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -788,171 +662,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                         <h2 className="text-2xl font-bold text-slate-900">🎯 Smart Matching System</h2>
                                         <p className="text-slate-500">Find and match the perfect reps for your gigs</p>
                                     </div>
-                                    <button
-                                        onClick={() => setShowWeights(!showWeights)}
-                                        className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 text-sm font-medium ${showWeights
-                                            ? 'bg-harx-500 text-white hover:bg-indigo-700'
-                                            : 'bg-white border border-slate-200 text-slate-900 hover:bg-gray-50'
-                                            }`}
-                                    >
-                                        <Settings size={16} className={showWeights ? 'rotate-180' : ''} />
-                                        <span>{showWeights ? 'Close Weights' : 'Adjust Weights'}</span>
-                                    </button>
                                 </div>
-
-                                {/* Weights Configuration Panel */}
-                                {showWeights && (
-                                    <div className="bg-white rounded-xl shadow-lg p-6 mb-6 transform transition-all duration-300 ease-in-out border border-harx-100 overflow-hidden">
-                                        <div className="flex justify-between items-center mb-4">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="p-2 bg-harx-50 rounded-lg shadow-sm border border-harx-200">
-                                                    <Settings size={20} className="text-harx-500" />
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center space-x-2">
-                                                        <h2 className="text-lg font-bold text-gray-900">Matching Weights Configuration</h2>
-                                                        {hasUnsavedChanges && (
-                                                            <span className="inline-flex items-center px-3 py-1 bg-harx-alt-100 text-harx-alt-600 rounded-full text-sm font-medium animate-pulse border border-harx-alt-200">
-                                                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                                                                </svg>
-                                                                Unsaved changes
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <p className="text-gray-500 text-sm mt-1">Customize how each factor influences the matching algorithm</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center space-x-4">
-                                                <button
-                                                    onClick={resetWeights}
-                                                    disabled={loading}
-                                                    className="px-6 py-3 bg-gray-600 text-white hover:bg-gray-700 rounded-xl shadow-lg transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5"
-                                                >
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                                    </svg>
-                                                    <span className="font-semibold">Reset to Default</span>
-                                                </button>
-                                                {selectedGig && gigHasWeights && (
-                                                    <button
-                                                        onClick={async () => {
-                                                            if (!selectedGig) return;
-                                                            try {
-                                                                setLoading(true);
-                                                                await resetGigWeights(selectedGig._id || '');
-                                                                setGigHasWeights(false);
-                                                                resetWeights(); // Reset UI weights to default
-                                                                console.log('✅ Gig weights reset successfully');
-                                                            } catch (error) {
-                                                                console.error('❌ Error resetting gig weights:', error);
-                                                                setError('Failed to reset gig weights');
-                                                            } finally {
-                                                                setLoading(false);
-                                                            }
-                                                        }}
-                                                        disabled={loading}
-                                                        className="px-6 py-3 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 rounded-xl shadow-lg transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5"
-                                                    >
-                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                        </svg>
-                                                        <span className="font-semibold">Delete Saved Weights</span>
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Weights Grid */}
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4 w-full overflow-hidden">
-                                            {Object.entries(weights).map(([key, value]) => (
-                                                <div key={`weight-${key}`} className="bg-gray-50 rounded-xl p-3 shadow-md border border-gray-100 hover:border-harx-200 transition-all duration-200 group w-full max-w-full">
-                                                    <div className="flex justify-between items-center mb-3">
-                                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                                            {key}
-                                                        </label>
-                                                        <div className={`px-2 py-1 rounded text-xs font-bold ${Math.round(value * 100) >= 20 ? 'bg-harx-100 text-harx-600 shadow-sm shadow-harx-500/10' :
-                                                            Math.round(value * 100) >= 10 ? 'bg-harx-alt-100 text-harx-alt-600' :
-                                                                'bg-gray-200 text-gray-500'
-                                                            }`}>
-                                                            {Math.round(value * 100)}%
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Custom Slider */}
-                                                    <div className="relative mb-2 px-1">
-                                                        <input
-                                                            type="range"
-                                                            min="0"
-                                                            max="1"
-                                                            step="0.05"
-                                                            value={value}
-                                                            onChange={(e: { target: { value: string; }; }) =>
-                                                                handleWeightChange(key, parseFloat(e.target.value))
-                                                            }
-                                                            className="w-full h-1.5 bg-white rounded-full appearance-none cursor-pointer slider"
-                                                            style={{
-                                                                background: `linear-gradient(to right, #ff4d4d 0%, #ec4899 ${value * 100}%, #e5e7eb ${value * 100}%, #e5e7eb 100%)`
-                                                            }}
-                                                        />
-                                                        <div
-                                                            className="absolute top-1/2 transform -translate-y-1/2 w-4 h-4 bg-gray-900 rounded-full shadow-lg border-2 border-harx-500 pointer-events-none transition-all duration-200 group-hover:scale-110 group-hover:bg-white"
-                                                            style={{ left: `calc(${value * 100}% - 4px)` }}
-                                                        ></div>
-                                                    </div>
-
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        {/* Save Button */}
-                                        {selectedGig && (
-                                            <div className="flex justify-center">
-                                                <button
-                                                    onClick={() => {
-                                                        console.log('🎯 BUTTON CLICKED - User manually clicked save button');
-                                                        saveWeightsForGig();
-                                                    }}
-                                                    disabled={loading}
-                                                    className={`group relative px-6 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 shadow-lg transform hover:-translate-y-0.5 hover:shadow-xl font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed ${hasUnsavedChanges
-                                                        ? 'bg-gradient-to-r from-harx-500 to-harx-700 hover:from-harx-600 hover:to-harx-800 text-white animate-pulse'
-                                                        : gigHasWeights
-                                                            ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white'
-                                                            : 'bg-gradient-to-r from-harx-600 to-harx-500 hover:from-harx-700 hover:to-harx-600 text-white'
-                                                        }`}
-                                                >
-                                                    {/* Animated Background */}
-                                                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-
-                                                    {/* Icon */}
-                                                    {loading ? (
-                                                        <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                                                    ) : (
-                                                        <svg className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                    )}
-
-                                                    {/* Text */}
-                                                    <span className="relative z-10">
-                                                        {loading ? 'Saving...' :
-                                                            hasUnsavedChanges ? `Save Changes` :
-                                                                gigHasWeights ? `Update Weights` :
-                                                                    `Save Weights`}
-                                                    </span>
-
-                                                    {/* Glow Effect */}
-                                                    <div className={`absolute inset-0 rounded-lg blur-lg opacity-20 group-hover:opacity-40 transition-opacity duration-200 ${hasUnsavedChanges
-                                                        ? 'bg-harx-500'
-                                                        : gigHasWeights
-                                                            ? 'bg-green-500'
-                                                            : 'bg-harx-500'
-                                                        }`}></div>
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
 
                                 {/* Search Input - Only show when a gig is selected */}
                                 {selectedGig && (
