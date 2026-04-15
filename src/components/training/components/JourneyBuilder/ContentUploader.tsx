@@ -1050,8 +1050,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
     };
 
     return (
-    <div className={rep ? 'flex w-full min-w-0 flex-col bg-[#f7f7f3]' : 'min-h-[92vh] bg-[#fcfcf8] p-2'}>
-      <div className={rep ? 'mx-auto flex w-full max-w-6xl flex-col px-5 py-3 md:px-7' : 'mx-auto w-full max-w-[1400px]'}>
+    <div className={rep ? 'flex w-full min-w-0 flex-col bg-[#fcfcf8]' : 'min-h-[92vh] bg-[#fcfcf8] p-2'}>
+      <div className={rep ? 'mx-auto flex w-full max-w-5xl flex-col px-4 py-6 md:px-6' : 'mx-auto w-full max-w-[1400px]'}>
         <div
           className={
             rep
@@ -1059,7 +1059,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               : 'w-full flex-1 rounded-3xl border border-[#ece8dc] bg-[#fcfcf8] p-2 md:p-3'
           }
         >
-          <div className={rep ? 'flex w-full flex-col' : 'grid min-h-[88vh] gap-3 lg:grid-cols-[265px_minmax(0,1fr)]'}>
+          <div className={rep ? 'flex min-h-[72vh] w-full flex-col' : 'grid min-h-[88vh] gap-3 lg:grid-cols-[265px_minmax(0,1fr)]'}>
           {!rep && (
             <aside className="flex flex-col rounded-2xl border border-[#ece8dc] bg-[#f6f4eb] p-3">
               <div className="mb-4 px-2 text-xl font-semibold text-[#1f1f1d]">
@@ -1123,10 +1123,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
               </div>
             </aside>
           )}
-          <div className={rep ? 'flex w-full flex-col' : 'rounded-2xl border border-[#ebe9df] bg-[#fcfcf8] px-4 py-6 md:px-8 md:py-8'}>
+          <div className={rep ? 'flex w-full flex-col rounded-2xl border border-[#ebe9df] bg-[#fcfcf8] px-4 py-6 md:px-8 md:py-8' : 'rounded-2xl border border-[#ebe9df] bg-[#fcfcf8] px-4 py-6 md:px-8 md:py-8'}>
           {/* Header */}
-          <div className={rep ? 'mb-3 shrink-0 px-1 text-center' : 'mb-10 text-center'}>
+          <div className={rep ? 'mb-10 shrink-0 px-1 text-center' : 'mb-10 text-center'}>
             {!rep && (
+              <div className="mb-8 flex items-center justify-center gap-2">
+                <button type="button" className="rounded-md border border-[#e4dece] bg-[#f5f2e8] px-2.5 py-1 text-xs font-medium text-[#565146]">Forfait Free</button>
+                <button type="button" className="rounded-md border border-[#e4dece] bg-[#fcfcf8] px-2.5 py-1 text-xs font-medium text-[#565146]">Mettre a niveau</button>
+              </div>
+            )}
+            {rep && (
               <div className="mb-8 flex items-center justify-center gap-2">
                 <button type="button" className="rounded-md border border-[#e4dece] bg-[#f5f2e8] px-2.5 py-1 text-xs font-medium text-[#565146]">Forfait Free</button>
                 <button type="button" className="rounded-md border border-[#e4dece] bg-[#fcfcf8] px-2.5 py-1 text-xs font-medium text-[#565146]">Mettre a niveau</button>
@@ -1135,26 +1141,26 @@ export default function ContentUploader(props: ContentUploaderProps) {
             <h2
               className={
                 rep
-                  ? 'mb-1 text-[17px] font-extrabold tracking-tight text-harx-600 md:text-lg'
+                  ? 'mb-2 text-5xl font-serif font-semibold tracking-tight text-[#2b2a26]'
                   : 'mb-2 text-6xl font-serif font-semibold tracking-tight text-[#2b2a26]'
               }
             >
-              {rep ? 'Bonsoir, construisons votre formation.' : `Bonsoir, ${displayName}.`}
+              {`Bonsoir, ${displayName}.`}
             </h2>
             <p className={rep ? 'mx-auto max-w-xl text-[11px] leading-snug text-gray-500' : 'mx-auto max-w-3xl text-sm font-medium text-[#6b665b]'}>
-              {rep ? 'Chat interactif style Claude, adapte a HARX.' : 'Comment puis-je vous aider ?'}
+              Comment puis-je vous aider ?
             </p>
           </div>
 
           <div className={rep ? 'mb-2' : 'mx-auto mb-4 w-full max-w-3xl'}>
-            <div className={rep ? 'rounded-xl border border-harx-100 bg-white p-3' : 'rounded-3xl border border-[#e5e1d6] bg-white p-4 shadow-sm'}>
-              <div className={rep ? 'mb-2 text-xs font-bold text-gray-900' : 'mb-3 hidden text-sm font-semibold text-gray-900'}>
+            <div className={rep ? 'rounded-3xl border border-[#e5e1d6] bg-white p-4 shadow-sm' : 'rounded-3xl border border-[#e5e1d6] bg-white p-4 shadow-sm'}>
+              <div className={rep ? 'mb-3 hidden text-sm font-semibold text-gray-900' : 'mb-3 hidden text-sm font-semibold text-gray-900'}>
                 <span className="inline-flex items-center gap-1.5 text-[#5c574a]">
                   <MessageSquareText className="h-4 w-4 text-harx-600" />
                   {rep ? 'Chat formation interactif' : 'Assistant formation'}
                 </span>
               </div>
-              <div className={rep ? 'mb-3 max-h-56 space-y-2 overflow-y-auto rounded-lg bg-slate-50 p-2' : 'mb-0 hidden max-h-72 space-y-2 overflow-y-auto rounded-2xl bg-[#fcfcf8] p-3'}>
+              <div className={rep ? 'mb-0 hidden max-h-72 space-y-2 overflow-y-auto rounded-2xl bg-[#fcfcf8] p-3' : 'mb-0 hidden max-h-72 space-y-2 overflow-y-auto rounded-2xl bg-[#fcfcf8] p-3'}>
                 {chatMessages.map((msg) => (
                   <div
                     key={msg.id}
@@ -1168,78 +1174,37 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   </div>
                 ))}
               </div>
-              {rep ? (
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <input
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleChatSubmit();
-                    }}
-                    placeholder="Decrivez la formation que vous voulez..."
-                    className="min-w-0 flex-1 rounded-lg border border-harx-100 px-3 py-2 text-xs text-gray-800 outline-none focus:border-harx-300"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleChatSubmit}
-                    disabled={!chatInput.trim()}
-                    className="rounded-lg bg-gradient-harx px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
-                  >
-                    Envoyer
-                  </button>
-                </div>
-              ) : (
-                <div className="rounded-[28px] border border-[#ddd8ca] bg-white px-5 py-4">
-                  <input
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleChatSubmit();
-                    }}
-                    placeholder="Comment puis-je vous aider ?"
-                    className="mb-3 w-full bg-transparent text-[15px] text-[#3f3a31] outline-none placeholder:text-[#7a7568]"
-                  />
-                  <div className="flex items-center justify-between">
-                    <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#dfd9ca] text-[#5c574a]">+</button>
-                    <div className="inline-flex items-center gap-2 rounded-xl border border-[#dfd9ca] px-2.5 py-1.5 text-xs font-medium text-[#5c574a]">
-                      Sonnet 4.6
-                      <span className="text-[10px]">▼</span>
-                    </div>
+              <div className="rounded-[28px] border border-[#ddd8ca] bg-white px-5 py-4">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleChatSubmit();
+                  }}
+                  placeholder="Comment puis-je vous aider ?"
+                  className="mb-3 w-full bg-transparent text-[15px] text-[#3f3a31] outline-none placeholder:text-[#7a7568]"
+                />
+                <div className="flex items-center justify-between">
+                  <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#dfd9ca] text-[#5c574a]">+</button>
+                  <div className="inline-flex items-center gap-2 rounded-xl border border-[#dfd9ca] px-2.5 py-1.5 text-xs font-medium text-[#5c574a]">
+                    Sonnet 4.6
+                    <span className="text-[10px]">▼</span>
                   </div>
                 </div>
-              )}
-              {!rep && (
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                  {['Code', 'Ecrire', 'Apprendre', 'Vie quotidienne', 'Choix de Claude'].map((chip) => (
-                    <button
-                      key={chip}
-                      type="button"
-                      onClick={() => setChatInput(chip)}
-                      className="rounded-xl border border-[#ddd8ca] bg-[#fcfcf8] px-3 py-1.5 text-xs font-semibold text-[#5f5a4f] hover:border-[#c9c2b0]"
-                    >
-                      {chip}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {rep && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {['Plan rapide', 'Modules experts', 'Quiz final', 'Version courte'].map((chip) => (
-                    <button
-                      key={chip}
-                      type="button"
-                      onClick={() => {
-                        setChatInput(chip);
-                      }}
-                      className="rounded-full border border-[#e2ddce] bg-[#f5f4ed] px-3 py-1.5 text-xs font-semibold text-[#5f5a4f] hover:border-harx-300 hover:text-harx-700"
-                    >
-                      {chip}
-                    </button>
-                  ))}
-                </div>
-              )}
+              </div>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                {['Code', 'Ecrire', 'Apprendre', 'Vie quotidienne', 'Choix de Claude'].map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => setChatInput(chip)}
+                    className="rounded-xl border border-[#ddd8ca] bg-[#fcfcf8] px-3 py-1.5 text-xs font-semibold text-[#5f5a4f] hover:border-[#c9c2b0]"
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
