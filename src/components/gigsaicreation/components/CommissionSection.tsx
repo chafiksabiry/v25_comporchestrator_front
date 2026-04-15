@@ -392,14 +392,14 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
           </div>
         </div>
 
-        {/* Minimum Volume Requirements Section */}
+        {/* Minimum Volume Requirements For Bonus Section */}
         <div className="mt-8 bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
           <div className="flex items-center mb-6">
             <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center shadow-md">
               <Target className="w-6 h-6 text-white" />
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-bold text-gray-900">Minimum Volume Requirements</h3>
+              <h3 className="text-lg font-bold text-gray-900">Minimum Volume Requirements For Bonus</h3>
               <p className="text-sm text-gray-500">Set minimum performance thresholds</p>
             </div>
           </div>

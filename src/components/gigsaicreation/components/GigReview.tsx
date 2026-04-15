@@ -614,13 +614,13 @@ export function GigReview({
                       </span>
                     </div>
 
-                    {/* Minimum Volume Requirements */}
+                    {/* Minimum Volume Requirements For Bonus */}
                     <div className="flex items-center justify-between p-3 bg-white/60 rounded-lg border border-harx-alt-100/50 col-span-1 md:col-span-2">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-harx-alt-100 rounded-lg text-harx-alt-600">
                           <Target className="w-5 h-5" />
                         </div>
-                        <span className="text-gray-600 font-medium">Minimum Volume Requirements</span>
+                        <span className="text-gray-600 font-medium">Minimum Volume Requirements For Bonus</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-gray-900 text-lg">

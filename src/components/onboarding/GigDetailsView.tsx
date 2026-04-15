@@ -398,7 +398,7 @@ const GigDetailsView: React.FC<GigDetailsViewProps> = ({ gig, onBack }) => {
                 </div>
               </div>
 
-              {/* Card 4: Minimum Volume Requirements */}
+              {/* Card 4: Minimum Volume Requirements For Bonus */}
               <div className="p-6 rounded-2xl bg-white/60 backdrop-blur-sm border border-white/40 flex flex-col justify-between h-40 group hover:shadow-lg transition-all duration-300 relative">
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-harx-50 rounded-xl">

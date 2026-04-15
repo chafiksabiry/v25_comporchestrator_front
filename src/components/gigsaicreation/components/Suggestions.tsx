@@ -4337,7 +4337,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
                         <Gauge className="w-6 h-6 text-white" />
                       </div>
                       <div className="ml-4">
-                        <h3 className="text-lg font-bold text-gray-900">Minimum Volume Requirements</h3>
+                        <h3 className="text-lg font-bold text-gray-900">Minimum Volume Requirements For Bonus</h3>
                         <p className="text-sm text-gray-500">Set minimum performance thresholds</p>
                       </div>
                     </div>
