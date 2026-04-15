@@ -358,6 +358,7 @@ const CompanyOnboarding = () => {
         console.error("User ID not found in cookies");
         // Rediriger vers /auth si pas d'userId
         window.location.href = "/auth";
+        setIsInitialLoad(false);
         return;
       }
 
@@ -376,10 +377,14 @@ const CompanyOnboarding = () => {
         } else {
           console.error("No company data found for user:", userId);
           // Ne pas rediriger immédiatement, afficher un message d'erreur à la place
+          // Allow Step 1 (Create Company Profile) to start even without existing companyId
+          setIsInitialLoad(false);
         }
       } catch (error) {
         console.error("Error fetching company ID:", error);
         // Ne pas rediriger immédiatement, afficher un message d'erreur à la place
+        // Allow onboarding UI to render so user can create first company profile (step 1)
+        setIsInitialLoad(false);
       }
     };
 
@@ -784,7 +789,8 @@ const CompanyOnboarding = () => {
   };
 
   const handleStartStep = async (stepId: number) => {
-    if (!companyId) {
+    // Step 1 must be accessible even when no company exists yet.
+    if (!companyId && stepId !== 1) {
       console.error("Company ID not available for starting step");
       return;
     }
@@ -796,7 +802,7 @@ const CompanyOnboarding = () => {
       // Si le step est déjà complété, ne pas changer son statut
       if (isStepCompleted) {
         console.log(`✅ Step ${stepId} is already completed, not changing status`);
-      } else {
+      } else if (companyId) {
         // Mettre à jour le statut de l'étape à "in_progress" seulement si pas déjà complétée
         const phaseId =
           phases.findIndex((phase) =>
@@ -882,7 +888,7 @@ const CompanyOnboarding = () => {
 
   // Nouvelle fonction pour gérer la révision des steps complétés
   const handleReviewStep = async (stepId: number) => {
-    if (!companyId) {
+    if (!companyId && stepId !== 1) {
       console.error("Company ID not available for reviewing step");
       return;
     }
