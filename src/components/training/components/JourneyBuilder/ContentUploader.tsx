@@ -1444,7 +1444,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
     const sendChatMessage = async (
       message: string,
-      options?: { appendUser?: boolean; replaceAssistantId?: string }
+      options?: {
+        appendUser?: boolean;
+        replaceAssistantId?: string;
+        historyMessages?: Array<{ id: string; role: 'user' | 'assistant'; text: string; isStreaming?: boolean }>;
+      }
     ) => {
       const cleanMessage = message.trim();
       if (!cleanMessage || isChatLoading) return;
@@ -1462,16 +1466,23 @@ export default function ContentUploader(props: ContentUploaderProps) {
             objectives: u.aiAnalysis?.learningObjectives || [],
           }));
 
+        const sourceHistory = options?.historyMessages || chatMessages;
+        const historyForContext = sourceHistory
+          .filter((m) => m.id !== options?.replaceAssistantId)
+          .filter((m) => m.text?.trim())
+          .slice(-8)
+          .map((m) => ({
+            role: m.role,
+            text: m.text,
+          }));
+
         const chatContext = JSON.stringify({
           app: 'HARX Journey Builder',
           analyzedUploadsCount: analyzedUploads.length,
           analyzedUploads,
           selectedDuration: generationPreferences.selectedDuration,
           selectedMethodology: generationPreferences.methodologyName,
-          conversationHistory: chatMessages.slice(-8).map((m) => ({
-            role: m.role,
-            text: m.text,
-          })),
+          conversationHistory: historyForContext,
           canGenerateTraining: canProceed,
         });
 
@@ -1530,10 +1541,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const handleRegenerateMessage = async (assistantId: string) => {
       const assistantIndex = chatMessages.findIndex((m) => m.id === assistantId && m.role === 'assistant');
       if (assistantIndex < 0) return;
+
+      // Keep history only up to the message being regenerated.
+      const truncatedHistory = chatMessages.slice(0, assistantIndex + 1);
+      setChatMessages(truncatedHistory);
+
       for (let i = assistantIndex - 1; i >= 0; i -= 1) {
-        const candidate = chatMessages[i];
+        const candidate = truncatedHistory[i];
         if (candidate.role === 'user' && candidate.text.trim()) {
-          await sendChatMessage(candidate.text, { appendUser: false, replaceAssistantId: assistantId });
+          await sendChatMessage(candidate.text, {
+            appendUser: false,
+            replaceAssistantId: assistantId,
+            historyMessages: truncatedHistory.slice(0, assistantIndex),
+          });
           return;
         }
       }
