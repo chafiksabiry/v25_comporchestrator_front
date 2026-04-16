@@ -1448,6 +1448,59 @@ export default function ContentUploader(props: ContentUploaderProps) {
       return result;
     };
 
+    const parseShowcaseTrainingCard = (rawText: string): {
+      title?: string;
+      subtitle?: string;
+      paragraphs: string[];
+      bullets: string[];
+    } | null => {
+      const clean = (v: string) =>
+        String(v || '')
+          .replace(/\*\*(.*?)\*\*/g, '$1')
+          .replace(/__(.*?)__/g, '$1')
+          .replace(/`([^`]+)`/g, '$1')
+          .replace(/^#+\s*/, '')
+          .trim();
+
+      const lines = String(rawText || '')
+        .split('\n')
+        .map((line) => clean(line))
+        .filter(Boolean)
+        .filter((line) => !/^rappel\s*[—:-]/i.test(line))
+        .filter((line) => !/^module\s+\d+\s*[:\-]/i.test(line));
+
+      if (lines.length < 4) return null;
+
+      const title = lines[0];
+      if (!title || title.length < 8) return null;
+
+      let cursor = 1;
+      let subtitle: string | undefined;
+      if (
+        lines[cursor] &&
+        !/^[-•*]\s+/.test(lines[cursor]) &&
+        !/^\d+\.\s+/.test(lines[cursor]) &&
+        lines[cursor].length <= 90
+      ) {
+        subtitle = lines[cursor];
+        cursor += 1;
+      }
+
+      const paragraphs: string[] = [];
+      const bullets: string[] = [];
+      for (let i = cursor; i < lines.length; i += 1) {
+        const line = lines[i];
+        if (/^[-•*]\s+/.test(line) || /^\d+\.\s+/.test(line)) {
+          bullets.push(line.replace(/^[-•*]\s+/, '').trim());
+          continue;
+        }
+        if (line.length > 2) paragraphs.push(line);
+      }
+
+      if (bullets.length < 3) return null;
+      return { title, subtitle, paragraphs: paragraphs.slice(0, 2), bullets: bullets.slice(0, 8) };
+    };
+
     const handleChatSubmit = async () => {
       const message = chatInput.trim();
       if (!message || isChatLoading || hasPendingUploads) return;
@@ -1750,6 +1803,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
                               if (!hasDesignedPlan) {
                                 const detailedModule = parseDetailedModuleContent(textWithoutStyle);
+                                const showcaseCard = parseShowcaseTrainingCard(textWithoutStyle);
                                 const contentTheme = styleBlueprint.contentTheme || {
                                   bodyColor: '#1f1d18',
                                   headingColor: '#181611',
@@ -1767,6 +1821,53 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   badgeBg: '#f0ecdf',
                                   badgeText: '#655b48',
                                 };
+
+                                if (showcaseCard && detailedModule.sections.length === 0) {
+                                  return (
+                                    <div
+                                      className="relative mb-4 overflow-hidden rounded-[26px] border px-6 py-6"
+                                      style={{ borderColor: contentTheme.panelBorder, backgroundColor: contentTheme.panelBg }}
+                                    >
+                                      <div
+                                        className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full opacity-80"
+                                        style={{ backgroundColor: styleBlueprint.accentColor || contentTheme.badgeBg }}
+                                      />
+                                      <div
+                                        className="pointer-events-none absolute -bottom-10 -left-8 h-24 w-24 rounded-full opacity-70"
+                                        style={{ backgroundColor: contentTheme.badgeBg }}
+                                      />
+
+                                      <h3 className="relative z-10 text-[44px] font-extrabold leading-[1.03] md:text-[52px]" style={{ color: contentTheme.headingColor }}>
+                                        {showcaseCard.title}
+                                      </h3>
+
+                                      {showcaseCard.subtitle && (
+                                        <div
+                                          className="relative z-10 mt-3 inline-flex rounded-2xl border px-4 py-1.5 text-[18px] font-semibold"
+                                          style={{
+                                            backgroundColor: contentTheme.badgeBg,
+                                            borderColor: contentTheme.panelBorder,
+                                            color: contentTheme.badgeText,
+                                          }}
+                                        >
+                                          {showcaseCard.subtitle}
+                                        </div>
+                                      )}
+
+                                      {showcaseCard.paragraphs.map((p, idx) => (
+                                        <p key={`showcase-p-${idx}`} className="relative z-10 mt-4 text-[16px] leading-7" style={{ color: contentTheme.bodyColor }}>
+                                          {p}
+                                        </p>
+                                      ))}
+
+                                      <ul className="relative z-10 mt-4 list-disc space-y-1.5 pl-6 text-[16px] leading-7" style={{ color: contentTheme.bodyColor }}>
+                                        {showcaseCard.bullets.map((bullet, idx) => (
+                                          <li key={`showcase-b-${idx}`}>{bullet}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  );
+                                }
                                 return (
                                   <>
                                     {detailedModule.moduleHeader && (
