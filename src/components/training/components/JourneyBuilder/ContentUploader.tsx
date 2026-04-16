@@ -1168,8 +1168,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const handleChatSubmit = async () => {
       const message = chatInput.trim();
       if (!message || isChatLoading) return;
-      appendChatMessage('user', message);
       setChatInput('');
+      await sendChatMessage(message);
+    };
+
+    const sendChatMessage = async (message: string) => {
+      const cleanMessage = message.trim();
+      if (!cleanMessage || isChatLoading) return;
+      appendChatMessage('user', cleanMessage);
       setIsChatLoading(true);
 
       try {
@@ -1182,7 +1188,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
         const chatContext = JSON.stringify({
           app: 'HARX Journey Builder',
-          // Intentionally avoid company/gig identity so AI doesn't anchor to gig metadata.
           analyzedUploadsCount: analyzedUploads.length,
           analyzedUploads,
           selectedDuration: generationPreferences.selectedDuration,
@@ -1195,7 +1200,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         });
 
         const streamingAssistantId = appendChatMessage('assistant', '', { isStreaming: true });
-        const fullResponse = await AIService.chatStream(message, chatContext, (chunk) => {
+        const fullResponse = await AIService.chatStream(cleanMessage, chatContext, (chunk) => {
           setChatMessages((prev) =>
             prev.map((m) =>
               m.id === streamingAssistantId
@@ -1398,9 +1403,20 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                     <div className="text-center text-[15px] font-semibold text-[#1b1914]">{parsed.title}</div>
                                   )}
                                   {parsed.modules.map((module, idx) => (
-                                    <div
+                                    <button
                                       key={`${module.title}-${idx}`}
-                                      className={`rounded-xl border px-3 py-2 ${cardThemes[idx % cardThemes.length]}`}
+                                      type="button"
+                                      disabled={isChatLoading}
+                                      onClick={() => {
+                                        const moduleSummary =
+                                          module.bullets.length > 0
+                                            ? `\nPoints du module:\n- ${module.bullets.slice(0, 4).join('\n- ')}`
+                                            : '';
+                                        const ask = `Detaille ${module.title} avec objectifs, contenu pedagogique, activites pratiques, quiz, et duree precise.${moduleSummary}`;
+                                        void sendChatMessage(ask);
+                                      }}
+                                      className={`w-full rounded-xl border px-3 py-2 text-left transition-all duration-150 hover:-translate-y-[1px] hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${cardThemes[idx % cardThemes.length]}`}
+                                      title={`Cliquer pour detailler ${module.title}`}
                                     >
                                       <div className="text-[15px] font-semibold text-[#1f1d18]">{module.title}</div>
                                       {module.duration && (
@@ -1413,7 +1429,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                           ))}
                                         </ul>
                                       )}
-                                    </div>
+                                    </button>
                                   ))}
                                 </div>
                               );
