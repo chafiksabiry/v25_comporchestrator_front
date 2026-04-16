@@ -1839,40 +1839,54 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 <div className={rep ? 'mb-3 space-y-6 rounded-xl bg-transparent p-0' : 'mb-4 space-y-6 rounded-2xl bg-white/70 p-4'}>
                   {shouldShowKbQuestionInChat && (
                     <div className="flex justify-start">
-                      <div className="w-full max-w-[92%] rounded-2xl border border-harx-200 bg-[#f8fafc] px-4 py-3 shadow-sm">
-                        <p className="text-sm font-semibold text-harx-800">
-                          Est-ce que vous voulez generer un plan de formation et une formation a partir de knowledge base ?
-                        </p>
-                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                          {kbOptions.map((option) => {
-                            const selected = kbGenerationChoice === option.id;
-                            return (
-                              <button
-                                key={option.id}
-                                type="button"
-                                onClick={() => setKbGenerationChoice(option.id)}
-                                className={`rounded-xl border px-3 py-2 text-left transition ${
-                                  selected
-                                    ? 'border-harx-400 bg-harx-100/70 text-harx-900'
-                                    : 'border-harx-200 bg-white text-harx-700 hover:border-harx-300 hover:bg-harx-50'
-                                }`}
-                              >
-                                <div className="text-xs font-semibold">{option.label}</div>
-                                <div className="mt-0.5 text-[11px] text-harx-600">{option.hint}</div>
-                              </button>
-                            );
-                          })}
+                      <div className="w-full max-w-[92%] rounded-[24px] border border-[#e7e3db] bg-white p-3 shadow-[0_8px_24px_rgba(17,24,39,0.05)]">
+                        <div className="mb-2 flex items-center justify-between px-2 pt-1">
+                          <p className="text-[28px] font-semibold leading-tight text-[#1f1d18]">
+                            Est-ce que vous voulez generer un plan de formation et une formation a partir de knowledge base ?
+                          </p>
+                          <div className="ml-3 shrink-0 text-sm font-semibold text-[#b7b0a1]">1 sur 1</div>
                         </div>
-                        <div className="mt-2 min-h-[16px] text-[11px] text-harx-600">
-                          {isChatKbLoading ? (
-                            <span className="inline-flex items-center gap-1">
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              Chargement des documents KB...
-                            </span>
-                          ) : (kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads') ? (
-                            <span>{chatKbDocuments.length} document(s) KB pret(s) pour la generation.</span>
-                          ) : null}
+
+                        <div className="overflow-hidden rounded-2xl border border-[#f0ece3] bg-[#faf9f6]">
+                          {kbOptions.map((option, idx) => (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => setKbGenerationChoice(option.id)}
+                              className="flex w-full items-center gap-3 border-b border-[#efebe3] px-4 py-3 text-left transition hover:bg-white last:border-b-0"
+                            >
+                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#ece8e1] text-sm font-semibold text-[#777065]">
+                                {idx + 1}
+                              </span>
+                              <span className="flex-1">
+                                <span className="block text-base font-semibold text-[#26231c]">{option.label}</span>
+                                <span className="block text-xs text-[#8d8678]">{option.hint}</span>
+                              </span>
+                              <span className="text-lg text-[#b3ac9d]">→</span>
+                            </button>
+                          ))}
                         </div>
+
+                        <div className="mt-2 flex items-center justify-between px-1">
+                          <div className="min-h-[16px] text-[11px] text-harx-600">
+                            {isChatKbLoading ? (
+                              <span className="inline-flex items-center gap-1">
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                Chargement des documents KB...
+                              </span>
+                            ) : (kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads') ? (
+                              <span>{chatKbDocuments.length} document(s) KB pret(s) pour la generation.</span>
+                            ) : null}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setKbGenerationChoice('none')}
+                            className="rounded-lg border border-[#d8d2c6] bg-white px-3 py-1.5 text-xs font-semibold text-[#4f493f] hover:bg-[#f8f6f1]"
+                          >
+                            Passer
+                          </button>
+                        </div>
+
                       </div>
                     </div>
                   )}
