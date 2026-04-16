@@ -363,14 +363,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
             }
             : u
         ));
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: `assistant-upload-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            role: 'assistant',
-            text: `Fichier analyse avec succes: ${upload.name}. Tu peux maintenant me demander de generer le plan de formation a partir de ce document.`,
-          },
-        ]);
       } catch (error: any) {
         console.error('AI Analysis failed:', error);
         const errorMessage = error?.message || 'Analysis failed';
@@ -381,14 +373,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
             error: errorMessage
           } : u
         ));
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: `assistant-upload-error-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            role: 'assistant',
-            text: `Echec analyse/upload pour ${upload.name}: ${errorMessage}`,
-          },
-        ]);
       }
     }
 
