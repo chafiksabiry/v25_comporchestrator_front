@@ -784,6 +784,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const canProceed = (uploads.length > 0 && uploads.every(u => u.status === 'analyzed')) || (uploads.length === 0 && !!gigId);
   const totalAnalyzed = uploads.filter(u => u.status === 'analyzed').length;
   const isGigOnly = uploads.length === 0 && !!gigId;
+  const hasPendingUploads = uploads.some((u) => u.status === 'uploading' || u.status === 'processing');
 
   if (isPreviewOpen && generatedPresentation && !repOnboardingLayout) {
     return (
@@ -1449,7 +1450,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
     const handleChatSubmit = async () => {
       const message = chatInput.trim();
-      if (!message || isChatLoading) return;
+      if (!message || isChatLoading || hasPendingUploads) return;
       setChatInput('');
       await sendChatMessage(message);
     };
@@ -2052,8 +2053,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     <button
                       type="button"
                       onClick={() => void handleChatSubmit()}
-                      disabled={!chatInput.trim() || isChatLoading}
+                      disabled={!chatInput.trim() || isChatLoading || hasPendingUploads}
                       className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+                      title={hasPendingUploads ? 'Attendre la fin de l upload/analyse du fichier' : 'Envoyer'}
                     >
                       <Send className="h-3.5 w-3.5" />
                       Send
