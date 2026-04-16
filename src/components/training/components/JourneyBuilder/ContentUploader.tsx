@@ -65,6 +65,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [chatMessages, setChatMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; text: string; isStreaming?: boolean }>>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [kbGenerationChoice, setKbGenerationChoice] = useState<'kb_only' | 'uploads_only' | 'kb_and_uploads' | 'none' | null>(null);
+  const [chatKbDocuments, setChatKbDocuments] = useState<
+    Array<{ _id: string; name: string; fileType?: string; summary?: string; keyTerms?: string[]; createdAt?: string }>
+  >([]);
+  const [isChatKbLoading, setIsChatKbLoading] = useState(false);
   const [chatHistorySessions, setChatHistorySessions] = useState<ChatHistoryItem[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -98,10 +103,37 @@ export default function ContentUploader(props: ContentUploaderProps) {
     if (!gigId) {
       setActiveChatSessionId(null);
       setChatHistorySessions([]);
+      setChatKbDocuments([]);
       return;
     }
     void refreshChatHistory();
   }, [gigId, refreshChatHistory]);
+
+  useEffect(() => {
+    const usesKb =
+      kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads';
+    if (!usesKb || !gigId) {
+      setIsChatKbLoading(false);
+      if (!usesKb) setChatKbDocuments([]);
+      return;
+    }
+    let cancelled = false;
+    setIsChatKbLoading(true);
+    AIService.listGigKnowledgeDocuments(String(gigId))
+      .then((docs) => {
+        if (!cancelled) setChatKbDocuments(Array.isArray(docs) ? docs : []);
+      })
+      .catch((error) => {
+        console.error('[ContentUploader] Failed loading KB docs for chat:', error);
+        if (!cancelled) setChatKbDocuments([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsChatKbLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [kbGenerationChoice, gigId]);
 
   const getAnalyzedUploads = useCallback(
     () => uploads.filter((u) => u.status === 'analyzed' && !!u.aiAnalysis),
@@ -1152,6 +1184,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setChatInput('');
       setActiveChatSessionId(null);
       setIsHistoryOpen(false);
+      setKbGenerationChoice(null);
+      setChatKbDocuments([]);
     };
 
     const openHistorySession = async (sessionId: string) => {
@@ -1503,7 +1537,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
     const handleChatSubmit = async () => {
       const message = chatInput.trim();
-      if (!message || isChatLoading || hasPendingUploads) return;
+      if (!message || isChatLoading || hasPendingUploads || kbGenerationChoice === null || isChatKbLoading) return;
       setChatInput('');
       await sendChatMessage(message);
     };
@@ -1532,6 +1566,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
             objectives: u.aiAnalysis?.learningObjectives || [],
           }));
 
+        const usesKbForChat = kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads';
+        const usesUploadsForChat = kbGenerationChoice === 'uploads_only' || kbGenerationChoice === 'kb_and_uploads';
+        const uploadsForChat = usesUploadsForChat ? analyzedUploads : [];
+
         const sourceHistory = options?.historyMessages || chatMessages;
         const historyForContext = sourceHistory
           .filter((m) => m.id !== options?.replaceAssistantId)
@@ -1542,10 +1580,25 @@ export default function ContentUploader(props: ContentUploaderProps) {
             text: m.text,
           }));
 
+        const kbDocsSummary =
+          usesKbForChat
+            ? chatKbDocuments.slice(0, 20).map((doc) => ({
+                id: doc._id,
+                name: doc.name,
+                summary: doc.summary || '',
+                keyTerms: Array.isArray(doc.keyTerms) ? doc.keyTerms.slice(0, 10) : [],
+              }))
+            : [];
+
         const chatContext = JSON.stringify({
           app: 'HARX Journey Builder',
-          analyzedUploadsCount: analyzedUploads.length,
-          analyzedUploads,
+          generationMode: kbGenerationChoice,
+          analyzedUploadsCount: uploadsForChat.length,
+          analyzedUploads: uploadsForChat,
+          useKnowledgeBase: usesKbForChat,
+          useUploadedDocuments: usesUploadsForChat,
+          knowledgeBaseDocumentsCount: kbDocsSummary.length,
+          knowledgeBaseDocuments: kbDocsSummary,
           selectedDuration: generationPreferences.selectedDuration,
           selectedMethodology: generationPreferences.methodologyName,
           conversationHistory: historyForContext,
@@ -1788,6 +1841,53 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   </div>
                 </div>
               )}
+              <div className="mb-3 rounded-xl border border-harx-200 bg-white px-3 py-2">
+                <p className="text-xs font-semibold text-harx-800">
+                  Est-ce que vous voulez generer un plan de formation et une formation a partir de knowledge base ?
+                </p>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  {[
+                    { id: 'kb_only', label: 'KB uniquement', hint: 'Utiliser les documents analyses de knowledge base' },
+                    { id: 'uploads_only', label: 'Fichiers uploades uniquement', hint: 'Ignorer KB et utiliser seulement vos fichiers joints' },
+                    { id: 'kb_and_uploads', label: 'KB + fichiers uploades', hint: 'Combiner knowledge base et fichiers joints' },
+                    { id: 'none', label: 'Sans documents', hint: 'Generer sans KB ni fichiers analyses' },
+                  ].map((option) => {
+                    const selected = kbGenerationChoice === (option.id as any);
+                    return (
+                      <label
+                        key={option.id}
+                        className={`inline-flex cursor-pointer items-start gap-2 rounded-lg border px-2 py-2 text-xs transition ${
+                          selected ? 'border-harx-300 bg-harx-50 text-harx-800' : 'border-harx-200 bg-white text-harx-700'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => setKbGenerationChoice((prev) => (prev === option.id ? null : (option.id as any)))}
+                          className="mt-0.5 h-4 w-4 rounded border-harx-300 text-harx-600"
+                        />
+                        <span>
+                          <span className="block font-semibold">{option.label}</span>
+                          <span className="block text-[11px] text-harx-600">{option.hint}</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  {isChatKbLoading && (
+                    <span className="inline-flex items-center gap-1 text-[11px] text-harx-600">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Chargement des documents KB...
+                    </span>
+                  )}
+                  {(kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads') && !isChatKbLoading && (
+                    <span className="text-[11px] text-harx-600">
+                      {chatKbDocuments.length} document(s) KB pret(s) pour la generation.
+                    </span>
+                  )}
+                </div>
+              </div>
               {hasStartedChat && (
                 <div className={rep ? 'mb-3 space-y-6 rounded-xl bg-transparent p-0' : 'mb-4 space-y-6 rounded-2xl bg-white/70 p-4'}>
                   {chatMessages.map((msg) => (
@@ -2154,9 +2254,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     <button
                       type="button"
                       onClick={() => void handleChatSubmit()}
-                      disabled={!chatInput.trim() || isChatLoading || hasPendingUploads}
+                      disabled={!chatInput.trim() || isChatLoading || hasPendingUploads || kbGenerationChoice === null || isChatKbLoading}
                       className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
-                      title={hasPendingUploads ? 'Attendre la fin de l upload/analyse du fichier' : 'Envoyer'}
+                      title={
+                        kbGenerationChoice === null
+                          ? 'Selectionnez un mode de generation'
+                          : hasPendingUploads
+                            ? 'Attendre la fin de l upload/analyse du fichier'
+                            : isChatKbLoading
+                              ? 'Chargement des documents KB en cours'
+                              : 'Envoyer'
+                      }
                     >
                       <Send className="h-3.5 w-3.5" />
                       Send
