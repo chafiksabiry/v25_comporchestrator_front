@@ -1184,7 +1184,22 @@ export default function ContentUploader(props: ContentUploaderProps) {
       moduleCardThemes: Array<{ bg: string; border: string; text?: string }>;
       titleColor?: string;
       accentColor?: string;
+      contentTheme?: {
+        bodyColor: string;
+        headingColor: string;
+        tableBorder: string;
+        tableHeaderBg: string;
+        tableHeaderText: string;
+        tableRowBg: string;
+        kpiBg: string;
+        kpiBorder: string;
+        kpiLabel: string;
+        kpiValue: string;
+        moduleShape: 'rounded' | 'square' | 'soft';
+      };
     } => {
+      const isHex = (v: unknown) => typeof v === 'string' && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
+      const safeHex = (v: unknown, fallback: string) => (isHex(v) ? String(v) : fallback);
       const defaults = {
         moduleCardThemes: [
           { bg: '#eaf3ff', border: '#98b9ea', text: '#1f1d18' },
@@ -1194,6 +1209,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
         ],
         titleColor: '#1b1914',
         accentColor: '#a6a098',
+        contentTheme: {
+          bodyColor: '#1f1d18',
+          headingColor: '#181611',
+          tableBorder: '#e8e2d2',
+          tableHeaderBg: '#f6f3ea',
+          tableHeaderText: '#1f1d18',
+          tableRowBg: '#ffffff',
+          kpiBg: '#fbfaf6',
+          kpiBorder: '#e7dfcc',
+          kpiLabel: '#6e6758',
+          kpiValue: '#1f1d18',
+          moduleShape: 'rounded' as const,
+        },
       };
 
       const match = String(rawText || '').match(/<harx-style>([\s\S]*?)<\/harx-style>/i);
@@ -1204,15 +1232,34 @@ export default function ContentUploader(props: ContentUploaderProps) {
           ? parsed.moduleCardThemes
               .filter((t: any) => typeof t?.bg === 'string' && typeof t?.border === 'string')
               .map((t: any) => ({
-                bg: t.bg,
-                border: t.border,
-                text: typeof t?.text === 'string' ? t.text : '#1f1d18',
+                bg: safeHex(t.bg, '#f9f9f9'),
+                border: safeHex(t.border, '#dddddd'),
+                text: isHex(t?.text) ? t.text : '#1f1d18',
               }))
           : [];
+        const contentTheme = parsed?.contentTheme && typeof parsed.contentTheme === 'object'
+          ? {
+              bodyColor: safeHex(parsed.contentTheme.bodyColor, defaults.contentTheme.bodyColor),
+              headingColor: safeHex(parsed.contentTheme.headingColor, defaults.contentTheme.headingColor),
+              tableBorder: safeHex(parsed.contentTheme.tableBorder, defaults.contentTheme.tableBorder),
+              tableHeaderBg: safeHex(parsed.contentTheme.tableHeaderBg, defaults.contentTheme.tableHeaderBg),
+              tableHeaderText: safeHex(parsed.contentTheme.tableHeaderText, defaults.contentTheme.tableHeaderText),
+              tableRowBg: safeHex(parsed.contentTheme.tableRowBg, defaults.contentTheme.tableRowBg),
+              kpiBg: safeHex(parsed.contentTheme.kpiBg, defaults.contentTheme.kpiBg),
+              kpiBorder: safeHex(parsed.contentTheme.kpiBorder, defaults.contentTheme.kpiBorder),
+              kpiLabel: safeHex(parsed.contentTheme.kpiLabel, defaults.contentTheme.kpiLabel),
+              kpiValue: safeHex(parsed.contentTheme.kpiValue, defaults.contentTheme.kpiValue),
+              moduleShape:
+                parsed.contentTheme.moduleShape === 'square' || parsed.contentTheme.moduleShape === 'soft'
+                  ? parsed.contentTheme.moduleShape
+                  : 'rounded',
+            }
+          : defaults.contentTheme;
         return {
           moduleCardThemes: themes.length > 0 ? themes : defaults.moduleCardThemes,
-          titleColor: typeof parsed?.titleColor === 'string' ? parsed.titleColor : defaults.titleColor,
-          accentColor: typeof parsed?.accentColor === 'string' ? parsed.accentColor : defaults.accentColor,
+          titleColor: safeHex(parsed?.titleColor, defaults.titleColor),
+          accentColor: safeHex(parsed?.accentColor, defaults.accentColor),
+          contentTheme,
         };
       } catch {
         return defaults;
@@ -1482,52 +1529,65 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
                               if (!hasDesignedPlan) {
                                 const stats = parseStats(textWithoutStyle);
+                                const contentTheme = styleBlueprint.contentTheme || {
+                                  bodyColor: '#1f1d18',
+                                  headingColor: '#181611',
+                                  tableBorder: '#e8e2d2',
+                                  tableHeaderBg: '#f6f3ea',
+                                  tableHeaderText: '#1f1d18',
+                                  tableRowBg: '#ffffff',
+                                  kpiBg: '#fbfaf6',
+                                  kpiBorder: '#e7dfcc',
+                                  kpiLabel: '#6e6758',
+                                  kpiValue: '#1f1d18',
+                                  moduleShape: 'rounded' as const,
+                                };
                                 return (
                                   <>
                                     <ReactMarkdown
                                       remarkPlugins={[remarkGfm]}
                                       components={{
                                         h1: ({ children }) => (
-                                          <h3 className="mb-3 mt-1 text-[28px] font-semibold tracking-tight text-[#13110d]">
+                                          <h3 className="mb-3 mt-1 text-[28px] font-semibold tracking-tight" style={{ color: contentTheme.headingColor }}>
                                             {children}
                                           </h3>
                                         ),
                                         h2: ({ children }) => (
-                                          <h4 className="mb-2 mt-3 text-[22px] font-semibold text-[#181611]">
+                                          <h4 className="mb-2 mt-3 text-[22px] font-semibold" style={{ color: contentTheme.headingColor }}>
                                             {children}
                                           </h4>
                                         ),
                                         h3: ({ children }) => (
-                                          <h5 className="mb-2 mt-2 text-[17px] font-semibold text-[#1f1d18]">
+                                          <h5 className="mb-2 mt-2 text-[17px] font-semibold" style={{ color: contentTheme.headingColor }}>
                                             {children}
                                           </h5>
                                         ),
                                         p: ({ children }) => (
-                                          <p className="my-2 text-[16px] leading-7 text-[#1f1d18]">{children}</p>
+                                          <p className="my-2 text-[16px] leading-7" style={{ color: contentTheme.bodyColor }}>{children}</p>
                                         ),
                                         ul: ({ children }) => (
-                                          <ul className="my-2 list-disc space-y-1 pl-6 text-[16px] leading-7 text-[#1f1d18]">
+                                          <ul className="my-2 list-disc space-y-1 pl-6 text-[16px] leading-7" style={{ color: contentTheme.bodyColor }}>
                                             {children}
                                           </ul>
                                         ),
                                         ol: ({ children }) => (
-                                          <ol className="my-2 list-decimal space-y-1 pl-6 text-[16px] leading-7 text-[#1f1d18]">
+                                          <ol className="my-2 list-decimal space-y-1 pl-6 text-[16px] leading-7" style={{ color: contentTheme.bodyColor }}>
                                             {children}
                                           </ol>
                                         ),
                                         table: ({ children }) => (
-                                          <div className="my-4 overflow-x-auto rounded-xl border border-[#e8e2d2]">
-                                            <table className="min-w-full border-collapse bg-white">{children}</table>
+                                          <div className="my-4 overflow-x-auto rounded-xl border" style={{ borderColor: contentTheme.tableBorder }}>
+                                            <table className="min-w-full border-collapse" style={{ backgroundColor: contentTheme.tableRowBg }}>{children}</table>
                                           </div>
                                         ),
-                                        thead: ({ children }) => <thead className="bg-[#f6f3ea]">{children}</thead>,
-                                        tbody: ({ children }) => <tbody className="divide-y divide-[#efe9d8]">{children}</tbody>,
+                                        thead: ({ children }) => <thead style={{ backgroundColor: contentTheme.tableHeaderBg }}>{children}</thead>,
+                                        tbody: ({ children }) => <tbody className="divide-y" style={{ borderColor: contentTheme.tableBorder }}>{children}</tbody>,
                                         tr: ({ children }) => <tr className="align-top">{children}</tr>,
                                         th: ({ children }) => (
-                                          <th className="px-3 py-2 text-left text-sm font-semibold text-[#1f1d18]">{children}</th>
+                                          <th className="px-3 py-2 text-left text-sm font-semibold" style={{ color: contentTheme.tableHeaderText }}>{children}</th>
                                         ),
                                         td: ({ children }) => (
-                                          <td className="px-3 py-2 text-sm text-[#2a271f]">{children}</td>
+                                          <td className="px-3 py-2 text-sm" style={{ color: contentTheme.bodyColor }}>{children}</td>
                                         ),
                                         li: ({ children }) => <li>{children}</li>,
                                         strong: ({ children }) => (
@@ -1547,12 +1607,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                         {stats.map((item, statIdx) => (
                                           <div
                                             key={`${item.label}-${statIdx}`}
-                                            className="rounded-lg border border-[#e7dfcc] bg-[#fbfaf6] px-3 py-2"
+                                            className="rounded-lg border px-3 py-2"
+                                            style={{
+                                              backgroundColor: contentTheme.kpiBg,
+                                              borderColor: contentTheme.kpiBorder,
+                                            }}
                                           >
-                                            <div className="text-[11px] font-semibold uppercase tracking-wide text-[#6e6758]">
+                                            <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: contentTheme.kpiLabel }}>
                                               {item.label}
                                             </div>
-                                            <div className="mt-0.5 text-[18px] font-bold text-[#1f1d18]">{item.value}</div>
+                                            <div className="mt-0.5 text-[18px] font-bold" style={{ color: contentTheme.kpiValue }}>{item.value}</div>
                                           </div>
                                         ))}
                                       </div>
@@ -1574,6 +1638,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   {parsed.modules.map((module, idx) => (
                                     (() => {
                                       const theme = styleBlueprint.moduleCardThemes[idx % styleBlueprint.moduleCardThemes.length];
+                                      const moduleShapeClass = styleBlueprint.contentTheme?.moduleShape === 'square'
+                                        ? 'rounded-none'
+                                        : styleBlueprint.contentTheme?.moduleShape === 'soft'
+                                          ? 'rounded-2xl'
+                                          : 'rounded-xl';
                                       return (
                                     <button
                                       key={`${module.title}-${idx}`}
@@ -1587,7 +1656,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                         const ask = `Detaille ${module.title} avec objectifs, contenu pedagogique, activites pratiques, quiz, et duree precise.${moduleSummary}`;
                                         void sendChatMessage(ask);
                                       }}
-                                      className="w-full rounded-xl border px-3 py-2 text-left transition-all duration-150 hover:-translate-y-[1px] hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                                      className={`w-full border px-3 py-2 text-left transition-all duration-150 hover:-translate-y-[1px] hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${moduleShapeClass}`}
                                       style={{
                                         backgroundColor: theme?.bg || '#f9f9f9',
                                         borderColor: theme?.border || '#ddd',
