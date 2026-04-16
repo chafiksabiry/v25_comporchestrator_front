@@ -1165,6 +1165,34 @@ export default function ContentUploader(props: ContentUploaderProps) {
       };
     };
 
+    const parseStats = (rawText: string): Array<{ label: string; value: string }> => {
+      const lines = String(rawText || '')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      const stats: Array<{ label: string; value: string }> = [];
+      for (const line of lines) {
+        const cleaned = line
+          .replace(/\*\*(.*?)\*\*/g, '$1')
+          .replace(/__(.*?)__/g, '$1')
+          .replace(/^[-•*]\s*/, '')
+          .trim();
+
+        const match = cleaned.match(
+          /^([A-Za-zÀ-ÿ0-9()'’\-_\/\s]+)\s*[:\-]\s*([0-9][0-9.,\s]*(?:%|h|heures?|jours?|j|min|k|m)?(?:\s*[A-Za-zÀ-ÿ]+)?)$/i
+        );
+        if (!match) continue;
+
+        const label = match[1].trim();
+        const value = match[2].trim();
+        if (!label || !value) continue;
+        stats.push({ label, value });
+      }
+
+      return stats.slice(0, 6);
+    };
+
     const handleChatSubmit = async () => {
       const message = chatInput.trim();
       if (!message || isChatLoading) return;
@@ -1340,51 +1368,83 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               const hasDesignedPlan = parsed.modules.length >= 2;
 
                               if (!hasDesignedPlan) {
+                                const stats = parseStats(msg.text);
                                 return (
-                                  <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                    components={{
-                                      h1: ({ children }) => (
-                                        <h3 className="mb-3 mt-1 text-[28px] font-semibold tracking-tight text-[#13110d]">
-                                          {children}
-                                        </h3>
-                                      ),
-                                      h2: ({ children }) => (
-                                        <h4 className="mb-2 mt-3 text-[22px] font-semibold text-[#181611]">
-                                          {children}
-                                        </h4>
-                                      ),
-                                      h3: ({ children }) => (
-                                        <h5 className="mb-2 mt-2 text-[17px] font-semibold text-[#1f1d18]">
-                                          {children}
-                                        </h5>
-                                      ),
-                                      p: ({ children }) => (
-                                        <p className="my-2 text-[16px] leading-7 text-[#1f1d18]">{children}</p>
-                                      ),
-                                      ul: ({ children }) => (
-                                        <ul className="my-2 list-disc space-y-1 pl-6 text-[16px] leading-7 text-[#1f1d18]">
-                                          {children}
-                                        </ul>
-                                      ),
-                                      ol: ({ children }) => (
-                                        <ol className="my-2 list-decimal space-y-1 pl-6 text-[16px] leading-7 text-[#1f1d18]">
-                                          {children}
-                                        </ol>
-                                      ),
-                                      li: ({ children }) => <li>{children}</li>,
-                                      strong: ({ children }) => (
-                                        <strong className="font-semibold text-[#12100c]">{children}</strong>
-                                      ),
-                                      code: ({ children }) => (
-                                        <code className="rounded bg-[#f3f2ec] px-1 py-0.5 text-[14px] text-[#2b271f]">
-                                          {children}
-                                        </code>
-                                      ),
-                                    }}
-                                  >
-                                    {msg.text}
-                                  </ReactMarkdown>
+                                  <>
+                                    <ReactMarkdown
+                                      remarkPlugins={[remarkGfm]}
+                                      components={{
+                                        h1: ({ children }) => (
+                                          <h3 className="mb-3 mt-1 text-[28px] font-semibold tracking-tight text-[#13110d]">
+                                            {children}
+                                          </h3>
+                                        ),
+                                        h2: ({ children }) => (
+                                          <h4 className="mb-2 mt-3 text-[22px] font-semibold text-[#181611]">
+                                            {children}
+                                          </h4>
+                                        ),
+                                        h3: ({ children }) => (
+                                          <h5 className="mb-2 mt-2 text-[17px] font-semibold text-[#1f1d18]">
+                                            {children}
+                                          </h5>
+                                        ),
+                                        p: ({ children }) => (
+                                          <p className="my-2 text-[16px] leading-7 text-[#1f1d18]">{children}</p>
+                                        ),
+                                        ul: ({ children }) => (
+                                          <ul className="my-2 list-disc space-y-1 pl-6 text-[16px] leading-7 text-[#1f1d18]">
+                                            {children}
+                                          </ul>
+                                        ),
+                                        ol: ({ children }) => (
+                                          <ol className="my-2 list-decimal space-y-1 pl-6 text-[16px] leading-7 text-[#1f1d18]">
+                                            {children}
+                                          </ol>
+                                        ),
+                                        table: ({ children }) => (
+                                          <div className="my-4 overflow-x-auto rounded-xl border border-[#e8e2d2]">
+                                            <table className="min-w-full border-collapse bg-white">{children}</table>
+                                          </div>
+                                        ),
+                                        thead: ({ children }) => <thead className="bg-[#f6f3ea]">{children}</thead>,
+                                        tbody: ({ children }) => <tbody className="divide-y divide-[#efe9d8]">{children}</tbody>,
+                                        tr: ({ children }) => <tr className="align-top">{children}</tr>,
+                                        th: ({ children }) => (
+                                          <th className="px-3 py-2 text-left text-sm font-semibold text-[#1f1d18]">{children}</th>
+                                        ),
+                                        td: ({ children }) => (
+                                          <td className="px-3 py-2 text-sm text-[#2a271f]">{children}</td>
+                                        ),
+                                        li: ({ children }) => <li>{children}</li>,
+                                        strong: ({ children }) => (
+                                          <strong className="font-semibold text-[#12100c]">{children}</strong>
+                                        ),
+                                        code: ({ children }) => (
+                                          <code className="rounded bg-[#f3f2ec] px-1 py-0.5 text-[14px] text-[#2b271f]">
+                                            {children}
+                                          </code>
+                                        ),
+                                      }}
+                                    >
+                                      {msg.text}
+                                    </ReactMarkdown>
+                                    {stats.length >= 3 && (
+                                      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                        {stats.map((item, statIdx) => (
+                                          <div
+                                            key={`${item.label}-${statIdx}`}
+                                            className="rounded-lg border border-[#e7dfcc] bg-[#fbfaf6] px-3 py-2"
+                                          >
+                                            <div className="text-[11px] font-semibold uppercase tracking-wide text-[#6e6758]">
+                                              {item.label}
+                                            </div>
+                                            <div className="mt-0.5 text-[18px] font-bold text-[#1f1d18]">{item.value}</div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </>
                                 );
                               }
 
