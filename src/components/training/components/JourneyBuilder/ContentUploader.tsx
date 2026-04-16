@@ -446,7 +446,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             uploadContext as any,
             {
               selectedDuration: journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined,
-              methodologyName: methodology?.name,
+              methodologyName: methodology?.name || 'Methodologie 360',
               methodologyDescription: methodology?.description,
               methodologyComponents: Array.isArray(methodology?.components)
                 ? methodology.components.map((c) => c.title).slice(0, 8)
@@ -601,7 +601,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             uploadContext as any,
             {
               selectedDuration: journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined,
-              methodologyName: methodology?.name,
+              methodologyName: methodology?.name || 'Methodologie 360',
               methodologyDescription: methodology?.description,
               methodologyComponents: Array.isArray(methodology?.components)
                 ? methodology.components.map((c) => c.title).slice(0, 8)
@@ -689,7 +689,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           ? {
               preferences: {
                 selectedDuration: journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined,
-                methodologyName: methodology?.name,
+                methodologyName: methodology?.name || 'Methodologie 360',
                 methodologyDescription: methodology?.description,
                 methodologyComponents: Array.isArray(methodology?.components)
                   ? methodology.components.map((c) => c.title).slice(0, 8)
@@ -1090,7 +1090,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
     const generationPreferences = {
       selectedDuration: journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined,
-      methodologyName: methodology?.name,
+      methodologyName: methodology?.name || 'Methodologie 360',
       methodologyDescription: methodology?.description,
       methodologyComponents: Array.isArray(methodology?.components)
         ? methodology.components.map((c) => c.title).slice(0, 8)
