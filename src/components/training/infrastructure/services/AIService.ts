@@ -112,6 +112,22 @@ export interface TrainingGenerationPreferences {
   trainingDescription?: string;
 }
 
+export interface ChatHistoryItem {
+  _id: string;
+  title: string;
+  lastActivityAt?: string;
+  messagesCount?: number;
+  preview?: string;
+}
+
+export interface ChatSessionDetails {
+  _id: string;
+  title: string;
+  gigId?: string | null;
+  lastActivityAt?: string;
+  messages: Array<{ role: 'user' | 'assistant'; text: string; createdAt?: string | null }>;
+}
+
 export interface AiBaseResponse {
   success: boolean;
   error?: string;
@@ -367,8 +383,9 @@ export class AIService {
   static async chatStream(
     message: string,
     context: string,
-    onChunk: (chunk: string) => void
-  ): Promise<string> {
+    onChunk: (chunk: string) => void,
+    options?: { gigId?: string; companyId?: string; sessionId?: string }
+  ): Promise<{ text: string; sessionId?: string }> {
     const token = ApiClient.getToken();
     const apiUrl =
       import.meta.env.VITE_API_TRAINING_URL ||
@@ -377,13 +394,18 @@ export class AIService {
       'https://v25platformtrainingbackend-production.up.railway.app';
     const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
 
+    const requestBody: Record<string, unknown> = { message, context };
+    if (options?.gigId) requestBody.gigId = options.gigId;
+    if (options?.companyId) requestBody.companyId = options.companyId;
+    if (options?.sessionId) requestBody.sessionId = options.sessionId;
+
     const response = await fetch(`${baseUrl}/api/ai/chat?stream=true`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),
       },
-      body: JSON.stringify({ message, context }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -395,6 +417,7 @@ export class AIService {
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
+    const sessionId = response.headers.get('X-Chat-Session-Id') || undefined;
     let fullText = '';
 
     while (true) {
@@ -406,7 +429,24 @@ export class AIService {
       onChunk(chunk);
     }
 
-    return fullText;
+    return { text: fullText, sessionId };
+  }
+
+  static async listChatHistory(gigId: string): Promise<ChatHistoryItem[]> {
+    const response = await ApiClient.get<{ success?: boolean; sessions?: ChatHistoryItem[] }>(
+      `/api/ai/chat/history?gigId=${encodeURIComponent(gigId)}`
+    );
+    const raw = response.data as any;
+    const sessions = raw.sessions ?? raw.data?.sessions ?? [];
+    return Array.isArray(sessions) ? sessions : [];
+  }
+
+  static async getChatSession(sessionId: string): Promise<ChatSessionDetails | null> {
+    const response = await ApiClient.get<{ success?: boolean; session?: ChatSessionDetails }>(
+      `/api/ai/chat/history/${encodeURIComponent(sessionId)}`
+    );
+    const raw = response.data as any;
+    return (raw.session ?? raw.data?.session ?? null) as ChatSessionDetails | null;
   }
 
   /**
