@@ -1961,6 +1961,45 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     }}
                     className="hidden"
                   />
+                  {uploads.length > 0 && (
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {uploads.map((upload) => {
+                        const statusLabel =
+                          upload.status === 'analyzed'
+                            ? 'Analyse'
+                            : upload.status === 'error'
+                              ? 'Erreur'
+                              : upload.status === 'uploading'
+                                ? 'Upload...'
+                                : 'Analyse...';
+                        return (
+                          <div
+                            key={`inline-${upload.id}`}
+                            className="inline-flex max-w-full items-center gap-2 rounded-xl border border-harx-200 bg-harx-50/50 px-2.5 py-1.5"
+                          >
+                            {getFileIcon(upload.type, true)}
+                            <div className="min-w-0">
+                              <div className="max-w-[210px] truncate text-[11px] font-semibold text-harx-800">
+                                {upload.name}
+                              </div>
+                              <div className="text-[10px] text-harx-600">{statusLabel}</div>
+                            </div>
+                            {upload.status === 'uploading' || upload.status === 'processing' ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin text-harx-500" />
+                            ) : null}
+                            <button
+                              type="button"
+                              onClick={() => removeUpload(upload.id)}
+                              className="rounded p-0.5 text-harx-500 hover:bg-harx-100"
+                              title="Retirer le fichier"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                   <textarea
                     value={chatInput}
                     disabled={isChatLoading}
@@ -2005,181 +2044,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             </div>
           </div>
 
-          {/* Processing Status */}
-          {isProcessing && (
-            <div
-              className={
-                rep
-                  ? 'mb-2 rounded-lg border border-harx-100 bg-harx-50/50 p-3'
-                  : 'mb-4 rounded-xl border border-purple-100 bg-white/40 p-4 backdrop-blur-sm'
-              }
-            >
-              <div className="flex items-center justify-center gap-2 sm:gap-3">
-                <Wand2 className={rep ? 'h-5 w-5 animate-spin text-harx-500' : 'h-6 w-6 animate-spin text-purple-500'} />
-                <div className="text-left">
-                  <h3 className={rep ? 'text-xs font-bold text-gray-900' : 'text-base font-semibold text-gray-900'}>AI is analyzing your content</h3>
-                  <p className={rep ? 'text-[10px] text-gray-600' : 'text-sm text-gray-600'}>Extracting concepts, objectives, and structure…</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Uploaded Files */}
-          {uploads.length > 0 && (
-            <div className={rep ? 'mb-2 border-t border-harx-100/80 pt-3' : 'mb-4 border-t border-gray-100/50 pt-6'}>
-              <div className={rep ? 'mb-2 flex items-center justify-between gap-2' : 'mb-4 flex items-center justify-between'}>
-                <h3 className={rep ? 'text-xs font-extrabold text-gray-900' : 'text-xl font-bold text-gray-800'}>
-                  Uploaded files ({uploads.length})
-                </h3>
-                {totalAnalyzed > 0 && (
-                  <div
-                    className={
-                      rep
-                        ? 'flex items-center gap-1 rounded-full border border-emerald-100 bg-emerald-50/90 px-2 py-1'
-                        : 'flex items-center space-x-2 rounded-full border border-green-100 bg-green-50 px-4 py-2'
-                    }
-                  >
-                    <CheckCircle className={rep ? 'h-3.5 w-3.5 text-emerald-600' : 'h-5 w-5 text-green-500'} />
-                    <span className={rep ? 'text-[10px] font-bold text-emerald-800' : 'text-sm font-bold text-green-700'}>
-                      {totalAnalyzed} analyzed
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className={rep ? 'grid grid-cols-1 gap-2 lg:grid-cols-2' : 'grid grid-cols-1 gap-6 lg:grid-cols-2'}>
-                {uploads.map((upload) => (
-                  <div
-                    key={upload.id}
-                    className={`border transition-all duration-300 group ${rep ? 'rounded-xl p-3' : 'rounded-2xl p-5'} ${
-                      upload.status === 'analyzed'
-                        ? rep
-                          ? 'border-harx-100/80 bg-white hover:border-harx-200'
-                          : 'border-gray-100/50 bg-white/60 hover:border-purple-200'
-                        : upload.status === 'processing'
-                          ? rep
-                            ? 'border-harx-100 bg-harx-50/40'
-                            : 'border-purple-100/50 bg-purple-50/50'
-                          : upload.status === 'error'
-                            ? 'border-red-100 bg-red-50/50'
-                            : rep
-                              ? 'border-gray-100 bg-white'
-                              : 'border-gray-100/50 bg-white/40'
-                    }`}
-                  >
-                    <div className={rep ? 'mb-2 flex items-start justify-between' : 'mb-4 flex items-start justify-between'}>
-                      <div className={rep ? 'flex items-start gap-2' : 'flex items-start space-x-4'}>
-                        {getFileIcon(upload.type, rep)}
-                        <div className="min-w-0 flex-1">
-                          <h4 className={rep ? 'mb-0.5 truncate text-xs font-bold text-gray-900' : 'mb-1 font-semibold text-gray-900'}>{upload.name}</h4>
-                          <p className={rep ? 'text-[10px] text-gray-500' : 'text-sm text-gray-500'}>
-                            {(upload.size / 1024 / 1024).toFixed(2)} MB · {upload.type}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex shrink-0 items-center gap-1">
-                        {getStatusIcon(upload.status)}
-                        <button
-                          type="button"
-                          onClick={() => removeUpload(upload.id)}
-                          className="text-gray-400 transition-colors hover:text-harx-500"
-                        >
-                          <X className={rep ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
-                        </button>
-                      </div>
-                    </div>
-
-                    {upload.status === 'error' && upload.error && (
-                      <div className={rep ? 'mt-2 rounded-lg border border-red-200 bg-red-50 p-2' : 'mt-4 rounded-lg border border-red-300 bg-red-100 p-4'}>
-                        <div className="flex items-start space-x-2">
-                          <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
-                          <div className="flex-1">
-                            <h5 className="font-medium text-red-900 mb-1">Analysis Failed</h5>
-                            <p className="text-sm text-red-700">{upload.error}</p>
-                            <button
-                              onClick={() => analyzeUpload(upload)}
-                              className="mt-2 text-sm text-red-600 hover:text-red-800 font-medium underline"
-                            >
-                              Try again
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {upload.status === 'analyzed' && upload.aiAnalysis && (
-                      <div className={rep ? 'space-y-2' : 'space-y-4'}>
-                        <div className={rep ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-2 gap-4'}>
-                          <div className={rep ? 'rounded-lg border border-emerald-100 bg-white p-2 text-center' : 'rounded-lg border border-green-200 bg-white p-3 text-center'}>
-                            <BarChart3 className={rep ? 'mx-auto mb-0.5 h-4 w-4 text-emerald-600' : 'mx-auto mb-1 h-6 w-6 text-green-600'} />
-                            <div className={rep ? 'text-sm font-bold text-emerald-700' : 'text-lg font-bold text-green-600'}>
-                              {(upload.aiAnalysis.difficulty as number) || 0}/10
-                            </div>
-                            <div className={rep ? 'text-[9px] text-gray-500' : 'text-xs text-gray-600'}>Difficulty</div>
-                          </div>
-                          <div className={rep ? 'rounded-lg border border-emerald-100 bg-white p-2 text-center' : 'rounded-lg border border-green-200 bg-white p-3 text-center'}>
-                            <Clock className={rep ? 'mx-auto mb-0.5 h-4 w-4 text-emerald-600' : 'mx-auto mb-1 h-6 w-6 text-green-600'} />
-                            <div className={rep ? 'text-sm font-bold text-emerald-700' : 'text-lg font-bold text-green-600'}>
-                              {(upload.aiAnalysis.estimatedReadTime as number) || 0}m
-                            </div>
-                            <div className={rep ? 'text-[9px] text-gray-500' : 'text-xs text-gray-600'}>Duration</div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <h5 className={rep ? 'mb-1 text-[10px] font-bold text-gray-800' : 'mb-2 font-medium text-gray-900'}>Key topics</h5>
-                          <div className={rep ? 'flex flex-wrap gap-1' : 'flex flex-wrap gap-2'}>
-                            {upload.aiAnalysis.keyTopics?.map((topic: string, index: number) => (
-                              <span
-                                key={index}
-                                className={
-                                  rep
-                                    ? 'rounded-full border border-harx-100 bg-harx-50/90 px-1.5 py-0.5 text-[9px] font-semibold text-harx-700'
-                                    : 'rounded-full border border-purple-100 bg-purple-50 px-3 py-1 text-sm font-medium text-purple-600'
-                                }
-                              >
-                                {topic}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div>
-                          <h5 className={rep ? 'mb-0.5 text-[10px] font-bold text-gray-800' : 'mb-2 font-medium text-gray-900'}>
-                            AI modules ({upload.aiAnalysis.suggestedModules?.length || 0})
-                          </h5>
-                          <div className={rep ? 'line-clamp-2 text-[10px] leading-snug text-gray-600' : 'text-sm text-gray-600'}>
-                            {upload.aiAnalysis.suggestedModules?.join(' → ') || 'Modular structure pending'}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {(upload.status === 'uploading' || upload.status === 'processing') && (
-                      <div
-                        className={
-                          rep
-                            ? 'mt-2 flex items-center gap-2 rounded-lg border border-harx-100 bg-harx-50/60 p-2'
-                            : 'mt-4 flex items-center justify-center space-x-3 rounded-xl border border-purple-100 bg-purple-50/70 p-3'
-                        }
-                      >
-                        <Wand2 className={rep ? 'h-4 w-4 animate-spin text-harx-500' : 'h-5 w-5 animate-spin text-purple-500'} />
-                        <div className="min-w-0 flex-1">
-                          <span className={rep ? 'block text-[10px] font-bold text-harx-800' : 'block text-sm font-medium text-purple-700'}>
-                            {upload.status === 'uploading' ? 'Uploading…' : 'Analyzing…'}
-                          </span>
-                          <span className={rep ? 'mt-0.5 block text-[9px] text-harx-600/90' : 'mt-0.5 block text-xs text-purple-500'}>
-                            {upload.status === 'uploading' ? 'Sending file' : 'Extracting structure'}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Claude-like upload experience: attachment chips are displayed inside composer */}
 
           {/* AI Enhancement Preview */}
           {/* {totalAnalyzed > 0 && (
@@ -2239,21 +2104,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               Back to setup
             </button>
 
-            <div className={rep ? 'order-3 flex flex-1 justify-center sm:order-none' : 'order-3 flex flex-1 justify-center md:order-none'}>
-              {uploads.length > 0 && (
-                <div className="text-center">
-                  <div className={rep ? 'mb-1 text-[10px] font-semibold text-gray-500' : 'mb-2 text-sm text-gray-500'}>
-                    {totalAnalyzed} of {uploads.length} files analyzed
-                  </div>
-                  <div className={rep ? 'mx-auto h-1.5 w-36 overflow-hidden rounded-full bg-gray-200' : 'mx-auto h-2 w-48 overflow-hidden rounded-full bg-gray-200'}>
-                    <div
-                      className="h-full bg-emerald-500 transition-all duration-500"
-                      style={{ width: `${(totalAnalyzed / uploads.length) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
+            <div className={rep ? 'order-3 flex flex-1 justify-center sm:order-none' : 'order-3 flex flex-1 justify-center md:order-none'} />
 
             <div className={rep ? 'flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center' : 'flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center md:w-auto'} />
           </div>
