@@ -1355,34 +1355,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
       return filtered.join('\n').replace(/\n{3,}/g, '\n\n').trim();
     };
 
-    const parseStats = (rawText: string): Array<{ label: string; value: string }> => {
-      const lines = String(rawText || '')
-        .split('\n')
-        .map((line) => line.trim())
-        .filter(Boolean);
-
-      const stats: Array<{ label: string; value: string }> = [];
-      for (const line of lines) {
-        const cleaned = line
-          .replace(/\*\*(.*?)\*\*/g, '$1')
-          .replace(/__(.*?)__/g, '$1')
-          .replace(/^[-•*]\s*/, '')
-          .trim();
-
-        const match = cleaned.match(
-          /^([A-Za-zÀ-ÿ0-9()'’\-_\/\s]+)\s*[:\-]\s*([0-9][0-9.,\s]*(?:%|h|heures?|jours?|j|min|k|m)?(?:\s*[A-Za-zÀ-ÿ]+)?)$/i
-        );
-        if (!match) continue;
-
-        const label = match[1].trim();
-        const value = match[2].trim();
-        if (!label || !value) continue;
-        stats.push({ label, value });
-      }
-
-      return stats.slice(0, 6);
-    };
-
     const parseDetailedModuleContent = (rawText: string): {
       reminder?: string;
       moduleHeader?: string;
@@ -1724,7 +1696,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               const hasDesignedPlan = parsed.modules.length >= 2;
 
                               if (!hasDesignedPlan) {
-                                const stats = parseStats(textWithoutStyle);
                                 const detailedModule = parseDetailedModuleContent(textWithoutStyle);
                                 const contentTheme = styleBlueprint.contentTheme || {
                                   bodyColor: '#1f1d18',
@@ -1840,25 +1811,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                     >
                                       {textWithoutStyle}
                                     </ReactMarkdown>
-                                    {stats.length >= 3 && (
-                                      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                                        {stats.map((item, statIdx) => (
-                                          <div
-                                            key={`${item.label}-${statIdx}`}
-                                            className="rounded-lg border px-3 py-2"
-                                            style={{
-                                              backgroundColor: contentTheme.kpiBg,
-                                              borderColor: contentTheme.kpiBorder,
-                                            }}
-                                          >
-                                            <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: contentTheme.kpiLabel }}>
-                                              {item.label}
-                                            </div>
-                                            <div className="mt-0.5 text-[18px] font-bold" style={{ color: contentTheme.kpiValue }}>{item.value}</div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
                                   </>
                                 );
                               }
