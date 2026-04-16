@@ -32,6 +32,8 @@ interface ContentUploaderProps {
   repOnboardingLayout?: boolean;
 }
 
+type KbGenerationMode = 'kb_only' | 'uploads_only' | 'kb_and_uploads' | 'none';
+
 export default function ContentUploader(props: ContentUploaderProps) {
   const { onComplete, onBack, company, gigId, journey, methodology, repOnboardingLayout = false } = props;
   const analysisMetadata = {
@@ -65,7 +67,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [chatMessages, setChatMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; text: string; isStreaming?: boolean }>>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
-  const [kbGenerationChoice, setKbGenerationChoice] = useState<'kb_only' | 'uploads_only' | 'kb_and_uploads' | 'none' | null>(null);
+  const [kbGenerationChoice, setKbGenerationChoice] = useState<KbGenerationMode | null>(null);
   const [chatKbDocuments, setChatKbDocuments] = useState<
     Array<{ _id: string; name: string; fileType?: string; summary?: string; keyTerms?: string[]; createdAt?: string }>
   >([]);
@@ -1150,6 +1152,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const rep = repOnboardingLayout;
     const displayName = String(company?.name || 'QARA EL HOUCINE').toUpperCase();
     const hasStartedChat = chatMessages.length > 0;
+    const shouldShowKbQuestionInChat = kbGenerationChoice === null;
+    const shouldShowChatThread = hasStartedChat || shouldShowKbQuestionInChat;
+    const kbOptions: Array<{ id: KbGenerationMode; label: string; hint: string }> = [
+      { id: 'kb_only', label: 'KB uniquement', hint: 'Utiliser les documents analyses de knowledge base' },
+      { id: 'uploads_only', label: 'Fichiers uploades uniquement', hint: 'Utiliser seulement vos fichiers joints' },
+      { id: 'kb_and_uploads', label: 'KB + fichiers uploades', hint: 'Combiner knowledge base et fichiers joints' },
+      { id: 'none', label: 'Sans documents', hint: 'Generer sans KB ni fichiers analyses' },
+    ];
     const appendChatMessage = (
       role: 'user' | 'assistant',
       text: string,
@@ -1825,55 +1835,47 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   </div>
                 </div>
               )}
-              <div className="mb-3 rounded-xl border border-harx-200 bg-white px-3 py-2">
-                <p className="text-xs font-semibold text-harx-800">
-                  Est-ce que vous voulez generer un plan de formation et une formation a partir de knowledge base ?
-                </p>
-                <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                  {[
-                    { id: 'kb_only', label: 'KB uniquement', hint: 'Utiliser les documents analyses de knowledge base' },
-                    { id: 'uploads_only', label: 'Fichiers uploades uniquement', hint: 'Ignorer KB et utiliser seulement vos fichiers joints' },
-                    { id: 'kb_and_uploads', label: 'KB + fichiers uploades', hint: 'Combiner knowledge base et fichiers joints' },
-                    { id: 'none', label: 'Sans documents', hint: 'Generer sans KB ni fichiers analyses' },
-                  ].map((option) => {
-                    const selected = kbGenerationChoice === (option.id as any);
-                    return (
-                      <label
-                        key={option.id}
-                        className={`inline-flex cursor-pointer items-start gap-2 rounded-lg border px-2 py-2 text-xs transition ${
-                          selected ? 'border-harx-300 bg-harx-50 text-harx-800' : 'border-harx-200 bg-white text-harx-700'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selected}
-                          onChange={() => setKbGenerationChoice((prev) => (prev === option.id ? null : (option.id as any)))}
-                          className="mt-0.5 h-4 w-4 rounded border-harx-300 text-harx-600"
-                        />
-                        <span>
-                          <span className="block font-semibold">{option.label}</span>
-                          <span className="block text-[11px] text-harx-600">{option.hint}</span>
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-                <div className="mt-2 flex flex-wrap items-center gap-3">
-                  {isChatKbLoading && (
-                    <span className="inline-flex items-center gap-1 text-[11px] text-harx-600">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Chargement des documents KB...
-                    </span>
-                  )}
-                  {(kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads') && !isChatKbLoading && (
-                    <span className="text-[11px] text-harx-600">
-                      {chatKbDocuments.length} document(s) KB pret(s) pour la generation.
-                    </span>
-                  )}
-                </div>
-              </div>
-              {hasStartedChat && (
+              {shouldShowChatThread && (
                 <div className={rep ? 'mb-3 space-y-6 rounded-xl bg-transparent p-0' : 'mb-4 space-y-6 rounded-2xl bg-white/70 p-4'}>
+                  {shouldShowKbQuestionInChat && (
+                    <div className="flex justify-start">
+                      <div className="w-full max-w-[92%] rounded-2xl border border-harx-200 bg-[#f8fafc] px-4 py-3 shadow-sm">
+                        <p className="text-sm font-semibold text-harx-800">
+                          Est-ce que vous voulez generer un plan de formation et une formation a partir de knowledge base ?
+                        </p>
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                          {kbOptions.map((option) => {
+                            const selected = kbGenerationChoice === option.id;
+                            return (
+                              <button
+                                key={option.id}
+                                type="button"
+                                onClick={() => setKbGenerationChoice(option.id)}
+                                className={`rounded-xl border px-3 py-2 text-left transition ${
+                                  selected
+                                    ? 'border-harx-400 bg-harx-100/70 text-harx-900'
+                                    : 'border-harx-200 bg-white text-harx-700 hover:border-harx-300 hover:bg-harx-50'
+                                }`}
+                              >
+                                <div className="text-xs font-semibold">{option.label}</div>
+                                <div className="mt-0.5 text-[11px] text-harx-600">{option.hint}</div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <div className="mt-2 min-h-[16px] text-[11px] text-harx-600">
+                          {isChatKbLoading ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              Chargement des documents KB...
+                            </span>
+                          ) : (kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads') ? (
+                            <span>{chatKbDocuments.length} document(s) KB pret(s) pour la generation.</span>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   {chatMessages.map((msg) => (
                     <div key={msg.id} className={msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
                       {msg.role === 'assistant' ? (
