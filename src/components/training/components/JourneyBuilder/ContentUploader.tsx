@@ -1275,6 +1275,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
         kpiLabel: string;
         kpiValue: string;
         moduleShape: 'rounded' | 'square' | 'soft';
+        panelBg: string;
+        panelBorder: string;
+        badgeBg: string;
+        badgeText: string;
       };
     } => {
       const isHex = (v: unknown) => typeof v === 'string' && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
@@ -1300,6 +1304,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
           kpiLabel: '#6e6758',
           kpiValue: '#1f1d18',
           moduleShape: 'rounded' as const,
+          panelBg: '#fbfaf6',
+          panelBorder: '#e7dfcc',
+          badgeBg: '#f0ecdf',
+          badgeText: '#655b48',
         },
       };
 
@@ -1328,6 +1336,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
               kpiBorder: safeHex(parsed.contentTheme.kpiBorder, defaults.contentTheme.kpiBorder),
               kpiLabel: safeHex(parsed.contentTheme.kpiLabel, defaults.contentTheme.kpiLabel),
               kpiValue: safeHex(parsed.contentTheme.kpiValue, defaults.contentTheme.kpiValue),
+              panelBg: safeHex(parsed.contentTheme.panelBg, defaults.contentTheme.panelBg),
+              panelBorder: safeHex(parsed.contentTheme.panelBorder, defaults.contentTheme.panelBorder),
+              badgeBg: safeHex(parsed.contentTheme.badgeBg, defaults.contentTheme.badgeBg),
+              badgeText: safeHex(parsed.contentTheme.badgeText, defaults.contentTheme.badgeText),
               moduleShape:
                 parsed.contentTheme.moduleShape === 'square' || parsed.contentTheme.moduleShape === 'soft'
                   ? parsed.contentTheme.moduleShape
@@ -1749,14 +1761,23 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   kpiLabel: '#6e6758',
                                   kpiValue: '#1f1d18',
                                   moduleShape: 'rounded' as const,
+                                  panelBg: '#fbfaf6',
+                                  panelBorder: '#e7dfcc',
+                                  badgeBg: '#f0ecdf',
+                                  badgeText: '#655b48',
                                 };
                                 return (
                                   <>
                                     {detailedModule.moduleHeader && (
-                                      <div className="mb-3 rounded-xl border px-3 py-2" style={{ borderColor: contentTheme.tableBorder, backgroundColor: contentTheme.tableHeaderBg }}>
+                                      <div className="mb-3 rounded-2xl border px-4 py-3" style={{ borderColor: contentTheme.panelBorder, backgroundColor: contentTheme.panelBg }}>
                                         <div className="text-[16px] font-semibold" style={{ color: contentTheme.headingColor }}>
                                           {detailedModule.moduleHeader}
                                         </div>
+                                        {detailedModule.intro.length > 0 && (
+                                          <div className="mt-2 inline-flex rounded-xl border px-2.5 py-1 text-[12px] font-semibold" style={{ backgroundColor: contentTheme.badgeBg, borderColor: contentTheme.panelBorder, color: contentTheme.badgeText }}>
+                                            {detailedModule.intro[0]}
+                                          </div>
+                                        )}
                                       </div>
                                     )}
                                     {detailedModule.sections.length > 0 && (
@@ -1764,10 +1785,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                         {detailedModule.sections.map((section, idx) => (
                                           <div
                                             key={`${section.title}-${idx}`}
-                                            className="rounded-xl border px-3 py-2"
-                                            style={{ borderColor: contentTheme.tableBorder, backgroundColor: contentTheme.tableRowBg }}
+                                            className="rounded-2xl border px-4 py-3"
+                                            style={{ borderColor: contentTheme.panelBorder, backgroundColor: contentTheme.panelBg }}
                                           >
-                                            <h5 className="mb-1 text-[15px] font-semibold" style={{ color: contentTheme.headingColor }}>
+                                            <h5 className="mb-2 text-[17px] font-semibold" style={{ color: contentTheme.headingColor }}>
                                               {section.title}
                                             </h5>
                                             <div className="space-y-1">
