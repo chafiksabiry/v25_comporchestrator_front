@@ -254,6 +254,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
   };
 
   const handleFileUpload = useCallback(async (files: File[]) => {
+    const currentAnalysisMetadata = {
+      gigId: gigId || undefined,
+      companyId: company?.id || company?._id || undefined
+    };
     const newUploads: ContentUpload[] = files.map(file => ({
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       name: file.name,
@@ -303,7 +307,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           console.warn('⚠️ Cloudinary upload failed, attempting fallback to backend storage:', uploadError);
           try {
             if (!upload.file) throw new Error('File content is missing');
-            const backendResult = await AIService.uploadDocumentViaBackend(upload.file, analysisMetadata);
+            const backendResult = await AIService.uploadDocumentViaBackend(upload.file, currentAnalysisMetadata);
             cloudinaryUrl = backendResult.url;
             publicId = backendResult.publicId;
             console.log(`✅ File uploaded via fallback to backend: ${upload.name}`, cloudinaryUrl);
@@ -314,7 +318,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
         // ✅ Vraie analyse avec AI
         if (!upload.file) throw new Error('File content is missing for analysis');
-        const analysis = await AIService.analyzeDocument(upload.file, analysisMetadata);
+        const analysis = await AIService.analyzeDocument(upload.file, currentAnalysisMetadata);
 
         setUploads(prev => prev.map(u =>
           u.id === upload.id
@@ -327,6 +331,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
             }
             : u
         ));
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-upload-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            role: 'assistant',
+            text: `Fichier analyse avec succes: ${upload.name}. Tu peux maintenant me demander de generer le plan de formation a partir de ce document.`,
+          },
+        ]);
       } catch (error: any) {
         console.error('AI Analysis failed:', error);
         const errorMessage = error?.message || 'Analysis failed';
@@ -337,11 +349,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
             error: errorMessage
           } : u
         ));
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-upload-error-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            role: 'assistant',
+            text: `Echec analyse/upload pour ${upload.name}: ${errorMessage}`,
+          },
+        ]);
       }
     }
 
     setIsProcessing(false);
-  }, []);
+  }, [gigId, company?.id, company?._id]);
 
   const handleUrlSubmit = useCallback(async () => {
     if (!urlInput.trim()) return;
@@ -1112,7 +1132,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   function renderSourcesUploadUI() {
     const rep = repOnboardingLayout;
     const displayName = String(company?.name || 'QARA EL HOUCINE').toUpperCase();
-    const hasStartedChat = chatMessages.some((msg) => msg.role === 'user');
+    const hasStartedChat = chatMessages.length > 0;
     const appendChatMessage = (
       role: 'user' | 'assistant',
       text: string,
