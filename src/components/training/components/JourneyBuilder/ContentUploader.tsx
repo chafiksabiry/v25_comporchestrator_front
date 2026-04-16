@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, RotateCcw, Send } from 'lucide-react';
+import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, RotateCcw, Send, History } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ContentUpload } from '../../types/core';
-import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef } from '../../infrastructure/services/AIService';
+import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef, type ChatHistoryItem } from '../../infrastructure/services/AIService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
 import { DraftService } from '../../infrastructure/services/DraftService';
 import { cloudinaryService } from '../../lib/cloudinaryService';
@@ -65,6 +65,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [chatMessages, setChatMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; text: string; isStreaming?: boolean }>>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [chatHistorySessions, setChatHistorySessions] = useState<ChatHistoryItem[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
   const chatFileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -72,6 +76,32 @@ export default function ContentUploader(props: ContentUploaderProps) {
       window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
     });
   }, [chatMessages, isChatLoading]);
+
+  const refreshChatHistory = useCallback(async () => {
+    if (!gigId) {
+      setChatHistorySessions([]);
+      return;
+    }
+    setIsHistoryLoading(true);
+    try {
+      const sessions = await AIService.listChatHistory(String(gigId));
+      setChatHistorySessions(Array.isArray(sessions) ? sessions : []);
+    } catch (error) {
+      console.error('[ContentUploader] Failed loading chat history:', error);
+      setChatHistorySessions([]);
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  }, [gigId]);
+
+  useEffect(() => {
+    if (!gigId) {
+      setActiveChatSessionId(null);
+      setChatHistorySessions([]);
+      return;
+    }
+    void refreshChatHistory();
+  }, [gigId, refreshChatHistory]);
 
   const getAnalyzedUploads = useCallback(
     () => uploads.filter((u) => u.status === 'analyzed' && !!u.aiAnalysis),
@@ -1096,6 +1126,35 @@ export default function ContentUploader(props: ContentUploaderProps) {
       return id;
     };
 
+    const startNewConversation = () => {
+      setChatMessages([]);
+      setChatInput('');
+      setActiveChatSessionId(null);
+      setIsHistoryOpen(false);
+    };
+
+    const openHistorySession = async (sessionId: string) => {
+      if (!sessionId || isChatLoading) return;
+      setIsHistoryLoading(true);
+      try {
+        const session = await AIService.getChatSession(sessionId);
+        if (!session) return;
+        const mappedMessages = (session.messages || []).map((m, idx) => ({
+          id: `history-${sessionId}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+          role: m.role === 'assistant' ? 'assistant' : 'user',
+          text: m.text || '',
+          isStreaming: false,
+        }));
+        setChatMessages(mappedMessages);
+        setActiveChatSessionId(session._id || sessionId);
+        setIsHistoryOpen(false);
+      } catch (error) {
+        console.error('[ContentUploader] Failed to open history session:', error);
+      } finally {
+        setIsHistoryLoading(false);
+      }
+    };
+
     const generationPreferences = {
       selectedDuration: formatDurationForAi(journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined),
       methodologyName: methodology?.name || 'Methodologie 360',
@@ -1324,6 +1383,66 @@ export default function ContentUploader(props: ContentUploaderProps) {
       return stats.slice(0, 6);
     };
 
+    const parseDetailedModuleContent = (rawText: string): {
+      reminder?: string;
+      moduleHeader?: string;
+      intro: string[];
+      sections: Array<{ title: string; lines: string[] }>;
+    } => {
+      const lines = String(rawText || '')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      const clean = (v: string) =>
+        v
+          .replace(/\*\*(.*?)\*\*/g, '$1')
+          .replace(/__(.*?)__/g, '$1')
+          .replace(/`([^`]+)`/g, '$1')
+          .trim();
+
+      const result = {
+        reminder: undefined as string | undefined,
+        moduleHeader: undefined as string | undefined,
+        intro: [] as string[],
+        sections: [] as Array<{ title: string; lines: string[] }>,
+      };
+
+      let currentSection: { title: string; lines: string[] } | null = null;
+      const sectionHeaderPattern =
+        /^(objectifs?\s+sp[ée]cifiques?|partie\s*\d+\s*:?.*|activit[ée]\s+pratique.*|[ée]valuation.*|consigne|travail\s+[àa]\s+r[ée]aliser.*)$/i;
+
+      for (const raw of lines) {
+        const line = clean(raw);
+        if (!line) continue;
+
+        if (!result.reminder && /^rappel\s*[—:-]/i.test(line)) {
+          result.reminder = line;
+          continue;
+        }
+
+        if (!result.moduleHeader && /^module\s+\d+\s*[:\-]/i.test(line)) {
+          result.moduleHeader = line;
+          continue;
+        }
+
+        if (sectionHeaderPattern.test(line)) {
+          if (currentSection) result.sections.push(currentSection);
+          currentSection = { title: line, lines: [] };
+          continue;
+        }
+
+        if (currentSection) {
+          currentSection.lines.push(line);
+        } else {
+          result.intro.push(line);
+        }
+      }
+
+      if (currentSection) result.sections.push(currentSection);
+      return result;
+    };
+
     const handleChatSubmit = async () => {
       const message = chatInput.trim();
       if (!message || isChatLoading) return;
@@ -1374,7 +1493,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
             )
           );
         }
-        const fullResponse = await AIService.chatStream(cleanMessage, chatContext, (chunk) => {
+        const companyId = company?.id || company?._id ? String(company?.id || company?._id) : undefined;
+        const streamResult = await AIService.chatStream(cleanMessage, chatContext, (chunk) => {
           setChatMessages((prev) =>
             prev.map((m) =>
               m.id === streamingAssistantId
@@ -1382,18 +1502,26 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 : m
             )
           );
+        }, {
+          gigId: gigId ? String(gigId) : undefined,
+          companyId,
+          sessionId: activeChatSessionId || undefined,
         });
+        if (streamResult.sessionId && streamResult.sessionId !== activeChatSessionId) {
+          setActiveChatSessionId(streamResult.sessionId);
+        }
         setChatMessages((prev) =>
           prev.map((m) =>
             m.id === streamingAssistantId
               ? {
                 ...m,
-                text: fullResponse?.trim() || "Je n'ai pas pu generer une reponse pour le moment.",
+                text: streamResult.text?.trim() || "Je n'ai pas pu generer une reponse pour le moment.",
                 isStreaming: false,
               }
               : m
           )
         );
+        void refreshChatHistory();
       } catch (error: any) {
         console.error('[ContentUploader] Chat backend call failed:', error);
         appendChatMessage(
@@ -1437,6 +1565,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               </div>
               <button
                 type="button"
+                onClick={startNewConversation}
                 className="mb-2 inline-flex w-full items-center gap-2 rounded-xl border border-[#e6e2d7] bg-white px-3 py-2 text-sm font-medium text-[#3f3a31]"
               >
                 <Plus className="h-4 w-4 text-harx-600" />
@@ -1513,7 +1642,74 @@ export default function ContentUploader(props: ContentUploaderProps) {
           )}
 
           <div className={rep ? 'mx-auto mb-2 w-full max-w-[700px]' : 'mx-auto mb-4 w-full max-w-[700px]'}>
-            <div className={rep ? 'rounded-none border-0 bg-transparent p-0 shadow-none' : 'rounded-3xl border border-harx-100 bg-white p-4 shadow-sm'}>
+            <div className={rep ? 'relative rounded-none border-0 bg-transparent p-0 shadow-none' : 'relative rounded-3xl border border-harx-100 bg-white p-4 shadow-sm'}>
+              <div className="mb-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsHistoryOpen((prev) => !prev)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-harx-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-harx-700 hover:bg-harx-50"
+                  title="Ouvrir l'historique"
+                >
+                  <History className="h-3.5 w-3.5" />
+                  Historique
+                </button>
+                <button
+                  type="button"
+                  onClick={startNewConversation}
+                  className="inline-flex items-center gap-1 rounded-lg border border-harx-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-harx-700 hover:bg-harx-50"
+                  title="Nouvelle conversation"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Nouvelle
+                </button>
+              </div>
+              {isHistoryOpen && (
+                <div className="absolute right-0 top-10 z-30 w-full max-w-[320px] rounded-xl border border-harx-200 bg-white p-2 shadow-xl">
+                  <div className="mb-2 flex items-center justify-between px-1">
+                    <div className="text-xs font-bold uppercase tracking-wide text-harx-600">Historique du gig</div>
+                    <button
+                      type="button"
+                      onClick={() => void refreshChatHistory()}
+                      className="rounded p-1 text-harx-600 hover:bg-harx-50"
+                      title="Rafraichir"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <div className="max-h-[320px] space-y-1 overflow-y-auto">
+                    {isHistoryLoading ? (
+                      <div className="flex items-center gap-2 rounded-md px-2 py-2 text-xs text-harx-600">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Chargement...
+                      </div>
+                    ) : chatHistorySessions.length === 0 ? (
+                      <div className="rounded-md px-2 py-2 text-xs text-harx-500">
+                        Aucun historique trouve pour ce gig.
+                      </div>
+                    ) : (
+                      chatHistorySessions.map((session) => (
+                        <button
+                          key={session._id}
+                          type="button"
+                          onClick={() => void openHistorySession(session._id)}
+                          className={`w-full rounded-md border px-2 py-2 text-left transition ${
+                            activeChatSessionId === session._id
+                              ? 'border-harx-300 bg-harx-50'
+                              : 'border-transparent hover:border-harx-100 hover:bg-harx-50/70'
+                          }`}
+                        >
+                          <div className="truncate text-[12px] font-semibold text-harx-800">
+                            {session.title || 'Nouvelle conversation'}
+                          </div>
+                          {session.preview ? (
+                            <div className="mt-0.5 line-clamp-2 text-[11px] text-harx-600">{session.preview}</div>
+                          ) : null}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
               {hasStartedChat && (
                 <div className={rep ? 'mb-3 space-y-6 rounded-xl bg-transparent p-0' : 'mb-4 space-y-6 rounded-2xl bg-white/70 p-4'}>
                   {chatMessages.map((msg) => (
@@ -1529,6 +1725,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
                               if (!hasDesignedPlan) {
                                 const stats = parseStats(textWithoutStyle);
+                                const detailedModule = parseDetailedModuleContent(textWithoutStyle);
                                 const contentTheme = styleBlueprint.contentTheme || {
                                   bodyColor: '#1f1d18',
                                   headingColor: '#181611',
@@ -1544,6 +1741,47 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                 };
                                 return (
                                   <>
+                                    {detailedModule.moduleHeader && (
+                                      <div className="mb-3 rounded-xl border px-3 py-2" style={{ borderColor: contentTheme.tableBorder, backgroundColor: contentTheme.tableHeaderBg }}>
+                                        <div className="text-[16px] font-semibold" style={{ color: contentTheme.headingColor }}>
+                                          {detailedModule.moduleHeader}
+                                        </div>
+                                      </div>
+                                    )}
+                                    {detailedModule.sections.length > 0 && (
+                                      <div className="mb-4 space-y-3">
+                                        {detailedModule.sections.map((section, idx) => (
+                                          <div
+                                            key={`${section.title}-${idx}`}
+                                            className="rounded-xl border px-3 py-2"
+                                            style={{ borderColor: contentTheme.tableBorder, backgroundColor: contentTheme.tableRowBg }}
+                                          >
+                                            <h5 className="mb-1 text-[15px] font-semibold" style={{ color: contentTheme.headingColor }}>
+                                              {section.title}
+                                            </h5>
+                                            <div className="space-y-1">
+                                              {section.lines.map((line, lineIdx) => {
+                                                const numbered = /^\d+\.\s+/.test(line);
+                                                const bullet = /^[-•*]\s+/.test(line);
+                                                const content = line.replace(/^[-•*]\s+/, '');
+                                                if (numbered || bullet) {
+                                                  return (
+                                                    <div key={`${idx}-${lineIdx}`} className="text-[15px] leading-7" style={{ color: contentTheme.bodyColor }}>
+                                                      {line}
+                                                    </div>
+                                                  );
+                                                }
+                                                return (
+                                                  <p key={`${idx}-${lineIdx}`} className="text-[15px] leading-7" style={{ color: contentTheme.bodyColor }}>
+                                                    {content}
+                                                  </p>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
                                     <ReactMarkdown
                                       remarkPlugins={[remarkGfm]}
                                       components={{
@@ -1715,50 +1953,60 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 </div>
               )}
 
-              <div className={rep ? 'rounded-[20px] border border-harx-200 bg-white px-4 py-3' : 'rounded-[28px] border border-harx-200 bg-white px-5 py-4'}>
-                <input
-                  ref={chatFileInputRef}
-                  type="file"
-                  multiple
-                  accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp,.gif"
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files || []);
-                    if (files.length > 0) {
-                      void handleFileUpload(files);
-                    }
-                    e.currentTarget.value = '';
-                  }}
-                  className="hidden"
-                />
-                <input
-                  type="text"
-                  value={chatInput}
-                  disabled={isChatLoading}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleChatSubmit();
-                  }}
-                  placeholder={hasStartedChat ? 'Repondre...' : 'Comment puis-je vous aider ?'}
-                  className="mb-3 w-full bg-transparent text-[15px] text-harx-800 outline-none placeholder:text-harx-600/70"
-                />
-                <div className="flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => chatFileInputRef.current?.click()}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-harx-200 text-harx-700 hover:bg-harx-50"
-                    title="Importer des fichiers"
-                  >
-                    +
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleChatSubmit()}
-                    disabled={!chatInput.trim() || isChatLoading}
-                    className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
-                  >
-                    <Send className="h-3.5 w-3.5" />
-                    Send
-                  </button>
+              <div className={rep ? 'sticky bottom-2 z-20 bg-[#fcfcf8]/95 pb-1 pt-2 backdrop-blur-sm' : 'sticky bottom-2 z-20 bg-white/95 pb-1 pt-2 backdrop-blur-sm'}>
+                <div className={rep ? 'rounded-[20px] border border-harx-200 bg-white px-4 py-3' : 'rounded-[28px] border border-harx-200 bg-white px-5 py-4'}>
+                  <input
+                    ref={chatFileInputRef}
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp,.gif"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 0) {
+                        void handleFileUpload(files);
+                      }
+                      e.currentTarget.value = '';
+                    }}
+                    className="hidden"
+                  />
+                  <textarea
+                    value={chatInput}
+                    disabled={isChatLoading}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onInput={(e) => {
+                      const el = e.currentTarget;
+                      el.style.height = '0px';
+                      el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        void handleChatSubmit();
+                      }
+                    }}
+                    rows={1}
+                    placeholder={hasStartedChat ? 'Repondre...' : 'Comment puis-je vous aider ?'}
+                    className="mb-3 w-full resize-none bg-transparent text-[15px] text-harx-800 outline-none placeholder:text-harx-600/70"
+                  />
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => chatFileInputRef.current?.click()}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-harx-200 text-harx-700 hover:bg-harx-50"
+                      title="Importer des fichiers"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleChatSubmit()}
+                      disabled={!chatInput.trim() || isChatLoading}
+                      className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                      Send
+                    </button>
+                  </div>
                 </div>
               </div>
 
