@@ -234,7 +234,8 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
         // Utiliser uniquement le titre du module basé sur l'analyse des documents, sans préfixe de méthodologie
         title: module.title,
         description: `${module.description} Enhanced with ${methodology.name} methodology.`,
-        duration: module.duration + methodologyComponent.estimatedDuration,
+        // IMPORTANT: keep duration from Vision selection; do not add methodology duration.
+        duration: module.duration,
         difficulty: methodologyComponent.competencyLevel === 'expert' ? 'advanced' :
           methodologyComponent.competencyLevel === 'proficient' ? 'intermediate' : 'beginner',
         prerequisites: [...module.prerequisites, ...methodologyComponent.prerequisites],
