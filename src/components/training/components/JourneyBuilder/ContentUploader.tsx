@@ -445,7 +445,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             undefined,
             uploadContext as any,
             {
-              selectedDuration: journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined,
+              selectedDuration: formatDurationForAi(journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined),
               methodologyName: methodology?.name || 'Methodologie 360',
               methodologyDescription: methodology?.description,
               methodologyComponents: Array.isArray(methodology?.components)
@@ -600,7 +600,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             undefined,
             uploadContext as any,
             {
-              selectedDuration: journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined,
+              selectedDuration: formatDurationForAi(journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined),
               methodologyName: methodology?.name || 'Methodologie 360',
               methodologyDescription: methodology?.description,
               methodologyComponents: Array.isArray(methodology?.components)
@@ -688,7 +688,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         ...(journey?.estimatedDuration || methodology?.name
           ? {
               preferences: {
-                selectedDuration: journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined,
+                selectedDuration: formatDurationForAi(journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined),
                 methodologyName: methodology?.name || 'Methodologie 360',
                 methodologyDescription: methodology?.description,
                 methodologyComponents: Array.isArray(methodology?.components)
@@ -715,6 +715,23 @@ export default function ContentUploader(props: ContentUploaderProps) {
         return <Wand2 className="h-5 w-5 text-gray-400 animate-spin" />;
     }
   };
+
+  const formatDurationForAi = useCallback((raw?: string): string | undefined => {
+    if (!raw) return undefined;
+    const value = String(raw).trim().toLowerCase();
+    const minutes = parseInt(value, 10);
+    if (!Number.isNaN(minutes) && minutes > 0) {
+      if (minutes < 60) return `${minutes} minutes`;
+      const hours = minutes / 60;
+      if (hours >= 24) {
+        const days = Math.round((hours / 24) * 10) / 10;
+        return `${days} jours`;
+      }
+      const roundedHours = Math.round(hours * 10) / 10;
+      return `${roundedHours} heures`;
+    }
+    return raw;
+  }, []);
 
   const canProceed = (uploads.length > 0 && uploads.every(u => u.status === 'analyzed')) || (uploads.length === 0 && !!gigId);
   const totalAnalyzed = uploads.filter(u => u.status === 'analyzed').length;
@@ -1089,7 +1106,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     };
 
     const generationPreferences = {
-      selectedDuration: journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined,
+      selectedDuration: formatDurationForAi(journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined),
       methodologyName: methodology?.name || 'Methodologie 360',
       methodologyDescription: methodology?.description,
       methodologyComponents: Array.isArray(methodology?.components)
@@ -1153,7 +1170,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
         }
 
         if (/^[-•*]\s+/.test(line) || normalized.includes(':')) {
-          current.bullets.push(normalized);
+          const stripped = normalized
+            .replace(/^objectifs?\s*:\s*/i, '')
+            .replace(/^contenu\s*:\s*/i, '')
+            .trim();
+          const lower = stripped.toLowerCase();
+          if (!stripped) continue;
+          if (['objectif', 'objectifs', 'contenu', 'content'].includes(lower)) continue;
+          current.bullets.push(stripped);
         }
       }
 
@@ -1164,6 +1188,48 @@ export default function ContentUploader(props: ContentUploaderProps) {
         modules,
       };
     };
+
+    const extractStyleBlueprint = (rawText: string): {
+      moduleCardThemes: Array<{ bg: string; border: string; text?: string }>;
+      titleColor?: string;
+      accentColor?: string;
+    } => {
+      const defaults = {
+        moduleCardThemes: [
+          { bg: '#eaf3ff', border: '#98b9ea', text: '#1f1d18' },
+          { bg: '#eafbf5', border: '#95d7c8', text: '#1f1d18' },
+          { bg: '#f0efff', border: '#b7b5ea', text: '#1f1d18' },
+          { bg: '#fff7eb', border: '#e8c79d', text: '#1f1d18' },
+        ],
+        titleColor: '#1b1914',
+        accentColor: '#a6a098',
+      };
+
+      const match = String(rawText || '').match(/<harx-style>([\s\S]*?)<\/harx-style>/i);
+      if (!match?.[1]) return defaults;
+      try {
+        const parsed = JSON.parse(match[1]);
+        const themes = Array.isArray(parsed?.moduleCardThemes)
+          ? parsed.moduleCardThemes
+              .filter((t: any) => typeof t?.bg === 'string' && typeof t?.border === 'string')
+              .map((t: any) => ({
+                bg: t.bg,
+                border: t.border,
+                text: typeof t?.text === 'string' ? t.text : '#1f1d18',
+              }))
+          : [];
+        return {
+          moduleCardThemes: themes.length > 0 ? themes : defaults.moduleCardThemes,
+          titleColor: typeof parsed?.titleColor === 'string' ? parsed.titleColor : defaults.titleColor,
+          accentColor: typeof parsed?.accentColor === 'string' ? parsed.accentColor : defaults.accentColor,
+        };
+      } catch {
+        return defaults;
+      }
+    };
+
+    const stripStyleBlueprint = (rawText: string): string =>
+      String(rawText || '').replace(/<harx-style>[\s\S]*?<\/harx-style>/gi, '').trim();
 
     const parseStats = (rawText: string): Array<{ label: string; value: string }> => {
       const lines = String(rawText || '')
@@ -1355,20 +1421,29 @@ export default function ContentUploader(props: ContentUploaderProps) {
           )}
 
           <div className={rep ? 'mx-auto mb-2 w-full max-w-[700px]' : 'mx-auto mb-4 w-full max-w-[700px]'}>
-            <div className={rep ? 'rounded-3xl border border-harx-100 bg-white p-4 shadow-sm' : 'rounded-3xl border border-harx-100 bg-white p-4 shadow-sm'}>
+            <div className={rep ? 'rounded-none border-0 bg-transparent p-0 shadow-none' : 'rounded-3xl border border-harx-100 bg-white p-4 shadow-sm'}>
               {hasStartedChat && (
-                <div ref={chatScrollRef} className="mb-4 max-h-[48vh] min-h-[34vh] space-y-6 overflow-y-auto rounded-2xl bg-white/70 p-4">
+                <div
+                  ref={chatScrollRef}
+                  className={
+                    rep
+                      ? 'mb-3 max-h-[48vh] min-h-[34vh] space-y-6 overflow-y-auto rounded-xl bg-transparent p-0'
+                      : 'mb-4 max-h-[48vh] min-h-[34vh] space-y-6 overflow-y-auto rounded-2xl bg-white/70 p-4'
+                  }
+                >
                   {chatMessages.map((msg) => (
                     <div key={msg.id} className={msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
                       {msg.role === 'assistant' ? (
                         <div className="max-w-[88%]">
                           <div className="max-w-none text-[#1f1d18]">
                             {(() => {
-                              const parsed = parseTrainingPlan(msg.text);
+                              const textWithoutStyle = stripStyleBlueprint(msg.text);
+                              const styleBlueprint = extractStyleBlueprint(msg.text);
+                              const parsed = parseTrainingPlan(textWithoutStyle);
                               const hasDesignedPlan = parsed.modules.length >= 2;
 
                               if (!hasDesignedPlan) {
-                                const stats = parseStats(msg.text);
+                                const stats = parseStats(textWithoutStyle);
                                 return (
                                   <>
                                     <ReactMarkdown
@@ -1427,7 +1502,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                         ),
                                       }}
                                     >
-                                      {msg.text}
+                                      {textWithoutStyle}
                                     </ReactMarkdown>
                                     {stats.length >= 3 && (
                                       <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -1448,21 +1523,20 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                 );
                               }
 
-                              const cardThemes = [
-                                'border-[#98b9ea] bg-[#eaf3ff]',
-                                'border-[#95d7c8] bg-[#eafbf5]',
-                                'border-[#b7b5ea] bg-[#f0efff]',
-                                'border-[#e8c79d] bg-[#fff7eb]',
-                              ];
                               return (
                                 <div className="mt-4 space-y-3">
                                   {parsed.intro && (
                                     <p className="text-[16px] leading-7 text-[#1f1d18]">{parsed.intro}</p>
                                   )}
                                   {parsed.title && (
-                                    <div className="text-center text-[15px] font-semibold text-[#1b1914]">{parsed.title}</div>
+                                    <div className="text-center text-[15px] font-semibold" style={{ color: styleBlueprint.titleColor || '#1b1914' }}>
+                                      {parsed.title}
+                                    </div>
                                   )}
                                   {parsed.modules.map((module, idx) => (
+                                    (() => {
+                                      const theme = styleBlueprint.moduleCardThemes[idx % styleBlueprint.moduleCardThemes.length];
+                                      return (
                                     <button
                                       key={`${module.title}-${idx}`}
                                       type="button"
@@ -1475,7 +1549,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                         const ask = `Detaille ${module.title} avec objectifs, contenu pedagogique, activites pratiques, quiz, et duree precise.${moduleSummary}`;
                                         void sendChatMessage(ask);
                                       }}
-                                      className={`w-full rounded-xl border px-3 py-2 text-left transition-all duration-150 hover:-translate-y-[1px] hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${cardThemes[idx % cardThemes.length]}`}
+                                      className="w-full rounded-xl border px-3 py-2 text-left transition-all duration-150 hover:-translate-y-[1px] hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                                      style={{
+                                        backgroundColor: theme?.bg || '#f9f9f9',
+                                        borderColor: theme?.border || '#ddd',
+                                        color: theme?.text || '#1f1d18',
+                                      }}
                                       title={`Cliquer pour detailler ${module.title}`}
                                     >
                                       <div className="text-[15px] font-semibold text-[#1f1d18]">{module.title}</div>
@@ -1490,6 +1569,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                         </ul>
                                       )}
                                     </button>
+                                      );
+                                    })()
                                   ))}
                                 </div>
                               );
@@ -1536,7 +1617,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 </div>
               )}
 
-              <div className="rounded-[28px] border border-harx-200 bg-white px-5 py-4">
+              <div className={rep ? 'rounded-[20px] border border-harx-200 bg-white px-4 py-3' : 'rounded-[28px] border border-harx-200 bg-white px-5 py-4'}>
                 <input
                   type="text"
                   value={chatInput}
