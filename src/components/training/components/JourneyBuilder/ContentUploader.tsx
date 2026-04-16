@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, Copy, ThumbsUp, ThumbsDown, RotateCcw } from 'lucide-react';
+import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, RotateCcw, Send } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ContentUpload } from '../../types/core';
@@ -65,13 +65,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [chatMessages, setChatMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; text: string; isStreaming?: boolean }>>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
-  const chatScrollRef = useRef<HTMLDivElement | null>(null);
+  const chatFileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    if (!chatScrollRef.current) return;
-    chatScrollRef.current.scrollTo({
-      top: chatScrollRef.current.scrollHeight,
-      behavior: 'smooth',
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
     });
   }, [chatMessages, isChatLoading]);
 
@@ -1085,13 +1083,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const rep = repOnboardingLayout;
     const displayName = String(company?.name || 'QARA EL HOUCINE').toUpperCase();
     const hasStartedChat = chatMessages.some((msg) => msg.role === 'user');
-    const copyMessage = async (text: string) => {
-      try {
-        await navigator.clipboard.writeText(text);
-      } catch (error) {
-        console.warn('[ContentUploader] Unable to copy message:', error);
-      }
-    };
     const appendChatMessage = (
       role: 'user' | 'assistant',
       text: string,
@@ -1231,6 +1222,33 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const stripStyleBlueprint = (rawText: string): string =>
       String(rawText || '').replace(/<harx-style>[\s\S]*?<\/harx-style>/gi, '').trim();
 
+    const stripResourceSections = (rawText: string): string => {
+      const lines = String(rawText || '').split('\n');
+      const blockHeader = /^(supports?\s*(et|&)\s*ressources?|documents?\s+fournis|[ée]quipement\s+n[ée]cessaire)\s*:?\s*$/i;
+      const isBulletOrIndented = (line: string) => /^\s*([-•*]|\d+\.)\s+/.test(line) || /^\s{2,}\S+/.test(line);
+
+      const filtered: string[] = [];
+      let skipping = false;
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!skipping && blockHeader.test(trimmed)) {
+          skipping = true;
+          continue;
+        }
+        if (skipping) {
+          if (!trimmed) {
+            skipping = false;
+          } else if (isBulletOrIndented(line)) {
+            continue;
+          } else {
+            skipping = false;
+          }
+        }
+        if (!skipping) filtered.push(line);
+      }
+      return filtered.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+    };
+
     const parseStats = (rawText: string): Array<{ label: string; value: string }> => {
       const lines = String(rawText || '')
         .split('\n')
@@ -1266,10 +1284,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
       await sendChatMessage(message);
     };
 
-    const sendChatMessage = async (message: string) => {
+    const sendChatMessage = async (
+      message: string,
+      options?: { appendUser?: boolean; replaceAssistantId?: string }
+    ) => {
       const cleanMessage = message.trim();
       if (!cleanMessage || isChatLoading) return;
-      appendChatMessage('user', cleanMessage);
+      const shouldAppendUser = options?.appendUser !== false;
+      if (shouldAppendUser) {
+        appendChatMessage('user', cleanMessage);
+      }
       setIsChatLoading(true);
 
       try {
@@ -1293,7 +1317,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
           canGenerateTraining: canProceed,
         });
 
-        const streamingAssistantId = appendChatMessage('assistant', '', { isStreaming: true });
+        const streamingAssistantId = options?.replaceAssistantId || appendChatMessage('assistant', '', { isStreaming: true });
+        if (options?.replaceAssistantId) {
+          setChatMessages((prev) =>
+            prev.map((m) =>
+              m.id === options.replaceAssistantId
+                ? { ...m, text: '', isStreaming: true }
+                : m
+            )
+          );
+        }
         const fullResponse = await AIService.chatStream(cleanMessage, chatContext, (chunk) => {
           setChatMessages((prev) =>
             prev.map((m) =>
@@ -1324,6 +1357,18 @@ export default function ContentUploader(props: ContentUploaderProps) {
         );
       } finally {
         setIsChatLoading(false);
+      }
+    };
+
+    const handleRegenerateMessage = async (assistantId: string) => {
+      const assistantIndex = chatMessages.findIndex((m) => m.id === assistantId && m.role === 'assistant');
+      if (assistantIndex < 0) return;
+      for (let i = assistantIndex - 1; i >= 0; i -= 1) {
+        const candidate = chatMessages[i];
+        if (candidate.role === 'user' && candidate.text.trim()) {
+          await sendChatMessage(candidate.text, { appendUser: false, replaceAssistantId: assistantId });
+          return;
+        }
       }
     };
 
@@ -1423,21 +1468,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
           <div className={rep ? 'mx-auto mb-2 w-full max-w-[700px]' : 'mx-auto mb-4 w-full max-w-[700px]'}>
             <div className={rep ? 'rounded-none border-0 bg-transparent p-0 shadow-none' : 'rounded-3xl border border-harx-100 bg-white p-4 shadow-sm'}>
               {hasStartedChat && (
-                <div
-                  ref={chatScrollRef}
-                  className={
-                    rep
-                      ? 'mb-3 max-h-[48vh] min-h-[34vh] space-y-6 overflow-y-auto rounded-xl bg-transparent p-0'
-                      : 'mb-4 max-h-[48vh] min-h-[34vh] space-y-6 overflow-y-auto rounded-2xl bg-white/70 p-4'
-                  }
-                >
+                <div className={rep ? 'mb-3 space-y-6 rounded-xl bg-transparent p-0' : 'mb-4 space-y-6 rounded-2xl bg-white/70 p-4'}>
                   {chatMessages.map((msg) => (
                     <div key={msg.id} className={msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
                       {msg.role === 'assistant' ? (
                         <div className="max-w-[88%]">
                           <div className="max-w-none text-[#1f1d18]">
                             {(() => {
-                              const textWithoutStyle = stripStyleBlueprint(msg.text);
+                              const textWithoutStyle = stripResourceSections(stripStyleBlueprint(msg.text));
                               const styleBlueprint = extractStyleBlueprint(msg.text);
                               const parsed = parseTrainingPlan(textWithoutStyle);
                               const hasDesignedPlan = parsed.modules.length >= 2;
@@ -1582,19 +1620,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           <div className={`mt-2 flex items-center gap-2 text-harx-500 ${msg.isStreaming || !msg.text.trim() ? 'opacity-40 pointer-events-none' : ''}`}>
                             <button
                               type="button"
-                              onClick={() => copyMessage(msg.text)}
+                              onClick={() => handleRegenerateMessage(msg.id)}
                               className="rounded-md p-1.5 hover:bg-harx-100/70"
-                              title="Copier"
+                              title="Regenerer"
                             >
-                              <Copy className="h-3.5 w-3.5" />
-                            </button>
-                            <button type="button" className="rounded-md p-1.5 hover:bg-harx-100/70" title="Utile">
-                              <ThumbsUp className="h-3.5 w-3.5" />
-                            </button>
-                            <button type="button" className="rounded-md p-1.5 hover:bg-harx-100/70" title="Pas utile">
-                              <ThumbsDown className="h-3.5 w-3.5" />
-                            </button>
-                            <button type="button" className="rounded-md p-1.5 hover:bg-harx-100/70" title="Regenerer">
                               <RotateCcw className="h-3.5 w-3.5" />
                             </button>
                           </div>
@@ -1619,6 +1648,20 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
               <div className={rep ? 'rounded-[20px] border border-harx-200 bg-white px-4 py-3' : 'rounded-[28px] border border-harx-200 bg-white px-5 py-4'}>
                 <input
+                  ref={chatFileInputRef}
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp,.gif"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    if (files.length > 0) {
+                      void handleFileUpload(files);
+                    }
+                    e.currentTarget.value = '';
+                  }}
+                  className="hidden"
+                />
+                <input
                   type="text"
                   value={chatInput}
                   disabled={isChatLoading}
@@ -1630,11 +1673,23 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   className="mb-3 w-full bg-transparent text-[15px] text-harx-800 outline-none placeholder:text-harx-600/70"
                 />
                 <div className="flex items-center justify-between">
-                  <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-harx-200 text-harx-700 hover:bg-harx-50">+</button>
-                  <div className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-harx-50/60 px-2.5 py-1.5 text-xs font-medium text-harx-700">
-                    Sonnet 4.6
-                    <span className="text-[10px]">▼</span>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => chatFileInputRef.current?.click()}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-harx-200 text-harx-700 hover:bg-harx-50"
+                    title="Importer des fichiers"
+                  >
+                    +
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleChatSubmit()}
+                    disabled={!chatInput.trim() || isChatLoading}
+                    className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    Send
+                  </button>
                 </div>
               </div>
 
@@ -1891,35 +1946,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               )}
             </div>
 
-            <div className={rep ? 'flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center' : 'flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center md:w-auto'}>
-
-              <button
-                type="button"
-                onClick={handleGenerateCurriculum}
-                disabled={!canProceed || isProcessing}
-                className={
-                  rep
-                    ? 'inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-harx px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50'
-                    : 'flex items-center justify-center space-x-2 rounded-xl border border-rose-200 bg-white px-6 py-3 font-medium text-rose-600 shadow-sm transition-all hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50'
-                }
-              >
-                {isGeneratingPresentation ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <FileIcon className="h-5 w-5" />
-                )}
-                <span>{isGeneratingPresentation ? 'Generating…' : 'Valider et generer la formation'}</span>
-              </button>
-
-              {/* <button
-                onClick={() => onComplete(uploads, fileTrainingUrl)}
-                disabled={!canProceed}
-                className="px-8 py-3 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-xl hover:from-rose-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg flex items-center justify-center space-x-2"
-              >
-                <span>Continue to AI Enhancement</span>
-                <Wand2 className="h-5 w-5" />
-              </button> */}
-            </div>
+            <div className={rep ? 'flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center' : 'flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center md:w-auto'} />
           </div>
           </div>
           </div>
