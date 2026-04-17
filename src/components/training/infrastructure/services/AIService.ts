@@ -377,6 +377,22 @@ export class AIService {
     return response.data.response || '';
   }
 
+  static async generateChatTitle(
+    messages: Array<{ role: 'user' | 'assistant'; text: string }>
+  ): Promise<string> {
+    const response = await ApiClient.post<{ success?: boolean; title?: string; error?: string }>(
+      '/api/ai/chat/title',
+      { messages }
+    );
+
+    const raw = response.data as any;
+    if (raw?.success === false) {
+      throw new Error(raw?.error || 'Title generation failed');
+    }
+
+    return String(raw?.title || '').trim();
+  }
+
   /**
    * Stream chat response chunk-by-chunk from Claude backend.
    */
