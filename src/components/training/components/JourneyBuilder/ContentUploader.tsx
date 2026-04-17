@@ -1646,8 +1646,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
             objectives: u.aiAnalysis?.learningObjectives || [],
           }));
 
-        const usesKbForChat = kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads';
-        const usesUploadsForChat = kbGenerationChoice === 'uploads_only' || kbGenerationChoice === 'kb_and_uploads';
+        let effectiveGenerationMode = kbGenerationChoice;
+        // Safety: if user uploaded/analyzed files but mode is "none", auto-switch to uploads.
+        if (effectiveGenerationMode === 'none' && analyzedUploads.length > 0) {
+          effectiveGenerationMode = 'uploads_only';
+          setKbGenerationChoice('uploads_only');
+        }
+
+        const usesKbForChat = effectiveGenerationMode === 'kb_only' || effectiveGenerationMode === 'kb_and_uploads';
+        const usesUploadsForChat = effectiveGenerationMode === 'uploads_only' || effectiveGenerationMode === 'kb_and_uploads';
         const uploadsForChat = usesUploadsForChat ? analyzedUploads : [];
 
         const sourceHistory = options?.historyMessages || chatMessages;
@@ -1672,7 +1679,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
         const chatContext = JSON.stringify({
           app: 'HARX Journey Builder',
-          generationMode: kbGenerationChoice,
+          generationMode: effectiveGenerationMode,
           personalizationProfile: {
             level: personalizationAnswers.level || '',
             objective: personalizationAnswers.objective || '',
@@ -2371,6 +2378,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           {selectedKbOption.hint}
                           {(kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads') && !isChatKbLoading
                             ? ` · ${chatKbDocuments.length} doc(s) KB charges`
+                            : ''}
+                          {kbGenerationChoice === 'none' && uploads.some((u) => u.status === 'analyzed')
+                            ? ' · Attention: ce mode ignore les fichiers uploades'
                             : ''}
                         </div>
                       </div>
