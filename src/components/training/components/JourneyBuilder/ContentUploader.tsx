@@ -1223,19 +1223,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
             'Q : Quel format preferez-vous ?',
             `R : ${nextAnswers.format}`,
           ].join('\n');
-          setChatMessages((prev) => [
-            ...prev,
-            {
-              id: `user-persona-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-              role: 'user',
-              text: summary,
-            },
-          ]);
           setShowPersonalizationCard(false);
           setPersonalizationStep(0);
-          window.requestAnimationFrame(() => {
-            chatTextareaRef.current?.focus();
-          });
+          void sendChatMessage(summary);
         }
         return;
       }
