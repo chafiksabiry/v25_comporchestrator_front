@@ -571,11 +571,25 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
 
   const handleSavePresentation = async () => {
-    const buildPresentationFromChat = () => {
+    const buildPresentationFromChat = async () => {
       const assistantMessages = chatMessages
         .filter((m) => m.role === 'assistant' && String(m.text || '').trim())
         .slice(-12);
       if (assistantMessages.length === 0) return null;
+
+      let claudeTitle = '';
+      try {
+        const titleSource = chatMessages
+          .filter((m) => String(m.text || '').trim())
+          .slice(-16)
+          .map((m) => ({
+            role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
+            text: String(m.text || '').trim(),
+          }));
+        claudeTitle = await AIService.generateChatTitle(titleSource);
+      } catch (titleError) {
+        console.warn('[ContentUploader] Failed to generate Claude title for chat slides:', titleError);
+      }
 
       const slides = assistantMessages.map((m, idx) => {
         const raw = String(m.text || '').trim();
@@ -604,7 +618,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       });
 
       return {
-        title: generatedCurriculum?.title || 'Slides générées depuis le chat',
+        title: generatedCurriculum?.title || claudeTitle || 'Slides generees depuis le chat',
         totalSlides: slides.length,
         slides,
         estimatedTime: `${Math.max(1, slides.length * 2)} minutes`,
@@ -612,7 +626,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     };
 
     const presentationToSave =
-      generatedPresentation?.slides?.length > 0 ? generatedPresentation : buildPresentationFromChat();
+      generatedPresentation?.slides?.length > 0 ? generatedPresentation : await buildPresentationFromChat();
     if (!presentationToSave?.slides?.length) return;
 
     try {
@@ -642,7 +656,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           }))
         : [
             {
-              title: 'Slides générées depuis le chat',
+              title: presentationToSave?.title || 'Slides generees depuis le chat',
               description: 'Contenu de formation validé à partir des slides générées.',
               duration: 30,
               difficulty: 'beginner',
@@ -2445,21 +2459,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       <button
                         type="button"
                         onClick={() => void handleSavePresentation()}
-                        disabled={
-                          isSavingCloud ||
-                          (
-                            !generatedPresentation?.slides?.length &&
-                            !chatMessages.some((m) => m.role === 'assistant' && String(m.text || '').trim())
-                          )
-                        }
+                        disabled={isSavingCloud}
                         className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 disabled:opacity-50"
-                        title={
-                          generatedPresentation?.slides?.length
-                            ? 'Valider a partir des slides generees'
-                            : chatMessages.some((m) => m.role === 'assistant' && String(m.text || '').trim())
-                              ? 'Valider a partir du contenu du chat'
-                              : 'Aucune slide generee pour le moment'
-                        }
+                        title="Valider"
                       >
                         {isSavingCloud ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
                         Valider
