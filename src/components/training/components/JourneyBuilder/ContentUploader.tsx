@@ -2230,7 +2230,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   badgeText: '#655b48',
                                 };
 
-                                if (showcaseCard && detailedModule.sections.length === 0) {
+                                const canUseShowcaseCard =
+                                  Boolean(showcaseCard) &&
+                                  detailedModule.sections.length === 0 &&
+                                  String(showcaseCard?.title || '').trim().length > 0 &&
+                                  String(showcaseCard?.title || '').trim().length <= 80;
+
+                                if (canUseShowcaseCard && showcaseCard) {
                                   return (
                                     <div
                                       className="relative mb-4 overflow-hidden rounded-[26px] border px-6 py-6"
@@ -2245,7 +2251,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                         style={{ backgroundColor: contentTheme.badgeBg }}
                                       />
 
-                                      <h3 className="relative z-10 text-[44px] font-extrabold leading-[1.03] md:text-[52px]" style={{ color: contentTheme.headingColor }}>
+                                      <h3
+                                        className="relative z-10 text-[30px] font-extrabold leading-[1.08] md:text-[36px] break-words"
+                                        style={{ color: contentTheme.headingColor }}
+                                      >
                                         {showcaseCard.title}
                                       </h3>
 
