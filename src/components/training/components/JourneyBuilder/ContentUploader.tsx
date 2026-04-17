@@ -571,7 +571,50 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
 
   const handleSavePresentation = async () => {
-    if (!generatedPresentation?.slides?.length) return;
+    const buildPresentationFromChat = () => {
+      const assistantMessages = chatMessages
+        .filter((m) => m.role === 'assistant' && String(m.text || '').trim())
+        .slice(-12);
+      if (assistantMessages.length === 0) return null;
+
+      const slides = assistantMessages.map((m, idx) => {
+        const raw = String(m.text || '').trim();
+        const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
+        const title = (lines[0] || `Slide ${idx + 1}`).replace(/^#+\s*/, '').slice(0, 120);
+        const bullets = lines
+          .filter((l) => /^[-•*]\s+/.test(l))
+          .map((l) => l.replace(/^[-•*]\s+/, '').trim())
+          .slice(0, 6);
+        const content = lines
+          .filter((l) => !/^[-•*]\s+/.test(l))
+          .slice(1, 6)
+          .join('\n');
+
+        return {
+          id: idx + 1,
+          type: 'content',
+          title,
+          subtitle: '',
+          content,
+          bullets,
+          note: '',
+          imageDescription: '',
+          illustrationUrl: '',
+        };
+      });
+
+      return {
+        title: generatedCurriculum?.title || 'Slides générées depuis le chat',
+        totalSlides: slides.length,
+        slides,
+        estimatedTime: `${Math.max(1, slides.length * 2)} minutes`,
+      };
+    };
+
+    const presentationToSave =
+      generatedPresentation?.slides?.length > 0 ? generatedPresentation : buildPresentationFromChat();
+    if (!presentationToSave?.slides?.length) return;
+
     try {
       setIsSavingCloud(true);
       console.log('💾 Saving generated training journey...');
@@ -579,7 +622,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setFileTrainingUrl(undefined);
 
       const journeyToSave: any = {
-        title: generatedCurriculum?.title || generatedPresentation?.title || 'AI-generated training',
+        title: generatedCurriculum?.title || presentationToSave?.title || 'AI-generated training',
         description: generatedCurriculum?.description || 'AI-generated description',
         status: 'active',
         industry: company?.industry || 'General',
@@ -604,7 +647,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               duration: 30,
               difficulty: 'beginner',
               learningObjectives: [],
-              content: generatedPresentation.slides || [],
+              content: presentationToSave.slides || [],
               sections: [],
               order: 0
             }
@@ -623,7 +666,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         gigId || '',
         undefined, // finalExam
         existingJourneyId, // journeyId (update existing when available)
-        generatedPresentation, // Pass presentation data to be saved in Cloudinary/DB
+        presentationToSave, // Pass presentation data to be saved in Cloudinary/DB
         fileTrainingUrl
       );
 
@@ -2402,9 +2445,21 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       <button
                         type="button"
                         onClick={() => void handleSavePresentation()}
-                        disabled={isSavingCloud || !generatedPresentation?.slides?.length}
+                        disabled={
+                          isSavingCloud ||
+                          (
+                            !generatedPresentation?.slides?.length &&
+                            !chatMessages.some((m) => m.role === 'assistant' && String(m.text || '').trim())
+                          )
+                        }
                         className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 disabled:opacity-50"
-                        title={!generatedPresentation?.slides?.length ? 'Aucune slide generee pour le moment' : 'Valider a partir des slides generees'}
+                        title={
+                          generatedPresentation?.slides?.length
+                            ? 'Valider a partir des slides generees'
+                            : chatMessages.some((m) => m.role === 'assistant' && String(m.text || '').trim())
+                              ? 'Valider a partir du contenu du chat'
+                              : 'Aucune slide generee pour le moment'
+                        }
                       >
                         {isSavingCloud ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
                         Valider
