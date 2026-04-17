@@ -2396,18 +2396,22 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       +
                     </button>
                     <div className="flex items-center gap-2">
-                      {generatedPresentation?.slides?.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => void handleSavePresentation()}
-                          disabled={isSavingCloud || !generatedCurriculum}
-                          className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 disabled:opacity-50"
-                          title={generatedCurriculum ? 'Valider a partir des slides generees' : 'Generation du programme requise avant validation'}
-                        >
-                          {isSavingCloud ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
-                          Valider
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => void handleSavePresentation()}
+                        disabled={isSavingCloud || !generatedCurriculum || !generatedPresentation?.slides?.length}
+                        className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 disabled:opacity-50"
+                        title={
+                          !generatedPresentation?.slides?.length
+                            ? 'Aucune slide generee pour le moment'
+                            : !generatedCurriculum
+                              ? 'Generation du programme requise avant validation'
+                              : 'Valider a partir des slides generees'
+                        }
+                      >
+                        {isSavingCloud ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
+                        Valider
+                      </button>
                       <button
                         type="button"
                         onClick={() => void handleChatSubmit()}
