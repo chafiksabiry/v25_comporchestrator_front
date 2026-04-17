@@ -1379,7 +1379,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         if (!session) return;
         const mappedMessages = (session.messages || []).map((m, idx) => ({
           id: `history-${sessionId}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
-          role: m.role === 'assistant' ? 'assistant' : 'user',
+          role: (m.role === 'assistant' ? 'assistant' : 'user') as 'assistant' | 'user',
           text: m.text || '',
           isStreaming: false,
         }));
@@ -1501,33 +1501,93 @@ export default function ContentUploader(props: ContentUploaderProps) {
     } => {
       const isHex = (v: unknown) => typeof v === 'string' && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
       const safeHex = (v: unknown, fallback: string) => (isHex(v) ? String(v) : fallback);
-      const defaults = {
-        moduleCardThemes: [
-          { bg: '#eaf3ff', border: '#98b9ea', text: '#1f1d18' },
-          { bg: '#eafbf5', border: '#95d7c8', text: '#1f1d18' },
-          { bg: '#f0efff', border: '#b7b5ea', text: '#1f1d18' },
-          { bg: '#fff7eb', border: '#e8c79d', text: '#1f1d18' },
-        ],
-        titleColor: '#1b1914',
-        accentColor: '#a6a098',
-        contentTheme: {
-          bodyColor: '#1f1d18',
-          headingColor: '#181611',
-          tableBorder: '#e8e2d2',
-          tableHeaderBg: '#f6f3ea',
-          tableHeaderText: '#1f1d18',
-          tableRowBg: '#ffffff',
-          kpiBg: '#fbfaf6',
-          kpiBorder: '#e7dfcc',
-          kpiLabel: '#6e6758',
-          kpiValue: '#1f1d18',
-          moduleShape: 'rounded' as const,
-          panelBg: '#fbfaf6',
-          panelBorder: '#e7dfcc',
-          badgeBg: '#f0ecdf',
-          badgeText: '#655b48',
+      const fallbackPalettes = [
+        {
+          moduleCardThemes: [
+            { bg: '#eafbf5', border: '#9ddfc8', text: '#153427' },
+            { bg: '#ecf8ff', border: '#9ecde7', text: '#163043' },
+            { bg: '#f3f1ff', border: '#c2b9ef', text: '#2a2352' },
+            { bg: '#fff5eb', border: '#efc998', text: '#402a12' },
+          ],
+          titleColor: '#102033',
+          accentColor: '#0ea5a0',
+          contentTheme: {
+            bodyColor: '#1c2a33',
+            headingColor: '#0f2138',
+            tableBorder: '#c9e4de',
+            tableHeaderBg: '#e6f8f4',
+            tableHeaderText: '#10313a',
+            tableRowBg: '#f9fffd',
+            kpiBg: '#ecfbf7',
+            kpiBorder: '#c8ece1',
+            kpiLabel: '#2f6f67',
+            kpiValue: '#11353b',
+            moduleShape: 'soft' as const,
+            panelBg: '#f4fffc',
+            panelBorder: '#cdece4',
+            badgeBg: '#e5f8f2',
+            badgeText: '#0f766e',
+          },
         },
-      };
+        {
+          moduleCardThemes: [
+            { bg: '#f2f5ff', border: '#b8c8f5', text: '#1b2a4a' },
+            { bg: '#eef8ff', border: '#b8d8ee', text: '#1a3347' },
+            { bg: '#f7f2ff', border: '#d0baf0', text: '#34244f' },
+            { bg: '#fff5f7', border: '#efbfd0', text: '#4a2030' },
+          ],
+          titleColor: '#15233f',
+          accentColor: '#6366f1',
+          contentTheme: {
+            bodyColor: '#1f2d3f',
+            headingColor: '#112241',
+            tableBorder: '#d1d9ee',
+            tableHeaderBg: '#eaf0ff',
+            tableHeaderText: '#13274a',
+            tableRowBg: '#fbfcff',
+            kpiBg: '#eef2ff',
+            kpiBorder: '#d4dcf4',
+            kpiLabel: '#4d5f95',
+            kpiValue: '#1a2d4d',
+            moduleShape: 'rounded' as const,
+            panelBg: '#f8faff',
+            panelBorder: '#d8e0f6',
+            badgeBg: '#e8eeff',
+            badgeText: '#3949ab',
+          },
+        },
+        {
+          moduleCardThemes: [
+            { bg: '#fff8ea', border: '#efd7aa', text: '#352814' },
+            { bg: '#fff2df', border: '#efc58b', text: '#3c260f' },
+            { bg: '#fff9f1', border: '#ebd4b2', text: '#362918' },
+            { bg: '#f5f9ed', border: '#cfe2a5', text: '#25341a' },
+          ],
+          titleColor: '#1b2238',
+          accentColor: '#f59e0b',
+          contentTheme: {
+            bodyColor: '#2d2419',
+            headingColor: '#1a2440',
+            tableBorder: '#e7d9bd',
+            tableHeaderBg: '#fff3de',
+            tableHeaderText: '#2a2218',
+            tableRowBg: '#fffaf2',
+            kpiBg: '#fff6e9',
+            kpiBorder: '#ecd8b3',
+            kpiLabel: '#8b6a32',
+            kpiValue: '#2e2618',
+            moduleShape: 'soft' as const,
+            panelBg: '#fffbf3',
+            panelBorder: '#ecdab8',
+            badgeBg: '#fff1da',
+            badgeText: '#b86f09',
+          },
+        },
+      ];
+      const hash = String(rawText || '')
+        .split('')
+        .reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+      const defaults = fallbackPalettes[hash % fallbackPalettes.length];
 
       const match = String(rawText || '').match(/<harx-style>([\s\S]*?)<\/harx-style>/i);
       if (!match?.[1]) return defaults;
@@ -2311,7 +2371,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                         ),
                                         li: ({ children }) => <li>{children}</li>,
                                         strong: ({ children }) => (
-                                          <strong className="font-semibold text-[#12100c]">{children}</strong>
+                                          <strong className="font-semibold" style={{ color: contentTheme.headingColor }}>{children}</strong>
                                         ),
                                         code: ({ children }) => (
                                           <code className="rounded bg-[#f3f2ec] px-1 py-0.5 text-[14px] text-[#2b271f]">
@@ -2329,7 +2389,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               return (
                                 <div className="mt-4 space-y-3">
                                   {parsed.intro && (
-                                    <p className="text-[16px] leading-7 text-[#1f1d18]">{parsed.intro}</p>
+                                    <p className="text-[16px] leading-7" style={{ color: styleBlueprint.contentTheme?.bodyColor || '#1f1d18' }}>{parsed.intro}</p>
                                   )}
                                   {parsed.title && (
                                     <div className="text-center text-[15px] font-semibold" style={{ color: styleBlueprint.titleColor || '#1b1914' }}>
@@ -2365,12 +2425,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                       }}
                                       title={`Cliquer pour detailler ${module.title}`}
                                     >
-                                      <div className="text-[15px] font-semibold text-[#1f1d18]">{module.title}</div>
+                                      <div className="text-[15px] font-semibold" style={{ color: theme?.text || '#1f1d18' }}>{module.title}</div>
                                       {module.duration && (
-                                        <div className="text-[13px] text-[#3f3b31]">Duree: {module.duration}</div>
+                                        <div className="text-[13px]" style={{ color: theme?.text || '#3f3b31' }}>Duree: {module.duration}</div>
                                       )}
                                       {module.bullets.length > 0 && (
-                                        <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[13px] leading-5 text-[#2d2a22]">
+                                        <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[13px] leading-5" style={{ color: theme?.text || '#2d2a22' }}>
                                           {module.bullets.slice(0, 5).map((bullet, bIdx) => (
                                             <li key={`${idx}-${bIdx}`}>{bullet}</li>
                                           ))}
