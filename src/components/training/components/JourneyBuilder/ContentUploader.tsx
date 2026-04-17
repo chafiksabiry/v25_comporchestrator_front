@@ -2395,18 +2395,30 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     >
                       +
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleChatSubmit()}
-                      disabled={!chatInput.trim() || isChatLoading}
-                      className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
-                      title={
-                        'Envoyer'
-                      }
-                    >
-                      <Send className="h-3.5 w-3.5" />
-                      Send
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {generatedPresentation?.slides?.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => void handleSavePresentation()}
+                          disabled={isSavingCloud || !generatedCurriculum}
+                          className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 disabled:opacity-50"
+                          title={generatedCurriculum ? 'Valider a partir des slides generees' : 'Generation du programme requise avant validation'}
+                        >
+                          {isSavingCloud ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
+                          Valider
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => void handleChatSubmit()}
+                        disabled={!chatInput.trim() || isChatLoading}
+                        className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+                        title="Envoyer"
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                        Send
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
