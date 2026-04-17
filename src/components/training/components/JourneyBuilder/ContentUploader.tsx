@@ -810,7 +810,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const canProceed = (uploads.length > 0 && uploads.every(u => u.status === 'analyzed')) || (uploads.length === 0 && !!gigId);
   const totalAnalyzed = uploads.filter(u => u.status === 'analyzed').length;
   const isGigOnly = uploads.length === 0 && !!gigId;
-  const hasPendingUploads = uploads.some((u) => u.status === 'uploading' || u.status === 'processing');
 
   if (isPreviewOpen && generatedPresentation && !repOnboardingLayout) {
     return (
@@ -1199,7 +1198,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
         ],
       },
     ];
-    const selectedKbOption = kbOptions.find((opt) => opt.id === kbGenerationChoice) || null;
     const handleSelectKbMode = (mode: KbGenerationMode) => {
       setKbGenerationChoice(mode);
       setShowPersonalizationCard(true);
@@ -1617,7 +1615,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
     const handleChatSubmit = async () => {
       const message = chatInput.trim();
-      if (!message || isChatLoading || hasPendingUploads || kbGenerationChoice === null || isChatKbLoading || showPersonalizationCard) return;
+      if (!message || isChatLoading) return;
       setChatInput('');
       await sendChatMessage(message);
     };
@@ -2368,31 +2366,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       })}
                     </div>
                   )}
-                  {selectedKbOption && !showPersonalizationCard && (
-                    <div className="mb-2 flex items-center justify-between gap-2 rounded-xl border border-harx-200 bg-harx-50/60 px-3 py-2">
-                      <div className="min-w-0">
-                        <div className="truncate text-[12px] font-semibold text-harx-800">
-                          Mode selectionne: {selectedKbOption.label}
-                        </div>
-                        <div className="text-[11px] text-harx-600">
-                          {selectedKbOption.hint}
-                          {(kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads') && !isChatKbLoading
-                            ? ` · ${chatKbDocuments.length} doc(s) KB charges`
-                            : ''}
-                          {kbGenerationChoice === 'none' && uploads.some((u) => u.status === 'analyzed')
-                            ? ' · Attention: ce mode ignore les fichiers uploades'
-                            : ''}
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setKbGenerationChoice(null)}
-                        className="shrink-0 rounded-lg border border-harx-200 bg-white px-2 py-1 text-[11px] font-semibold text-harx-700 hover:bg-harx-50"
-                      >
-                        Changer
-                      </button>
-                    </div>
-                  )}
                   <textarea
                     ref={chatTextareaRef}
                     value={chatInput}
@@ -2425,18 +2398,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     <button
                       type="button"
                       onClick={() => void handleChatSubmit()}
-                      disabled={!chatInput.trim() || isChatLoading || hasPendingUploads || kbGenerationChoice === null || isChatKbLoading || showPersonalizationCard}
+                      disabled={!chatInput.trim() || isChatLoading}
                       className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
                       title={
-                        kbGenerationChoice === null
-                          ? 'Selectionnez un mode de generation'
-                          : showPersonalizationCard
-                            ? 'Repondez aux questions de personnalisation'
-                          : hasPendingUploads
-                            ? 'Attendre la fin de l upload/analyse du fichier'
-                            : isChatKbLoading
-                              ? 'Chargement des documents KB en cours'
-                              : 'Envoyer'
+                        'Envoyer'
                       }
                     >
                       <Send className="h-3.5 w-3.5" />
