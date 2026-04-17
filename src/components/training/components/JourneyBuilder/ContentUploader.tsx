@@ -571,7 +571,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
 
   const handleSavePresentation = async () => {
-    if (!generatedCurriculum) return;
+    if (!generatedPresentation?.slides?.length) return;
     try {
       setIsSavingCloud(true);
       console.log('💾 Saving generated training journey...');
@@ -579,23 +579,36 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setFileTrainingUrl(undefined);
 
       const journeyToSave: any = {
-        title: generatedCurriculum.title || 'AI-generated training',
-        description: generatedCurriculum.description || 'AI-generated description',
+        title: generatedCurriculum?.title || generatedPresentation?.title || 'AI-generated training',
+        description: generatedCurriculum?.description || 'AI-generated description',
         status: 'active',
         industry: company?.industry || 'General',
         company: company?.name || 'My Company',
       };
 
-      const modulesToSave: any[] = (generatedCurriculum.modules || []).map((m: any, idx: number) => ({
-        title: m.title || `Module ${idx + 1}`,
-        description: m.description || '',
-        duration: m.duration || 30,
-        difficulty: m.difficulty || 'beginner',
-        learningObjectives: m.learningObjectives || [],
-        content: m.sections || m.content || [],
-        sections: m.sections || [],
-        order: idx
-      }));
+      const modulesToSave: any[] = Array.isArray(generatedCurriculum?.modules) && generatedCurriculum.modules.length > 0
+        ? (generatedCurriculum.modules || []).map((m: any, idx: number) => ({
+            title: m.title || `Module ${idx + 1}`,
+            description: m.description || '',
+            duration: m.duration || 30,
+            difficulty: m.difficulty || 'beginner',
+            learningObjectives: m.learningObjectives || [],
+            content: m.sections || m.content || [],
+            sections: m.sections || [],
+            order: idx
+          }))
+        : [
+            {
+              title: 'Slides générées depuis le chat',
+              description: 'Contenu de formation validé à partir des slides générées.',
+              duration: 30,
+              difficulty: 'beginner',
+              learningObjectives: [],
+              content: generatedPresentation.slides || [],
+              sections: [],
+              order: 0
+            }
+          ];
 
       const existingJourneyId =
         (generatedCurriculum as any)?.data?.journeyId ||
@@ -2389,15 +2402,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       <button
                         type="button"
                         onClick={() => void handleSavePresentation()}
-                        disabled={isSavingCloud || !generatedCurriculum || !generatedPresentation?.slides?.length}
+                        disabled={isSavingCloud || !generatedPresentation?.slides?.length}
                         className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 disabled:opacity-50"
-                        title={
-                          !generatedPresentation?.slides?.length
-                            ? 'Aucune slide generee pour le moment'
-                            : !generatedCurriculum
-                              ? 'Generation du programme requise avant validation'
-                              : 'Valider a partir des slides generees'
-                        }
+                        title={!generatedPresentation?.slides?.length ? 'Aucune slide generee pour le moment' : 'Valider a partir des slides generees'}
                       >
                         {isSavingCloud ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
                         Valider
