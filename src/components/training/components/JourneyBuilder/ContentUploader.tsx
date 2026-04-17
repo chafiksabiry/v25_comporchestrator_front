@@ -577,6 +577,26 @@ export default function ContentUploader(props: ContentUploaderProps) {
         .slice(-12);
       if (assistantMessages.length === 0) return null;
 
+      const extractHarxStyleBlueprint = (rawText: string): any | null => {
+        const match = String(rawText || '').match(/<harx-style>([\s\S]*?)<\/harx-style>/i);
+        if (!match?.[1]) return null;
+        try {
+          return JSON.parse(match[1]);
+        } catch {
+          return null;
+        }
+      };
+
+      const stripHarxStyleTag = (rawText: string): string =>
+        String(rawText || '').replace(/<harx-style>[\s\S]*?<\/harx-style>/gi, '').trim();
+
+      const latestStyleBlueprint =
+        assistantMessages
+          .slice()
+          .reverse()
+          .map((m) => extractHarxStyleBlueprint(String(m.text || '')))
+          .find(Boolean) || null;
+
       let claudeTitle = '';
       try {
         const titleSource = chatMessages
@@ -592,7 +612,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
 
       const slides = assistantMessages.map((m, idx) => {
-        const raw = String(m.text || '').trim();
+        const raw = stripHarxStyleTag(String(m.text || '').trim());
         const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
         const title = (lines[0] || `Slide ${idx + 1}`).replace(/^#+\s*/, '').slice(0, 120);
         const bullets = lines
@@ -614,6 +634,21 @@ export default function ContentUploader(props: ContentUploaderProps) {
           note: '',
           imageDescription: '',
           illustrationUrl: '',
+          visualConfig: {
+            layout: 'content',
+            theme: 'light',
+            accentHex:
+              latestStyleBlueprint?.accentColor ||
+              latestStyleBlueprint?.titleColor ||
+              '#F43F5E',
+            backgroundHex:
+              latestStyleBlueprint?.moduleCardThemes?.[idx % Math.max(1, latestStyleBlueprint?.moduleCardThemes?.length || 1)]?.bg ||
+              '#ffffff',
+            textHex:
+              latestStyleBlueprint?.moduleCardThemes?.[idx % Math.max(1, latestStyleBlueprint?.moduleCardThemes?.length || 1)]?.text ||
+              latestStyleBlueprint?.contentTheme?.bodyColor ||
+              '#111827',
+          },
         };
       });
 
@@ -622,6 +657,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
         totalSlides: slides.length,
         slides,
         estimatedTime: `${Math.max(1, slides.length * 2)} minutes`,
+        visualTheme: {
+          primaryColor: latestStyleBlueprint?.titleColor || '#1f2937',
+          secondaryColor: latestStyleBlueprint?.accentColor || '#F43F5E',
+          accentColor:
+            latestStyleBlueprint?.contentTheme?.badgeBg ||
+            latestStyleBlueprint?.accentColor ||
+            '#F43F5E',
+          layoutStyle: 'creative',
+        },
+        harxStyleBlueprint: latestStyleBlueprint || undefined,
       };
     };
 
