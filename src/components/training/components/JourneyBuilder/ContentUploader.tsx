@@ -72,6 +72,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
     Array<{ _id: string; name: string; fileType?: string; summary?: string; keyTerms?: string[]; createdAt?: string }>
   >([]);
   const [isChatKbLoading, setIsChatKbLoading] = useState(false);
+  const [showPersonalizationCard, setShowPersonalizationCard] = useState(false);
+  const [personalizationStep, setPersonalizationStep] = useState(0);
+  const [personalizationAnswers, setPersonalizationAnswers] = useState<{
+    level?: string;
+    objective?: string;
+    format?: string;
+  }>({});
   const [chatHistorySessions, setChatHistorySessions] = useState<ChatHistoryItem[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -1154,19 +1161,87 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const displayName = String(company?.name || 'QARA EL HOUCINE').toUpperCase();
     const hasStartedChat = chatMessages.length > 0;
     const shouldShowKbQuestionInChat = kbGenerationChoice === null;
-    const shouldShowChatThread = hasStartedChat || shouldShowKbQuestionInChat;
+    const shouldShowChatThread = hasStartedChat || shouldShowKbQuestionInChat || showPersonalizationCard;
     const kbOptions: Array<{ id: KbGenerationMode; label: string; hint: string }> = [
       { id: 'kb_only', label: 'KB uniquement', hint: 'Utiliser les documents analyses de knowledge base' },
       { id: 'uploads_only', label: 'Fichiers uploades uniquement', hint: 'Utiliser seulement vos fichiers joints' },
       { id: 'kb_and_uploads', label: 'KB + fichiers uploades', hint: 'Combiner knowledge base et fichiers joints' },
       { id: 'none', label: 'Sans documents', hint: 'Generer sans KB ni fichiers analyses' },
     ];
+    const personalizationQuestions: Array<{
+      key: 'level' | 'objective' | 'format';
+      question: string;
+      options: string[];
+    }> = [
+      {
+        key: 'level',
+        question: 'Quel est votre niveau actuel ?',
+        options: ['Debutant complet', 'Quelques notions', 'Intermediaire', 'Avance'],
+      },
+      {
+        key: 'objective',
+        question: 'Quel est votre objectif principal ?',
+        options: [
+          'Comprendre les fondamentaux',
+          'Mieux vendre le produit',
+          'Traiter des cas pratiques',
+          'Se preparer a la certification',
+        ],
+      },
+      {
+        key: 'format',
+        question: 'Quel format preferez-vous ?',
+        options: [
+          'Plan de formation structure',
+          'Cas pratiques + exercices',
+          'Format atelier interactif',
+          'Format fiche memo',
+        ],
+      },
+    ];
     const selectedKbOption = kbOptions.find((opt) => opt.id === kbGenerationChoice) || null;
     const handleSelectKbMode = (mode: KbGenerationMode) => {
       setKbGenerationChoice(mode);
+      setShowPersonalizationCard(true);
+      setPersonalizationStep(0);
+      setPersonalizationAnswers({});
       window.requestAnimationFrame(() => {
         chatTextareaRef.current?.focus();
       });
+    };
+    const handleSelectPersonalizationOption = (value: string) => {
+      const current = personalizationQuestions[personalizationStep];
+      if (!current) return;
+      const nextAnswers = { ...personalizationAnswers, [current.key]: value };
+      setPersonalizationAnswers(nextAnswers);
+      if (personalizationStep >= personalizationQuestions.length - 1) {
+        if (nextAnswers.level && nextAnswers.objective && nextAnswers.format) {
+          const summary = [
+            'Quelques questions pour personnaliser votre formation',
+            'Q : Quel est votre niveau actuel ?',
+            `R : ${nextAnswers.level}`,
+            'Q : Quel est votre objectif principal ?',
+            `R : ${nextAnswers.objective}`,
+            'Q : Quel format preferez-vous ?',
+            `R : ${nextAnswers.format}`,
+          ].join('\n');
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: `user-persona-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+              role: 'user',
+              text: summary,
+            },
+          ]);
+          setShowPersonalizationCard(false);
+          setPersonalizationStep(0);
+          window.requestAnimationFrame(() => {
+            chatTextareaRef.current?.focus();
+          });
+        }
+        return;
+      }
+      setPersonalizationStep((prev) => prev + 1);
     };
     const appendChatMessage = (
       role: 'user' | 'assistant',
@@ -1188,6 +1263,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setIsHistoryOpen(false);
       setKbGenerationChoice(null);
       setChatKbDocuments([]);
+      setShowPersonalizationCard(false);
+      setPersonalizationStep(0);
+      setPersonalizationAnswers({});
     };
 
     const openHistorySession = async (sessionId: string) => {
@@ -1539,7 +1617,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
     const handleChatSubmit = async () => {
       const message = chatInput.trim();
-      if (!message || isChatLoading || hasPendingUploads || kbGenerationChoice === null || isChatKbLoading) return;
+      if (!message || isChatLoading || hasPendingUploads || kbGenerationChoice === null || isChatKbLoading || showPersonalizationCard) return;
       setChatInput('');
       await sendChatMessage(message);
     };
@@ -1595,6 +1673,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
         const chatContext = JSON.stringify({
           app: 'HARX Journey Builder',
           generationMode: kbGenerationChoice,
+          personalizationProfile: {
+            level: personalizationAnswers.level || '',
+            objective: personalizationAnswers.objective || '',
+            format: personalizationAnswers.format || '',
+          },
           analyzedUploadsCount: uploadsForChat.length,
           analyzedUploads: uploadsForChat,
           useKnowledgeBase: usesKbForChat,
@@ -1895,6 +1978,53 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           </button>
                         </div>
 
+                      </div>
+                    </div>
+                  )}
+                  {showPersonalizationCard && (
+                    <div className="flex justify-start">
+                      <div className="w-full max-w-[92%] rounded-[24px] border border-[#e7e3db] bg-white p-3 shadow-[0_8px_24px_rgba(17,24,39,0.05)]">
+                        <div className="mb-2 flex items-center justify-between px-2 pt-1">
+                          <p className="text-[18px] font-semibold leading-tight text-[#1f1d18]">
+                            {personalizationQuestions[personalizationStep]?.question || 'Quelques questions pour personnaliser votre formation'}
+                          </p>
+                          <div className="ml-3 shrink-0 text-sm font-semibold text-[#b7b0a1]">
+                            {`${Math.min(personalizationStep + 1, personalizationQuestions.length)} sur ${personalizationQuestions.length}`}
+                          </div>
+                        </div>
+
+                        <div className="overflow-hidden rounded-2xl border border-[#f0ece3] bg-[#faf9f6]">
+                          {(personalizationQuestions[personalizationStep]?.options || []).map((option, idx) => (
+                            <button
+                              key={`${personalizationStep}-${option}`}
+                              type="button"
+                              onClick={() => handleSelectPersonalizationOption(option)}
+                              className="flex w-full items-center gap-3 border-b border-[#efebe3] px-4 py-3 text-left transition hover:bg-white last:border-b-0"
+                            >
+                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#ece8e1] text-sm font-semibold text-[#777065]">
+                                {idx + 1}
+                              </span>
+                              <span className="flex-1">
+                                <span className="block text-base font-semibold text-[#26231c]">{option}</span>
+                              </span>
+                              <span className="text-lg text-[#b3ac9d]">→</span>
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="mt-2 flex items-center justify-end px-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowPersonalizationCard(false);
+                              setPersonalizationStep(0);
+                              setPersonalizationAnswers({});
+                            }}
+                            className="rounded-lg border border-[#d8d2c6] bg-white px-3 py-1.5 text-xs font-semibold text-[#4f493f] hover:bg-[#f8f6f1]"
+                          >
+                            Passer
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2231,7 +2361,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       })}
                     </div>
                   )}
-                  {selectedKbOption && (
+                  {selectedKbOption && !showPersonalizationCard && (
                     <div className="mb-2 flex items-center justify-between gap-2 rounded-xl border border-harx-200 bg-harx-50/60 px-3 py-2">
                       <div className="min-w-0">
                         <div className="truncate text-[12px] font-semibold text-harx-800">
@@ -2285,11 +2415,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     <button
                       type="button"
                       onClick={() => void handleChatSubmit()}
-                      disabled={!chatInput.trim() || isChatLoading || hasPendingUploads || kbGenerationChoice === null || isChatKbLoading}
+                      disabled={!chatInput.trim() || isChatLoading || hasPendingUploads || kbGenerationChoice === null || isChatKbLoading || showPersonalizationCard}
                       className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
                       title={
                         kbGenerationChoice === null
                           ? 'Selectionnez un mode de generation'
+                          : showPersonalizationCard
+                            ? 'Repondez aux questions de personnalisation'
                           : hasPendingUploads
                             ? 'Attendre la fin de l upload/analyse du fichier'
                             : isChatKbLoading
