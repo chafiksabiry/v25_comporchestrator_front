@@ -46,6 +46,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const [thumbnailPrompt, setThumbnailPrompt] = useState('');
   const [visionTitleGenerating, setVisionTitleGenerating] = useState(false);
   const [visionDescriptionGenerating, setVisionDescriptionGenerating] = useState(false);
+  const [targetRolesGenerating, setTargetRolesGenerating] = useState(false);
   const isCloudinaryThumbnail = thumbnailUrl.includes('res.cloudinary.com');
 
   useEffect(() => {
@@ -301,6 +302,45 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     }
   };
 
+  const roleOptions = [
+    { role: 'Customer Success Representatives', dept: 'Customer Success', icon: '🎯' },
+    { role: 'Sales Representatives', dept: 'Sales', icon: '💼' },
+    { role: 'Support Agents', dept: 'Customer Support', icon: '🛟' },
+    { role: 'Account Managers', dept: 'Sales', icon: '🤝' },
+    { role: 'Product Specialists', dept: 'Product', icon: '⚙️' },
+    { role: 'New Hires', dept: 'All Departments', icon: '🌟' },
+    { role: 'Team Leaders', dept: 'Management', icon: '👥' },
+    { role: 'All Employees', dept: 'Company-wide', icon: '🏢' }
+  ];
+
+  const handleSuggestTargetRoles = async () => {
+    if (!selectedGig) {
+      alert('Please select a gig first.');
+      return;
+    }
+    try {
+      setTargetRolesGenerating(true);
+      const trainingBackendUrl = getTrainingBackendUrl();
+      const baseUrl = trainingBackendUrl.endsWith('/api') ? trainingBackendUrl : `${trainingBackendUrl}/api`;
+      const response = await axios.post(`${baseUrl}/training_journeys/suggest-target-roles`, {
+        gig: selectedGig,
+        industry: industries.find(i => i._id === company.industry)?.name || String(company.industry || ''),
+        allowedRoles: roleOptions.map(r => r.role)
+      });
+      const roles = ((response?.data as any)?.data?.roles || []) as string[];
+      if (!roles.length) throw new Error('No role suggestions returned');
+      setJourney({ ...journey, targetRoles: roles });
+    } catch (error: any) {
+      const backendMessage =
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.message;
+      alert(backendMessage || 'Could not generate target roles.');
+    } finally {
+      setTargetRolesGenerating(false);
+    }
+  };
+
   if (showMethodologyBuilder) {
     return <MethodologyBuilder onApplyMethodology={handleMethodologyApply} selectedIndustry={company.industry} />;
   }
@@ -551,20 +591,36 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 <p style={{ fontSize: 13, color: '#6b7280', marginTop: 6 }}>Role-based paths · Skill assessments · Personalization</p>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#1f2937', marginBottom: 10 }}>
-                  Target roles & departments <span style={{ color: HARX }}>*</span>
-                </label>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#1f2937' }}>
+                    Target roles & departments <span style={{ color: HARX }}>*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => void handleSuggestTargetRoles()}
+                    disabled={targetRolesGenerating}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      border: '1px solid #fecaca',
+                      borderRadius: 999,
+                      background: '#fff',
+                      color: HARX,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: '5px 10px',
+                      cursor: targetRolesGenerating ? 'not-allowed' : 'pointer',
+                      opacity: targetRolesGenerating ? 0.7 : 1
+                    }}
+                    title="Suggest roles from gig context"
+                  >
+                    {targetRolesGenerating ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : <Sparkles style={{ width: 12, height: 12 }} />}
+                    AI suggest
+                  </button>
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-                  {[
-                    { role: 'Customer Success Representatives', dept: 'Customer Success', icon: '🎯' },
-                    { role: 'Sales Representatives', dept: 'Sales', icon: '💼' },
-                    { role: 'Support Agents', dept: 'Customer Support', icon: '🛟' },
-                    { role: 'Account Managers', dept: 'Sales', icon: '🤝' },
-                    { role: 'Product Specialists', dept: 'Product', icon: '⚙️' },
-                    { role: 'New Hires', dept: 'All Departments', icon: '🌟' },
-                    { role: 'Team Leaders', dept: 'Management', icon: '👥' },
-                    { role: 'All Employees', dept: 'Company-wide', icon: '🏢' },
-                  ].map(item => {
+                  {roleOptions.map(item => {
                     const checked = journey.targetRoles?.includes(item.role) || false;
                     return (
                       <label key={item.role} style={{ display: 'flex', alignItems: 'center', padding: 10, border: `1.5px solid ${checked ? HARX : '#e5e7eb'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 150ms' }}>
