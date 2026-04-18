@@ -114,12 +114,12 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
   useEffect(() => {
     const prev = prevWizardStepRef.current;
-    if (currentStep === 2 && prev === 1) {
+    if (currentStep === 3 && prev === 2) {
       setVisionSubStep(0);
       setVisionName('');
       setVisionDesc('');
       setVisionDuration('');
-    } else if (currentStep === 2 && prev === 3 && trainingDetails) {
+    } else if (currentStep === 3 && prev === 4 && trainingDetails) {
       setVisionSubStep(1);
       setVisionName(trainingDetails.trainingName);
       setVisionDesc(trainingDetails.trainingDescription);
@@ -129,16 +129,16 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   }, [currentStep, trainingDetails]);
 
   useEffect(() => {
-    if (currentStep !== 2) return;
+    if (currentStep !== 3) return;
     scrollJourneyMainToTop();
   }, [currentStep, visionSubStep]);
 
   const steps = [
     { id: 1, label: 'Industry' },
-    { id: 2, label: 'Vision' },
-    { id: 3, label: 'Team' },
-    { id: 4, label: 'Methodology' },
-    { id: 5, label: 'Thumbnail' },
+    { id: 2, label: 'Thumbnail' },
+    { id: 3, label: 'Vision' },
+    { id: 4, label: 'Team' },
+    { id: 5, label: 'Methodology' },
   ];
 
   const handleNext = () => {
@@ -188,7 +188,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
   const handleVisionFooterBack = () => {
     if (visionSubStep > 0) setVisionSubStep(visionSubStep - 1);
-    else setCurrentStep(1);
+    else setCurrentStep(2);
   };
 
   const handleVisionFooterContinue = () => {
@@ -200,13 +200,13 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         trainingDescription: visionDesc,
         estimatedDuration: visionDuration,
       });
-      setCurrentStep(3);
+      setCurrentStep(4);
     }
   };
 
-  const handleMethodologySelect = (m: TrainingMethodology) => { setSelectedMethodology(m); setCurrentStep(5); };
-  const handleMethodologyApply = (m: TrainingMethodology) => { setSelectedMethodology(m); setShowMethodologyBuilder(false); setCurrentStep(5); };
-  const handleCustomMethodology = () => { setCurrentStep(5); };
+  const handleMethodologySelect = (m: TrainingMethodology) => { setSelectedMethodology(m); setCurrentStep(6); };
+  const handleMethodologyApply = (m: TrainingMethodology) => { setSelectedMethodology(m); setShowMethodologyBuilder(false); setCurrentStep(6); };
+  const handleCustomMethodology = () => { setCurrentStep(6); };
 
   const handleThumbnailUpload = async (file: File) => {
     try {
@@ -228,19 +228,19 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const isStepValid = () => {
     switch (currentStep) {
       case 1: return companyData && company.industry && selectedGig !== null;
-      case 2: return trainingDetails !== null;
-      case 3: return journey.targetRoles && journey.targetRoles.length > 0;
-      case 4: return selectedMethodology !== null;
-      case 5: return !!thumbnailUrl && !thumbnailUploading;
+      case 2: return !!thumbnailUrl && !thumbnailUploading;
+      case 3: return trainingDetails !== null;
+      case 4: return journey.targetRoles && journey.targetRoles.length > 0;
+      case 5: return selectedMethodology !== null;
       case 6: return true;
       default: return true;
     }
   };
 
   const stepNum = currentStep > 5 ? 5 : currentStep;
-  const isStep2 = currentStep === 2;
-  const isStep4 = currentStep === 4;
-  const isStep5 = currentStep === 5;
+  const isVisionStep = currentStep === 3;
+  const isStep4 = currentStep === 5;
+  const isStep5 = currentStep === 2;
   const isStep6 = currentStep === 6;
 
   const formatVisionDuration = (raw: string | undefined) => {
@@ -444,7 +444,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             </>
           )}
 
-          {isStep2 && (
+          {isVisionStep && (
             <TrainingDetailsForm
               subStep={visionSubStep}
               trainingName={visionName}
@@ -457,7 +457,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
             />
           )}
 
-          {currentStep === 3 && (
+          {currentStep === 4 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <div style={{ textAlign: 'center' }}>
                 <h3 style={{ fontSize: 18, fontWeight: 800, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
@@ -803,7 +803,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           background: '#fff',
         }}
       >
-        {isStep2 ? (
+        {isVisionStep ? (
           <>
             <button
               type="button"
@@ -818,7 +818,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               <ArrowLeft style={{ width: 14, height: 14 }} />
               Back
             </button>
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Vision {visionSubStep + 1}/2 · Step 2 of 5</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Vision {visionSubStep + 1}/2 · Step 3 of 5</span>
             <button
               type="button"
               onClick={handleVisionFooterContinue}
