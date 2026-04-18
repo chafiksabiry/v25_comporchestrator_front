@@ -13,6 +13,10 @@ export interface TrainingJourney {
   name: string;
   description: string;
   status: 'draft' | 'active' | 'completed' | 'archived';
+  trainingLogo?: {
+    type: 'icon' | 'image';
+    value: string;
+  };
   steps: JourneyStep[];
   createdAt: string;
   estimatedDuration: string;
