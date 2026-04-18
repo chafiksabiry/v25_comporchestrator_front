@@ -306,7 +306,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: currentStep === 1 ? '12px 28px 8px' : isStep2 ? '12px 28px 8px' : isStep4 ? '12px 28px 8px' : isStep5 ? '8px 24px 6px' : '16px 28px',
+          padding: currentStep === 1 ? '12px 28px 8px' : isVisionStep ? '12px 28px 8px' : isStep4 ? '12px 28px 8px' : isStep5 ? '8px 24px 6px' : '16px 28px',
           width: '100%',
         }}>
         <div style={{
