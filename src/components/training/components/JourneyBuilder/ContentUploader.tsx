@@ -1290,10 +1290,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const shouldShowKbQuestionInChat = kbGenerationChoice === null;
     const shouldShowChatThread = hasStartedChat || shouldShowKbQuestionInChat || showPersonalizationCard;
     const kbOptions: Array<{ id: KbGenerationMode; label: string; hint: string }> = [
-      { id: 'kb_only', label: 'KB uniquement', hint: 'Utiliser les documents analyses de knowledge base' },
-      { id: 'uploads_only', label: 'Fichiers uploades uniquement', hint: 'Utiliser seulement vos fichiers joints' },
-      { id: 'kb_and_uploads', label: 'KB + fichiers uploades', hint: 'Combiner knowledge base et fichiers joints' },
-      { id: 'none', label: 'Sans documents', hint: 'Generer sans KB ni fichiers analyses' },
+      { id: 'kb_only', label: 'KB only', hint: 'Use analyzed knowledge base documents only' },
+      { id: 'uploads_only', label: 'Uploaded files only', hint: 'Use only your attached files' },
+      { id: 'kb_and_uploads', label: 'KB + uploaded files', hint: 'Combine knowledge base and uploaded files' },
+      { id: 'none', label: 'No documents', hint: 'Generate without KB or analyzed files' },
     ];
     const personalizationQuestions: Array<{
       key: 'level' | 'objective' | 'format';
@@ -1302,27 +1302,27 @@ export default function ContentUploader(props: ContentUploaderProps) {
     }> = [
       {
         key: 'level',
-        question: 'Quel est votre niveau actuel ?',
-        options: ['Debutant complet', 'Quelques notions', 'Intermediaire', 'Avance'],
+        question: 'What is your current level?',
+        options: ['Complete beginner', 'Some basics', 'Intermediate', 'Advanced'],
       },
       {
         key: 'objective',
-        question: 'Quel est votre objectif principal ?',
+        question: 'What is your main objective?',
         options: [
-          'Comprendre les fondamentaux',
-          'Mieux vendre le produit',
-          'Traiter des cas pratiques',
-          'Se preparer a la certification',
+          'Understand the fundamentals',
+          'Sell the product better',
+          'Handle practical use cases',
+          'Prepare for certification',
         ],
       },
       {
         key: 'format',
-        question: 'Quel format preferez-vous ?',
+        question: 'Which format do you prefer?',
         options: [
-          'Plan de formation structure',
-          'Cas pratiques + exercices',
-          'Format atelier interactif',
-          'Format fiche memo',
+          'Structured training plan',
+          'Practical cases + exercises',
+          'Interactive workshop format',
+          'Quick reference sheet format',
         ],
       },
     ];
@@ -1343,12 +1343,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
       if (personalizationStep >= personalizationQuestions.length - 1) {
         if (nextAnswers.level && nextAnswers.objective && nextAnswers.format) {
           const summary = [
-            'Quelques questions pour personnaliser votre formation',
-            'Q : Quel est votre niveau actuel ?',
+            'A few questions to personalize your training',
+            'Q: What is your current level?',
             `R : ${nextAnswers.level}`,
-            'Q : Quel est votre objectif principal ?',
+            'Q: What is your main objective?',
             `R : ${nextAnswers.objective}`,
-            'Q : Quel format preferez-vous ?',
+            'Q: Which format do you prefer?',
             `R : ${nextAnswers.format}`,
           ].join('\n');
           setShowPersonalizationCard(false);
@@ -1437,7 +1437,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           .replace(/^[-•*]\s*/, '')
           .trim();
 
-      const titleLine = lines.find((line) => /plan de formation/i.test(line));
+      const titleLine = lines.find((line) => /plan de formation|training plan/i.test(line));
       const introLines: string[] = [];
       const modules: Array<{ title: string; duration?: string; bullets: string[] }> = [];
       let current: { title: string; duration?: string; bullets: string[] } | null = null;
@@ -1456,7 +1456,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         if (!current) {
           if (
             normalized &&
-            !/^plan de formation/i.test(normalized) &&
+            !/^(plan de formation|training plan)/i.test(normalized) &&
             !/^module\s*\d+/i.test(normalized)
           ) {
             introLines.push(normalized);
@@ -1464,16 +1464,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
           continue;
         }
 
-        const durationMatch = normalized.match(/^dur[ée]e?\s*[:\-]\s*(.+)$/i);
+        const durationMatch = normalized.match(/^(dur[ée]e?|duration)\s*[:\-]\s*(.+)$/i);
         if (durationMatch) {
-          current.duration = durationMatch[1].trim();
+          current.duration = durationMatch[2].trim();
           continue;
         }
 
         if (/^[-•*]\s+/.test(line) || normalized.includes(':')) {
           const stripped = normalized
-            .replace(/^objectifs?\s*:\s*/i, '')
-            .replace(/^contenu\s*:\s*/i, '')
+            .replace(/^(objectifs?|objectives?)\s*:\s*/i, '')
+            .replace(/^(contenu|content)\s*:\s*/i, '')
             .trim();
           const lower = stripped.toLowerCase();
           if (!stripped) continue;
@@ -1865,30 +1865,30 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 className="mb-2 inline-flex w-full items-center gap-2 rounded-xl border border-[#e6e2d7] bg-white px-3 py-2 text-sm font-medium text-[#3f3a31]"
               >
                 <Plus className="h-4 w-4 text-harx-600" />
-                Nouvelle conversation
+                New conversation
               </button>
               <button
                 type="button"
                 className="mb-4 inline-flex w-full items-center gap-2 rounded-xl border border-transparent px-2 py-2 text-sm text-[#5f5a4f] hover:bg-white/70"
               >
                 <Search className="h-4 w-4 text-harx-500" />
-                Rechercher
+                Search
               </button>
               <div className="mb-3 space-y-1 px-1 text-sm text-[#3f3a31]">
-                <div className="rounded-lg px-2 py-1.5 hover:bg-white/70">Discussions</div>
-                <div className="rounded-lg px-2 py-1.5 hover:bg-white/70">Projets</div>
+                <div className="rounded-lg px-2 py-1.5 hover:bg-white/70">Chats</div>
+                <div className="rounded-lg px-2 py-1.5 hover:bg-white/70">Projects</div>
                 <div className="rounded-lg px-2 py-1.5 hover:bg-white/70">Artefacts</div>
               </div>
-              <div className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wide text-[#7d786b]">Récents</div>
+              <div className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wide text-[#7d786b]">Recent</div>
               <div className="max-h-[50vh] space-y-1 overflow-y-auto pr-1">
                 {isLoadingCompanyGigs ? (
                   <div className="flex items-center gap-2 rounded-lg px-2 py-2 text-xs text-[#6c675b]">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Chargement...
+                    Loading...
                   </div>
                 ) : companyGigs.length === 0 ? (
                   <div className="rounded-lg bg-white/60 px-2 py-2 text-xs text-[#6c675b]">
-                    Aucun project disponible.
+                    No project available.
                   </div>
                 ) : (
                   companyGigs.map((gig: any) => {
@@ -1916,7 +1916,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               </div>
               <div className="mt-auto border-t border-[#e7e2d3] px-2 pt-3">
                 <div className="text-sm font-semibold text-[#2d2a22]">{displayName}</div>
-                <div className="text-xs text-[#7d786b]">Forfait Free</div>
+                <div className="text-xs text-[#7d786b]">Free plan</div>
               </div>
             </aside>
           )}
@@ -1931,10 +1931,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     : 'mb-2 text-6xl font-serif font-semibold tracking-tight text-harx-700'
                 }
               >
-                {`Bonsoir, ${displayName}.`}
+                {`Good evening, ${displayName}.`}
               </h2>
               <p className={rep ? 'mx-auto max-w-xl text-[11px] leading-snug text-harx-600/80' : 'mx-auto max-w-3xl text-sm font-medium text-harx-600/80'}>
-                Comment puis-je vous aider ?
+                How can I help you?
               </p>
             </div>
           )}
@@ -1946,9 +1946,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   value={activeChatGigId}
                   onChange={(e) => setSelectedChatGigId(e.target.value)}
                   className="max-w-[200px] rounded-lg border border-harx-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-harx-700 outline-none hover:bg-harx-50"
-                  title="Choisir le gig pour le chat"
+                  title="Choose gig for chat"
                 >
-                  <option value="">Choisir un gig</option>
+                  <option value="">Choose a gig</option>
                   {companyGigs.map((gig: any) => {
                     const id = String(gig?._id || gig?.id || '');
                     return (
@@ -1962,32 +1962,32 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   type="button"
                   onClick={() => setIsHistoryOpen((prev) => !prev)}
                   className="inline-flex items-center gap-1 rounded-lg border border-harx-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-harx-700 hover:bg-harx-50"
-                  title="Ouvrir l'historique"
+                  title="Open history"
                 >
                   <History className="h-3.5 w-3.5" />
-                  Historique
+                  History
                 </button>
                 <button
                   type="button"
                   onClick={startNewConversation}
                   className="inline-flex items-center gap-1 rounded-lg border border-harx-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-harx-700 hover:bg-harx-50"
-                  title="Nouvelle conversation"
+                  title="New conversation"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  Nouvelle
+                  New
                 </button>
               </div>
               {isHistoryOpen && (
                 <div className="absolute right-0 top-10 z-30 w-full max-w-[320px] rounded-xl border border-harx-200 bg-white p-2 shadow-xl">
                   <div className="mb-2 flex items-center justify-between px-1">
                     <div className="text-xs font-bold uppercase tracking-wide text-harx-600">
-                      {`Historique — ${activeChatGigTitle}`}
+                      {`History — ${activeChatGigTitle}`}
                     </div>
                     <button
                       type="button"
                       onClick={() => void refreshChatHistory()}
                       className="rounded p-1 text-harx-600 hover:bg-harx-50"
-                      title="Rafraichir"
+                      title="Refresh"
                     >
                       <RefreshCw className="h-3.5 w-3.5" />
                     </button>
@@ -1996,11 +1996,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     {isHistoryLoading ? (
                       <div className="flex items-center gap-2 rounded-md px-2 py-2 text-xs text-harx-600">
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        Chargement...
+                        Loading...
                       </div>
                     ) : chatHistorySessions.length === 0 ? (
                       <div className="rounded-md px-2 py-2 text-xs text-harx-500">
-                        Aucun historique trouve pour ce gig.
+                        No history found for this gig.
                       </div>
                     ) : (
                       chatHistorySessions.map((session) => (
@@ -2015,7 +2015,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           }`}
                         >
                           <div className="truncate text-[12px] font-semibold text-harx-800">
-                            {session.title || 'Nouvelle conversation'}
+                            {session.title || 'New conversation'}
                           </div>
                           {session.preview ? (
                             <div className="mt-0.5 line-clamp-2 text-[11px] text-harx-600">{session.preview}</div>
@@ -2033,9 +2033,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       <div className="w-full max-w-[92%] rounded-[24px] border border-[#e7e3db] bg-white p-3 shadow-[0_8px_24px_rgba(17,24,39,0.05)]">
                         <div className="mb-2 flex items-center justify-between px-2 pt-1">
                           <p className="text-[28px] font-semibold leading-tight text-[#1f1d18]">
-                            Est-ce que vous voulez generer un plan de formation et une formation a partir de knowledge base ?
+                            Do you want to generate a training plan and training content from your knowledge base?
                           </p>
-                          <div className="ml-3 shrink-0 text-sm font-semibold text-[#b7b0a1]">1 sur 1</div>
+                          <div className="ml-3 shrink-0 text-sm font-semibold text-[#b7b0a1]">1 of 1</div>
                         </div>
 
                         <div className="overflow-hidden rounded-2xl border border-[#f0ece3] bg-[#faf9f6]">
@@ -2063,10 +2063,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             {isChatKbLoading ? (
                               <span className="inline-flex items-center gap-1">
                                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                Chargement des documents KB...
+                                Loading KB documents...
                               </span>
                             ) : (kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads') ? (
-                              <span>{chatKbDocuments.length} document(s) KB pret(s) pour la generation.</span>
+                              <span>{chatKbDocuments.length} KB document(s) ready for generation.</span>
                             ) : null}
                           </div>
                           <button
@@ -2074,7 +2074,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             onClick={() => handleSelectKbMode('none')}
                             className="rounded-lg border border-[#d8d2c6] bg-white px-3 py-1.5 text-xs font-semibold text-[#4f493f] hover:bg-[#f8f6f1]"
                           >
-                            Passer
+                            Skip
                           </button>
                         </div>
 
@@ -2086,10 +2086,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       <div className="w-full max-w-[92%] rounded-[24px] border border-[#e7e3db] bg-white p-3 shadow-[0_8px_24px_rgba(17,24,39,0.05)]">
                         <div className="mb-2 flex items-center justify-between px-2 pt-1">
                           <p className="text-[18px] font-semibold leading-tight text-[#1f1d18]">
-                            {personalizationQuestions[personalizationStep]?.question || 'Quelques questions pour personnaliser votre formation'}
+                            {personalizationQuestions[personalizationStep]?.question || 'A few questions to personalize your training'}
                           </p>
                           <div className="ml-3 shrink-0 text-sm font-semibold text-[#b7b0a1]">
-                            {`${Math.min(personalizationStep + 1, personalizationQuestions.length)} sur ${personalizationQuestions.length}`}
+                            {`${Math.min(personalizationStep + 1, personalizationQuestions.length)} of ${personalizationQuestions.length}`}
                           </div>
                         </div>
 
@@ -2122,7 +2122,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             }}
                             className="rounded-lg border border-[#d8d2c6] bg-white px-3 py-1.5 text-xs font-semibold text-[#4f493f] hover:bg-[#f8f6f1]"
                           >
-                            Passer
+                            Skip
                           </button>
                         </div>
                       </div>
@@ -2284,10 +2284,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                           module.bullets.length > 0
                                             ? `\nPoints du module:\n- ${module.bullets.slice(0, 4).join('\n- ')}`
                                             : '';
-                                        const ask = `Detaille le module "${module.title}" sous forme de reponse de formation normale.
-Donne une explication pedagogique claire avec objectifs, contenu, activites pratiques et evaluation.
-Conserve la duree totale du module et propose une repartition en etapes simples.
-N'utilise pas de format slides (pas de "Slide 1", "Slide 2", etc.).${moduleSummary}`;
+                                        const ask = `Detail the module "${module.title}" as a standard training response.
+Provide a clear pedagogical explanation with objectives, content, practical activities, and evaluation.
+Keep the total module duration and suggest a simple step-by-step breakdown.
+Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                                         void sendChatMessage(ask);
                                       }}
                                       className={`w-full border px-3 py-2 text-left transition-all duration-150 hover:-translate-y-[1px] hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${moduleShapeClass}`}
@@ -2296,11 +2296,11 @@ N'utilise pas de format slides (pas de "Slide 1", "Slide 2", etc.).${moduleSumma
                                         borderColor: theme?.border || '#ddd',
                                         color: theme?.text || '#1f1d18',
                                       }}
-                                      title={`Cliquer pour detailler ${module.title}`}
+                                      title={`Click to detail ${module.title}`}
                                     >
                                       <div className="text-[15px] font-semibold" style={{ color: theme?.text || '#1f1d18' }}>{module.title}</div>
                                       {module.duration && (
-                                        <div className="text-[13px]" style={{ color: theme?.text || '#3f3b31' }}>Duree: {module.duration}</div>
+                                        <div className="text-[13px]" style={{ color: theme?.text || '#3f3b31' }}>Duration: {module.duration}</div>
                                       )}
                                       {module.bullets.length > 0 && (
                                         <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[13px] leading-5" style={{ color: theme?.text || '#2d2a22' }}>
@@ -2325,7 +2325,7 @@ N'utilise pas de format slides (pas de "Slide 1", "Slide 2", etc.).${moduleSumma
                               type="button"
                               onClick={() => handleRegenerateMessage(msg.id)}
                               className="rounded-md p-1.5 hover:bg-harx-100/70"
-                              title="Regenerer"
+                              title="Regenerate"
                             >
                               <RotateCcw className="h-3.5 w-3.5" />
                             </button>
@@ -2342,7 +2342,7 @@ N'utilise pas de format slides (pas de "Slide 1", "Slide 2", etc.).${moduleSumma
                     <div className="flex justify-start">
                       <div className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-white px-3 py-2 text-sm text-harx-700 shadow-sm">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Claude reflechit...
+                        Claude is thinking...
                       </div>
                     </div>
                   )}
@@ -2370,12 +2370,12 @@ N'utilise pas de format slides (pas de "Slide 1", "Slide 2", etc.).${moduleSumma
                       {uploads.map((upload) => {
                         const statusLabel =
                           upload.status === 'analyzed'
-                            ? 'Analyse'
+                            ? 'Analyzed'
                             : upload.status === 'error'
-                              ? 'Erreur'
+                              ? 'Error'
                               : upload.status === 'uploading'
-                                ? 'Upload...'
-                                : 'Analyse...';
+                                ? 'Uploading...'
+                                : 'Analyzing...';
                         return (
                           <div
                             key={`inline-${upload.id}`}
@@ -2395,7 +2395,7 @@ N'utilise pas de format slides (pas de "Slide 1", "Slide 2", etc.).${moduleSumma
                               type="button"
                               onClick={() => removeUpload(upload.id)}
                               className="rounded p-0.5 text-harx-500 hover:bg-harx-100"
-                              title="Retirer le fichier"
+                              title="Remove file"
                             >
                               <X className="h-3 w-3" />
                             </button>
@@ -2421,7 +2421,7 @@ N'utilise pas de format slides (pas de "Slide 1", "Slide 2", etc.).${moduleSumma
                       }
                     }}
                     rows={1}
-                    placeholder={hasStartedChat ? 'Repondre...' : 'Comment puis-je vous aider ?'}
+                    placeholder={hasStartedChat ? 'Reply...' : 'How can I help you?'}
                     className="mb-3 w-full resize-none bg-transparent text-[15px] text-harx-800 outline-none placeholder:text-harx-600/70"
                   />
                   <div className="flex items-center justify-between">
@@ -2429,7 +2429,7 @@ N'utilise pas de format slides (pas de "Slide 1", "Slide 2", etc.).${moduleSumma
                       type="button"
                       onClick={() => chatFileInputRef.current?.click()}
                       className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-harx-200 text-harx-700 hover:bg-harx-50"
-                      title="Importer des fichiers"
+                      title="Upload files"
                     >
                       +
                     </button>
@@ -2439,17 +2439,17 @@ N'utilise pas de format slides (pas de "Slide 1", "Slide 2", etc.).${moduleSumma
                         onClick={() => void handleSavePresentation()}
                         disabled={isSavingCloud}
                         className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 disabled:opacity-50"
-                        title="Valider"
+                        title="Validate"
                       >
                         {isSavingCloud ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
-                        Valider
+                        Validate
                       </button>
                       <button
                         type="button"
                         onClick={() => void handleChatSubmit()}
                         disabled={!chatInput.trim() || isChatLoading}
                         className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
-                        title="Envoyer"
+                        title="Send"
                       >
                         <Send className="h-3.5 w-3.5" />
                         Send
