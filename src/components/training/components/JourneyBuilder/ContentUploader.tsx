@@ -64,6 +64,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [isLoadingGigKbDocs, setIsLoadingGigKbDocs] = useState(false);
   const [companyGigs, setCompanyGigs] = useState<Gig[]>([]);
   const [isLoadingCompanyGigs, setIsLoadingCompanyGigs] = useState(false);
+  const [selectedChatGigId, setSelectedChatGigId] = useState<string>(gigId ? String(gigId) : '');
   const [chatMessages, setChatMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; text: string; isStreaming?: boolean }>>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
@@ -92,14 +93,25 @@ export default function ContentUploader(props: ContentUploaderProps) {
     });
   }, [chatMessages, isChatLoading]);
 
+  useEffect(() => {
+    if (gigId) {
+      setSelectedChatGigId(String(gigId));
+    }
+  }, [gigId]);
+
+  const activeChatGigId = selectedChatGigId || (gigId ? String(gigId) : '');
+  const activeChatGigTitle =
+    companyGigs.find((g: any) => String(g?._id || g?.id || '') === String(activeChatGigId))?.title ||
+    (activeChatGigId ? `Gig ${activeChatGigId.slice(0, 8)}` : 'Aucun gig');
+
   const refreshChatHistory = useCallback(async () => {
-    if (!gigId) {
+    if (!activeChatGigId) {
       setChatHistorySessions([]);
       return;
     }
     setIsHistoryLoading(true);
     try {
-      const sessions = await AIService.listChatHistory(String(gigId));
+      const sessions = await AIService.listChatHistory(String(activeChatGigId));
       setChatHistorySessions(Array.isArray(sessions) ? sessions : []);
     } catch (error) {
       console.error('[ContentUploader] Failed loading chat history:', error);
@@ -107,29 +119,30 @@ export default function ContentUploader(props: ContentUploaderProps) {
     } finally {
       setIsHistoryLoading(false);
     }
-  }, [gigId]);
+  }, [activeChatGigId]);
 
   useEffect(() => {
-    if (!gigId) {
+    if (!activeChatGigId) {
       setActiveChatSessionId(null);
       setChatHistorySessions([]);
       setChatKbDocuments([]);
       return;
     }
+    setActiveChatSessionId(null);
     void refreshChatHistory();
-  }, [gigId, refreshChatHistory]);
+  }, [activeChatGigId, refreshChatHistory]);
 
   useEffect(() => {
     const usesKb =
       kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads';
-    if (!usesKb || !gigId) {
+    if (!usesKb || !activeChatGigId) {
       setIsChatKbLoading(false);
       if (!usesKb) setChatKbDocuments([]);
       return;
     }
     let cancelled = false;
     setIsChatKbLoading(true);
-    AIService.listGigKnowledgeDocuments(String(gigId))
+    AIService.listGigKnowledgeDocuments(String(activeChatGigId))
       .then((docs) => {
         if (!cancelled) setChatKbDocuments(Array.isArray(docs) ? docs : []);
       })
@@ -143,7 +156,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     return () => {
       cancelled = true;
     };
-  }, [kbGenerationChoice, gigId]);
+  }, [kbGenerationChoice, activeChatGigId]);
 
   const getAnalyzedUploads = useCallback(
     () => uploads.filter((u) => u.status === 'analyzed' && !!u.aiAnalysis),
@@ -1842,6 +1855,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
         const chatContext = JSON.stringify({
           app: 'HARX Journey Builder',
+          selectedGigId: activeChatGigId || '',
+          selectedGigTitle: activeChatGigTitle,
           generationMode: effectiveGenerationMode,
           personalizationProfile: {
             level: personalizationAnswers.level || '',
@@ -1880,7 +1895,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             )
           );
         }, {
-          gigId: gigId ? String(gigId) : undefined,
+          gigId: activeChatGigId ? String(activeChatGigId) : undefined,
           companyId,
           sessionId: activeChatSessionId || undefined,
         });
@@ -1983,21 +1998,23 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 ) : (
                   companyGigs.map((gig: any) => {
                     const id = String(gig?._id || gig?.id || '');
-                    const active = !!gigId && id === String(gigId);
+                    const active = !!activeChatGigId && id === String(activeChatGigId);
                     return (
-                      <div
+                      <button
                         key={id || gig?.title}
+                        type="button"
+                        onClick={() => setSelectedChatGigId(id)}
                         className={`rounded-lg border px-2.5 py-2 ${
                           active
                             ? 'border-harx-200 bg-harx-50 text-harx-800'
-                            : 'border-transparent bg-white/60 text-[#4f4a3f]'
+                            : 'border-transparent bg-white/60 text-[#4f4a3f] hover:border-harx-100'
                         }`}
                       >
                         <div className="truncate text-sm font-semibold">{gig?.title || 'Untitled project'}</div>
                         {gig?.category ? (
                           <div className="truncate text-[11px] text-[#7d786b]">{gig.category}</div>
                         ) : null}
-                      </div>
+                      </button>
                     );
                   })
                 )}
@@ -2030,6 +2047,22 @@ export default function ContentUploader(props: ContentUploaderProps) {
           <div className={rep ? 'mx-auto mb-2 w-full max-w-[700px]' : 'mx-auto mb-4 w-full max-w-[700px]'}>
             <div className={rep ? 'relative rounded-none border-0 bg-transparent p-0 shadow-none' : 'relative rounded-3xl border border-harx-100 bg-white p-4 shadow-sm'}>
               <div className="mb-2 flex items-center justify-end gap-2">
+                <select
+                  value={activeChatGigId}
+                  onChange={(e) => setSelectedChatGigId(e.target.value)}
+                  className="max-w-[200px] rounded-lg border border-harx-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-harx-700 outline-none hover:bg-harx-50"
+                  title="Choisir le gig pour le chat"
+                >
+                  <option value="">Choisir un gig</option>
+                  {companyGigs.map((gig: any) => {
+                    const id = String(gig?._id || gig?.id || '');
+                    return (
+                      <option key={id} value={id}>
+                        {gig?.title || 'Untitled gig'}
+                      </option>
+                    );
+                  })}
+                </select>
                 <button
                   type="button"
                   onClick={() => setIsHistoryOpen((prev) => !prev)}
@@ -2052,7 +2085,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
               {isHistoryOpen && (
                 <div className="absolute right-0 top-10 z-30 w-full max-w-[320px] rounded-xl border border-harx-200 bg-white p-2 shadow-xl">
                   <div className="mb-2 flex items-center justify-between px-1">
-                    <div className="text-xs font-bold uppercase tracking-wide text-harx-600">Historique du gig</div>
+                    <div className="text-xs font-bold uppercase tracking-wide text-harx-600">
+                      {`Historique — ${activeChatGigTitle}`}
+                    </div>
                     <button
                       type="button"
                       onClick={() => void refreshChatHistory()}

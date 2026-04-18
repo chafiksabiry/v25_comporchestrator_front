@@ -8,6 +8,7 @@ import {
   FileText,
   Clock,
   Play,
+  MessageSquare,
   RefreshCw,
   Plus,
   Pencil,
@@ -657,6 +658,16 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               </button>
 
                               <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowTraining({ isOpen: true, newJourney: true, journeyId: formatted.id })}
+                                  disabled={loadingPresentation || deletingJourneyId === formatted.id}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-harx-200 px-2.5 py-2 text-xs font-semibold text-harx-600 hover:bg-harx-50 disabled:opacity-50"
+                                  title="Open chat"
+                                >
+                                  <MessageSquare className="h-3.5 w-3.5" />
+                                  <span>Chat</span>
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => handleViewPresentation(formatted.presentationUrl, formatted.id, journey, true)}
