@@ -44,6 +44,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [thumbnailGenerating, setThumbnailGenerating] = useState(false);
   const [thumbnailPrompt, setThumbnailPrompt] = useState('');
+  const [visionTitleGenerating, setVisionTitleGenerating] = useState(false);
+  const [visionDescriptionGenerating, setVisionDescriptionGenerating] = useState(false);
   const isCloudinaryThumbnail = thumbnailUrl.includes('res.cloudinary.com');
 
   useEffect(() => {
@@ -257,6 +259,45 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       alert(backendMessage || 'Could not generate thumbnail with AI.');
     } finally {
       setThumbnailGenerating(false);
+    }
+  };
+
+  const handleSuggestVision = async (target: 'title' | 'description') => {
+    if (!selectedGig) {
+      alert('Please select a gig first.');
+      return;
+    }
+    const isTitle = target === 'title';
+    try {
+      if (isTitle) setVisionTitleGenerating(true);
+      else setVisionDescriptionGenerating(true);
+
+      const trainingBackendUrl = getTrainingBackendUrl();
+      const baseUrl = trainingBackendUrl.endsWith('/api') ? trainingBackendUrl : `${trainingBackendUrl}/api`;
+      const response = await axios.post(`${baseUrl}/training_journeys/suggest-vision`, {
+        target,
+        currentTitle: visionName,
+        currentDescription: visionDesc,
+        industry: industries.find(i => i._id === company.industry)?.name || String(company.industry || ''),
+        gig: selectedGig
+      });
+      const data = (response?.data as any)?.data || {};
+      if (isTitle) {
+        const suggestedTitle = String(data.title || '').trim();
+        if (suggestedTitle) setVisionName(suggestedTitle);
+      } else {
+        const suggestedDescription = String(data.description || '').trim();
+        if (suggestedDescription) setVisionDesc(suggestedDescription);
+      }
+    } catch (error: any) {
+      const backendMessage =
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.message;
+      alert(backendMessage || 'Could not generate vision suggestion.');
+    } finally {
+      if (isTitle) setVisionTitleGenerating(false);
+      else setVisionDescriptionGenerating(false);
     }
   };
 
@@ -493,6 +534,10 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               onTrainingDescriptionChange={setVisionDesc}
               onEstimatedDurationChange={setVisionDuration}
               gigData={selectedGig}
+              onSuggestTitle={() => void handleSuggestVision('title')}
+              onSuggestDescription={() => void handleSuggestVision('description')}
+              generatingTitle={visionTitleGenerating}
+              generatingDescription={visionDescriptionGenerating}
             />
           )}
 
