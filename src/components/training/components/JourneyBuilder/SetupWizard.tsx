@@ -244,12 +244,16 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         gigTitle: selectedGig?.title || trainingDetails?.trainingName || '',
         industry: industries.find(i => i._id === company.industry)?.name || String(company.industry || '')
       });
-      const url = String(response?.data?.url || '').trim();
+      const url = String((response?.data as any)?.url || '').trim();
       if (!url) throw new Error('No image URL returned');
       setThumbnailUrl(url);
     } catch (error: any) {
       console.error('[SetupWizard] Failed AI thumbnail generation:', error);
-      alert(error?.message || 'Could not generate thumbnail with AI.');
+      const backendMessage =
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.message;
+      alert(backendMessage || 'Could not generate thumbnail with AI.');
     } finally {
       setThumbnailGenerating(false);
     }
