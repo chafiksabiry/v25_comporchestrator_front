@@ -526,7 +526,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 </p>
               </div>
 
-              <div style={{ border: '1px dashed #fecaca', borderRadius: 12, padding: 16, background: '#fffafa' }}>
+              <div style={{ border: '1px dashed #fecaca', borderRadius: 4, padding: 16, background: '#fffafa' }}>
                 <input
                   id="training-thumbnail-input"
                   type="file"
@@ -538,7 +538,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                     e.currentTarget.value = '';
                   }}
                 />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                   <label
                     htmlFor="training-thumbnail-input"
                     style={{
@@ -546,7 +546,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                       alignItems: 'center',
                       gap: 6,
                       padding: '8px 12px',
-                      borderRadius: 8,
+                      borderRadius: 4,
                       border: '1px solid #fecaca',
                       background: '#fff',
                       color: HARX,
@@ -565,7 +565,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                       onClick={() => setThumbnailUrl('')}
                       style={{
                         padding: '8px 10px',
-                        borderRadius: 8,
+                        borderRadius: 4,
                         border: '1px solid #e5e7eb',
                         background: '#fff',
                         color: '#6b7280',
@@ -580,15 +580,28 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 </div>
 
                 {thumbnailUrl ? (
-                  <div style={{ border: '1px solid #fee2e2', borderRadius: 10, background: '#fff', padding: 8, width: 'fit-content' }}>
+                  <div style={{ border: '1px solid #fee2e2', borderRadius: 4, background: '#fff', padding: 8, width: 'fit-content' }}>
                     <img
                       src={thumbnailUrl}
                       alt="Training thumbnail"
-                      style={{ width: 240, height: 140, objectFit: 'cover', borderRadius: 8 }}
+                      style={{ width: 220, height: 220, objectFit: 'cover', borderRadius: 2 }}
                     />
                   </div>
                 ) : (
-                  <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>No thumbnail uploaded yet.</p>
+                  <div
+                    style={{
+                      width: 220,
+                      height: 220,
+                      border: '1px dashed #fbcfe8',
+                      borderRadius: 4,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: '#fff',
+                    }}
+                  >
+                    <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>No thumbnail uploaded yet.</p>
+                  </div>
                 )}
               </div>
             </div>
