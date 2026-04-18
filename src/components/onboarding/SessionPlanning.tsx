@@ -12,7 +12,6 @@ import {
 import { PremiumDropdown } from '../ui/PremiumDropdown';
 import { SlotActionPanel } from '../../components/scheduler/SlotActionPanel';
 import { RepSelector } from '../../components/scheduler/RepSelector';
-import { CompanyView } from '../../components/scheduler/CompanyView';
 import { AIRecommendations } from '../../components/scheduler/AIRecommendations';
 import { OptimalTimeHeatmap } from '../../components/scheduler/OptimalTimeHeatmap';
 import { PerformanceMetrics } from '../../components/scheduler/PerformanceMetrics';
@@ -725,28 +724,6 @@ export default function SessionPlanning() {
                     onSelectDay={setSelectedDate}
                     availabilitySchedule={selectedGigAvailabilitySchedule}
                   />
-                </div>
-              )}
-
-              {selectedGigId && (
-                <div className="rounded-2xl bg-gray-900 p-2.5 shadow-xl border border-harx-500/20 overflow-hidden relative">
-                  <div className="absolute top-0 right-0 w-96 h-96 bg-harx-600/5 rounded-full blur-[100px]"></div>
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-2 px-1.5">
-                      <h2 className="text-base sm:text-lg font-black text-white italic uppercase tracking-wider">Operational Overview</h2>
-                      <div className="flex items-center gap-1.5 bg-harx-600/15 px-2.5 py-1 rounded-lg text-[10px] font-black text-harx-100 uppercase tracking-widest border border-harx-500/35">
-                        <Users className="w-3.5 h-3.5 text-harx-400 shrink-0" />
-                        Live Field Status
-                      </div>
-                    </div>
-                    <CompanyView
-                      company={projects.find(p => p.id === selectedGigId)?.name || ''}
-                      slots={slots}
-                      projects={projects.filter(p => p.id === selectedGigId).map(p => ({ ...p, company: p.name }))}
-                      reps={reps}
-                      selectedDate={selectedDate}
-                    />
-                  </div>
                 </div>
               )}
 
