@@ -84,6 +84,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
+  const [htmlPreviewHeights, setHtmlPreviewHeights] = useState<Record<string, number>>({});
   const chatFileInputRef = useRef<HTMLInputElement | null>(null);
   const chatTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -157,6 +158,20 @@ export default function ContentUploader(props: ContentUploaderProps) {
       cancelled = true;
     };
   }, [kbGenerationChoice, activeChatGigId]);
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      const data = event.data;
+      if (!data || typeof data !== 'object') return;
+      const payload = data as { type?: string; id?: string; height?: number };
+      if (payload.type !== 'harx-html-height' || !payload.id || typeof payload.height !== 'number') return;
+      const messageId: string = payload.id;
+      const safeHeight = Math.max(320, Math.min(2200, Math.round(payload.height + 8)));
+      setHtmlPreviewHeights((prev) => (prev[messageId] === safeHeight ? prev : { ...prev, [messageId]: safeHeight }));
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
 
   const getAnalyzedUploads = useCallback(
     () => uploads.filter((u) => u.status === 'analyzed' && !!u.aiAnalysis),
@@ -1652,10 +1667,33 @@ export default function ContentUploader(props: ContentUploaderProps) {
       String(rawText || '').replace(/<harx-style>[\s\S]*?<\/harx-style>/gi, '').trim();
 
     const extractHtmlBundle = (rawText: string): string | null => {
-      const match = String(rawText || '').match(/<harx-html>([\s\S]*?)<\/harx-html>/i);
-      if (!match?.[1]) return null;
-      const html = match[1].trim();
-      return html.length > 0 ? html : null;
+      const source = String(rawText || '').trim();
+      if (!source) return null;
+
+      const taggedMatch = source.match(/<harx-html>([\s\S]*?)<\/harx-html>/i);
+      if (taggedMatch?.[1]?.trim()) return taggedMatch[1].trim();
+
+      const fencedHtmlMatch = source.match(/```(?:html)?\s*([\s\S]*?)```/i);
+      if (fencedHtmlMatch?.[1]?.trim()) {
+        const candidate = fencedHtmlMatch[1].trim();
+        if (/<(?:html|head|body|style|script|main|section|article|div)\b/i.test(candidate)) {
+          return candidate;
+        }
+      }
+
+      if (/<(?:html|head|body|style|script)\b/i.test(source)) {
+        return source;
+      }
+
+      return null;
+    };
+
+    const withAutoResizeScript = (html: string, messageId: string): string => {
+      const resizeScript = `<script>(function(){var id=${JSON.stringify(messageId)};var sendHeight=function(){var h=Math.max(document.documentElement.scrollHeight||0,document.body?document.body.scrollHeight:0,document.documentElement.offsetHeight||0);parent.postMessage({type:'harx-html-height',id:id,height:h},'*');};if(document.readyState==='complete'){sendHeight();}window.addEventListener('load',sendHeight);window.addEventListener('resize',sendHeight);if(window.ResizeObserver&&document.body){new ResizeObserver(sendHeight).observe(document.body);}setTimeout(sendHeight,80);setTimeout(sendHeight,250);setTimeout(sendHeight,700);})();</script>`;
+      if (/<\/body>/i.test(html)) {
+        return html.replace(/<\/body>/i, `${resizeScript}</body>`);
+      }
+      return `${html}${resizeScript}`;
     };
 
     const stripResourceSections = (rawText: string): string => {
@@ -2249,12 +2287,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             {(() => {
                               const htmlBundle = extractHtmlBundle(msg.text);
                               if (htmlBundle) {
+                                const htmlDoc = withAutoResizeScript(htmlBundle, msg.id);
+                                const iframeHeight = htmlPreviewHeights[msg.id] || 560;
                                 return (
                                   <div className="my-2 overflow-hidden rounded-2xl border border-harx-200 bg-white">
                                     <iframe
                                       title={`assistant-html-${msg.id}`}
-                                      srcDoc={htmlBundle}
-                                      className="h-[560px] w-full border-0"
+                                      srcDoc={htmlDoc}
+                                      style={{ height: `${iframeHeight}px` }}
+                                      className="w-full border-0"
                                       sandbox="allow-scripts"
                                     />
                                   </div>
