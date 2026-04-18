@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { MemoryRouter } from 'react-router-dom';
@@ -25,6 +25,7 @@ import { getGigsByCompanyId } from '../../api/matching';
 import { DraftService } from '../training/infrastructure/services/DraftService';
 import { OnboardingService } from '../training/infrastructure/services/OnboardingService';
 import { mapJourneyToPresentation } from '../training/utils/PresentationMapper';
+import { cloudinaryService } from '../training/lib/cloudinaryService';
 import '../training/index.css';
 
 interface RepOnboardingProps { }
@@ -45,20 +46,18 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [deletingJourneyId, setDeletingJourneyId] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [settingsJourney, setSettingsJourney] = useState<any | null>(null);
   const [settingsForm, setSettingsForm] = useState<{
     title: string;
     description: string;
-    status: string;
-    logoType: 'icon' | 'image';
-    logoValue: string;
+    logoUrl: string;
   }>({
     title: '',
     description: '',
-    status: 'draft',
-    logoType: 'icon',
-    logoValue: 'book-open',
+    logoUrl: '',
   });
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
 
   // Helper function to format training journey data for display
   const asUiString = (v: unknown, fallback: string): string => {
@@ -119,7 +118,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     'chart': BarChart3,
     'laptop': Laptop,
   };
-  const logoOptions = Object.keys(logoIconByKey);
 
   const renderTrainingLogo = (logo: any) => {
     const type = String(logo?.type || 'icon').toLowerCase();
@@ -138,18 +136,30 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   };
 
   const openTrainingSettings = (journey: any) => {
-    const status = String(journey?.status || 'draft');
-    const logoType = String(journey?.trainingLogo?.type || 'icon').toLowerCase() === 'image' ? 'image' : 'icon';
-    const logoValue = String(journey?.trainingLogo?.value || (logoType === 'icon' ? 'book-open' : '')).trim();
+    const logoUrl =
+      String(journey?.trainingLogo?.type || '').toLowerCase() === 'image'
+        ? String(journey?.trainingLogo?.value || '').trim()
+        : '';
     setSettingsJourney(journey);
     setSettingsForm({
       title: asUiString(journey?.title ?? journey?.name, ''),
       description: asUiString(journey?.description, ''),
-      status: ['draft', 'rehearsal', 'active', 'completed', 'archived'].includes(status) ? status : 'draft',
-      logoType,
-      logoValue,
+      logoUrl,
     });
     setIsSettingsOpen(true);
+  };
+
+  const handleUploadTrainingLogo = async (file: File) => {
+    try {
+      setIsUploadingLogo(true);
+      const uploaded = await cloudinaryService.uploadImage(file, 'trainings/logos');
+      setSettingsForm((prev) => ({ ...prev, logoUrl: uploaded.secureUrl || uploaded.url }));
+    } catch (error: any) {
+      console.error('[RepOnboarding] Failed uploading training logo:', error);
+      window.alert(error?.message || 'Could not upload logo image.');
+    } finally {
+      setIsUploadingLogo(false);
+    }
   };
 
   const handleSaveTrainingSettings = async () => {
@@ -170,11 +180,12 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         title: settingsForm.title.trim(),
         name: settingsForm.title.trim(),
         description: settingsForm.description.trim(),
-        status: settingsForm.status,
-        trainingLogo: {
-          type: settingsForm.logoType,
-          value: settingsForm.logoValue.trim() || (settingsForm.logoType === 'icon' ? 'book-open' : ''),
-        },
+        trainingLogo: settingsForm.logoUrl.trim()
+          ? {
+              type: 'image',
+              value: settingsForm.logoUrl.trim(),
+            }
+          : undefined,
       };
       await axios.put(`${baseUrl}/training_journeys/${journeyId}`, payload);
       setIsSettingsOpen(false);
@@ -840,76 +851,50 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">Status</label>
-                  <select
-                    value={settingsForm.status}
-                    onChange={(e) => setSettingsForm((prev) => ({ ...prev, status: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
-                  >
-                    <option value="draft">Draft</option>
-                    <option value="rehearsal">Rehearsal</option>
-                    <option value="active">Active</option>
-                    <option value="completed">Completed</option>
-                    <option value="archived">Archived</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">Logo type</label>
-                  <select
-                    value={settingsForm.logoType}
-                    onChange={(e) =>
-                      setSettingsForm((prev) => ({
-                        ...prev,
-                        logoType: (e.target.value === 'image' ? 'image' : 'icon') as 'icon' | 'image',
-                        logoValue: e.target.value === 'image' ? '' : (prev.logoValue || 'book-open'),
-                      }))
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">Training logo</label>
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      void handleUploadTrainingLogo(file);
                     }
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+                    e.currentTarget.value = '';
+                  }}
+                />
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={isUploadingLogo}
+                    className="inline-flex items-center gap-2 rounded-xl border border-harx-200 px-3 py-2 text-sm font-semibold text-harx-700 hover:bg-harx-50 disabled:opacity-60"
                   >
-                    <option value="icon">Icon</option>
-                    <option value="image">Image URL</option>
-                  </select>
+                    {isUploadingLogo ? <RefreshCw className="h-4 w-4 animate-spin" /> : null}
+                    {isUploadingLogo ? 'Uploading...' : 'Import image'}
+                  </button>
+                  {settingsForm.logoUrl ? (
+                    <button
+                      type="button"
+                      onClick={() => setSettingsForm((prev) => ({ ...prev, logoUrl: '' }))}
+                      className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+                    >
+                      Remove
+                    </button>
+                  ) : null}
                 </div>
-              </div>
-
-              {settingsForm.logoType === 'icon' ? (
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">Logo icon</label>
-                  <div className="flex flex-wrap gap-2">
-                    {logoOptions.map((key) => {
-                      const IconComp = logoIconByKey[key];
-                      const selected = settingsForm.logoValue === key;
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => setSettingsForm((prev) => ({ ...prev, logoValue: key }))}
-                          className={`inline-flex items-center gap-2 rounded-lg border px-2.5 py-2 text-xs font-semibold ${
-                            selected
-                              ? 'border-harx-300 bg-harx-50 text-harx-700'
-                              : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                          }`}
-                        >
-                          <IconComp className="h-4 w-4" />
-                          {key}
-                        </button>
-                      );
-                    })}
+                {settingsForm.logoUrl ? (
+                  <div className="mt-3 inline-flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
+                    <img src={settingsForm.logoUrl} alt="Training logo preview" className="h-10 w-10 rounded-lg object-cover" />
+                    <span className="max-w-[320px] truncate text-xs text-gray-600">{settingsForm.logoUrl}</span>
                   </div>
-                </div>
-              ) : (
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">Logo image URL</label>
-                  <input
-                    value={settingsForm.logoValue}
-                    onChange={(e) => setSettingsForm((prev) => ({ ...prev, logoValue: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
-                    placeholder="https://..."
-                  />
-                </div>
-              )}
+                ) : (
+                  <p className="mt-2 text-xs text-gray-500">No logo selected. Import an image to set your training logo.</p>
+                )}
+              </div>
             </div>
 
             <div className="mt-5 flex items-center justify-end gap-2">
