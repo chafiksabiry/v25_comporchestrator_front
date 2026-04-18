@@ -712,7 +712,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         return (
                           <div
                           key={formatted.id}
-                          className="group relative overflow-hidden rounded-3xl border-2 border-gray-100 bg-white p-0 transition-all duration-500 hover:-translate-y-1 hover:border-harx-300 hover:shadow-xl hover:shadow-harx-500/10"
+                          className="group relative overflow-hidden rounded-[26px] border border-[#f2d8e1] bg-white/95 p-0 shadow-[0_10px_24px_rgba(25,35,60,0.08)] transition-all duration-500 hover:-translate-y-1 hover:border-harx-300 hover:shadow-[0_18px_34px_rgba(244,63,94,0.15)]"
                           >
                           {trainingBgImage ? (
                             <>
@@ -727,26 +727,26 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                           <div className="relative z-10 p-5">
                             <div className="mb-4 flex items-start justify-between gap-3">
                               <div className="flex items-start space-x-3">
-                                <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${formatted.status === 'completed' ? 'bg-green-100 text-green-600' :
+                                <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm ${formatted.status === 'completed' ? 'bg-green-100 text-green-600' :
                                   formatted.status === 'in_progress' ? 'bg-gradient-harx text-white shadow-lg shadow-harx-500/25' : 'bg-harx-50 text-harx-500'
                                   }`}>
                                   {formatted.status === 'completed' ? <CheckCircle className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                                 </div>
                                 <div>
                                   <div className="flex items-start gap-2">
-                                    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-harx-50 text-harx-600 ring-1 ring-harx-100">
+                                    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-white/85 text-harx-600 ring-1 ring-harx-100">
                                       {renderTrainingLogo(formatted.trainingLogo)}
                                     </span>
-                                    <h3 className="line-clamp-2 text-base font-bold leading-snug text-gray-900 transition-colors group-hover:text-harx-700">
+                                    <h3 className="line-clamp-2 text-[22px] font-black leading-[1.05] text-gray-900 transition-colors group-hover:text-harx-700">
                                       {formatted.title}
                                     </h3>
                                   </div>
-                                  <p className="mt-1 line-clamp-2 text-sm text-gray-500">
+                                  <p className="mt-1 line-clamp-2 text-sm font-medium text-gray-500">
                                     {formatted.description}
                                   </p>
                                 </div>
                               </div>
-                              <span className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[11px] font-bold ${formatted.status === 'completed'
+                              <span className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[11px] font-bold shadow-sm ${formatted.status === 'completed'
                                 ? 'bg-green-100 text-green-700'
                                 : formatted.status === 'in_progress'
                                   ? 'bg-yellow-100 text-yellow-800'
@@ -756,16 +756,16 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               </span>
                             </div>
                             <div className="mb-4 grid grid-cols-2 gap-2">
-                              <div className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600">
+                              <div className="rounded-xl border border-gray-100 bg-white/90 px-3 py-2 text-xs font-semibold text-gray-600 shadow-sm backdrop-blur">
                                 <Clock className="mr-1.5 inline h-3.5 w-3.5 text-harx-500" />
                                 {formatted.duration}
                               </div>
-                              <div className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600">
+                              <div className="rounded-xl border border-gray-100 bg-white/90 px-3 py-2 text-xs font-semibold text-gray-600 shadow-sm backdrop-blur">
                                 <FileText className="mr-1.5 inline h-3.5 w-3.5 text-harx-alt-500" />
                                 {formatted.modulesCount} modules
                               </div>
                             </div>
-                            <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center justify-between gap-3 border-t border-white/70 pt-3">
                               <button
                                 type="button"
                                 onClick={() => handleViewPresentation(formatted.presentationUrl, formatted.id, journey)}
@@ -790,7 +790,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                   type="button"
                                   onClick={() => openTrainingSettings(journey)}
                                   disabled={loadingPresentation || deletingJourneyId === formatted.id}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-harx-200 text-harx-700 hover:bg-harx-50 disabled:opacity-50"
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-harx-200 bg-white/85 text-harx-700 shadow-sm hover:bg-harx-50 disabled:opacity-50"
                                   title="Training settings"
                                 >
                                   <Settings className="h-4 w-4" />
@@ -799,7 +799,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                   type="button"
                                   onClick={() => handleDeleteJourney(journey)}
                                   disabled={loadingPresentation || deletingJourneyId === formatted.id}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-white/85 text-rose-600 shadow-sm hover:bg-rose-50 disabled:opacity-50"
                                   title="Delete training"
                                 >
                                   {deletingJourneyId === formatted.id ? (
