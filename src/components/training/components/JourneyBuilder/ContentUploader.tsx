@@ -1651,6 +1651,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const stripStyleBlueprint = (rawText: string): string =>
       String(rawText || '').replace(/<harx-style>[\s\S]*?<\/harx-style>/gi, '').trim();
 
+    const extractHtmlBundle = (rawText: string): string | null => {
+      const match = String(rawText || '').match(/<harx-html>([\s\S]*?)<\/harx-html>/i);
+      if (!match?.[1]) return null;
+      const html = match[1].trim();
+      return html.length > 0 ? html : null;
+    };
+
     const stripResourceSections = (rawText: string): string => {
       const lines = String(rawText || '').split('\n');
       const blockHeader = /^(supports?\s*(et|&)\s*ressources?|documents?\s+fournis|[ée]quipement\s+n[ée]cessaire)\s*:?\s*$/i;
@@ -2240,6 +2247,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         <div className="max-w-[88%]">
                           <div className="max-w-none text-[#1f1d18]">
                             {(() => {
+                              const htmlBundle = extractHtmlBundle(msg.text);
+                              if (htmlBundle) {
+                                return (
+                                  <div className="my-2 overflow-hidden rounded-2xl border border-harx-200 bg-white">
+                                    <iframe
+                                      title={`assistant-html-${msg.id}`}
+                                      srcDoc={htmlBundle}
+                                      className="h-[560px] w-full border-0"
+                                      sandbox="allow-scripts"
+                                    />
+                                  </div>
+                                );
+                              }
                               const textWithoutStyle = stripResourceSections(stripStyleBlueprint(msg.text));
                               const styleBlueprint = extractStyleBlueprint(msg.text);
                               const hasStyleBlueprint = /<harx-style>[\s\S]*?<\/harx-style>/i.test(String(msg.text || ''));
