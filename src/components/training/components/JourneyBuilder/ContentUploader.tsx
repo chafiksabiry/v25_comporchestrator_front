@@ -1694,6 +1694,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           .replace(/\*\*(.*?)\*\*/g, '$1')
           .replace(/__(.*?)__/g, '$1')
           .replace(/`([^`]+)`/g, '$1')
+          .replace(/^#+\s*/, '')
           .trim();
 
       const result = {
@@ -2241,6 +2242,37 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             {(() => {
                               const textWithoutStyle = stripResourceSections(stripStyleBlueprint(msg.text));
                               const styleBlueprint = extractStyleBlueprint(msg.text);
+                              const hasStyleBlueprint = /<harx-style>[\s\S]*?<\/harx-style>/i.test(String(msg.text || ''));
+                              if (!hasStyleBlueprint) {
+                                return (
+                                  <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                      h1: ({ children }) => <h3 className="mb-3 mt-1 text-[24px] font-semibold text-[#1b1914]">{children}</h3>,
+                                      h2: ({ children }) => <h4 className="mb-2 mt-3 text-[20px] font-semibold text-[#1b1914]">{children}</h4>,
+                                      h3: ({ children }) => <h5 className="mb-2 mt-2 text-[17px] font-semibold text-[#1b1914]">{children}</h5>,
+                                      p: ({ children }) => <p className="my-2 text-[16px] leading-7 text-[#1f1d18]">{children}</p>,
+                                      ul: ({ children }) => <ul className="my-2 list-disc space-y-1 pl-6 text-[16px] leading-7 text-[#1f1d18]">{children}</ul>,
+                                      ol: ({ children }) => <ol className="my-2 list-decimal space-y-1 pl-6 text-[16px] leading-7 text-[#1f1d18]">{children}</ol>,
+                                      table: ({ children }) => (
+                                        <div className="my-4 overflow-x-auto rounded-xl border border-[#e8e2d2]">
+                                          <table className="min-w-full border-collapse bg-white">{children}</table>
+                                        </div>
+                                      ),
+                                      thead: ({ children }) => <thead className="bg-[#f6f3ea]">{children}</thead>,
+                                      tbody: ({ children }) => <tbody className="divide-y divide-[#e8e2d2]">{children}</tbody>,
+                                      tr: ({ children }) => <tr className="align-top">{children}</tr>,
+                                      th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-[#1f1d18]">{children}</th>,
+                                      td: ({ children }) => <td className="px-3 py-2 text-sm text-[#1f1d18]">{children}</td>,
+                                      li: ({ children }) => <li>{children}</li>,
+                                      strong: ({ children }) => <strong className="font-semibold text-[#1b1914]">{children}</strong>,
+                                      code: ({ children }) => <code className="rounded bg-[#f3f2ec] px-1 py-0.5 text-[14px] text-[#2b271f]">{children}</code>,
+                                    }}
+                                  >
+                                    {textWithoutStyle}
+                                  </ReactMarkdown>
+                                );
+                              }
                               const parsed = parseTrainingPlan(textWithoutStyle);
                               const hasDesignedPlan = parsed.modules.length >= 2;
 
@@ -2458,14 +2490,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                           module.bullets.length > 0
                                             ? `\nPoints du module:\n- ${module.bullets.slice(0, 4).join('\n- ')}`
                                             : '';
-                                        const ask = `Cree une sequence de slides pour ${module.title}, avec ce format:
-Slide 1: Objectif + contexte
-Slide 2: Concepts cles
-Slide 3: Cas pratique
-Slide 4: Quiz de validation
-Ajoute autant de slides que necessaire selon le contenu.
-Pour chaque slide: titre, points concrets, timing (minutes), et transition vers la slide suivante.
-Conserve la duree totale du module.${moduleSummary}`;
+                                        const ask = `Detaille le module "${module.title}" sous forme de reponse de formation normale.
+Donne une explication pedagogique claire avec objectifs, contenu, activites pratiques et evaluation.
+Conserve la duree totale du module et propose une repartition en etapes simples.
+N'utilise pas de format slides (pas de "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                                         void sendChatMessage(ask);
                                       }}
                                       className={`w-full border px-3 py-2 text-left transition-all duration-150 hover:-translate-y-[1px] hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${moduleShapeClass}`}
