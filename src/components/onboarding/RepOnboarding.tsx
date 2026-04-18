@@ -746,14 +746,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                   </p>
                                 </div>
                               </div>
-                              <span className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[11px] font-bold shadow-sm ${formatted.status === 'completed'
-                                ? 'bg-green-100 text-green-700'
-                                : formatted.status === 'in_progress'
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-gray-100 text-gray-700'
-                                }`}>
-                                {formatted.status === 'completed' ? 'Completed' : formatted.status === 'in_progress' ? 'In Progress' : 'New'}
-                              </span>
                             </div>
                             <div className="mb-4 grid grid-cols-2 gap-2">
                               <div className="rounded-xl border border-gray-100 bg-white/90 px-3 py-2 text-xs font-semibold text-gray-600 shadow-sm backdrop-blur">
