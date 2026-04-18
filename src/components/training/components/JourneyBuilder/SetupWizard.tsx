@@ -10,6 +10,7 @@ import { OnboardingService } from '../../infrastructure/services/OnboardingServi
 import GigSelector from '../Dashboard/GigSelector';
 import TrainingDetailsForm from './TrainingDetailsForm';
 import { scrollJourneyMainToTop } from './journeyScroll';
+import { cloudinaryService } from '../../lib/cloudinaryService';
 
 interface SetupWizardProps {
   onComplete: (company: Company, journey: TrainingJourney, methodology?: TrainingMethodology, gigId?: string) => void;
@@ -38,6 +39,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const industryMenuRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 0 });
   const [setupSummaryModulesExpanded, setSetupSummaryModulesExpanded] = useState(false);
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
 
   useEffect(() => {
     if (currentStep !== 5) setSetupSummaryModulesExpanded(false);
@@ -135,10 +138,11 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     { id: 2, label: 'Vision' },
     { id: 3, label: 'Team' },
     { id: 4, label: 'Methodology' },
+    { id: 5, label: 'Thumbnail' },
   ];
 
   const handleNext = () => {
-    if (currentStep === 5) {
+    if (currentStep === 6) {
       const realCompanyId = OnboardingService.getCompanyId();
       if (!realCompanyId) { alert('Internal Error: Company ID not found.'); return; }
       const completeCompany: Company = { id: realCompanyId, name: companyData?.name || companyData?.data?.name || company.name || '', industry: company.industry || '', size: company.size || 'medium', setupComplete: true };
@@ -157,8 +161,16 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         createdAt: new Date().toISOString(),
         estimatedDuration: trainingDetails?.estimatedDuration || journey.estimatedDuration || '1 hour total setup',
         targetRoles: journey.targetRoles || [],
+        trainingLogo: thumbnailUrl
+          ? {
+              type: 'image',
+              value: thumbnailUrl
+            }
+          : undefined,
       };
       onComplete(completeCompany, completeJourney, selectedMethodology || undefined, selectedGig?._id);
+    } else if (currentStep === 5) {
+      setCurrentStep(6);
     } else if (currentStep === 4 && selectedMethodology) {
       setCurrentStep(5);
     } else if (currentStep === 3) {
@@ -196,6 +208,19 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const handleMethodologyApply = (m: TrainingMethodology) => { setSelectedMethodology(m); setShowMethodologyBuilder(false); setCurrentStep(5); };
   const handleCustomMethodology = () => { setCurrentStep(5); };
 
+  const handleThumbnailUpload = async (file: File) => {
+    try {
+      setThumbnailUploading(true);
+      const uploaded = await cloudinaryService.uploadImage(file, 'trainings/thumbnails');
+      setThumbnailUrl(uploaded.secureUrl || uploaded.url);
+    } catch (error: any) {
+      console.error('[SetupWizard] Failed thumbnail upload:', error);
+      alert(error?.message || 'Could not upload thumbnail.');
+    } finally {
+      setThumbnailUploading(false);
+    }
+  };
+
   if (showMethodologyBuilder) {
     return <MethodologyBuilder onApplyMethodology={handleMethodologyApply} selectedIndustry={company.industry} />;
   }
@@ -206,15 +231,17 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       case 2: return trainingDetails !== null;
       case 3: return journey.targetRoles && journey.targetRoles.length > 0;
       case 4: return selectedMethodology !== null;
-      case 5: return true;
+      case 5: return !!thumbnailUrl && !thumbnailUploading;
+      case 6: return true;
       default: return true;
     }
   };
 
-  const stepNum = currentStep > 4 ? 4 : currentStep;
+  const stepNum = currentStep > 5 ? 5 : currentStep;
   const isStep2 = currentStep === 2;
   const isStep4 = currentStep === 4;
   const isStep5 = currentStep === 5;
+  const isStep6 = currentStep === 6;
 
   const formatVisionDuration = (raw: string | undefined) => {
     if (!raw) return null;
@@ -236,7 +263,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
           {steps.map((step, i) => {
             const done = currentStep > step.id;
-            const active = currentStep === step.id || (currentStep === 5 && step.id === 4);
+            const active = currentStep === step.id || (currentStep === 6 && step.id === 5);
             return (
               <Fragment key={step.id}>
                 <button
@@ -489,6 +516,85 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           )}
 
           {isStep5 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ textAlign: 'center' }}>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#111827', margin: 0 }}>
+                  Upload training thumbnail
+                </h3>
+                <p style={{ fontSize: 12, color: '#6b7280', marginTop: 6 }}>
+                  Add a miniature image for your training card.
+                </p>
+              </div>
+
+              <div style={{ border: '1px dashed #fecaca', borderRadius: 12, padding: 16, background: '#fffafa' }}>
+                <input
+                  id="training-thumbnail-input"
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void handleThumbnailUpload(file);
+                    e.currentTarget.value = '';
+                  }}
+                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                  <label
+                    htmlFor="training-thumbnail-input"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      border: '1px solid #fecaca',
+                      background: '#fff',
+                      color: HARX,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: thumbnailUploading ? 'not-allowed' : 'pointer',
+                      opacity: thumbnailUploading ? 0.6 : 1
+                    }}
+                  >
+                    {thumbnailUploading ? <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} /> : null}
+                    {thumbnailUploading ? 'Uploading...' : 'Import thumbnail'}
+                  </label>
+                  {thumbnailUrl ? (
+                    <button
+                      type="button"
+                      onClick={() => setThumbnailUrl('')}
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: 8,
+                        border: '1px solid #e5e7eb',
+                        background: '#fff',
+                        color: '#6b7280',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
+
+                {thumbnailUrl ? (
+                  <div style={{ border: '1px solid #fee2e2', borderRadius: 10, background: '#fff', padding: 8, width: 'fit-content' }}>
+                    <img
+                      src={thumbnailUrl}
+                      alt="Training thumbnail"
+                      style={{ width: 240, height: 140, objectFit: 'cover', borderRadius: 8 }}
+                    />
+                  </div>
+                ) : (
+                  <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>No thumbnail uploaded yet.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {isStep6 && (
             <div
               style={{
                 flex: 1,
@@ -712,7 +818,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               <ArrowLeft style={{ width: 14, height: 14 }} />
               Back
             </button>
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Vision {visionSubStep + 1}/2 · Step 2 of 4</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af' }}>Vision {visionSubStep + 1}/2 · Step 2 of 5</span>
             <button
               type="button"
               onClick={handleVisionFooterContinue}
@@ -761,7 +867,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 boxShadow: isStepValid() ? '0 2px 8px rgba(255,77,77,0.25)' : 'none',
               }}
             >
-              {currentStep === 5 ? 'Start building' : 'Continue'}
+              {currentStep === 6 ? 'Start building' : 'Continue'}
               <ArrowRight style={{ width: 14, height: 14 }} />
             </button>
           </>
