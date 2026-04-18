@@ -2423,7 +2423,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                           module.bullets.length > 0
                                             ? `\nPoints du module:\n- ${module.bullets.slice(0, 4).join('\n- ')}`
                                             : '';
-                                        const ask = `Detaille ${module.title} avec objectifs, contenu pedagogique, activites pratiques, quiz, et duree precise.${moduleSummary}`;
+                                        const ask = `Cree une sequence de slides pour ${module.title}, avec ce format:
+Slide 1: Objectif + contexte
+Slide 2: Concepts cles
+Slide 3: Cas pratique
+Slide 4: Quiz de validation
+Ajoute autant de slides que necessaire selon le contenu.
+Pour chaque slide: titre, points concrets, timing (minutes), et transition vers la slide suivante.
+Conserve la duree totale du module.${moduleSummary}`;
                                         void sendChatMessage(ask);
                                       }}
                                       className={`w-full border px-3 py-2 text-left transition-all duration-150 hover:-translate-y-[1px] hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${moduleShapeClass}`}
