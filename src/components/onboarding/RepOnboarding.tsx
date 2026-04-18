@@ -8,10 +8,9 @@ import {
   FileText,
   Clock,
   Play,
-  MessageSquare,
+  Settings,
   RefreshCw,
   Plus,
-  Pencil,
   Trash2
 } from 'lucide-react';
 
@@ -611,9 +610,14 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                   {formatted.status === 'completed' ? <CheckCircle className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                                 </div>
                                 <div>
-                                  <h3 className="line-clamp-2 text-base font-bold leading-snug text-gray-900 transition-colors group-hover:text-harx-700">
-                                    {formatted.title}
-                                  </h3>
+                                  <div className="flex items-start gap-2">
+                                    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-harx-50 text-harx-600 ring-1 ring-harx-100">
+                                      <BookOpen className="h-3 w-3" />
+                                    </span>
+                                    <h3 className="line-clamp-2 text-base font-bold leading-snug text-gray-900 transition-colors group-hover:text-harx-700">
+                                      {formatted.title}
+                                    </h3>
+                                  </div>
                                   <p className="mt-1 line-clamp-2 text-sm text-gray-500">
                                     {formatted.description}
                                   </p>
@@ -661,29 +665,18 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               <div className="flex items-center gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => setShowTraining({ isOpen: true, newJourney: true, journeyId: formatted.id })}
-                                  disabled={loadingPresentation || deletingJourneyId === formatted.id}
-                                  className="inline-flex items-center gap-1 rounded-lg border border-harx-200 px-2.5 py-2 text-xs font-semibold text-harx-700 hover:bg-harx-50 disabled:opacity-50"
-                                  title="Open chat"
-                                >
-                                  <MessageSquare className="h-3.5 w-3.5" />
-                                  <span>Chat</span>
-                                </button>
-                                <button
-                                  type="button"
                                   onClick={() => handleViewPresentation(formatted.presentationUrl, formatted.id, journey, true)}
                                   disabled={loadingPresentation || deletingJourneyId === formatted.id}
-                                  className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-2 text-xs font-semibold text-gray-600 hover:border-harx-200 hover:text-harx-700 disabled:opacity-50"
-                                  title="Edit training"
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-harx-200 text-harx-700 hover:bg-harx-50 disabled:opacity-50"
+                                  title="Training settings"
                                 >
-                                  <Pencil className="h-3.5 w-3.5" />
-                                  <span>Edit</span>
+                                  <Settings className="h-4 w-4" />
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteJourney(journey)}
                                   disabled={loadingPresentation || deletingJourneyId === formatted.id}
-                                  className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-2.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
                                   title="Delete training"
                                 >
                                   {deletingJourneyId === formatted.id ? (
@@ -691,7 +684,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                   ) : (
                                     <Trash2 className="h-3.5 w-3.5" />
                                   )}
-                                  <span>Delete</span>
                                 </button>
                               </div>
                             </div>
