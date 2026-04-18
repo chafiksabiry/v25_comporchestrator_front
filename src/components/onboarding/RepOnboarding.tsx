@@ -519,14 +519,32 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               </h1>
               <p className="mt-1 text-sm font-medium text-gray-500">Complete your setup and start your journey</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowTraining({ isOpen: true, newJourney: true })}
-              className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-harx px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-harx-500/20 transition-all hover:-translate-y-0.5 hover:shadow-harx-500/40 sm:w-auto"
-            >
-              <Plus className="h-4 w-4" />
-              <span>New training journey</span>
-            </button>
+            <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-gray-500">Gig:</span>
+                <select
+                  id="gig-filter-dropdown"
+                  value={filterGigId}
+                  onChange={(e) => setFilterGigId(e.target.value)}
+                  className="min-w-[170px] rounded-xl border-2 border-gray-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+                >
+                  <option value="all">Tous les Gigs</option>
+                  {companyGigs.map((gig: any) => (
+                    <option key={gig._id || gig.id} value={gig._id || gig.id}>
+                      {gig.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTraining({ isOpen: true, newJourney: true })}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-harx px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-harx-500/20 transition-all hover:-translate-y-0.5 hover:shadow-harx-500/40 sm:w-auto"
+              >
+                <Plus className="h-4 w-4" />
+                <span>New training journey</span>
+              </button>
+            </div>
           </div>
         </header>
 
@@ -538,33 +556,15 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               <div className="absolute top-0 right-0 h-64 w-64 rounded-full bg-harx-50/40 blur-[100px] -mr-32 -mt-32" />
               <div className="h-1 w-full bg-gradient-harx" aria-hidden />
               <div className="relative z-10 p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
                     <div className="flex items-center space-x-3">
                       <div className="rounded-2xl bg-gradient-harx p-3 text-white shadow-lg shadow-harx-500/30">
                         <BookOpen className="h-6 w-6" />
                       </div>
                       <div>
-                        <h2 className="text-2xl font-black tracking-tight text-gray-900">Training & Certification</h2>
+                        <h2 className="text-2xl font-black tracking-tight text-gray-900">Training</h2>
                         <p className="text-sm font-medium text-gray-500">Skills development and validation</p>
                       </div>
-                    </div>
-
-                    {/* Gig Filter Dropdown */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-black uppercase tracking-wider text-gray-500">Gig:</span>
-                      <select
-                        id="gig-filter-dropdown"
-                        value={filterGigId}
-                        onChange={(e) => setFilterGigId(e.target.value)}
-                        className="rounded-xl border-2 border-gray-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
-                      >
-                        <option value="all">Tous les Gigs</option>
-                        {companyGigs.map((gig: any) => (
-                          <option key={gig._id || gig.id} value={gig._id || gig.id}>
-                            {gig.title}
-                          </option>
-                        ))}
-                      </select>
                     </div>
                   </div>
 
