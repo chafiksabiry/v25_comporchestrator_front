@@ -1678,118 +1678,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
       return filtered.join('\n').replace(/\n{3,}/g, '\n\n').trim();
     };
 
-    const parseDetailedModuleContent = (rawText: string): {
-      reminder?: string;
-      moduleHeader?: string;
-      intro: string[];
-      sections: Array<{ title: string; lines: string[] }>;
-    } => {
-      const lines = String(rawText || '')
-        .split('\n')
-        .map((line) => line.trim())
-        .filter(Boolean);
-
-      const clean = (v: string) =>
-        v
-          .replace(/\*\*(.*?)\*\*/g, '$1')
-          .replace(/__(.*?)__/g, '$1')
-          .replace(/`([^`]+)`/g, '$1')
-          .replace(/^#+\s*/, '')
-          .trim();
-
-      const result = {
-        reminder: undefined as string | undefined,
-        moduleHeader: undefined as string | undefined,
-        intro: [] as string[],
-        sections: [] as Array<{ title: string; lines: string[] }>,
-      };
-
-      let currentSection: { title: string; lines: string[] } | null = null;
-      const sectionHeaderPattern =
-        /^(objectifs?\s+sp[ée]cifiques?|partie\s*\d+\s*:?.*|activit[ée]\s+pratique.*|[ée]valuation.*|consigne|travail\s+[àa]\s+r[ée]aliser.*)$/i;
-
-      for (const raw of lines) {
-        const line = clean(raw);
-        if (!line) continue;
-
-        if (!result.reminder && /^rappel\s*[—:-]/i.test(line)) {
-          result.reminder = line;
-          continue;
-        }
-
-        if (!result.moduleHeader && /^module\s+\d+\s*[:\-]/i.test(line)) {
-          result.moduleHeader = line;
-          continue;
-        }
-
-        if (sectionHeaderPattern.test(line)) {
-          if (currentSection) result.sections.push(currentSection);
-          currentSection = { title: line, lines: [] };
-          continue;
-        }
-
-        if (currentSection) {
-          currentSection.lines.push(line);
-        } else {
-          result.intro.push(line);
-        }
-      }
-
-      if (currentSection) result.sections.push(currentSection);
-      return result;
-    };
-
-    const parseShowcaseTrainingCard = (rawText: string): {
-      title?: string;
-      subtitle?: string;
-      paragraphs: string[];
-      bullets: string[];
-    } | null => {
-      const clean = (v: string) =>
-        String(v || '')
-          .replace(/\*\*(.*?)\*\*/g, '$1')
-          .replace(/__(.*?)__/g, '$1')
-          .replace(/`([^`]+)`/g, '$1')
-          .replace(/^#+\s*/, '')
-          .trim();
-
-      const lines = String(rawText || '')
-        .split('\n')
-        .map((line) => clean(line))
-        .filter(Boolean)
-        .filter((line) => !/^rappel\s*[—:-]/i.test(line))
-        .filter((line) => !/^module\s+\d+\s*[:\-]/i.test(line));
-
-      if (lines.length < 4) return null;
-
-      const title = lines[0];
-      if (!title || title.length < 8) return null;
-
-      let cursor = 1;
-      let subtitle: string | undefined;
-      if (
-        lines[cursor] &&
-        !/^[-•*]\s+/.test(lines[cursor]) &&
-        !/^\d+\.\s+/.test(lines[cursor]) &&
-        lines[cursor].length <= 90
-      ) {
-        subtitle = lines[cursor];
-        cursor += 1;
-      }
-
-      const paragraphs: string[] = [];
-      const bullets: string[] = [];
-      for (let i = cursor; i < lines.length; i += 1) {
-        const line = lines[i];
-        if (/^[-•*]\s+/.test(line) || /^\d+\.\s+/.test(line)) {
-          bullets.push(line.replace(/^[-•*]\s+/, '').trim());
-          continue;
-        }
-        if (line.length > 2) paragraphs.push(line);
-      }
-
-      if (bullets.length < 3) return null;
-      return { title, subtitle, paragraphs: paragraphs.slice(0, 2), bullets: bullets.slice(0, 8) };
+    const stripPromptEcho = (rawText: string): string => {
+      const lines = String(rawText || '').split('\n');
+      const instructionLine =
+        /^(d[ée]taille\s+le\s+module|donne\s+une\s+explication\s+p[ée]dagogique|conserve\s+la\s+dur[ée]e|n['’]utilise\s+pas\s+de\s+format\s+slides|points\s+du\s+module)/i;
+      const cleaned = lines.filter((line) => !instructionLine.test(line.trim()));
+      return cleaned.join('\n').replace(/\n{3,}/g, '\n\n').trim();
     };
 
     const handleChatSubmit = async () => {
@@ -2240,9 +2134,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         <div className="max-w-[88%]">
                           <div className="max-w-none text-[#1f1d18]">
                             {(() => {
-                              const textWithoutStyle = stripResourceSections(
+                              const textWithoutStyle = stripPromptEcho(stripResourceSections(
                                 stripStyleBlueprint(String(msg.text || '').replace(/<harx-html>[\s\S]*?<\/harx-html>/gi, ''))
-                              );
+                              ));
                               const styleBlueprint = extractStyleBlueprint(msg.text);
                               const hasStyleBlueprint = /<harx-style>[\s\S]*?<\/harx-style>/i.test(String(msg.text || ''));
                               const looksLikeTrainingContent =
@@ -2283,8 +2177,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               const hasDesignedPlan = parsed.modules.length >= 2;
 
                               if (!hasDesignedPlan) {
-                                const detailedModule = parseDetailedModuleContent(textWithoutStyle);
-                                const showcaseCard = parseShowcaseTrainingCard(textWithoutStyle);
                                 const contentTheme = styleBlueprint.contentTheme || {
                                   bodyColor: '#1f1d18',
                                   headingColor: '#181611',
@@ -2302,169 +2194,65 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   badgeBg: '#f0ecdf',
                                   badgeText: '#655b48',
                                 };
-
-                                const canUseShowcaseCard =
-                                  Boolean(showcaseCard) &&
-                                  detailedModule.sections.length === 0 &&
-                                  String(showcaseCard?.title || '').trim().length > 0 &&
-                                  String(showcaseCard?.title || '').trim().length <= 80;
-
-                                if (canUseShowcaseCard && showcaseCard) {
-                                  return (
-                                    <div
-                                      className="relative mb-4 overflow-hidden rounded-[26px] border px-6 py-6"
-                                      style={{ borderColor: contentTheme.panelBorder, backgroundColor: contentTheme.panelBg }}
-                                    >
-                                      <div
-                                        className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full opacity-80"
-                                        style={{ backgroundColor: styleBlueprint.accentColor || contentTheme.badgeBg }}
-                                      />
-                                      <div
-                                        className="pointer-events-none absolute -bottom-10 -left-8 h-24 w-24 rounded-full opacity-70"
-                                        style={{ backgroundColor: contentTheme.badgeBg }}
-                                      />
-
-                                      <h3
-                                        className="relative z-10 text-[30px] font-extrabold leading-[1.08] md:text-[36px] break-words"
-                                        style={{ color: contentTheme.headingColor }}
-                                      >
-                                        {showcaseCard.title}
-                                      </h3>
-
-                                      {showcaseCard.subtitle && (
-                                        <div
-                                          className="relative z-10 mt-3 inline-flex rounded-2xl border px-4 py-1.5 text-[18px] font-semibold"
-                                          style={{
-                                            backgroundColor: contentTheme.badgeBg,
-                                            borderColor: contentTheme.panelBorder,
-                                            color: contentTheme.badgeText,
-                                          }}
-                                        >
-                                          {showcaseCard.subtitle}
-                                        </div>
-                                      )}
-
-                                      {showcaseCard.paragraphs.map((p, idx) => (
-                                        <p key={`showcase-p-${idx}`} className="relative z-10 mt-4 text-[16px] leading-7" style={{ color: contentTheme.bodyColor }}>
-                                          {p}
-                                        </p>
-                                      ))}
-
-                                      <ul className="relative z-10 mt-4 list-disc space-y-1.5 pl-6 text-[16px] leading-7" style={{ color: contentTheme.bodyColor }}>
-                                        {showcaseCard.bullets.map((bullet, idx) => (
-                                          <li key={`showcase-b-${idx}`}>{bullet}</li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  );
-                                }
                                 return (
-                                  <>
-                                    {detailedModule.moduleHeader && (
-                                      <div className="mb-3 rounded-2xl border px-4 py-3" style={{ borderColor: contentTheme.panelBorder, backgroundColor: contentTheme.panelBg }}>
-                                        <div className="text-[16px] font-semibold" style={{ color: contentTheme.headingColor }}>
-                                          {detailedModule.moduleHeader}
+                                  <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                      h1: ({ children }) => (
+                                        <h3 className="mb-3 mt-1 text-[28px] font-semibold tracking-tight" style={{ color: contentTheme.headingColor }}>
+                                          {children}
+                                        </h3>
+                                      ),
+                                      h2: ({ children }) => (
+                                        <h4 className="mb-2 mt-3 text-[22px] font-semibold" style={{ color: contentTheme.headingColor }}>
+                                          {children}
+                                        </h4>
+                                      ),
+                                      h3: ({ children }) => (
+                                        <h5 className="mb-2 mt-2 text-[17px] font-semibold" style={{ color: contentTheme.headingColor }}>
+                                          {children}
+                                        </h5>
+                                      ),
+                                      p: ({ children }) => (
+                                        <p className="my-2 text-[16px] leading-7" style={{ color: contentTheme.bodyColor }}>{children}</p>
+                                      ),
+                                      ul: ({ children }) => (
+                                        <ul className="my-2 list-disc space-y-1 pl-6 text-[16px] leading-7" style={{ color: contentTheme.bodyColor }}>
+                                          {children}
+                                        </ul>
+                                      ),
+                                      ol: ({ children }) => (
+                                        <ol className="my-2 list-decimal space-y-1 pl-6 text-[16px] leading-7" style={{ color: contentTheme.bodyColor }}>
+                                          {children}
+                                        </ol>
+                                      ),
+                                      table: ({ children }) => (
+                                        <div className="my-4 overflow-x-auto rounded-xl border" style={{ borderColor: contentTheme.tableBorder }}>
+                                          <table className="min-w-full border-collapse" style={{ backgroundColor: contentTheme.tableRowBg }}>{children}</table>
                                         </div>
-                                        {detailedModule.intro.length > 0 && (
-                                          <div className="mt-2 inline-flex rounded-xl border px-2.5 py-1 text-[12px] font-semibold" style={{ backgroundColor: contentTheme.badgeBg, borderColor: contentTheme.panelBorder, color: contentTheme.badgeText }}>
-                                            {detailedModule.intro[0]}
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                                    {detailedModule.sections.length > 0 && (
-                                      <div className="mb-4 space-y-3">
-                                        {detailedModule.sections.map((section, idx) => (
-                                          <div
-                                            key={`${section.title}-${idx}`}
-                                            className="rounded-2xl border px-4 py-3"
-                                            style={{ borderColor: contentTheme.panelBorder, backgroundColor: contentTheme.panelBg }}
-                                          >
-                                            <h5 className="mb-2 text-[17px] font-semibold" style={{ color: contentTheme.headingColor }}>
-                                              {section.title}
-                                            </h5>
-                                            <div className="space-y-1">
-                                              {section.lines.map((line, lineIdx) => {
-                                                const numbered = /^\d+\.\s+/.test(line);
-                                                const bullet = /^[-•*]\s+/.test(line);
-                                                const content = line.replace(/^[-•*]\s+/, '');
-                                                if (numbered || bullet) {
-                                                  return (
-                                                    <div key={`${idx}-${lineIdx}`} className="text-[15px] leading-7" style={{ color: contentTheme.bodyColor }}>
-                                                      {line}
-                                                    </div>
-                                                  );
-                                                }
-                                                return (
-                                                  <p key={`${idx}-${lineIdx}`} className="text-[15px] leading-7" style={{ color: contentTheme.bodyColor }}>
-                                                    {content}
-                                                  </p>
-                                                );
-                                              })}
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
-                                    <ReactMarkdown
-                                      remarkPlugins={[remarkGfm]}
-                                      components={{
-                                        h1: ({ children }) => (
-                                          <h3 className="mb-3 mt-1 text-[28px] font-semibold tracking-tight" style={{ color: contentTheme.headingColor }}>
-                                            {children}
-                                          </h3>
-                                        ),
-                                        h2: ({ children }) => (
-                                          <h4 className="mb-2 mt-3 text-[22px] font-semibold" style={{ color: contentTheme.headingColor }}>
-                                            {children}
-                                          </h4>
-                                        ),
-                                        h3: ({ children }) => (
-                                          <h5 className="mb-2 mt-2 text-[17px] font-semibold" style={{ color: contentTheme.headingColor }}>
-                                            {children}
-                                          </h5>
-                                        ),
-                                        p: ({ children }) => (
-                                          <p className="my-2 text-[16px] leading-7" style={{ color: contentTheme.bodyColor }}>{children}</p>
-                                        ),
-                                        ul: ({ children }) => (
-                                          <ul className="my-2 list-disc space-y-1 pl-6 text-[16px] leading-7" style={{ color: contentTheme.bodyColor }}>
-                                            {children}
-                                          </ul>
-                                        ),
-                                        ol: ({ children }) => (
-                                          <ol className="my-2 list-decimal space-y-1 pl-6 text-[16px] leading-7" style={{ color: contentTheme.bodyColor }}>
-                                            {children}
-                                          </ol>
-                                        ),
-                                        table: ({ children }) => (
-                                          <div className="my-4 overflow-x-auto rounded-xl border" style={{ borderColor: contentTheme.tableBorder }}>
-                                            <table className="min-w-full border-collapse" style={{ backgroundColor: contentTheme.tableRowBg }}>{children}</table>
-                                          </div>
-                                        ),
-                                        thead: ({ children }) => <thead style={{ backgroundColor: contentTheme.tableHeaderBg }}>{children}</thead>,
-                                        tbody: ({ children }) => <tbody className="divide-y" style={{ borderColor: contentTheme.tableBorder }}>{children}</tbody>,
-                                        tr: ({ children }) => <tr className="align-top">{children}</tr>,
-                                        th: ({ children }) => (
-                                          <th className="px-3 py-2 text-left text-sm font-semibold" style={{ color: contentTheme.tableHeaderText }}>{children}</th>
-                                        ),
-                                        td: ({ children }) => (
-                                          <td className="px-3 py-2 text-sm" style={{ color: contentTheme.bodyColor }}>{children}</td>
-                                        ),
-                                        li: ({ children }) => <li>{children}</li>,
-                                        strong: ({ children }) => (
-                                          <strong className="font-semibold" style={{ color: contentTheme.headingColor }}>{children}</strong>
-                                        ),
-                                        code: ({ children }) => (
-                                          <code className="rounded bg-[#f3f2ec] px-1 py-0.5 text-[14px] text-[#2b271f]">
-                                            {children}
-                                          </code>
-                                        ),
-                                      }}
-                                    >
-                                      {textWithoutStyle}
-                                    </ReactMarkdown>
-                                  </>
+                                      ),
+                                      thead: ({ children }) => <thead style={{ backgroundColor: contentTheme.tableHeaderBg }}>{children}</thead>,
+                                      tbody: ({ children }) => <tbody className="divide-y" style={{ borderColor: contentTheme.tableBorder }}>{children}</tbody>,
+                                      tr: ({ children }) => <tr className="align-top">{children}</tr>,
+                                      th: ({ children }) => (
+                                        <th className="px-3 py-2 text-left text-sm font-semibold" style={{ color: contentTheme.tableHeaderText }}>{children}</th>
+                                      ),
+                                      td: ({ children }) => (
+                                        <td className="px-3 py-2 text-sm" style={{ color: contentTheme.bodyColor }}>{children}</td>
+                                      ),
+                                      li: ({ children }) => <li>{children}</li>,
+                                      strong: ({ children }) => (
+                                        <strong className="font-semibold" style={{ color: contentTheme.headingColor }}>{children}</strong>
+                                      ),
+                                      code: ({ children }) => (
+                                        <code className="rounded bg-[#f3f2ec] px-1 py-0.5 text-[14px] text-[#2b271f]">
+                                          {children}
+                                        </code>
+                                      ),
+                                    }}
+                                  >
+                                    {textWithoutStyle}
+                                  </ReactMarkdown>
                                 );
                               }
 
