@@ -43,6 +43,22 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [openClaudeEditorOnPreview, setOpenClaudeEditorOnPreview] = useState(false);
   const [loadingPresentation, setLoadingPresentation] = useState(false);
   const [deletingJourneyId, setDeletingJourneyId] = useState<string | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [settingsJourney, setSettingsJourney] = useState<any | null>(null);
+  const [settingsForm, setSettingsForm] = useState<{
+    title: string;
+    description: string;
+    status: string;
+    logoType: 'icon' | 'image';
+    logoValue: string;
+  }>({
+    title: '',
+    description: '',
+    status: 'draft',
+    logoType: 'icon',
+    logoValue: 'book-open',
+  });
 
   // Helper function to format training journey data for display
   const asUiString = (v: unknown, fallback: string): string => {
@@ -103,6 +119,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     'chart': BarChart3,
     'laptop': Laptop,
   };
+  const logoOptions = Object.keys(logoIconByKey);
 
   const renderTrainingLogo = (logo: any) => {
     const type = String(logo?.type || 'icon').toLowerCase();
@@ -118,6 +135,57 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     }
     const IconComp = logoIconByKey[value] || BookOpen;
     return <IconComp className="h-3 w-3" />;
+  };
+
+  const openTrainingSettings = (journey: any) => {
+    const status = String(journey?.status || 'draft');
+    const logoType = String(journey?.trainingLogo?.type || 'icon').toLowerCase() === 'image' ? 'image' : 'icon';
+    const logoValue = String(journey?.trainingLogo?.value || (logoType === 'icon' ? 'book-open' : '')).trim();
+    setSettingsJourney(journey);
+    setSettingsForm({
+      title: asUiString(journey?.title ?? journey?.name, ''),
+      description: asUiString(journey?.description, ''),
+      status: ['draft', 'rehearsal', 'active', 'completed', 'archived'].includes(status) ? status : 'draft',
+      logoType,
+      logoValue,
+    });
+    setIsSettingsOpen(true);
+  };
+
+  const handleSaveTrainingSettings = async () => {
+    const journeyId = String(settingsJourney?._id || settingsJourney?.id || '');
+    if (!journeyId) return;
+    if (!settingsForm.title.trim()) {
+      window.alert('Title is required.');
+      return;
+    }
+    try {
+      setIsSavingSettings(true);
+      const trainingBackendUrl = getTrainingBackendUrl();
+      const baseUrl = trainingBackendUrl.endsWith('/api')
+        ? trainingBackendUrl
+        : `${trainingBackendUrl}/api`;
+
+      const payload = {
+        title: settingsForm.title.trim(),
+        name: settingsForm.title.trim(),
+        description: settingsForm.description.trim(),
+        status: settingsForm.status,
+        trainingLogo: {
+          type: settingsForm.logoType,
+          value: settingsForm.logoValue.trim() || (settingsForm.logoType === 'icon' ? 'book-open' : ''),
+        },
+      };
+      await axios.put(`${baseUrl}/training_journeys/${journeyId}`, payload);
+      setIsSettingsOpen(false);
+      setSettingsJourney(null);
+      await fetchCompanyTrainings();
+    } catch (error) {
+      console.error('[RepOnboarding] Failed to save training settings:', error);
+      window.alert('Could not save training settings. Please try again.');
+    } finally {
+      setIsSavingSettings(false);
+    }
   };
 
   const handleViewPresentation = async (
@@ -696,7 +764,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               <div className="flex items-center gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => handleViewPresentation(formatted.presentationUrl, formatted.id, journey, true)}
+                                  onClick={() => openTrainingSettings(journey)}
                                   disabled={loadingPresentation || deletingJourneyId === formatted.id}
                                   className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-harx-200 text-harx-700 hover:bg-harx-50 disabled:opacity-50"
                                   title="Training settings"
@@ -732,6 +800,143 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           </>
         )}
       </div>
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-xl rounded-2xl border border-harx-100 bg-white p-5 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-black text-gray-900">Training settings</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  if (isSavingSettings) return;
+                  setIsSettingsOpen(false);
+                  setSettingsJourney(null);
+                }}
+                className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">Title</label>
+                <input
+                  value={settingsForm.title}
+                  onChange={(e) => setSettingsForm((prev) => ({ ...prev, title: e.target.value }))}
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+                  placeholder="Training title"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">Description</label>
+                <textarea
+                  value={settingsForm.description}
+                  onChange={(e) => setSettingsForm((prev) => ({ ...prev, description: e.target.value }))}
+                  rows={3}
+                  className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+                  placeholder="Training description"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">Status</label>
+                  <select
+                    value={settingsForm.status}
+                    onChange={(e) => setSettingsForm((prev) => ({ ...prev, status: e.target.value }))}
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="rehearsal">Rehearsal</option>
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                    <option value="archived">Archived</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">Logo type</label>
+                  <select
+                    value={settingsForm.logoType}
+                    onChange={(e) =>
+                      setSettingsForm((prev) => ({
+                        ...prev,
+                        logoType: (e.target.value === 'image' ? 'image' : 'icon') as 'icon' | 'image',
+                        logoValue: e.target.value === 'image' ? '' : (prev.logoValue || 'book-open'),
+                      }))
+                    }
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+                  >
+                    <option value="icon">Icon</option>
+                    <option value="image">Image URL</option>
+                  </select>
+                </div>
+              </div>
+
+              {settingsForm.logoType === 'icon' ? (
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">Logo icon</label>
+                  <div className="flex flex-wrap gap-2">
+                    {logoOptions.map((key) => {
+                      const IconComp = logoIconByKey[key];
+                      const selected = settingsForm.logoValue === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setSettingsForm((prev) => ({ ...prev, logoValue: key }))}
+                          className={`inline-flex items-center gap-2 rounded-lg border px-2.5 py-2 text-xs font-semibold ${
+                            selected
+                              ? 'border-harx-300 bg-harx-50 text-harx-700'
+                              : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          <IconComp className="h-4 w-4" />
+                          {key}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-600">Logo image URL</label>
+                  <input
+                    value={settingsForm.logoValue}
+                    onChange={(e) => setSettingsForm((prev) => ({ ...prev, logoValue: e.target.value }))}
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
+                    placeholder="https://..."
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (isSavingSettings) return;
+                  setIsSettingsOpen(false);
+                  setSettingsJourney(null);
+                }}
+                className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleSaveTrainingSettings()}
+                disabled={isSavingSettings}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-harx px-4 py-2 text-sm font-bold text-white shadow-sm disabled:opacity-60"
+              >
+                {isSavingSettings ? <RefreshCw className="h-4 w-4 animate-spin" /> : null}
+                Save changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
