@@ -1,5 +1,5 @@
 import React from 'react';
-import { Target } from 'lucide-react';
+import { Target, Brain, Loader2 } from 'lucide-react';
 
 const HARX = '#ff4d4d';
 
@@ -21,6 +21,10 @@ interface TrainingDetailsFormProps {
   onTrainingDescriptionChange: (v: string) => void;
   onEstimatedDurationChange: (v: string) => void;
   gigData?: { title?: string } | null;
+  onSuggestTitle?: () => void;
+  onSuggestDescription?: () => void;
+  generatingTitle?: boolean;
+  generatingDescription?: boolean;
 }
 
 export default function TrainingDetailsForm({
@@ -32,6 +36,10 @@ export default function TrainingDetailsForm({
   onTrainingDescriptionChange,
   onEstimatedDurationChange,
   gigData,
+  onSuggestTitle,
+  onSuggestDescription,
+  generatingTitle = false,
+  generatingDescription = false,
 }: TrainingDetailsFormProps) {
   return (
     <div
@@ -85,9 +93,34 @@ export default function TrainingDetailsForm({
         {subStep === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
-                Training Program Name <span style={{ color: HARX }}>*</span>
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937' }}>
+                  Training Program Name <span style={{ color: HARX }}>*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={onSuggestTitle}
+                  disabled={generatingTitle}
+                  title="Suggest title from gig"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    border: '1px solid #fecaca',
+                    borderRadius: 999,
+                    background: '#fff',
+                    color: HARX,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: '4px 8px',
+                    cursor: generatingTitle ? 'not-allowed' : 'pointer',
+                    opacity: generatingTitle ? 0.7 : 1
+                  }}
+                >
+                  {generatingTitle ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : <Brain style={{ width: 12, height: 12 }} />}
+                  AI
+                </button>
+              </div>
               <input
                 type="text"
                 value={trainingName}
@@ -107,9 +140,34 @@ export default function TrainingDetailsForm({
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
-                Program Description <span style={{ fontWeight: 400, color: '#9ca3af' }}>(optional)</span>
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937' }}>
+                  Program Description <span style={{ fontWeight: 400, color: '#9ca3af' }}>(optional)</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={onSuggestDescription}
+                  disabled={generatingDescription}
+                  title="Suggest description from gig"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    border: '1px solid #fecaca',
+                    borderRadius: 999,
+                    background: '#fff',
+                    color: HARX,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: '4px 8px',
+                    cursor: generatingDescription ? 'not-allowed' : 'pointer',
+                    opacity: generatingDescription ? 0.7 : 1
+                  }}
+                >
+                  {generatingDescription ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : <Brain style={{ width: 12, height: 12 }} />}
+                  AI
+                </button>
+              </div>
               <textarea
                 value={trainingDescription}
                 onChange={(e) => onTrainingDescriptionChange(e.target.value)}
