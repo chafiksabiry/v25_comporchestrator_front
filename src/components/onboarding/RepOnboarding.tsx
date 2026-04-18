@@ -11,7 +11,12 @@ import {
   Settings,
   RefreshCw,
   Plus,
-  Trash2
+  Trash2,
+  GraduationCap,
+  Briefcase,
+  Shield,
+  BarChart3,
+  Laptop
 } from 'lucide-react';
 
 import { AppContent } from '../training/App';
@@ -85,8 +90,34 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       modulesCount: journey.modules ? journey.modules.length : 0,
       status: status,
       progress: journey.progress || 0,
-      presentationUrl
+      presentationUrl,
+      trainingLogo: journey.trainingLogo || null
     };
+  };
+
+  const logoIconByKey: Record<string, React.ComponentType<{ className?: string }>> = {
+    'book-open': BookOpen,
+    'graduation-cap': GraduationCap,
+    'briefcase': Briefcase,
+    'shield': Shield,
+    'chart': BarChart3,
+    'laptop': Laptop,
+  };
+
+  const renderTrainingLogo = (logo: any) => {
+    const type = String(logo?.type || 'icon').toLowerCase();
+    const value = String(logo?.value || '').trim();
+    if (type === 'image' && value) {
+      return (
+        <img
+          src={value}
+          alt="Training logo"
+          className="h-3 w-3 object-contain"
+        />
+      );
+    }
+    const IconComp = logoIconByKey[value] || BookOpen;
+    return <IconComp className="h-3 w-3" />;
   };
 
   const handleViewPresentation = async (
@@ -612,7 +643,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                 <div>
                                   <div className="flex items-start gap-2">
                                     <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-harx-50 text-harx-600 ring-1 ring-harx-100">
-                                      <BookOpen className="h-3 w-3" />
+                                      {renderTrainingLogo(formatted.trainingLogo)}
                                     </span>
                                     <h3 className="line-clamp-2 text-base font-bold leading-snug text-gray-900 transition-colors group-hover:text-harx-700">
                                       {formatted.title}
