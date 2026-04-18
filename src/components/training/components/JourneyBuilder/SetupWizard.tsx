@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import { createPortal } from 'react-dom';
 import { Building2, Loader2, Target, Users, Sparkles, Briefcase, AlertCircle, CheckCircle, ArrowRight, ArrowLeft, ChevronDown, Check, Search } from 'lucide-react';
+import axios from 'axios';
 import { Company, TrainingJourney } from '../../types/core';
 import { Industry, GigFromApi } from '../../types';
 import { TrainingMethodology, MethodologyComponent } from '../../types/methodology';
@@ -41,6 +42,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const [setupSummaryModulesExpanded, setSetupSummaryModulesExpanded] = useState(false);
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const [thumbnailGenerating, setThumbnailGenerating] = useState(false);
+  const [thumbnailPrompt, setThumbnailPrompt] = useState('');
 
   useEffect(() => {
     if (currentStep !== 5) setSetupSummaryModulesExpanded(false);
@@ -218,6 +221,37 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       alert(error?.message || 'Could not upload thumbnail.');
     } finally {
       setThumbnailUploading(false);
+    }
+  };
+
+  const getTrainingBackendUrl = (): string => {
+    if (import.meta.env.VITE_API_TRAINING_URL) return import.meta.env.VITE_API_TRAINING_URL;
+    if (import.meta.env.VITE_TRAINING_BACKEND_URL) return import.meta.env.VITE_TRAINING_BACKEND_URL;
+    if (typeof window !== 'undefined') {
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      return isLocal ? 'http://localhost:5010' : 'https://v25platformtrainingbackend-production.up.railway.app';
+    }
+    return 'http://localhost:5010';
+  };
+
+  const handleGenerateThumbnailWithAI = async () => {
+    try {
+      setThumbnailGenerating(true);
+      const trainingBackendUrl = getTrainingBackendUrl();
+      const baseUrl = trainingBackendUrl.endsWith('/api') ? trainingBackendUrl : `${trainingBackendUrl}/api`;
+      const response = await axios.post(`${baseUrl}/training_journeys/generate-thumbnail`, {
+        prompt: thumbnailPrompt.trim(),
+        gigTitle: selectedGig?.title || trainingDetails?.trainingName || '',
+        industry: industries.find(i => i._id === company.industry)?.name || String(company.industry || '')
+      });
+      const url = String(response?.data?.url || '').trim();
+      if (!url) throw new Error('No image URL returned');
+      setThumbnailUrl(url);
+    } catch (error: any) {
+      console.error('[SetupWizard] Failed AI thumbnail generation:', error);
+      alert(error?.message || 'Could not generate thumbnail with AI.');
+    } finally {
+      setThumbnailGenerating(false);
     }
   };
 
@@ -538,13 +572,73 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                     e.currentTarget.value = '';
                   }}
                 />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                  <label
-                    htmlFor="training-thumbnail-input"
+                <label
+                  htmlFor="training-thumbnail-input"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const file = e.dataTransfer.files?.[0];
+                    if (file) void handleThumbnailUpload(file);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 240,
+                    height: 240,
+                    border: '1px dashed #fbcfe8',
+                    borderRadius: 4,
+                    background: '#fff',
+                    cursor: thumbnailUploading ? 'not-allowed' : 'pointer',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {thumbnailUrl ? (
+                    <img
+                      src={thumbnailUrl}
+                      alt="Training thumbnail"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '0 16px' }}>
+                      {thumbnailUploading ? (
+                        <Loader2 className="animate-spin" style={{ width: 18, height: 18, color: HARX, margin: '0 auto 8px' }} />
+                      ) : null}
+                      <div style={{ fontSize: 12, fontWeight: 700, color: HARX }}>
+                        {thumbnailUploading ? 'Uploading...' : 'Import or drop image'}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+                        PNG, JPG, WEBP
+                      </div>
+                    </div>
+                  )}
+                </label>
+
+                <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input
+                    value={thumbnailPrompt}
+                    onChange={(e) => setThumbnailPrompt(e.target.value)}
+                    placeholder="Describe an AI thumbnail (optional)"
                     style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
+                      flex: 1,
+                      minWidth: 0,
+                      border: '1px solid #fbcfe8',
+                      borderRadius: 4,
+                      padding: '8px 10px',
+                      fontSize: 12,
+                      color: '#374151',
+                      outline: 'none'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleGenerateThumbnailWithAI()}
+                    disabled={thumbnailGenerating}
+                    style={{
                       padding: '8px 12px',
                       borderRadius: 4,
                       border: '1px solid #fecaca',
@@ -552,13 +646,12 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                       color: HARX,
                       fontSize: 12,
                       fontWeight: 700,
-                      cursor: thumbnailUploading ? 'not-allowed' : 'pointer',
-                      opacity: thumbnailUploading ? 0.6 : 1
+                      cursor: thumbnailGenerating ? 'not-allowed' : 'pointer',
+                      opacity: thumbnailGenerating ? 0.6 : 1
                     }}
                   >
-                    {thumbnailUploading ? <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} /> : null}
-                    {thumbnailUploading ? 'Uploading...' : 'Import thumbnail'}
-                  </label>
+                    {thumbnailGenerating ? 'Generating...' : 'Generate with AI'}
+                  </button>
                   {thumbnailUrl ? (
                     <button
                       type="button"
@@ -578,31 +671,6 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                     </button>
                   ) : null}
                 </div>
-
-                {thumbnailUrl ? (
-                  <div style={{ border: '1px solid #fee2e2', borderRadius: 4, background: '#fff', padding: 8, width: 'fit-content' }}>
-                    <img
-                      src={thumbnailUrl}
-                      alt="Training thumbnail"
-                      style={{ width: 220, height: 220, objectFit: 'cover', borderRadius: 2 }}
-                    />
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      width: 220,
-                      height: 220,
-                      border: '1px dashed #fbcfe8',
-                      borderRadius: 4,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: '#fff',
-                    }}
-                  >
-                    <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>No thumbnail uploaded yet.</p>
-                  </div>
-                )}
               </div>
             </div>
           )}
