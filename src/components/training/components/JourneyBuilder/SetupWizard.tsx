@@ -605,6 +605,11 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                     <img
                       src={thumbnailUrl}
                       alt="Training thumbnail"
+                      onError={(e) => {
+                        console.error('[SetupWizard] Thumbnail failed to render from URL:', thumbnailUrl);
+                        const img = e.currentTarget as HTMLImageElement;
+                        img.style.display = 'none';
+                      }}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                   ) : (
