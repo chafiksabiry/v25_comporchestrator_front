@@ -47,6 +47,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const [visionTitleGenerating, setVisionTitleGenerating] = useState(false);
   const [visionDescriptionGenerating, setVisionDescriptionGenerating] = useState(false);
   const [targetRolesGenerating, setTargetRolesGenerating] = useState(false);
+  const autoRolesSuggestionKeyRef = useRef('');
   const isCloudinaryThumbnail = thumbnailUrl.includes('res.cloudinary.com');
 
   useEffect(() => {
@@ -313,9 +314,9 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
     { role: 'All Employees', dept: 'Company-wide', icon: '🏢' }
   ];
 
-  const handleSuggestTargetRoles = async () => {
+  const handleSuggestTargetRoles = async (showAlert: boolean = true) => {
     if (!selectedGig) {
-      alert('Please select a gig first.');
+      if (showAlert) alert('Please select a gig first.');
       return;
     }
     try {
@@ -329,17 +330,30 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
       });
       const roles = ((response?.data as any)?.data?.roles || []) as string[];
       if (!roles.length) throw new Error('No role suggestions returned');
-      setJourney({ ...journey, targetRoles: roles });
+      setJourney(prev => ({ ...prev, targetRoles: roles }));
     } catch (error: any) {
       const backendMessage =
         error?.response?.data?.error ||
         error?.response?.data?.message ||
         error?.message;
-      alert(backendMessage || 'Could not generate target roles.');
+      if (showAlert) alert(backendMessage || 'Could not generate target roles.');
     } finally {
       setTargetRolesGenerating(false);
     }
   };
+
+  useEffect(() => {
+    if (currentStep !== 4 || !selectedGig) return;
+    const alreadyHasRoles = (journey.targetRoles?.length || 0) > 0;
+    const key = `${selectedGig._id || selectedGig.title || 'gig'}::${String(company.industry || '')}`;
+    if (autoRolesSuggestionKeyRef.current === key) return;
+    if (alreadyHasRoles) {
+      autoRolesSuggestionKeyRef.current = key;
+      return;
+    }
+    autoRolesSuggestionKeyRef.current = key;
+    void handleSuggestTargetRoles(false);
+  }, [currentStep, selectedGig?._id, selectedGig?.title, company.industry, journey.targetRoles]);
 
   if (showMethodologyBuilder) {
     return <MethodologyBuilder onApplyMethodology={handleMethodologyApply} selectedIndustry={company.industry} />;
@@ -595,29 +609,12 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#1f2937' }}>
                     Target roles & departments <span style={{ color: HARX }}>*</span>
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => void handleSuggestTargetRoles()}
-                    disabled={targetRolesGenerating}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      border: '1px solid #fecaca',
-                      borderRadius: 999,
-                      background: '#fff',
-                      color: HARX,
-                      fontSize: 11,
-                      fontWeight: 700,
-                      padding: '5px 10px',
-                      cursor: targetRolesGenerating ? 'not-allowed' : 'pointer',
-                      opacity: targetRolesGenerating ? 0.7 : 1
-                    }}
-                    title="Suggest roles from gig context"
-                  >
-                    {targetRolesGenerating ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : <Sparkles style={{ width: 12, height: 12 }} />}
-                    AI suggest
-                  </button>
+                  {targetRolesGenerating ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, color: HARX }}>
+                      <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" />
+                      AI selecting roles...
+                    </span>
+                  ) : null}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
                   {roleOptions.map(item => {
