@@ -44,6 +44,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [thumbnailGenerating, setThumbnailGenerating] = useState(false);
   const [thumbnailPrompt, setThumbnailPrompt] = useState('');
+  const isCloudinaryThumbnail = thumbnailUrl.includes('res.cloudinary.com');
 
   useEffect(() => {
     if (currentStep !== 5) setSetupSummaryModulesExpanded(false);
@@ -680,6 +681,48 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                     </button>
                   ) : null}
                 </div>
+
+                {thumbnailUrl ? (
+                  <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 700 }}>
+                      {isCloudinaryThumbnail ? 'Cloudinary image link' : 'Image link'}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input
+                        value={thumbnailUrl}
+                        readOnly
+                        style={{
+                          flex: 1,
+                          border: '1px solid #e5e7eb',
+                          borderRadius: 4,
+                          padding: '8px 10px',
+                          fontSize: 11,
+                          color: '#374151',
+                          background: '#fff'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void navigator.clipboard.writeText(thumbnailUrl);
+                        }}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: 4,
+                          border: '1px solid #e5e7eb',
+                          background: '#fff',
+                          color: '#374151',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        Copy link
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
           )}
