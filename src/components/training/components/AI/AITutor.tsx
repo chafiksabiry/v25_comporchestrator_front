@@ -49,34 +49,34 @@ export default function AITutor({ tutor, currentModule, onSuggestion }: AITutorP
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm h-96 flex flex-col">
-      <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+    <div className="flex h-96 flex-col rounded-xl border border-harx-200 bg-white shadow-sm ring-1 ring-harx-100/60">
+      <div className="border-b border-harx-100 bg-gradient-to-r from-harx-50 via-white to-harx-alt-50 p-4">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 shadow-md shadow-harx-500/25">
             <Bot className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">{activeTutor.name}</h3>
-            <p className="text-sm text-gray-600">AI Learning Assistant • {activeTutor.specialty.join(', ')}</p>
+            <h3 className="font-semibold text-harx-900">{activeTutor.name}</h3>
+            <p className="text-sm text-harx-700/80">Assistant HARX • {activeTutor.specialty.join(', ')}</p>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 space-y-4 overflow-y-auto bg-harx-50/20 p-4">
         {activeTutor.conversationHistory.map((message) => (
           <div
             key={message.id}
             className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+              className={`max-w-xs rounded-xl px-4 py-2 lg:max-w-md ${
                 message.sender === 'user'
-                  ? 'bg-blue-600 text-white'
+                  ? 'border border-harx-alt-300/50 bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-sm'
                   : message.type === 'suggestion'
-                  ? 'bg-amber-50 border border-amber-200 text-amber-800'
+                  ? 'border border-harx-alt-200 bg-harx-alt-50 text-harx-900'
                   : message.type === 'resource'
-                  ? 'bg-green-50 border border-green-200 text-green-800'
-                  : 'bg-gray-100 text-gray-800'
+                  ? 'border border-harx-200 bg-harx-50 text-harx-900'
+                  : 'border border-harx-100 bg-white text-harx-900 shadow-sm'
               }`}
             >
               <div className="flex items-start space-x-2">
@@ -99,13 +99,13 @@ export default function AITutor({ tutor, currentModule, onSuggestion }: AITutorP
 
         {isTyping && (
           <div className="flex justify-start">
-            <div className="bg-gray-100 text-gray-800 max-w-xs lg:max-w-md px-4 py-2 rounded-lg">
+            <div className="max-w-xs rounded-xl border border-harx-200 bg-white px-4 py-2 text-harx-800 shadow-sm lg:max-w-md">
               <div className="flex items-center space-x-2">
-                <Bot className="h-4 w-4" />
+                <Bot className="h-4 w-4 text-harx-500" />
                 <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="h-2 w-2 animate-bounce rounded-full bg-harx-400"></div>
+                  <div className="h-2 w-2 animate-bounce rounded-full bg-harx-alt-400" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="h-2 w-2 animate-bounce rounded-full bg-harx-400" style={{ animationDelay: '0.2s' }}></div>
                 </div>
               </div>
             </div>
@@ -114,24 +114,24 @@ export default function AITutor({ tutor, currentModule, onSuggestion }: AITutorP
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 border-t border-gray-200">
-        <div className="flex flex-wrap gap-2 mb-3">
+      <div className="border-t border-harx-100 bg-white/95 p-4 backdrop-blur-sm">
+        <div className="mb-3 flex flex-wrap gap-2">
           {quickActions.map((action, index) => {
             const Icon = action.icon;
             return (
               <button
                 key={index}
                 onClick={() => handleQuickAction(action.action)}
-                className="flex items-center space-x-1 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs text-gray-700 transition-colors"
+                className="flex items-center space-x-1 rounded-full border border-harx-100 bg-harx-50/80 px-3 py-1 text-xs font-medium text-harx-800 transition-colors hover:border-harx-200 hover:bg-harx-100"
               >
-                <Icon className="h-3 w-3" />
+                <Icon className="h-3 w-3 text-harx-600" />
                 <span>{action.text}</span>
               </button>
             );
           })}
           <button
             onClick={clearConversation}
-            className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-full text-xs transition-colors"
+            className="rounded-full border border-harx-200 bg-white px-3 py-1 text-xs font-medium text-harx-700 transition-colors hover:bg-harx-50"
           >
             Clear Chat
           </button>
@@ -144,12 +144,12 @@ export default function AITutor({ tutor, currentModule, onSuggestion }: AITutorP
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
             placeholder="Ask me anything about your training..."
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            className="flex-1 rounded-xl border border-harx-200 bg-harx-50/30 px-3 py-2 text-sm text-harx-900 placeholder:text-harx-500/70 focus:border-harx-400 focus:outline-none focus:ring-2 focus:ring-harx-400/30"
           />
           <button
             onClick={handleSendMessage}
             disabled={!inputMessage.trim() || isTyping}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="rounded-xl bg-gradient-to-r from-harx-500 to-harx-alt-500 px-4 py-2 text-white shadow-md shadow-harx-500/20 transition hover:from-harx-600 hover:to-harx-alt-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Send className="h-4 w-4" />
           </button>
