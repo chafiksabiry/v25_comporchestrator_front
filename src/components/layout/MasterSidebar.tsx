@@ -282,7 +282,7 @@ export function MasterSidebar({
                   {isExpanded && !isCollapsed && (
                     <div className="ml-6 space-y-2 mt-2">
                       <NavLink
-                        to="/knowledge-base"
+                        to="/dashboard/knowledge-base"
                         className={({ isActive }) =>
                           `flex items-center gap-4 w-full p-3 rounded-xl transition-all duration-300 ${isActive
                             ? "text-rose-400 bg-rose-500/5 shadow-sm"
@@ -294,7 +294,7 @@ export function MasterSidebar({
                         <span className="text-sm font-medium">Knowledge Base</span>
                       </NavLink>
                       <NavLink
-                        to="/kb-insight"
+                        to="/dashboard/kb-insight"
                         className={({ isActive }) =>
                           `flex items-center gap-4 w-full p-3 rounded-xl transition-all duration-300 ${isActive
                             ? "text-rose-400 bg-rose-500/5 shadow-sm"
