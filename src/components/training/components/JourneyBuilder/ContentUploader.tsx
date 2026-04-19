@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, RotateCcw, Send, History, Bot } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -12,6 +12,7 @@ import type { Gig } from '../../../../types/matching';
 import PresentationPreview from '../Training/PresentationPreview';
 import { scrollJourneyMainToTop } from './journeyScroll';
 import type { TrainingMethodology } from '../../types/methodology';
+import { buildGigSnapshotForAi } from '../../utils/gigSnapshotForAi';
 
 interface ContentUploaderProps {
   onComplete: (uploads: ContentUpload[], fileTrainingUrl?: string) => void;
@@ -188,6 +189,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
     companyGigs.find((g: any) => String(g?._id || g?.id || '') === String(activeChatGigId))?.title ||
     (activeChatGigId ? `Gig ${activeChatGigId.slice(0, 8)}` : 'Aucun gig');
 
+  const gigSnapshotForBuilder = useMemo(() => {
+    const gid = gigId ? String(gigId) : '';
+    if (!gid) return null;
+    const row = companyGigs.find((g: any) => String(g?._id || g?.id || '') === gid);
+    return row ? buildGigSnapshotForAi(row) : null;
+  }, [companyGigs, gigId]);
+
   const refreshChatHistory = useCallback(async () => {
     if (!activeChatGigId) {
       setChatHistorySessions([]);
@@ -277,6 +285,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           uploadAnalyses: uploadContext,
           knowledgeDocuments: [],
           callRecordings: [],
+          gigSnapshot: gigSnapshotForBuilder,
         };
       }
 
@@ -296,9 +305,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
         uploadAnalyses: uploadContext,
         knowledgeDocuments: docs,
         callRecordings: calls,
+        gigSnapshot: gigSnapshotForBuilder,
       };
     },
-    [getUploadContext, gigId, getGenerationSourceMode]
+    [getUploadContext, gigId, getGenerationSourceMode, gigSnapshotForBuilder]
   );
 
   useEffect(() => {
@@ -995,6 +1005,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         uploadAnalyses: [],
         knowledgeDocuments: [],
         callRecordings: [],
+        gigSnapshot: gigSnapshotForBuilder,
         ...(journey?.estimatedDuration || methodology?.name
           ? {
               preferences: {
@@ -1865,10 +1876,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
               }))
             : [];
 
+        const chatGigRow = companyGigs.find((g: any) => String(g?._id || g?.id || '') === String(activeChatGigId));
+        const chatGigSnapshot = chatGigRow ? buildGigSnapshotForAi(chatGigRow) : null;
+
         const chatContext = JSON.stringify({
           app: 'HARX Journey Builder',
           selectedGigId: activeChatGigId || '',
           selectedGigTitle: activeChatGigTitle,
+          gigSnapshot: chatGigSnapshot,
+          gigAnchoringRequired: !!activeChatGigId,
           generationMode: effectiveGenerationMode,
           personalizationProfile: {
             level: personalizationAnswers.level || '',

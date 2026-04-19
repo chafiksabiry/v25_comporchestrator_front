@@ -101,6 +101,8 @@ export interface PresentationGenerationContext {
   uploadAnalyses?: UploadCurriculumContext[];
   knowledgeDocuments?: KnowledgeDocumentRef[];
   callRecordings?: CallRecordingRef[];
+  /** Rich gig fields (title, industries, activities, …) so slides/plan stay anchored to the job */
+  gigSnapshot?: Record<string, unknown> | null;
 }
 
 export interface TrainingGenerationPreferences {
@@ -837,8 +839,10 @@ export class AIService {
     }
   ): Promise<any> {
     const body: Record<string, unknown> = { curriculum };
-    if (kb?.gigId && kb.useKnowledgeBase === true) {
+    if (kb?.gigId) {
       body.gigId = kb.gigId;
+    }
+    if (kb?.useKnowledgeBase === true) {
       body.useKnowledgeBase = true;
     }
     if (kb?.includeCallRecordings === true) {
