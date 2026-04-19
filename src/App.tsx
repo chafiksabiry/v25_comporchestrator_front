@@ -85,11 +85,26 @@ function AppContent() {
           // Fetch company details for logo
           const companyApiUrl = import.meta.env.VITE_COMPANY_API_URL;
           if (companyApiUrl) {
-            const companyResponse = await fetch(`${companyApiUrl}/companies/user/${userId}`);
-            if (companyResponse.ok) {
+            const companyId = Cookies.get('companyId');
+            let companyResponse;
+
+            if (companyId) {
+              // Try fetching by companyId first
+              companyResponse = await fetch(`${companyApiUrl}/companies/${companyId}/details`);
+              if (!companyResponse.ok) {
+                 // Fallback to userId if companyId fetch fails
+                 companyResponse = await fetch(`${companyApiUrl}/companies/user/${userId}`);
+              }
+            } else {
+              // Direct fetch by userId
+              companyResponse = await fetch(`${companyApiUrl}/companies/user/${userId}`);
+            }
+
+            if (companyResponse && companyResponse.ok) {
               const companyData = await companyResponse.json();
-              if (companyData.success && companyData.data && companyData.data.logo) {
-                setCompanyLogo(companyData.data.logo);
+              const logo = companyData.data?.logo || companyData.logo;
+              if (logo) {
+                setCompanyLogo(logo);
               }
             }
           }
