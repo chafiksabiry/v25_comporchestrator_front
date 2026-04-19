@@ -27,7 +27,7 @@ const PHASES = [
     icon: Building2,
     color: "#6366f1", // Indigo
     steps: [
-      { id: 1, title: "Company Profile", description: "Legal and commercial details", path: "/company" },
+      { id: 1, title: "Company Profile", description: "Legal and commercial details", path: "/company/profile" },
       { id: 2, title: "Verification", description: "Identity & Trust", disabled: true }
     ]
   },
