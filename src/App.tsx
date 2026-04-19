@@ -31,10 +31,13 @@ import { ProjectViewSwitch, type ProjectView } from './components/ProjectViewSwi
 function AppContent() {
   const location = useLocation();
   const [activeProject, setActiveProject] = useState<ProjectView>(() => {
-    if (location.pathname !== '/' && location.pathname !== '') {
+    if (location.pathname.includes('/company/orchestrator')) {
+      return 'comporchestrator';
+    }
+    if (location.pathname.includes('/company/dashboard') || location.pathname !== '/' && location.pathname !== '') {
       return 'dashboard';
     }
-    return 'comporchestrator';
+    return 'comporchestrator'; // default
   });
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -112,12 +115,20 @@ function AppContent() {
       }
     };
 
-    const openComporchestrator = () => setActiveProject('comporchestrator');
+    const openComporchestrator = () => {
+      setActiveProject('comporchestrator');
+      window.location.hash = '#/company/orchestrator';
+    };
 
     window.addEventListener('tabChange', handleTabChange as EventListener);
     window.addEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
     window.addEventListener('setGlobalBack', handleGlobalBackUpdate as EventListener);
     window.addEventListener('openComporchestrator', openComporchestrator);
+
+    // Initial Path correction
+    if (location.pathname === '/' || location.pathname === '') {
+      window.location.hash = '#/company/orchestrator';
+    }
 
     return () => {
       window.removeEventListener('tabChange', handleTabChange as EventListener);
@@ -125,7 +136,7 @@ function AppContent() {
       window.removeEventListener('setGlobalBack', handleGlobalBackUpdate as EventListener);
       window.removeEventListener('openComporchestrator', openComporchestrator);
     };
-  }, []);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     const cookies = Cookies.get();

@@ -23,7 +23,7 @@ export default defineConfig(() => {
       react({
         jsxRuntime: 'classic',
       }),
-      qiankun('app11', {
+      qiankun('company', {
         useDevMode: true,
       }),
       removeReactRefreshScript(),
