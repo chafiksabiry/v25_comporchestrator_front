@@ -558,15 +558,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           <div className="flex min-h-0 w-full flex-1 flex-col rounded-xl border border-harx-100 bg-white">
             <div className="h-0.5 w-full shrink-0 bg-gradient-harx" aria-hidden />
             <div className="flex min-h-0 flex-1 flex-col">
-              <MemoryRouter>
-                <AppContent
-                  initialJourneyId={showTraining.journeyId}
-                  isEmbedded={true}
-                  startWithJourneyBuilder={true}
-                  repOnboardingLayout={true}
-                  onJourneyLaunch={handleEmbeddedJourneyComplete}
-                />
-              </MemoryRouter>
+              <AppContent
+                initialJourneyId={showTraining.journeyId}
+                isEmbedded={true}
+                startWithJourneyBuilder={true}
+                repOnboardingLayout={true}
+                onJourneyLaunch={handleEmbeddedJourneyComplete}
+              />
             </div>
           </div>
         </div>

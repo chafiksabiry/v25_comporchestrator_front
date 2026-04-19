@@ -9,9 +9,7 @@ type MatchHarxRepsProps = {
 const MatchHarxReps = ({ onBack }: MatchHarxRepsProps) => {
   return (
     <div className="h-[calc(100vh-100px)] w-full">
-      <MemoryRouter>
-        <MatchingDashboard onBackToOnboarding={onBack} />
-      </MemoryRouter>
+      <MatchingDashboard onBackToOnboarding={onBack} />
     </div>
   );
 };
