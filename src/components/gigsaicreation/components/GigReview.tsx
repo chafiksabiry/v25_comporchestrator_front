@@ -39,6 +39,7 @@ interface GigReviewProps {
   editGigId?: string | null;
   /** When set (e.g. embedded in Company Onboarding), called instead of full page navigation to /#/orchestrator */
   onPublishSuccess?: () => void | Promise<void>;
+  isReadOnly?: boolean;
 }
 
 export function GigReview({
@@ -50,6 +51,7 @@ export function GigReview({
   isEditMode = false,
   editGigId = null,
   onPublishSuccess,
+  isReadOnly = false,
 }: GigReviewProps) {
   // State for skills data
   const [softSkills, setSoftSkills] = useState<Array<{ _id: string, name: string, description: string, category: string }>>([]);
@@ -402,13 +404,15 @@ export function GigReview({
           {icon}
           {title}
         </h2>
-        <button
-          onClick={() => onEdit(section)}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-harx hover:opacity-90 text-white rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
-        >
-          <Edit3 className="w-4 h-4" />
-          Edit
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={() => onEdit(section)}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-harx hover:opacity-90 text-white rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
+          >
+            <Edit3 className="w-4 h-4" />
+            Edit
+          </button>
+        )}
       </div>
       <div className="p-6">
         {children}
@@ -436,25 +440,26 @@ export function GigReview({
               >
                 ← Previous
               </button>
-
             </div>
-            <button
-              onClick={handlePublish}
-              disabled={isSubmitting}
-              className="px-8 py-3 bg-gradient-harx hover:opacity-90 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-lg font-semibold transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  {isEditMode ? 'Updating...' : 'Publishing...'}
-                </>
-              ) : (
-                <>
-                  <Zap className="w-4 h-4" />
-                  {isEditMode ? 'Update Gig' : 'Publish Gig'}
-                </>
-              )}
-            </button>
+            {!isReadOnly && (
+              <button
+                onClick={handlePublish}
+                disabled={isSubmitting}
+                className="px-8 py-3 bg-gradient-harx hover:opacity-90 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-lg font-semibold transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    {isEditMode ? 'Updating...' : 'Publishing...'}
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4" />
+                    {isEditMode ? 'Update Gig' : 'Publish Gig'}
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
 
