@@ -2159,8 +2159,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                       <p className="text-sm text-gray-500 mb-6 font-medium leading-relaxed">Review and edit your leads before saving. Click the edit icon to modify any field to ensure data integrity.</p>
                       <div className="max-h-96 overflow-y-auto pr-2 custom-scrollbar">
                         <div className="space-y-4">
-                          {parsedLeads.map((lead: any, index: number) => (
-                            <div key={index} className="bg-gray-50/80 rounded-2xl p-4 border border-gray-100 hover:border-harx-200 hover:bg-white transition-all duration-300 group">
+                          {(parsedLeads || []).map((lead: any, index: number) => lead && (
+                            <div key={lead._id || `parsed-${index}`} className="bg-gray-50/80 rounded-2xl p-4 border border-gray-100 hover:border-harx-200 hover:bg-white transition-all duration-300 group">
                               <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center space-x-4">
                                   <div className="w-10 h-10 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:border-harx-100">
@@ -2541,9 +2541,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         </div>
                       </td>
                     </tr>
-                  ) : filteredLeads.length > 0 ? (
-                    filteredLeads.map((lead, index) => (
-                      <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 text-center ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-orange-400' : ''}`}>
+                  ) : (filteredLeads && filteredLeads.length > 0) ? (
+                    filteredLeads.map((lead, index) => lead && (
+                      <tr key={lead._id || `filtered-${index}`} className={`hover:bg-gray-50 transition-colors duration-150 text-center ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(lead as any)._isPlaceholder ? 'opacity-75 border-l-4 border-orange-400' : ''}`}>
                         <td className="px-2 py-4 text-sm text-gray-900 border-r border-gray-100 truncate max-w-0">
                           {lead.Last_Name || '-'}
                         </td>
@@ -2567,9 +2567,9 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                         </td>
                       </tr>
                     ))
-                  ) : realtimeLeads.length > 0 ? (
-                    realtimeLeads.map((lead, index) => (
-                      <tr key={lead._id} className={`hover:bg-gray-50 transition-colors duration-150 text-center ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                  ) : (realtimeLeads && realtimeLeads.length > 0) ? (
+                    realtimeLeads.map((lead, index) => lead && (
+                      <tr key={lead._id || `realtime-${index}`} className={`hover:bg-gray-50 transition-colors duration-150 text-center ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                         <td className="px-2 py-4 text-sm text-gray-900 border-r border-gray-100 truncate max-w-0">
                           {lead.Last_Name || '-'}
                         </td>
@@ -2681,8 +2681,8 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
                 </div>
               </div>
               <div className="bg-white divide-y divide-gray-100">
-                {realtimeLeads.map((lead, index) => (
-                  <div key={index} className="grid grid-cols-3 px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
+                {(realtimeLeads || []).map((lead, index) => lead && (
+                  <div key={lead._id || index} className="grid grid-cols-3 px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
                     <div className="text-sm font-medium text-gray-900">{lead.Email_1 || 'N/A'}</div>
                     <div className="text-sm text-gray-700">{lead.Phone || 'N/A'}</div>
                     <div className="text-sm text-gray-700">{lead.Deal_Name || 'N/A'}</div>
