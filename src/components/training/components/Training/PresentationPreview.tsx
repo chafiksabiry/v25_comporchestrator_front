@@ -86,6 +86,18 @@ function normalizeHexColor(c: string | number | undefined, fallback: string) {
   return s.startsWith('#') ? s : `#${s}`;
 }
 
+/** Luminance 0–1 (sRGB). Used when `theme: light` but `backgroundHex` is actually dark (API mismatch). */
+function hexLuminance(hexRaw: string | number | undefined): number {
+  const full = normalizeHexColor(hexRaw, '#ffffff');
+  const hex = full.replace('#', '');
+  if (hex.length !== 6) return 0.9;
+  const r = parseInt(hex.slice(0, 2), 16) / 255;
+  const g = parseInt(hex.slice(2, 4), 16) / 255;
+  const b = parseInt(hex.slice(4, 6), 16) / 255;
+  const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
 function SlideVisualElementsSvg({
   elements,
   accentFallback,
@@ -322,6 +334,9 @@ export default function PresentationPreview({
 
     const bgColor = vc.backgroundHex || (isDarkFallback ? '#1a1a2e' : '#ffffff');
     const textColor = vc.textHex || (isDarkFallback ? '#ffffff' : '#111827');
+    const bgLuminance = hexLuminance(bgColor);
+    /** Fond réellement sombre même si `theme` dit « light » (ex. slides générées HARX). */
+    const slideCanvasIsDark = isDarkFallback || bgLuminance < 0.38;
     const accentColor = vc.accentHex || themeParams.primaryColor || '#F43F5E';
     const explicitAccent =
       typeof vc.accentHex === 'string'
@@ -333,12 +348,12 @@ export default function PresentationPreview({
       explicitAccent.trim().length > 0 ? explicitAccent : themeParams.secondaryColor || '#6D28D9';
 
     const layout = vc.layout || (slide.type === 'cover' ? 'split' : 'content');
-    const bulletTileClass = isDarkFallback
+    const bulletTileClass = slideCanvasIsDark
       ? 'rounded-2xl border border-white/15 bg-white/5'
-      : 'rounded-2xl border border-slate-200/90 bg-slate-50/90';
+      : 'rounded-2xl border border-slate-200/90 bg-white/95 text-slate-800';
 
     const isSplit = layout === 'split';
-    const contentPanelClass = isDarkFallback
+    const contentPanelClass = slideCanvasIsDark
       ? 'bg-white/[0.04] border border-white/12 backdrop-blur-sm'
       : 'bg-white/80 border border-slate-200/80';
 
@@ -383,43 +398,58 @@ export default function PresentationPreview({
         <div className={`relative z-10 flex min-h-0 flex-1 flex-col justify-start overflow-y-auto p-8 md:p-12 lg:p-14 custom-scrollbar ${layout === 'split' ? '' : 'w-full'}`}>
           {layout !== 'split' && (
             <>
-              <h1 className="mb-6 text-3xl font-black leading-[1.15] tracking-tight md:text-5xl" style={{ color: isDarkFallback ? '#fff' : '#0f172a' }}>
+              <h1
+                className="mb-4 text-3xl font-black leading-[1.15] tracking-tight md:mb-5 md:text-5xl"
+                style={{ color: slideCanvasIsDark ? textColor || '#f8fafc' : '#0f172a' }}
+              >
                 {toSlideText(slide.title)}
               </h1>
             </>
           )}
 
-          <div className={`rounded-3xl p-5 md:p-7 ${contentPanelClass}`}>
+          <div className={`rounded-3xl p-4 md:p-6 ${contentPanelClass}`}>
             {slide.subtitle && !isSplit && (
-              <h2 className="mb-5 text-lg font-bold opacity-95 md:text-xl" style={{ color: accentColor }}>
+              <h2 className="mb-4 text-lg font-bold opacity-95 md:mb-5 md:text-xl" style={{ color: accentColor }}>
                 {toSlideText(slide.subtitle)}
               </h2>
             )}
 
             {slide.content && (
-              <div className="mb-4 max-w-5xl text-base leading-relaxed opacity-95 md:text-lg" style={{ color: 'inherit' }}>
+              <div
+                className={`mb-3 max-w-5xl text-sm leading-relaxed md:mb-4 md:text-base ${slideCanvasIsDark ? '' : 'text-slate-800'}`}
+                style={{ color: slideCanvasIsDark ? textColor || '#e2e8f0' : undefined }}
+              >
                 {Array.isArray(slide.content) ? (
-                  <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-x-8 md:gap-y-3">
+                  <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-x-6 md:gap-y-2">
                     {slide.content.map((bullet: unknown, i: number) => (
-                      <li key={i} className={`flex items-start gap-3 p-3 md:p-4 ${bulletTileClass}`}>
+                      <li key={i} className={`flex items-start gap-2.5 p-2.5 md:gap-3 md:p-3 ${bulletTileClass}`}>
                         <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full shadow-sm" style={{ background: accentColor }} />
                         <span className="font-medium" dangerouslySetInnerHTML={{ __html: parseMarkdown(toSlideText(bullet)) }} />
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p dangerouslySetInnerHTML={{ __html: parseMarkdown(slide.content) }} />
+                  <div dangerouslySetInnerHTML={{ __html: parseMarkdown(slide.content) }} />
                 )}
               </div>
             )}
 
             {/* Support for bullets field */}
             {Array.isArray(slide.bullets) && slide.bullets.length > 0 && (
-              <ul className={`grid max-w-5xl grid-cols-1 gap-3 md:grid-cols-2 md:gap-x-8 md:gap-y-3 ${slide.content ? 'mt-5 border-t border-current/10 pt-5' : ''}`}>
+              <ul
+                className={`grid max-w-5xl grid-cols-1 gap-2 md:grid-cols-2 md:gap-x-6 md:gap-y-2 ${slide.content ? 'mt-4 border-t border-current/10 pt-4 md:mt-5 md:pt-5' : ''}`}
+              >
                 {slide.bullets.map((bullet: unknown, i: number) => (
-                  <li key={i} className={`flex items-start gap-3 p-3 text-base md:text-lg ${bulletTileClass}`}>
+                  <li
+                    key={i}
+                    className={`flex items-start gap-2.5 p-2.5 text-sm md:gap-3 md:p-3 md:text-base ${bulletTileClass}`}
+                  >
                     <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full shadow-sm" style={{ background: accentColor }} />
-                    <span className="opacity-90" dangerouslySetInnerHTML={{ __html: parseMarkdown(toSlideText(bullet)) }} />
+                    <span
+                      className={slideCanvasIsDark ? 'opacity-95' : 'text-slate-800'}
+                      style={slideCanvasIsDark ? { color: textColor || '#f1f5f9' } : undefined}
+                      dangerouslySetInnerHTML={{ __html: parseMarkdown(toSlideText(bullet)) }}
+                    />
                   </li>
                 ))}
               </ul>

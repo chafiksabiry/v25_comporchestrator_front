@@ -56,7 +56,7 @@ function extractTrainingReadinessBlock(raw: string): {
   const displayText = full.replace(HARX_TRAINING_STATUS_REGEX, '').trim();
   try {
     const parsed = JSON.parse(m[1]);
-    const readiness = parsed?.readiness;
+    let readiness = parsed?.readiness as 'ready' | 'incomplete' | 'not_applicable' | undefined;
     if (readiness !== 'ready' && readiness !== 'incomplete' && readiness !== 'not_applicable') {
       return { displayText, trainingReadiness: null };
     }
@@ -68,7 +68,14 @@ function extractTrainingReadinessBlock(raw: string): {
             reason: x.reason ? String(x.reason).trim() : undefined,
           }))
       : [];
-    const messageFr = String(parsed?.messageFr || '').trim();
+    if (readiness === 'ready' && missingModules.length > 0) {
+      readiness = 'incomplete';
+    }
+    let messageFr = String(parsed?.messageFr || '').trim();
+    if (readiness === 'incomplete' && missingModules.length > 0 && !messageFr) {
+      messageFr = `Il manque encore du contenu pour ${missingModules.length} module(s).`;
+    }
+    const canShowValidate = readiness === 'ready' && missingModules.length === 0;
     const actions = Array.isArray(parsed?.actions)
       ? (parsed.actions as any[])
           .filter(
@@ -78,6 +85,7 @@ function extractTrainingReadinessBlock(raw: string): {
                 a.id === 'save_without_missing' ||
                 a.id === 'generate_missing_modules')
           )
+          .filter((a) => (a.id === 'validate_training' ? canShowValidate : true))
           .map((a) => ({ id: String(a.id), label: String(a.label || '').trim() }))
           .filter((a) => a.label)
       : [];
