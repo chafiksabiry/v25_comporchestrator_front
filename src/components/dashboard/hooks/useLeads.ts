@@ -26,7 +26,7 @@ export function useLeads(p0: (prevLeads: any) => any[]) {
     try {
       setLoading(true); // Démarre le chargement
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/leads`
+        `${import.meta.env.VITE_COMPANY_API_URL}/leads`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch leads");

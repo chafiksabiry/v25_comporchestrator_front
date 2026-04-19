@@ -49,7 +49,7 @@ function EmailsPanel() {
   const fetchEmails = async () => {
     let accessToken = localStorage.getItem("zoho_access_token");
     if (!accessToken) {
-      window.location.href = `${import.meta.env.VITE_API_URL}/zoho/auth`;
+      window.location.href = `${import.meta.env.VITE_COMPANY_API_URL}/zoho/auth`;
       return;
     }
     try {
@@ -61,7 +61,7 @@ function EmailsPanel() {
       };
 
       const endpoint = endpoints[activeFilter as keyof typeof endpoints] || '/zoho/emails/inbox';
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}${endpoint}`, {
+      const response = await axios.get(`${import.meta.env.VITE_COMPANY_API_URL}${endpoint}`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -150,7 +150,7 @@ function EmailsPanel() {
 
     try {
       await axios.post(
-        `${import.meta.env.VITE_API_URL}/zoho/emails/${email.id}/archive`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/zoho/emails/${email.id}/archive`,
         {},
         {
           headers: {
@@ -202,7 +202,7 @@ Date: ${formatDate(email.receivedTime)}
       console.log("Tentative de configuration avec:", configData);
 
       // Première étape : Configuration
-      const configResponse = await fetch('https://harxv25dashboardfrontend.netlify.app/api/zoho/configure', {
+      const configResponse = await fetch(`${import.meta.env.VITE_COMPANY_API_URL}/zoho/configure`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -220,7 +220,7 @@ Date: ${formatDate(email.receivedTime)}
       if (configResult.success) {
         console.log("Configuration réussie, récupération du token...");
         // Deuxième étape : Récupération du token
-        const tokenResponse = await fetch('https://harxv25dashboardfrontend.netlify.app/api/zoho/token', {
+        const tokenResponse = await fetch(`${import.meta.env.VITE_COMPANY_API_URL}/zoho/token`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json'
@@ -264,13 +264,13 @@ Date: ${formatDate(email.receivedTime)}
 
     try {
       const [sentResponse, archivedResponse, inboxResponse] = await Promise.all([
-        axios.get(`${import.meta.env.VITE_API_URL}/zoho/emails/sent`, {
+        axios.get(`${import.meta.env.VITE_COMPANY_API_URL}/zoho/emails/sent`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         }),
-        axios.get(`${import.meta.env.VITE_API_URL}/zoho/emails/archived`, {
+        axios.get(`${import.meta.env.VITE_COMPANY_API_URL}/zoho/emails/archived`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         }),
-        axios.get(`${import.meta.env.VITE_API_URL}/zoho/emails/inbox`, {
+        axios.get(`${import.meta.env.VITE_COMPANY_API_URL}/zoho/emails/inbox`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         })
       ]);

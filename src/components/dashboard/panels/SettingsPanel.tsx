@@ -11,7 +11,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Rocket,
-  BarChart,
+  BarChart2,
   BookOpen,
   Bell,
   CreditCard
@@ -130,7 +130,7 @@ function SettingsPanel() {
       case 4: return <Phone className="w-3.5 h-3.5" />;
       case 5: return <FileText className="w-3.5 h-3.5" />;
       case 6: return <FileText className="w-3.5 h-3.5" />;
-      case 7: return <BarChart className="w-3.5 h-3.5" />;
+      case 7: return <BarChart2 className="w-3.5 h-3.5" />;
       case 8: return <BookOpen className="w-3.5 h-3.5" />;
       case 9: return <Users className="w-3.5 h-3.5" />;
       case 10: return <Clock className="w-3.5 h-3.5" />;

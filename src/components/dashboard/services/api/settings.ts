@@ -1,4 +1,5 @@
 import axios from 'axios';
+import Cookies from 'js-cookie';
 import api from './index';
 
 export interface CompanySettings {
@@ -19,7 +20,8 @@ export interface CompanySettings {
 
 export const settingsApi = {
   getSettings: async () => {
-    const response = await axios.get<CompanySettings>(`${import.meta.env.VITE_API_URL}/companies/67921fce031b145d2e8088ca`);
+    const companyId = Cookies.get('companyId') || '67921fce031b145d2e8088ca';
+    const response = await axios.get<CompanySettings>(`${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}`);
     return response.data;
   },
 

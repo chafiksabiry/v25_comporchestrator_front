@@ -103,7 +103,7 @@ const SalesInboxChat: React.FC = () => {
     }
 
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/zoho/chats`, {
+      const res = await axios.get(`${import.meta.env.VITE_COMPANY_API_URL}/zoho/chats`, {
         headers: {
           "Authorization": `Zoho-oauthtoken ${token}`,
           "Content-Type": "application/json"
@@ -156,7 +156,7 @@ const SalesInboxChat: React.FC = () => {
 
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_API_URL}/zoho/chats/${chatId}/messages`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/zoho/chats/${chatId}/messages`,
         {
           headers: {
             "Authorization": `Zoho-oauthtoken ${token}`,
@@ -205,7 +205,7 @@ const SalesInboxChat: React.FC = () => {
 
     try {
       const res = await axios.post(
-        `${import.meta.env.VITE_API_URL}/zoho/chats/${activeChat}`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/zoho/chats/${activeChat}`,
         { text: message },
         {
           headers: {
