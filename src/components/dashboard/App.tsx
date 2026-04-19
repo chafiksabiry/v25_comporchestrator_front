@@ -27,7 +27,7 @@ function App() {
     <Routes>
       <Route element={<DashboardLayout />}>
         <Route index element={<OverviewDashboardPage />} />
-        <Route path="company" element={<Navigate to="/company/dashboard" replace />} />
+        <Route path="company" element={<Navigate to="/company/profile" replace />} />
         <Route path="company/dashboard" element={<CompanyDashboardPage />} />
         <Route path="company/profile" element={<CompanyProfilePanel />} />
         <Route path="leads" element={<LeadManagementPanel />} />
