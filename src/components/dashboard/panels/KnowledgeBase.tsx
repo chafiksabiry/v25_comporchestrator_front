@@ -3,7 +3,7 @@ import KnowledgeBaseComponent from "../../onboarding/KnowledgeBase";
 
 export default function KnowledgeBase() {
   return (
-    <div className="w-full h-full pb-10">
+    <div className="w-full">
       <KnowledgeBaseComponent />
     </div>
   );
