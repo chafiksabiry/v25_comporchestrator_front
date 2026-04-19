@@ -420,7 +420,10 @@ export default function CurriculumDesigner({ uploads, methodology, gigId, onComp
         }))
       };
 
-      const generatedPresentation = await AIService.generatePresentation(curriculumSummary);
+      const generatedPresentation = await AIService.generatePresentation(curriculumSummary, {
+        gigId: gigId || undefined,
+        useKnowledgeBase: false,
+      });
       setPresentation(generatedPresentation);
       setIsPreviewOpen(true);
     } catch (error) {
