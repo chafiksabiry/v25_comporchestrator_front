@@ -7,7 +7,7 @@ const envSchema = z.object({
 });
 
 export const env = envSchema.parse({
-  API_URL: import.meta.env.VITE_API_URL,
+  API_URL: import.meta.env.VITE_COMPANY_API_URL,
   API_URL_CALL: import.meta.env.VITE_API_URL_CALL,
   NODE_ENV: import.meta.env.MODE
 });
