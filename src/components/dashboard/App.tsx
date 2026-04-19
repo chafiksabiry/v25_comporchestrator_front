@@ -1,9 +1,5 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Provider } from 'react-redux';
-import { Toaster } from 'react-hot-toast';
-import { store } from './store';
-import { AuthProvider } from './contexts/AuthContext';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from './layouts/DashboardLayout';
 import CompanyProfilePanel from './panels/CompanyProfilePanel';
 import LeadManagementPanel from './panels/LeadManagementPanel';
@@ -28,38 +24,31 @@ import CompanyDashboardPage from './pages/CompanyDashboardPage';
 
 function App() {
   return (
-    <AuthProvider>
-      <Provider store={store}>
-        <Router>
-          <Routes>
-            <Route element={<DashboardLayout />}>
-              <Route index element={<OverviewDashboardPage />} />
-              <Route path="company" element={<Navigate to="/company/dashboard" replace />} />
-              <Route path="company/dashboard" element={<CompanyDashboardPage />} />
-              <Route path="company/profile" element={<CompanyProfilePanel />} />
-              <Route path="leads" element={<LeadManagementPanel />} />
-              <Route path="rep-matching" element={<RepMatchingPanel />} />
-              <Route path="scheduler" element={<SchedulerPanel />} />
-              <Route path="calls" element={<CallsPanel />} />
-              <Route path="telnyx-call-test" element={<TelnyxCallTest />} />
-              <Route path="call-report" element={<CallReportCard />} />
-              <Route path="emails" element={<EmailsPanel />} />
-              <Route path="chat" element={<ChatPanel />} />
-              <Route path="gigs" element={<GigsPanel />} />
-              <Route path="gigs/:gigId" element={<GigDetailsPanel />} />
-              <Route path="quality-assurance" element={<QualityAssurancePanel />} />
-              <Route path="operations" element={<OperationsPanel />} />
-              <Route path="analytics" element={<AnalyticsPanel />} />
-              <Route path="integrations" element={<IntegrationsPanel />} />
-              <Route path="settings" element={<SettingsPanel />} />
-              <Route path="knowledge-base" element={<KnowledgeBase />} />
-              <Route path="kb-insight" element={<KnowledgeInsights />} />
-            </Route>
-          </Routes>
-          <Toaster position="top-right" />
-        </Router>
-      </Provider>
-    </AuthProvider>
+    <Routes>
+      <Route element={<DashboardLayout />}>
+        <Route index element={<OverviewDashboardPage />} />
+        <Route path="company" element={<Navigate to="/company/dashboard" replace />} />
+        <Route path="company/dashboard" element={<CompanyDashboardPage />} />
+        <Route path="company/profile" element={<CompanyProfilePanel />} />
+        <Route path="leads" element={<LeadManagementPanel />} />
+        <Route path="rep-matching" element={<RepMatchingPanel />} />
+        <Route path="scheduler" element={<SchedulerPanel />} />
+        <Route path="calls" element={<CallsPanel />} />
+        <Route path="telnyx-call-test" element={<TelnyxCallTest />} />
+        <Route path="call-report" element={<CallReportCard />} />
+        <Route path="emails" element={<EmailsPanel />} />
+        <Route path="chat" element={<ChatPanel />} />
+        <Route path="gigs" element={<GigsPanel />} />
+        <Route path="gigs/:gigId" element={<GigDetailsPanel />} />
+        <Route path="quality-assurance" element={<QualityAssurancePanel />} />
+        <Route path="operations" element={<OperationsPanel />} />
+        <Route path="analytics" element={<AnalyticsPanel />} />
+        <Route path="integrations" element={<IntegrationsPanel />} />
+        <Route path="settings" element={<SettingsPanel />} />
+        <Route path="knowledge-base" element={<KnowledgeBase />} />
+        <Route path="kb-insight" element={<KnowledgeInsights />} />
+      </Route>
+    </Routes>
   );
 }
 
