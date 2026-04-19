@@ -46,6 +46,7 @@ function AppContent() {
   const [currentStepGuide, setCurrentStepGuide] = useState<{ title: string; description: string } | null>(null);
   const [globalBackConfig, setGlobalBackConfig] = useState<{ label: string; action: () => void } | null>(null);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const [faviconLogo, setFaviconLogo] = useState<string | null>(null);
   const [logoError, setLogoError] = useState(false);
 
   useEffect(() => {
@@ -109,11 +110,14 @@ function AppContent() {
               
               if (rawLogo) {
                 setCompanyLogo(rawLogo);
-              } else if (website) {
-                // Fallback to website favicon if no logo provided
+              }
+
+              if (website) {
                 try {
                   const domain = new URL(website).hostname;
-                  setCompanyLogo(`https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
+                  const favUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+                  setFaviconLogo(favUrl);
+                  if (!rawLogo) setCompanyLogo(favUrl);
                 } catch (e) {
                   console.debug('Failed to parse website for favicon', e);
                 }
@@ -276,16 +280,8 @@ function AppContent() {
                         alt="Company Logo"
                         className="w-full h-full object-contain p-1"
                         onError={() => {
-                          // If primary logo fails and we haven't tried the favicon fallback yet
-                          if (!companyLogo.includes('google.com/s2/favicons')) {
-                             try {
-                               // Try to extract domain from current failing logo or just show initial
-                               const url = new URL(companyLogo);
-                               const domain = url.hostname.replace('logo.clearbit.com/', '');
-                               setCompanyLogo(`https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
-                             } catch (e) {
-                               setLogoError(true);
-                             }
+                          if (faviconLogo && companyLogo !== faviconLogo) {
+                            setCompanyLogo(faviconLogo);
                           } else {
                             setLogoError(true);
                           }
