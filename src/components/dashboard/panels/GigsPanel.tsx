@@ -22,6 +22,7 @@ import Cookies from 'js-cookie';
 import axios from 'axios';
 import countries from 'i18n-iso-countries';
 import { GigsTableSkeleton, PanelHeaderSkeleton } from "../components/common/Skeleton";
+import PrompAI from "../../gigsaicreation/components/PrompAI";
 
 interface Gig {
   _id: string;
@@ -88,6 +89,7 @@ function GigsPanel() {
   const [error, setError] = useState<string | null>(null);
 
   const [editedGig, setEditedGig] = useState<Gig | null>(null);
+  const [showGigCreation, setShowGigCreation] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -409,6 +411,16 @@ function GigsPanel() {
     return true;
   });
 
+  if (showGigCreation) {
+    return (
+      <PrompAI
+        onBackToGigs={() => setShowGigCreation(false)}
+        onBack={() => setShowGigCreation(false)}
+        onBackToOnboarding={() => setShowGigCreation(false)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl shadow-sm p-6">
@@ -425,7 +437,7 @@ function GigsPanel() {
             </div>
           </div>
           <button
-            onClick={() => (window.location.href = "/app6")}
+            onClick={() => setShowGigCreation(true)}
             className="px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 flex items-center gap-2"
           >
             <Plus className="w-5 h-5" />
