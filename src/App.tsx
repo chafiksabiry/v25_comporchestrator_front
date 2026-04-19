@@ -102,6 +102,7 @@ function AppContent() {
 
             if (companyResponse && companyResponse.ok) {
               const companyData = await companyResponse.json();
+              console.log('[V25 Main App] Company data fetched:', companyData);
               const logo = companyData.data?.logo || companyData.logo;
               if (logo) {
                 setCompanyLogo(logo);
