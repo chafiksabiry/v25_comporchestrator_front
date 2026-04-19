@@ -80,7 +80,7 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
       const currentDraft = DraftService.getDraft();
 
       // Only auto-save if we have a draftId (journey already created)
-      // Initial creation is handled by saveDraftImmediately in handleSetupComplete, handleUploadComplete, handleCurriculumComplete
+      // Première persistance backend : validation chat (ContentUploader), ou saveDraftImmediately après upload / curriculum — pas au seul wizard setup.
       if (currentDraft.draftId) {
         console.log('[JourneyBuilder] Auto-saving with existing draftId:', currentDraft.draftId);
         // Use debounced save to prevent multiple rapid saves
@@ -100,7 +100,7 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
     }
   }, [company, journey, methodology, uploads, modules, currentStep, selectedGigId, isRestoringDraft]);
 
-  const handleSetupComplete = async (newCompany: Company, newJourney: TrainingJourney, selectedMethodology?: TrainingMethodology, gigId?: string) => {
+  const handleSetupComplete = (newCompany: Company, newJourney: TrainingJourney, selectedMethodology?: TrainingMethodology, gigId?: string) => {
     setCompany(newCompany);
     setJourney(newJourney);
     if (selectedMethodology) {
@@ -111,8 +111,8 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
     }
     setCurrentStep(1);
 
-    // Sauvegarder immédiatement après le setup (parcours en brouillon sans modules ; les modules arrivent au curriculum)
-    await DraftService.saveDraftImmediately({
+    // Brouillon local uniquement après le setup : ne pas créer de training_journey en base tant que l’utilisateur n’a pas validé dans le chat (ou terminé upload/curriculum).
+    DraftService.saveDraftLocally({
       company: newCompany,
       journey: newJourney,
       methodology: selectedMethodology || null,
