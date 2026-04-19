@@ -7,7 +7,7 @@ export default function GigsPanel() {
 
   if (showGigCreation) {
     return (
-      <div className="w-full h-full pb-10">
+      <div className="w-full">
         <PrompAI
           onBackToGigs={() => setShowGigCreation(false)}
           onBack={() => setShowGigCreation(false)}
@@ -18,7 +18,7 @@ export default function GigsPanel() {
   }
 
   return (
-    <div className="w-full h-full pb-10">
+    <div className="w-full">
       <GigDetails
         onAddNew={() => setShowGigCreation(true)}
       />

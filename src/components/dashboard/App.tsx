@@ -43,11 +43,11 @@ function App() {
         <Route path="/dashboard/quality-assurance" element={<QualityAssurancePanel />} />
         <Route path="/dashboard/operations" element={<OperationsPanel />} />
         <Route path="/dashboard/analytics" element={<AnalyticsPanel />} />
-        <Route path="*" element={<div className="p-8 text-red-500 font-bold">Le tableau de bord n'a pas trouvé cette route. URL: {window.location.hash}</div>} />
         <Route path="/dashboard/integrations" element={<IntegrationsPanel />} />
         <Route path="/dashboard/settings" element={<SettingsPanel />} />
         <Route path="/dashboard/knowledge-base" element={<KnowledgeBase />} />
         <Route path="/dashboard/kb-insight" element={<KnowledgeInsights />} />
+        <Route path="*" element={<div className="p-8 text-red-500 font-bold">Le tableau de bord n'a pas trouvé cette route. URL: {window.location.hash}</div>} />
       </Route>
     </Routes>
   );
