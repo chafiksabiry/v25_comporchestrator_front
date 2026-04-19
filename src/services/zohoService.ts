@@ -45,11 +45,13 @@ class ZohoService {
 
       if (response.ok) {
         const config = await response.json();
-        this.config.accessToken = config.access_token;
-        this.config.refreshToken = config.refresh_token;
-        this.config.tokenExpiry = Date.now() + (config.expires_in * 1000);
-        this.config.isConfigured = true;
-        console.debug('ZohoService: Configuration loaded successfully');
+        if (config) {
+          this.config.accessToken = config.access_token;
+          this.config.refreshToken = config.refresh_token;
+          this.config.tokenExpiry = Date.now() + (config.expires_in * 1000);
+          this.config.isConfigured = true;
+          console.debug('ZohoService: Configuration loaded successfully');
+        }
       } else if (response.status === 404) {
         console.debug('ZohoService: No configuration found for user');
       } else {
