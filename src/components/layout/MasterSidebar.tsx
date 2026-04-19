@@ -225,26 +225,7 @@ export function MasterSidebar({
                   </button>
                 );
               })}
-              <div className="my-2 border-t border-white/10 pt-2" />
-              <button
-                onClick={() => {
-                  setActiveProject('dashboard');
-                  navigate('/dashboard/overview');
-                }}
-                className={`flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden text-slate-400 hover:text-white hover:bg-white/5`}
-              >
-                <div className="shrink-0 group-hover:scale-110 transition-transform duration-300 bg-white/5 p-1 rounded-lg">
-                  <BarChart2 size={16} />
-                </div>
-                {!isCollapsed && (
-                  <span className="font-medium whitespace-nowrap overflow-hidden text-sm transition-all duration-300">Go to Dashboard</span>
-                )}
-                {isCollapsed && (
-                  <div className="absolute left-16 bg-slate-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10">
-                    Go to Dashboard
-                  </div>
-                )}
-              </button>
+
             </>
           ) : (
             <>
