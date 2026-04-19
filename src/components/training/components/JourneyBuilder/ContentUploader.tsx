@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, RotateCcw, Send, History } from 'lucide-react';
+import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, RotateCcw, Send, History, Bot } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ContentUpload } from '../../types/core';
@@ -2066,28 +2066,29 @@ export default function ContentUploader(props: ContentUploaderProps) {
               </div>
             </aside>
           )}
-          <div className={rep ? 'flex w-full flex-col rounded-2xl border border-slate-200 bg-white px-4 py-6 shadow-sm md:px-8 md:py-8' : 'rounded-2xl border border-slate-200 bg-white px-4 py-6 shadow-sm md:px-8 md:py-8'}>
-          {/* Header */}
-          {!hasStartedChat && (
-            <div className={rep ? 'mb-10 shrink-0 px-1 text-center' : 'mb-10 text-center'}>
-              <h2
-                className={
-                  rep
-                    ? 'mb-2 text-5xl font-serif font-semibold tracking-tight text-slate-900'
-                    : 'mb-2 text-6xl font-serif font-semibold tracking-tight text-slate-900'
-                }
-              >
-                {`Good evening, ${displayName}.`}
-              </h2>
-              <p className={rep ? 'mx-auto max-w-xl text-[11px] leading-snug text-slate-500' : 'mx-auto max-w-3xl text-sm font-medium text-slate-500'}>
-                How can I help you?
-              </p>
-            </div>
-          )}
+          <div
+            className={
+              rep
+                ? 'flex w-full flex-col rounded-2xl border border-slate-200 bg-white px-4 py-6 shadow-sm md:px-8 md:py-8'
+                : 'flex max-h-[90vh] min-h-0 flex-col rounded-2xl border border-slate-200 bg-white px-4 py-6 shadow-sm md:px-8 md:py-8'
+            }
+          >
 
-          <div className={rep ? 'mx-auto mb-2 w-full max-w-[700px]' : 'mx-auto mb-4 w-full max-w-[700px]'}>
-            <div className={rep ? 'relative rounded-none border-0 bg-transparent p-0 shadow-none' : 'relative rounded-3xl border border-slate-200 bg-slate-50/40 p-4 shadow-sm'}>
-              <div className="mb-2 flex items-center justify-end gap-2">
+          <div
+            className={
+              rep
+                ? 'mx-auto mb-2 w-full max-w-[700px]'
+                : 'mx-auto flex min-h-0 w-full max-w-[700px] flex-1 flex-col pb-2'
+            }
+          >
+            <div
+              className={
+                rep
+                  ? 'relative rounded-none border-0 bg-transparent p-0 shadow-none'
+                  : 'relative flex min-h-0 flex-1 flex-col rounded-3xl border border-slate-200 bg-slate-50/40 shadow-sm'
+              }
+            >
+              <div className={`mb-0 flex shrink-0 items-center justify-end gap-2 ${rep ? '' : 'px-3 pt-3'}`}>
                 <select
                   value={activeChatGigId}
                   onChange={(e) => setSelectedChatGigId(e.target.value)}
@@ -2173,103 +2174,149 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 </div>
               )}
               {shouldShowChatThread && (
-                <div className={rep ? 'mb-3 space-y-6 rounded-xl bg-transparent p-0' : 'mb-4 space-y-6 rounded-2xl border border-slate-100 bg-slate-50/50 p-4'}>
+                <div
+                  className={
+                    rep
+                      ? 'mb-3 space-y-6 rounded-xl bg-transparent p-0'
+                      : 'mb-2 min-h-0 flex-1 space-y-6 overflow-y-auto px-3 pb-3 pt-2'
+                  }
+                >
+                  {!hasStartedChat && (
+                    <div className="border-b border-slate-200/90 pb-5 text-center">
+                      <h2
+                        className={
+                          rep
+                            ? 'mb-2 text-4xl font-serif font-semibold tracking-tight text-slate-900 sm:text-5xl'
+                            : 'mb-2 text-4xl font-serif font-semibold tracking-tight text-slate-900 sm:text-5xl md:text-6xl'
+                        }
+                      >
+                        {`Good evening, ${displayName}.`}
+                      </h2>
+                      <p className="mx-auto max-w-3xl text-sm font-medium text-slate-500">
+                        How can I help you?
+                      </p>
+                    </div>
+                  )}
                   {shouldShowKbQuestionInChat && (
-                    <div className="flex justify-start">
-                      <div className="w-full max-w-[92%] rounded-[24px] border border-slate-200 bg-white p-3 shadow-md shadow-slate-900/5">
-                        <div className="mb-2 flex items-center justify-between px-2 pt-1">
-                          <p className="text-[28px] font-semibold leading-tight text-slate-900">
-                            Do you want to generate a training plan and training content from your knowledge base?
-                          </p>
-                          <div className="ml-3 shrink-0 text-sm font-semibold text-slate-400">1 of 1</div>
+                    <div className="flex justify-start gap-3">
+                      <div
+                        className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-md shadow-harx-500/20"
+                        aria-hidden
+                      >
+                        <Bot className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <div className="flex flex-wrap items-baseline gap-x-2">
+                          <span className="text-xs font-bold uppercase tracking-wide text-slate-500">HARX</span>
+                          <span className="text-xs font-medium text-slate-400">Assistant</span>
                         </div>
-
-                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/80">
-                          {kbOptions.map((option, idx) => (
-                            <button
-                              key={option.id}
-                              type="button"
-                              onClick={() => handleSelectKbMode(option.id)}
-                              className="flex w-full items-center gap-3 border-b border-slate-200/90 px-4 py-3 text-left transition hover:bg-white last:border-b-0"
-                            >
-                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-harx-500 to-harx-alt-500 text-sm font-bold text-white shadow-sm">
-                                {idx + 1}
-                              </span>
-                              <span className="flex-1">
-                                <span className="block text-base font-semibold text-slate-900">{option.label}</span>
-                                <span className="block text-xs text-slate-600">{option.hint}</span>
-                              </span>
-                              <span className="text-lg text-slate-400">→</span>
-                            </button>
-                          ))}
-                        </div>
-
-                        <div className="mt-2 flex items-center justify-between px-1">
-                          <div className="min-h-[16px] text-[11px] text-slate-600">
-                            {isChatKbLoading ? (
-                              <span className="inline-flex items-center gap-1">
-                                <Loader2 className="h-3.5 w-3.5 animate-spin text-harx-500" />
-                                Loading KB documents...
-                              </span>
-                            ) : (kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads') ? (
-                              <span>{chatKbDocuments.length} KB document(s) ready for generation.</span>
-                            ) : null}
+                        <div className="w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-md shadow-slate-900/5">
+                          <div className="mb-2 flex flex-col gap-1 px-0.5 sm:flex-row sm:items-start sm:justify-between">
+                            <p className="text-lg font-semibold leading-snug text-slate-900 sm:text-xl md:text-2xl">
+                              Do you want to generate a training plan and training content from your knowledge base?
+                            </p>
+                            <div className="shrink-0 text-xs font-semibold text-slate-400 sm:text-sm">1 of 1</div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleSelectKbMode('none')}
-                            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                          >
-                            Skip
-                          </button>
-                        </div>
 
+                          <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80">
+                            {kbOptions.map((option, idx) => (
+                              <button
+                                key={option.id}
+                                type="button"
+                                onClick={() => handleSelectKbMode(option.id)}
+                                className="flex w-full items-center gap-3 border-b border-slate-200/90 px-3 py-3 text-left transition hover:bg-white last:border-b-0 sm:px-4"
+                              >
+                                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F43F5E] text-sm font-bold text-white shadow-sm">
+                                  {idx + 1}
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="block text-sm font-semibold text-slate-900 sm:text-base">{option.label}</span>
+                                  <span className="block text-xs text-slate-600">{option.hint}</span>
+                                </span>
+                                <span className="shrink-0 text-lg text-slate-400">→</span>
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 px-0.5">
+                            <div className="min-h-[16px] text-[11px] text-slate-600">
+                              {isChatKbLoading ? (
+                                <span className="inline-flex items-center gap-1">
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin text-harx-500" />
+                                  Loading KB documents...
+                                </span>
+                              ) : kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads' ? (
+                                <span>{chatKbDocuments.length} KB document(s) ready for generation.</span>
+                              ) : null}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleSelectKbMode('none')}
+                              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                            >
+                              Skip
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
                   {showPersonalizationCard && (
-                    <div className="flex justify-start">
-                      <div className="w-full max-w-[92%] rounded-[24px] border border-slate-200 bg-white p-3 shadow-md shadow-slate-900/5">
-                        <div className="mb-2 flex items-center justify-between px-2 pt-1">
-                          <p className="text-[18px] font-semibold leading-tight text-slate-900">
-                            {personalizationQuestions[personalizationStep]?.question || 'A few questions to personalize your training'}
-                          </p>
-                          <div className="ml-3 shrink-0 text-sm font-semibold text-slate-400">
-                            {`${Math.min(personalizationStep + 1, personalizationQuestions.length)} of ${personalizationQuestions.length}`}
+                    <div className="flex justify-start gap-3">
+                      <div
+                        className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-md shadow-harx-500/20"
+                        aria-hidden
+                      >
+                        <Bot className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <div className="flex flex-wrap items-baseline gap-x-2">
+                          <span className="text-xs font-bold uppercase tracking-wide text-slate-500">HARX</span>
+                          <span className="text-xs font-medium text-slate-400">Assistant</span>
+                        </div>
+                        <div className="w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-md shadow-slate-900/5">
+                          <div className="mb-2 flex flex-col gap-1 px-0.5 sm:flex-row sm:items-start sm:justify-between">
+                            <p className="text-base font-semibold leading-snug text-slate-900 sm:text-lg">
+                              {personalizationQuestions[personalizationStep]?.question ||
+                                'A few questions to personalize your training'}
+                            </p>
+                            <div className="shrink-0 text-xs font-semibold text-slate-400 sm:text-sm">
+                              {`${Math.min(personalizationStep + 1, personalizationQuestions.length)} of ${personalizationQuestions.length}`}
+                            </div>
                           </div>
-                        </div>
 
-                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/80">
-                          {(personalizationQuestions[personalizationStep]?.options || []).map((option, idx) => (
+                          <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80">
+                            {(personalizationQuestions[personalizationStep]?.options || []).map((option, idx) => (
+                              <button
+                                key={`${personalizationStep}-${option}`}
+                                type="button"
+                                onClick={() => handleSelectPersonalizationOption(option)}
+                                className="flex w-full items-center gap-3 border-b border-slate-200/90 px-3 py-3 text-left transition hover:bg-white last:border-b-0 sm:px-4"
+                              >
+                                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F43F5E] text-sm font-bold text-white shadow-sm">
+                                  {idx + 1}
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                  <span className="block text-sm font-semibold text-slate-900 sm:text-base">{option}</span>
+                                </span>
+                                <span className="shrink-0 text-lg text-slate-400">→</span>
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="mt-2 flex items-center justify-end px-0.5">
                             <button
-                              key={`${personalizationStep}-${option}`}
                               type="button"
-                              onClick={() => handleSelectPersonalizationOption(option)}
-                              className="flex w-full items-center gap-3 border-b border-slate-200/90 px-4 py-3 text-left transition hover:bg-white last:border-b-0"
+                              onClick={() => {
+                                setShowPersonalizationCard(false);
+                                setPersonalizationStep(0);
+                                setPersonalizationAnswers({});
+                              }}
+                              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                             >
-                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-harx-500 to-harx-alt-500 text-sm font-bold text-white shadow-sm">
-                                {idx + 1}
-                              </span>
-                              <span className="flex-1">
-                                <span className="block text-base font-semibold text-slate-900">{option}</span>
-                              </span>
-                              <span className="text-lg text-slate-400">→</span>
+                              Skip
                             </button>
-                          ))}
-                        </div>
-
-                        <div className="mt-2 flex items-center justify-end px-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowPersonalizationCard(false);
-                              setPersonalizationStep(0);
-                              setPersonalizationAnswers({});
-                            }}
-                            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                          >
-                            Skip
-                          </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -2520,7 +2567,13 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                     </div>
                   ))}
                   {isChatLoading && !chatMessages.some((m) => m.isStreaming) && (
-                    <div className="flex justify-start">
+                    <div className="flex justify-start gap-3">
+                      <div
+                        className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-md shadow-harx-500/20"
+                        aria-hidden
+                      >
+                        <Bot className="h-4 w-4" />
+                      </div>
                       <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm">
                         <Loader2 className="h-4 w-4 animate-spin text-harx-500" />
                         HARX is thinking…
@@ -2530,7 +2583,9 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                 </div>
               )}
 
-              <div className={rep ? 'sticky bottom-2 z-20 border-t border-slate-200/80 bg-white/95 pb-1 pt-2 backdrop-blur-sm' : 'sticky bottom-2 z-20 border-t border-slate-200/80 bg-white/95 pb-1 pt-2 backdrop-blur-sm'}>
+              <div
+                className={`shrink-0 border-t border-slate-200/80 bg-white/95 pb-1 pt-2 backdrop-blur-sm ${rep ? 'sticky bottom-2 z-20' : 'sticky bottom-0 z-20 px-3'}`}
+              >
                 <div className={rep ? 'rounded-[20px] border border-slate-200 bg-white px-4 py-3 shadow-sm' : 'rounded-[28px] border border-slate-200 bg-white px-5 py-4 shadow-sm'}>
                   <input
                     ref={chatFileInputRef}
