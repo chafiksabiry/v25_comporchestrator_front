@@ -15,9 +15,11 @@ import { cloudinaryService } from '../../lib/cloudinaryService';
 
 interface SetupWizardProps {
   onComplete: (company: Company, journey: TrainingJourney, methodology?: TrainingMethodology, gigId?: string) => void;
+  /** Embedded in REP Onboarding: less top padding, content top-aligned (no vertical centering gap). */
+  repOnboardingLayout?: boolean;
 }
 
-export default function SetupWizard({ onComplete }: SetupWizardProps) {
+export default function SetupWizard({ onComplete, repOnboardingLayout = false }: SetupWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [company, setCompany] = useState<Partial<Company>>({});
   const [companyData, setCompanyData] = useState<any>(null);
@@ -388,12 +390,42 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
 
   const HARX = '#ff4d4d';
   const HARX_GRADIENT = 'linear-gradient(to right, #ff4d4d, #ec4899)';
+  const embedCompact = repOnboardingLayout;
+  const stepperPadding = embedCompact ? '2px 24px 4px' : '8px 24px';
+  const bodyPadding = embedCompact
+    ? currentStep === 1
+      ? '4px 20px 8px'
+      : isVisionStep
+        ? '4px 20px 8px'
+        : isStep4
+          ? '4px 20px 8px'
+          : isStep5
+            ? '2px 14px 4px'
+            : '8px 20px 10px'
+    : currentStep === 1
+      ? '12px 28px 8px'
+      : isVisionStep
+        ? '12px 28px 8px'
+        : isStep4
+          ? '12px 28px 8px'
+          : isStep5
+            ? '8px 24px 6px'
+            : '16px 28px';
+
+  const isThumbnailStep = currentStep === 2;
+  const setupContentMaxWidth = isStep4 ? 1120 : embedCompact && isThumbnailStep ? 380 : 500;
+  const thumbDropSize = embedCompact && isThumbnailStep ? 160 : 260;
+  const thumbOuterPadding = embedCompact && isThumbnailStep ? '10px 10px 8px' : '20px 16px 18px';
+  const thumbSectionGap = embedCompact && isThumbnailStep ? 8 : 18;
+  const thumbAiBlockMarginTop = embedCompact && isThumbnailStep ? 10 : 18;
+  const thumbTextareaRows = embedCompact && isThumbnailStep ? 2 : 4;
+  const thumbTextareaMinH = embedCompact && isThumbnailStep ? 64 : 100;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%', width: '100%' }}>
 
       {/* ── Stepper ── */}
-      <div style={{ flexShrink: 0, padding: '8px 24px' }}>
+      <div style={{ flexShrink: 0, padding: stepperPadding }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
           {steps.map((step, i) => {
             const done = currentStep > step.id;
@@ -439,23 +471,23 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          padding: currentStep === 1 ? '12px 28px 8px' : isVisionStep ? '12px 28px 8px' : isStep4 ? '12px 28px 8px' : isStep5 ? '8px 24px 6px' : '16px 28px',
+          justifyContent: embedCompact ? 'flex-start' : 'center',
+          padding: bodyPadding,
           width: '100%',
         }}>
         <div style={{
-          maxWidth: isStep4 ? 1120 : 500,
+          maxWidth: setupContentMaxWidth,
           margin: '0 auto',
           width: '100%',
         }}>
 
           {currentStep === 1 && (
             <>
-              <div style={{ textAlign: 'center', marginBottom: 18 }}>
+              <div style={{ textAlign: 'center', marginBottom: embedCompact ? 10 : 18 }}>
                 <h3 style={{ fontSize: 17, fontWeight: 800, color: '#111827', margin: 0, letterSpacing: '-0.01em' }}>
                   Welcome to your training journey
                 </h3>
-                <p style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+                <p style={{ fontSize: 12, color: '#6b7280', marginTop: embedCompact ? 2 : 4 }}>
                   Industry templates · Smart defaults · Compliance
                 </p>
               </div>
@@ -653,12 +685,12 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           )}
 
           {isStep5 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 18, width: '100%' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: thumbSectionGap, width: '100%' }}>
               <div style={{ textAlign: 'center' }}>
-                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#111827', margin: 0 }}>
+                <h3 style={{ fontSize: embedCompact ? 16 : 18, fontWeight: 800, color: '#111827', margin: 0 }}>
                   Upload training thumbnail
                 </h3>
-                <p style={{ fontSize: 13, color: '#6b7280', marginTop: 6, lineHeight: 1.45 }}>
+                <p style={{ fontSize: embedCompact ? 12 : 13, color: '#6b7280', marginTop: embedCompact ? 3 : 6, lineHeight: 1.45 }}>
                   Add a cover image for your training card, or describe one for AI.
                 </p>
               </div>
@@ -666,9 +698,11 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
               <div
                 style={{
                   width: '100%',
+                  maxWidth: embedCompact && isThumbnailStep ? 360 : undefined,
+                  margin: embedCompact && isThumbnailStep ? '0 auto' : undefined,
                   border: '1px dashed #cbd5e1',
-                  borderRadius: 16,
-                  padding: '20px 16px 18px',
+                  borderRadius: embedCompact ? 12 : 16,
+                  padding: thumbOuterPadding,
                   background: 'transparent',
                 }}
               >
@@ -701,12 +735,12 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      width: 260,
-                      height: 260,
+                      width: thumbDropSize,
+                      height: thumbDropSize,
                       maxWidth: '100%',
                       aspectRatio: '1',
                       border: '2px dashed #e2e8f0',
-                      borderRadius: 14,
+                      borderRadius: embedCompact ? 12 : 14,
                       background: '#ffffff',
                       overflow: 'hidden',
                       boxSizing: 'border-box',
@@ -724,16 +758,16 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
                     ) : (
-                      <div style={{ textAlign: 'center', padding: '0 18px' }}>
+                      <div style={{ textAlign: 'center', padding: embedCompact ? '0 10px' : '0 18px' }}>
                         {thumbnailUploading ? (
-                          <Loader2 className="animate-spin" style={{ width: 22, height: 22, color: HARX, margin: '0 auto 10px' }} />
+                          <Loader2 className="animate-spin" style={{ width: embedCompact ? 18 : 22, height: embedCompact ? 18 : 22, color: HARX, margin: embedCompact ? '0 auto 6px' : '0 auto 10px' }} />
                         ) : (
-                          <ImagePlus style={{ width: 28, height: 28, color: '#94a3b8', margin: '0 auto 10px' }} strokeWidth={1.5} />
+                          <ImagePlus style={{ width: embedCompact ? 22 : 28, height: embedCompact ? 22 : 28, color: '#94a3b8', margin: embedCompact ? '0 auto 6px' : '0 auto 10px' }} strokeWidth={1.5} />
                         )}
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+                        <div style={{ fontSize: embedCompact ? 12 : 13, fontWeight: 700, color: '#0f172a' }}>
                           {thumbnailUploading ? 'Uploading…' : 'Import or drop image'}
                         </div>
-                        <div style={{ fontSize: 12, color: '#64748b', marginTop: 6, lineHeight: 1.35 }}>
+                        <div style={{ fontSize: embedCompact ? 11 : 12, color: '#64748b', marginTop: embedCompact ? 4 : 6, lineHeight: 1.35 }}>
                           PNG, JPG, WEBP
                         </div>
                       </div>
@@ -741,8 +775,8 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                   </label>
                 </div>
 
-                <div style={{ marginTop: 18, width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <label htmlFor="thumbnail-ai-prompt" style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>
+                <div style={{ marginTop: thumbAiBlockMarginTop, width: '100%', display: 'flex', flexDirection: 'column', gap: embedCompact ? 6 : 10 }}>
+                  <label htmlFor="thumbnail-ai-prompt" style={{ fontSize: embedCompact ? 11 : 12, fontWeight: 700, color: '#475569' }}>
                     Describe an AI thumbnail <span style={{ fontWeight: 500, color: '#94a3b8' }}>(optional)</span>
                   </label>
                   <textarea
@@ -750,15 +784,15 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                     value={thumbnailPrompt}
                     onChange={(e) => setThumbnailPrompt(e.target.value)}
                     placeholder="E.g. modern dashboard mockup, soft gradients, professional training cover…"
-                    rows={4}
+                    rows={thumbTextareaRows}
                     style={{
                       width: '100%',
-                      minHeight: 100,
+                      minHeight: thumbTextareaMinH,
                       resize: 'vertical',
                       border: '1px solid #e2e8f0',
                       borderRadius: 10,
-                      padding: '12px 14px',
-                      fontSize: 13,
+                      padding: embedCompact ? '8px 10px' : '12px 14px',
+                      fontSize: embedCompact ? 12 : 13,
                       lineHeight: 1.5,
                       color: '#1e293b',
                       outline: 'none',
@@ -817,7 +851,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
                 </div>
 
                 {thumbnailUrl ? (
-                  <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ marginTop: embedCompact ? 10 : 16, display: 'flex', flexDirection: 'column', gap: embedCompact ? 6 : 8 }}>
                     <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, letterSpacing: '0.02em' }}>
                       {isCloudinaryThumbnail ? 'Cloudinary image link' : 'Image link'}
                     </div>
@@ -1066,7 +1100,7 @@ export default function SetupWizard({ onComplete }: SetupWizardProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '10px 28px',
+          padding: embedCompact ? '8px 20px' : '10px 28px',
           borderTop: '1px solid #f3f4f6',
           background: '#fff',
         }}
