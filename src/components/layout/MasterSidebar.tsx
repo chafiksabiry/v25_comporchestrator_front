@@ -233,12 +233,12 @@ export function MasterSidebar({
                   key={item.label}
                   to={item.path}
                   end={item.key === 'overview'}
-                  className={() => {
+                  className={({ isActive }) => {
+                    // Manual override for specific prefix rules if they exist
                     const prefix = (item as { activePathPrefix?: string }).activePathPrefix;
-                    const isActive = prefix
-                      ? location.pathname === prefix || location.pathname.startsWith(`${prefix}/`)
-                      : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
-                    return `flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden ${isActive
+                    const isReallyActive = isActive || (prefix && location.pathname.startsWith(prefix));
+                    
+                    return `flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden ${isReallyActive
                       ? "bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg shadow-rose-500/30 scale-[1.02] z-10"
                       : "text-slate-400 hover:text-white hover:bg-white/5"
                     }`;

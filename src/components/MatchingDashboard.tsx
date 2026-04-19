@@ -1346,15 +1346,16 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                 <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
                                     {invitedAgentsList.length > 0 ? (
                                         <div className="space-y-4">
-                                            {invitedAgentsList.map((agent: { _id: any; personalInfo: { name: any; email: any; }; gigId: { title: any; }; gig: { title: any; }; }, index: any) => {
+                                            {(invitedAgentsList || []).map((agent: any, index: number) => {
+                                                if (!agent) return null;
                                                 console.log('🔍 Invited Agent Data:', agent);
 
                                                 return (
-                                                    <div key={`invited-${agent._id}-${index}`} className="bg-yellow-50 border border-yellow-200 rounded-xl p-5 hover:shadow-md transition-all duration-200">
+                                                    <div key={`invited-${agent._id || index}`} className="bg-yellow-50 border border-yellow-200 rounded-xl p-5 hover:shadow-md transition-all duration-200">
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex-1">
-                                                                <h3 className="text-lg font-bold text-gray-900">{agent.personalInfo?.name}</h3>
-                                                                <p className="text-slate-500">{agent.personalInfo?.email}</p>
+                                                                <h3 className="text-lg font-bold text-gray-900">{agent.personalInfo?.name || 'Unnamed Agent'}</h3>
+                                                                <p className="text-slate-500">{agent.personalInfo?.email || 'No email'}</p>
                                                                 <div className="mt-2 space-y-1">
                                                                     <p className="text-sm text-yellow-600 font-medium bg-yellow-100/50 inline-block px-2 py-0.5 rounded">
                                                                         Invited • Waiting for response
@@ -1403,15 +1404,15 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                 <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
                                     {enrollmentRequests.length > 0 ? (
                                         <div className="space-y-4">
-                                            {enrollmentRequests.map((agent: { _id: string; agentId: { personalInfo: { name: any; email: any; }; }; enrollmentStatus: any; gigId: { title: any; }; gig: { title: any; }; notes: any; }, index: any) => (
-                                                <div key={`enrollment-${agent._id}-${index}`} className="bg-blue-50 border border-blue-200 rounded-xl p-5 hover:shadow-md transition-all duration-200">
+                                            {(enrollmentRequests || []).map((agent: any, index: number) => agent && (
+                                                <div key={`enrollment-${agent._id || index}`} className="bg-blue-50 border border-blue-200 rounded-xl p-5 hover:shadow-md transition-all duration-200">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex-1">
-                                                            <h3 className="text-lg font-bold text-gray-900">{agent.agentId?.personalInfo?.name}</h3>
-                                                            <p className="text-slate-500">{agent.agentId?.personalInfo?.email}</p>
+                                                            <h3 className="text-lg font-bold text-gray-900">{agent.agentId?.personalInfo?.name || 'Unnamed Agent'}</h3>
+                                                            <p className="text-slate-500">{agent.agentId?.personalInfo?.email || 'No email'}</p>
                                                             <div className="mt-2 space-y-1">
                                                                 <p className="text-sm text-blue-600 font-medium">
-                                                                    <span className="font-medium">Status:</span> {agent.enrollmentStatus}
+                                                                    <span className="font-medium">Status:</span> {agent.enrollmentStatus || 'Pending'}
                                                                 </p>
                                                                 {(agent.gigId?.title || agent.gig?.title) && (
                                                                     <p className="text-sm text-slate-500">
@@ -1504,17 +1505,17 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                 <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
                                     {activeAgentsList.length > 0 ? (
                                         <div className="space-y-4">
-                                            {activeAgentsList.map((agent: { _id: any; agentId: { personalInfo: { name: any; email: any; languages: string | any[]; }; professionalSummary: { yearsOfExperience: any; currentRole: any; keyExpertise: any[]; }; availability: { schedule: string | any[]; }; onboardingProgress: { currentPhase: number; }; }; gigId: { title: any; }; gig: { title: any; }; }, index: any) => (
-                                                <div key={`active-${agent._id}-${index}`} className="bg-green-50 border border-green-200 rounded-xl p-5 hover:shadow-md transition-all duration-200">
+                                            {(activeAgentsList || []).map((agent: any, index: number) => agent && (
+                                                <div key={`active-${agent._id || index}`} className="bg-green-50 border border-green-200 rounded-xl p-5 hover:shadow-md transition-all duration-200">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex-1">
                                                             <div className="flex items-center gap-3 mb-2">
-                                                                <h3 className="text-lg font-bold text-gray-900">{agent.agentId?.personalInfo?.name}</h3>
+                                                                <h3 className="text-lg font-bold text-gray-900">{agent.agentId?.personalInfo?.name || 'Unnamed Agent'}</h3>
                                                                 <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium border border-green-200">
                                                                     ✅ Active
                                                                 </span>
                                                             </div>
-                                                            <p className="text-slate-500 mb-2">{agent.agentId?.personalInfo?.email}</p>
+                                                            <p className="text-slate-500 mb-2">{agent.agentId?.personalInfo?.email || 'No email'}</p>
 
                                                             <div className="mt-3 space-y-2">
                                                                 {(agent.gigId?.title || agent.gig?.title) && (
@@ -1526,15 +1527,15 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                                                 )}
                                                                 <div className="flex items-center gap-4 text-sm">
                                                                     <span className="text-slate-500">
-                                                                        <span className="font-medium">Experience:</span> {agent.agentId?.professionalSummary?.yearsOfExperience} years
+                                                                        <span className="font-medium">Experience:</span> {agent.agentId?.professionalSummary?.yearsOfExperience || 0} years
                                                                     </span>
                                                                     <span className="text-slate-500">
-                                                                        <span className="font-medium">Role:</span> {agent.agentId?.professionalSummary?.currentRole}
+                                                                        <span className="font-medium">Role:</span> {agent.agentId?.professionalSummary?.currentRole || 'N/A'}
                                                                     </span>
                                                                 </div>
 
                                                                 <div className="flex flex-wrap gap-2">
-                                                                    {agent.agentId?.professionalSummary?.keyExpertise?.slice(0, 5).map((skill: any, i: any) => (
+                                                                    {(agent.agentId?.professionalSummary?.keyExpertise || []).slice(0, 5).map((skill: any, i: any) => (
                                                                         <span key={i} className="px-2 py-1 bg-green-900/30 text-green-300 rounded text-xs">
                                                                             {skill}
                                                                         </span>
@@ -1548,7 +1549,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
                                                                 <div className="flex flex-wrap gap-4 text-sm text-slate-500">
                                                                     <div>
-                                                                        <span className="font-medium">Availability:</span> {agent.agentId?.availability?.schedule?.length} days/week
+                                                                        <span className="font-medium">Availability:</span> {agent.agentId?.availability?.schedule?.length || 0} days/week
                                                                     </div>
                                                                     <div>
                                                                         <span className="font-medium">Status:</span> {agent.agentId?.onboardingProgress?.currentPhase === 4 ? 'Fully Onboarded' : 'In Progress'}
