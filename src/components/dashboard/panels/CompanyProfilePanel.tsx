@@ -3,7 +3,7 @@ import SearchCompanyWizardStep from '../../onboarding/searchCompanyWizard/Search
 
 export default function CompanyProfilePanel() {
   return (
-    <div className="-m-8 px-4 py-3">
+    <div className="w-full h-full">
       <SearchCompanyWizardStep />
     </div>
   );

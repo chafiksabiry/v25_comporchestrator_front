@@ -623,7 +623,7 @@ const KnowledgeInsights: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="w-full">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500"></div>
         </div>
@@ -633,7 +633,7 @@ const KnowledgeInsights: React.FC = () => {
 
   if (error) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="w-full">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
           <strong className="font-bold">Error!</strong>
           <span className="block sm:inline"> {error}</span>
@@ -643,7 +643,7 @@ const KnowledgeInsights: React.FC = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="w-full">
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
