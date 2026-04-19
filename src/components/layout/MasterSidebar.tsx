@@ -69,7 +69,7 @@ export function MasterSidebar({
       if (!userId) return;
 
       try {
-        const companyRes = await fetch(`${import.meta.env.VITE_BACKEND_URL_COMPANY}/companies/user/${userId}`);
+        const companyRes = await fetch(`${import.meta.env.VITE_COMPANY_API_URL}/companies/user/${userId}`);
         if (companyRes.ok) {
           const companyData = await companyRes.json();
           const companyExists = companyData.success && companyData.data;
@@ -77,7 +77,7 @@ export function MasterSidebar({
 
           if (companyExists && companyData.data._id) {
             try {
-              const progressRes = await fetch(`${import.meta.env.VITE_BACKEND_URL_COMPANY}/onboarding/companies/${companyData.data._id}/onboarding`);
+              const progressRes = await fetch(`${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyData.data._id}/onboarding`);
 
               let stepGigs = false;
               let stepLeads = false;
