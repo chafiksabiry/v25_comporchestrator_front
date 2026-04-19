@@ -123,7 +123,7 @@ export function MasterSidebar({
     {
       icon: <Building2 size={20} />,
       label: 'Company',
-      path: '/company/dashboard',
+      path: '/company/profile',
       key: 'company',
       alwaysShow: true,
       activePathPrefix: '/company',
