@@ -1053,7 +1053,7 @@ const CompanyOnboarding = () => {
         return;
       }
     } else if (displayedPhase === 4) {
-      window.location.hash = '#/dashboard/overview';
+      window.location.hash = '#/dashboard/profile';
     }
   };
 
