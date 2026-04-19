@@ -34,9 +34,10 @@ export function OverviewDashboardPage() {
           </span>
         </Link>
 
-        <a
-          href="/app11"
-          className="group relative overflow-hidden rounded-3xl border border-slate-200/80 bg-slate-900 p-8 text-white shadow-sm transition hover:border-slate-600 hover:shadow-md"
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('openComporchestrator'))}
+          className="group relative w-full text-left overflow-hidden rounded-3xl border border-slate-200/80 bg-slate-900 p-8 text-white shadow-sm transition hover:border-slate-600 hover:shadow-md"
         >
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20">
             <LayoutDashboard className="h-6 w-6 text-orange-300" />
@@ -49,7 +50,7 @@ export function OverviewDashboardPage() {
             Retour orchestrateur
             <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
           </span>
-        </a>
+        </button>
       </div>
     </div>
   );
