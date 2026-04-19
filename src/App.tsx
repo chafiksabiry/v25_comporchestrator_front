@@ -7,7 +7,7 @@ import {
   Info
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
-import { HashRouter } from 'react-router-dom';
+import { HashRouter, useLocation } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from './components/dashboard/store';
 import { AuthProvider } from './components/dashboard/contexts/AuthContext';
@@ -29,7 +29,13 @@ import MasterSidebar from './components/layout/MasterSidebar';
 import { ProjectViewSwitch, type ProjectView } from './components/ProjectViewSwitch';
 
 function AppContent() {
-  const [activeProject, setActiveProject] = useState<ProjectView>('comporchestrator');
+  const location = useLocation();
+  const [activeProject, setActiveProject] = useState<ProjectView>(() => {
+    if (location.pathname !== '/' && location.pathname !== '') {
+      return 'dashboard';
+    }
+    return 'comporchestrator';
+  });
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [userFullName, setUserFullName] = useState('Admin User');
