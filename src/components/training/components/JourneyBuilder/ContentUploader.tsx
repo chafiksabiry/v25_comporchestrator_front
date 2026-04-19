@@ -2180,8 +2180,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
           <div
             className={
               rep
-                ? 'mx-auto mb-2 w-full max-w-[700px]'
-                : 'mx-auto flex min-h-0 w-full max-w-[700px] flex-1 flex-col pb-2'
+                ? 'mb-2 w-full min-w-0'
+                : 'flex min-h-0 w-full min-w-0 flex-1 flex-col pb-2'
             }
           >
             <div
