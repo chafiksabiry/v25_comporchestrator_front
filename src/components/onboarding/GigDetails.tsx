@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import Swal from 'sweetalert2';
-import GigDetailsView from './GigDetailsView';
+import { GigReview } from '../gigsaicreation/components/GigReview';
 import { Clock, Users, Plus } from 'lucide-react';
 
 interface Gig {
@@ -230,11 +230,56 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
 
   // If a gig is selected, show the details view
   if (selectedGig) {
-    console.log('Rendering GigDetailsView with gig:', selectedGig);
+    const rawGig = selectedGig as any;
+    
+    // Map populated API data back into the flat GigData structure expected by GigReview
+    const mappedGig = {
+      ...rawGig,
+      destination_zone: rawGig.destination_zone?._id || rawGig.destination_zone?.cca2 || rawGig.destination_zone,
+      commission: {
+        ...rawGig.commission,
+        currency: rawGig.commission?.currency?._id || rawGig.commission?.currency
+      },
+      skills: {
+        ...rawGig.skills,
+        professional: rawGig.skills?.professional?.map((s: any) => ({
+          skill: s.skill?._id || s.skill,
+          level: s.level || 50
+        })) || [],
+        technical: rawGig.skills?.technical?.map((s: any) => ({
+          skill: s.skill?._id || s.skill,
+          level: s.level || 50
+        })) || [],
+        soft: rawGig.skills?.soft?.map((s: any) => ({
+          skill: s.skill?._id || s.skill,
+          level: s.level || 50
+        })) || [],
+        languages: rawGig.skills?.languages?.map((l: any) => ({
+          language: l.language?._id || l.language,
+          proficiency: l.proficiency || 'Intermediate',
+          iso639_1: l.language?.iso639_1 || 'en'
+        })) || []
+      },
+      industries: rawGig.industries?.map((i: any) => i._id || i) || [],
+      activities: rawGig.activities?.map((a: any) => a._id || a) || [],
+      schedule: {
+         ...rawGig.schedule,
+         schedules: rawGig.availability?.schedule?.map((s: any) => ({
+            day: s.day,
+            hours: s.hours
+         })) || []
+      }
+    };
+
+    console.log('Rendering GigReview with gig:', mappedGig);
     return (
-      <GigDetailsView
-        gig={selectedGig as any}
+      <GigReview
+        data={mappedGig as any}
+        isReadOnly={true}
         onBack={() => setSelectedGig(null)}
+        onEdit={() => {}}
+        onSubmit={async () => {}}
+        isSubmitting={false}
       />
     );
   }

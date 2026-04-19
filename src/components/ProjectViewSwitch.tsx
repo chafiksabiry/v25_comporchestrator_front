@@ -22,7 +22,7 @@ export function ProjectViewSwitch({
   dashboard,
 }: ProjectViewSwitchProps) {
   if (activeView === 'dashboard') {
-    return <div className="h-screen w-full overflow-hidden">{dashboard}</div>;
+    return <div className="h-full w-full">{dashboard}</div>;
   }
   return <>{comporchestrator}</>;
 }
