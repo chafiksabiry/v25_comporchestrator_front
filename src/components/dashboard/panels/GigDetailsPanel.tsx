@@ -87,7 +87,7 @@ function GigDetailsPanel() {
   }, [gigId]);
 
   const handleBack = () => {
-    navigate('/gigs');
+    navigate('/dashboard/gigs');
   };
 
   if (loading) {

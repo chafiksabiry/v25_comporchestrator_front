@@ -293,9 +293,9 @@ export function GigReview({
       });
 
       if (isEditMode && editGigId) {
-        const gigUrl = `company/#/dashboard/gigs/${editGigId}`;
+        const gigUrl = `#/dashboard/gigs/${editGigId}`;
         console.log('Redirecting to:', gigUrl);
-        window.location.href = gigUrl;
+        window.location.hash = gigUrl;
       } else if (onPublishSuccess) {
         await onPublishSuccess();
       } else {
