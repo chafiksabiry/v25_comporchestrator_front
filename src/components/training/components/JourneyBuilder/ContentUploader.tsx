@@ -1969,11 +1969,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
         if (!titles.length) return;
         const list = titles.join(', ');
         const prompt = [
-          'En français : rédige UNIQUEMENT le texte destiné aux slides (ce que le participant verra à l’écran) pour les modules suivants du parcours en cours :',
+          'En français : rédige le contenu destiné aux slides pour les modules suivants du parcours en cours, au format **Markdown** (titres ## ou ###, listes -, **gras**, paragraphes, tableaux uniquement si pédagogiquement utiles) :',
           list,
           '',
-          'Pour chaque module : un titre court + contenu sous forme de listes à puces et courts paragraphes (pédagogie concrète, exemples, points clés).',
-          'Ne pas inclure : durées (minutes, « Durée totale », etc.), ligne « Rappel — durée / méthodologie », objectifs pédagogiques en section séparée, grille d’évaluation, tableaux récapitulatifs, ni méta-administratif.',
+          'Pour chaque module : structure claire en Markdown (sous-titres ##, sous-parties ###, puces) avec pédagogie concrète, exemples et points clés.',
+          'Ne pas inclure : durées (minutes, « Durée totale », etc.), ligne « Rappel — durée / méthodologie », sections génériques vides type objectifs, grilles d’évaluation, tableaux récap admin, ni méta hors contenu visible.',
           'Reste cohérent avec le plan déjà proposé dans la conversation. Ne réécris pas tout le programme : concentre-toi sur ces modules.',
         ].join('\n');
         await sendChatMessage(prompt);
