@@ -259,55 +259,25 @@ export function MasterSidebar({
               ))}
 
               {hasKb && (
-                <div>
-                  <button
-                    onClick={() => !isCollapsed && setIsExpanded(!isExpanded)}
-                    className={`flex items-center justify-between w-full p-3.5 rounded-2xl transition-all duration-300 relative group ${isCollapsed ? 'justify-center' : ''} text-slate-400 hover:text-white hover:bg-white/5`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="shrink-0 group-hover:scale-110 transition-transform duration-300">
-                        <Book size={20} />
-                      </div>
-                      {!isCollapsed && <span className="font-medium text-sm">Knowledge Base</span>}
-                    </div>
-                    {!isCollapsed && (isExpanded ? <ChevronDown size={14} className="opacity-50" /> : <ChevronRight size={14} className="opacity-50" />)}
-                    
-                    {isCollapsed && (
-                      <div className="absolute left-16 bg-slate-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10">
-                        Knowledge Base
-                      </div>
-                    )}
-                  </button>
-
-                  {isExpanded && !isCollapsed && (
-                    <div className="ml-6 space-y-2 mt-2">
-                      <NavLink
-                        to="/dashboard/knowledge-base"
-                        className={({ isActive }) =>
-                          `flex items-center gap-4 w-full p-3 rounded-xl transition-all duration-300 ${isActive
-                            ? "text-rose-400 bg-rose-500/5 shadow-sm"
-                            : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
-                          }`
-                        }
-                      >
-                        <Book size={18} />
-                        <span className="text-sm font-medium">Knowledge Base</span>
-                      </NavLink>
-                      <NavLink
-                        to="/dashboard/kb-insight"
-                        className={({ isActive }) =>
-                          `flex items-center gap-4 w-full p-3 rounded-xl transition-all duration-300 ${isActive
-                            ? "text-rose-400 bg-rose-500/5 shadow-sm"
-                            : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
-                          }`
-                        }
-                      >
-                        <Lightbulb size={18} />
-                        <span className="text-sm font-medium">Knowledge Base Insight</span>
-                      </NavLink>
+                <NavLink
+                  to="/dashboard/knowledge-base"
+                  className={({ isActive }) =>
+                    `flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden ${isActive
+                      ? "bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg shadow-rose-500/30 scale-[1.02] z-10"
+                      : "text-slate-400 hover:text-white hover:bg-white/5"
+                    }`
+                  }
+                >
+                  <div className="shrink-0 group-hover:scale-110 transition-transform duration-300">
+                    <Book size={20} />
+                  </div>
+                  {!isCollapsed && <span className="font-medium text-sm transition-all duration-300">Knowledge Base</span>}
+                  {isCollapsed && (
+                    <div className="absolute left-16 bg-slate-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10">
+                      Knowledge Base
                     </div>
                   )}
-                </div>
+                </NavLink>
               )}
               
               <div className="my-2 border-t border-white/10 pt-2" />
