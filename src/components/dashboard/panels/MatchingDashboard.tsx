@@ -249,7 +249,7 @@ const MatchingDashboard: React.FC = () => {
  
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="w-full">
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -283,7 +283,7 @@ const MatchingDashboard: React.FC = () => {
       </header>*/}
 
       {/* Main Content */}
-      <main className="container mx-auto p-6">
+      <main className="w-full mt-6">
         {/* Error Message */}
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">

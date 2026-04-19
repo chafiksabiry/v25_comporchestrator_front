@@ -32,8 +32,8 @@ function ChatPanel() {
   };
 
   return (
-    <div className="space-y-6 p-4 max-w-[1400px] mx-auto">
-      <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+    <div className="space-y-6 w-full">
+      <div className="bg-white rounded-2xl shadow-xl p-4 md:p-6 border border-gray-100">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-orange-100 rounded-xl transition-all hover:bg-orange-200">
