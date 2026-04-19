@@ -20,7 +20,9 @@ import {
   ChevronLeft,
   Lightbulb,
   LogOut,
-  BarChart2
+  BarChart2,
+  Sparkles,
+  Info
 } from 'lucide-react';
 import { getHiddenSections } from '../dashboard/config/sections';
 import Math from 'mathjs'; // Dummy import to keep parser happy for now, not using it.
@@ -36,6 +38,7 @@ interface MasterSidebarProps {
   activeTab: string;
   setActiveTab: (t: string) => void;
   onLogout: () => void;
+  currentStepGuide?: { title: string; description: string } | null;
 }
 
 export function MasterSidebar({ 
@@ -45,7 +48,8 @@ export function MasterSidebar({
   setActiveProject, 
   activeTab, 
   setActiveTab, 
-  onLogout 
+  onLogout,
+  currentStepGuide 
 }: MasterSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -347,6 +351,25 @@ export function MasterSidebar({
                    className="w-40 h-40 object-contain drop-shadow-[0_0_20px_rgba(255,77,77,0.3)] relative z-10 transition-transform duration-500 group-hover:scale-105 animate-float"
                  />
                </div>
+
+               {currentStepGuide && (
+                 <div className="px-2 animate-fade-in-up shrink-0 mt-6 w-full">
+                   <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10 shadow-inner">
+                     <div className="flex items-center gap-2 mb-2 text-rose-400">
+                       <Sparkles className="h-4 w-4" />
+                       <span className="text-[10px] font-black uppercase tracking-widest">Active Guide</span>
+                     </div>
+                     <h4 className="text-xs font-bold text-white mb-1">{currentStepGuide.title}</h4>
+                     <p className="text-[10px] text-gray-400 leading-relaxed italic line-clamp-3">
+                       {currentStepGuide.description}
+                     </p>
+                     <div className="mt-2 flex items-center gap-1.5 text-[9px] text-rose-500/80 font-bold uppercase tracking-tighter">
+                       <Info className="h-3 w-3" />
+                       <span>Interactive Step</span>
+                     </div>
+                   </div>
+                 </div>
+               )}
             </div>
           )}
         </nav>

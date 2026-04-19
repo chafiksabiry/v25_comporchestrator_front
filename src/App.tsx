@@ -176,6 +176,7 @@ function AppContent() {
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           onLogout={handleLogout}
+          currentStepGuide={currentStepGuide}
         />
 
         <div className="flex flex-1 flex-col overflow-hidden relative">
@@ -220,24 +221,6 @@ function AppContent() {
                 </div>
               }
             />
-            {activeProject === 'comporchestrator' && currentStepGuide && (
-              <div className="fixed bottom-6 right-6 animate-fade-in-up z-50 w-72">
-                <div className="bg-[#0a0b14] backdrop-blur-md rounded-2xl p-5 border border-white/10 shadow-2xl">
-                  <div className="flex items-center gap-2 mb-3 text-harx-400">
-                    <Sparkles className="h-4 w-4" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Active Guide</span>
-                  </div>
-                  <h4 className="text-sm font-bold text-white mb-2">{currentStepGuide.title}</h4>
-                  <p className="text-xs text-gray-400 leading-relaxed italic">
-                    {currentStepGuide.description}
-                  </p>
-                  <div className="mt-3 flex items-center gap-1.5 text-[9px] text-harx-500/80 font-bold uppercase tracking-tighter bg-harx-500/10 w-fit px-2 py-1 rounded-full">
-                    <Info className="h-3 w-3" />
-                    <span>Interactive Step</span>
-                  </div>
-                </div>
-              </div>
-            )}
           </main>
         </div>
       </div>
