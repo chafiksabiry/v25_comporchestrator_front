@@ -1388,7 +1388,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const displayName = String(company?.name || 'QARA EL HOUCINE').toUpperCase();
     const hasStartedChat = chatMessages.length > 0;
     const shouldShowKbQuestionInChat = kbGenerationChoice === null;
-    const shouldShowChatThread = hasStartedChat || shouldShowKbQuestionInChat || showPersonalizationCard;
+    /** Après Skip (KB ou perso), garder la zone thread pour ne pas masquer la salutation tant qu’il n’y a pas de message. */
+    const showComposerOnlyShell =
+      kbGenerationChoice !== null && !showPersonalizationCard && !hasStartedChat;
+    const shouldShowChatThread =
+      hasStartedChat || shouldShowKbQuestionInChat || showPersonalizationCard || showComposerOnlyShell;
     const kbOptions: Array<{ id: KbGenerationMode; label: string; hint: string }> = [
       { id: 'kb_only', label: 'KB only', hint: 'Use analyzed knowledge base documents only' },
       { id: 'uploads_only', label: 'Uploaded files only', hint: 'Use only your attached files' },
@@ -2180,8 +2184,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
           <div
             className={
               rep
-                ? 'mb-2 w-full min-w-0'
-                : 'flex min-h-0 w-full min-w-0 flex-1 flex-col pb-2'
+                ? 'mx-auto mb-2 w-full min-w-0 max-w-5xl'
+                : 'mx-auto flex min-h-0 w-full min-w-0 max-w-5xl flex-1 flex-col pb-2'
             }
           >
             <div
