@@ -1989,21 +1989,21 @@ export default function ContentUploader(props: ContentUploaderProps) {
     };
 
     return (
-    <div className={rep ? 'flex w-full min-w-0 flex-col bg-harx-50/30' : 'min-h-[92vh] bg-harx-50/30 p-2'}>
+    <div className={rep ? 'flex w-full min-w-0 flex-col bg-slate-50' : 'min-h-[92vh] bg-slate-50 p-2'}>
       <div className={rep ? 'mx-auto flex w-full max-w-5xl flex-col px-4 py-6 md:px-6' : 'mx-auto w-full max-w-[1400px]'}>
         <div
           className={
             rep
               ? 'flex w-full flex-col'
-              : 'w-full flex-1 rounded-3xl border border-harx-100 bg-harx-50/20 p-2 md:p-3'
+              : 'w-full flex-1 rounded-3xl border border-slate-200/90 bg-white p-2 shadow-sm md:p-3'
           }
         >
           <div className={rep ? 'flex min-h-[72vh] w-full flex-col' : 'grid min-h-[88vh] gap-3 lg:grid-cols-[265px_minmax(0,1fr)]'}>
           {!rep && (
-            <aside className="flex flex-col rounded-2xl border border-harx-200 bg-gradient-to-b from-white via-harx-50/40 to-harx-alt-50/30 p-3 shadow-sm">
+            <aside className="flex flex-col rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
               <div className="mb-3 px-2">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-harx-600">HARX</div>
-                <div className="text-xl font-semibold tracking-tight text-harx-900">Journey chat</div>
+                <div className="text-xl font-semibold tracking-tight text-slate-900">Journey chat</div>
               </div>
               <button
                 type="button"
@@ -2015,25 +2015,25 @@ export default function ContentUploader(props: ContentUploaderProps) {
               </button>
               <button
                 type="button"
-                className="mb-4 inline-flex w-full items-center gap-2 rounded-xl border border-harx-200 bg-white/80 px-2 py-2 text-sm font-medium text-harx-800 hover:bg-harx-50"
+                className="mb-4 inline-flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-2 py-2 text-sm font-medium text-slate-700 hover:border-slate-300 hover:bg-white"
               >
-                <Search className="h-4 w-4 text-harx-500" />
+                <Search className="h-4 w-4 text-slate-500" />
                 Search
               </button>
-              <div className="mb-3 space-y-0.5 px-1 text-sm text-harx-800">
-                <div className="rounded-lg px-2 py-1.5 font-medium hover:bg-white/80">Chats</div>
-                <div className="rounded-lg px-2 py-1.5 font-medium hover:bg-white/80">Projects</div>
-                <div className="rounded-lg px-2 py-1.5 font-medium hover:bg-white/80">Artefacts</div>
+              <div className="mb-3 space-y-0.5 px-1 text-sm text-slate-700">
+                <div className="rounded-lg px-2 py-1.5 font-medium hover:bg-slate-100">Chats</div>
+                <div className="rounded-lg px-2 py-1.5 font-medium hover:bg-slate-100">Projects</div>
+                <div className="rounded-lg px-2 py-1.5 font-medium hover:bg-slate-100">Artefacts</div>
               </div>
-              <div className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wide text-harx-600">Recent</div>
+              <div className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">Recent</div>
               <div className="max-h-[50vh] space-y-1 overflow-y-auto pr-1">
                 {isLoadingCompanyGigs ? (
-                  <div className="flex items-center gap-2 rounded-lg px-2 py-2 text-xs text-harx-600">
+                  <div className="flex items-center gap-2 rounded-lg px-2 py-2 text-xs text-slate-600">
                     <Loader2 className="h-4 w-4 animate-spin text-harx-500" />
                     Loading...
                   </div>
                 ) : companyGigs.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-harx-200 bg-white/70 px-2 py-2 text-xs text-harx-600">
+                  <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-2 py-2 text-xs text-slate-600">
                     No project available.
                   </div>
                 ) : (
@@ -2047,51 +2047,51 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         onClick={() => setSelectedChatGigId(id)}
                         className={`rounded-lg border px-2.5 py-2 text-left transition ${
                           active
-                            ? 'border-harx-300 bg-white shadow-sm ring-1 ring-harx-200/60'
-                            : 'border-transparent bg-white/70 text-harx-800 hover:border-harx-200 hover:bg-white'
+                            ? 'border-harx-300 bg-harx-50/60 shadow-sm ring-1 ring-harx-200/50'
+                            : 'border-transparent bg-slate-50/80 text-slate-800 hover:border-slate-200 hover:bg-white'
                         }`}
                       >
                         <div className="truncate text-sm font-semibold">{gig?.title || 'Untitled project'}</div>
                         {gig?.category ? (
-                          <div className="truncate text-[11px] text-harx-600">{gig.category}</div>
+                          <div className="truncate text-[11px] text-slate-500">{gig.category}</div>
                         ) : null}
                       </button>
                     );
                   })
                 )}
               </div>
-              <div className="mt-auto border-t border-harx-200/80 px-2 pt-3">
-                <div className="text-sm font-semibold text-harx-900">{displayName}</div>
-                <div className="text-xs text-harx-600">HARX Training</div>
+              <div className="mt-auto border-t border-slate-200 px-2 pt-3">
+                <div className="text-sm font-semibold text-slate-900">{displayName}</div>
+                <div className="text-xs text-slate-500">HARX Training</div>
               </div>
             </aside>
           )}
-          <div className={rep ? 'flex w-full flex-col rounded-2xl border border-harx-100 bg-harx-50/20 px-4 py-6 md:px-8 md:py-8' : 'rounded-2xl border border-harx-100 bg-harx-50/20 px-4 py-6 md:px-8 md:py-8'}>
+          <div className={rep ? 'flex w-full flex-col rounded-2xl border border-slate-200 bg-white px-4 py-6 shadow-sm md:px-8 md:py-8' : 'rounded-2xl border border-slate-200 bg-white px-4 py-6 shadow-sm md:px-8 md:py-8'}>
           {/* Header */}
           {!hasStartedChat && (
             <div className={rep ? 'mb-10 shrink-0 px-1 text-center' : 'mb-10 text-center'}>
               <h2
                 className={
                   rep
-                    ? 'mb-2 text-5xl font-serif font-semibold tracking-tight text-harx-700'
-                    : 'mb-2 text-6xl font-serif font-semibold tracking-tight text-harx-700'
+                    ? 'mb-2 text-5xl font-serif font-semibold tracking-tight text-slate-900'
+                    : 'mb-2 text-6xl font-serif font-semibold tracking-tight text-slate-900'
                 }
               >
                 {`Good evening, ${displayName}.`}
               </h2>
-              <p className={rep ? 'mx-auto max-w-xl text-[11px] leading-snug text-harx-600/80' : 'mx-auto max-w-3xl text-sm font-medium text-harx-600/80'}>
+              <p className={rep ? 'mx-auto max-w-xl text-[11px] leading-snug text-slate-500' : 'mx-auto max-w-3xl text-sm font-medium text-slate-500'}>
                 How can I help you?
               </p>
             </div>
           )}
 
           <div className={rep ? 'mx-auto mb-2 w-full max-w-[700px]' : 'mx-auto mb-4 w-full max-w-[700px]'}>
-            <div className={rep ? 'relative rounded-none border-0 bg-transparent p-0 shadow-none' : 'relative rounded-3xl border border-harx-100 bg-white p-4 shadow-sm'}>
+            <div className={rep ? 'relative rounded-none border-0 bg-transparent p-0 shadow-none' : 'relative rounded-3xl border border-slate-200 bg-slate-50/40 p-4 shadow-sm'}>
               <div className="mb-2 flex items-center justify-end gap-2">
                 <select
                   value={activeChatGigId}
                   onChange={(e) => setSelectedChatGigId(e.target.value)}
-                  className="max-w-[200px] rounded-lg border border-harx-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-harx-700 outline-none hover:bg-harx-50"
+                  className="max-w-[200px] rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-800 outline-none ring-harx-500/20 hover:border-slate-300 focus:border-harx-400 focus:ring-2"
                   title="Choose gig for chat"
                 >
                   <option value="">Choose a gig</option>
@@ -2107,7 +2107,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 <button
                   type="button"
                   onClick={() => setIsHistoryOpen((prev) => !prev)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-harx-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-harx-700 hover:bg-harx-50"
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50"
                   title="Open history"
                 >
                   <History className="h-3.5 w-3.5" />
@@ -2116,7 +2116,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 <button
                   type="button"
                   onClick={startNewConversation}
-                  className="inline-flex items-center gap-1 rounded-lg border border-harx-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-harx-700 hover:bg-harx-50"
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50"
                   title="New conversation"
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -2124,15 +2124,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 </button>
               </div>
               {isHistoryOpen && (
-                <div className="absolute right-0 top-10 z-30 w-full max-w-[320px] rounded-xl border border-harx-200 bg-white p-2 shadow-xl">
+                <div className="absolute right-0 top-10 z-30 w-full max-w-[320px] rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
                   <div className="mb-2 flex items-center justify-between px-1">
-                    <div className="text-xs font-bold uppercase tracking-wide text-harx-600">
+                    <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
                       {`History — ${activeChatGigTitle}`}
                     </div>
                     <button
                       type="button"
                       onClick={() => void refreshChatHistory()}
-                      className="rounded p-1 text-harx-600 hover:bg-harx-50"
+                      className="rounded p-1 text-slate-500 hover:bg-slate-100"
                       title="Refresh"
                     >
                       <RefreshCw className="h-3.5 w-3.5" />
@@ -2140,12 +2140,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   </div>
                   <div className="max-h-[320px] space-y-1 overflow-y-auto">
                     {isHistoryLoading ? (
-                      <div className="flex items-center gap-2 rounded-md px-2 py-2 text-xs text-harx-600">
+                      <div className="flex items-center gap-2 rounded-md px-2 py-2 text-xs text-slate-600">
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         Loading...
                       </div>
                     ) : chatHistorySessions.length === 0 ? (
-                      <div className="rounded-md px-2 py-2 text-xs text-harx-500">
+                      <div className="rounded-md px-2 py-2 text-xs text-slate-500">
                         No history found for this gig.
                       </div>
                     ) : (
@@ -2156,15 +2156,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           onClick={() => void openHistorySession(session._id)}
                           className={`w-full rounded-md border px-2 py-2 text-left transition ${
                             activeChatSessionId === session._id
-                              ? 'border-harx-300 bg-harx-50'
-                              : 'border-transparent hover:border-harx-100 hover:bg-harx-50/70'
+                              ? 'border-harx-300 bg-harx-50/70'
+                              : 'border-transparent hover:border-slate-200 hover:bg-slate-50'
                           }`}
                         >
-                          <div className="truncate text-[12px] font-semibold text-harx-800">
+                          <div className="truncate text-[12px] font-semibold text-slate-900">
                             {session.title || 'New conversation'}
                           </div>
                           {session.preview ? (
-                            <div className="mt-0.5 line-clamp-2 text-[11px] text-harx-600">{session.preview}</div>
+                            <div className="mt-0.5 line-clamp-2 text-[11px] text-slate-600">{session.preview}</div>
                           ) : null}
                         </button>
                       ))
@@ -2173,42 +2173,42 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 </div>
               )}
               {shouldShowChatThread && (
-                <div className={rep ? 'mb-3 space-y-6 rounded-xl bg-transparent p-0' : 'mb-4 space-y-6 rounded-2xl bg-white/70 p-4'}>
+                <div className={rep ? 'mb-3 space-y-6 rounded-xl bg-transparent p-0' : 'mb-4 space-y-6 rounded-2xl border border-slate-100 bg-slate-50/50 p-4'}>
                   {shouldShowKbQuestionInChat && (
                     <div className="flex justify-start">
-                      <div className="w-full max-w-[92%] rounded-[24px] border border-harx-200 bg-white p-3 shadow-lg shadow-harx-900/5 ring-1 ring-harx-100/80">
+                      <div className="w-full max-w-[92%] rounded-[24px] border border-slate-200 bg-white p-3 shadow-md shadow-slate-900/5">
                         <div className="mb-2 flex items-center justify-between px-2 pt-1">
-                          <p className="text-[28px] font-semibold leading-tight text-harx-900">
+                          <p className="text-[28px] font-semibold leading-tight text-slate-900">
                             Do you want to generate a training plan and training content from your knowledge base?
                           </p>
-                          <div className="ml-3 shrink-0 text-sm font-semibold text-harx-500">1 of 1</div>
+                          <div className="ml-3 shrink-0 text-sm font-semibold text-slate-400">1 of 1</div>
                         </div>
 
-                        <div className="overflow-hidden rounded-2xl border border-harx-100 bg-harx-50/50">
+                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/80">
                           {kbOptions.map((option, idx) => (
                             <button
                               key={option.id}
                               type="button"
                               onClick={() => handleSelectKbMode(option.id)}
-                              className="flex w-full items-center gap-3 border-b border-harx-100/80 px-4 py-3 text-left transition hover:bg-white last:border-b-0"
+                              className="flex w-full items-center gap-3 border-b border-slate-200/90 px-4 py-3 text-left transition hover:bg-white last:border-b-0"
                             >
-                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-harx-100 to-harx-alt-100 text-sm font-semibold text-harx-700">
+                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-harx-500 to-harx-alt-500 text-sm font-bold text-white shadow-sm">
                                 {idx + 1}
                               </span>
                               <span className="flex-1">
-                                <span className="block text-base font-semibold text-harx-900">{option.label}</span>
-                                <span className="block text-xs text-harx-600">{option.hint}</span>
+                                <span className="block text-base font-semibold text-slate-900">{option.label}</span>
+                                <span className="block text-xs text-slate-600">{option.hint}</span>
                               </span>
-                              <span className="text-lg text-harx-alt-500">→</span>
+                              <span className="text-lg text-slate-400">→</span>
                             </button>
                           ))}
                         </div>
 
                         <div className="mt-2 flex items-center justify-between px-1">
-                          <div className="min-h-[16px] text-[11px] text-harx-600">
+                          <div className="min-h-[16px] text-[11px] text-slate-600">
                             {isChatKbLoading ? (
                               <span className="inline-flex items-center gap-1">
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                <Loader2 className="h-3.5 w-3.5 animate-spin text-harx-500" />
                                 Loading KB documents...
                               </span>
                             ) : (kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads') ? (
@@ -2218,7 +2218,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           <button
                             type="button"
                             onClick={() => handleSelectKbMode('none')}
-                            className="rounded-lg border border-harx-200 bg-white px-3 py-1.5 text-xs font-semibold text-harx-800 hover:bg-harx-50"
+                            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                           >
                             Skip
                           </button>
@@ -2229,31 +2229,31 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   )}
                   {showPersonalizationCard && (
                     <div className="flex justify-start">
-                      <div className="w-full max-w-[92%] rounded-[24px] border border-harx-200 bg-white p-3 shadow-lg shadow-harx-900/5 ring-1 ring-harx-100/80">
+                      <div className="w-full max-w-[92%] rounded-[24px] border border-slate-200 bg-white p-3 shadow-md shadow-slate-900/5">
                         <div className="mb-2 flex items-center justify-between px-2 pt-1">
-                          <p className="text-[18px] font-semibold leading-tight text-harx-900">
+                          <p className="text-[18px] font-semibold leading-tight text-slate-900">
                             {personalizationQuestions[personalizationStep]?.question || 'A few questions to personalize your training'}
                           </p>
-                          <div className="ml-3 shrink-0 text-sm font-semibold text-harx-500">
+                          <div className="ml-3 shrink-0 text-sm font-semibold text-slate-400">
                             {`${Math.min(personalizationStep + 1, personalizationQuestions.length)} of ${personalizationQuestions.length}`}
                           </div>
                         </div>
 
-                        <div className="overflow-hidden rounded-2xl border border-harx-100 bg-harx-50/50">
+                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/80">
                           {(personalizationQuestions[personalizationStep]?.options || []).map((option, idx) => (
                             <button
                               key={`${personalizationStep}-${option}`}
                               type="button"
                               onClick={() => handleSelectPersonalizationOption(option)}
-                              className="flex w-full items-center gap-3 border-b border-harx-100/80 px-4 py-3 text-left transition hover:bg-white last:border-b-0"
+                              className="flex w-full items-center gap-3 border-b border-slate-200/90 px-4 py-3 text-left transition hover:bg-white last:border-b-0"
                             >
-                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-harx-100 to-harx-alt-100 text-sm font-semibold text-harx-700">
+                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-harx-500 to-harx-alt-500 text-sm font-bold text-white shadow-sm">
                                 {idx + 1}
                               </span>
                               <span className="flex-1">
-                                <span className="block text-base font-semibold text-harx-900">{option}</span>
+                                <span className="block text-base font-semibold text-slate-900">{option}</span>
                               </span>
-                              <span className="text-lg text-harx-alt-500">→</span>
+                              <span className="text-lg text-slate-400">→</span>
                             </button>
                           ))}
                         </div>
@@ -2266,7 +2266,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               setPersonalizationStep(0);
                               setPersonalizationAnswers({});
                             }}
-                            className="rounded-lg border border-harx-200 bg-white px-3 py-1.5 text-xs font-semibold text-harx-800 hover:bg-harx-50"
+                            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                           >
                             Skip
                           </button>
@@ -2294,25 +2294,25 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
                                     components={{
-                                      h1: ({ children }) => <h3 className="mb-3 mt-1 border-l-4 border-harx-500 pl-3 text-[24px] font-semibold text-slate-900">{children}</h3>,
+                                      h1: ({ children }) => <h3 className="mb-3 mt-1 border-l-4 border-slate-900 pl-3 text-[24px] font-semibold text-slate-900">{children}</h3>,
                                       h2: ({ children }) => <h4 className="mb-2 mt-3 text-[20px] font-semibold text-slate-900">{children}</h4>,
                                       h3: ({ children }) => <h5 className="mb-2 mt-2 text-[17px] font-semibold text-slate-900">{children}</h5>,
                                       p: ({ children }) => <p className="my-2 text-[16px] leading-7 text-slate-700">{children}</p>,
                                       ul: ({ children }) => <ul className="my-2 list-disc space-y-1 pl-6 text-[16px] leading-7 text-slate-700">{children}</ul>,
                                       ol: ({ children }) => <ol className="my-2 list-decimal space-y-1 pl-6 text-[16px] leading-7 text-slate-700">{children}</ol>,
                                       table: ({ children }) => (
-                                        <div className="my-4 overflow-x-auto rounded-xl border border-harx-200">
+                                        <div className="my-4 overflow-x-auto rounded-xl border border-slate-200">
                                           <table className="min-w-full border-collapse bg-white">{children}</table>
                                         </div>
                                       ),
-                                      thead: ({ children }) => <thead className="bg-harx-50">{children}</thead>,
-                                      tbody: ({ children }) => <tbody className="divide-y divide-harx-100">{children}</tbody>,
+                                      thead: ({ children }) => <thead className="bg-slate-100">{children}</thead>,
+                                      tbody: ({ children }) => <tbody className="divide-y divide-slate-200">{children}</tbody>,
                                       tr: ({ children }) => <tr className="align-top">{children}</tr>,
                                       th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-slate-900">{children}</th>,
                                       td: ({ children }) => <td className="px-3 py-2 text-sm text-slate-700">{children}</td>,
                                       li: ({ children }) => <li>{children}</li>,
-                                      strong: ({ children }) => <strong className="font-semibold text-harx-700">{children}</strong>,
-                                      code: ({ children }) => <code className="rounded bg-harx-50 px-1 py-0.5 text-[14px] text-slate-800 ring-1 ring-harx-100">{children}</code>,
+                                      strong: ({ children }) => <strong className="font-semibold text-slate-900">{children}</strong>,
+                                      code: ({ children }) => <code className="rounded bg-slate-100 px-1 py-0.5 text-[14px] text-slate-800 ring-1 ring-slate-200">{children}</code>,
                                     }}
                                   >
                                     {textWithoutStyle}
@@ -2391,7 +2391,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                         <strong className="font-semibold" style={{ color: contentTheme.headingColor }}>{children}</strong>
                                       ),
                                       code: ({ children }) => (
-                                        <code className="rounded bg-harx-50 px-1 py-0.5 text-[14px] text-slate-800 ring-1 ring-harx-100">
+                                        <code className="rounded bg-slate-100 px-1 py-0.5 text-[14px] text-slate-800 ring-1 ring-slate-200">
                                           {children}
                                         </code>
                                       ),
@@ -2466,25 +2466,25 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                               <span className="ml-1 inline-block h-4 w-1 animate-pulse rounded bg-harx-400 align-middle" />
                             )}
                           </div>
-                          <div className={`mt-2 flex items-center gap-2 text-harx-500 ${msg.isStreaming || !msg.text.trim() ? 'opacity-40 pointer-events-none' : ''}`}>
+                          <div className={`mt-2 flex items-center gap-2 text-slate-500 ${msg.isStreaming || !msg.text.trim() ? 'opacity-40 pointer-events-none' : ''}`}>
                             <button
                               type="button"
                               onClick={() => handleRegenerateMessage(msg.id)}
-                              className="rounded-md p-1.5 hover:bg-harx-100/70"
+                              className="rounded-md p-1.5 hover:bg-slate-100"
                               title="Regenerate"
                             >
                               <RotateCcw className="h-3.5 w-3.5" />
                             </button>
                           </div>
                           {msg.trainingReadiness && msg.trainingReadiness.actions?.length > 0 ? (
-                            <div className="mt-3 rounded-xl border border-harx-200 bg-gradient-to-br from-white to-harx-50/60 p-3 shadow-sm">
-                              <p className="text-sm font-medium text-harx-900">{msg.trainingReadiness.messageFr}</p>
+                            <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                              <p className="text-sm font-medium text-slate-900">{msg.trainingReadiness.messageFr}</p>
                               {msg.trainingReadiness.missingModules?.length > 0 ? (
-                                <ul className="mt-2 list-disc space-y-0.5 pl-4 text-xs text-harx-800">
+                                <ul className="mt-2 list-disc space-y-0.5 pl-4 text-xs text-slate-700">
                                   {msg.trainingReadiness.missingModules.map((mod, mi) => (
                                     <li key={`${msg.id}-miss-${mi}`}>
                                       <span className="font-semibold">{mod.title}</span>
-                                      {mod.reason ? <span className="text-harx-600"> — {mod.reason}</span> : null}
+                                      {mod.reason ? <span className="text-slate-500"> — {mod.reason}</span> : null}
                                     </li>
                                   ))}
                                 </ul>
@@ -2499,7 +2499,7 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                                     className={
                                       act.id === 'validate_training'
                                         ? 'inline-flex items-center gap-1 rounded-xl bg-gradient-to-r from-harx-500 to-harx-alt-500 px-3 py-2 text-xs font-bold text-white shadow-md shadow-harx-500/20 disabled:opacity-50'
-                                        : 'inline-flex items-center gap-1 rounded-xl border border-harx-200 bg-white px-3 py-2 text-xs font-semibold text-harx-800 hover:bg-harx-50 disabled:opacity-50'
+                                        : 'inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-white disabled:opacity-50'
                                     }
                                   >
                                     {act.id === 'validate_training' ? (
@@ -2521,7 +2521,7 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                   ))}
                   {isChatLoading && !chatMessages.some((m) => m.isStreaming) && (
                     <div className="flex justify-start">
-                      <div className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-white px-3 py-2 text-sm font-medium text-harx-800 shadow-sm">
+                      <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm">
                         <Loader2 className="h-4 w-4 animate-spin text-harx-500" />
                         HARX is thinking…
                       </div>
@@ -2530,8 +2530,8 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                 </div>
               )}
 
-              <div className={rep ? 'sticky bottom-2 z-20 bg-harx-50/95 pb-1 pt-2 backdrop-blur-sm' : 'sticky bottom-2 z-20 bg-gradient-to-t from-white via-white to-harx-50/40 pb-1 pt-2 backdrop-blur-sm'}>
-                <div className={rep ? 'rounded-[20px] border border-harx-200 bg-white px-4 py-3' : 'rounded-[28px] border border-harx-200 bg-white px-5 py-4'}>
+              <div className={rep ? 'sticky bottom-2 z-20 border-t border-slate-200/80 bg-white/95 pb-1 pt-2 backdrop-blur-sm' : 'sticky bottom-2 z-20 border-t border-slate-200/80 bg-white/95 pb-1 pt-2 backdrop-blur-sm'}>
+                <div className={rep ? 'rounded-[20px] border border-slate-200 bg-white px-4 py-3 shadow-sm' : 'rounded-[28px] border border-slate-200 bg-white px-5 py-4 shadow-sm'}>
                   <input
                     ref={chatFileInputRef}
                     type="file"
@@ -2560,14 +2560,14 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                         return (
                           <div
                             key={`inline-${upload.id}`}
-                            className="inline-flex max-w-full items-center gap-2 rounded-xl border border-harx-200 bg-harx-50/50 px-2.5 py-1.5"
+                            className="inline-flex max-w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-2.5 py-1.5"
                           >
                             {getFileIcon(upload.type, true)}
                             <div className="min-w-0">
-                              <div className="max-w-[210px] truncate text-[11px] font-semibold text-harx-800">
+                              <div className="max-w-[210px] truncate text-[11px] font-semibold text-slate-800">
                                 {upload.name}
                               </div>
-                              <div className="text-[10px] text-harx-600">{statusLabel}</div>
+                              <div className="text-[10px] text-slate-600">{statusLabel}</div>
                             </div>
                             {upload.status === 'uploading' || upload.status === 'processing' ? (
                               <Loader2 className="h-3.5 w-3.5 animate-spin text-harx-500" />
@@ -2575,7 +2575,7 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                             <button
                               type="button"
                               onClick={() => removeUpload(upload.id)}
-                              className="rounded p-0.5 text-harx-500 hover:bg-harx-100"
+                              className="rounded p-0.5 text-slate-500 hover:bg-slate-200/80"
                               title="Remove file"
                             >
                               <X className="h-3 w-3" />
@@ -2603,13 +2603,13 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                     }}
                     rows={1}
                     placeholder={hasStartedChat ? 'Reply...' : 'How can I help you?'}
-                    className="mb-3 w-full resize-none bg-transparent text-[15px] text-harx-800 outline-none placeholder:text-harx-600/70"
+                    className="mb-3 w-full resize-none bg-transparent text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
                   />
                   <div className="flex items-center justify-between">
                     <button
                       type="button"
                       onClick={() => chatFileInputRef.current?.click()}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-harx-200 text-harx-700 hover:bg-harx-50"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                       title="Upload files"
                     >
                       +
@@ -2678,7 +2678,7 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
             className={
               rep
                 ? 'mt-4 flex flex-col gap-2 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between'
-                : 'mt-8 flex flex-col gap-4 border-t border-harx-100 pt-6 md:flex-row md:items-center md:justify-between'
+                : 'mt-8 flex flex-col gap-4 border-t border-slate-200 pt-6 md:flex-row md:items-center md:justify-between'
             }
           >
             <button
@@ -2687,7 +2687,7 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
               className={
                 rep
                   ? 'rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 shadow-sm transition-colors hover:border-harx-200 hover:text-harx-600'
-                  : 'rounded-xl border border-harx-200 bg-white px-6 py-2 font-medium text-harx-800 shadow-sm transition-colors hover:border-harx-300 hover:bg-harx-50'
+                  : 'rounded-xl border border-slate-200 bg-white px-6 py-2 font-medium text-slate-800 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50'
               }
             >
               Back to setup
