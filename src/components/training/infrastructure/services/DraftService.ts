@@ -275,8 +275,8 @@ export class DraftService {
         // Sauvegarder localement d'abord
         this.saveDraftLocally(updatedDraft);
 
-        // Si on a un journey et des modules, sauvegarder dans le backend
-        if (updatedDraft.journey && updatedDraft.modules.length > 0) {
+        // Si on a un journey, sauvegarder dans le backend (modules peuvent être vides après le setup — le backend accepte [])
+        if (updatedDraft.journey) {
           const companyId = OnboardingService.getCompanyId();
           const gigId = updatedDraft.selectedGigId || null;
 
@@ -404,9 +404,8 @@ export class DraftService {
 
       console.log('[DraftService] Local draft updated, draftId:', updatedDraft.draftId);
 
-      // Sauvegarder dans le backend si possible
-      // IMPORTANT: Only save if we have both journey AND modules (to avoid creating empty journeys)
-      if (updatedDraft.journey && updatedDraft.modules.length > 0) {
+      // Sauvegarder dans le backend si possible (y compris modules vides après le wizard — sinon le parcours n’est jamais créé en base)
+      if (updatedDraft.journey) {
         const companyId = OnboardingService.getCompanyId();
         const gigId = updatedDraft.selectedGigId || null;
 
@@ -495,10 +494,7 @@ export class DraftService {
           console.warn('[DraftService] Could not save draft immediately to backend:', error);
         }
       } else {
-        console.log('[DraftService] Skipping save - missing journey or modules:', {
-          hasJourney: !!updatedDraft.journey,
-          modulesCount: updatedDraft.modules.length
-        });
+        console.log('[DraftService] Skipping backend save — no journey in draft');
       }
     } catch (error) {
       console.error('[DraftService] Error saving draft immediately:', error);
