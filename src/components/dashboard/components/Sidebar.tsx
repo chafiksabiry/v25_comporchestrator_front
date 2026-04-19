@@ -111,7 +111,14 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
 
   const allMenuItems = [
     { icon: <LayoutDashboard size={20} />, label: 'Overview', path: '/', key: 'overview', alwaysShow: true },
-    { icon: <Building2 size={20} />, label: 'Company', path: '/company', key: 'company', alwaysShow: true },
+    {
+      icon: <Building2 size={20} />,
+      label: 'Company',
+      path: '/company/dashboard',
+      key: 'company',
+      alwaysShow: true,
+      activePathPrefix: '/company',
+    },
     // Needs Gigs
     { icon: <Briefcase size={20} />, label: 'Gigs', path: '/gigs', key: 'gigs', requiresGigs: true },
     // Needs Leads
@@ -172,12 +179,17 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
             <NavLink
               key={item.label}
               to={item.path}
-              className={({ isActive }) =>
-                `flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden ${isActive
+              end={item.key === 'overview'}
+              className={() => {
+                const prefix = (item as { activePathPrefix?: string }).activePathPrefix;
+                const isActive = prefix
+                  ? location.pathname === prefix || location.pathname.startsWith(`${prefix}/`)
+                  : location.pathname === item.path;
+                return `flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden ${isActive
                   ? "bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg shadow-rose-500/30 scale-[1.02] z-10"
                   : "text-slate-400 hover:text-white hover:bg-white/5"
-                }`
-              }
+                }`;
+              }}
             >
               <div className="shrink-0 group-hover:scale-110 transition-transform duration-300">
                 {item.icon}
