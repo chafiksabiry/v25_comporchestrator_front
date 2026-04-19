@@ -45,6 +45,7 @@ function AppContent() {
   const [currentStepGuide, setCurrentStepGuide] = useState<{ title: string; description: string } | null>(null);
   const [globalBackConfig, setGlobalBackConfig] = useState<{ label: string; action: () => void } | null>(null);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const [logoError, setLogoError] = useState(false);
 
   useEffect(() => {
     if (location.pathname.includes('/orchestrator')) {
@@ -243,11 +244,12 @@ function AppContent() {
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
                        <span className="text-sm font-black text-gray-900 leading-tight">{userFullName}</span>
-                       {companyLogo && (
+                       {companyLogo && !logoError && (
                          <img 
                            src={companyLogo} 
-                           alt="Company Logo" 
+                           alt="" 
                            className="h-4 w-4 object-contain rounded"
+                           onError={() => setLogoError(true)}
                          />
                        )}
                     </div>
