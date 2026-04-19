@@ -86,7 +86,7 @@ function AppContent() {
       const tab = event.detail?.tab;
       if (!tab) return;
       if (tab === 'dashboard') {
-        setActiveProject('dashboard');
+        window.location.hash = '#/dashboard/overview';
         return;
       }
       setActiveProject('comporchestrator');

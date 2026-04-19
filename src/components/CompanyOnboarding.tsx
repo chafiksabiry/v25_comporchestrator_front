@@ -1053,12 +1053,7 @@ const CompanyOnboarding = () => {
         return;
       }
     } else if (displayedPhase === 4) {
-      // Dispatch tabChange event to switch to the dashboard tab
-      window.dispatchEvent(
-        new CustomEvent("tabChange", {
-          detail: { tab: "dashboard" },
-        })
-      );
+      window.location.hash = '#/dashboard/overview';
     }
   };
 
