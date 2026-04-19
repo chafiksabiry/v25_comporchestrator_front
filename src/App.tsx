@@ -44,6 +44,7 @@ function AppContent() {
   const [userFullName, setUserFullName] = useState('Admin User');
   const [currentStepGuide, setCurrentStepGuide] = useState<{ title: string; description: string } | null>(null);
   const [globalBackConfig, setGlobalBackConfig] = useState<{ label: string; action: () => void } | null>(null);
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
 
   useEffect(() => {
     if (location.pathname.includes('/orchestrator')) {
@@ -63,24 +64,37 @@ function AppContent() {
       return;
     }
 
-    const fetchUserDetails = async () => {
+    const fetchData = async () => {
       if (userId) {
         try {
+          // Fetch user details
           const registrationBackendUrl = import.meta.env.VITE_REGISTRATION_BACKEND_URL;
-          const response = await fetch(`${registrationBackendUrl}/api/users/${userId}`);
-          if (response.ok) {
-            const userData = await response.json();
+          const userResponse = await fetch(`${registrationBackendUrl}/api/users/${userId}`);
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
             if (userData.data && userData.data.fullName) {
               setUserFullName(userData.data.fullName);
             }
           }
+
+          // Fetch company details for logo
+          const companyApiUrl = import.meta.env.VITE_COMPANY_API_URL;
+          if (companyApiUrl) {
+            const companyResponse = await fetch(`${companyApiUrl}/companies/user/${userId}`);
+            if (companyResponse.ok) {
+              const companyData = await companyResponse.json();
+              if (companyData.success && companyData.data && companyData.data.logoUrl) {
+                setCompanyLogo(companyData.data.logoUrl);
+              }
+            }
+          }
         } catch (error) {
-          console.error('Error fetching user details:', error);
+          console.error('Error fetching details:', error);
         }
       }
     };
 
-    fetchUserDetails();
+    fetchData();
 
     const initializeZoho = async () => {
       ZohoService.getInstance();
@@ -227,7 +241,16 @@ function AppContent() {
                     {userFullName.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-black text-gray-900 leading-tight">{userFullName}</span>
+                    <div className="flex items-center gap-2">
+                       <span className="text-sm font-black text-gray-900 leading-tight">{userFullName}</span>
+                       {companyLogo && (
+                         <img 
+                           src={companyLogo} 
+                           alt="Company Logo" 
+                           className="h-4 w-4 object-contain rounded"
+                         />
+                       )}
+                    </div>
                     <span className="text-[10px] text-harx-500 font-bold uppercase tracking-wider">Administrator</span>
                   </div>
                 </div>
