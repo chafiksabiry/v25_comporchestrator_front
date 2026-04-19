@@ -25,10 +25,12 @@ import ScriptGenerator from './components/ScriptGenerator';
 import ZohoService from './services/zohoService';
 import StripeContainer from './components/stripe/StripeContainer';
 import DashboardWrapper from './components/dashboard/DashboardWrapper';
+import { ProjectViewSwitch, type ProjectView } from './components/ProjectViewSwitch';
 
 function App() {
 
 
+  const [activeProject, setActiveProject] = useState<ProjectView>('comporchestrator');
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -93,9 +95,14 @@ function App() {
 
     // Listen for tab change events from CompanyOnboarding
     const handleTabChange = (event: CustomEvent) => {
-      if (event.detail && event.detail.tab) {
-        setActiveTab(event.detail.tab);
+      const tab = event.detail?.tab;
+      if (!tab) return;
+      if (tab === 'dashboard') {
+        setActiveProject('dashboard');
+        return;
       }
+      setActiveProject('comporchestrator');
+      setActiveTab(tab);
     };
 
     // Removed postMessage handling - using localStorage and CustomEvent instead
@@ -123,14 +130,18 @@ function App() {
       }
     };
 
+    const openComporchestrator = () => setActiveProject('comporchestrator');
+
     window.addEventListener('tabChange', handleTabChange as EventListener);
     window.addEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
     window.addEventListener('setGlobalBack', handleGlobalBackUpdate as EventListener);
+    window.addEventListener('openComporchestrator', openComporchestrator);
 
     return () => {
       window.removeEventListener('tabChange', handleTabChange as EventListener);
       window.removeEventListener('stepGuideUpdate', handleStepGuideUpdate as EventListener);
       window.removeEventListener('setGlobalBack', handleGlobalBackUpdate as EventListener);
+      window.removeEventListener('openComporchestrator', openComporchestrator);
     };
   }, []);
 
@@ -175,8 +186,6 @@ function App() {
         return <KnowledgeBase />;
       case 'script-generator':
         return <ScriptGenerator />;
-      case 'dashboard':
-        return <DashboardWrapper />;
       case 'company-onboarding':
       default:
         return <CompanyOnboarding />;
@@ -199,9 +208,12 @@ function App() {
 
   return (
     <StripeContainer>
-      <div className="flex h-screen bg-gray-50 overflow-hidden">
-
       <Toaster position="top-right" />
+      <ProjectViewSwitch
+        activeView={activeProject}
+        dashboard={<DashboardWrapper />}
+        comporchestrator={(
+      <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Sidebar */}
       <div
         className={`fixed inset-y-0 left-0 z-30 bg-[#0a0b14] text-white transition-all duration-300 ease-in-out md:relative shadow-2xl border-r border-white/5 flex flex-col overflow-visible ${
@@ -272,24 +284,21 @@ function App() {
 
           <div className="shrink-0 pb-4">
             <button
+              type="button"
               className={`flex w-full items-center rounded-2xl transition-all duration-300 group relative ${
                 isCollapsed ? 'justify-center p-3' : 'space-x-3 py-3 px-5'
-              } ${
-                activeTab === 'dashboard'
-                  ? 'bg-gradient-harx text-white shadow-xl shadow-harx-500/25 ring-1 ring-white/10'
-                  : 'text-gray-500 hover:bg-white/5 hover:text-gray-200'
-              }`}
-              onClick={() => setActiveTab('dashboard')}
+              } text-gray-500 hover:bg-white/5 hover:text-gray-200`}
+              onClick={() => setActiveProject('dashboard')}
             >
-              <div className={`p-2 rounded-xl transition-all shrink-0 ${activeTab === 'dashboard' ? 'bg-white/20' : 'bg-gray-800/40 group-hover:bg-gray-800'}`}>
+              <div className="p-2 rounded-xl transition-all shrink-0 bg-gray-800/40 group-hover:bg-gray-800">
                 <BarChart2 className="h-5 w-5" />
               </div>
               {!isCollapsed && (
-                <span className="font-black text-sm tracking-tight whitespace-nowrap overflow-hidden">Dashboard</span>
+                <span className="font-black text-sm tracking-tight whitespace-nowrap overflow-hidden">Go to dashboard</span>
               )}
               {isCollapsed && (
                 <div className="absolute left-16 bg-slate-900 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl border border-white/10">
-                  Dashboard
+                  Go to dashboard
                 </div>
               )}
             </button>
@@ -387,6 +396,8 @@ function App() {
         </main>
       </div>
     </div>
+        )}
+      />
     </StripeContainer>
   );
 }

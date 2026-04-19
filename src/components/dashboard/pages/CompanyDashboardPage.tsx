@@ -148,12 +148,13 @@ export function CompanyDashboardPage() {
             <PencilLine className="h-4 w-4" />
             Fiche entreprise
           </Link>
-          <a
-            href="/app11"
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('openComporchestrator'))}
             className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-bold text-slate-800"
           >
             Orchestrateur
-          </a>
+          </button>
         </div>
       </div>
     );
