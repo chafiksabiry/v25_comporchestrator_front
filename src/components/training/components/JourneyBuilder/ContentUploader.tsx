@@ -34,6 +34,74 @@ interface ContentUploaderProps {
 
 type KbGenerationMode = 'kb_only' | 'uploads_only' | 'kb_and_uploads' | 'none';
 
+/** Bloc JSON renvoyé par le backend (2e passage Claude) — actions hors zone de saisie. */
+export type TrainingReadinessPayload = {
+  readiness: 'ready' | 'incomplete' | 'not_applicable';
+  missingModules: { title: string; reason?: string }[];
+  messageFr: string;
+  actions: { id: string; label: string }[];
+};
+
+const HARX_TRAINING_STATUS_REGEX = /<harx-training-status>\s*([\s\S]*?)\s*<\/harx-training-status>/i;
+
+function extractTrainingReadinessBlock(raw: string): {
+  displayText: string;
+  trainingReadiness: TrainingReadinessPayload | null;
+} {
+  const full = String(raw || '');
+  const m = full.match(HARX_TRAINING_STATUS_REGEX);
+  if (!m?.[1]) {
+    return { displayText: full.trim(), trainingReadiness: null };
+  }
+  const displayText = full.replace(HARX_TRAINING_STATUS_REGEX, '').trim();
+  try {
+    const parsed = JSON.parse(m[1]);
+    const readiness = parsed?.readiness;
+    if (readiness !== 'ready' && readiness !== 'incomplete' && readiness !== 'not_applicable') {
+      return { displayText, trainingReadiness: null };
+    }
+    const missingModules = Array.isArray(parsed?.missingModules)
+      ? (parsed.missingModules as any[])
+          .filter((x) => x && String(x.title || '').trim())
+          .map((x) => ({
+            title: String(x.title).trim(),
+            reason: x.reason ? String(x.reason).trim() : undefined,
+          }))
+      : [];
+    const messageFr = String(parsed?.messageFr || '').trim();
+    const actions = Array.isArray(parsed?.actions)
+      ? (parsed.actions as any[])
+          .filter(
+            (a) =>
+              a &&
+              (a.id === 'validate_training' ||
+                a.id === 'save_without_missing' ||
+                a.id === 'generate_missing_modules')
+          )
+          .map((a) => ({ id: String(a.id), label: String(a.label || '').trim() }))
+          .filter((a) => a.label)
+      : [];
+    if (!actions.length) {
+      return { displayText, trainingReadiness: null };
+    }
+    return {
+      displayText,
+      trainingReadiness: {
+        readiness,
+        missingModules,
+        messageFr:
+          messageFr ||
+          (readiness === 'ready'
+            ? 'La formation semble prête. Vous pouvez la valider pour l’enregistrer.'
+            : `Il manque encore du contenu pour ${missingModules.length} module(s).`),
+        actions,
+      },
+    };
+  } catch {
+    return { displayText, trainingReadiness: null };
+  }
+}
+
 export default function ContentUploader(props: ContentUploaderProps) {
   const { onComplete, onBack, company, gigId, journey, methodology, repOnboardingLayout = false } = props;
   const analysisMetadata = {
@@ -65,7 +133,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [companyGigs, setCompanyGigs] = useState<Gig[]>([]);
   const [isLoadingCompanyGigs, setIsLoadingCompanyGigs] = useState(false);
   const [selectedChatGigId, setSelectedChatGigId] = useState<string>(gigId ? String(gigId) : '');
-  const [chatMessages, setChatMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; text: string; isStreaming?: boolean }>>([]);
+  const [chatMessages, setChatMessages] = useState<
+    Array<{
+      id: string;
+      role: 'user' | 'assistant';
+      text: string;
+      isStreaming?: boolean;
+      trainingReadiness?: TrainingReadinessPayload | null;
+    }>
+  >([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [kbGenerationChoice, setKbGenerationChoice] = useState<KbGenerationMode | null>(null);
@@ -583,7 +659,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   };
 
 
-  const handleSavePresentation = async () => {
+  const handleSavePresentation = async (saveOpts?: { omitModuleTitles?: string[] }) => {
     const buildPresentationFromChat = async () => {
       const assistantMessages = chatMessages
         .filter((m) => m.role === 'assistant' && String(m.text || '').trim())
@@ -601,7 +677,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
       };
 
       const stripHarxStyleTag = (rawText: string): string =>
-        String(rawText || '').replace(/<harx-style>[\s\S]*?<\/harx-style>/gi, '').trim();
+        String(rawText || '')
+          .replace(/<harx-style>[\s\S]*?<\/harx-style>/gi, '')
+          .replace(HARX_TRAINING_STATUS_REGEX, '')
+          .trim();
 
       const latestStyleBlueprint =
         assistantMessages
@@ -701,29 +780,50 @@ export default function ContentUploader(props: ContentUploaderProps) {
         company: company?.name || 'My Company',
       };
 
-      const modulesToSave: any[] = Array.isArray(generatedCurriculum?.modules) && generatedCurriculum.modules.length > 0
-        ? (generatedCurriculum.modules || []).map((m: any, idx: number) => ({
-            title: m.title || `Module ${idx + 1}`,
-            description: m.description || '',
-            duration: m.duration || 30,
-            difficulty: m.difficulty || 'beginner',
-            learningObjectives: m.learningObjectives || [],
-            content: m.sections || m.content || [],
-            sections: m.sections || [],
-            order: idx
-          }))
-        : [
-            {
-              title: presentationToSave?.title || 'Slides generees depuis le chat',
-              description: 'Contenu de formation validé à partir des slides générées.',
-              duration: 30,
-              difficulty: 'beginner',
-              learningObjectives: [],
-              content: presentationToSave.slides || [],
-              sections: [],
-              order: 0
-            }
-          ];
+      let modulesToSave: any[] =
+        Array.isArray(generatedCurriculum?.modules) && generatedCurriculum.modules.length > 0
+          ? (generatedCurriculum.modules || []).map((m: any, idx: number) => ({
+              title: m.title || `Module ${idx + 1}`,
+              description: m.description || '',
+              duration: m.duration || 30,
+              difficulty: m.difficulty || 'beginner',
+              learningObjectives: m.learningObjectives || [],
+              content: m.sections || m.content || [],
+              sections: m.sections || [],
+              order: idx
+            }))
+          : [
+              {
+                title: presentationToSave?.title || 'Slides generees depuis le chat',
+                description: 'Contenu de formation validé à partir des slides générées.',
+                duration: 30,
+                difficulty: 'beginner',
+                learningObjectives: [],
+                content: presentationToSave.slides || [],
+                sections: [],
+                order: 0
+              }
+            ];
+
+      const omitTitles = (saveOpts?.omitModuleTitles || []).map((t) => String(t || '').trim()).filter(Boolean);
+      if (omitTitles.length > 0 && Array.isArray(generatedCurriculum?.modules) && generatedCurriculum.modules.length > 0) {
+        modulesToSave = modulesToSave.filter((mod: any) => {
+          const title = String(mod.title || '').trim();
+          if (!title) return true;
+          const lower = title.toLowerCase();
+          const drop = omitTitles.some((o) => {
+            const ot = o.toLowerCase();
+            return ot && (lower.includes(ot) || ot.includes(lower));
+          });
+          return !drop;
+        });
+        if (modulesToSave.length === 0) {
+          alert(
+            'Aucun module restant après exclusion. Annulez le filtre ou complétez les modules avant d’enregistrer.'
+          );
+          return;
+        }
+      }
 
       const existingJourneyId =
         (generatedCurriculum as any)?.data?.journeyId ||
@@ -981,7 +1081,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={handleSavePresentation}
+                onClick={() => void handleSavePresentation()}
                 disabled={isSavingCloud || !generatedCurriculum}
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 via-fuchsia-500 to-purple-600 px-3 py-2 text-xs font-bold text-white shadow-md transition-all hover:shadow-lg disabled:opacity-50"
               >
@@ -1259,7 +1359,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 </button>
 
                 <button
-                  onClick={handleSavePresentation}
+                  onClick={() => void handleSavePresentation()}
                   disabled={isSavingCloud}
                   className="px-10 py-4 bg-gradient-to-r from-rose-500 to-purple-600 text-white rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all flex items-center justify-center"
                 >
@@ -1390,12 +1490,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
       try {
         const session = await AIService.getChatSession(sessionId);
         if (!session) return;
-        const mappedMessages = (session.messages || []).map((m, idx) => ({
-          id: `history-${sessionId}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
-          role: (m.role === 'assistant' ? 'assistant' : 'user') as 'assistant' | 'user',
-          text: m.text || '',
-          isStreaming: false,
-        }));
+        const mappedMessages = (session.messages || []).map((m, idx) => {
+          const raw = m.text || '';
+          const { displayText, trainingReadiness } = extractTrainingReadinessBlock(raw);
+          return {
+            id: `history-${sessionId}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+            role: (m.role === 'assistant' ? 'assistant' : 'user') as 'assistant' | 'user',
+            text: displayText,
+            trainingReadiness: trainingReadiness || undefined,
+            isStreaming: false,
+          };
+        });
         setChatMessages(mappedMessages);
         setActiveChatSessionId(session._id || sessionId);
         setIsHistoryOpen(false);
@@ -1768,6 +1873,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
           selectedMethodology: generationPreferences.methodologyName,
           conversationHistory: historyForContext,
           canGenerateTraining: canProceed,
+          curriculumOutline: Array.isArray(generatedCurriculum?.modules)
+            ? (generatedCurriculum.modules as any[]).map((m) => ({
+                title: String(m?.title || '').trim(),
+                hasSections: Array.isArray(m?.sections) && m.sections.length > 0,
+                sectionCount: Array.isArray(m?.sections) ? m.sections.length : 0,
+              }))
+            : [],
         });
 
         const streamingAssistantId = options?.replaceAssistantId || appendChatMessage('assistant', '', { isStreaming: true });
@@ -1775,7 +1887,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           setChatMessages((prev) =>
             prev.map((m) =>
               m.id === options.replaceAssistantId
-                ? { ...m, text: '', isStreaming: true }
+                ? { ...m, text: '', isStreaming: true, trainingReadiness: undefined }
                 : m
             )
           );
@@ -1797,14 +1909,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
         if (streamResult.sessionId && streamResult.sessionId !== activeChatSessionId) {
           setActiveChatSessionId(streamResult.sessionId);
         }
+        const rawAssistant = streamResult.text?.trim() || "Je n'ai pas pu generer une reponse pour le moment.";
+        const { displayText, trainingReadiness } = extractTrainingReadinessBlock(rawAssistant);
         setChatMessages((prev) =>
           prev.map((m) =>
             m.id === streamingAssistantId
               ? {
-                ...m,
-                text: streamResult.text?.trim() || "Je n'ai pas pu generer une reponse pour le moment.",
-                isStreaming: false,
-              }
+                  ...m,
+                  text: displayText,
+                  trainingReadiness: trainingReadiness || undefined,
+                  isStreaming: false,
+                }
               : m
           )
         );
@@ -1819,6 +1934,36 @@ export default function ContentUploader(props: ContentUploaderProps) {
         );
       } finally {
         setIsChatLoading(false);
+      }
+    };
+
+    const handleTrainingReadinessAction = async (
+      actionId: string,
+      readiness: TrainingReadinessPayload | null | undefined
+    ) => {
+      const r = readiness;
+      if (!r?.actions?.length) return;
+      if (actionId === 'validate_training') {
+        await handleSavePresentation();
+        return;
+      }
+      if (actionId === 'save_without_missing') {
+        const titles = r.missingModules?.map((m) => m.title).filter(Boolean) || [];
+        await handleSavePresentation({ omitModuleTitles: titles });
+        return;
+      }
+      if (actionId === 'generate_missing_modules') {
+        const titles = r.missingModules?.map((m) => m.title).filter(Boolean) || [];
+        if (!titles.length) return;
+        const list = titles.join(', ');
+        const prompt = [
+          'En français : rédige le contenu pédagogique COMPLET pour les modules suivants du parcours en cours :',
+          list,
+          '',
+          'Pour chaque module : objectifs pédagogiques, contenus/sections détaillées, activités pratiques, évaluation, durée indicative.',
+          'Reste cohérent avec le plan déjà proposé dans la conversation. Ne réécris pas tout le programme : concentre-toi sur ces modules.',
+        ].join('\n');
+        await sendChatMessage(prompt);
       }
     };
 
@@ -1855,39 +2000,40 @@ export default function ContentUploader(props: ContentUploaderProps) {
         >
           <div className={rep ? 'flex min-h-[72vh] w-full flex-col' : 'grid min-h-[88vh] gap-3 lg:grid-cols-[265px_minmax(0,1fr)]'}>
           {!rep && (
-            <aside className="flex flex-col rounded-2xl border border-[#ece8dc] bg-[#f6f4eb] p-3">
-              <div className="mb-4 px-2 text-xl font-semibold text-[#1f1f1d]">
-                Claude
+            <aside className="flex flex-col rounded-2xl border border-harx-200 bg-gradient-to-b from-white via-harx-50/40 to-harx-alt-50/30 p-3 shadow-sm">
+              <div className="mb-3 px-2">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-harx-600">HARX</div>
+                <div className="text-xl font-semibold tracking-tight text-harx-900">Journey chat</div>
               </div>
               <button
                 type="button"
                 onClick={startNewConversation}
-                className="mb-2 inline-flex w-full items-center gap-2 rounded-xl border border-[#e6e2d7] bg-white px-3 py-2 text-sm font-medium text-[#3f3a31]"
+                className="mb-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-harx px-3 py-2.5 text-sm font-semibold text-white shadow-md shadow-harx-500/20 transition hover:brightness-105"
               >
-                <Plus className="h-4 w-4 text-harx-600" />
+                <Plus className="h-4 w-4" />
                 New conversation
               </button>
               <button
                 type="button"
-                className="mb-4 inline-flex w-full items-center gap-2 rounded-xl border border-transparent px-2 py-2 text-sm text-[#5f5a4f] hover:bg-white/70"
+                className="mb-4 inline-flex w-full items-center gap-2 rounded-xl border border-harx-200 bg-white/80 px-2 py-2 text-sm font-medium text-harx-800 hover:bg-harx-50"
               >
                 <Search className="h-4 w-4 text-harx-500" />
                 Search
               </button>
-              <div className="mb-3 space-y-1 px-1 text-sm text-[#3f3a31]">
-                <div className="rounded-lg px-2 py-1.5 hover:bg-white/70">Chats</div>
-                <div className="rounded-lg px-2 py-1.5 hover:bg-white/70">Projects</div>
-                <div className="rounded-lg px-2 py-1.5 hover:bg-white/70">Artefacts</div>
+              <div className="mb-3 space-y-0.5 px-1 text-sm text-harx-800">
+                <div className="rounded-lg px-2 py-1.5 font-medium hover:bg-white/80">Chats</div>
+                <div className="rounded-lg px-2 py-1.5 font-medium hover:bg-white/80">Projects</div>
+                <div className="rounded-lg px-2 py-1.5 font-medium hover:bg-white/80">Artefacts</div>
               </div>
-              <div className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wide text-[#7d786b]">Recent</div>
+              <div className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wide text-harx-600">Recent</div>
               <div className="max-h-[50vh] space-y-1 overflow-y-auto pr-1">
                 {isLoadingCompanyGigs ? (
-                  <div className="flex items-center gap-2 rounded-lg px-2 py-2 text-xs text-[#6c675b]">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                  <div className="flex items-center gap-2 rounded-lg px-2 py-2 text-xs text-harx-600">
+                    <Loader2 className="h-4 w-4 animate-spin text-harx-500" />
                     Loading...
                   </div>
                 ) : companyGigs.length === 0 ? (
-                  <div className="rounded-lg bg-white/60 px-2 py-2 text-xs text-[#6c675b]">
+                  <div className="rounded-lg border border-dashed border-harx-200 bg-white/70 px-2 py-2 text-xs text-harx-600">
                     No project available.
                   </div>
                 ) : (
@@ -1899,24 +2045,24 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         key={id || gig?.title}
                         type="button"
                         onClick={() => setSelectedChatGigId(id)}
-                        className={`rounded-lg border px-2.5 py-2 ${
+                        className={`rounded-lg border px-2.5 py-2 text-left transition ${
                           active
-                            ? 'border-harx-200 bg-harx-50 text-harx-800'
-                            : 'border-transparent bg-white/60 text-[#4f4a3f] hover:border-harx-100'
+                            ? 'border-harx-300 bg-white shadow-sm ring-1 ring-harx-200/60'
+                            : 'border-transparent bg-white/70 text-harx-800 hover:border-harx-200 hover:bg-white'
                         }`}
                       >
                         <div className="truncate text-sm font-semibold">{gig?.title || 'Untitled project'}</div>
                         {gig?.category ? (
-                          <div className="truncate text-[11px] text-[#7d786b]">{gig.category}</div>
+                          <div className="truncate text-[11px] text-harx-600">{gig.category}</div>
                         ) : null}
                       </button>
                     );
                   })
                 )}
               </div>
-              <div className="mt-auto border-t border-[#e7e2d3] px-2 pt-3">
-                <div className="text-sm font-semibold text-[#2d2a22]">{displayName}</div>
-                <div className="text-xs text-[#7d786b]">Free plan</div>
+              <div className="mt-auto border-t border-harx-200/80 px-2 pt-3">
+                <div className="text-sm font-semibold text-harx-900">{displayName}</div>
+                <div className="text-xs text-harx-600">HARX Training</div>
               </div>
             </aside>
           )}
@@ -2030,30 +2176,30 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 <div className={rep ? 'mb-3 space-y-6 rounded-xl bg-transparent p-0' : 'mb-4 space-y-6 rounded-2xl bg-white/70 p-4'}>
                   {shouldShowKbQuestionInChat && (
                     <div className="flex justify-start">
-                      <div className="w-full max-w-[92%] rounded-[24px] border border-[#e7e3db] bg-white p-3 shadow-[0_8px_24px_rgba(17,24,39,0.05)]">
+                      <div className="w-full max-w-[92%] rounded-[24px] border border-harx-200 bg-white p-3 shadow-lg shadow-harx-900/5 ring-1 ring-harx-100/80">
                         <div className="mb-2 flex items-center justify-between px-2 pt-1">
-                          <p className="text-[28px] font-semibold leading-tight text-[#1f1d18]">
+                          <p className="text-[28px] font-semibold leading-tight text-harx-900">
                             Do you want to generate a training plan and training content from your knowledge base?
                           </p>
-                          <div className="ml-3 shrink-0 text-sm font-semibold text-[#b7b0a1]">1 of 1</div>
+                          <div className="ml-3 shrink-0 text-sm font-semibold text-harx-500">1 of 1</div>
                         </div>
 
-                        <div className="overflow-hidden rounded-2xl border border-[#f0ece3] bg-[#faf9f6]">
+                        <div className="overflow-hidden rounded-2xl border border-harx-100 bg-harx-50/50">
                           {kbOptions.map((option, idx) => (
                             <button
                               key={option.id}
                               type="button"
                               onClick={() => handleSelectKbMode(option.id)}
-                              className="flex w-full items-center gap-3 border-b border-[#efebe3] px-4 py-3 text-left transition hover:bg-white last:border-b-0"
+                              className="flex w-full items-center gap-3 border-b border-harx-100/80 px-4 py-3 text-left transition hover:bg-white last:border-b-0"
                             >
-                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#ece8e1] text-sm font-semibold text-[#777065]">
+                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-harx-100 to-harx-alt-100 text-sm font-semibold text-harx-700">
                                 {idx + 1}
                               </span>
                               <span className="flex-1">
-                                <span className="block text-base font-semibold text-[#26231c]">{option.label}</span>
-                                <span className="block text-xs text-[#8d8678]">{option.hint}</span>
+                                <span className="block text-base font-semibold text-harx-900">{option.label}</span>
+                                <span className="block text-xs text-harx-600">{option.hint}</span>
                               </span>
-                              <span className="text-lg text-[#b3ac9d]">→</span>
+                              <span className="text-lg text-harx-alt-500">→</span>
                             </button>
                           ))}
                         </div>
@@ -2072,7 +2218,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           <button
                             type="button"
                             onClick={() => handleSelectKbMode('none')}
-                            className="rounded-lg border border-[#d8d2c6] bg-white px-3 py-1.5 text-xs font-semibold text-[#4f493f] hover:bg-[#f8f6f1]"
+                            className="rounded-lg border border-harx-200 bg-white px-3 py-1.5 text-xs font-semibold text-harx-800 hover:bg-harx-50"
                           >
                             Skip
                           </button>
@@ -2083,31 +2229,31 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   )}
                   {showPersonalizationCard && (
                     <div className="flex justify-start">
-                      <div className="w-full max-w-[92%] rounded-[24px] border border-[#e7e3db] bg-white p-3 shadow-[0_8px_24px_rgba(17,24,39,0.05)]">
+                      <div className="w-full max-w-[92%] rounded-[24px] border border-harx-200 bg-white p-3 shadow-lg shadow-harx-900/5 ring-1 ring-harx-100/80">
                         <div className="mb-2 flex items-center justify-between px-2 pt-1">
-                          <p className="text-[18px] font-semibold leading-tight text-[#1f1d18]">
+                          <p className="text-[18px] font-semibold leading-tight text-harx-900">
                             {personalizationQuestions[personalizationStep]?.question || 'A few questions to personalize your training'}
                           </p>
-                          <div className="ml-3 shrink-0 text-sm font-semibold text-[#b7b0a1]">
+                          <div className="ml-3 shrink-0 text-sm font-semibold text-harx-500">
                             {`${Math.min(personalizationStep + 1, personalizationQuestions.length)} of ${personalizationQuestions.length}`}
                           </div>
                         </div>
 
-                        <div className="overflow-hidden rounded-2xl border border-[#f0ece3] bg-[#faf9f6]">
+                        <div className="overflow-hidden rounded-2xl border border-harx-100 bg-harx-50/50">
                           {(personalizationQuestions[personalizationStep]?.options || []).map((option, idx) => (
                             <button
                               key={`${personalizationStep}-${option}`}
                               type="button"
                               onClick={() => handleSelectPersonalizationOption(option)}
-                              className="flex w-full items-center gap-3 border-b border-[#efebe3] px-4 py-3 text-left transition hover:bg-white last:border-b-0"
+                              className="flex w-full items-center gap-3 border-b border-harx-100/80 px-4 py-3 text-left transition hover:bg-white last:border-b-0"
                             >
-                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#ece8e1] text-sm font-semibold text-[#777065]">
+                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-harx-100 to-harx-alt-100 text-sm font-semibold text-harx-700">
                                 {idx + 1}
                               </span>
                               <span className="flex-1">
-                                <span className="block text-base font-semibold text-[#26231c]">{option}</span>
+                                <span className="block text-base font-semibold text-harx-900">{option}</span>
                               </span>
-                              <span className="text-lg text-[#b3ac9d]">→</span>
+                              <span className="text-lg text-harx-alt-500">→</span>
                             </button>
                           ))}
                         </div>
@@ -2120,7 +2266,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               setPersonalizationStep(0);
                               setPersonalizationAnswers({});
                             }}
-                            className="rounded-lg border border-[#d8d2c6] bg-white px-3 py-1.5 text-xs font-semibold text-[#4f493f] hover:bg-[#f8f6f1]"
+                            className="rounded-lg border border-harx-200 bg-white px-3 py-1.5 text-xs font-semibold text-harx-800 hover:bg-harx-50"
                           >
                             Skip
                           </button>
@@ -2132,7 +2278,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     <div key={msg.id} className={msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
                       {msg.role === 'assistant' ? (
                         <div className="max-w-[88%]">
-                          <div className="max-w-none text-[#1f1d18]">
+                          <div className="max-w-none text-slate-900">
                             {(() => {
                               const textWithoutStyle = stripPromptEcho(stripResourceSections(
                                 stripStyleBlueprint(String(msg.text || '').replace(/<harx-html>[\s\S]*?<\/harx-html>/gi, ''))
@@ -2148,25 +2294,25 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
                                     components={{
-                                      h1: ({ children }) => <h3 className="mb-3 mt-1 text-[24px] font-semibold text-[#1b1914]">{children}</h3>,
-                                      h2: ({ children }) => <h4 className="mb-2 mt-3 text-[20px] font-semibold text-[#1b1914]">{children}</h4>,
-                                      h3: ({ children }) => <h5 className="mb-2 mt-2 text-[17px] font-semibold text-[#1b1914]">{children}</h5>,
-                                      p: ({ children }) => <p className="my-2 text-[16px] leading-7 text-[#1f1d18]">{children}</p>,
-                                      ul: ({ children }) => <ul className="my-2 list-disc space-y-1 pl-6 text-[16px] leading-7 text-[#1f1d18]">{children}</ul>,
-                                      ol: ({ children }) => <ol className="my-2 list-decimal space-y-1 pl-6 text-[16px] leading-7 text-[#1f1d18]">{children}</ol>,
+                                      h1: ({ children }) => <h3 className="mb-3 mt-1 border-l-4 border-harx-500 pl-3 text-[24px] font-semibold text-slate-900">{children}</h3>,
+                                      h2: ({ children }) => <h4 className="mb-2 mt-3 text-[20px] font-semibold text-slate-900">{children}</h4>,
+                                      h3: ({ children }) => <h5 className="mb-2 mt-2 text-[17px] font-semibold text-slate-900">{children}</h5>,
+                                      p: ({ children }) => <p className="my-2 text-[16px] leading-7 text-slate-700">{children}</p>,
+                                      ul: ({ children }) => <ul className="my-2 list-disc space-y-1 pl-6 text-[16px] leading-7 text-slate-700">{children}</ul>,
+                                      ol: ({ children }) => <ol className="my-2 list-decimal space-y-1 pl-6 text-[16px] leading-7 text-slate-700">{children}</ol>,
                                       table: ({ children }) => (
-                                        <div className="my-4 overflow-x-auto rounded-xl border border-[#e8e2d2]">
+                                        <div className="my-4 overflow-x-auto rounded-xl border border-harx-200">
                                           <table className="min-w-full border-collapse bg-white">{children}</table>
                                         </div>
                                       ),
-                                      thead: ({ children }) => <thead className="bg-[#f6f3ea]">{children}</thead>,
-                                      tbody: ({ children }) => <tbody className="divide-y divide-[#e8e2d2]">{children}</tbody>,
+                                      thead: ({ children }) => <thead className="bg-harx-50">{children}</thead>,
+                                      tbody: ({ children }) => <tbody className="divide-y divide-harx-100">{children}</tbody>,
                                       tr: ({ children }) => <tr className="align-top">{children}</tr>,
-                                      th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-[#1f1d18]">{children}</th>,
-                                      td: ({ children }) => <td className="px-3 py-2 text-sm text-[#1f1d18]">{children}</td>,
+                                      th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-slate-900">{children}</th>,
+                                      td: ({ children }) => <td className="px-3 py-2 text-sm text-slate-700">{children}</td>,
                                       li: ({ children }) => <li>{children}</li>,
-                                      strong: ({ children }) => <strong className="font-semibold text-[#1b1914]">{children}</strong>,
-                                      code: ({ children }) => <code className="rounded bg-[#f3f2ec] px-1 py-0.5 text-[14px] text-[#2b271f]">{children}</code>,
+                                      strong: ({ children }) => <strong className="font-semibold text-harx-700">{children}</strong>,
+                                      code: ({ children }) => <code className="rounded bg-harx-50 px-1 py-0.5 text-[14px] text-slate-800 ring-1 ring-harx-100">{children}</code>,
                                     }}
                                   >
                                     {textWithoutStyle}
@@ -2178,21 +2324,21 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
                               if (!hasDesignedPlan) {
                                 const contentTheme = styleBlueprint.contentTheme || {
-                                  bodyColor: '#1f1d18',
-                                  headingColor: '#181611',
-                                  tableBorder: '#e8e2d2',
-                                  tableHeaderBg: '#f6f3ea',
-                                  tableHeaderText: '#1f1d18',
+                                  bodyColor: '#334155',
+                                  headingColor: '#be185d',
+                                  tableBorder: '#ffc2c2',
+                                  tableHeaderBg: '#fff5f5',
+                                  tableHeaderText: '#9f1239',
                                   tableRowBg: '#ffffff',
-                                  kpiBg: '#fbfaf6',
-                                  kpiBorder: '#e7dfcc',
-                                  kpiLabel: '#6e6758',
-                                  kpiValue: '#1f1d18',
+                                  kpiBg: '#fff5f5',
+                                  kpiBorder: '#fbcfe8',
+                                  kpiLabel: '#be185d',
+                                  kpiValue: '#1e293b',
                                   moduleShape: 'rounded' as const,
-                                  panelBg: '#fbfaf6',
-                                  panelBorder: '#e7dfcc',
-                                  badgeBg: '#f0ecdf',
-                                  badgeText: '#655b48',
+                                  panelBg: '#fff5f5',
+                                  panelBorder: '#fbcfe8',
+                                  badgeBg: '#fce7f3',
+                                  badgeText: '#9d174d',
                                 };
                                 return (
                                   <ReactMarkdown
@@ -2245,7 +2391,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                         <strong className="font-semibold" style={{ color: contentTheme.headingColor }}>{children}</strong>
                                       ),
                                       code: ({ children }) => (
-                                        <code className="rounded bg-[#f3f2ec] px-1 py-0.5 text-[14px] text-[#2b271f]">
+                                        <code className="rounded bg-harx-50 px-1 py-0.5 text-[14px] text-slate-800 ring-1 ring-harx-100">
                                           {children}
                                         </code>
                                       ),
@@ -2330,9 +2476,44 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                               <RotateCcw className="h-3.5 w-3.5" />
                             </button>
                           </div>
+                          {msg.trainingReadiness && msg.trainingReadiness.actions?.length > 0 ? (
+                            <div className="mt-3 rounded-xl border border-harx-200 bg-gradient-to-br from-white to-harx-50/60 p-3 shadow-sm">
+                              <p className="text-sm font-medium text-harx-900">{msg.trainingReadiness.messageFr}</p>
+                              {msg.trainingReadiness.missingModules?.length > 0 ? (
+                                <ul className="mt-2 list-disc space-y-0.5 pl-4 text-xs text-harx-800">
+                                  {msg.trainingReadiness.missingModules.map((mod, mi) => (
+                                    <li key={`${msg.id}-miss-${mi}`}>
+                                      <span className="font-semibold">{mod.title}</span>
+                                      {mod.reason ? <span className="text-harx-600"> — {mod.reason}</span> : null}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : null}
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {msg.trainingReadiness.actions.map((act) => (
+                                  <button
+                                    key={`${msg.id}-${act.id}`}
+                                    type="button"
+                                    disabled={isChatLoading || isSavingCloud}
+                                    onClick={() => void handleTrainingReadinessAction(act.id, msg.trainingReadiness)}
+                                    className={
+                                      act.id === 'validate_training'
+                                        ? 'inline-flex items-center gap-1 rounded-xl bg-gradient-to-r from-harx-500 to-harx-alt-500 px-3 py-2 text-xs font-bold text-white shadow-md shadow-harx-500/20 disabled:opacity-50'
+                                        : 'inline-flex items-center gap-1 rounded-xl border border-harx-200 bg-white px-3 py-2 text-xs font-semibold text-harx-800 hover:bg-harx-50 disabled:opacity-50'
+                                    }
+                                  >
+                                    {act.id === 'validate_training' ? (
+                                      <CheckCircle className="h-3.5 w-3.5" />
+                                    ) : null}
+                                    {act.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
                         </div>
                       ) : (
-                        <div className="max-w-[60%] rounded-xl border border-harx-200 bg-[#f6f5ef] px-3 py-2 text-sm font-medium text-harx-700 shadow-sm">
+                        <div className="max-w-[60%] rounded-xl border border-harx-alt-300/40 bg-gradient-to-br from-harx-500 to-harx-alt-500 px-3 py-2 text-sm font-medium text-white shadow-md shadow-harx-500/25">
                           {msg.text}
                         </div>
                       )}
@@ -2340,16 +2521,16 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                   ))}
                   {isChatLoading && !chatMessages.some((m) => m.isStreaming) && (
                     <div className="flex justify-start">
-                      <div className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-white px-3 py-2 text-sm text-harx-700 shadow-sm">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Claude is thinking...
+                      <div className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-white px-3 py-2 text-sm font-medium text-harx-800 shadow-sm">
+                        <Loader2 className="h-4 w-4 animate-spin text-harx-500" />
+                        HARX is thinking…
                       </div>
                     </div>
                   )}
                 </div>
               )}
 
-              <div className={rep ? 'sticky bottom-2 z-20 bg-[#fcfcf8]/95 pb-1 pt-2 backdrop-blur-sm' : 'sticky bottom-2 z-20 bg-white/95 pb-1 pt-2 backdrop-blur-sm'}>
+              <div className={rep ? 'sticky bottom-2 z-20 bg-harx-50/95 pb-1 pt-2 backdrop-blur-sm' : 'sticky bottom-2 z-20 bg-gradient-to-t from-white via-white to-harx-50/40 pb-1 pt-2 backdrop-blur-sm'}>
                 <div className={rep ? 'rounded-[20px] border border-harx-200 bg-white px-4 py-3' : 'rounded-[28px] border border-harx-200 bg-white px-5 py-4'}>
                   <input
                     ref={chatFileInputRef}
@@ -2436,16 +2617,6 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => void handleSavePresentation()}
-                        disabled={isSavingCloud}
-                        className="inline-flex items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 disabled:opacity-50"
-                        title="Validate"
-                      >
-                        {isSavingCloud ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
-                        Validate
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => void handleChatSubmit()}
                         disabled={!chatInput.trim() || isChatLoading}
                         className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
@@ -2507,7 +2678,7 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
             className={
               rep
                 ? 'mt-4 flex flex-col gap-2 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between'
-                : 'mt-8 flex flex-col gap-4 border-t border-gray-200 pt-6 md:flex-row md:items-center md:justify-between'
+                : 'mt-8 flex flex-col gap-4 border-t border-harx-100 pt-6 md:flex-row md:items-center md:justify-between'
             }
           >
             <button
@@ -2516,7 +2687,7 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
               className={
                 rep
                   ? 'rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 shadow-sm transition-colors hover:border-harx-200 hover:text-harx-600'
-                  : 'rounded-xl border border-gray-300 bg-white px-6 py-2 font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50'
+                  : 'rounded-xl border border-harx-200 bg-white px-6 py-2 font-medium text-harx-800 shadow-sm transition-colors hover:border-harx-300 hover:bg-harx-50'
               }
             >
               Back to setup
