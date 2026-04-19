@@ -45,6 +45,14 @@ function AppContent() {
   const [currentStepGuide, setCurrentStepGuide] = useState<{ title: string; description: string } | null>(null);
   const [globalBackConfig, setGlobalBackConfig] = useState<{ label: string; action: () => void } | null>(null);
 
+  useEffect(() => {
+    if (location.pathname.includes('/orchestrator')) {
+      setActiveProject('comporchestrator');
+    } else if (location.pathname.includes('/dashboard')) {
+      setActiveProject('dashboard');
+    }
+  }, [location.pathname]);
+
   const isZohoCallback = window.location.pathname === '/zoho-callback';
   const isZohoAuth = window.location.pathname === '/zoho-auth';
 
