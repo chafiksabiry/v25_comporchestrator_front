@@ -213,8 +213,15 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       try {
         console.log('[RepOnboarding] Fetching presentation JSON from:', url);
         const response = await axios.get(url);
-        if (response.data) {
-          setSelectedPresentation(response.data);
+        const raw = response.data as Record<string, unknown> | null | undefined;
+        const fromUrl =
+          raw && Array.isArray(raw.slides)
+            ? (raw as { slides: unknown[] })
+            : raw && typeof raw.presentation === 'object' && raw.presentation !== null && Array.isArray((raw.presentation as { slides?: unknown[] }).slides)
+              ? (raw.presentation as { slides: unknown[] })
+              : null;
+        if (fromUrl?.slides?.length) {
+          setSelectedPresentation(fromUrl);
           setLoadingPresentation(false);
           return;
         }
@@ -226,7 +233,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       }
     }
 
-    // Use AI generated presentation if it exists in the journey object, otherwise fallback to local mapping
+    // Présentation embarquée (Mongo) : source de vérité pour titre, bullets, visualConfig
     let presentationToUse;
     if (journey.presentation && journey.presentation.slides && journey.presentation.slides.length > 0) {
       console.log('[RepOnboarding] Using stored AI presentation from journey object');
@@ -235,7 +242,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       console.log('[RepOnboarding] Using local mapping for presentation');
       presentationToUse = mapJourneyToPresentation(journey);
     }
-    
+
     setSelectedPresentation(presentationToUse);
   };
 
