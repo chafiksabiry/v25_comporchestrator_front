@@ -4,7 +4,8 @@ import {
   ChevronRight,
   ChevronLeft,
   Sparkles,
-  Info
+  Info,
+  Building2
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { HashRouter, useLocation } from 'react-router-dom';
@@ -264,13 +265,15 @@ function AppContent() {
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
                        <span className="text-sm font-black text-gray-900 leading-tight">{userFullName}</span>
-                       {companyLogo && !logoError && (
+                       {companyLogo && !logoError ? (
                          <img 
                            src={companyLogo} 
                            alt="" 
                            className="h-4 w-4 object-contain rounded"
                            onError={() => setLogoError(true)}
                          />
+                       ) : (
+                         <Building2 className="h-3.5 w-3.5 text-harx-400 opacity-60" />
                        )}
                     </div>
                     <span className="text-[10px] text-harx-500 font-bold uppercase tracking-wider">Administrator</span>
