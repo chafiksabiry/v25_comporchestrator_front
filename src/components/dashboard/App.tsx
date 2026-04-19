@@ -26,23 +26,24 @@ function App() {
   return (
     <Routes>
       <Route element={<DashboardLayout />}>
-        <Route path="dashboard/overview" element={<OverviewDashboardPage />} />
-        <Route path="company" element={<Navigate to="/dashboard/profile" replace />} />
-        <Route path="dashboard" element={<CompanyDashboardPage />} />
-        <Route path="dashboard/profile" element={<CompanyProfilePanel />} />
-        <Route path="leads" element={<LeadManagementPanel />} />
-        <Route path="rep-matching" element={<RepMatchingPanel />} />
-        <Route path="scheduler" element={<SchedulerPanel />} />
-        <Route path="calls" element={<CallsPanel />} />
-        <Route path="telnyx-call-test" element={<TelnyxCallTest />} />
-        <Route path="call-report" element={<CallReportCard />} />
-        <Route path="emails" element={<EmailsPanel />} />
-        <Route path="chat" element={<ChatPanel />} />
-        <Route path="gigs" element={<GigsPanel />} />
-        <Route path="gigs/:gigId" element={<GigDetailsPanel />} />
-        <Route path="quality-assurance" element={<QualityAssurancePanel />} />
-        <Route path="operations" element={<OperationsPanel />} />
-        <Route path="analytics" element={<AnalyticsPanel />} />
+        <Route path="/dashboard/overview" element={<OverviewDashboardPage />} />
+        <Route path="/company" element={<Navigate to="/dashboard/profile" replace />} />
+        <Route path="/dashboard" element={<CompanyDashboardPage />} />
+        <Route path="/dashboard/profile" element={<CompanyProfilePanel />} />
+        <Route path="/leads" element={<LeadManagementPanel />} />
+        <Route path="/rep-matching" element={<RepMatchingPanel />} />
+        <Route path="/scheduler" element={<SchedulerPanel />} />
+        <Route path="/calls" element={<CallsPanel />} />
+        <Route path="/telnyx-call-test" element={<TelnyxCallTest />} />
+        <Route path="/call-report" element={<CallReportCard />} />
+        <Route path="/emails" element={<EmailsPanel />} />
+        <Route path="/chat" element={<ChatPanel />} />
+        <Route path="/gigs" element={<GigsPanel />} />
+        <Route path="/gigs/:gigId" element={<GigDetailsPanel />} />
+        <Route path="/quality-assurance" element={<QualityAssurancePanel />} />
+        <Route path="/operations" element={<OperationsPanel />} />
+        <Route path="/analytics" element={<AnalyticsPanel />} />
+        <Route path="*" element={<div className="p-8 text-red-500 font-bold">Le tableau de bord n'a pas trouvé cette route. URL: {window.location.hash}</div>} />
         <Route path="integrations" element={<IntegrationsPanel />} />
         <Route path="settings" element={<SettingsPanel />} />
         <Route path="knowledge-base" element={<KnowledgeBase />} />
