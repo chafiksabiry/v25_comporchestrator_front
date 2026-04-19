@@ -7,7 +7,7 @@ import {
   Users,
   BookOpen,
   MessageSquare,
-  BarChart,
+  BarChart2,
   CheckCircle,
   ChevronRight,
   AlertCircle,
@@ -1087,7 +1087,7 @@ const CompanyOnboarding = () => {
       case 6:
         return FileText;
       case 7:
-        return BarChart;
+        return BarChart2;
       case 8:
         return BookOpen;
       case 9:
