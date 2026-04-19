@@ -111,15 +111,14 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
     }
     setCurrentStep(1);
 
-    // Sauvegarder immédiatement après le setup
-    // IMPORTANT: Don't pass modules yet (empty array) to avoid creating journey without modules
+    // Sauvegarder immédiatement après le setup (parcours en brouillon sans modules ; les modules arrivent au curriculum)
     await DraftService.saveDraftImmediately({
       company: newCompany,
       journey: newJourney,
       methodology: selectedMethodology || null,
       selectedGigId: gigId || null,
       currentStep: 1,
-      modules: [] // Empty modules - journey will be created when modules are added
+      modules: []
     });
   };
 
