@@ -1053,8 +1053,12 @@ const CompanyOnboarding = () => {
         return;
       }
     } else if (displayedPhase === 4) {
-      // Rediriger seulement si on est déjà en phase 4
-      window.location.href = "/company#/company";
+      // Dispatch tabChange event to switch to the dashboard tab
+      window.dispatchEvent(
+        new CustomEvent("tabChange", {
+          detail: { tab: "dashboard" },
+        })
+      );
     }
   };
 
