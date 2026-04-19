@@ -104,9 +104,19 @@ function AppContent() {
             if (companyResponse && companyResponse.ok) {
               const companyData = await companyResponse.json();
               console.log('[V25 Main App] Company data fetched:', companyData);
-              const logo = companyData.data?.logo;
-              if (logo) {
-                setCompanyLogo(logo);
+              const rawLogo = companyData.data?.logo;
+              const website = companyData.data?.contact?.website;
+              
+              if (rawLogo) {
+                setCompanyLogo(rawLogo);
+              } else if (website) {
+                // Fallback to website favicon if no logo provided
+                try {
+                  const domain = new URL(website).hostname;
+                  setCompanyLogo(`https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
+                } catch (e) {
+                  console.debug('Failed to parse website for favicon', e);
+                }
               }
             }
           }
@@ -264,8 +274,22 @@ function AppContent() {
                       <img
                         src={companyLogo}
                         alt="Company Logo"
-                        className="w-full h-full object-contain"
-                        onError={() => setLogoError(true)}
+                        className="w-full h-full object-contain p-1"
+                        onError={() => {
+                          // If primary logo fails and we haven't tried the favicon fallback yet
+                          if (!companyLogo.includes('google.com/s2/favicons')) {
+                             try {
+                               // Try to extract domain from current failing logo or just show initial
+                               const url = new URL(companyLogo);
+                               const domain = url.hostname.replace('logo.clearbit.com/', '');
+                               setCompanyLogo(`https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
+                             } catch (e) {
+                               setLogoError(true);
+                             }
+                          } else {
+                            setLogoError(true);
+                          }
+                        }}
                       />
                     ) : (
                       userFullName.charAt(0).toUpperCase()
