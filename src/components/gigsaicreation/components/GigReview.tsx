@@ -293,7 +293,7 @@ export function GigReview({
       });
 
       if (isEditMode && editGigId) {
-        const gigUrl = `company#/gigs/${editGigId}`;
+        const gigUrl = `company/#/dashboard/gigs/${editGigId}`;
         console.log('Redirecting to:', gigUrl);
         window.location.href = gigUrl;
       } else if (onPublishSuccess) {
