@@ -259,22 +259,21 @@ function AppContent() {
               </div>
               <div className="flex items-center space-x-4 ml-auto">
                 <div className="flex items-center space-x-3 bg-gray-50 p-1.5 pr-4 rounded-2xl border border-gray-100 shadow-sm">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-harx flex items-center justify-center text-white font-black shadow-md">
-                    {userFullName.charAt(0).toUpperCase()}
+                  <div className="h-10 w-10 rounded-xl bg-gradient-harx flex items-center justify-center text-white font-black shadow-md overflow-hidden bg-white">
+                    {companyLogo && !logoError ? (
+                      <img 
+                        src={companyLogo} 
+                        alt="Company Logo" 
+                        className="w-full h-full object-contain"
+                        onError={() => setLogoError(true)}
+                      />
+                    ) : (
+                      userFullName.charAt(0).toUpperCase()
+                    )}
                   </div>
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
                        <span className="text-sm font-black text-gray-900 leading-tight">{userFullName}</span>
-                       {companyLogo && !logoError ? (
-                         <img 
-                           src={companyLogo} 
-                           alt="" 
-                           className="h-4 w-4 object-contain rounded"
-                           onError={() => setLogoError(true)}
-                         />
-                       ) : (
-                         <Building2 className="h-3.5 w-3.5 text-harx-400 opacity-60" />
-                       )}
                     </div>
                     <span className="text-[10px] text-harx-500 font-bold uppercase tracking-wider">Administrator</span>
                   </div>
