@@ -43,11 +43,11 @@ function DealManagementPanel() {
   const fetchDeals = async () => {
     let accessToken = localStorage.getItem("zoho_access_token");
     if (!accessToken) {
-        window.location.href = `${import.meta.env.VITE_API_URL}/zoho/auth`;
+        window.location.href = `${import.meta.env.VITE_COMPANY_API_URL}/zoho/auth`;
         return;
     }
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/zoho/deals`, {
+      const response = await fetch(`${import.meta.env.VITE_COMPANY_API_URL}/zoho/deals`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${accessToken}`,

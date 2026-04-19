@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  BarChart,
+  BarChart2,
   Users,
   MessageSquare,
   CheckCircle2,
@@ -18,7 +18,7 @@ function AnalyticsPanel() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-rose-100 rounded-lg">
-              <BarChart className="w-6 h-6 text-rose-500" />
+              <BarChart2 className="w-6 h-6 text-rose-500" />
             </div>
             <h2 className="text-xl font-semibold">Analytics Overview</h2>
           </div>

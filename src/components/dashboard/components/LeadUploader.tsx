@@ -45,7 +45,7 @@ export function LeadUploader({ onComplete, onClose }: LeadUploaderProps) {
       setUploading(true);
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/leads/upload-csv`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/leads/upload-csv`,
         {
           method: "POST",
           body: formData,
@@ -97,7 +97,7 @@ export function LeadUploader({ onComplete, onClose }: LeadUploaderProps) {
       }
 
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/zoho/refresh-token`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/zoho/refresh-token`,
         {
           refresh_token: refreshToken,
         }
@@ -120,13 +120,13 @@ export function LeadUploader({ onComplete, onClose }: LeadUploaderProps) {
 
     let accessToken = localStorage.getItem("zoho_access_token");
     if (!accessToken) {
-      window.location.href = `${import.meta.env.VITE_API_URL}/zoho/auth`;
+      window.location.href = `${import.meta.env.VITE_COMPANY_API_URL}/zoho/auth`;
       return;
     }
 
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/zoho/leads`,
+        `${import.meta.env.VITE_COMPANY_API_URL}/zoho/leads`,
         {
           headers: {
             Authorization: `Zoho-oauthtoken ${accessToken}`,
@@ -151,7 +151,7 @@ export function LeadUploader({ onComplete, onClose }: LeadUploaderProps) {
         if (newAccessToken) {
           fetchLeads(); // Réessayer avec le nouveau token
         } else {
-          window.location.href = `${import.meta.env.VITE_API_URL}/zoho/auth`;
+          window.location.href = `${import.meta.env.VITE_COMPANY_API_URL}/zoho/auth`;
         }
       } else {
         setError(
@@ -176,7 +176,7 @@ export function LeadUploader({ onComplete, onClose }: LeadUploaderProps) {
       }).then((result) => {
         if (result.isConfirmed) {
           // Redirige vers Zoho pour la connexion
-          window.location.href = `${import.meta.env.VITE_API_URL}/zoho/auth`;
+          window.location.href = `${import.meta.env.VITE_COMPANY_API_URL}/zoho/auth`;
         }
       });
     } else {

@@ -42,12 +42,12 @@ function ContactManagementPanel() {
   const fetchContacts = async () => {
     let accessToken = localStorage.getItem("zoho_access_token");
     if (!accessToken) {
-      window.location.href = `${import.meta.env.VITE_API_URL}/zoho/auth`;
+      window.location.href = `${import.meta.env.VITE_COMPANY_API_URL}/zoho/auth`;
       return;
     }
 
     try {
-      const response = await fetch("https://harxv25dashboardfrontend.netlify.app/api/zoho/contacts", {
+      const response = await fetch(`${import.meta.env.VITE_COMPANY_API_URL}/zoho/contacts`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${accessToken}`,
