@@ -26,10 +26,10 @@ function App() {
   return (
     <Routes>
       <Route element={<DashboardLayout />}>
-        <Route index element={<OverviewDashboardPage />} />
-        <Route path="company" element={<Navigate to="/company/profile" replace />} />
+        <Route path="company/dashboard/overview" element={<OverviewDashboardPage />} />
+        <Route path="company" element={<Navigate to="/company/dashboard/profile" replace />} />
         <Route path="company/dashboard" element={<CompanyDashboardPage />} />
-        <Route path="company/profile" element={<CompanyProfilePanel />} />
+        <Route path="company/dashboard/profile" element={<CompanyProfilePanel />} />
         <Route path="leads" element={<LeadManagementPanel />} />
         <Route path="rep-matching" element={<RepMatchingPanel />} />
         <Route path="scheduler" element={<SchedulerPanel />} />

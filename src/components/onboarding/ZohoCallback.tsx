@@ -58,14 +58,14 @@ const ZohoCallback = () => {
         toast.success('Successfully connected to Zoho CRM');
 
         setTimeout(() => {
-          window.location.href = '/app11?startStep=6';
+          window.location.href = '/#/company/orchestrator?startStep=6';
         }, 3000);
 
       } catch (error: any) {
         console.error('Error handling Zoho callback:', error);
         toast.error(error.message || 'Failed to complete Zoho authentication');
         setTimeout(() => {
-          window.location.href = '/app11';
+          window.location.href = '/#/company/orchestrator';
         }, 2000);
       }
     };

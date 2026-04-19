@@ -2,7 +2,7 @@ import React from 'react';
 
 export function DashboardPanel() {
   const handleOrchestratorClick = () => {
-    window.location.href = '/app11';
+    window.location.href = '/#/company/orchestrator';
   };
 
   return (
