@@ -31,7 +31,7 @@ import {
   Globe,
   Filter,
   Inbox,
-  BarChart,
+  BarChart2 as BarChartIcon,
   Activity,
   CheckCircle2
 } from 'lucide-react';
@@ -290,7 +290,7 @@ const ReportingSetup = () => {
       id: 'channel_utilization',
       name: 'Channel Utilization',
       description: 'Usage patterns across channels',
-      icon: BarChart,
+      icon: BarChartIcon,
       category: 'efficiency'
     },
     {

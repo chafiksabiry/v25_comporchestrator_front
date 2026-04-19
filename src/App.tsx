@@ -7,7 +7,8 @@ import {
   Sparkles,
   Info,
   X,
-  Cpu
+  Cpu,
+  BarChart2
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import Cookies from 'js-cookie';
@@ -281,7 +282,7 @@ function App() {
               onClick={() => setActiveTab('dashboard')}
             >
               <div className={`p-2 rounded-xl transition-all shrink-0 ${activeTab === 'dashboard' ? 'bg-white/20' : 'bg-gray-800/40 group-hover:bg-gray-800'}`}>
-                <BarChart className="h-5 w-5" />
+                <BarChart2 className="h-5 w-5" />
               </div>
               {!isCollapsed && (
                 <span className="font-black text-sm tracking-tight whitespace-nowrap overflow-hidden">Dashboard</span>
