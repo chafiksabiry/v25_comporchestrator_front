@@ -83,8 +83,8 @@ function AppContent() {
             const companyResponse = await fetch(`${companyApiUrl}/companies/user/${userId}`);
             if (companyResponse.ok) {
               const companyData = await companyResponse.json();
-              if (companyData.success && companyData.data && companyData.data.logoUrl) {
-                setCompanyLogo(companyData.data.logoUrl);
+              if (companyData.success && companyData.data && companyData.data.logo) {
+                setCompanyLogo(companyData.data.logo);
               }
             }
           }
