@@ -93,8 +93,8 @@ function AppContent() {
               // Try fetching by companyId first
               companyResponse = await fetch(`${companyApiUrl}/companies/${companyId}/details`);
               if (!companyResponse.ok) {
-                 // Fallback to userId if companyId fetch fails
-                 companyResponse = await fetch(`${companyApiUrl}/companies/user/${userId}`);
+                // Fallback to userId if companyId fetch fails
+                companyResponse = await fetch(`${companyApiUrl}/companies/user/${userId}`);
               }
             } else {
               // Direct fetch by userId
@@ -104,7 +104,7 @@ function AppContent() {
             if (companyResponse && companyResponse.ok) {
               const companyData = await companyResponse.json();
               console.log('[V25 Main App] Company data fetched:', companyData);
-              const logo = companyData.data?.logo || companyData.logo;
+              const logo = companyData.data?.logo;
               if (logo) {
                 setCompanyLogo(logo);
               }
@@ -261,9 +261,9 @@ function AppContent() {
                 <div className="flex items-center space-x-3 bg-gray-50 p-1.5 pr-4 rounded-2xl border border-gray-100 shadow-sm">
                   <div className="h-10 w-10 rounded-xl bg-gradient-harx flex items-center justify-center text-white font-black shadow-md overflow-hidden bg-white">
                     {companyLogo && !logoError ? (
-                      <img 
-                        src={companyLogo} 
-                        alt="Company Logo" 
+                      <img
+                        src={companyLogo}
+                        alt="Company Logo"
                         className="w-full h-full object-contain"
                         onError={() => setLogoError(true)}
                       />
@@ -273,7 +273,7 @@ function AppContent() {
                   </div>
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
-                       <span className="text-sm font-black text-gray-900 leading-tight">{userFullName}</span>
+                      <span className="text-sm font-black text-gray-900 leading-tight">{userFullName}</span>
                     </div>
                     <span className="text-[10px] text-harx-500 font-bold uppercase tracking-wider">Administrator</span>
                   </div>
@@ -305,7 +305,7 @@ function App() {
     <AuthProvider>
       <Provider store={store}>
         <HashRouter>
-           <AppContent />
+          <AppContent />
         </HashRouter>
       </Provider>
     </AuthProvider>
