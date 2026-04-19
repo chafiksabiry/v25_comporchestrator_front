@@ -59,6 +59,10 @@ function AppContent() {
   const isZohoAuth = window.location.pathname === '/zoho-auth';
 
   useEffect(() => {
+    setLogoError(false);
+  }, [companyLogo]);
+
+  useEffect(() => {
     const userId = Cookies.get('userId');
     if (!userId && !isZohoCallback && !isZohoAuth) {
       window.location.href = '/auth';
