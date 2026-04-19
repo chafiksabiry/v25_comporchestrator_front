@@ -29,7 +29,7 @@ export function CompanyDashboardPage() {
   const [onboarding, setOnboarding] = useState<{ completedSteps?: number[]; currentPhase?: number } | null>(null);
   const [gigsCount, setGigsCount] = useState<number | null>(null);
 
-  const base = import.meta.env.VITE_BACKEND_URL_COMPANY;
+  const base = import.meta.env.VITE_COMPANY_API_URL;
 
   const loadCompany = useCallback(async () => {
     const userId = Cookies.get('userId');

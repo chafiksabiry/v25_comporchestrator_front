@@ -85,7 +85,7 @@ function SettingsPanel() {
         return;
       }
       try {
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL_COMPANY}/onboarding/companies/${companyId}/onboarding`);
+        const response = await axios.get(`${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`);
         if (response.data) {
           setOnboardingProgress(response.data.data || response.data);
         }

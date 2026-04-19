@@ -110,7 +110,7 @@ function GigsPanel() {
   // const fetchCompanyDetails = async () => {
   //   try {
   //     const response = await axios.get(
-  //       `${import.meta.env.VITE_BACKEND_URL_COMPANY}/companies/${companyId}`
+  //       `${import.meta.env.VITE_COMPANY_API_URL}/companies/${companyId}`
   //     );
   //     setCompanyName(response.data.data.name);
   //   } catch (err) {
