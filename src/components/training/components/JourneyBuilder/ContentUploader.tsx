@@ -2195,44 +2195,50 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   : 'relative flex min-h-0 flex-1 flex-col rounded-3xl border border-slate-200 bg-slate-50/40 shadow-sm'
               }
             >
-              <div className={`mb-0 flex shrink-0 items-center justify-end gap-2 ${rep ? '' : 'px-3 pt-3'}`}>
-                <select
-                  value={activeChatGigId}
-                  onChange={(e) => setSelectedChatGigId(e.target.value)}
-                  className="max-w-[200px] rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-800 outline-none ring-harx-500/20 hover:border-slate-300 focus:border-harx-400 focus:ring-2"
-                  title="Choose gig for chat"
-                >
-                  <option value="">Choose a gig</option>
-                  {companyGigs.map((gig: any) => {
-                    const id = String(gig?._id || gig?.id || '');
-                    return (
-                      <option key={id} value={id}>
-                        {gig?.title || 'Untitled gig'}
-                      </option>
-                    );
-                  })}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => setIsHistoryOpen((prev) => !prev)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-                  title="Open history"
-                >
-                  <History className="h-3.5 w-3.5" />
-                  History
-                </button>
-                <button
-                  type="button"
-                  onClick={startNewConversation}
-                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-                  title="New conversation"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  New
-                </button>
-              </div>
-              {isHistoryOpen && (
-                <div className="absolute right-0 top-10 z-30 w-full max-w-[320px] rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+              <div className={`relative mb-2 flex w-full shrink-0 justify-end ${rep ? 'px-0.5 pt-0.5' : 'px-3 pt-3'}`}>
+                <div className="flex w-full max-w-full flex-wrap items-center justify-end gap-2 rounded-2xl border border-slate-200/90 bg-white/95 p-1.5 shadow-sm ring-1 ring-slate-900/[0.04] backdrop-blur-sm sm:inline-flex sm:w-auto sm:flex-nowrap sm:gap-1.5">
+                  <select
+                    value={activeChatGigId}
+                    onChange={(e) => setSelectedChatGigId(e.target.value)}
+                    className="min-w-0 flex-1 truncate rounded-xl border-0 bg-slate-50/90 px-3 py-2 text-xs font-semibold text-slate-800 outline-none transition hover:bg-slate-100/90 focus:bg-white focus:ring-2 focus:ring-harx-500/25 sm:min-w-[12rem] sm:max-w-[min(20rem,50vw)] sm:flex-none sm:shrink-0"
+                    title="Choose gig for chat"
+                  >
+                    <option value="">Choose a gig</option>
+                    {companyGigs.map((gig: any) => {
+                      const id = String(gig?._id || gig?.id || '');
+                      return (
+                        <option key={id} value={id}>
+                          {gig?.title || 'Untitled gig'}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <span className="hidden h-8 w-px shrink-0 self-center bg-slate-200/90 sm:block" aria-hidden />
+                  <button
+                    type="button"
+                    onClick={() => setIsHistoryOpen((prev) => !prev)}
+                    className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition sm:px-2.5 ${
+                      isHistoryOpen
+                        ? 'bg-slate-100 text-slate-900 ring-1 ring-slate-300/80'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
+                    title="Open history"
+                  >
+                    <History className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+                    History
+                  </button>
+                  <button
+                    type="button"
+                    onClick={startNewConversation}
+                    className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-gradient-harx px-3 py-2 text-xs font-bold text-white shadow-sm shadow-harx-500/15 transition hover:brightness-105 active:brightness-95"
+                    title="New conversation"
+                  >
+                    <Plus className="h-3.5 w-3.5 shrink-0" />
+                    New
+                  </button>
+                </div>
+                {isHistoryOpen && (
+                  <div className="absolute right-0 top-full z-30 mt-1.5 w-full max-w-[320px] rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
                   <div className="mb-2 flex items-center justify-between px-1">
                     <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
                       {`History — ${activeChatGigTitle}`}
@@ -2279,7 +2285,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     )}
                   </div>
                 </div>
-              )}
+                )}
+              </div>
               {shouldShowChatThread && (
                 <div
                   className={
