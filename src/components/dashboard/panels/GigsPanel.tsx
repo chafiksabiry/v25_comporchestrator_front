@@ -122,7 +122,7 @@ function GigsPanel() {
     try {
       setLoading(true);
       const userId: string = Cookies.get('userId') || '680a27ffefa3d29d628d0016';
-      const apiUrl = `${import.meta.env.VITE_API_URL_GIGS}/gigs/user/${userId}`;
+      const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/user/${userId}`;
 
       const response = await fetch(apiUrl);
 
