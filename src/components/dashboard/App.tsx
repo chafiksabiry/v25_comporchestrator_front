@@ -30,24 +30,24 @@ function App() {
         <Route path="/company" element={<Navigate to="/dashboard/profile" replace />} />
         <Route path="/dashboard" element={<CompanyDashboardPage />} />
         <Route path="/dashboard/profile" element={<CompanyProfilePanel />} />
-        <Route path="/leads" element={<LeadManagementPanel />} />
-        <Route path="/rep-matching" element={<RepMatchingPanel />} />
-        <Route path="/scheduler" element={<SchedulerPanel />} />
-        <Route path="/calls" element={<CallsPanel />} />
-        <Route path="/telnyx-call-test" element={<TelnyxCallTest />} />
-        <Route path="/call-report" element={<CallReportCard />} />
-        <Route path="/emails" element={<EmailsPanel />} />
-        <Route path="/chat" element={<ChatPanel />} />
-        <Route path="/gigs" element={<GigsPanel />} />
-        <Route path="/gigs/:gigId" element={<GigDetailsPanel />} />
-        <Route path="/quality-assurance" element={<QualityAssurancePanel />} />
-        <Route path="/operations" element={<OperationsPanel />} />
-        <Route path="/analytics" element={<AnalyticsPanel />} />
+        <Route path="/dashboard/leads" element={<LeadManagementPanel />} />
+        <Route path="/dashboard/rep-matching" element={<RepMatchingPanel />} />
+        <Route path="/dashboard/scheduler" element={<SchedulerPanel />} />
+        <Route path="/dashboard/calls" element={<CallsPanel />} />
+        <Route path="/dashboard/telnyx-call-test" element={<TelnyxCallTest />} />
+        <Route path="/dashboard/call-report" element={<CallReportCard />} />
+        <Route path="/dashboard/emails" element={<EmailsPanel />} />
+        <Route path="/dashboard/chat" element={<ChatPanel />} />
+        <Route path="/dashboard/gigs" element={<GigsPanel />} />
+        <Route path="/dashboard/gigs/:gigId" element={<GigDetailsPanel />} />
+        <Route path="/dashboard/quality-assurance" element={<QualityAssurancePanel />} />
+        <Route path="/dashboard/operations" element={<OperationsPanel />} />
+        <Route path="/dashboard/analytics" element={<AnalyticsPanel />} />
         <Route path="*" element={<div className="p-8 text-red-500 font-bold">Le tableau de bord n'a pas trouvé cette route. URL: {window.location.hash}</div>} />
-        <Route path="integrations" element={<IntegrationsPanel />} />
-        <Route path="settings" element={<SettingsPanel />} />
-        <Route path="knowledge-base" element={<KnowledgeBase />} />
-        <Route path="kb-insight" element={<KnowledgeInsights />} />
+        <Route path="/dashboard/integrations" element={<IntegrationsPanel />} />
+        <Route path="/dashboard/settings" element={<SettingsPanel />} />
+        <Route path="/dashboard/knowledge-base" element={<KnowledgeBase />} />
+        <Route path="/dashboard/kb-insight" element={<KnowledgeInsights />} />
       </Route>
     </Routes>
   );
