@@ -2315,49 +2315,49 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   )}
                   {rep && shouldShowKbQuestionInChat && (
                     <div className="w-full min-w-0">
-                      <div className="w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-md shadow-slate-900/5 sm:p-4">
-                        <div className="mb-3 flex items-center justify-between gap-2">
-                          <div className="flex min-w-0 items-center gap-2">
+                      <div className="w-full rounded-2xl border border-slate-200 bg-white p-2.5 shadow-md shadow-slate-900/5 sm:p-3">
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <div className="flex min-w-0 items-center gap-1.5">
                             <div
-                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-sm shadow-harx-500/20"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-sm shadow-harx-500/20"
                               aria-hidden
                             >
-                              <Bot className="h-4 w-4" />
+                              <Bot className="h-3.5 w-3.5" />
                             </div>
                             <div className="min-w-0">
-                              <span className="text-xs font-bold uppercase tracking-wide text-slate-500">HARX</span>
-                              <span className="ml-2 text-xs font-medium text-slate-400">Assistant</span>
+                              <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">HARX</span>
+                              <span className="ml-1.5 text-[11px] font-medium text-slate-400">Assistant</span>
                             </div>
                           </div>
-                          <span className="shrink-0 text-xs font-semibold text-slate-400 sm:text-sm">1 of 1</span>
+                          <span className="shrink-0 text-[11px] font-semibold text-slate-400">1 of 1</span>
                         </div>
-                        <p className="mb-3 text-lg font-semibold leading-snug text-slate-900 sm:text-xl md:text-2xl">
+                        <p className="mb-2 text-base font-semibold leading-snug text-slate-900 sm:text-lg">
                           Do you want to generate a training plan and training content from your knowledge base?
                         </p>
-                        <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80">
+                        <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50/80">
                           {kbOptions.map((option, idx) => (
                             <button
                               key={option.id}
                               type="button"
                               onClick={() => handleSelectKbMode(option.id)}
-                              className="flex w-full items-center gap-3 border-b border-slate-200/90 px-3 py-3 text-left transition hover:bg-white last:border-b-0 sm:px-4"
+                              className="flex w-full items-center gap-2 border-b border-slate-200/90 px-2.5 py-2 text-left transition hover:bg-white last:border-b-0 sm:px-3"
                             >
-                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F43F5E] text-sm font-bold text-white shadow-sm">
+                              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#F43F5E] text-xs font-bold text-white shadow-sm">
                                 {idx + 1}
                               </span>
                               <span className="min-w-0 flex-1">
-                                <span className="block text-sm font-semibold text-slate-900 sm:text-base">{option.label}</span>
-                                <span className="block text-xs text-slate-600">{option.hint}</span>
+                                <span className="block text-sm font-semibold leading-tight text-slate-900">{option.label}</span>
+                                <span className="mt-0.5 block text-[11px] leading-snug text-slate-600">{option.hint}</span>
                               </span>
-                              <span className="shrink-0 text-lg text-slate-400">→</span>
+                              <span className="shrink-0 text-base leading-none text-slate-400">→</span>
                             </button>
                           ))}
                         </div>
-                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                          <div className="min-h-[16px] text-[11px] text-slate-600">
+                        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                          <div className="min-h-[14px] text-[10px] leading-tight text-slate-600">
                             {isChatKbLoading ? (
                               <span className="inline-flex items-center gap-1">
-                                <Loader2 className="h-3.5 w-3.5 animate-spin text-harx-500" />
+                                <Loader2 className="h-3 w-3 animate-spin text-harx-500" />
                                 Loading KB documents...
                               </span>
                             ) : kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads' ? (
@@ -2367,7 +2367,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           <button
                             type="button"
                             onClick={() => handleSelectKbMode('none')}
-                            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                            className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
                           >
                             Skip
                           </button>
@@ -2377,47 +2377,47 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   )}
                   {rep && showPersonalizationCard && (
                     <div className="w-full min-w-0">
-                      <div className="w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-md shadow-slate-900/5 sm:p-4">
-                        <div className="mb-3 flex items-center justify-between gap-2">
-                          <div className="flex min-w-0 items-center gap-2">
+                      <div className="w-full rounded-2xl border border-slate-200 bg-white p-2.5 shadow-md shadow-slate-900/5 sm:p-3">
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <div className="flex min-w-0 items-center gap-1.5">
                             <div
-                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-sm shadow-harx-500/20"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-sm shadow-harx-500/20"
                               aria-hidden
                             >
-                              <Bot className="h-4 w-4" />
+                              <Bot className="h-3.5 w-3.5" />
                             </div>
                             <div className="min-w-0">
-                              <span className="text-xs font-bold uppercase tracking-wide text-slate-500">HARX</span>
-                              <span className="ml-2 text-xs font-medium text-slate-400">Assistant</span>
+                              <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">HARX</span>
+                              <span className="ml-1.5 text-[11px] font-medium text-slate-400">Assistant</span>
                             </div>
                           </div>
-                          <span className="shrink-0 text-xs font-semibold text-slate-400 sm:text-sm">
+                          <span className="shrink-0 text-[11px] font-semibold text-slate-400">
                             {`${Math.min(personalizationStep + 1, personalizationQuestions.length)} of ${personalizationQuestions.length}`}
                           </span>
                         </div>
-                        <p className="mb-3 text-base font-semibold leading-snug text-slate-900 sm:text-lg">
+                        <p className="mb-2 text-sm font-semibold leading-snug text-slate-900 sm:text-base">
                           {personalizationQuestions[personalizationStep]?.question ||
                             'A few questions to personalize your training'}
                         </p>
-                        <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80">
+                        <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50/80">
                           {(personalizationQuestions[personalizationStep]?.options || []).map((option, idx) => (
                             <button
                               key={`${personalizationStep}-${option}`}
                               type="button"
                               onClick={() => handleSelectPersonalizationOption(option)}
-                              className="flex w-full items-center gap-3 border-b border-slate-200/90 px-3 py-3 text-left transition hover:bg-white last:border-b-0 sm:px-4"
+                              className="flex w-full items-center gap-2 border-b border-slate-200/90 px-2.5 py-2 text-left transition hover:bg-white last:border-b-0 sm:px-3"
                             >
-                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F43F5E] text-sm font-bold text-white shadow-sm">
+                              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#F43F5E] text-xs font-bold text-white shadow-sm">
                                 {idx + 1}
                               </span>
                               <span className="min-w-0 flex-1">
-                                <span className="block text-sm font-semibold text-slate-900 sm:text-base">{option}</span>
+                                <span className="block text-sm font-semibold leading-tight text-slate-900">{option}</span>
                               </span>
-                              <span className="shrink-0 text-lg text-slate-400">→</span>
+                              <span className="shrink-0 text-base leading-none text-slate-400">→</span>
                             </button>
                           ))}
                         </div>
-                        <div className="mt-3 flex justify-end">
+                        <div className="mt-2 flex justify-end">
                           <button
                             type="button"
                             onClick={() => {
@@ -2425,7 +2425,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               setPersonalizationStep(0);
                               setPersonalizationAnswers({});
                             }}
-                            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                            className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
                           >
                             Skip
                           </button>
@@ -2699,46 +2699,46 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                 <div className="sticky bottom-0 z-20 shrink-0 bg-white/95 px-3 pb-2 pt-1 backdrop-blur-sm">
                   <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
                     {shouldShowKbQuestionInChat && (
-                      <div className="border-b border-slate-100 px-4 pb-3 pt-4">
-                        <div className="mb-3 flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-sm">
-                              <Bot className="h-4 w-4" />
+                      <div className="border-b border-slate-100 px-3 pb-2 pt-3">
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-sm">
+                              <Bot className="h-3.5 w-3.5" />
                             </div>
                             <div>
-                              <span className="text-xs font-bold uppercase tracking-wide text-slate-500">HARX</span>
-                              <span className="ml-2 text-xs font-medium text-slate-400">Assistant</span>
+                              <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">HARX</span>
+                              <span className="ml-1.5 text-[11px] font-medium text-slate-400">Assistant</span>
                             </div>
                           </div>
-                          <span className="shrink-0 text-xs font-semibold text-slate-400">1 of 1</span>
+                          <span className="shrink-0 text-[11px] font-semibold text-slate-400">1 of 1</span>
                         </div>
-                        <p className="mb-3 text-lg font-semibold leading-snug text-slate-900 sm:text-xl">
+                        <p className="mb-2 text-base font-semibold leading-snug text-slate-900 sm:text-lg">
                           Do you want to generate a training plan and training content from your knowledge base?
                         </p>
-                        <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80">
+                        <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50/80">
                           {kbOptions.map((option, idx) => (
                             <button
                               key={option.id}
                               type="button"
                               onClick={() => handleSelectKbMode(option.id)}
-                              className="flex w-full items-center gap-3 border-b border-slate-200/90 px-3 py-3 text-left transition hover:bg-white last:border-b-0 sm:px-4"
+                              className="flex w-full items-center gap-2 border-b border-slate-200/90 px-2.5 py-2 text-left transition hover:bg-white last:border-b-0 sm:px-3"
                             >
-                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F43F5E] text-sm font-bold text-white shadow-sm">
+                              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#F43F5E] text-xs font-bold text-white shadow-sm">
                                 {idx + 1}
                               </span>
                               <span className="min-w-0 flex-1">
-                                <span className="block text-sm font-semibold text-slate-900 sm:text-base">{option.label}</span>
-                                <span className="block text-xs text-slate-600">{option.hint}</span>
+                                <span className="block text-sm font-semibold leading-tight text-slate-900">{option.label}</span>
+                                <span className="mt-0.5 block text-[11px] leading-snug text-slate-600">{option.hint}</span>
                               </span>
-                              <span className="shrink-0 text-lg text-slate-400">→</span>
+                              <span className="shrink-0 text-base leading-none text-slate-400">→</span>
                             </button>
                           ))}
                         </div>
-                        <div className="mt-3 space-y-2">
-                          <div className="min-h-[16px] text-[11px] text-slate-600">
+                        <div className="mt-2 space-y-1.5">
+                          <div className="min-h-[14px] text-[10px] leading-tight text-slate-600">
                             {isChatKbLoading ? (
                               <span className="inline-flex items-center gap-1">
-                                <Loader2 className="h-3.5 w-3.5 animate-spin text-harx-500" />
+                                <Loader2 className="h-3 w-3 animate-spin text-harx-500" />
                                 Loading KB documents...
                               </span>
                             ) : kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads' ? (
@@ -2748,7 +2748,7 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                           <button
                             type="button"
                             onClick={() => handleSelectKbMode('none')}
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-white"
+                            className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 text-xs font-semibold text-slate-800 transition hover:bg-white"
                           >
                             Skip
                           </button>
@@ -2757,45 +2757,45 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                     )}
                     {showPersonalizationCard && (
                       <div
-                        className={`px-4 pb-3 pt-4 ${shouldShowKbQuestionInChat ? 'border-b border-slate-100' : ''}`}
+                        className={`px-3 pb-2 pt-3 ${shouldShowKbQuestionInChat ? 'border-b border-slate-100' : ''}`}
                       >
-                        <div className="mb-3 flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-sm">
-                              <Bot className="h-4 w-4" />
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-sm">
+                              <Bot className="h-3.5 w-3.5" />
                             </div>
                             <div>
-                              <span className="text-xs font-bold uppercase tracking-wide text-slate-500">HARX</span>
-                              <span className="ml-2 text-xs font-medium text-slate-400">Assistant</span>
+                              <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">HARX</span>
+                              <span className="ml-1.5 text-[11px] font-medium text-slate-400">Assistant</span>
                             </div>
                           </div>
-                          <span className="shrink-0 text-xs font-semibold text-slate-400">
+                          <span className="shrink-0 text-[11px] font-semibold text-slate-400">
                             {`${Math.min(personalizationStep + 1, personalizationQuestions.length)} of ${personalizationQuestions.length}`}
                           </span>
                         </div>
-                        <p className="mb-3 text-base font-semibold leading-snug text-slate-900 sm:text-lg">
+                        <p className="mb-2 text-sm font-semibold leading-snug text-slate-900 sm:text-base">
                           {personalizationQuestions[personalizationStep]?.question ||
                             'A few questions to personalize your training'}
                         </p>
-                        <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80">
+                        <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50/80">
                           {(personalizationQuestions[personalizationStep]?.options || []).map((option, idx) => (
                             <button
                               key={`${personalizationStep}-${option}`}
                               type="button"
                               onClick={() => handleSelectPersonalizationOption(option)}
-                              className="flex w-full items-center gap-3 border-b border-slate-200/90 px-3 py-3 text-left transition hover:bg-white last:border-b-0 sm:px-4"
+                              className="flex w-full items-center gap-2 border-b border-slate-200/90 px-2.5 py-2 text-left transition hover:bg-white last:border-b-0 sm:px-3"
                             >
-                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F43F5E] text-sm font-bold text-white shadow-sm">
+                              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#F43F5E] text-xs font-bold text-white shadow-sm">
                                 {idx + 1}
                               </span>
                               <span className="min-w-0 flex-1">
-                                <span className="block text-sm font-semibold text-slate-900 sm:text-base">{option}</span>
+                                <span className="block text-sm font-semibold leading-tight text-slate-900">{option}</span>
                               </span>
-                              <span className="shrink-0 text-lg text-slate-400">→</span>
+                              <span className="shrink-0 text-base leading-none text-slate-400">→</span>
                             </button>
                           ))}
                         </div>
-                        <div className="mt-3">
+                        <div className="mt-2">
                           <button
                             type="button"
                             onClick={() => {
@@ -2803,14 +2803,14 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                               setPersonalizationStep(0);
                               setPersonalizationAnswers({});
                             }}
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-white"
+                            className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 text-xs font-semibold text-slate-800 transition hover:bg-white"
                           >
                             Skip
                           </button>
                         </div>
                       </div>
                     )}
-                    <div className="border-t border-slate-100 px-4 pb-4 pt-3">{renderComposerBody()}</div>
+                    <div className="border-t border-slate-100 px-3 pb-3 pt-2.5">{renderComposerBody()}</div>
                   </div>
                 </div>
               ) : (
