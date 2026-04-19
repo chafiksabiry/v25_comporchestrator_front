@@ -1988,6 +1988,109 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
     };
 
+    /** Carte choix KB / perso collée au composer (même largeur que l’input), desktop uniquement */
+    const anchoredChoiceUi = !rep && (shouldShowKbQuestionInChat || showPersonalizationCard);
+
+    const renderComposerBody = () => (
+      <>
+        <input
+          ref={chatFileInputRef}
+          type="file"
+          multiple
+          accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp,.gif"
+          onChange={(e) => {
+            const files = Array.from(e.target.files || []);
+            if (files.length > 0) {
+              void handleFileUpload(files);
+            }
+            e.currentTarget.value = '';
+          }}
+          className="hidden"
+        />
+        {uploads.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {uploads.map((upload) => {
+              const statusLabel =
+                upload.status === 'analyzed'
+                  ? 'Analyzed'
+                  : upload.status === 'error'
+                    ? 'Error'
+                    : upload.status === 'uploading'
+                      ? 'Uploading...'
+                      : 'Analyzing...';
+              return (
+                <div
+                  key={`inline-${upload.id}`}
+                  className="inline-flex max-w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-2.5 py-1.5"
+                >
+                  {getFileIcon(upload.type, true)}
+                  <div className="min-w-0">
+                    <div className="max-w-[210px] truncate text-[11px] font-semibold text-slate-800">
+                      {upload.name}
+                    </div>
+                    <div className="text-[10px] text-slate-600">{statusLabel}</div>
+                  </div>
+                  {upload.status === 'uploading' || upload.status === 'processing' ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-harx-500" />
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => removeUpload(upload.id)}
+                    className="rounded p-0.5 text-slate-500 hover:bg-slate-200/80"
+                    title="Remove file"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <textarea
+          ref={chatTextareaRef}
+          value={chatInput}
+          disabled={isChatLoading}
+          onChange={(e) => setChatInput(e.target.value)}
+          onInput={(e) => {
+            const el = e.currentTarget;
+            el.style.height = '0px';
+            el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              void handleChatSubmit();
+            }
+          }}
+          rows={1}
+          placeholder={hasStartedChat ? 'Reply...' : 'How can I help you?'}
+          className="mb-3 w-full resize-none bg-transparent text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
+        />
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => chatFileInputRef.current?.click()}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+            title="Upload files"
+          >
+            +
+          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void handleChatSubmit()}
+              disabled={!chatInput.trim() || isChatLoading}
+              className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+              title="Send"
+            >
+              <Send className="h-3.5 w-3.5" />
+              Send
+            </button>
+          </div>
+        </div>
+      </>
+    );
+
     return (
     <div className={rep ? 'flex w-full min-w-0 flex-col bg-slate-50' : 'min-h-[92vh] bg-slate-50 p-2'}>
       <div className={rep ? 'mx-auto flex w-full max-w-5xl flex-col px-4 py-6 md:px-6' : 'mx-auto w-full max-w-[1400px]'}>
@@ -2178,7 +2281,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   className={
                     rep
                       ? 'mb-3 space-y-6 rounded-xl bg-transparent p-0'
-                      : 'mb-2 min-h-0 flex-1 space-y-6 overflow-y-auto px-3 pb-3 pt-2'
+                      : anchoredChoiceUi
+                        ? 'mb-0 min-h-0 flex-1 space-y-6 overflow-y-auto px-3 pb-2 pt-2'
+                        : 'mb-2 min-h-0 flex-1 space-y-6 overflow-y-auto px-3 pb-3 pt-2'
                   }
                 >
                   {!hasStartedChat && (
@@ -2197,7 +2302,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       </p>
                     </div>
                   )}
-                  {shouldShowKbQuestionInChat && (
+                  {rep && shouldShowKbQuestionInChat && (
                     <div className="flex justify-start gap-3">
                       <div
                         className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-md shadow-harx-500/20"
@@ -2261,7 +2366,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       </div>
                     </div>
                   )}
-                  {showPersonalizationCard && (
+                  {rep && showPersonalizationCard && (
                     <div className="flex justify-start gap-3">
                       <div
                         className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-md shadow-harx-500/20"
@@ -2583,107 +2688,139 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                 </div>
               )}
 
-              <div
-                className={`shrink-0 border-t border-slate-200/80 bg-white/95 pb-1 pt-2 backdrop-blur-sm ${rep ? 'sticky bottom-2 z-20' : 'sticky bottom-0 z-20 px-3'}`}
-              >
-                <div className={rep ? 'rounded-[20px] border border-slate-200 bg-white px-4 py-3 shadow-sm' : 'rounded-[28px] border border-slate-200 bg-white px-5 py-4 shadow-sm'}>
-                  <input
-                    ref={chatFileInputRef}
-                    type="file"
-                    multiple
-                    accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp,.gif"
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
-                      if (files.length > 0) {
-                        void handleFileUpload(files);
-                      }
-                      e.currentTarget.value = '';
-                    }}
-                    className="hidden"
-                  />
-                  {uploads.length > 0 && (
-                    <div className="mb-3 flex flex-wrap gap-2">
-                      {uploads.map((upload) => {
-                        const statusLabel =
-                          upload.status === 'analyzed'
-                            ? 'Analyzed'
-                            : upload.status === 'error'
-                              ? 'Error'
-                              : upload.status === 'uploading'
-                                ? 'Uploading...'
-                                : 'Analyzing...';
-                        return (
-                          <div
-                            key={`inline-${upload.id}`}
-                            className="inline-flex max-w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-2.5 py-1.5"
-                          >
-                            {getFileIcon(upload.type, true)}
-                            <div className="min-w-0">
-                              <div className="max-w-[210px] truncate text-[11px] font-semibold text-slate-800">
-                                {upload.name}
-                              </div>
-                              <div className="text-[10px] text-slate-600">{statusLabel}</div>
+              {anchoredChoiceUi ? (
+                <div className="sticky bottom-0 z-20 shrink-0 bg-white/95 px-3 pb-2 pt-1 backdrop-blur-sm">
+                  <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+                    {shouldShowKbQuestionInChat && (
+                      <div className="border-b border-slate-100 px-4 pb-3 pt-4">
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-sm">
+                              <Bot className="h-4 w-4" />
                             </div>
-                            {upload.status === 'uploading' || upload.status === 'processing' ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin text-harx-500" />
-                            ) : null}
-                            <button
-                              type="button"
-                              onClick={() => removeUpload(upload.id)}
-                              className="rounded p-0.5 text-slate-500 hover:bg-slate-200/80"
-                              title="Remove file"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
+                            <div>
+                              <span className="text-xs font-bold uppercase tracking-wide text-slate-500">HARX</span>
+                              <span className="ml-2 text-xs font-medium text-slate-400">Assistant</span>
+                            </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                  <textarea
-                    ref={chatTextareaRef}
-                    value={chatInput}
-                    disabled={isChatLoading}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onInput={(e) => {
-                      const el = e.currentTarget;
-                      el.style.height = '0px';
-                      el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        void handleChatSubmit();
-                      }
-                    }}
-                    rows={1}
-                    placeholder={hasStartedChat ? 'Reply...' : 'How can I help you?'}
-                    className="mb-3 w-full resize-none bg-transparent text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
-                  />
-                  <div className="flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => chatFileInputRef.current?.click()}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-                      title="Upload files"
-                    >
-                      +
-                    </button>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => void handleChatSubmit()}
-                        disabled={!chatInput.trim() || isChatLoading}
-                        className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
-                        title="Send"
+                          <span className="shrink-0 text-xs font-semibold text-slate-400">1 of 1</span>
+                        </div>
+                        <p className="mb-3 text-lg font-semibold leading-snug text-slate-900 sm:text-xl">
+                          Do you want to generate a training plan and training content from your knowledge base?
+                        </p>
+                        <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80">
+                          {kbOptions.map((option, idx) => (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => handleSelectKbMode(option.id)}
+                              className="flex w-full items-center gap-3 border-b border-slate-200/90 px-3 py-3 text-left transition hover:bg-white last:border-b-0 sm:px-4"
+                            >
+                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F43F5E] text-sm font-bold text-white shadow-sm">
+                                {idx + 1}
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-sm font-semibold text-slate-900 sm:text-base">{option.label}</span>
+                                <span className="block text-xs text-slate-600">{option.hint}</span>
+                              </span>
+                              <span className="shrink-0 text-lg text-slate-400">→</span>
+                            </button>
+                          ))}
+                        </div>
+                        <div className="mt-3 space-y-2">
+                          <div className="min-h-[16px] text-[11px] text-slate-600">
+                            {isChatKbLoading ? (
+                              <span className="inline-flex items-center gap-1">
+                                <Loader2 className="h-3.5 w-3.5 animate-spin text-harx-500" />
+                                Loading KB documents...
+                              </span>
+                            ) : kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads' ? (
+                              <span>{chatKbDocuments.length} KB document(s) ready for generation.</span>
+                            ) : null}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleSelectKbMode('none')}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-white"
+                          >
+                            Skip
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {showPersonalizationCard && (
+                      <div
+                        className={`px-4 pb-3 pt-4 ${shouldShowKbQuestionInChat ? 'border-b border-slate-100' : ''}`}
                       >
-                        <Send className="h-3.5 w-3.5" />
-                        Send
-                      </button>
-                    </div>
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-sm">
+                              <Bot className="h-4 w-4" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold uppercase tracking-wide text-slate-500">HARX</span>
+                              <span className="ml-2 text-xs font-medium text-slate-400">Assistant</span>
+                            </div>
+                          </div>
+                          <span className="shrink-0 text-xs font-semibold text-slate-400">
+                            {`${Math.min(personalizationStep + 1, personalizationQuestions.length)} of ${personalizationQuestions.length}`}
+                          </span>
+                        </div>
+                        <p className="mb-3 text-base font-semibold leading-snug text-slate-900 sm:text-lg">
+                          {personalizationQuestions[personalizationStep]?.question ||
+                            'A few questions to personalize your training'}
+                        </p>
+                        <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80">
+                          {(personalizationQuestions[personalizationStep]?.options || []).map((option, idx) => (
+                            <button
+                              key={`${personalizationStep}-${option}`}
+                              type="button"
+                              onClick={() => handleSelectPersonalizationOption(option)}
+                              className="flex w-full items-center gap-3 border-b border-slate-200/90 px-3 py-3 text-left transition hover:bg-white last:border-b-0 sm:px-4"
+                            >
+                              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F43F5E] text-sm font-bold text-white shadow-sm">
+                                {idx + 1}
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-sm font-semibold text-slate-900 sm:text-base">{option}</span>
+                              </span>
+                              <span className="shrink-0 text-lg text-slate-400">→</span>
+                            </button>
+                          ))}
+                        </div>
+                        <div className="mt-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowPersonalizationCard(false);
+                              setPersonalizationStep(0);
+                              setPersonalizationAnswers({});
+                            }}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-white"
+                          >
+                            Skip
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    <div className="border-t border-slate-100 px-4 pb-4 pt-3">{renderComposerBody()}</div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div
+                  className={`shrink-0 bg-white/95 pb-1 pt-2 backdrop-blur-sm ${rep ? 'sticky bottom-2 z-20 border-t border-slate-200/80' : 'sticky bottom-0 z-20 border-t border-slate-200/80 px-3'}`}
+                >
+                  <div
+                    className={
+                      rep
+                        ? 'rounded-[20px] border border-slate-200 bg-white px-4 py-3 shadow-sm'
+                        : 'rounded-[28px] border border-slate-200 bg-white px-5 py-4 shadow-sm'
+                    }
+                  >
+                    {renderComposerBody()}
+                  </div>
+                </div>
+              )}
 
             </div>
           </div>
