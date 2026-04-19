@@ -31,10 +31,10 @@ import { ProjectViewSwitch, type ProjectView } from './components/ProjectViewSwi
 function AppContent() {
   const location = useLocation();
   const [activeProject, setActiveProject] = useState<ProjectView>(() => {
-    if (location.pathname.includes('/company/orchestrator')) {
+    if (location.pathname.includes('/orchestrator')) {
       return 'comporchestrator';
     }
-    if (location.pathname.includes('/company/dashboard') || location.pathname !== '/' && location.pathname !== '') {
+    if (location.pathname.includes('/dashboard') || location.pathname !== '/' && location.pathname !== '') {
       return 'dashboard';
     }
     return 'comporchestrator'; // default
@@ -117,7 +117,7 @@ function AppContent() {
 
     const openComporchestrator = () => {
       setActiveProject('comporchestrator');
-      window.location.hash = '#/company/orchestrator';
+      window.location.hash = '#/orchestrator';
     };
 
     window.addEventListener('tabChange', handleTabChange as EventListener);
@@ -127,7 +127,7 @@ function AppContent() {
 
     // Initial Path correction
     if (location.pathname === '/' || location.pathname === '') {
-      window.location.hash = '#/company/orchestrator';
+      window.location.hash = '#/orchestrator';
     }
 
     return () => {

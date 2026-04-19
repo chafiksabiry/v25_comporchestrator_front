@@ -119,14 +119,14 @@ export function MasterSidebar({
   }, [location.pathname, activeProject]);
 
   const dashboardItems = [
-    { icon: <LayoutDashboard size={20} />, label: 'Overview', path: '/company/dashboard/overview', key: 'overview', alwaysShow: true },
+    { icon: <LayoutDashboard size={20} />, label: 'Overview', path: '/dashboard/overview', key: 'overview', alwaysShow: true },
     {
       icon: <Building2 size={20} />,
       label: 'Company',
-      path: '/company/dashboard/profile',
+      path: '/dashboard/profile',
       key: 'company',
       alwaysShow: true,
-      activePathPrefix: '/company/dashboard',
+      activePathPrefix: '/dashboard',
     },
     { icon: <Briefcase size={20} />, label: 'Gigs', path: '/gigs', key: 'gigs', requiresGigs: true },
     { icon: <UserPlus size={20} />, label: 'Leads', path: '/leads', key: 'leads', requiresLeads: true },
@@ -229,7 +229,7 @@ export function MasterSidebar({
               <button
                 onClick={() => {
                   setActiveProject('dashboard');
-                  navigate('/company/dashboard/overview');
+                  navigate('/dashboard/overview');
                 }}
                 className={`flex items-center gap-4 w-full p-3.5 rounded-2xl transition-all duration-300 relative group overflow-hidden text-slate-400 hover:text-white hover:bg-white/5`}
               >

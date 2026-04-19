@@ -37,7 +37,7 @@ interface GigReviewProps {
   onBack: () => void;
   isEditMode?: boolean;
   editGigId?: string | null;
-  /** When set (e.g. embedded in Company Onboarding), called instead of full page navigation to /#/company/orchestrator */
+  /** When set (e.g. embedded in Company Onboarding), called instead of full page navigation to /#/orchestrator */
   onPublishSuccess?: () => void | Promise<void>;
 }
 

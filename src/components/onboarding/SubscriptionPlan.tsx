@@ -144,8 +144,8 @@ const SubscriptionPlan = () => {
         companyId,
         priceId,
         planName,
-        successUrl: `${window.location.origin}/#/company/orchestrator?success=true`,
-        cancelUrl: `${window.location.origin}/#/company/orchestrator?cancel=true`
+        successUrl: `${window.location.origin}/#/orchestrator?success=true`,
+        cancelUrl: `${window.location.origin}/#/orchestrator?cancel=true`
       });
 
       if (response.data && (response.data as any).data && (response.data as any).data.url) {
