@@ -261,7 +261,7 @@ export default function TraineePortal({
       const prevModuleProgress = repProgressData.modules[prevModuleId];
 
       // Debug log
-       for access to module ${moduleIndex}:`, {
+      console.log(`[TraineePortal] Prerequisite check for access to module ${moduleIndex}:`, {
         hasProgress: !!prevModuleProgress,
         status: prevModuleProgress?.status,
         progress: prevModuleProgress?.progress,
