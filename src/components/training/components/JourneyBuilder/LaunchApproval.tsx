@@ -448,9 +448,6 @@ export default function LaunchApproval({
         }
       }
 
-       => sum + (m.assessments?.length || 0), 0)
-      });
-
       onLaunch(updatedJourney, modulesToLaunch, enrolledReps);
     } catch (error) {
       console.error('❌ Failed to save journey to MongoDB:', error);
