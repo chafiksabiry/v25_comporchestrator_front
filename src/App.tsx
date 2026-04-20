@@ -49,6 +49,12 @@ function AppContent() {
   const [companyLogo, setCompanyLogo] = useState<string | null>(() => localStorage.getItem('companyLogo'));
   const [logoError, setLogoError] = useState(false);
 
+  const unwrapPayload = (body: any) => {
+    if (!body) return null;
+    if (body.data !== undefined && body.data !== null) return body.data;
+    return body;
+  };
+
   const isZohoCallback = window.location.pathname === '/zoho-callback';
   const isZohoAuth = window.location.pathname === '/zoho-auth';
 
@@ -104,9 +110,10 @@ function AppContent() {
 
             if (companyResponse && companyResponse.ok) {
               const companyData = await companyResponse.json();
+              const company = unwrapPayload(companyData);
 
-              const rawLogo = companyData.data?.logo;
-              const name = companyData.data?.name;
+              const rawLogo = company?.logo || company?.logoUrl || null;
+              const name = company?.name;
 
               if (name) {
                 setCompanyName(name);
@@ -116,6 +123,9 @@ function AppContent() {
               if (rawLogo) {
                 setCompanyLogo(rawLogo);
                 localStorage.setItem('companyLogo', rawLogo);
+              } else {
+                setCompanyLogo(null);
+                localStorage.removeItem('companyLogo');
               }
             }
           }
