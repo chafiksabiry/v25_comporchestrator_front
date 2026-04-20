@@ -401,6 +401,7 @@ export default function TraineeModulePlayer({
 
         if (firstQuestion) {
           const quizData = {
+            type: 'module-quiz',
             id: `quiz-0`,
             question: firstQuestion.text || firstQuestion.question || '',
             options: firstQuestion.options || [],
@@ -435,6 +436,7 @@ export default function TraineeModulePlayer({
 
           if (firstQuestion) {
             const quizData = {
+              type: 'module-quiz',
               id: firstQuestion._id ? `quiz-${firstQuestion._id}` : `quiz-0`,
               question: firstQuestion.question || firstQuestion.text || '',
               options: firstQuestion.options || [],
@@ -628,6 +630,7 @@ export default function TraineeModulePlayer({
       const nextQuestion = questions[nextIndex];
       if (nextQuestion) {
         setCurrentQuiz({
+          type: 'module-quiz',
           id: nextQuestion._id ? `quiz-${nextQuestion._id}` : `quiz-${nextIndex}`,
           question: nextQuestion.question || nextQuestion.text || '',
           options: nextQuestion.options || [],
@@ -913,6 +916,7 @@ export default function TraineeModulePlayer({
                         setCurrentQuizIndex(0);
                         const q = questions[0];
                         setCurrentQuiz({
+                          type: 'module-quiz',
                           id: q._id ? `quiz-${q._id}` : `quiz-0`,
                           question: q.question || q.text || '',
                           options: q.options || [],
