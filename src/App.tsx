@@ -55,6 +55,28 @@ function AppContent() {
     return body;
   };
 
+  const normalizeCompany = (payload: any) => {
+    if (!payload) return null;
+    if (Array.isArray(payload)) return payload[0] || null;
+    if (payload.company && typeof payload.company === 'object') return payload.company;
+    return payload;
+  };
+
+  const getCompanyId = (company: any): string | null => {
+    const id = company?._id || company?.id;
+    if (typeof id === 'string') return id;
+    if (id && typeof id === 'object' && typeof id.$oid === 'string') return id.$oid;
+    return null;
+  };
+
+  const pickCompanyLogo = (company: any): string | null =>
+    company?.logo ||
+    company?.logoUrl ||
+    company?.companyLogo ||
+    company?.branding?.logo ||
+    company?.contact?.logo ||
+    null;
+
   const isZohoCallback = window.location.pathname === '/zoho-callback';
   const isZohoAuth = window.location.pathname === '/zoho-auth';
 
@@ -110,9 +132,24 @@ function AppContent() {
 
             if (companyResponse && companyResponse.ok) {
               const companyData = await companyResponse.json();
-              const company = unwrapPayload(companyData);
+              let company = normalizeCompany(unwrapPayload(companyData));
 
-              const rawLogo = company?.logo || company?.logoUrl || null;
+              // Some endpoints return partial company without logo; fetch full details when possible.
+              let rawLogo = pickCompanyLogo(company);
+              const resolvedCompanyId = getCompanyId(company) || companyId || null;
+              if (!rawLogo && resolvedCompanyId) {
+                try {
+                  const detailsResponse = await fetch(`${companyApiUrl}/companies/${resolvedCompanyId}/details`);
+                  if (detailsResponse.ok) {
+                    const detailsData = await detailsResponse.json();
+                    company = normalizeCompany(unwrapPayload(detailsData)) || company;
+                    rawLogo = pickCompanyLogo(company);
+                  }
+                } catch {
+                  // Keep silent and fallback to previously known logo.
+                }
+              }
+
               const name = company?.name;
 
               if (name) {
@@ -123,9 +160,6 @@ function AppContent() {
               if (rawLogo) {
                 setCompanyLogo(rawLogo);
                 localStorage.setItem('companyLogo', rawLogo);
-              } else {
-                setCompanyLogo(null);
-                localStorage.removeItem('companyLogo');
               }
             }
           }
