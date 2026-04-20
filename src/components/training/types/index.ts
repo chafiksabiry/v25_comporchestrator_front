@@ -201,6 +201,7 @@ export interface Exercise {
 }
 
 export interface Quiz {
+  type: any;
   id: string;
   question: string;
   options: string[];

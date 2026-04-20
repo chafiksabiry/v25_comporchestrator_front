@@ -312,7 +312,9 @@ export default function TraineeModulePlayer({
 
   // Debug quiz state
   useEffect(() => {
-     } : null,
+    console.log('[TraineeModulePlayer] Quiz state:', {
+      showModuleQuiz,
+      currentQuiz: currentQuiz ? { id: currentQuiz.id, type: currentQuiz.type } : null,
       currentQuizIndex,
       hasAssessments: module.assessments && module.assessments.length > 0,
       assessments: module.assessments
@@ -390,9 +392,6 @@ export default function TraineeModulePlayer({
           }).catch(err => console.error('Error saving completed progress:', err));
         }
       }
-
-      .quizzes
-      });
 
       // If quizzes exist, redirect automatically to quiz
       if (hasAssessments && module.assessments && module.assessments[0] && module.assessments[0].questions) {
@@ -672,9 +671,6 @@ export default function TraineeModulePlayer({
           ? percentage >= passingScore
           : score >= passingScore;
 
-        .length
-        });
-
         if (passed) {
           setAllQuizzesPassed(true);
           
@@ -781,7 +777,7 @@ export default function TraineeModulePlayer({
                 attempts: 1
               };
 
-              :', {
+              console.warn('[TraineeModulePlayer] Quiz failed, saving in-progress state:', {
                 quizId,
                 score: percentage,
                 passed: false,
