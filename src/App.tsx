@@ -50,22 +50,21 @@ function AppContent() {
   const [faviconLogo, setFaviconLogo] = useState<string | null>(() => localStorage.getItem('faviconLogo'));
   const [logoError, setLogoError] = useState(false);
 
+  const isZohoCallback = window.location.pathname === '/zoho-callback';
+  const isZohoAuth = window.location.pathname === '/zoho-auth';
+
   useEffect(() => {
+    // 1. Reset logo error on change
+    setLogoError(false);
+
+    // 2. Sync active project based on path
     if (location.pathname.includes('/orchestrator')) {
       setActiveProject('comporchestrator');
     } else if (location.pathname.includes('/dashboard')) {
       setActiveProject('dashboard');
     }
-  }, [location.pathname]);
 
-  const isZohoCallback = window.location.pathname === '/zoho-callback';
-  const isZohoAuth = window.location.pathname === '/zoho-auth';
-
-  useEffect(() => {
-    setLogoError(false);
-  }, [companyLogo]);
-
-  useEffect(() => {
+    // 3. Auth Check & Setup
     const userId = Cookies.get('userId');
     if (!userId && !isZohoCallback && !isZohoAuth) {
       window.location.href = '/auth';
@@ -204,7 +203,7 @@ function AppContent() {
       window.removeEventListener('setGlobalBack', handleGlobalBackUpdate as EventListener);
       window.removeEventListener('openComporchestrator', openComporchestrator);
     };
-  }, [location.pathname]);
+  }, [location.pathname, companyLogo, isZohoCallback, isZohoAuth]);
 
   const handleLogout = () => {
     const cookies = Cookies.get();
