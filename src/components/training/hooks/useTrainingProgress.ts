@@ -34,9 +34,6 @@ export const useTrainingProgress = (initialData: {
     
     // Always update if length is different or IDs are different
     if (currentModuleIds !== newModuleIds || progress.modules.length !== initialData.modules.length) {
-      ,
-        newIds: newModuleIds.substring(0, 50)
-      });
       setProgress(prev => ({
         ...prev,
         modules: initialData.modules,
