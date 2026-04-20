@@ -1468,7 +1468,7 @@ export function AppContent({
     if (userRole === 'trainer') {
       switch (activeTab) {
         case 'dashboard':
-          return <TrainerDashboard onTraineeSelect={(trainee) => } />;
+          return <TrainerDashboard onTraineeSelect={(trainee) => handleViewTraineePortal(trainee)} />;
         case 'training':
           return (
             loadingModules ? (
@@ -1611,7 +1611,7 @@ export function AppContent({
                       
                       modules.forEach((m, idx) => {
                         const quizIds = (m as any).quizIds;
-                        :`, {
+                        console.log(`[App] Module ${idx + 1} quiz data:`, {
                           quizIds: quizIds,
                           hasQuizIds: !!quizIds && Array.isArray(quizIds) && quizIds.length > 0,
                           quizIdsCount: Array.isArray(quizIds) ? quizIds.length : 0,
@@ -1751,7 +1751,7 @@ export function AppContent({
             />
           );
         default:
-          return <TrainerDashboard onTraineeSelect={(trainee) => } />;
+          return <TrainerDashboard onTraineeSelect={(trainee) => handleViewTraineePortal(trainee)} />;
       }
     }
 
@@ -1936,7 +1936,7 @@ export function AppContent({
             </div>
           );
         }
-        return <TrainerDashboard onTraineeSelect={(trainee) => } />;
+        return <TrainerDashboard onTraineeSelect={(trainee) => handleViewTraineePortal(trainee)} />;
       case 'training':
         return (
           <div className="space-y-6">
