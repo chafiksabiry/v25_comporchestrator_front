@@ -42,12 +42,12 @@ function AppContent() {
   });
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [userFullName, setUserFullName] = useState('Admin User');
-  const [companyName, setCompanyName] = useState<string | null>(null);
+  const [userFullName, setUserFullName] = useState(() => localStorage.getItem('userFullName') || '');
+  const [companyName, setCompanyName] = useState<string | null>(() => localStorage.getItem('companyName'));
   const [currentStepGuide, setCurrentStepGuide] = useState<{ title: string; description: string } | null>(null);
   const [globalBackConfig, setGlobalBackConfig] = useState<{ label: string; action: () => void } | null>(null);
-  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
-  const [faviconLogo, setFaviconLogo] = useState<string | null>(null);
+  const [companyLogo, setCompanyLogo] = useState<string | null>(() => localStorage.getItem('companyLogo'));
+  const [faviconLogo, setFaviconLogo] = useState<string | null>(() => localStorage.getItem('faviconLogo'));
   const [logoError, setLogoError] = useState(false);
 
   useEffect(() => {
@@ -82,6 +82,7 @@ function AppContent() {
             const userData = await userResponse.json();
             if (userData.data && userData.data.fullName) {
               setUserFullName(userData.data.fullName);
+              localStorage.setItem('userFullName', userData.data.fullName);
             }
           }
 
@@ -112,10 +113,12 @@ function AppContent() {
               
               if (name) {
                 setCompanyName(name);
+                localStorage.setItem('companyName', name);
               }
 
               if (rawLogo) {
                 setCompanyLogo(rawLogo);
+                localStorage.setItem('companyLogo', rawLogo);
               }
 
               if (website) {
@@ -123,6 +126,7 @@ function AppContent() {
                   const domain = new URL(website).hostname;
                   const favUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
                   setFaviconLogo(favUrl);
+                  localStorage.setItem('faviconLogo', favUrl);
                   if (!rawLogo) setCompanyLogo(favUrl);
                 } catch (e) {
                   console.debug('Failed to parse website for favicon', e);
