@@ -1,56 +1,65 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { LayoutDashboard, Building2, Sparkles, ArrowRight } from 'lucide-react';
+import { LayoutDashboard, ArrowRight, Sparkles } from 'lucide-react';
 
 export function OverviewDashboardPage() {
+  const handleRedirect = () => {
+    window.dispatchEvent(new CustomEvent('openComporchestrator'));
+  };
+
   return (
-    <div className="max-w-6xl mx-auto space-y-10">
-      <header className="space-y-2">
-        <div className="inline-flex items-center gap-2 rounded-full bg-orange-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-orange-600">
-          <Sparkles className="h-3.5 w-3.5" />
-          Overview
+    <div className="min-h-[70vh] flex flex-col items-center justify-center px-4">
+      {/* Decorative background element */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-harx-500/5 rounded-full blur-[120px] pointer-events-none" />
+      
+      <div className="relative z-10 w-full max-w-xl text-center space-y-12">
+        {/* Badge */}
+        <div className="flex justify-center">
+          <div className="inline-flex items-center gap-2 rounded-full bg-harx-500/10 px-4 py-1.5 text-xs font-black uppercase tracking-widest text-harx-600 border border-harx-500/20 shadow-sm animate-in fade-in zoom-in duration-700">
+            <Sparkles className="h-3.5 w-3.5" />
+            Overview
+          </div>
         </div>
-        <h1 className="text-3xl font-black tracking-tight text-slate-900">Tableau de bord</h1>
-        <p className="text-slate-600 max-w-2xl">
-          Vue d’ensemble de votre espace entreprise : accédez au tableau de bord société ou poursuivez l’onboarding dans l’orchestrateur.
+
+        {/* Content */}
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
+          <h1 className="text-5xl font-black tracking-tight text-slate-900 uppercase">
+            Tableau de <span className="text-transparent bg-clip-text bg-gradient-harx">Bord</span>
+          </h1>
+          <p className="text-lg text-slate-500 font-medium max-w-md mx-auto leading-relaxed italic">
+            Return to the orchestrator to manage your setup and onboarding.
+          </p>
+        </div>
+
+        {/* The Button */}
+        <div className="pt-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
+          <button
+            onClick={handleRedirect}
+            className="group relative inline-flex items-center gap-4 px-10 py-5 rounded-[2rem] bg-slate-900 text-white shadow-2xl shadow-slate-900/20 transition-all duration-300 hover:scale-105 hover:shadow-slate-900/30 active:scale-95 overflow-hidden border border-slate-800"
+          >
+            {/* Shimmer effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-shimmer" />
+            
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20 transition-transform duration-300 group-hover:rotate-12">
+              <LayoutDashboard className="h-6 w-6 text-harx-300" />
+            </div>
+            
+            <div className="flex flex-col items-start leading-none text-left">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-harx-400 transition-colors">
+                Return to
+              </span>
+              <span className="text-2xl font-black mt-1">Orchestrator</span>
+            </div>
+            
+            <div className="ml-4 p-2 rounded-full bg-white/5 transition-transform duration-300 group-hover:translate-x-2">
+              <ArrowRight className="h-5 w-5" />
+            </div>
+          </button>
+        </div>
+
+        {/* Footer Hint */}
+        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em] animate-in fade-in duration-1000 delay-500">
+          Streamlined Access System
         </p>
-      </header>
-
-      <div className="grid gap-6 sm:grid-cols-2">
-        <Link
-          to="/company/dashboard"
-          className="group relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-8 shadow-sm transition hover:border-orange-300 hover:shadow-md"
-        >
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-lg shadow-rose-500/25">
-            <Building2 className="h-6 w-6" />
-          </div>
-          <h2 className="mt-6 text-xl font-black text-slate-900">Entreprise</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            Indicateurs et raccourcis liés à votre société (URI dédiée&nbsp;: <code className="text-xs font-mono text-rose-600">company/dashboard</code>).
-          </p>
-          <span className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-rose-600">
-            Ouvrir
-            <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-          </span>
-        </Link>
-
-        <button
-          type="button"
-          onClick={() => window.dispatchEvent(new CustomEvent('openComporchestrator'))}
-          className="group relative w-full text-left overflow-hidden rounded-3xl border border-slate-200/80 bg-slate-900 p-8 text-white shadow-sm transition hover:border-slate-600 hover:shadow-md"
-        >
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20">
-            <LayoutDashboard className="h-6 w-6 text-orange-300" />
-          </div>
-          <h2 className="mt-6 text-xl font-black">Orchestrateur</h2>
-          <p className="mt-2 text-sm text-slate-300">
-            Poursuivre l’onboarding, les gigs et les étapes guidées dans l’application principale.
-          </p>
-          <span className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-orange-300">
-            Retour orchestrateur
-            <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-          </span>
-        </button>
       </div>
     </div>
   );
