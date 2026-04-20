@@ -532,7 +532,8 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
 
                       // Only log if there's significant audio or status change
                       if (rms > 0.01) {
-                        ,
+                        console.debug('Audio level', {
+                          rms: rms.toFixed(3),
                           peak: peak.toFixed(3),
                           bufferSize: dataArray.length,
                           isActive
