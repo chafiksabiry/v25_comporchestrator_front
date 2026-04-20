@@ -5,7 +5,7 @@
     <title>Vite + React + TS</title>
     <script crossorigin="">import('https://harxv25comporchestratorfront.netlify.app/index.js').finally(() => {
             
-    const qiankunLifeCycle = window.moudleQiankunAppLifeCycles && window.moudleQiankunAppLifeCycles['app11'];
+    const qiankunLifeCycle = window.moudleQiankunAppLifeCycles && window.moudleQiankunAppLifeCycles['company'];
     if (qiankunLifeCycle) {
       window.proxy.vitemount((props) => qiankunLifeCycle.mount(props));
       window.proxy.viteunmount((props) => qiankunLifeCycle.unmount(props));
@@ -46,8 +46,8 @@
   const update = createDeffer('update');
 
   ;(global => {
-    global.qiankunName = 'app11';
-    global['app11'] = {
+    global.qiankunName = 'company';
+    global['company'] = {
       bootstrap,
       mount,
       unmount,
