@@ -318,7 +318,7 @@ export default function TraineePortal({
           // Check if at least one quiz result is passed
           allQuizzesPassed = quizzKeys.some(key => moduleQuizz[key]?.passed === true);
           if (!allQuizzesPassed) {
-             has quiz results but none are passed. Cannot access module ${moduleIndex}.`, {
+            console.warn(`[TraineePortal] Previous module has quiz results but none are passed. Cannot access module ${moduleIndex}.`, {
               quizzKeys,
               results: quizzKeys.map(key => ({ key, result: moduleQuizz[key] }))
             });
