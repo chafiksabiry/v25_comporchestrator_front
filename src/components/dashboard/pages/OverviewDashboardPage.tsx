@@ -23,7 +23,7 @@ export function OverviewDashboardPage() {
         {/* Content */}
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
           <h1 className="text-5xl font-black tracking-tight text-slate-900 uppercase">
-            Tableau de <span className="text-transparent bg-clip-text bg-gradient-harx">Bord</span>
+            Dashboard <span className="text-transparent bg-clip-text bg-gradient-harx">Overview</span>
           </h1>
           <p className="text-lg text-slate-500 font-medium max-w-md mx-auto leading-relaxed italic">
             Return to the orchestrator to manage your setup and onboarding.
