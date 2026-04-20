@@ -229,9 +229,6 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
 
   // Vérifier si l'étape peut être marquée comme complétée
   useEffect(() => {
-    
-    });
-
     if (company && !isStepCompleted && hasBasicInfo()) {
       
       // Si l'entreprise a les informations de base, on peut marquer l'étape comme complétée
@@ -566,8 +563,6 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
           console.error('❌ Error updating onboarding progress:', onboardingError);
         }
       } else {
-        
-        });
       }
 
       setHasChanges(false);

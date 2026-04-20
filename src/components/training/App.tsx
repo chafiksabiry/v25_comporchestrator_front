@@ -1416,7 +1416,7 @@ export function AppContent({
                 const trainee = launchedJourney.enrolledReps.find(rep => rep.id === repId);
                 if (trainee) handleViewTraineePortal(trainee);
               }}
-              onViewAnalytics={() => }
+              onViewAnalytics={() => {}}
             />
           </main>
         </div>

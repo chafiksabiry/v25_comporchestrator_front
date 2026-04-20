@@ -305,7 +305,7 @@ export class DraftService {
               existingJourneyId = null;
             }
 
-            :', {
+            console.log('[DraftService] Debounced save ID sources:', {
               fromLatestDraft: latestDraft.draftId,
               fromUpdatedDraft: updatedDraft.draftId,
               fromJourneyId: (updatedDraft.journey as any).id,
@@ -437,7 +437,10 @@ export class DraftService {
             existingJourneyId = null;
           }
 
-          .id,
+          console.log('[DraftService] Save ID sources:', {
+            fromDraft: draft.draftId,
+            fromLatestDraft: latestDraft.draftId,
+            fromJourneyId: (updatedDraft.journey as any).id,
             fromJourney_id: (updatedDraft.journey as any)._id,
             finalJourneyId: existingJourneyId,
             isValid: existingJourneyId ? isValidMongoId(existingJourneyId) : false
