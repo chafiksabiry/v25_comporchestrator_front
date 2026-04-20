@@ -182,7 +182,7 @@ export class JourneyService {
       journeyPayload._id = journeyId;
     }
 
-    console.log('[JourneyService] Saving journey with nested components (Backend will partition):', {
+    :', {
       journeyId: journeyId || 'NEW',
       modulesCount: embeddedModules.length,
       hasFinalExam: !!embeddedFinalExam
@@ -195,7 +195,7 @@ export class JourneyService {
       if (!response.data.success) {
         throw new Error('Failed to update journey');
       }
-      console.log('[JourneyService] Updated journey:', journeyId);
+      
     } else {
       // Create new journey
       response = await ApiClient.post('/training_journeys', journeyPayload) as any;
@@ -214,7 +214,7 @@ export class JourneyService {
       }
 
       journeyId = returnedJourneyId;
-      console.log('[JourneyService] Created new journey:', journeyId);
+      
     }
 
     const savedJourney = response.data.journey || response.data;
@@ -364,11 +364,7 @@ export class JourneyService {
       journeyPayload._id = journeyIdToUse;
     }
 
-    console.log('[JourneyService] Launching journey with embedded modules:', {
-      journeyId: journeyIdToUse || 'NEW',
-      modulesCount: embeddedModules.length,
-      hasFinalExam: !!embeddedFinalExam
-    });
+    
 
     const launchPayload = {
       journey: journeyPayload,
@@ -412,10 +408,10 @@ export class JourneyService {
    */
   static async getJourneysByCompany(companyId: string): Promise<any> {
     const endpoint = `/training_journeys/trainer/companyId/${companyId}`;
-    console.log('[JourneyService] Fetching journeys by company from:', endpoint);
+    
     try {
       const response = await ApiClient.get(endpoint) as any;
-      console.log('[JourneyService] Response:', response);
+      
       // ApiClient.get returns {data: {...}, status: 200}
       // The backend returns {data: [...], success: true, count: N}
       // So we need to return response.data which contains {data: [...], success: true}
@@ -431,10 +427,10 @@ export class JourneyService {
    */
   static async getJourneysByCompanyAndGig(companyId: string, gigId: string): Promise<any> {
     const endpoint = `/training_journeys/trainer/companyId/${companyId}/gigId/${gigId}`;
-    console.log('[JourneyService] Fetching journeys by company and gig from:', endpoint);
+    
     try {
       const response = await ApiClient.get(endpoint) as any;
-      console.log('[JourneyService] Response:', response);
+      
       return response.data;
     } catch (error: any) {
       console.error('[JourneyService] Error fetching journeys by company and gig:', error);
@@ -447,10 +443,10 @@ export class JourneyService {
    */
   static async getJourneysForRep(repId: string): Promise<any[]> {
     const endpoint = `/training_journeys/rep/${repId}`;
-    console.log('[JourneyService] Fetching journeys for rep from:', endpoint);
+    
     try {
       const response = await ApiClient.get(endpoint) as any;
-      console.log('[JourneyService] Response:', response);
+      
       // The backend returns a List<TrainingJourneyEntity> directly
       // ApiClient wraps it in response.data, so we have response.data = [...]
       if (Array.isArray(response.data)) {
@@ -473,10 +469,10 @@ export class JourneyService {
    */
   static async getAllAvailableJourneysForTrainees(): Promise<any> {
     const endpoint = `/training_journeys/trainee/available`;
-    console.log('[JourneyService] Fetching all available journeys for trainees from:', endpoint);
+    
     try {
       const response = await ApiClient.get(endpoint) as any;
-      console.log('[JourneyService] Response for available journeys:', response);
+      
       // The backend returns {success: true, data: [...], count: N}
       // ApiClient wraps it in response.data, so we have response.data = {success: true, data: [...], count: N}
       return response.data;
@@ -495,10 +491,10 @@ export class JourneyService {
       params.append('gigId', gigId);
     }
     const endpoint = `/training_journeys/trainer/dashboard?${params.toString()}`;
-    console.log('[JourneyService] Fetching trainer dashboard from:', endpoint);
+    
     try {
       const response = await ApiClient.get(endpoint) as any;
-      console.log('[JourneyService] Response:', response);
+      
       // The backend returns {success: true, data: {...}}
       // ApiClient wraps it in response.data, so we have response.data = {success: true, data: {...}}
       // Return the full response structure

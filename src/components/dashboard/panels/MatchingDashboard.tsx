@@ -79,14 +79,14 @@ const MatchingDashboard: React.FC = () => {
   // Get matches based on current selection
   useEffect(() => {
     const getMatches = async () => {
-      console.log("Starting getMatches function");
-      console.log("Current activeTab:", activeTab);
-      console.log("Selected Gig:", selectedGig);
-      console.log("Selected Rep:", selectedRep);
-      console.log("Current weights:", weights);
+      
+      
+      
+      
+      
 
       if (loading) {
-        console.log("Loading is true, returning early");
+        
         return;
       }
       
@@ -94,7 +94,7 @@ const MatchingDashboard: React.FC = () => {
         setLoading(true);
         
         if (activeTab === 'gigs' && selectedGig) {
-          console.log('Processing gig matching...');
+          
           const transformedWeights = {
             experienceWeight: weights.experience,
             skillsWeight: weights.skills,
@@ -105,8 +105,8 @@ const MatchingDashboard: React.FC = () => {
             performanceWeight: weights.performance,
             regionWeight: weights.region
           };
-          console.log('Transformed Weights:', transformedWeights);
-          console.log('Calling API with gigId:', selectedGig._id);
+          
+          
           const response = await findMatchesForGig(selectedGig._id!, {
             experience: weights.experience,
             skills: weights.skills,
@@ -117,18 +117,18 @@ const MatchingDashboard: React.FC = () => {
             performance: weights.performance,
             region: weights.region
           });
-          console.log('API Response:', response);
+          
           
           if (!response.matches || response.matches.length === 0) {
             const errorMessage = `Aucun match trouvé.`;
-            console.log('Setting error:', errorMessage);
+            
             setError(errorMessage);
           } else {
-            console.log('Setting matches:', response.matches);
+            
             setMatches(response.matches);
           }
         } else if (activeTab === 'reps' && selectedRep) {
-          console.log('Processing rep matching...');
+          
           const transformedWeights = {
             experienceWeight: weights.experience,
             skillsWeight: weights.skills,
@@ -139,17 +139,17 @@ const MatchingDashboard: React.FC = () => {
             performanceWeight: weights.performance,
             regionWeight: weights.region
           };
-          console.log('Transformed Weights:', transformedWeights);
-          console.log('Calling API with repId:', selectedRep._id);
+          
+          
           const response = await findGigsForRep(selectedRep._id!, weights);
-          console.log('API Response:', response);
+          
           
           if (!response.matches || response.matches.length === 0) {
             const errorMessage = `Aucun match trouvé.`;
-            console.log('Setting error:', errorMessage);
+            
             setError(errorMessage);
           } else {
-            console.log('Setting matches:', response.matches);
+            
             setMatches(response.matches);
           }
         } else if (activeTab === 'optimal') {
@@ -164,12 +164,12 @@ const MatchingDashboard: React.FC = () => {
         console.error('Error in getMatches:', err);
         setError('Failed to fetch matches. Please try again later.');
       } finally {
-        console.log('Setting loading to false');
+        
         setLoading(false);
       }
     };
     
-    console.log('useEffect triggered with:', { activeTab, selectedGig, selectedRep, weights });
+    
     getMatches();
   }, [activeTab, selectedGig, selectedRep, weights]);
   

@@ -42,7 +42,7 @@ const KYCVerification = () => {
   // Vérifier l'état de l'étape quand les données changent
   useEffect(() => {
     if (companyId && hasBasicInfo() && !isStepCompleted) {
-      console.log('🎯 KYC data changed, checking if step should be auto-completed...');
+      
       checkStepStatus();
     }
   }, [uploadedFiles, verificationStatus, currentStep, companyId, isStepCompleted]);
@@ -51,17 +51,17 @@ const KYCVerification = () => {
     try {
       if (!companyId) return;
 
-      console.log('🔍 Checking step 2 status for company:', companyId);
+      
 
       // Vérifier l'état de l'étape 2 via l'API d'onboarding
       const response = await axios.get(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/1/steps/2`
       );
 
-      console.log('📡 API response for step 2:', response.data);
+      
 
       if (response.data && (response.data as any).status === 'completed') {
-        console.log('✅ Step 2 is already completed according to API');
+        
         setIsStepCompleted(true);
         return;
       }
@@ -72,7 +72,7 @@ const KYCVerification = () => {
         try {
           const progress = JSON.parse(storedProgress);
           if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(2)) {
-            console.log('✅ Step 2 found in localStorage, setting as completed');
+            
             setIsStepCompleted(true);
             return;
           }
@@ -84,7 +84,7 @@ const KYCVerification = () => {
       // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
       // marquer automatiquement l'étape comme complétée localement
       if (hasBasicInfo() && !isStepCompleted) {
-        console.log('🎯 Auto-completing step 2 locally because basic info is present');
+        
 
         // Marquer l'étape comme complétée localement
         setIsStepCompleted(true);
@@ -111,7 +111,7 @@ const KYCVerification = () => {
           }
         }));
 
-        console.log('💾 Step 2 marked as completed locally and parent component notified');
+        
       }
 
     } catch (error) {
@@ -134,11 +134,7 @@ const KYCVerification = () => {
 
   const hasBasicInfo = () => {
     const hasInfo = uploadedFiles.length >= 3 && verificationStatus === 'completed';
-    console.log('🔍 Checking basic info for KYC:', {
-      uploadedFiles: uploadedFiles.length,
-      verificationStatus,
-      hasInfo
-    });
+    
     return hasInfo;
   };
 
@@ -149,7 +145,7 @@ const KYCVerification = () => {
         return;
       }
 
-      console.log('🚀 Completing KYC verification...');
+      
 
       // Marquer l'étape 2 comme complétée
       const stepResponse = await axios.put(
@@ -157,7 +153,7 @@ const KYCVerification = () => {
         { status: 'completed' }
       );
 
-      console.log('✅ Step 2 marked as completed:', stepResponse.data);
+      
 
       // Mettre à jour l'état local
       setIsStepCompleted(true);
@@ -183,7 +179,7 @@ const KYCVerification = () => {
         }
       }));
 
-      console.log('💾 KYC verification completed and step 2 marked as completed');
+      
 
     } catch (error) {
       console.error('❌ Error completing KYC verification:', error);

@@ -103,9 +103,9 @@ export function PlanningMatrix({ selectedDate, gigId, slots, onRefresh, onSelect
             }
 
             if (slotsToUpdate.length > 0) {
-                console.log(`[PlanningMatrix] Saving ${slotsToUpdate.length} slots for gig ${gigId}...`);
+                
                 const response = await schedulerApi.bulkUpsertTimeSlots(gigId, slotsToUpdate);
-                console.log('[PlanningMatrix] Save successful:', response);
+                
             }
 
             onRefresh();

@@ -140,7 +140,7 @@ export function SkillsSection({ data, onChange, errors, onNext, onPrevious }: Sk
             console.warn('⚠️ Could not load professional skills:', professionalError);
             setErrorSkills(prev => ({ ...prev, professional: true }));
           } else {
-            console.log('📚 Loaded professional skills:', professionalSkillsData);
+            
             setProfessionalSkills(professionalSkillsData || []);
           }
         } catch (error) {
@@ -1076,18 +1076,12 @@ export function SkillsSection({ data, onChange, errors, onNext, onPrevious }: Sk
                       skillName = foundSkill ? foundSkill.name : 'Unknown Professional Skill';
                       
                       // Debug: Log what's happening with professional skill rendering
-                      console.log(`🎯 Rendering ${type} skill:`, {
-                        skillId,
-                        availableSkills: professionalSkills.length,
-                        foundSkill,
-                        skillName,
-                        skillData: skill
-                      });
+                      
                     }
                   } else if (typeof skill.skill === 'object' && !skill.skill.$oid) {
                     // Handle case where skill.skill is an object but not $oid format
                     // This might be a direct skill object or malformed data
-                    console.log(`⚠️ Rendering skill with unexpected format:`, skill.skill);
+                    
                     
                     // Try to extract skill name from the object if possible
                     if (skill.skill.name) {
@@ -1381,22 +1375,22 @@ export function SkillsSection({ data, onChange, errors, onNext, onPrevious }: Sk
 
 
   // Debug logs
-  console.log('🎯 SKILLS SECTION - Rendering SkillsSection component');
-  console.log('🎯 SKILLS SECTION - data:', data);
-  console.log('🎯 SKILLS SECTION - safeData:', safeData);
-  console.log('🎯 SKILLS SECTION - languages:', safeData.languages);
-  console.log('🎯 SKILLS SECTION - professional:', safeData.professional);
-  console.log('🎯 SKILLS SECTION - technical:', safeData.technical);
-  console.log('🎯 SKILLS SECTION - soft:', safeData.soft);
-  console.log('🎯 SKILLS SECTION - certifications:', safeData.certifications);
-  console.log('🎯 SKILLS SECTION - professionalSkills from API:', professionalSkills);
-  console.log('🎯 SKILLS SECTION - softSkills from API:', softSkills);
-  console.log('🎯 SKILLS SECTION - technicalSkills from API:', technicalSkills);
-  console.log('🎯 SKILLS SECTION - languages from API:', languages);
-  console.log('🎯 SKILLS SECTION - loadingSkills:', loadingSkills);
-  console.log('🎯 SKILLS SECTION - errorSkills:', errorSkills);
-  console.log('🎯 SKILLS SECTION - languagesLoading:', languagesLoading);
-  console.log('🎯 SKILLS SECTION - errors:', errors);
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   return (
     <div className="w-full bg-white p-0">

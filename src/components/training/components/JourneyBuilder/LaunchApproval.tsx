@@ -56,13 +56,13 @@ export default function LaunchApproval({
   useEffect(() => {
     const draft = DraftService.getDraft();
     if (draft.modules && draft.modules.length > 0) {
-      console.log('[LaunchApproval] Loading modules from localStorage (with quizzes):', draft.modules.length);
+      
       // Check if modules have quizzes
       const modulesWithQuizzes = draft.modules.filter(m => m.assessments && m.assessments.length > 0);
-      console.log('[LaunchApproval] Modules with quizzes:', modulesWithQuizzes.length);
+      
       setUpdatedModules(draft.modules);
     } else {
-      console.log('[LaunchApproval] No modules found in localStorage, using props');
+      
       setUpdatedModules(modules);
     }
   }, []); // Only run on mount
@@ -133,7 +133,7 @@ export default function LaunchApproval({
       ? { totalQuestions: 30, passingScore: 70, multipleChoice: 12, trueFalse: 9, multipleCorrect: 9 }
       : { totalQuestions: 10, passingScore: 70, multipleChoice: 4, trueFalse: 3, multipleCorrect: 3 });
 
-    console.log(`📊 ${isFinalExam ? 'Final Exam' : 'Quiz'} Configuration: ${finalConfig.totalQuestions} questions (${finalConfig.multipleChoice} QCM, ${finalConfig.trueFalse} True/False, ${finalConfig.multipleCorrect} Multiple Correct Answers)`);
+    
 
     try {
       // Prepare module content in the format expected by the backend
@@ -158,7 +158,7 @@ export default function LaunchApproval({
 
       // Log only for final exam to track the issue
       if (isFinalExam) {
-        console.log(`[Final Exam] Requesting ${finalConfig.totalQuestions} questions (${finalConfig.multipleChoice} QCM, ${finalConfig.trueFalse} True/False, ${finalConfig.multipleCorrect} Multiple Correct)`);
+        
       }
 
       // Generate quiz using AI service with question type distribution
@@ -277,13 +277,13 @@ export default function LaunchApproval({
       // This prevents deleting and recreating modules unnecessarily
       // The quizzes will be saved to backend when the journey is launched
       try {
-        console.log('[LaunchApproval] Saving quiz locally only (not to backend yet)');
+        
 
         // Save locally to preserve the quiz in localStorage
         DraftService.saveDraftLocally({
           modules: updatedModulesList
         });
-        console.log('[LaunchApproval] ✓ Quiz saved locally');
+        
       } catch (draftError) {
         console.warn('[LaunchApproval] Could not save quiz locally:', draftError);
       }
@@ -292,10 +292,10 @@ export default function LaunchApproval({
       // 1. Modules might still have temporary IDs (module-1, module-2, etc.)
       // 2. Saving to backend would delete and recreate all modules unnecessarily
       // 3. Quizzes will be properly saved when the journey is launched via JourneyService.launchJourney
-      console.log('[LaunchApproval] Quiz will be saved to backend when journey is launched');
+      
 
       if (isFinalExam) {
-        console.log(`[Final Exam] Generated ${assessmentQuestions.length} questions (requested: ${finalConfig.totalQuestions})`);
+        
         if (assessmentQuestions.length !== finalConfig.totalQuestions) {
           console.error(`[Final Exam] ❌ ERROR: Expected ${finalConfig.totalQuestions} questions but got ${assessmentQuestions.length}`);
         }
@@ -402,7 +402,7 @@ export default function LaunchApproval({
         existingJourneyId = undefined;
       }
 
-      console.log('[LaunchApproval] Launching journey with ID:', existingJourneyId || 'NEW');
+      
 
       // CRITICAL: Re-load modules from localStorage right before launch to ensure we have the latest quizzes
       const latestDraft = DraftService.getDraft();
@@ -410,11 +410,11 @@ export default function LaunchApproval({
 
       // Log quiz information for debugging
       const modulesWithQuizzes = modulesToLaunch.filter(m => m.assessments && m.assessments.length > 0);
-      console.log('[LaunchApproval] Modules to launch:', modulesToLaunch.length);
-      console.log('[LaunchApproval] Modules with quizzes:', modulesWithQuizzes.length);
+      
+      
       modulesToLaunch.forEach((m, idx) => {
         const quizCount = m.assessments ? m.assessments.length : 0;
-        console.log(`[LaunchApproval] Module ${idx + 1} (${m.title}): ${quizCount} quiz(es)`);
+        
       });
 
       const launchResponse = await JourneyService.launchJourney({
@@ -431,28 +431,24 @@ export default function LaunchApproval({
         gigId: gigId || undefined
       }, undefined, existingJourneyId); // Pass existingJourneyId as third parameter
 
-      console.log('✅ Journey saved to MongoDB:', launchResponse);
+      
 
       // Update onboarding progress for Step 11 (REP Onboarding)
       if (companyId) {
         try {
           const onboardingApiUrl = 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
           const onboardingEndpoint = `${onboardingApiUrl}/onboarding/companies/${companyId}/onboarding/phases/3/steps/9`;
-          console.log('[LaunchApproval] Updating onboarding progress:', onboardingEndpoint);
+          
 
           await axios.put(onboardingEndpoint, { status: "completed" });
-          console.log('[LaunchApproval] Onboarding Step 11 marked as completed');
+          
         } catch (onboardingError) {
           console.error('[LaunchApproval] Failed to update onboarding progress:', onboardingError);
           // Don't alert the user here, the journey launch itself was successful
         }
       }
 
-      console.log('📊 Launching with:', {
-        journey: updatedJourney.name,
-        modules: modulesToLaunch.length,
-        enrolledReps: enrolledReps.length,
-        assessments: updatedModules.reduce((sum, m) => sum + (m.assessments?.length || 0), 0)
+       => sum + (m.assessments?.length || 0), 0)
       });
 
       onLaunch(updatedJourney, modulesToLaunch, enrolledReps);

@@ -14,7 +14,7 @@ export default function GigSelectorDemo() {
 
   const handleGigSelect = (gig: GigFromApi) => {
     setSelectedGig(gig);
-    console.log('Selected Gig:', gig);
+    
   };
 
   return (

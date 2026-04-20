@@ -32,7 +32,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
       try {
         const fetchedCurrencies = await fetchAllCurrencies();
         setCurrencies(fetchedCurrencies);
-        console.log('💰 COMMISSION - Loaded currencies:', fetchedCurrencies.length);
+        
       } catch (error) {
         console.error('❌ Error loading currencies:', error);
       } finally {
@@ -62,7 +62,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
 
         if (foundCurrency) {
           setSelectedCurrency(foundCurrency);
-          console.log('💰 COMMISSION - Selected currency from list:', foundCurrency);
+          
         } else {
           // If not found, fetch by ID ONLY if it looks like a valid Mongo ID (24 hex chars)
           // This prevents sending "EUR" to the ID endpoint which causes 400 error
@@ -71,7 +71,7 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
               const fetchedCurrency = await fetchCurrencyById(currencyId);
               if (fetchedCurrency) {
                 setSelectedCurrency(fetchedCurrency);
-                console.log('💰 COMMISSION - Selected currency from API:', fetchedCurrency);
+                
               }
             } catch (error) {
               console.error('❌ Error fetching selected currency:', error);
@@ -181,10 +181,10 @@ export function CommissionSection({ data, onChange, errors, warnings, onNext, on
     }
   }, [data?.commission?.minimumVolume?.period]);
 
-  console.log('💰 COMMISSION SECTION - Rendering CommissionSection component');
-  console.log('💰 COMMISSION SECTION - data.commission:', data.commission);
-  console.log('💰 COMMISSION SECTION - currency:', data?.commission?.currency);
-  console.log('💰 COMMISSION SECTION - commission_per_call:', data?.commission?.commission_per_call);
+  
+  
+  
+  
 
   return (
     <div className="w-full bg-white p-0">

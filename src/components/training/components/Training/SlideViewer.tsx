@@ -89,18 +89,18 @@ export default function SlideViewer({ modules, onComplete }: SlideViewerProps) {
   const progress = ((currentSlideIndex + 1) / slides.length) * 100;
 
   const goToNextSlide = () => {
-    console.log('🔄 Next slide clicked', currentSlideIndex);
+    
     if (currentSlideIndex < slides.length - 1) {
       setCompletedSlides(prev => new Set([...prev, currentSlideIndex]));
       setCurrentSlideIndex(prev => prev + 1);
     } else if (onComplete) {
-      console.log('✅ Course completed!');
+      
       onComplete();
     }
   };
 
   const goToPreviousSlide = () => {
-    console.log('🔄 Previous slide clicked', currentSlideIndex);
+    
     if (currentSlideIndex > 0) {
       setCurrentSlideIndex(prev => prev - 1);
     }

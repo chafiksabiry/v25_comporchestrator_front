@@ -99,7 +99,7 @@ const KnowledgeInsights: React.FC = () => {
   const getCompanyIdFromToken = () => {
     const token = localStorage.getItem('jwtToken');
     if (!token) {
-      console.log('No JWT token found in localStorage');
+      
       return null;
     }
     try {
@@ -119,12 +119,12 @@ const KnowledgeInsights: React.FC = () => {
   // Function to check analysis status
   const checkAnalysisStatus = async (companyId: string) => {
     try {
-      console.log('📊 Checking analysis status...');
+      
       const response = await apiClient.get(`/analysis/${companyId}`);
       
       if (response.data.exists && response.data.analysis) {
         const currentAnalysis = response.data.analysis;
-        console.log('📊 Analysis status update:', currentAnalysis.status);
+        
         
         setAnalysis({
           status: currentAnalysis.status,
@@ -135,7 +135,7 @@ const KnowledgeInsights: React.FC = () => {
 
         // If analysis is completed or failed, stop polling
         if (currentAnalysis.status === 'completed' || currentAnalysis.status === 'failed') {
-          console.log('📊 Analysis finished, stopping polling');
+          
           if (pollingInterval) {
             clearInterval(pollingInterval);
             setPollingInterval(null);
@@ -154,7 +154,7 @@ const KnowledgeInsights: React.FC = () => {
       clearInterval(pollingInterval);
     }
     
-    console.log('🔄 Starting polling for analysis status');
+    
     const interval = setInterval(() => checkAnalysisStatus(companyId), 3000); // Poll every 3 seconds
     setPollingInterval(interval);
   };
@@ -164,7 +164,7 @@ const KnowledgeInsights: React.FC = () => {
     try {
       // Prevent duplicate requests
       setIsRequestInProgress(true);
-      console.log('🚀 Starting new analysis for company:', companyId);
+      
       
       // Clear any previous errors and set status to in_progress
       setAnalysis(prev => ({
@@ -175,7 +175,7 @@ const KnowledgeInsights: React.FC = () => {
       }));
 
       const startResponse = await apiClient.post('/analysis/start', { companyId });
-      console.log('📊 Analysis start response:', startResponse.data);
+      
 
       if (!startResponse.data.success) {
         throw new Error(startResponse.data.message || 'Failed to start analysis');
@@ -186,7 +186,7 @@ const KnowledgeInsights: React.FC = () => {
 
       if (startResponse.data.results) {
         // If we got immediate results
-        console.log('📦 Received immediate analysis results');
+        
         setAnalysis({
           status: 'completed',
           progress: 100,
@@ -227,10 +227,10 @@ const KnowledgeInsights: React.FC = () => {
           throw new Error('Company ID not found');
         }
 
-        console.log('🔄 Initializing data fetch for company:', companyId);
+        
 
         // Fetch documents first
-        console.log('📚 Fetching knowledge base documents...');
+        
         const docsResponse = await apiClient.get('/documents', {
           params: { companyId }
         });
@@ -253,18 +253,15 @@ const KnowledgeInsights: React.FC = () => {
         }));
 
         setKnowledgeBase(documents);
-        console.log('📚 Loaded knowledge base documents:', documents.length);
+        
 
         // Check for existing analysis
-        console.log('🔍 Checking for existing analysis...');
+        
         const analysisResponse = await apiClient.get(`/analysis/${companyId}`);
         
         if (analysisResponse.data.exists && analysisResponse.data.analysis) {
           const existingAnalysis = analysisResponse.data.analysis;
-          console.log('📦 Found existing analysis:', {
-            status: existingAnalysis.status,
-            documentCount: existingAnalysis.documentCount
-          });
+          
 
           setAnalysis({
             status: existingAnalysis.status,
@@ -275,12 +272,12 @@ const KnowledgeInsights: React.FC = () => {
 
           // If analysis is in progress, start polling
           if (existingAnalysis.status === 'in_progress') {
-            console.log('⏳ Analysis is in progress, starting polling...');
+            
             startPolling(companyId);
           }
         } else {
           // No analysis exists, check if we should auto-start one 
-          console.log('ℹ️ No existing analysis found');
+          
           
           // Don't auto-start analysis on initial load to prevent multiple requests
           // User can manually start analysis if needed
@@ -313,7 +310,7 @@ const KnowledgeInsights: React.FC = () => {
     // Cleanup polling on unmount
     return () => {
       if (pollingInterval) {
-        console.log('🧹 Cleaning up polling interval');
+        
         clearInterval(pollingInterval);
       }
     };
@@ -330,7 +327,7 @@ const KnowledgeInsights: React.FC = () => {
 
       // Prevent duplicate requests
       if (isRequestInProgress) {
-        console.log('⚠️ Request already in progress, ignoring click');
+        
         return;
       }
 
@@ -338,7 +335,7 @@ const KnowledgeInsights: React.FC = () => {
       const now = Date.now();
       const timeSinceLastRequest = now - lastRequestTime;
       if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
-        console.log(`⚠️ Rate limiting in effect. Please wait ${Math.ceil((MIN_REQUEST_INTERVAL - timeSinceLastRequest) / 1000)} seconds before trying again`);
+        
         setAnalysis(prev => ({
           ...prev,
           error: `Please wait ${Math.ceil((MIN_REQUEST_INTERVAL - timeSinceLastRequest) / 1000)} seconds between analysis requests to avoid rate limits.`
@@ -346,11 +343,11 @@ const KnowledgeInsights: React.FC = () => {
         return;
       }
 
-      console.log('🔄 Starting manual reanalysis for company:', companyId);
+      
       
       // Prevent starting new analysis if one is already in progress
       if (analysis.status === 'in_progress' as const) {
-        console.log('⚠️ Analysis already in progress, skipping new request');
+        
         return;
       }
 

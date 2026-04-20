@@ -28,7 +28,7 @@ interface AddressResponse {
 export const addressService = {
   async createAddress(data: AddressData): Promise<AddressResponse> {
     try {
-      console.log('📫 Address service - data to send:', data);
+      
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/addresses`,
         data

@@ -203,7 +203,7 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
 
   const cookieCompanyId = Cookies.get('companyId');
   const companyId = propCompanyId || cookieCompanyId;
-  console.log('Using companyId:', companyId, { fromProp: !!propCompanyId, fromCookie: !!cookieCompanyId });
+  
 
   // Define API URL with fallback
   const API_BASE_URL = import.meta.env.VITE_COMPANY_API_URL || 'https://v25searchcompanywizardbackend-production.up.railway.app/api';
@@ -211,7 +211,7 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
   // Vérifier l'état de l'étape au chargement
   useEffect(() => {
     if (companyId) {
-      console.log('🚀 CompanyProfile component loaded, checking step status...');
+      
       checkStepStatus();
     }
   }, [companyId]);
@@ -219,7 +219,7 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
   // Vérifier l'état de l'étape quand les données de l'entreprise sont chargées
   useEffect(() => {
     if (company && Object.keys(company).length > 0 && companyId) {
-      console.log('📊 Company data loaded, checking if step should be auto-completed...');
+      
       // Attendre un peu que les données soient bien chargées
       setTimeout(() => {
         checkStepStatus();
@@ -229,14 +229,11 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
 
   // Vérifier si l'étape peut être marquée comme complétée
   useEffect(() => {
-    console.log('🔄 useEffect triggered:', {
-      hasCompany: !!company,
-      isStepCompleted,
-      hasBasicInfo: hasBasicInfo()
+    
     });
 
     if (company && !isStepCompleted && hasBasicInfo()) {
-      console.log('🎯 Triggering automatic step completion check');
+      
       // Si l'entreprise a les informations de base, on peut marquer l'étape comme complétée
       checkStepStatus();
     }
@@ -244,38 +241,33 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
 
   const hasBasicInfo = () => {
     const hasInfo = company.name && company.industry && company.contact?.email;
-    console.log('🔍 Checking basic info:', {
-      name: company.name,
-      industry: company.industry,
-      email: company.contact?.email,
-      hasInfo
-    });
+    
     return hasInfo;
   };
 
   const checkStepStatus = async () => {
     try {
       if (!companyId) {
-        console.log('❌ No companyId available for step status check');
+        
         return;
       }
 
-      console.log('🔍 Checking step 1 status for company:', companyId);
+      
 
       // Vérifier l'état de l'étape 1 via l'API d'onboarding principale
       const response = await axios.get(
         `${API_BASE_URL}/onboarding/companies/${companyId}/onboarding`
       );
 
-      console.log('📡 API response for onboarding:', response.data);
+      
 
       if (response.data && (response.data as any).completedSteps && Array.isArray((response.data as any).completedSteps)) {
         if ((response.data as any).completedSteps.includes(1)) {
-          console.log('✅ Step 1 is already completed according to API');
+          
           setIsStepCompleted(true);
           return;
         } else {
-          console.log('⚠️ Step 1 is not completed according to API');
+          
         }
       }
 
@@ -284,9 +276,9 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
       if (storedProgress) {
         try {
           const progress = JSON.parse(storedProgress);
-          console.log('💾 Stored progress from localStorage:', progress);
+          
           if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(1)) {
-            console.log('✅ Step 1 found in localStorage, setting as completed');
+            
             setIsStepCompleted(true);
             return;
           }
@@ -294,13 +286,13 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
           console.error('❌ Error parsing stored progress:', e);
         }
       } else {
-        console.log('💾 No stored progress found in localStorage');
+        
       }
 
       // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
       // marquer automatiquement l'étape comme complétée localement
       if (hasBasicInfo()) {
-        console.log('🎯 Auto-completing step 1 locally because basic info is present');
+        
 
         // Marquer l'étape comme complétée localement
         setIsStepCompleted(true);
@@ -329,10 +321,10 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
           }
         }));
 
-        console.log('💾 Step 1 marked as completed locally and parent component notified');
+        
 
       } else {
-        console.log('⚠️ Cannot auto-complete step 1 because basic info is missing');
+        
       }
 
     } catch (error) {
@@ -476,10 +468,10 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
 
   const handleSaveAll = async () => {
     try {
-      console.log('🚀 Starting save process...');
-      console.log('📊 Current company data:', company);
-      console.log('🔍 Has basic info:', hasBasicInfo());
-      console.log('📝 Is step completed:', isStepCompleted);
+      
+      
+      
+      
 
       const cleanData = (obj: any): any => {
         if (Array.isArray(obj)) {
@@ -527,13 +519,13 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
         payload
       );
 
-      console.log('✅ Company data saved successfully');
+      
 
       // Marquer l'étape 1 comme complétée dans l'onboarding si les informations de base sont présentes
       if (!isStepCompleted && hasBasicInfo()) {
-        console.log('🎯 Marking step 1 as completed...');
+        
         try {
-          console.log('🎯 Marking step 1 as completed in onboarding...');
+          
 
           // Récupérer l'état actuel de l'onboarding
           const onboardingResponse = await axios.get(
@@ -552,7 +544,7 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
             }
           );
 
-          console.log('✅ Company Profile step 1 marked as completed:', updateResponse.data);
+          
 
           // Mettre à jour l'état local
           setIsStepCompleted(true);
@@ -568,15 +560,13 @@ function CompanyProfile({ companyId: propCompanyId }: { companyId?: string | nul
           // Synchroniser avec les cookies
           Cookies.set('companyProfileStepCompleted', 'true', { expires: 7 });
 
-          console.log('💾 Local state and storage updated after step completion');
+          
 
         } catch (onboardingError) {
           console.error('❌ Error updating onboarding progress:', onboardingError);
         }
       } else {
-        console.log('⚠️ Step not marked as completed because:', {
-          isStepCompleted,
-          hasBasicInfo: hasBasicInfo()
+        
         });
       }
 

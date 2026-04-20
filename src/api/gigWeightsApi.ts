@@ -11,12 +11,12 @@ export interface GigWeights {
 
 // Save matching weights for a gig
 export const saveGigWeights = async (gigId: string, matchingWeights: MatchingWeights): Promise<GigWeights> => {
-    console.log('🚨 SAVE GIG WEIGHTS CALLED:', { gigId, matchingWeights });
+    
     try {
         const response = await axios.post(`${API_BASE_URL}/gig-matching-weights/${gigId}`, {
             matchingWeights
         });
-        console.log('✅ SAVE GIG WEIGHTS SUCCESS:', response.data);
+        
         return response.data.data;
     } catch (error) {
         console.error('❌ Error saving gig weights:', error);

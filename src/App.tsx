@@ -47,7 +47,6 @@ function AppContent() {
   const [currentStepGuide, setCurrentStepGuide] = useState<{ title: string; description: string } | null>(null);
   const [globalBackConfig, setGlobalBackConfig] = useState<{ label: string; action: () => void } | null>(null);
   const [companyLogo, setCompanyLogo] = useState<string | null>(() => localStorage.getItem('companyLogo'));
-  const [faviconLogo, setFaviconLogo] = useState<string | null>(() => localStorage.getItem('faviconLogo'));
   const [logoError, setLogoError] = useState(false);
 
   const isZohoCallback = window.location.pathname === '/zoho-callback';
@@ -105,11 +104,10 @@ function AppContent() {
 
             if (companyResponse && companyResponse.ok) {
               const companyData = await companyResponse.json();
-              console.log('[V25 Main App] Company data fetched:', companyData);
+
               const rawLogo = companyData.data?.logo;
               const name = companyData.data?.name;
-              const website = companyData.data?.contact?.website;
-              
+
               if (name) {
                 setCompanyName(name);
                 localStorage.setItem('companyName', name);
@@ -118,18 +116,6 @@ function AppContent() {
               if (rawLogo) {
                 setCompanyLogo(rawLogo);
                 localStorage.setItem('companyLogo', rawLogo);
-              }
-
-              if (website) {
-                try {
-                  const domain = new URL(website).hostname;
-                  const favUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-                  setFaviconLogo(favUrl);
-                  localStorage.setItem('faviconLogo', favUrl);
-                  if (!rawLogo) setCompanyLogo(favUrl);
-                } catch (e) {
-                  console.debug('Failed to parse website for favicon', e);
-                }
               }
             }
           }
@@ -145,8 +131,8 @@ function AppContent() {
       ZohoService.getInstance();
     };
 
-    initializeZoho().catch(error => {
-      console.debug('App: Error initializing Zoho', error);
+    initializeZoho().catch(() => {
+
     });
 
     const handleTabChange = (event: CustomEvent) => {
@@ -288,13 +274,7 @@ function AppContent() {
                         src={companyLogo}
                         alt="Company Logo"
                         className="w-full h-full object-contain p-1"
-                        onError={() => {
-                          if (faviconLogo && companyLogo !== faviconLogo) {
-                            setCompanyLogo(faviconLogo);
-                          } else {
-                            setLogoError(true);
-                          }
-                        }}
+                        onError={() => setLogoError(true)}
                       />
                     ) : (
                       userFullName.charAt(0).toUpperCase()

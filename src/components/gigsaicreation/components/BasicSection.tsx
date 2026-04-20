@@ -146,7 +146,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
         try {
           const name = await getCountryNameById(data.destination_zone);
           setCountryName(name);
-          console.log(`🌍 BASIC SECTION - Fetched country name: ${name} for ID: ${data.destination_zone}`);
+          
         } catch (error) {
           console.error('❌ BASIC SECTION - Error fetching country name:', error);
           setCountryName(data.destination_zone);
@@ -167,11 +167,11 @@ const BasicSection: React.FC<BasicSectionProps> = ({
     // D'abord chercher par ID dans l'API
     const countryFromApi = countries.find(country => country._id === countryId);
     if (countryFromApi) {
-      console.log(`🌍 Found country in API: ${countryFromApi.name.common} for ID: ${countryId}`);
+      
       return countryFromApi.name.common;
     }
 
-    console.log(`⚠️ Country not found in API for ID: ${countryId}. Available countries: ${countries.length}`);
+    
 
     // Sinon, essayer avec les méthodes existantes (pour la compatibilité)
     return i18n.getName(countryId, 'en') || alpha2ToCountry[countryId] || countryId;
@@ -198,7 +198,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
       return;
     }
 
-    console.log('Selected country:', country);
+    
 
     // Mettre à jour destination_zone et s'assurer que le pays sélectionné est dans destinationZones
     const updatedDestinationZones = data.destinationZones || [];
@@ -227,7 +227,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
 
     // Si destination_zone est vide mais destinationZone (sans underscore) existe
     if (!data.destination_zone && destinationZoneValue) {
-      console.log('🔄 BASIC SECTION - Initializing destination_zone from destinationZone:', destinationZoneValue);
+      
       onChange({
         ...data,
         destination_zone: destinationZoneValue,
@@ -240,7 +240,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
     if (!data.destination_zone && destinationZonesArray.length > 0) {
       const firstDestination = destinationZonesArray[0];
 
-      console.log('🔄 BASIC SECTION - Initializing destination_zone from destinationZones[0]:', firstDestination);
+      
 
       // Si c'est déjà un code de pays (2-3 caractères), l'utiliser directement
       if (firstDestination && firstDestination.length <= 3) {
@@ -266,7 +266,7 @@ const BasicSection: React.FC<BasicSectionProps> = ({
       }
     } else if (data.destination_zone && destinationZonesArray.length === 0) {
       // Si destination_zone est défini mais destinationZones est vide, initialiser destinationZones
-      console.log('🔄 BASIC SECTION - Initializing destinationZones from destination_zone:', data.destination_zone);
+      
       onChange({
         ...data,
         destinationZones: [data.destination_zone]
@@ -310,17 +310,17 @@ const BasicSection: React.FC<BasicSectionProps> = ({
   }, [data, errors]);
 
   // Le rendu du composant
-  console.log('🏠 BASIC SECTION - Rendering BasicSection component');
-  console.log('🏠 BASIC SECTION - data:', data);
-  console.log('🏠 BASIC SECTION - destinationZones:', data.destinationZones);
-  console.log('🏠 BASIC SECTION - destination_zone:', data.destination_zone);
-  console.log('🏠 BASIC SECTION - destinationZone (sans underscore):', (data as any).destinationZone);
-  console.log('🏠 BASIC SECTION - countries from API:', countries.length, 'countries loaded');
-  console.log('🏠 BASIC SECTION - isLoading:', isLoading);
-  console.log('🏠 BASIC SECTION - industries:', data.industries);
-  console.log('🏠 BASIC SECTION - activities:', data.activities);
-  console.log('🏠 BASIC SECTION - seniority:', data.seniority);
-  console.log('🏠 BASIC SECTION - errors:', errors);
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
 
   return (
     <div className="w-full bg-white py-6">

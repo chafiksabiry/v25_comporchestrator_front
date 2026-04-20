@@ -52,24 +52,24 @@ const globalState = {
   },
   saveCallToDB: async () => {
     if (globalState.isSaving || !globalState.currentCallSid) {
-      console.log("⚠️ Save already in progress or no CallSid available");
+      
       return;
     }
 
     try {
       globalState.isSaving = true;
-      console.log("💾 Starting save process for CallSid:", globalState.currentCallSid);
+      
 
       // Get the current messages
       const currentMessages = [...globalState.messages];
-      console.log("📊 Current AI messages to save:", currentMessages.length);
+      
 
       const result = await axios.post(`${import.meta.env.VITE_API_URL_CALL}/api/calls/call-details`, {
         callSid: globalState.currentCallSid,
         userId: "6807abfc2c1ca099fe2b13c5"
       });
       const call = result.data.data;
-      console.log("📞 Call details retrieved from Twilio");
+      
       
       await new Promise(resolve => setTimeout(resolve, 2000));
       
@@ -90,10 +90,10 @@ const globalState = {
         userId: "6807abfc2c1ca099fe2b13c5"
       });
       
-      console.log('📝 Call stored in DB:', callInDB.data._id);
+      
 
       if (currentMessages.length > 0) {
-        console.log('💾 Storing AI messages:', currentMessages.length);
+        
         const resultStock = await axios.post(`${import.meta.env.VITE_API_URL_AI_MESSAGES}/messages/batch`, 
           currentMessages.map(msg => ({
             callId: callInDB.data._id,
@@ -105,7 +105,7 @@ const globalState = {
             isProcessed: msg.isProcessed,
           }))
         );
-        console.log('✅ AI messages stored successfully:', resultStock.data);
+        
       } else {
         console.warn('⚠️ No AI messages to store');
       }

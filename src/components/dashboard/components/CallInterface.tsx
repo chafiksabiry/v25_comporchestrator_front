@@ -118,12 +118,12 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
 
   const handleTranscription = async (transcription: string) => {
     if (!transcription?.trim()) {
-      console.log('❌ Empty transcription, skipping processing');
+      
       return;
     }
 
     try {
-      console.log('🎯 Sending transcription to AI assistant:', transcription);
+      
       const apiUrl = `${import.meta.env.VITE_API_URL_CALL}/api/calls/ai-assist`;
 
       // Get current messages from global state for context
@@ -143,7 +143,7 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
       };
 
       const response = await axios.post(apiUrl, payload);
-      console.log('📝 AI assistant response:', response.data);
+      
 
       if (response.data?.suggestion) {
         const { content, category, priority } = processMarkdownResponse(response.data.suggestion);
@@ -158,11 +158,11 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
             isProcessed: false
           };
 
-          console.log('🆕 Creating new AI message:', newMessage);
+          
 
           // Add message directly to global state
           AIAssistantAPI.addMessage(newMessage);
-          console.log('✅ Message added to global state');
+          
         }
       }
     } catch (error) {
@@ -184,7 +184,7 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
     // 1. C'est un segment final OU
     // 2. On a eu assez de silence ET ce n'est pas déjà en cours de traitement
     if ((isFinal || hasEnoughSilence()) && !isProcessingTranscript) {
-      console.log(`🎯 Processing transcript segment (${isFinal ? 'final' : 'silence'}):`);
+      
       setIsProcessingTranscript(true);
       try {
         await handleTranscription(segment);
@@ -217,11 +217,11 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
       setLastSpeechTimestamp(now);
       if (!isSpeaking) {
         setIsSpeaking(true);
-        console.log('🗣️ Speech started');
+        
       }
     } else if (isSpeaking && hasEnoughSilence()) {
       setIsSpeaking(false);
-      console.log('🤫 Speech ended - Processing transcript buffer');
+      
       if (currentSpeechSegment && currentSpeechSegment.trim().length > 0) {
         processTranscriptionSegment(currentSpeechSegment, false);
       }
@@ -234,7 +234,7 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
   const handleWebSocketMessage = (event: MessageEvent) => {
     try {
       const data = JSON.parse(event.data);
-      console.log('📥 Speech recognition result:', data);
+      
 
       if (data.error) {
         console.error('❌ Speech recognition error:', data.error);
@@ -254,7 +254,7 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
         const cleanedTranscript = transcriptToProcess.replace(lastProcessedText, '').trim();
 
         if (cleanedTranscript) {
-          console.log('✨ New transcript segment:', cleanedTranscript);
+          
 
           // Effacer tout timeout existant
           if (transcriptTimeoutRef.current) {
@@ -263,7 +263,7 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
 
           // Si c'est un résultat final, le traiter immédiatement
           if (data.isFinal) {
-            console.log('🏁 Final transcript received');
+            
             const fullSegment = `${currentSpeechSegment} ${cleanedTranscript}`.trim();
             processTranscriptionSegment(fullSegment, true);
           } else {
@@ -292,7 +292,7 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
         return;
       }
 
-      console.log('Initiating the call...');
+      
 
       try {
         // Existing Twilio implementation
@@ -328,13 +328,13 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
 
         conn.on('connect', () => {
           const callSid = conn.parameters.CallSid;
-          console.log("CallSid:", callSid);
+          
         });
 
         conn.on('accept', () => {
-          console.log("✅ Call accepted");
+          
           const Sid = conn.parameters.CallSid;
-          console.log("CallSid recupéré", Sid);
+          
           setCallSid(Sid);
           // Set call details in global state
           AIAssistantAPI.setCallDetails(Sid, agentId);
@@ -343,7 +343,7 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
           // Wait a moment for the media stream to be ready
           setTimeout(() => {
             const stream = conn.getRemoteStream();
-            console.log("mediaStream:", stream);
+            
 
             if (stream) {
               try {
@@ -377,13 +377,13 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
                 const cleanup = async () => {
                   if (cleanupInitiated) return;
                   cleanupInitiated = true;
-                  console.log("🧹 Starting cleanup...");
+                  
 
                   isCallActive = false;
 
                   // Close WebSocket first
                   if (ws?.readyState === WebSocket.OPEN) {
-                    console.log("🔌 Closing WebSocket connection...");
+                    
                     ws.close(1000, "Call ended normally");
                   }
 
@@ -392,7 +392,7 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
 
                   // Then cleanup audio
                   try {
-                    console.log("🎵 Cleaning up audio resources...");
+                    
                     if (analyzer) {
                       analyzer.disconnect();
                     }
@@ -409,24 +409,24 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
                     console.error("❌ Error during audio cleanup:", error);
                   }
 
-                  console.log("✅ Cleanup complete");
+                  
                 };
 
                 // Initialize WebSocket connection for streaming audio to backend
                 const wsUrl = import.meta.env.VITE_WS_URL || `${import.meta.env.VITE_API_URL_CALL.replace('http', 'ws')}/speech-to-text`;
-                console.log('Connecting to WebSocket URL:', wsUrl);
+                
                 const newWs = new WebSocket(wsUrl);
                 setWs(newWs);
                 let newAudioProcessor: AudioWorkletNode | null = null;
 
                 newWs.onopen = async () => {
                   if (!isCallActive) {
-                    console.log("Call no longer active, closing new WebSocket connection");
+                    
                     newWs.close(1000, "Call already ended");
                     return;
                   }
 
-                  console.log('🔌 WebSocket connection established for speech-to-text');
+                  
                   try {
                     // Create audio worklet for processing after WebSocket is ready
                     await audioContext.audioWorklet.addModule('/audio-processor.js');
@@ -476,7 +476,7 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
                       }
                     };
 
-                    console.log('📝 Sending speech recognition config:', config);
+                    
                     newWs.send(JSON.stringify(config));
 
                     // Handle audio data from worklet with improved error handling
@@ -502,7 +502,7 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
                           } catch (wsError) {
                             console.error('❌ WebSocket send error:', wsError);
                             if (isCallActive && newWs.readyState !== WebSocket.OPEN) {
-                              console.log('🔄 WebSocket not open, attempting reconnection...');
+                              
                               reconnectWebSocket();
                             }
                           }
@@ -532,8 +532,7 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
 
                       // Only log if there's significant audio or status change
                       if (rms > 0.01) {
-                        console.log('🎤 Audio levels:', {
-                          rms: rms.toFixed(3),
+                        ,
                           peak: peak.toFixed(3),
                           bufferSize: dataArray.length,
                           isActive
@@ -554,7 +553,7 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
 
                 const reconnectWebSocket = () => {
                   if (isCallActive && (!newWs || newWs.readyState === WebSocket.CLOSED)) {
-                    console.log('🔄 Attempting to reconnect WebSocket...');
+                    
                     const reconnectWs = new WebSocket(wsUrl);
                     setWs(reconnectWs);
                   }
@@ -568,9 +567,9 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
                 };
 
                 newWs.onclose = (event) => {
-                  console.log('WebSocket connection closed:', event.code, event.reason);
+                  
                   if (isCallActive && event.code !== 1000) {
-                    console.log('🔄 WebSocket closed unexpectedly, attempting to reconnect...');
+                    
                     setTimeout(reconnectWebSocket, 2000);
                   }
                 };
@@ -581,19 +580,19 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
                 // Set up cleanup for call end
                 conn.on("disconnect", async () => {
 
-                  console.log("❌ Call disconnected - Starting cleanup and save process");
+                  
 
                   const currentCallSid = conn.parameters.CallSid;
                   onEnd();
                   try {
                     // First do the cleanup to ensure resources are released
                     await cleanup();
-                    console.log("✅ Cleanup completed, proceeding to save call details");
+                    
 
                     // Save call details using global state
                     if (currentCallSid) {
                       await AIAssistantAPI.saveCallToDB();
-                      console.log("✅ Successfully saved call details to DB");
+                      
                       if (onCallSaved) {
                         onCallSaved();
                       }
@@ -662,7 +661,7 @@ export function CallInterface({ phoneNumber, agentId, onEnd, onCallSaved, provid
 
   const handleEndCall = async () => {
     try {
-      console.log("🔴 Manual call end initiated");
+      
 
       // Mark call as ended in global component
       AIAssistantAPI.setCallEnded(true);

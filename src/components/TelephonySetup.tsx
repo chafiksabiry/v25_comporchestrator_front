@@ -90,7 +90,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
     const readCookies = () => {
       const newCompanyId = Cookies.get('companyId');
 
-      console.log('📝 Reading companyId cookie:', newCompanyId);
+      
 
       if (newCompanyId) {
         setCompanyId(newCompanyId);
@@ -109,15 +109,15 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
     // Première lecture
     if (!readCookies()) {
-      console.log('⚠️ CompanyId cookie not found on first read, setting up retry interval');
+      
 
       // Si le cookie n'est pas trouvé, réessayer toutes les 2 secondes
       const interval = setInterval(() => {
         if (readCookies()) {
-          console.log('✅ CompanyId cookie found on retry');
+          
           clearInterval(interval);
         } else {
-          console.log('⚠️ CompanyId cookie still not found on retry');
+          
           setCookieError('Required company ID not found. Please refresh the page if this persists.');
         }
       }, 2000);
@@ -209,11 +209,11 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
   useEffect(() => {
     if (!companyId) {
-      console.log('Waiting for company ID...');
+      
       return;
     }
 
-    console.log('🔄 Company ID available, fetching initial data...');
+    
     fetchGigs();
     checkCompletedSteps();
   }, [companyId]);
@@ -221,7 +221,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
   // Effet pour récupérer les numéros existants quand un gig est sélectionné
   useEffect(() => {
     if (selectedGigId) {
-      console.log('🔄 Selected gig changed, fetching existing numbers...');
+      
       fetchExistingNumbers();
     }
   }, [selectedGigId]);
@@ -231,7 +231,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
     if (selectedGigId && Array.isArray(gigs) && gigs.length > 0) {
       const selectedGig = gigs.find((gig: Gig) => gig._id === selectedGigId);
       if (selectedGig?.destination_zone?.cca2) {
-        console.log('🌍 Setting destination zone from selected gig:', selectedGig.destination_zone.cca2);
+        
         setDestinationZone(selectedGig.destination_zone.cca2);
       }
     } else {
@@ -244,7 +244,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
     const hasPendingNumbers = phoneNumbers.some((number: PhoneNumber) => number.status === 'pending');
 
     if (hasPendingNumbers) {
-      console.log('🔄 Setting up auto-refresh for pending numbers');
+      
       const interval = setInterval(fetchExistingNumbers, 30000);
       return () => clearInterval(interval);
     }
@@ -264,12 +264,12 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
     const zone = zoneOverride || selectedGig?.destination_zone?.cca2;
 
     try {
-      console.log('🔍 Checking if gig has a phone number:', selectedGigId);
+      
       const result = await phoneNumberService.listPhoneNumbers(selectedGigId);
 
       if (result?.hasNumber && result.numbers && result.numbers.length > 0) {
         // Case 1.1: Gig already has number(s)
-        console.log('✅ Found existing numbers for gig');
+        
         setPhoneNumbers(result.numbers);
         setRequirementStatus({
           isChecking: false,
@@ -312,7 +312,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
       setRequirementStatus((prev: any) => ({ ...prev, isChecking: true }));
       const response = await phoneNumberService.getTwilioRequirements(destZone);
 
-      console.log('Twilio Requirements:', response);
+      
 
       if (response && response.requirements) {
         // Map Twilio requirements to frontend structure
@@ -401,7 +401,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
       // If no numbers available, don't proceed with requirements
       if (!Array.isArray(numbers) || numbers.length === 0) {
-        console.log('No available numbers for this destination zone, skipping requirements check');
+        
         setRequirementStatus({
           isChecking: false,
           hasRequirements: false,
@@ -613,27 +613,27 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
     try {
       if (!companyId) return;
 
-      console.log('🔍 Checking step 4 status for company:', companyId);
+      
 
       try {
         const response = await axios.get(
           `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
         );
 
-        console.log('📡 API response for onboarding:', response.data);
+        
 
         if (response.data && (response.data as any).completedSteps && Array.isArray((response.data as any).completedSteps)) {
           const completedSteps = (response.data as any).completedSteps;
           if (completedSteps.includes(4)) {
-            console.log('✅ Step 4 is already completed according to API');
+            
             setCompletedSteps(completedSteps);
             return;
           } else {
-            console.log('⚠️ Step 4 is not completed according to API');
+            
           }
         }
       } catch (apiError) {
-        console.log('⚠️ Could not fetch onboarding status from API, falling back to localStorage');
+        
       }
 
       const storedProgress = localStorage.getItem('companyOnboardingProgress');
@@ -641,7 +641,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
         try {
           const progress = JSON.parse(storedProgress);
           if (progress.completedSteps && Array.isArray(progress.completedSteps)) {
-            console.log('📱 Found completed steps in localStorage:', progress.completedSteps);
+            
             setCompletedSteps(progress.completedSteps);
           }
         } catch (e) {
@@ -659,18 +659,18 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
     try {
       setIsLoadingGigs(true);
-      console.log('🔍 Fetching gigs for company:', companyId);
+      
 
       const response = await axios.get(`${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}`);
-      console.log('✅ Gigs response:', response.data);
+      
 
       const responseData = response.data as { data: Gig[] };
       if (responseData && Array.isArray(responseData.data)) {
         setGigs(responseData.data);
-        console.log('📋 Loaded gigs:', responseData.data.length);
+        
       } else {
         setGigs([]);
-        console.log('⚠️ No gigs found in response');
+        
       }
     } catch (error) {
       console.error('❌ Error fetching gigs:', error);
@@ -688,9 +688,9 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
         return;
       }
 
-      console.log('📞 Checking numbers for gig:', selectedGigId);
+      
       const result = await phoneNumberService.listPhoneNumbers(selectedGigId);
-      console.log('📞 Check result:', result);
+      
 
       // Met à jour la liste des numéros (supporte maintenant plusieurs numéros s'ils existent)
       if (result?.hasNumber && result.numbers && Array.isArray(result.numbers)) {
@@ -716,12 +716,12 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
       return;
     }
 
-    console.log('🔍 Searching phone numbers with destination zone:', zone);
-    console.log('🔍 Using provider:', provider);
+    
+    
 
     try {
       const data = await phoneNumberService.searchPhoneNumbers(zone, provider);
-      console.log('📞 Phone numbers found:', data);
+      
       setAvailableNumbers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error searching numbers:', error);
@@ -738,14 +738,8 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
     }
 
     try {
-      console.log('🚀 PURE DEBUG - twilioRegulatorySids current state:', twilioRegulatorySids);
-      console.log('🛒 Starting purchase process:', {
-        phoneNumber,
-        provider,
-        selectedGigId,
-        requirementStatus,
-        options
-      });
+      
+      
 
       if (provider === 'telnyx') {
         // 1. Vérifier si les requirements sont en cours de vérification
@@ -797,17 +791,17 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
         type: options?.type
       };
 
-      console.log('📝 Purchase request data:', purchaseData);
+      
 
       const response = await phoneNumberService.purchasePhoneNumber(purchaseData);
-      console.log('📞 Purchase response:', response);
+      
 
       if (!response || (response as any).error) {
         const errorMessage = (response as any)?.message || (response as any)?.error || 'Failed to purchase number';
         throw new Error(errorMessage);
       }
 
-      console.log('✅ Number purchased successfully!');
+      
       setAvailableNumbers((prev: AvailablePhoneNumber[]) => prev.filter((num: AvailablePhoneNumber) => getPhoneNumber(num) !== phoneNumber));
       await fetchExistingNumbers(); // Wait for numbers to be fetched
       setPurchaseStatus('success');
@@ -824,7 +818,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
       });
 
       // --- Auto-Complete Onboarding Step 4 Here ---
-      console.log('🚀 Completing telephony setup silently...');
+      
       try {
         const onboardingResponse = await axios.get(
           `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding`
@@ -840,17 +834,17 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
             currentPhase: 2
           }
         );
-        console.log('✅ Telephony setup step 4 marked as completed via general onboarding:', updateResponse.data);
+        
       } catch (apiError) {
-        console.log('⚠️ Could not update via general onboarding API, trying individual step endpoint...');
+        
         try {
           const response = await axios.put(
             `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/4`,
             { status: 'completed' }
           );
-          console.log('✅ Telephony setup step 4 marked as completed via individual endpoint:', response.data);
+          
         } catch (stepError) {
-          console.log('⚠️ Individual step endpoint also failed, proceeding with localStorage only');
+          
         }
       }
 
@@ -882,7 +876,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
   const handleSubmitRequirements = async (values: Record<string, any>) => {
     try {
-      console.log('📝 Submitting requirements:', values);
+      
       if (!companyId) throw new Error('Company ID is required');
 
       if (provider === 'twilio') {
@@ -904,7 +898,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
             }
           });
           endUserSid = endUser.sid;
-          console.log('✅ Created Twilio End User:', endUserSid);
+          
         }
 
         // 2. Create Bundle
@@ -915,7 +909,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
           isoCountry: destinationZone
         });
         const bundleSid = bundle.sid;
-        console.log('✅ Created Twilio Bundle:', bundleSid);
+        
 
         // 3. Assign End User to Bundle
         if (endUserSid) {
@@ -934,14 +928,14 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
               docType, // Simplified type
               {} // attributes
             );
-            console.log(`✅ Uploaded Document ${field}:`, doc.sid);
+            
             await phoneNumberService.assignItemToBundle(bundleSid, doc.sid);
           }
         }
 
         // 5. Submit Bundle
         await phoneNumberService.submitTwilioBundle(bundleSid);
-        console.log('✅ Submitted Twilio Bundle');
+        
 
         // 6. Handle Address creation if needed (simplified check)
         let addressSid = twilioRegulatorySids.addressSid;
@@ -955,7 +949,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
             isoCountry: destinationZone
           });
           addressSid = address.sid;
-          console.log('✅ Created Twilio Address:', addressSid);
+          
         }
 
         // Store SIDs for Purchase
@@ -970,9 +964,9 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
         if (!groupId) {
           const { group } = await requirementService.getOrCreateGroup(companyId, destinationZone);
           groupId = group._id;
-          console.log('✅ Created new requirement group:', group);
+          
         } else {
-          console.log('✅ Using existing requirement group:', groupId);
+          
         }
 
         // 2. Soumettre chaque requirement
@@ -986,7 +980,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
 
         // 3. Valider les requirements
         const validation = await requirementService.validateRequirements(groupId);
-        console.log('✅ Validation result:', validation);
+        
 
         if (validation.isValid) {
           setRequirementStatus(prev => ({
@@ -1009,7 +1003,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
     const numberToPurchase = phoneNumberOverride || selectedNumber;
     if (!numberToPurchase) return;
     
-    console.log('🖱️ handleConfirmPurchase called with:', { sids, numberToPurchase, type });
+    
     setPurchaseStatus('purchasing');
     try {
       // Filter out empty strings and merge with default twilioRegulatorySids
@@ -1019,7 +1013,7 @@ const TelephonySetup = ({ companyId: propCompanyId }: { companyId?: string | nul
         ...(sids?.addressSid ? { addressSid: sids.addressSid } : {}),
         type: type // Include the type
       };
-      console.log('🧩 Merged purchaseSids to be sent:', purchaseSids);
+      
       await purchaseNumber(numberToPurchase, purchaseSids);
       // Success state is already set in purchaseNumber function
     } catch (error) {

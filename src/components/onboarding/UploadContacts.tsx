@@ -414,7 +414,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         }
       });
 
-      console.log('🧹 Cleaned up localStorage and sessionStorage to free space');
+      
     } catch (error) {
       console.error('❌ Error cleaning up localStorage:', error);
     }
@@ -820,12 +820,12 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       const currentCompanyId = Cookies.get('companyId');
 
       // Debug: Log the IDs being used for lead saving
-      console.log('💾 Saving leads with IDs:');
-      console.log(`   currentUserId: ${currentUserId}`);
-      console.log(`   currentGigId: ${currentGigId}`);
-      console.log(`   currentCompanyId: ${currentCompanyId}`);
-      console.log(`   Cookie gigId: ${Cookies.get('gigId')}`);
-      console.log(`   selectedGigId: ${selectedGigId}`);
+      
+      
+      
+      
+      
+      
 
       const leadsForAPI = parsedLeads.map((lead: any) => ({
         userId: lead.userId?.$oid || currentUserId,
@@ -1243,10 +1243,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
         return;
       }
       const leadsFromApi = data.data.leads;
-      console.log('📥 Leads importés de Zoho:', leadsFromApi.length, 'leads');
+      
       setRealtimeLeads(leadsFromApi);
       setParsedLeads(leadsFromApi);
-      console.log('🔄 Appel fetchLeads après import Zoho');
+      
       await fetchLeads(1, '');
 
       // Déclencher une mise à jour de l'état d'onboarding pour marquer le step 5 comme complété
@@ -1306,11 +1306,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       if (searchQuery.trim()) {
         // Utiliser l'endpoint de recherche dédié
         apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}/search?search=${encodeURIComponent(searchQuery.trim())}`;
-        console.log('🔍 Recherche leads avec URL:', apiUrl);
+        
       } else {
         // Utiliser l'endpoint normal avec pagination
         apiUrl = `${import.meta.env.VITE_DASHBOARD_API}/leads/gig/${selectedGigId}?page=${page}&limit=50`;
-        console.log('📄 Récupération leads avec URL:', apiUrl);
+        
       }
 
       const response = await fetch(apiUrl, {
@@ -1325,7 +1325,7 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
       }
 
       const responseData: ApiResponse = await response.json();
-      console.log('📊 Réponse API leads:', responseData);
+      
 
       if (!responseData.success) {
         throw new Error('Failed to fetch leads: API returned unsuccessful response');
@@ -1368,28 +1368,28 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
   // useEffect pour charger les leads normalement
   useEffect(() => {
-    console.log('🔍 useEffect principal - selectedGigId:', selectedGigId, 'isProcessing:', isProcessing, 'parsedLeads:', parsedLeads.length);
+    
 
     // Skip this effect if we're currently processing a file
     if (isProcessing || processingRef.current) {
-      console.log('⏸️ Skipping - processing in progress');
+      
       return;
     }
 
     // Skip fetchLeads if we have parsed leads waiting to be saved — fetchLeads would wipe them
     if (parsedLeads.length > 0) {
-      console.log('⏸️ Skipping fetchLeads - parsedLeads waiting to be saved:', parsedLeads.length);
+      
       return;
     }
 
     if (selectedGigId) {
-      console.log('📡 Chargement des leads pour gigId:', selectedGigId);
+      
       fetchLeads(1, '').catch(error => {
         console.error('Error in useEffect:', error);
         setError('Failed to load leads');
       });
     } else {
-      console.log('❌ Pas de selectedGigId, clearing leads');
+      
       // Don't clear leads if we're processing or have parsed leads
       if (processingRef.current || localStorage.getItem('uploadProcessing') === 'true' || sessionStorage.getItem('uploadProcessing') === 'true' || parsedLeads.length > 0) {
         return;
@@ -1405,10 +1405,10 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
   // useEffect pour recharger les leads après l'import Zoho
   useEffect(() => {
-    console.log('🔍 useEffect rechargement - realtimeLeads:', realtimeLeads.length, 'selectedGigId:', selectedGigId, 'isProcessing:', isProcessing);
+    
     // Recharger les leads si on vient de finir l'import Zoho et qu'on a des leads
     if (realtimeLeads.length > 0 && selectedGigId && !isProcessing) {
-      console.log('🔄 Rechargement des leads après import Zoho');
+      
       fetchLeads(1, '').catch(error => {
         console.error('Error reloading leads after Zoho import:', error);
       });
@@ -1417,11 +1417,11 @@ const UploadContacts = React.memo(({ onCancelProcessing, companyId: propCompanyI
 
   // useEffect pour charger les leads au montage du composant
   useEffect(() => {
-    console.log('🚀 useEffect montage - selectedGigId:', selectedGigId, 'parsedLeads:', parsedLeads.length, 'realtimeLeads:', realtimeLeads.length);
+    
 
     // Charger les leads si on a un gigId et qu'on n'a pas encore de leads affichés
     if (selectedGigId && leads.length === 0 && realtimeLeads.length === 0 && !isProcessing) {
-      console.log('🔄 Chargement initial des leads');
+      
       fetchLeads(1, '').catch(error => {
         console.error('Error in initial load useEffect:', error);
         setError('Failed to load leads');

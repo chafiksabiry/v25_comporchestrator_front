@@ -106,10 +106,10 @@ const ScheduleSection = (props: ScheduleSectionProps) => {
         // Only set default timezone if no timezone is currently set
         // Don't override user's selection or existing timezone
         if (processedTimezones.length > 0 && !props.data.time_zone) {
-          console.log('🕐 TIMEZONE - Setting default timezone to first available:', processedTimezones[0]._id);
+          
           props.onChange({ ...props.data, time_zone: processedTimezones[0]._id });
         } else if (props.data.time_zone) {
-          console.log('🕐 TIMEZONE - Keeping existing timezone:', props.data.time_zone);
+          
         }
       } catch (error) {
         setAvailableTimezones([]);
@@ -274,21 +274,21 @@ const ScheduleSection = (props: ScheduleSectionProps) => {
   const selectedTimezoneObj = availableTimezones.find(tz => tz._id === timeZone);
   const selectedTimezoneName = selectedTimezoneObj ? `${selectedTimezoneObj.name} (GMT${selectedTimezoneObj.offset >= 0 ? '+' : ''}${selectedTimezoneObj.offset})` : timeZone;
 
-  console.log('🕒 SCHEDULE SECTION - Rendering ScheduleSection component');
-  console.log('🕒 SCHEDULE SECTION - props.data.schedule----:', props);
-  console.log('🕒 SCHEDULE SECTION - props.data:', props.data);
-  console.log('🕒 SCHEDULE SECTION - schedules:', props.data.schedules);
-  console.log('🕒 SCHEDULE SECTION - minimumHours:', props.data.minimumHours);
-  console.log('🕒 SCHEDULE SECTION - time_zone:', props.data.time_zone);
-  console.log('🕒 SCHEDULE SECTION - flexibility:', props.data.flexibility);
-  console.log('🕒 SCHEDULE SECTION - destination_zone:', props.destination_zone);
-  console.log('🕒 SCHEDULE SECTION - groupedSchedules:', groupedSchedules);
-  console.log('🕒 SCHEDULE SECTION - emptyGroups:', emptyGroups);
-  console.log('🕒 SCHEDULE SECTION - availableTimezones:', availableTimezones);
-  console.log('🕒 SCHEDULE SECTION - timezoneLoading:', timezoneLoading);
-  console.log('🕒 SCHEDULE SECTION - timezonesLoaded:', timezonesLoaded);
-  console.log('🕒 SCHEDULE SECTION - selectedTimezoneObj:', selectedTimezoneObj);
-  console.log('🕒 SCHEDULE SECTION - selectedTimezoneName:', selectedTimezoneName);
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   return (
     <div className="w-full bg-white py-6">

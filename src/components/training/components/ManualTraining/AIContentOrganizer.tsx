@@ -50,7 +50,7 @@ export const AIContentOrganizer: React.FC<AIContentOrganizerProps> = ({
   // Initialize with existing uploads if provided
   useEffect(() => {
     if (existingUploads && existingUploads.length > 0) {
-      console.log('[AIContentOrganizer] Using existing uploads:', existingUploads);
+      
       // Convert existing uploads to UploadedFile format if needed
       // For now, we'll let user upload again or use the uploaded files
     }

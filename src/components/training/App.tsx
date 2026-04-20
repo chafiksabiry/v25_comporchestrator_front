@@ -156,7 +156,7 @@ export function AppContent({
       }
 
       try {
-        console.log('[App] Loading journey by ID from URL:', finalJourneyId);
+        
 
         // Try to get the journey from already loaded journeys first
         const existingJourney = realJourneys.find(j => {
@@ -165,7 +165,7 @@ export function AppContent({
         });
 
         if (existingJourney) {
-          console.log('[App] Found journey in loaded journeys, selecting it');
+          
           setSelectedTraineeJourney(existingJourney);
 
           // Load progress for this journey
@@ -189,7 +189,7 @@ export function AppContent({
           try {
             const journey = await JourneyService.getJourneyById(finalJourneyId);
             if (journey) {
-              console.log('[App] Loaded journey by ID:', journey.title || journey.name);
+              
               setSelectedTraineeJourney(journey);
 
               // Load progress
@@ -221,24 +221,10 @@ export function AppContent({
     // Load journey if we have the ID, agentId, and userType is rep
     // Don't wait for realJourneys to be loaded - we can fetch the journey directly
     if (finalJourneyId && agentId && userType === 'rep') {
-      console.log('[App] Conditions met for loading journey:', {
-        finalJourneyId,
-        agentId,
-        userType,
-        realJourneysCount: realJourneys.length
-      });
+      
       loadJourneyById();
     } else {
-      console.log('[App] Conditions NOT met for loading journey:', {
-        finalJourneyId,
-        journeyIdFromUrl,
-        journeyIdFromPathname,
-        agentId,
-        userType,
-        hasJourneyId: !!finalJourneyId,
-        hasAgentId: !!agentId,
-        isRep: userType === 'rep'
-      });
+      
     }
   }, [finalJourneyId, agentId, userType, realJourneys]);
 
@@ -256,7 +242,7 @@ export function AppContent({
         if (userType === 'rep') {
           try {
             const response = await JourneyService.getAllAvailableJourneysForTrainees();
-            console.log('[App] Loaded all available journeys for trainee:', response);
+            
 
             // Handle response format: {data: [...], success: true, count: N}
             if (Array.isArray(response)) {
@@ -268,14 +254,14 @@ export function AppContent({
             } else if (response?.journeys && Array.isArray(response.journeys)) {
               journeys = response.journeys;
             }
-            console.log('[App] Loaded all available journeys for trainee:', journeys.length);
+            
           } catch (error) {
             console.error('[App] Error loading available journeys for trainee:', error);
             // Fallback: try to get all journeys
             try {
               const allJourneys: any = await JourneyService.getAllJourneys();
               journeys = Array.isArray(allJourneys) ? allJourneys : (allJourneys?.data || []);
-              console.log('[App] Fallback: Loaded all journeys:', journeys.length);
+              
             } catch (fallbackError) {
               console.error('[App] Error loading all journeys:', fallbackError);
             }
@@ -283,7 +269,7 @@ export function AppContent({
         } else if (companyId) {
           // For trainers/companies, load by company
           const response = await JourneyService.getJourneysByCompany(companyId);
-          console.log('[App] Raw response from JourneyService:', response);
+          
 
           // Handle response format: {data: [...], success: true, count: 31}
           if (Array.isArray(response)) {
@@ -300,7 +286,7 @@ export function AppContent({
           try {
             const allJourneys: any = await JourneyService.getAllJourneys();
             journeys = Array.isArray(allJourneys) ? allJourneys : (allJourneys?.data || []);
-            console.log('[App] Fallback: Loaded all journeys:', journeys.length);
+            
           } catch (error) {
             console.warn('[App] No companyId or agentId found, and failed to load all journeys');
             setRealModules([]);
@@ -309,7 +295,7 @@ export function AppContent({
           }
         }
 
-        console.log('[App] Extracted journeys:', journeys.length, 'journeys');
+        
         
         // Filter out null journeys and filter by active/completed status
         const filteredJourneys = journeys
@@ -346,10 +332,10 @@ export function AppContent({
     // Only redirect if we're at /training (not already at /training/repdashboard or /training/companydashboard)
     if (currentPath === '/training' || currentPath === '/training/') {
       if (userType === 'rep') {
-        console.log('[App] Auto-redirecting rep user to /training/repdashboard');
+        
         window.location.href = '/training/repdashboard';
       } else if (userType === 'company') {
-        console.log('[App] Auto-redirecting company user to /training/companydashboard');
+        
         window.location.href = '/training/companydashboard';
       }
     }
@@ -375,19 +361,19 @@ export function AppContent({
 
         if (type === 'rep') {
           // Rep user: set as trainee, load their journeys
-          console.log('[App] User type is REP - setting as trainee');
+          
           setUserRole('trainee');
 
           const detectedAgentId = getAgentId();
           if (detectedAgentId) {
-            console.log('[App] Trainee detected with agentId:', detectedAgentId);
+            
             setAgentId(detectedAgentId);
             setLoadingTraineeJourneys(true);
 
             try {
               // Load journeys where the rep is enrolled
               const journeys = await JourneyService.getJourneysForRep(detectedAgentId);
-              console.log('[App] Loaded trainee journeys:', journeys.length);
+              
 
               // Filter active journeys
               const activeJourneys = journeys
@@ -402,7 +388,7 @@ export function AppContent({
 
               // Load progress for all journeys
               if (activeJourneys.length > 0 && detectedAgentId) {
-                console.log('[App] Loading progress for all journeys...');
+                
                 const progressPromises = activeJourneys.map(async (journey: any) => {
                   const journeyId = journey.id || journey._id;
                   try {
@@ -429,7 +415,7 @@ export function AppContent({
                     setTraineeProgressData(prev => ({ ...prev, [result.journeyId]: result.progressMap }));
                   }
                 });
-                console.log('[App] Loaded progress for all journeys');
+                
               }
             } catch (error) {
               console.error('[App] Error loading trainee journeys:', error);
@@ -439,11 +425,11 @@ export function AppContent({
           }
         } else if (type === 'company') {
           // Company user: set as trainer/admin, can create trainings
-          console.log('[App] User type is COMPANY - setting as trainer');
+          
           setUserRole('trainer');
         } else {
           // No type or unknown: check fallback (companyId for trainer, agentId for trainee)
-          console.log('[App] No user type found, checking fallback');
+          
           const companyId = OnboardingService.getCompanyId();
           const detectedAgentId = getAgentId();
 
@@ -556,10 +542,10 @@ export function AppContent({
         const nextModule = selectedJourneyModules[currentIndex + 1];
         setSelectedModule(nextModule.id);
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        console.log('[App] Module completed, moving to next module:', nextModule.title);
+        
       } else {
         // Last module completed, redirect to journey training list
-        console.log('[App] All modules completed, redirecting to journey training');
+        
         setSelectedModule(null);
         setSelectedJourney(null);
         setSelectedJourneyModules([]);
@@ -606,7 +592,7 @@ export function AppContent({
   };
 
   const handleMethodologyApply = (methodology: TrainingMethodology) => {
-    console.log('Methodology applied:', methodology);
+    
     // In a real implementation, this would integrate the methodology into the training system
   };
 
@@ -710,7 +696,7 @@ export function AppContent({
         text: `Check out this training journey: ${launchedJourney.journey.description}`,
         url: journeyUrl
       }).catch(err => {
-        console.log('Error sharing:', err);
+        
         // Fallback to clipboard
         copyToClipboard(journeyUrl);
       });
@@ -752,7 +738,7 @@ export function AppContent({
 
     if (confirm(`Send reminder to ${participantCount} participant(s)?`)) {
       // Simulate sending reminders
-      console.log('Sending reminders to:', launchedJourney.enrolledReps.map(r => r.email));
+      
       alert(`Reminders sent successfully to ${participantCount} participant(s)!`);
     }
   };
@@ -766,7 +752,7 @@ export function AppContent({
 
   // Show welcome screen for first-time users (but not if showing success page or if user is rep)
   if (!isEmbedded && !initialJourneyId && !hasCompletedSetup && showWelcome && !showJourneyBuilder && !showManualTraining && !showJourneySuccess && userType !== 'rep' && !checkingUserType) {
-    console.log('[App] Rendering welcome screen');
+    
     return (
       <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 overflow-y-auto">
         <div className="container mx-auto px-4 py-4">
@@ -839,7 +825,7 @@ export function AppContent({
                       alert('You do not have permission to create training journeys. Please contact your administrator.');
                       return;
                     }
-                    console.log('Manual Training clicked!');
+                    
                     setShowManualTraining(true);
                   }}
                   disabled={userType !== 'company'}
@@ -883,7 +869,7 @@ export function AppContent({
       return (
         <ManualTrainingSetup
           onComplete={(setupData) => {
-            console.log('Setup complete:', setupData);
+            
             setManualTrainingSetupData(setupData);
             setManualTrainingSetupComplete(true);
           }}
@@ -1146,7 +1132,7 @@ export function AppContent({
                               // For trainees, redirect to URL with journey ID
                               if (userType === 'rep' && agentId) {
                                 const journeyIdStr = journey.id || journey._id;
-                                console.log('[App] Redirecting trainee to journey URL from Continue button:', journeyIdStr);
+                                
                                 navigate(`/${journeyIdStr}`);
                               } else {
                                 setSelectedTraineeJourney(journey);
@@ -1430,7 +1416,7 @@ export function AppContent({
                 const trainee = launchedJourney.enrolledReps.find(rep => rep.id === repId);
                 if (trainee) handleViewTraineePortal(trainee);
               }}
-              onViewAnalytics={() => console.log('View analytics')}
+              onViewAnalytics={() => }
             />
           </main>
         </div>
@@ -1482,7 +1468,7 @@ export function AppContent({
     if (userRole === 'trainer') {
       switch (activeTab) {
         case 'dashboard':
-          return <TrainerDashboard onTraineeSelect={(trainee) => console.log('Selected trainee:', trainee)} />;
+          return <TrainerDashboard onTraineeSelect={(trainee) => } />;
         case 'training':
           return (
             loadingModules ? (
@@ -1522,7 +1508,7 @@ export function AppContent({
                 onJourneySelect={async (journeyId) => {
                   const journey = realJourneys.find(j => (j.id || j._id) === journeyId);
                   if (journey) {
-                    console.log('[App] Journey selected:', journeyId, journey);
+                    
                     setSelectedJourney(journey);
                     setLoadingModules(true);
 
@@ -1531,10 +1517,7 @@ export function AppContent({
                       const journeyIdStr = extractObjectId(journey.id || journey._id) || '';
                       const embeddedModules = journey.modules || [];
 
-                      console.log('[App] Loading modules from embedded structure:', {
-                        journeyId: journeyIdStr,
-                        modulesCount: embeddedModules.length
-                      });
+                      
 
                       let modules: TrainingModule[] = [];
 
@@ -1625,10 +1608,10 @@ export function AppContent({
                       }
 
                       setSelectedJourneyModules(modules);
-                      console.log('[App] Selected journey:', journey.title || journey.name, 'with', modules.length, 'modules');
+                      
                       modules.forEach((m, idx) => {
                         const quizIds = (m as any).quizIds;
-                        console.log(`[App] Module ${idx + 1} (${m.title}):`, {
+                        :`, {
                           quizIds: quizIds,
                           hasQuizIds: !!quizIds && Array.isArray(quizIds) && quizIds.length > 0,
                           quizIdsCount: Array.isArray(quizIds) ? quizIds.length : 0,
@@ -1666,8 +1649,8 @@ export function AppContent({
           return (
             <CurriculumBuilder
               curriculum={mockCurriculumBuilder}
-              onSave={(curriculum) => console.log('Save curriculum:', curriculum)}
-              onPublish={(curriculum) => console.log('Publish curriculum:', curriculum)}
+              onSave={(curriculum) => }
+              onPublish={(curriculum) => }
             />
           );
         case 'streaming':
@@ -1686,7 +1669,7 @@ export function AppContent({
                   <LiveStreamStudio
                     session={typedSession}
                     isInstructor={true}
-                    onSessionUpdate={(updatedSession) => console.log('Session updated:', updatedSession)}
+                    onSessionUpdate={(updatedSession) => }
                   />
                 </div>
               );
@@ -1695,9 +1678,9 @@ export function AppContent({
           return (
             <StreamingDashboard
               sessions={mockLiveStreamSessions.map(convertSessionToTyped)}
-              onCreateSession={() => console.log('Create new session')}
-              onEditSession={(session) => console.log('Edit session:', session)}
-              onDeleteSession={(sessionId) => console.log('Delete session:', sessionId)}
+              onCreateSession={() => }
+              onEditSession={(session) => }
+              onDeleteSession={(sessionId) => }
               onStartStream={(sessionId) => setSelectedStreamSession(sessionId)}
             />
           );
@@ -1720,16 +1703,16 @@ export function AppContent({
                       session={typedSession}
                       course={course}
                       participantId="participant-1"
-                      onProgress={(progress) => console.log('Participant progress:', progress)}
-                      onEngagement={(score) => console.log('Engagement score:', score)}
+                      onProgress={(progress) => }
+                      onEngagement={(score) => }
                     />
                   ) : (
                     <CourseStreamingStudio
                       session={typedSession}
                       course={course}
                       isInstructor={true}
-                      onSessionUpdate={(updatedSession) => console.log('Session updated:', updatedSession)}
-                      onCourseProgress={(moduleId, progress) => console.log('Course progress:', moduleId, progress)}
+                      onSessionUpdate={(updatedSession) => }
+                      onCourseProgress={(moduleId, progress) => }
                     />
                   )}
                   <div className="flex justify-center">
@@ -1748,16 +1731,16 @@ export function AppContent({
             <CourseStreamingDashboard
               sessions={mockLiveStreamSessions.map(convertSessionToTyped)}
               courses={progress.modules}
-              onCreateCourseStream={(courseId) => console.log('Create course stream:', courseId)}
-              onEditSession={(session) => console.log('Edit course session:', session)}
-              onDeleteSession={(sessionId) => console.log('Delete course session:', sessionId)}
+              onCreateCourseStream={(courseId) => }
+              onEditSession={(session) => }
+              onDeleteSession={(sessionId) => }
               onStartCourseStream={(sessionId, courseId) => setSelectedCourseStream(sessionId)}
             />
           );
         case 'document-transformer':
           return (
             <DocumentTransformer
-              onComplete={(modules) => console.log('Enhanced modules:', modules)}
+              onComplete={(modules) => }
             />
           );
         case 'methodology':
@@ -1768,7 +1751,7 @@ export function AppContent({
             />
           );
         default:
-          return <TrainerDashboard onTraineeSelect={(trainee) => console.log('Selected trainee:', trainee)} />;
+          return <TrainerDashboard onTraineeSelect={(trainee) => } />;
       }
     }
 
@@ -1788,7 +1771,7 @@ export function AppContent({
                 <JourneyTraining
                   journeys={realJourneys}
                   onJourneySelect={(journeyId) => {
-                    console.log('[App] Journey selected:', journeyId);
+                    
                   }}
                 />
               ) : (
@@ -1810,8 +1793,8 @@ export function AppContent({
           return (
             <CurriculumBuilder
               curriculum={mockCurriculumBuilder}
-              onSave={(curriculum) => console.log('Save curriculum:', curriculum)}
-              onPublish={(curriculum) => console.log('Publish curriculum:', curriculum)}
+              onSave={(curriculum) => }
+              onPublish={(curriculum) => }
             />
           );
         case 'streaming':
@@ -1830,7 +1813,7 @@ export function AppContent({
                   <LiveStreamStudio
                     session={typedSession}
                     isInstructor={true}
-                    onSessionUpdate={(updatedSession) => console.log('Session updated:', updatedSession)}
+                    onSessionUpdate={(updatedSession) => }
                   />
                 </div>
               );
@@ -1839,9 +1822,9 @@ export function AppContent({
           return (
             <StreamingDashboard
               sessions={mockLiveStreamSessions.map(convertSessionToTyped)}
-              onCreateSession={() => console.log('Create new session')}
-              onEditSession={(session) => console.log('Edit session:', session)}
-              onDeleteSession={(sessionId) => console.log('Delete session:', sessionId)}
+              onCreateSession={() => }
+              onEditSession={(session) => }
+              onDeleteSession={(sessionId) => }
               onStartStream={(sessionId) => setSelectedStreamSession(sessionId)}
             />
           );
@@ -1864,16 +1847,16 @@ export function AppContent({
                       session={typedSession}
                       course={course}
                       participantId="participant-1"
-                      onProgress={(progress) => console.log('Participant progress:', progress)}
-                      onEngagement={(score) => console.log('Engagement score:', score)}
+                      onProgress={(progress) => }
+                      onEngagement={(score) => }
                     />
                   ) : (
                     <CourseStreamingStudio
                       session={typedSession}
                       course={course}
                       isInstructor={true}
-                      onSessionUpdate={(updatedSession) => console.log('Session updated:', updatedSession)}
-                      onCourseProgress={(moduleId, progress) => console.log('Course progress:', moduleId, progress)}
+                      onSessionUpdate={(updatedSession) => }
+                      onCourseProgress={(moduleId, progress) => }
                     />
                   )}
                   <div className="flex justify-center">
@@ -1892,16 +1875,16 @@ export function AppContent({
             <CourseStreamingDashboard
               sessions={mockLiveStreamSessions.map(convertSessionToTyped)}
               courses={progress.modules}
-              onCreateCourseStream={(courseId) => console.log('Create course stream:', courseId)}
-              onEditSession={(session) => console.log('Edit course session:', session)}
-              onDeleteSession={(sessionId) => console.log('Delete course session:', sessionId)}
+              onCreateCourseStream={(courseId) => }
+              onEditSession={(session) => }
+              onDeleteSession={(sessionId) => }
               onStartCourseStream={(sessionId, courseId) => setSelectedCourseStream(sessionId)}
             />
           );
         case 'document-transformer':
           return (
             <DocumentTransformer
-              onComplete={(modules) => console.log('Enhanced modules:', modules)}
+              onComplete={(modules) => }
             />
           );
         case 'methodology':
@@ -1953,7 +1936,7 @@ export function AppContent({
             </div>
           );
         }
-        return <TrainerDashboard onTraineeSelect={(trainee) => console.log('Selected trainee:', trainee)} />;
+        return <TrainerDashboard onTraineeSelect={(trainee) => } />;
       case 'training':
         return (
           <div className="space-y-6">
@@ -1999,7 +1982,7 @@ export function AppContent({
                     if (userType === 'rep' && agentId) {
                       // Navigate to the journey URL with ID
                       const journeyIdStr = journeyId || journey.id || journey._id;
-                      console.log('[App] Redirecting trainee to journey URL:', journeyIdStr);
+                      
                       navigate(`/${journeyIdStr}`);
                     } else {
                       // For trainers, show module list as before
@@ -2051,7 +2034,7 @@ export function AppContent({
                         };
                       });
                       setSelectedJourneyModules(modules);
-                      console.log('[App] Selected journey:', journey.title || journey.name, 'with', modules.length, 'modules');
+                      
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
                   }
@@ -2096,7 +2079,7 @@ export function AppContent({
       case 'document-transformer':
         return (
           <DocumentTransformer
-            onComplete={(modules) => console.log('Enhanced modules:', modules)}
+            onComplete={(modules) => }
           />
         );
       case 'methodology':
@@ -2195,7 +2178,7 @@ export function AppContent({
               <AITutor
                 tutor={mockAITutor}
                 currentModule={selectedModule || undefined}
-                onSuggestion={(suggestion) => console.log('AI Suggestion:', suggestion)}
+                onSuggestion={(suggestion) => }
               />
             </div>
           )}
@@ -2231,14 +2214,7 @@ function App() {
   // Extract the relative path after basename for debugging
   const relativePath = pathname.replace(basename, '') || '/';
 
-  console.log('[App] Routing configuration:', {
-    pathname,
-    basename,
-    relativePath,
-    isStandaloneMode,
-    isQiankun: qiankunWindow.__POWERED_BY_QIANKUN__,
-    envMode: import.meta.env.VITE_RUN_MODE
-  });
+  
 
   return (
     <ErrorBoundary>

@@ -178,18 +178,14 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
             }
           }
         } catch (e) {
-          console.log('Not a valid address data for field:', val.field);
+          
         }
       }
       return acc;
     }, {} as Record<string, AddressFields>) || {};
 
     // Log pour le debugging
-    console.log('🏠 Initial address fields:', {
-      existingValues,
-      initialFields,
-      destinationZone
-    });
+    
 
     return initialFields;
   });
@@ -198,13 +194,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
   const currentRequirement = currentStep?.requirement;
 
   // Log pour le debugging
-  console.log('Current step data:', {
-    currentStepIndex,
-    currentStep,
-    currentRequirement,
-    requirementGroupId,
-    values
-  });
+  
 
   // S'assurer qu'il y a au moins une étape
   React.useEffect(() => {
@@ -308,12 +298,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
       return;
     }
 
-    console.log('Processing step:', {
-      currentStep,
-      currentRequirement,
-      requirementGroupId,
-      value: values[currentStep.id]
-    });
+    
 
     const isValid = await validateStep();
     if (!isValid) {
@@ -334,7 +319,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
       switch (currentRequirement.type) {
         case 'document':
           if (value instanceof File) {
-            console.log('Uploading new document:', value.name);
+            
             // Upload du nouveau document
             const filename = `${currentRequirement.name.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString()}`;
             
@@ -343,7 +328,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
               filename,
               requirementGroupId
             );
-            console.log('Upload result:', uploadResult);
+            
             
             if (!uploadResult.id) {
               throw new Error('Document upload failed - no ID received');
@@ -353,11 +338,11 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
             submittedValue = uploadResult.id;
           } else if (typeof value === 'object' && value !== null) {
             // Si c'est un document existant et pas de nouveau fichier sélectionné
-            console.log('Using existing document ID:', value.id);
+            
             submittedValue = value.id;
           } else if (typeof value === 'string') {
             // Si c'est déjà un ID
-            console.log('Using existing document ID (string):', value);
+            
             submittedValue = value;
           }
           break;
@@ -365,7 +350,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
         case 'address':
           if (typeof value === 'object' && value.id) {
             // Si on a déjà un ID d'adresse, on l'utilise directement
-            console.log('Using existing address ID:', value.id);
+            
             submittedValue = value.id;
           } else {
             // Sinon, on crée une nouvelle adresse
@@ -375,10 +360,10 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
               countryCode: destinationZone
             };
             
-            console.log('🌍 Creating new address:', addressToCreate);
+            
             
             const addressResult = await addressService.createAddress(addressToCreate);
-            console.log('📬 Address creation response:', addressResult);
+            
 
             if (!addressResult.id) {
               throw new Error('Failed to create address - no ID received');
@@ -397,11 +382,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
       }
 
       // Mettre à jour le requirement group dans le backend avec la valeur finale
-      console.log('Updating requirement group:', {
-        groupId: requirementGroupId,
-        requirementId: currentRequirement.id,
-        value: submittedValue
-      });
+      
 
       // S'assurer que nous n'envoyons que l'ID et la valeur
       const updatePayload = {
@@ -409,7 +390,7 @@ export const SteppedRequirementForm: React.FC<SteppedRequirementFormProps> = ({
         value: submittedValue
       };
 
-      console.log('📝 Update payload:', updatePayload);
+      
       await requirementGroupService.updateRequirements(requirementGroupId, [updatePayload]);
 
       // Marquer l'étape comme validée

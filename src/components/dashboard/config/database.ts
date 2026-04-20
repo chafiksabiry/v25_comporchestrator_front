@@ -10,7 +10,7 @@ export async function connectToDatabase() {
     if (!client) {
       client = new MongoClient(MONGODB_URI);
       await client.connect();
-      console.log('Connected to MongoDB successfully');
+      
     }
     return client.db(DATABASE_NAME);
   } catch (error) {
@@ -23,7 +23,7 @@ export async function disconnectFromDatabase() {
   try {
     if (client) {
       await client.close();
-      console.log('Disconnected from MongoDB');
+      
     }
   } catch (error) {
     console.error('Failed to disconnect from MongoDB:', error);

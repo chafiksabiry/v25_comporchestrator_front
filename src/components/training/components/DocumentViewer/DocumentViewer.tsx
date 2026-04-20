@@ -12,12 +12,7 @@ export default function DocumentViewer({ fileUrl, fileName, mimeType }: Document
 
   // Debug log
   useEffect(() => {
-    console.log('📄 DocumentViewer mounted/updated:', {
-      fileUrl,
-      fileName,
-      mimeType,
-      hasUrl: !!fileUrl,
-      urlType: fileUrl ? (fileUrl.startsWith('blob:') ? 'blob' : fileUrl.startsWith('http') ? 'http' : 'other') : 'none'
+     ? 'blob' : fileUrl.startsWith('http') ? 'http' : 'other') : 'none'
     });
   }, [fileUrl, fileName, mimeType]);
 

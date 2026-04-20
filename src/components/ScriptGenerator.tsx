@@ -305,7 +305,7 @@ const ScriptGenerator: React.FC = () => {
 
   const fetchGigs = async () => {
     const companyId = getCompanyId();
-    console.log('[GIGS] Fetching gigs for companyId:', companyId);
+    
     if (!companyId) {
       setGigsError('Company ID not found');
       return;
@@ -326,7 +326,7 @@ const ScriptGenerator: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log('[GIGS] API response:', data);
+      
       setGigs(Array.isArray(data.data) ? data.data : []);
     } catch (err: any) {
       console.error('[GIGS] Error fetching gigs:', err);
@@ -351,11 +351,11 @@ const ScriptGenerator: React.FC = () => {
         url += `?status=${statusFilter}`;
       }
 
-      console.log('[SCRIPTS] Fetching scripts for companyId:', companyId, 'with filter:', statusFilter, 'URL:', url);
+      
       const response = await fetch(url);
       if (!response.ok) throw new Error(`Failed to fetch scripts: ${response.statusText}`);
       const data = await response.json();
-      console.log('[SCRIPTS] API response:', data);
+      
       setScripts(Array.isArray(data.data) ? data.data : []);
     } catch (err: any) {
       console.error('[SCRIPTS] Error fetching scripts:', err);
@@ -372,11 +372,11 @@ const ScriptGenerator: React.FC = () => {
       const backendUrl = import.meta.env.VITE_BACKEND_KNOWLEDGEBASE_API;
       if (!backendUrl) throw new Error('Backend API URL not configured');
       const url = `${backendUrl}/scripts/gig/${gigId}`;
-      console.log('[SCRIPTS] Fetching scripts for gigId:', gigId, 'URL:', url);
+      
       const response = await fetch(url);
       if (!response.ok) throw new Error(`Failed to fetch scripts: ${response.statusText}`);
       const data = await response.json();
-      console.log('[SCRIPTS] API response:', data);
+      
       setScripts(Array.isArray(data.data) ? data.data : []);
     } catch (err: any) {
       console.error('[SCRIPTS] Error fetching scripts for gig:', err);
@@ -430,12 +430,12 @@ const ScriptGenerator: React.FC = () => {
       const apiUrl = import.meta.env.VITE_API_URL_ONBOARDING;
       const endpoint = `${apiUrl}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`;
       const response = await apiClient.put(endpoint, { status: 'completed' });
-      console.log('Onboarding progress (script) update response:', response.data);
+      
 
       // Update the companyOnboardingProgress cookie with the response data
       if (response.data) {
         Cookies.set('companyOnboardingProgress', JSON.stringify(response.data), { expires: 7 });
-        console.log('Updated companyOnboardingProgress cookie with new data');
+        
       }
 
       return response.data;
@@ -466,7 +466,7 @@ const ScriptGenerator: React.FC = () => {
       // Update onboarding progress for script creation (phase 2, step 8)
       try {
         await updateOnboardingProgress();
-        console.log('Successfully updated onboarding progress (script)');
+        
       } catch (err) {
         // Log but do not block script creation
         console.error('Failed to update onboarding progress (script):', err);
@@ -537,7 +537,7 @@ const ScriptGenerator: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log('[SCRIPTS] Script status updated successfully:', data);
+      
 
       // Update the script in the local state
       setScripts(prevScripts =>
@@ -580,7 +580,7 @@ const ScriptGenerator: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log('[SCRIPTS] Script deleted successfully:', data);
+      
 
       // Remove the script from the local state
       setScripts(prevScripts => prevScripts.filter(script => script._id !== scriptId));
@@ -624,7 +624,7 @@ const ScriptGenerator: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log('[SCRIPTS] Script regenerated successfully:', data);
+      
 
       // Update the script in the local state
       setScripts(prevScripts =>
@@ -670,7 +670,7 @@ const ScriptGenerator: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log('[SCRIPTS] Script part refined successfully:', data);
+      
 
       // Update the script in the local state
       setScripts(prevScripts =>
@@ -724,7 +724,7 @@ const ScriptGenerator: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log('[SCRIPTS] Script content updated successfully:', data);
+      
 
       // Update the script in the local state
       setScripts(prevScripts =>

@@ -174,7 +174,7 @@ const SalesInboxChat: React.FC = () => {
           message: msg.message
         }));
         setMessages(messagesData);
-        console.log('Messages de la conversation:', messagesData);
+        
       } else {
         setMessages([]);
       }

@@ -65,7 +65,7 @@ export default function AgentDetailsPage({ agentId: propAgentId, onBack, gigId: 
             const urlGigId = searchParams.get('gigId');
 
             if (urlGigId) {
-                console.log("Found gigId in URL:", urlGigId);
+                
                 setGigId(urlGigId);
             } else {
                 // Fallback to local storage if not in URL

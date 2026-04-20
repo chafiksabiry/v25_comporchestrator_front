@@ -73,7 +73,7 @@ export const getAgentId = (): string | null => {
   // Try to get agentId from cookies
   const agentIdFromCookie = Cookies.get('agentId');
   if (agentIdFromCookie) {
-    console.log('[UserUtils] AgentId found in cookies:', agentIdFromCookie);
+    
     return agentIdFromCookie.trim();
   }
 
@@ -85,7 +85,7 @@ export const getAgentId = (): string | null => {
       const agentIdFromProfile = profileData._id;
       
       if (agentIdFromProfile) {
-        console.log('[UserUtils] AgentId found in profileData:', agentIdFromProfile);
+        
         return agentIdFromProfile;
       }
     }
@@ -104,7 +104,7 @@ export const getAgentId = (): string | null => {
 export const getUserId = (): string | null => {
   const userId = Cookies.get('userId');
   if (userId) {
-    console.log('[UserUtils] UserId found in cookies:', userId);
+    
     return userId.trim();
   }
   console.warn('[UserUtils] UserId not found in cookies');
@@ -126,7 +126,7 @@ export const getUserType = async (): Promise<'company' | 'rep' | null> => {
     // Try to get from cache first (localStorage)
     const cachedType = localStorage.getItem('userType');
     if (cachedType === 'company' || cachedType === 'rep') {
-      console.log('[UserUtils] UserType found in cache:', cachedType);
+      
       return cachedType as 'company' | 'rep';
     }
 
@@ -151,7 +151,7 @@ export const getUserType = async (): Promise<'company' | 'rep' | null> => {
     if (userType === 'company' || userType === 'rep') {
       // Cache the result
       localStorage.setItem('userType', userType);
-      console.log('[UserUtils] UserType fetched from API:', userType);
+      
       return userType;
     }
 

@@ -104,7 +104,7 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
           if (professionalError) {
             console.warn('⚠️ Could not load professional skills:', professionalError);
           } else {
-            console.log('📚 Loaded professional skills:', professionalSkillsData);
+            
             setProfessionalSkills(professionalSkillsData || []);
           }
         } catch (error) {
@@ -295,7 +295,7 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
         const validLevel = Math.max(1, Math.min(5, level || 1));
         // Debug only for actual skill rendering, not hover calculations
         if (level !== 1) {
-          console.log(`getLevelLabel: level=${level}, validLevel=${validLevel}, label=${labels[validLevel]}`);
+          
         }
         return labels[validLevel] || 'Basic';
       }
@@ -389,8 +389,8 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
                 levelName = LANGUAGE_LEVELS[validLevelIndex]?.label.split(' - ')[1] || 'Elementary';
                 
                 // Debug: Log actual language data structure
-                console.log(`Language data:`, item);
-                console.log(`Calculated: proficiency=${item.proficiency}, levelIndex=${validLevelIndex}, percentage=${currentPercentage}%, name=${skillName}`);
+                
+                
                     } else {
                 // Extract the actual string ID from the skill object
                 let skillId = '';
@@ -427,40 +427,40 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
                 }
                 
                 // Additional debugging for skill ID extraction
-                console.log(`Skill ID extraction debug:`);
-                console.log(`- item.skill:`, item.skill);
-                console.log(`- item.skill.$oid:`, item.skill?.$oid);
-                console.log(`- item.skill.$oid.$oid:`, item.skill?.$oid?.$oid);
-                console.log(`- item.skill.$oid type:`, typeof item.skill?.$oid);
-                console.log(`- item.skill.$oid keys:`, item.skill?.$oid ? Object.keys(item.skill.$oid) : 'N/A');
-                console.log(`- item.skill.$oid.$oid type:`, typeof item.skill?.$oid?.$oid);
+                
+                
+                
+                
+                
+                
+                
                 
                 // Let's try a more direct approach to extract the ID
                 if (!skillId && item.skill?.$oid) {
                   // Try to access the $oid property directly
                   if (typeof item.skill.$oid === 'string') {
                     skillId = item.skill.$oid;
-                    console.log(`Direct string extraction:`, skillId);
+                    
                   } else if (typeof item.skill.$oid === 'object' && item.skill.$oid.$oid) {
                     skillId = item.skill.$oid.$oid;
-                    console.log(`Nested $oid extraction:`, skillId);
+                    
                   } else if (typeof item.skill.$oid === 'object') {
                     // Try to find any string property that looks like an ID
                     const keys = Object.keys(item.skill.$oid);
-                    console.log(`Available keys in $oid object:`, keys);
+                    
                     for (const key of keys) {
                       const value = item.skill.$oid[key];
-                      console.log(`Checking key '${key}':`, value, typeof value);
+                      
                       if (typeof value === 'string' && value.length > 10) {
                         skillId = value;
-                        console.log(`Found ID in key '${key}':`, skillId);
+                        
                         break;
                       }
                     }
                   }
                 }
                 
-                console.log(`- Final skillId:`, skillId);
+                
                 let skillArray: any[] = [];
                 if (skillType === 'professional') skillArray = professionalSkills;
                 else if (skillType === 'technical') skillArray = technicalSkills;
@@ -481,17 +481,17 @@ export function SkillsSection({ data, onChange, onNext, onPrevious }: SkillsSect
                 levelName = getLevelLabel(validLevel, skillType);
                 
                 // Debug: Log actual data structure
-                console.log(`${skillType} skill data:`, item);
-                console.log(`Raw skill object:`, item.skill);
-                console.log(`item.skill type:`, typeof item.skill);
-                console.log(`item.skill.$oid:`, item.skill?.$oid);
-                console.log(`item.skill.$oid type:`, typeof item.skill?.$oid);
-                console.log(`item.skill.$oid.$oid:`, item.skill?.$oid?.$oid);
-                console.log(`Extracted skillId:`, skillId);
-                console.log(`Extracted skillId type:`, typeof skillId);
-                console.log(`Calculated: level=${validLevel}, percentage=${currentPercentage}%, name=${skillName}`);
-                console.log(`Available ${skillType} skills:`, skillArray.length);
-                console.log(`Looking for skill ID: ${skillId}`);
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
               }
 
               return (

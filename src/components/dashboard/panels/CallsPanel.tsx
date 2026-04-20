@@ -78,9 +78,9 @@ function CallsPanel() {
       const response = await axios.get(`${import.meta.env.VITE_API_URL_CALL}/api/calls`, {
         params: { userId: currentUser.id }
       });
-      console.log("response.data.data",response.data.data);
+      
        setCalls(response.data.data);
-      //console.log("allCalls", allCalls);
+      //
       setLoading(false);
     } catch (error) {
       console.error('Error fetching calls:', error);
@@ -110,7 +110,7 @@ function CallsPanel() {
       </div>
     );
   }
-  //console.log("allCallss", allCalls);
+  //
   return (
     <>
       <div className="space-y-6">

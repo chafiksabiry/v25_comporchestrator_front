@@ -782,7 +782,7 @@ export function IntegrationsPanel() {
       setError(null); // Effacer les erreurs précédentes
 
       // Afficher un message de succès
-      console.log("Zoho successfully connected!");
+      
 
       // Charger la configuration depuis la base de données après connexion
       getZohoConfigFromDB().then(config => {
@@ -994,7 +994,7 @@ export function IntegrationsPanel() {
               }
             }));
 
-            console.log(`Successfully disconnected ${integration.name}`);
+            
           } else {
             throw new Error(data.message || 'Failed to disconnect from Zoho');
           }
@@ -1116,12 +1116,7 @@ export function IntegrationsPanel() {
             userId: Cookies.get("userId") || "67a22959828197bb180caa59"
           };
 
-          console.log('Sending configuration to server:', {
-            refreshToken: configData.refreshToken,
-            clientId: configData.clientId,
-            clientSecret: '***hidden***',
-            userId: configData.userId
-          });
+          
 
           // Appel à l'API pour configurer Zoho
           const maxRetries = 3;
@@ -1185,9 +1180,9 @@ export function IntegrationsPanel() {
                 // Afficher les données des leads après la configuration
                 const leadsData = await fetch(`${API_BASE_URL_ZOHO}/leads`);
                 const leadsResponse = await leadsData.json();
-                console.log('Leads data after configuration:', leadsResponse);
+                
 
-                console.log('Zoho CRM configured successfully');
+                
                 return;
               } else {
                 throw new Error(data.message || 'La configuration a échoué');
@@ -1261,7 +1256,7 @@ export function IntegrationsPanel() {
     try {
       const token = ZohoTokenService.getToken();
       if (!token) {
-        console.log('No token available to fetch leads');
+        
         return;
       }
 
@@ -1272,7 +1267,7 @@ export function IntegrationsPanel() {
       });
 
       const data = await response.json();
-      console.log('Current leads data:', data);
+      
     } catch (error) {
       console.error('Error fetching leads:', error);
     }

@@ -29,12 +29,12 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
 
   // Si le mode mock est activé, utiliser les données mockées
   if (USE_MOCK_DATA) {
-    console.log('🎭 MOCK MODE ENABLED - Using mock data instead of OpenAI API');
+    
     return await generateMockGigSuggestions(description);
   }
 
   try {
-    console.log('🤖 REAL API MODE - Calling OpenAI backend');
+    
     const response = await fetch(`${API_BASE_URL}/ai/generate-gig-suggestions`, {
       method: 'POST',
       headers: {
@@ -52,7 +52,7 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
     const data = await response.json();
 
     // Log the backend response for debugging
-    console.log('Backend API Response:', data);
+    
 
     // Transform the backend response to match our GigSuggestion type
     const timezoneId = data.availability?.time_zone;
@@ -61,9 +61,9 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
 
     // Log if territories were cleaned
     if (originalTerritories.length !== cleanedTerritories.length) {
-      console.log(`🧹 Cleaned territories: ${originalTerritories.length} → ${cleanedTerritories.length}`);
-      console.log('Original:', originalTerritories);
-      console.log('Cleaned:', cleanedTerritories);
+      
+      
+      
     }
 
     const transformedData = {
@@ -85,7 +85,7 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
           rawCommission.baseAmount !== undefined;
 
         if (isLegacyStructure) {
-          console.log('⚠️ Detected legacy commission structure, adapting to new format');
+          
           return {
             commission_per_call: rawCommission.baseAmount || 0, // Map baseAmount to commission_per_call
             bonusAmount: String(rawCommission.bonusAmount || "0"), // Convert to string
@@ -143,7 +143,7 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
       }
     };
 
-    console.log('Transformed data for UI:', transformedData);
+    
     return transformedData;
   } catch (error) {
     console.error('Error calling backend API:', error);
@@ -153,9 +153,9 @@ export async function generateGigSuggestions(description: string): Promise<GigSu
 
 // Convert GigData back to GigSuggestion format for the Suggestions component
 export function mapGigDataToSuggestions(gigData: GigData): any {
-  console.log('🔄 REVERSE MAPPING - Converting gigData back to suggestions format');
-  console.log('🔄 REVERSE MAPPING - gigData.schedule:', gigData.schedule);
-  console.log('🔄 REVERSE MAPPING - gigData.availability:', gigData.availability);
+  
+  
+  
 
   return {
     jobTitles: gigData.title ? [gigData.title] : [],
@@ -188,13 +188,13 @@ export function mapGigDataToSuggestions(gigData: GigData): any {
 
 // Keep the mapGeneratedDataToGigData function for compatibility
 export function mapGeneratedDataToGigData(generatedData: any): Partial<GigData> {
-  console.log('🗺️ MAPPING - generatedData.schedule:', generatedData.schedule);
-  console.log('🗺️ MAPPING - generatedData.availability:', generatedData.availability);
-  console.log('🗺️ MAPPING - generatedData.destination_zone:', generatedData.destination_zone);
-  console.log('🗺️ MAPPING - generatedData.destinationZones:', generatedData.destinationZones);
+  
+  
+  
+  
 
   const mappedDestinationZone = generatedData.destination_zone || generatedData.destinationZones?.[0] || '';
-  console.log('🗺️ MAPPING - Final destination_zone:', mappedDestinationZone);
+  
 
   return {
     title: generatedData.jobTitles?.[0] || '',

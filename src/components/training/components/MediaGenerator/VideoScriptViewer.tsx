@@ -145,7 +145,7 @@ export default function VideoScriptViewer({
           scenes={convertScriptToCanvasScenes()}
           title={script.title}
           onVideoGenerated={(blob) => {
-            console.log('Vidéo générée:', blob);
+            
           }}
         />
       </div>

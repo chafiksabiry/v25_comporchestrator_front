@@ -61,7 +61,7 @@ const ReportingSetup = () => {
   // Vérifier l'état de l'étape quand les données changent
   useEffect(() => {
     if (companyId && hasBasicInfo() && !isStepCompleted) {
-      console.log('🎯 Reporting setup data changed, checking if step should be auto-completed...');
+      
       checkStepStatus();
     }
   }, [selectedMetrics, selectedChannels, reportSchedule, companyId, isStepCompleted]);
@@ -70,17 +70,17 @@ const ReportingSetup = () => {
     try {
       if (!companyId) return;
 
-      console.log('🔍 Checking step 7 status for company:', companyId);
+      
 
       // Vérifier l'état de l'étape 7 via l'API d'onboarding
       const response = await axios.get(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/7`
       );
 
-      console.log('📡 API response for step 7:', response.data);
+      
 
       if (response.data && (response.data as any).status === 'completed') {
-        console.log('✅ Step 7 is already completed according to API');
+        
         setIsStepCompleted(true);
         return;
       }
@@ -91,7 +91,7 @@ const ReportingSetup = () => {
         try {
           const progress = JSON.parse(storedProgress);
           if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(7)) {
-            console.log('✅ Step 7 found in localStorage, setting as completed');
+            
             setIsStepCompleted(true);
             return;
           }
@@ -103,7 +103,7 @@ const ReportingSetup = () => {
       // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
       // marquer automatiquement l'étape comme complétée localement
       if (hasBasicInfo() && !isStepCompleted) {
-        console.log('🎯 Auto-completing step 7 locally because basic info is present');
+        
 
         // Marquer l'étape comme complétée localement
         setIsStepCompleted(true);
@@ -130,7 +130,7 @@ const ReportingSetup = () => {
           }
         }));
 
-        console.log('💾 Step 7 marked as completed locally and parent component notified');
+        
       }
 
     } catch (error) {
@@ -155,12 +155,7 @@ const ReportingSetup = () => {
     // Check if we have selected metrics and channels
     const hasInfo = selectedMetrics.length > 0 && selectedChannels.length > 0 && reportSchedule;
 
-    console.log('🔍 Checking basic info for ReportingSetup:', {
-      selectedMetrics: selectedMetrics.length,
-      selectedChannels: selectedChannels.length,
-      reportSchedule,
-      hasInfo
-    });
+    
     return hasInfo;
   };
 
@@ -171,7 +166,7 @@ const ReportingSetup = () => {
         return;
       }
 
-      console.log('🚀 Completing reporting setup...');
+      
 
       // Marquer l'étape 7 comme complétée
       const stepResponse = await axios.put(
@@ -179,7 +174,7 @@ const ReportingSetup = () => {
         { status: 'completed' }
       );
 
-      console.log('✅ Step 7 marked as completed:', stepResponse.data);
+      
 
       // Mettre à jour l'état local
       setIsStepCompleted(true);
@@ -205,7 +200,7 @@ const ReportingSetup = () => {
         }
       }));
 
-      console.log('💾 Reporting setup completed and step 7 marked as completed');
+      
 
     } catch (error) {
       console.error('❌ Error completing reporting setup:', error);

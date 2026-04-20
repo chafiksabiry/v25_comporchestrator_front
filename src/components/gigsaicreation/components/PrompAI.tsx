@@ -169,7 +169,7 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
   const loadGigForEdit = async (gigId: string) => {
     setIsLoadingGig(true);
     try {
-      console.log('🔄 EDIT MODE - Fetching gig data from:', `${import.meta.env.VITE_API_URL_GIGS}/gigs/${gigId}`);
+      
       const response = await fetch(`${import.meta.env.VITE_API_URL_GIGS}/gigs/${gigId}`);
 
       if (!response.ok) {
@@ -178,12 +178,12 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
       }
 
       const responseData = await response.json();
-      console.log('🔄 EDIT MODE - API Response:', responseData);
+      
 
       const { data } = responseData;
 
       if (data) {
-        console.log('🔍 DEBUG COMMISSION - Raw API data.commission:', data.commission);
+        
 
         // Map the fetched gig data to our GigData format
         const mappedGigData: GigData = {
@@ -365,66 +365,66 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
           }
         };
 
-        console.log('🔄 EDIT MODE - Loaded gig data:', data);
-        console.log('🔄 EDIT MODE - Raw industries:', data.industries);
-        console.log('🔄 EDIT MODE - Raw activities:', data.activities);
-        console.log('🔄 EDIT MODE - Mapped gig data:', mappedGigData);
-        console.log('🔄 EDIT MODE - Mapped industries (IDs):', mappedGigData.industries);
-        console.log('🔄 EDIT MODE - Mapped activities (IDs):', mappedGigData.activities);
-        console.log('🔄 EDIT MODE - destination_zone ID:', mappedGigData.destination_zone);
-        console.log('🔄 EDIT MODE - time_zone ID (schedule):', mappedGigData.schedule.time_zone);
-        console.log('🔄 EDIT MODE - time_zone ID (root):', mappedGigData.time_zone);
-        console.log('🔄 EDIT MODE - currency ID:', mappedGigData.commission.currency);
-        console.log('🔄 EDIT MODE - Raw skills data:', data.skills);
-        console.log('🔄 EDIT MODE - Raw languages:', data.skills?.languages);
-        console.log('🔄 EDIT MODE - Raw professional skills:', data.skills?.professional);
-        console.log('🔄 EDIT MODE - Raw technical skills:', data.skills?.technical);
-        console.log('🔄 EDIT MODE - Raw soft skills:', data.skills?.soft);
-        console.log('🔍 DEBUG COMMISSION - Mapped commission data:', mappedGigData.commission);
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
 
         // Debug: Check the structure of individual skill objects
         if (data.skills?.professional && data.skills.professional.length > 0) {
-          console.log('🔄 EDIT MODE - First professional skill raw structure:', data.skills.professional[0]);
-          console.log('🔄 EDIT MODE - First professional skill.skill structure:', data.skills.professional[0].skill);
+          
+          
         }
         if (data.skills?.technical && data.skills.technical.length > 0) {
-          console.log('🔄 EDIT MODE - First technical skill raw structure:', data.skills.technical[0]);
-          console.log('🔄 EDIT MODE - First technical skill.skill structure:', data.skills.technical[0].skill);
+          
+          
         }
         if (data.skills?.soft && data.skills.soft.length > 0) {
-          console.log('🔄 EDIT MODE - First soft skill raw structure:', data.skills.soft[0]);
-          console.log('🔄 EDIT MODE - First soft skill.skill structure:', data.skills.soft[0].skill);
+          
+          
         }
 
         // Debug: Check the mapped skill structure
         if (mappedGigData.skills.professional.length > 0) {
-          console.log('🔄 EDIT MODE - Mapped professional skill structure:', mappedGigData.skills.professional[0]);
-          console.log('🔄 EDIT MODE - Mapped professional skill.skill:', mappedGigData.skills.professional[0].skill);
+          
+          
         }
         if (mappedGigData.skills.technical.length > 0) {
-          console.log('🔄 EDIT MODE - Mapped technical skill structure:', mappedGigData.skills.technical[0]);
-          console.log('🔄 EDIT MODE - Mapped technical skill.skill:', mappedGigData.skills.technical[0].skill);
+          
+          
         }
         if (mappedGigData.skills.soft.length > 0) {
-          console.log('🔄 EDIT MODE - Mapped soft skill structure:', mappedGigData.skills.soft[0]);
-          console.log('🔄 EDIT MODE - Mapped soft skill.skill:', mappedGigData.skills.soft[0].skill);
+          
+          
         }
-        console.log('🔄 EDIT MODE - Mapped skills data:', mappedGigData.skills);
-        console.log('🔄 EDIT MODE - Mapped languages:', mappedGigData.skills.languages);
-        console.log('🔄 EDIT MODE - Mapped professional skills:', mappedGigData.skills.professional);
-        console.log('🔄 EDIT MODE - Mapped technical skills:', mappedGigData.skills.technical);
-        console.log('🔄 EDIT MODE - Mapped soft skills:', mappedGigData.skills.soft);
+        
+        
+        
+        
+        
 
         // Debug: Vérifier la structure des skills mappés
         if (mappedGigData.skills.languages.length > 0) {
-          console.log('🔄 EDIT MODE - First language structure:', mappedGigData.skills.languages[0]);
+          
         }
         if (mappedGigData.skills.professional.length > 0) {
-          console.log('🔄 EDIT MODE - First professional skill structure:', mappedGigData.skills.professional[0]);
+          
         }
-        console.log('🔄 EDIT MODE - Raw team territories:', data.team?.territories);
-        console.log('🔄 EDIT MODE - Mapped team territories:', mappedGigData.team.territories);
+        
+        
 
         setGigData(mappedGigData);
         setIsManualMode(true); // Activer le mode manuel pour l'édition
@@ -467,9 +467,9 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
 
     // Map the generated data to the initialized structure
     const mappedData = mapGeneratedDataToGigData(suggestions);
-    console.log('🔄 PROMP AI - suggestions.destination_zone:', suggestions.destination_zone);
-    console.log('🔄 PROMP AI - mappedData.destination_zone:', mappedData.destination_zone);
-    console.log('🔄 PROMP AI - selectedJobTitle:', suggestions.selectedJobTitle);
+    
+    
+    
 
     // Update the gig data with the mapped suggestions
     setGigData((prevData: GigData) => ({
@@ -486,14 +486,14 @@ const PrompAI: React.FC<PrompAIProps> = ({ onBack, onBackToGigs, onBackToOnboard
   };
 
   const handleSectionChange = (sectionId: string) => {
-    console.log(`🔄 PROMP AI - Section change to: ${sectionId}`);
-    console.log('🔄 PROMP AI - gigData.schedule:', gigData.schedule);
-    console.log('🔄 PROMP AI - gigData.availability:', gigData.availability);
+    
+    
+    
     setCurrentSection(sectionId);
   };
 
   const handleGigDataChange = (newData: GigData) => {
-    console.log('🔄 PROMP AI - Gig data changed:', newData);
+    
     setGigData(newData);
   };
 

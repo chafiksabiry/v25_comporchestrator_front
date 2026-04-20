@@ -132,7 +132,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             setError(null);
 
             try {
-                console.log("Fetching data from backend...");
+                
 
                 const companyId = Cookies.get('companyId') || '685abf28641398dc582f4c95';
 
@@ -162,10 +162,10 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                 setSkills(skillsData);
                 setLanguages(languagesData);
 
-                console.log("=== BACKEND DATA ===");
-                console.log("Gigs:", gigsData);
-                console.log("Company Invited Agents:", invitedAgentsData);
-                console.log("Enrollment Requests:", enrollmentRequestsData);
+                
+                
+                
+                
 
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -200,7 +200,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
     useEffect(() => {
         const savedGigId = localStorage.getItem('selectedGigId');
         if (savedGigId && gigs.length > 0 && !selectedGig) {
-            console.log("Restoring selected gig from localStorage:", savedGigId);
+            
             const savedGig = gigs.find((g: Gig) => g._id === savedGigId);
             if (savedGig) {
                 handleGigSelect(savedGig);
@@ -213,19 +213,19 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         // Skip if no data yet
         if (!companyInvitedAgents || !enrollmentRequests || !activeAgentsList) return;
 
-        console.log('🔍 Company Invited Agents Structure:', companyInvitedAgents);
-        console.log('🔍 Enrollment Requests Structure:', enrollmentRequests);
-        console.log('🔍 Active Agents Structure:', activeAgentsList);
+        
+        
+        
 
         // Directly set the lists without filtering again
         setInvitedAgentsList(companyInvitedAgents.filter((agent: { isActive: any; hasCompletedOnboarding: any; }) => !agent.isActive && !agent.hasCompletedOnboarding));
         setEnrollmentRequests(enrollmentRequests);
         // Active agents come directly from the API endpoint
-        console.log('✅ Setting active agents:', activeAgentsList);
+        
     }, [companyInvitedAgents, enrollmentRequests, activeAgentsList]);
 
     const handleGigSelect = async (gig: Gig) => {
-        console.log('🎯 GIG SELECTED:', gig.title, 'ID:', gig._id);
+        
         setSelectedGig(gig);
         if (gig._id) {
             localStorage.setItem('selectedGigId', gig._id);
@@ -243,11 +243,11 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                 const savedWeights = await getGigWeights(gig._id || '');
                 setWeights(savedWeights.matchingWeights);
                 currentWeights = savedWeights.matchingWeights;
-                console.log('✅ Gig has saved weights, loaded:', savedWeights.matchingWeights);
+                
             } catch (error: any) {
                 // Handle different types of errors more gracefully
                 if (error.message?.includes('No saved weights found')) {
-                    console.log('ℹ️ No saved weights found for gig:', gig._id, '- Using default weights');
+                    
                 } else if (error.message?.includes('Failed to fetch')) {
                     console.warn('⚠️ Network error loading weights for gig:', gig._id, '- Using current weights');
                 } else {
@@ -260,16 +260,16 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             const gigAgents = await getGigAgentsForGig(gig._id || '');
             const invitedAgentIds = new Set<string>(gigAgents.map((ga: any) => ga.agentId as string));
             setInvitedAgents(invitedAgentIds);
-            console.log('📧 Invited reps for gig:', invitedAgentIds);
+            
 
             // Find matches for the selected gig using current or loaded weights
-            console.log("Searching for reps matching gig:", gig.title);
-            console.log("🎯 WEIGHTS BEING SENT TO API:", currentWeights);
+            
+            
 
             let matchesData;
             try {
                 matchesData = await findMatchesForGig(gig._id || '', currentWeights);
-                console.log("=== MATCHES DATA ===", matchesData);
+                
             } catch (error: any) {
                 console.error("❌ Error finding matches for gig:", error);
 
@@ -295,17 +295,17 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             // Debug first match score calculation
             if (matchesData.preferedmatches && matchesData.preferedmatches.length > 0) {
                 const firstMatch = matchesData.preferedmatches[0];
-                console.log("🔍 SCORE BREAKDOWN FOR FIRST MATCH:");
-                console.log("- Agent:", firstMatch.agentInfo?.name);
-                console.log("- Total Score from API:", firstMatch.totalMatchingScore);
-                console.log("- Skills Score:", firstMatch.skillsMatch?.score, "× Weight:", currentWeights.skills, "=", (firstMatch.skillsMatch?.score || 0) * currentWeights.skills);
-                console.log("- Languages Score:", firstMatch.languageMatch?.score, "× Weight:", currentWeights.languages, "=", (firstMatch.languageMatch?.score || 0) * currentWeights.languages);
-                console.log("- Industry Score:", firstMatch.industryMatch?.score, "× Weight:", currentWeights.industry, "=", (firstMatch.industryMatch?.score || 0) * currentWeights.industry);
-                console.log("- Activity Score:", firstMatch.activityMatch?.score, "× Weight:", currentWeights.activities, "=", (firstMatch.activityMatch?.score || 0) * currentWeights.activities);
-                console.log("- Experience Score:", firstMatch.experienceMatch?.score, "× Weight:", currentWeights.experience, "=", (firstMatch.experienceMatch?.score || 0) * currentWeights.experience);
-                console.log("- Timezone Score:", firstMatch.timezoneMatch?.score, "× Weight:", currentWeights.timezone, "=", (firstMatch.timezoneMatch?.score || 0) * currentWeights.timezone);
-                console.log("- Region Score:", firstMatch.regionMatch?.score, "× Weight:", currentWeights.region, "=", (firstMatch.regionMatch?.score || 0) * currentWeights.region);
-                console.log("- Availability Score:", firstMatch.availabilityMatch?.score, "× Weight:", currentWeights.availability, "=", (firstMatch.availabilityMatch?.score || 0) * currentWeights.availability);
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
 
                 const calculatedTotal =
                     (firstMatch.skillsMatch?.score || 0) * currentWeights.skills +
@@ -317,9 +317,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                     (firstMatch.regionMatch?.score || 0) * currentWeights.region +
                     (firstMatch.availabilityMatch?.score || 0) * currentWeights.availability;
 
-                console.log("🧮 CALCULATED TOTAL:", calculatedTotal);
-                console.log("📊 API TOTAL:", firstMatch.totalMatchingScore);
-                console.log("❓ DIFFERENCE:", Math.abs(calculatedTotal - firstMatch.totalMatchingScore));
+                
+                
+                
             }
 
             setMatches(matchesData.preferedmatches || matchesData.matches || []);
@@ -349,11 +349,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
         setGigAgentError(null);
         setGigAgentSuccess(null);
 
-        console.log('Creating gig-rep with data:', {
-            agentId: match.agentId,
-            gigId: selectedGig._id,
-            match: match
-        });
+        
 
         // Send only the essential IDs to avoid any object processing errors
         const requestData = {
@@ -362,11 +358,11 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             // Removed matchDetails completely to avoid backend language processing
         };
 
-        console.log('🚀 Sending minimal request data:', requestData);
+        
 
         try {
             const response = await createGigAgent(requestData);
-            console.log('Gig-Rep created successfully:', response);
+            
 
             // Update onboarding progress - Phase 4, Step 10 (MATCH HARX REPS)
             // When at least one invitation is sent, mark the step as completed
@@ -377,7 +373,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                         `${onboardingApiUrl}/onboarding/companies/${companyId}/onboarding/phases/4/steps/13`,
                         { status: 'completed' }
                     );
-                    console.log('✅ Onboarding progress updated: Match HARX REPS step completed');
+                    
                 } catch (onboardingError) {
                     console.error('Error updating onboarding progress:', onboardingError);
                 }
@@ -433,9 +429,9 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
 
     // Helper functions to organize reps by status
     const organizeAgentsByStatus = () => {
-        console.log('🔍 DEBUG: All matches data:', matches);
-        console.log('🔍 DEBUG: invitedAgents Set:', invitedAgents);
-        console.log('🔍 DEBUG: Company Invited Reps:', companyInvitedAgents);
+        
+        
+        
 
         // Use company invited reps from API endpoint
         const invited = companyInvitedAgents.filter((agent: { isActive: any; hasCompletedOnboarding: any; personalInfo: { name: any; }; status: any; }) => {
@@ -443,29 +439,23 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
             const isInvited = !agent.isActive &&
                 !agent.hasCompletedOnboarding;
 
-            console.log(`🔍 Company Invited Rep ${agent.personalInfo?.name}:`, {
-                status: agent.status,
-                isActive: agent.isActive,
-                hasCompletedOnboarding: agent.hasCompletedOnboarding,
-                isInvited,
-                fullData: agent
-            });
+            
 
             return isInvited;
         });
 
         // Use enrollment requests from API endpoint
         const enrollmentReqs = enrollmentRequests;
-        console.log('📋 Enrollment Requests from API:', enrollmentReqs);
+        
 
         // Use active reps from API endpoint
         const active = activeAgentsList;
-        console.log('✅ Active Reps from API:', active);
+        
 
-        console.log('🔄 Organizing reps by status:');
-        console.log('📧 Invited:', invited.length, invited.map((a: { personalInfo: { name: any; }; _id: any; }) => ({ name: a.personalInfo?.name, id: a._id })));
-        console.log('📋 Enrollment Requests:', enrollmentReqs.length, enrollmentReqs.map((a: { personalInfo: { name: any; }; _id: any; }) => ({ name: a.personalInfo?.name, id: a._id })));
-        console.log('✅ Active:', active.length, active.map((a: { personalInfo: { name: any; }; _id: any; }) => ({ name: a.personalInfo?.name, id: a._id })));
+        
+        
+        
+        
 
         setInvitedAgentsList(invited);
         setEnrollmentRequests(enrollmentReqs);
@@ -1348,7 +1338,7 @@ export const MatchingDashboard = ({ onBackToOnboarding }: MatchingDashboardProps
                                         <div className="space-y-4">
                                             {(invitedAgentsList || []).map((agent: any, index: number) => {
                                                 if (!agent) return null;
-                                                console.log('🔍 Invited Agent Data:', agent);
+                                                
 
                                                 return (
                                                     <div key={`invited-${agent._id || index}`} className="bg-yellow-50 border border-yellow-200 rounded-xl p-5 hover:shadow-md transition-all duration-200">

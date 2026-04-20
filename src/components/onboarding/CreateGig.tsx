@@ -42,7 +42,7 @@ const CreateGig = () => {
   // Vérifier l'état de l'étape quand les données du formulaire changent
   useEffect(() => {
     if (companyId && hasBasicInfo() && !isStepCompleted) {
-      console.log('🎯 Form data changed, checking if step should be auto-completed...');
+      
       checkStepStatus();
     }
   }, [gigTitle, department, jobDescription, companyId, isStepCompleted]);
@@ -51,17 +51,17 @@ const CreateGig = () => {
     try {
       if (!companyId) return;
 
-      console.log('🔍 Checking step 3 status for company:', companyId);
+      
 
       // Vérifier l'état de l'étape 3 via l'API d'onboarding
       const response = await axios.get(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/3`
       );
 
-      console.log('📡 API response for step 3:', response.data);
+      
 
       if (response.data && (response.data as any).status === 'completed') {
-        console.log('✅ Step 3 is already completed according to API');
+        
         setIsStepCompleted(true);
         return;
       }
@@ -72,7 +72,7 @@ const CreateGig = () => {
         try {
           const progress = JSON.parse(storedProgress);
           if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(3)) {
-            console.log('✅ Step 3 found in localStorage, setting as completed');
+            
             setIsStepCompleted(true);
             return;
           }
@@ -84,7 +84,7 @@ const CreateGig = () => {
       // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
       // marquer automatiquement l'étape comme complétée localement
       if (hasBasicInfo() && !isStepCompleted) {
-        console.log('🎯 Auto-completing step 3 locally because basic info is present');
+        
 
         // Marquer l'étape comme complétée localement
         setIsStepCompleted(true);
@@ -111,7 +111,7 @@ const CreateGig = () => {
           }
         }));
 
-        console.log('💾 Step 3 marked as completed locally and parent component notified');
+        
       }
 
     } catch (error) {
@@ -134,12 +134,7 @@ const CreateGig = () => {
 
   const hasBasicInfo = () => {
     const hasInfo = gigTitle && department && jobDescription;
-    console.log('🔍 Checking basic info for CreateGig:', {
-      gigTitle,
-      department,
-      jobDescription,
-      hasInfo
-    });
+    
     return hasInfo;
   };
 
@@ -150,7 +145,7 @@ const CreateGig = () => {
         return;
       }
 
-      console.log('🚀 Publishing gig...');
+      
 
       // Marquer l'étape 3 comme complétée
       const stepResponse = await axios.put(
@@ -158,7 +153,7 @@ const CreateGig = () => {
         { status: 'completed' }
       );
 
-      console.log('✅ Step 3 marked as completed:', stepResponse.data);
+      
 
       // Mettre à jour l'état local
       setIsStepCompleted(true);
@@ -184,7 +179,7 @@ const CreateGig = () => {
         }
       }));
 
-      console.log('💾 Gig published and step 3 marked as completed');
+      
 
     } catch (error) {
       console.error('❌ Error publishing gig:', error);

@@ -114,7 +114,7 @@ export function SkillsSection({ data, onChange, errors, onNext, onPrevious }: Sk
           if (professionalError) {
             console.warn('⚠️ Could not load professional skills:', professionalError);
           } else {
-            console.log('📚 Loaded professional skills:', professionalSkillsData);
+            
             setProfessionalSkills(professionalSkillsData || []);
           }
         } catch (error) {

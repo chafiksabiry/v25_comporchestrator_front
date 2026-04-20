@@ -8,7 +8,7 @@ async function initializeDatabase() {
     // Check if collection is empty
     const count = await collection.countDocuments();
     if (count > 0) {
-      console.log('Database already initialized');
+      
       return;
     }
 
@@ -53,7 +53,7 @@ async function initializeDatabase() {
 
     // Insert default integrations
     await collection.insertMany(defaultIntegrations);
-    console.log('Database initialized with default integrations');
+    
   } catch (error) {
     console.error('Failed to initialize database:', error);
   }

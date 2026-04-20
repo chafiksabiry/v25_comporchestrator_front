@@ -204,7 +204,7 @@ export default function ManualTrainingSimulator({
           return newMap3;
         });
 
-        console.log(`🚨 VIOLATION: ${violationType} on question ${questionIndex} in quiz ${quizId}`);
+        
 
         // Vibration for mobile/tablet devices
         if (navigator.vibrate) {
@@ -337,7 +337,7 @@ export default function ManualTrainingSimulator({
           const questionIdx = currentQuestionIndex.get(quizId || '') || 0;
           if (quizId) {
             addViolation(quizId, questionIdx, 'fn_key_fraud');
-            console.log('🚨 Fn KEY DETECTED - FRAUD!', { key: e.key, code: e.code, keyCode: e.keyCode, which: e.which, location: e.location });
+            
           }
           return false;
         }
@@ -585,7 +585,7 @@ export default function ManualTrainingSimulator({
   useEffect(() => {
     if (currentSection?.type === 'document') {
       // Documents require manual confirmation (no auto-timer)
-      console.log('📄 Document section - waiting for user confirmation');
+      
     }
   }, [currentSection?.id, currentSection?.type]);
 
@@ -655,7 +655,7 @@ export default function ManualTrainingSimulator({
               setQuizzes(prev => new Map(prev).set(module.id, quiz));
             }
           } catch (error) {
-            console.log(`No quiz found for module ${module.id}`);
+            
           }
         }
 
@@ -665,8 +665,8 @@ export default function ManualTrainingSimulator({
           if (finalExamResponse.data.success && finalExamResponse.data.data.length > 0) {
             // Find final exam (quiz without moduleId or with trainingId)
             const finalExam = finalExamResponse.data.data.find((q: Quiz) => !q.moduleId && q.trainingId === trainingId);
-            console.log('🔍 Looking for final exam. All quizzes:', finalExamResponse.data.data);
-            console.log('📝 Found final exam:', finalExam);
+            
+            
             if (finalExam) {
               // Create a special "Final Exam" module
               const finalExamModule: Module = {
@@ -692,7 +692,7 @@ export default function ManualTrainingSimulator({
             }
           }
         } catch (error) {
-          console.log('No final exam found');
+          
         }
 
         setModules(sortedModules);
@@ -730,7 +730,7 @@ export default function ManualTrainingSimulator({
       const nextSection = currentModule.sections?.[currentSectionIndex + 1];
       if (nextSection && nextSection.type === 'quiz') {
         // Automatically move to quiz section
-        console.log('✅ Section completed, automatically redirecting to quiz');
+        
         setCurrentSectionIndex(prev => prev + 1);
         // Scroll to quiz section
         setTimeout(() => {
@@ -753,7 +753,7 @@ export default function ManualTrainingSimulator({
           // Find quiz section index and navigate to it
           const quizIndex = currentModule.sections?.findIndex(s => s.id === quizSection.id);
           if (quizIndex !== undefined && quizIndex !== -1) {
-            console.log('✅ Module completed, automatically redirecting to quiz');
+            
             setCurrentSectionIndex(quizIndex);
             setTimeout(() => {
               const quizElement = document.getElementById('quiz-section');
@@ -916,7 +916,7 @@ export default function ManualTrainingSimulator({
                   {!documentViewed ? (
                     <button
                       onClick={() => {
-                        console.log('✅ User confirmed reading document');
+                        
                         setDocumentViewed(true);
                       }}
                       className="flex items-center space-x-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg transform hover:scale-105"
@@ -955,7 +955,7 @@ export default function ManualTrainingSimulator({
                   title={content.file.name || 'Document'}
                   allow="autoplay"
                   onLoad={() => {
-                    console.log('✅ PDF loaded successfully via PDF.js');
+                    
                     setIframeLoaded(true);
                     setIframeError(false);
                   }}
@@ -1135,7 +1135,7 @@ export default function ManualTrainingSimulator({
 
       try {
         // Send to backend
-        console.log('📤 Submitting quiz with security metadata:', metadata);
+        
         const response = await axios.post(
           `${API_BASE}/manual-trainings/quizzes/${quizId}/submit`,
           {
@@ -1145,7 +1145,7 @@ export default function ManualTrainingSimulator({
           }
         );
 
-        console.log('✅ Quiz submission response:', response.data);
+        
 
         // Use server-calculated score if available
         const finalScore = response.data.data?.score ||

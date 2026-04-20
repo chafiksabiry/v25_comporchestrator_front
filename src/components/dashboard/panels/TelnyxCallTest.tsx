@@ -70,16 +70,16 @@ const TelnyxCallTest: React.FC = () => {
 
   const initializeTelnyxClient = async () => {
     try {
-      console.log('VITE_TELNYX_USERNAME:', import.meta.env.VITE_TELNYX_USERNAME);
-      console.log('VITE_TELNYX_PASSWORD:', import.meta.env.VITE_TELNYX_PASSWORD);
+      
+      
       
       const telnyxClient = new TelnyxRTC({
         login: import.meta.env.VITE_TELNYX_USERNAME,
         password: import.meta.env.VITE_TELNYX_PASSWORD,
       });
-      console.log('telnyxClient', telnyxClient);
+      
       telnyxClient.on('telnyx.ready', () => {
-        console.log('Telnyx ready');
+        
         setCallStatus('Client ready');
       });
      
@@ -90,12 +90,12 @@ const TelnyxCallTest: React.FC = () => {
       });
 
       telnyxClient.on('call:connected', () => {
-        console.log('Call connected');
+        
         setCallStatus('Call connected');
       });
 
       telnyxClient.on('call:disconnected', () => {
-        console.log('Call disconnected');
+        
         setCallStatus('Call ended');
         setCurrentCall(null);
       });

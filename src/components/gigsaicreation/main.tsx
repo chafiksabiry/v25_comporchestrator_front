@@ -22,7 +22,7 @@ function render(props: { container?: HTMLElement }) {
     return;
   }
 
-  console.log('[App] Rendering in container:', rootElement);
+  
 
   // Initialize React root if not already created
   if (!root) {
@@ -38,21 +38,21 @@ function render(props: { container?: HTMLElement }) {
 
 // Standalone mode check (if running outside Qiankun)
 if (!window.__POWERED_BY_QIANKUN__) {
-  console.log('[App] Running in standalone mode');
+  
   
   // Set user ID and company ID cookies in standalone mode
   const userId = Cookies.get('userId') || "680a27ffefa3d29d628d0016";
   const companyId = Cookies.get('companyId') || "684ace43641398dc582f1acc"; // Default company ID from GigForm.tsx
 
   if (userId) {
-    console.log('[App] Setting user ID cookie:', userId);
+    
     Cookies.set('userId', userId);
   } else {
     console.warn('[App] VITE_USER_ID environment variable not set');
   }
 
   if (companyId) {
-    console.log('[App] Setting company ID cookie:', companyId);
+    
     Cookies.set('companyId', companyId);
   } else {
     console.warn('[App] VITE_COMPANY_ID environment variable not set');
@@ -63,20 +63,20 @@ if (!window.__POWERED_BY_QIANKUN__) {
 
 // Qiankun lifecycle methods
 export async function bootstrap() {
-  console.log('[App] Bootstrapping...');
-  console.log('beforeLoad hook triggered');
+  
+  
   // You can add any setup needed for bootstrapping here
 }
 
 export async function mount(props: any) {
-  console.log('[App] Mounting...', props);
-  console.log('beforeMount hook triggered');
+  
+  
   render(props); // Mount the app
 }
 
 export async function unmount(props: any) {
-  console.log('[App] Unmounting...', props);
-  console.log('afterUnmount hook triggered');
+  
+  
 
   const { container } = props;
   const rootElement = container
@@ -84,7 +84,7 @@ export async function unmount(props: any) {
     : document.getElementById('root'); // Fallback for standalone mode
 
   if (root) {
-    console.log('[App] Unmounting from container:', rootElement);
+    
     root.unmount();
     root = null;
   } else {
