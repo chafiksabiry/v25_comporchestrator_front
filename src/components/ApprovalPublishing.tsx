@@ -366,9 +366,6 @@ const ApprovalPublishing = () => {
     return isMatch;
   });
 
-  )
-  });
-
   const formatDate = (dateString: string) => {
     
 
@@ -585,10 +582,6 @@ const ApprovalPublishing = () => {
       const hasActiveGig = gigs.some(gig =>
         gig.status === 'active' || gig.status === 'approved' || gig.status === 'published'
       );
-
-      
-      });
-
       if (!hasActiveGig) {
         
 
