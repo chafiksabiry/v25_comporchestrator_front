@@ -182,7 +182,7 @@ export class JourneyService {
       journeyPayload._id = journeyId;
     }
 
-    :', {
+    console.log('[JourneyService] Saving journey payload:', {
       journeyId: journeyId || 'NEW',
       modulesCount: embeddedModules.length,
       hasFinalExam: !!embeddedFinalExam

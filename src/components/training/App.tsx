@@ -1649,8 +1649,8 @@ export function AppContent({
           return (
             <CurriculumBuilder
               curriculum={mockCurriculumBuilder}
-              onSave={(curriculum) => }
-              onPublish={(curriculum) => }
+              onSave={(curriculum) => {}}
+              onPublish={(curriculum) => {}}
             />
           );
         case 'streaming':
@@ -1669,7 +1669,7 @@ export function AppContent({
                   <LiveStreamStudio
                     session={typedSession}
                     isInstructor={true}
-                    onSessionUpdate={(updatedSession) => }
+                    onSessionUpdate={(updatedSession) => {}}
                   />
                 </div>
               );
@@ -1678,9 +1678,9 @@ export function AppContent({
           return (
             <StreamingDashboard
               sessions={mockLiveStreamSessions.map(convertSessionToTyped)}
-              onCreateSession={() => }
-              onEditSession={(session) => }
-              onDeleteSession={(sessionId) => }
+              onCreateSession={() => {}}
+              onEditSession={(session) => {}}
+              onDeleteSession={(sessionId) => {}}
               onStartStream={(sessionId) => setSelectedStreamSession(sessionId)}
             />
           );
@@ -1703,16 +1703,16 @@ export function AppContent({
                       session={typedSession}
                       course={course}
                       participantId="participant-1"
-                      onProgress={(progress) => }
-                      onEngagement={(score) => }
+                      onProgress={(progress) => {}}
+                      onEngagement={(score) => {}}
                     />
                   ) : (
                     <CourseStreamingStudio
                       session={typedSession}
                       course={course}
                       isInstructor={true}
-                      onSessionUpdate={(updatedSession) => }
-                      onCourseProgress={(moduleId, progress) => }
+                      onSessionUpdate={(updatedSession) => {}}
+                      onCourseProgress={(moduleId, progress) => {}}
                     />
                   )}
                   <div className="flex justify-center">
@@ -1731,16 +1731,16 @@ export function AppContent({
             <CourseStreamingDashboard
               sessions={mockLiveStreamSessions.map(convertSessionToTyped)}
               courses={progress.modules}
-              onCreateCourseStream={(courseId) => }
-              onEditSession={(session) => }
-              onDeleteSession={(sessionId) => }
+              onCreateCourseStream={(courseId) => {}}
+              onEditSession={(session) => {}}
+              onDeleteSession={(sessionId) => {}}
               onStartCourseStream={(sessionId, courseId) => setSelectedCourseStream(sessionId)}
             />
           );
         case 'document-transformer':
           return (
             <DocumentTransformer
-              onComplete={(modules) => }
+              onComplete={(modules) => {}}
             />
           );
         case 'methodology':
@@ -1793,8 +1793,8 @@ export function AppContent({
           return (
             <CurriculumBuilder
               curriculum={mockCurriculumBuilder}
-              onSave={(curriculum) => }
-              onPublish={(curriculum) => }
+              onSave={(curriculum) => {}}
+              onPublish={(curriculum) => {}}
             />
           );
         case 'streaming':
@@ -1813,7 +1813,7 @@ export function AppContent({
                   <LiveStreamStudio
                     session={typedSession}
                     isInstructor={true}
-                    onSessionUpdate={(updatedSession) => }
+                    onSessionUpdate={(updatedSession) => {}}
                   />
                 </div>
               );
@@ -1822,9 +1822,9 @@ export function AppContent({
           return (
             <StreamingDashboard
               sessions={mockLiveStreamSessions.map(convertSessionToTyped)}
-              onCreateSession={() => }
-              onEditSession={(session) => }
-              onDeleteSession={(sessionId) => }
+              onCreateSession={() => {}}
+              onEditSession={(session) => {}}
+              onDeleteSession={(sessionId) => {}}
               onStartStream={(sessionId) => setSelectedStreamSession(sessionId)}
             />
           );
@@ -1847,16 +1847,16 @@ export function AppContent({
                       session={typedSession}
                       course={course}
                       participantId="participant-1"
-                      onProgress={(progress) => }
-                      onEngagement={(score) => }
+                      onProgress={(progress) => {}}
+                      onEngagement={(score) => {}}
                     />
                   ) : (
                     <CourseStreamingStudio
                       session={typedSession}
                       course={course}
                       isInstructor={true}
-                      onSessionUpdate={(updatedSession) => }
-                      onCourseProgress={(moduleId, progress) => }
+                      onSessionUpdate={(updatedSession) => {}}
+                      onCourseProgress={(moduleId, progress) => {}}
                     />
                   )}
                   <div className="flex justify-center">
@@ -1875,16 +1875,16 @@ export function AppContent({
             <CourseStreamingDashboard
               sessions={mockLiveStreamSessions.map(convertSessionToTyped)}
               courses={progress.modules}
-              onCreateCourseStream={(courseId) => }
-              onEditSession={(session) => }
-              onDeleteSession={(sessionId) => }
+              onCreateCourseStream={(courseId) => {}}
+              onEditSession={(session) => {}}
+              onDeleteSession={(sessionId) => {}}
               onStartCourseStream={(sessionId, courseId) => setSelectedCourseStream(sessionId)}
             />
           );
         case 'document-transformer':
           return (
             <DocumentTransformer
-              onComplete={(modules) => }
+              onComplete={(modules) => {}}
             />
           );
         case 'methodology':
@@ -2079,7 +2079,7 @@ export function AppContent({
       case 'document-transformer':
         return (
           <DocumentTransformer
-            onComplete={(modules) => }
+            onComplete={(modules) => {}}
           />
         );
       case 'methodology':
@@ -2178,7 +2178,7 @@ export function AppContent({
               <AITutor
                 tutor={mockAITutor}
                 currentModule={selectedModule || undefined}
-                onSuggestion={(suggestion) => }
+                onSuggestion={(suggestion) => {}}
               />
             </div>
           )}

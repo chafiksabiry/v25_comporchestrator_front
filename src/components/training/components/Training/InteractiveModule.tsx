@@ -406,10 +406,6 @@ export default function InteractiveModule({ module, onProgress, onComplete, onBa
                 || currentSectionData.text
                 || (typeof currentSectionData.content === 'string' && !currentSectionData.content.startsWith('http') ? currentSectionData.content : null);
 
-              ,
-                currentSectionData
-              });
-
               if (fileUrl) {
                 return (
                   <div className="flex-1 w-full min-h-0 overflow-hidden" style={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
