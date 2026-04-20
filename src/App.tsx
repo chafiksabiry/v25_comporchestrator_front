@@ -43,6 +43,7 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState('company-onboarding');
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [userFullName, setUserFullName] = useState('Admin User');
+  const [companyName, setCompanyName] = useState<string | null>(null);
   const [currentStepGuide, setCurrentStepGuide] = useState<{ title: string; description: string } | null>(null);
   const [globalBackConfig, setGlobalBackConfig] = useState<{ label: string; action: () => void } | null>(null);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
@@ -106,8 +107,13 @@ function AppContent() {
               const companyData = await companyResponse.json();
               console.log('[V25 Main App] Company data fetched:', companyData);
               const rawLogo = companyData.data?.logo;
+              const name = companyData.data?.name;
               const website = companyData.data?.contact?.website;
               
+              if (name) {
+                setCompanyName(name);
+              }
+
               if (rawLogo) {
                 setCompanyLogo(rawLogo);
               }
@@ -293,7 +299,7 @@ function AppContent() {
                   </div>
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-black text-gray-900 leading-tight">{userFullName}</span>
+                      <span className="text-sm font-black text-gray-900 leading-tight">{companyName || userFullName}</span>
                     </div>
                     <span className="text-[10px] text-harx-500 font-bold uppercase tracking-wider">Administrator</span>
                   </div>
