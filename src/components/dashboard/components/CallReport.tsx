@@ -23,7 +23,7 @@ const initialReport: CallReport = {
 function CallReportCard() {
     const location = useLocation();
     const callPased = location.state?.call; // Retrieve passed call object
-    console.log("call object : ", callPased)
+    
 
     const [call, setCall] = useState<Call | null>(callPased || null);
     const [report, setReport] = useState<CallReport>(callPased?.ai_call_score || initialReport);
@@ -105,7 +105,7 @@ function CallReportCard() {
             try {
                 setLoadingPostActions(true);
                 const response = await vertexApi.getCallPostActions({ file_uri: (call.recording_url_cloudinary) ? call.recording_url_cloudinary : call.recording_url });
-                console.log("post actions res :", response);
+                
                 setCallPostActions(response.plan_actions);
             } catch (err) {
                 setErrorSummary("Failed to generate call post actions.");

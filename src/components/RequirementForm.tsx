@@ -64,7 +64,7 @@ export const RequirementForm: React.FC<RequirementFormProps> = ({
           }
         } catch (e) {
           // Not a JSON string, ignore
-          console.log('Not a JSON string for address field:', val.field);
+          
         }
       }
       return acc;

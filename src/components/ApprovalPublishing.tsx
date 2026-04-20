@@ -170,7 +170,7 @@ const ApprovalPublishing = () => {
       }
 
       const response = await axios.get<CompanyResponse>(`${import.meta.env.VITE_COMPANY_API_URL}/${companyId}/details`);
-      console.log('🏢 Company details fetched:', response.data.data);
+      
       setCompany(response.data.data);
     } catch (err) {
       console.error('❌ Error fetching company details:', err);
@@ -181,7 +181,7 @@ const ApprovalPublishing = () => {
     try {
       const response = await axios.get<ActivitiesResponse>(`${import.meta.env.VITE_REP_API}/activities`);
       if (response.data && response.data.success && Array.isArray(response.data.data)) {
-        console.log('📋 Activities fetched:', response.data.data);
+        
         setActivities(response.data.data);
       } else {
         console.warn('⚠️ Invalid activities response format');
@@ -197,7 +197,7 @@ const ApprovalPublishing = () => {
     try {
       const response = await axios.get<IndustriesResponse>(`${import.meta.env.VITE_REP_API}/industries`);
       if (response.data && response.data.success && Array.isArray(response.data.data)) {
-        console.log('🏭 Industries fetched:', response.data.data);
+        
         setIndustries(response.data.data);
       } else {
         console.warn('⚠️ Invalid industries response format');
@@ -213,7 +213,7 @@ const ApprovalPublishing = () => {
     try {
       const response = await axios.get<LanguagesResponse>(`${import.meta.env.VITE_REP_API}/languages`);
       if (response.data && response.data.success && Array.isArray(response.data.data)) {
-        console.log('🗣️ Languages fetched:', response.data.data);
+        
         setLanguages(response.data.data);
       } else {
         console.warn('⚠️ Invalid languages response format');
@@ -250,7 +250,7 @@ const ApprovalPublishing = () => {
   };
 
   const fetchGigs = async () => {
-    console.log('🔄 Starting fetchGigs...');
+    
     setIsLoading(true);
     setError(null);
 
@@ -259,7 +259,7 @@ const ApprovalPublishing = () => {
       const gigId = Cookies.get('gigId');
       const userId = Cookies.get('userId');
 
-      console.log('📋 Cookies found:', { companyId, gigId, userId });
+      
 
       if (!companyId) {
         console.error('❌ Company ID not found in cookies');
@@ -267,7 +267,7 @@ const ApprovalPublishing = () => {
       }
 
       const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/company/${companyId}?populate=companyId`;
-      console.log('🌐 Fetching from API:', apiUrl);
+      
 
       const response = await fetch(apiUrl, {
         headers: {
@@ -276,8 +276,8 @@ const ApprovalPublishing = () => {
         }
       });
 
-      console.log('📡 API Response status:', response.status);
-      console.log('📡 API Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      
 
       if (!response.ok) {
         console.error('❌ API request failed:', response.status, response.statusText);
@@ -285,10 +285,10 @@ const ApprovalPublishing = () => {
       }
 
       const data = await response.json();
-      console.log('📦 Raw API data:', data);
+      
 
       if (data.data) {
-        console.log('📊 Found gigs data, transforming...');
+        
         // Transformer les données pour correspondre à l'interface attendue
         const transformedGigs = data.data.map((gig: any) => {
           const transformed = {
@@ -305,11 +305,11 @@ const ApprovalPublishing = () => {
             submittedBy: gig.submittedBy || gig.companyName || gig.company?.name || company?.name || 'Company',
             issues: gig.issues || []
           };
-          console.log('🔄 Transformed gig:', transformed);
+          
           return transformed;
         });
 
-        console.log('✅ Setting gigs state with', transformedGigs.length, 'gigs');
+        
         setGigs(transformedGigs);
       } else {
         console.warn('⚠️ No data property in API response');
@@ -319,18 +319,18 @@ const ApprovalPublishing = () => {
       console.error('❌ Error fetching gigs:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch gigs');
     } finally {
-      console.log('🏁 fetchGigs completed, setting loading to false');
+      
       setIsLoading(false);
     }
   };
 
   const toggleGig = (id: string) => {
-    console.log('🔄 Toggling gig expansion:', id, 'Current expanded:', expandedGig);
+    
     setExpandedGig(expandedGig === id ? null : id);
   };
 
   const toggleSelectGig = (id: string) => {
-    console.log('🔄 Toggling gig selection:', id, 'Currently selected:', selectedGigs);
+    
     if (selectedGigs.includes(id)) {
       setSelectedGigs(selectedGigs.filter(gigId => gigId !== id));
     } else {
@@ -339,7 +339,7 @@ const ApprovalPublishing = () => {
   };
 
   const selectAllGigs = () => {
-    console.log('🔄 Selecting all gigs. Current selected:', selectedGigs.length, 'Total filtered:', filteredGigs.length);
+    
     if (selectedGigs.length === filteredGigs.length) {
       setSelectedGigs([]);
     } else {
@@ -361,23 +361,19 @@ const ApprovalPublishing = () => {
     const validStatuses = statusMapping[filter] || [filter];
     const isMatch = validStatuses.includes(gig.status);
 
-    console.log(`🔍 Filtering gig ${gig._id} (${gig.title}): status="${gig.status}", filter="${filter}", validStatuses=${JSON.stringify(validStatuses)}, isMatch=${isMatch}`);
+    
 
     return isMatch;
   });
 
-  console.log('🔍 Filtered gigs:', {
-    filter,
-    totalGigs: gigs.length,
-    filteredCount: filteredGigs.length,
-    gigs: filteredGigs.map(g => ({ id: g._id, title: g.title, status: g.status }))
+  )
   });
 
   const formatDate = (dateString: string) => {
-    console.log('📅 Formatting date:', dateString);
+    
 
     if (!dateString) {
-      console.log('📅 No date string provided');
+      
       return 'Invalid date';
     }
 
@@ -385,7 +381,7 @@ const ApprovalPublishing = () => {
       const date = new Date(dateString);
 
       if (isNaN(date.getTime())) {
-        console.log('📅 Invalid date format');
+        
         return 'Invalid date';
       }
 
@@ -401,7 +397,7 @@ const ApprovalPublishing = () => {
         else result = `${diffInDays} days ago`;
       }
 
-      console.log('📅 Formatted result:', result);
+      
       return result;
     } catch (error) {
       console.error('📅 Error formatting date:', error);
@@ -438,24 +434,24 @@ const ApprovalPublishing = () => {
   // API Functions
   const approveGig = async (gigId: string) => {
     try {
-      console.log('🟢 Approving gig:', gigId);
+      
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
       const gigIdCookie = Cookies.get('gigId');
 
-      console.log('🔑 Auth tokens:', { companyId, userId, gigId: gigIdCookie });
+      
 
       if (!companyId || !userId) {
         throw new Error('Missing authentication tokens');
       }
 
       const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
-      console.log('🌐 API URL:', apiUrl);
+      
 
       const requestBody = {
         status: 'active'
       };
-      console.log('📦 Request body:', requestBody);
+      
 
       const response = await fetch(apiUrl, {
         method: 'PUT',
@@ -466,8 +462,8 @@ const ApprovalPublishing = () => {
         body: JSON.stringify(requestBody)
       });
 
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -476,7 +472,7 @@ const ApprovalPublishing = () => {
       }
 
       const responseData = await response.json();
-      console.log('✅ Gig approved successfully:', responseData);
+      
 
       // Update the gig status locally instead of refreshing
       setGigs(prevGigs => prevGigs.map(gig =>
@@ -499,7 +495,7 @@ const ApprovalPublishing = () => {
         return;
       }
 
-      console.log('🎯 Completing step 12 (Gig Activation) due to active gig');
+      
       const response = await fetch(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/4/steps/12`,
         {
@@ -513,7 +509,7 @@ const ApprovalPublishing = () => {
 
       if (response.ok) {
         const responseData = await response.json();
-        console.log('✅ Step 12 (Gig Activation) completed successfully:', responseData);
+        
       } else {
         console.warn('⚠️ Failed to complete step 12:', response.status);
       }
@@ -524,24 +520,24 @@ const ApprovalPublishing = () => {
 
   const rejectGig = async (gigId: string) => {
     try {
-      console.log('🔴 Rejecting gig:', gigId);
+      
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
       const gigIdCookie = Cookies.get('gigId');
 
-      console.log('🔑 Auth tokens:', { companyId, userId, gigId: gigIdCookie });
+      
 
       if (!companyId || !userId) {
         throw new Error('Missing authentication tokens');
       }
 
       const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
-      console.log('🌐 API URL:', apiUrl);
+      
 
       const requestBody = {
         status: 'inactive'
       };
-      console.log('📦 Request body:', requestBody);
+      
 
       const response = await fetch(apiUrl, {
         method: 'PUT',
@@ -552,8 +548,8 @@ const ApprovalPublishing = () => {
         body: JSON.stringify(requestBody)
       });
 
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -562,7 +558,7 @@ const ApprovalPublishing = () => {
       }
 
       const responseData = await response.json();
-      console.log('✅ Gig rejected successfully:', responseData);
+      
 
       // Update the gig status locally instead of refreshing
       setGigs(prevGigs => prevGigs.map(gig =>
@@ -590,14 +586,11 @@ const ApprovalPublishing = () => {
         gig.status === 'active' || gig.status === 'approved' || gig.status === 'published'
       );
 
-      console.log('🔍 Checking step 12 status after gig status change:', {
-        totalGigs: gigs.length,
-        hasActiveGig,
-        gigStatuses: gigs.map(g => g.status)
+      
       });
 
       if (!hasActiveGig) {
-        console.log('⚠️ No active gigs found - updating phase and step statuses');
+        
 
         // Mark step 12 as in_progress
         const stepResponse = await fetch(
@@ -624,7 +617,7 @@ const ApprovalPublishing = () => {
         );
 
         if (stepResponse.ok && phaseResponse.ok) {
-          console.log('⚠️ Step 12 and phase 4 statuses updated successfully');
+          
         } else {
           console.warn('⚠️ Failed to update step 12 or phase 4 status:', {
             stepStatus: stepResponse.status,
@@ -639,23 +632,23 @@ const ApprovalPublishing = () => {
 
   const fetchSkillsData = async (gigData: any) => {
     try {
-      console.log('🔍 Fetching skills data for gig');
+      
 
       // Collect skill IDs by category
       const professionalIds: string[] = [];
       const technicalIds: string[] = [];
       const softIds: string[] = [];
 
-      console.log('🔍 Gig skills structure:', gigData.skills);
+      
 
       if (gigData.skills?.professional) {
         gigData.skills.professional.forEach((skill: any) => {
-          console.log('🔍 Professional skill object:', skill);
+          
           // Try different possible structures
           const skillId = skill.skill?.$oid || skill.skill?._id || skill.skill || skill._id;
           if (skillId) {
             professionalIds.push(skillId);
-            console.log('✅ Added professional skill ID:', skillId);
+            
           } else {
             console.warn('⚠️ Could not extract professional skill ID from:', skill);
           }
@@ -664,12 +657,12 @@ const ApprovalPublishing = () => {
 
       if (gigData.skills?.technical) {
         gigData.skills.technical.forEach((skill: any) => {
-          console.log('🔍 Technical skill object:', skill);
+          
           // Try different possible structures
           const skillId = skill.skill?.$oid || skill.skill?._id || skill.skill || skill._id;
           if (skillId) {
             technicalIds.push(skillId);
-            console.log('✅ Added technical skill ID:', skillId);
+            
           } else {
             console.warn('⚠️ Could not extract technical skill ID from:', skill);
           }
@@ -678,23 +671,19 @@ const ApprovalPublishing = () => {
 
       if (gigData.skills?.soft) {
         gigData.skills.soft.forEach((skill: any) => {
-          console.log('🔍 Soft skill object:', skill);
+          
           // Try different possible structures
           const skillId = skill.skill?.$oid || skill.skill?._id || skill.skill || skill._id;
           if (skillId) {
             softIds.push(skillId);
-            console.log('✅ Added soft skill ID:', skillId);
+            
           } else {
             console.warn('⚠️ Could not extract soft skill ID from:', skill);
           }
         });
       }
 
-      console.log('📋 Skills IDs by category:', {
-        professional: professionalIds,
-        technical: technicalIds,
-        soft: softIds
-      });
+      
 
       const skillsDataMap: { [key: string]: any } = {};
 
@@ -706,17 +695,17 @@ const ApprovalPublishing = () => {
             const contentType = response.headers.get('content-type');
             if (contentType && contentType.includes('application/json')) {
               const responseData = await response.json();
-              console.log('✅ Fetched professional skills response:', responseData);
+              
 
               if (responseData.success && responseData.data && Array.isArray(responseData.data)) {
                 const professionalSkills = responseData.data;
-                console.log('✅ Professional skills data:', professionalSkills);
+                
 
                 professionalIds.forEach(skillId => {
                   const skill = professionalSkills.find((s: any) => s._id === skillId);
                   if (skill) {
                     skillsDataMap[skillId] = skill;
-                    console.log(`✅ Matched professional skill ${skillId}:`, skill.name);
+                    
                   } else {
                     console.warn(`⚠️ Professional skill ${skillId} not found`);
                   }
@@ -743,17 +732,17 @@ const ApprovalPublishing = () => {
             const contentType = response.headers.get('content-type');
             if (contentType && contentType.includes('application/json')) {
               const responseData = await response.json();
-              console.log('✅ Fetched technical skills response:', responseData);
+              
 
               if (responseData.success && responseData.data && Array.isArray(responseData.data)) {
                 const technicalSkills = responseData.data;
-                console.log('✅ Technical skills data:', technicalSkills);
+                
 
                 technicalIds.forEach(skillId => {
                   const skill = technicalSkills.find((s: any) => s._id === skillId);
                   if (skill) {
                     skillsDataMap[skillId] = skill;
-                    console.log(`✅ Matched technical skill ${skillId}:`, skill.name);
+                    
                   } else {
                     console.warn(`⚠️ Technical skill ${skillId} not found`);
                   }
@@ -780,17 +769,17 @@ const ApprovalPublishing = () => {
             const contentType = response.headers.get('content-type');
             if (contentType && contentType.includes('application/json')) {
               const responseData = await response.json();
-              console.log('✅ Fetched soft skills response:', responseData);
+              
 
               if (responseData.success && responseData.data && Array.isArray(responseData.data)) {
                 const softSkills = responseData.data;
-                console.log('✅ Soft skills data:', softSkills);
+                
 
                 softIds.forEach(skillId => {
                   const skill = softSkills.find((s: any) => s._id === skillId);
                   if (skill) {
                     skillsDataMap[skillId] = skill;
-                    console.log(`✅ Matched soft skill ${skillId}:`, skill.name);
+                    
                   } else {
                     console.warn(`⚠️ Soft skill ${skillId} not found`);
                   }
@@ -810,7 +799,7 @@ const ApprovalPublishing = () => {
       }
 
       setSkillsData(skillsDataMap);
-      console.log('✅ All skills data fetched and set:', skillsDataMap);
+      
     } catch (error) {
       console.error('❌ Error fetching skills data:', error);
     }
@@ -818,14 +807,14 @@ const ApprovalPublishing = () => {
 
   const fetchTimezoneData = async (gigData: any) => {
     try {
-      console.log('🌍 Fetching timezone data for gig');
+      
 
       // Get timezone ID from gig data
       const timezoneId = gigData.availability?.time_zone;
-      console.log('🔍 Timezone ID from gig:', timezoneId);
+      
 
       if (!timezoneId) {
-        console.log('⚠️ No timezone ID found in gig data');
+        
         return;
       }
 
@@ -836,17 +825,17 @@ const ApprovalPublishing = () => {
           const contentType = response.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
             const responseData = await response.json();
-            console.log('✅ Fetched timezones response:', responseData);
+            
 
             if (responseData.success && responseData.data && Array.isArray(responseData.data)) {
               const timezones = responseData.data;
-              console.log('✅ Timezones data:', timezones);
+              
 
               // Find the matching timezone
               const timezone = timezones.find((tz: any) => tz._id === timezoneId);
               if (timezone) {
                 setTimezoneData({ [timezoneId]: timezone });
-                console.log(`✅ Matched timezone ${timezoneId}:`, timezone.zoneName);
+                
               } else {
                 console.warn(`⚠️ Timezone ${timezoneId} not found`);
               }
@@ -869,14 +858,14 @@ const ApprovalPublishing = () => {
 
   const fetchDestinationZoneData = async (gigData: any) => {
     try {
-      console.log('🌍 Fetching destination zone data for gig');
+      
 
       // Get destination zone from gig data
       const destinationZone = gigData.destination_zone;
-      console.log('🔍 Destination zone from gig:', destinationZone);
+      
 
       if (!destinationZone) {
-        console.log('⚠️ No destination zone found in gig data');
+        
         return;
       }
 
@@ -889,7 +878,7 @@ const ApprovalPublishing = () => {
           const contentType = response.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
             const responseData = await response.json();
-            console.log('✅ Fetched destination zone timezones response:', responseData);
+            
 
             if (responseData.success && responseData.data && Array.isArray(responseData.data) && responseData.data.length > 0) {
               // Use the first element as specified
@@ -898,7 +887,7 @@ const ApprovalPublishing = () => {
                 ...prev,
                 0: timezone // Store as index 0 for easy access
               }));
-              console.log(`✅ Set destination zone timezone:`, timezone.countryName);
+              
             } else {
               console.warn('⚠️ Invalid response format for destination zone timezones');
             }
@@ -918,24 +907,24 @@ const ApprovalPublishing = () => {
 
   const archiveGig = async (gigId: string) => {
     try {
-      console.log('📦 Archiving gig:', gigId);
+      
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
       const gigIdCookie = Cookies.get('gigId');
 
-      console.log('🔑 Auth tokens:', { companyId, userId, gigId: gigIdCookie });
+      
 
       if (!companyId || !userId) {
         throw new Error('Missing authentication tokens');
       }
 
       const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
-      console.log('🌐 API URL:', apiUrl);
+      
 
       const requestBody = {
         status: 'archived'
       };
-      console.log('📦 Request body:', requestBody);
+      
 
       const response = await fetch(apiUrl, {
         method: 'PUT',
@@ -946,8 +935,8 @@ const ApprovalPublishing = () => {
         body: JSON.stringify(requestBody)
       });
 
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -956,7 +945,7 @@ const ApprovalPublishing = () => {
       }
 
       const responseData = await response.json();
-      console.log('✅ Gig archived successfully:', responseData);
+      
 
       // Update the gig status locally instead of refreshing
       setGigs(prevGigs => prevGigs.map(gig =>
@@ -973,19 +962,19 @@ const ApprovalPublishing = () => {
 
   const previewGig = async (gigId: string) => {
     try {
-      console.log('👁️ Previewing gig:', gigId);
+      
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
       const gigIdCookie = Cookies.get('gigId');
 
-      console.log('🔑 Auth tokens:', { companyId, userId, gigId: gigIdCookie });
+      
 
       if (!companyId || !userId) {
         throw new Error('Missing authentication tokens');
       }
 
       const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
-      console.log('🌐 API URL:', apiUrl);
+      
 
       const response = await fetch(apiUrl, {
         method: 'GET',
@@ -995,7 +984,7 @@ const ApprovalPublishing = () => {
         }
       });
 
-      console.log('📡 Response status:', response.status);
+      
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -1004,11 +993,8 @@ const ApprovalPublishing = () => {
       }
 
       const gigData = await response.json();
-      console.log('📋 Gig details for preview:', gigData);
-      console.log('📅 Date fields:', {
-        createdAt: gigData.data?.createdAt,
-        updatedAt: gigData.data?.updatedAt
-      });
+      
+      
 
       setCurrentGigData(gigData.data);
 
@@ -1030,19 +1016,19 @@ const ApprovalPublishing = () => {
 
   const editGig = async (gigId: string) => {
     try {
-      console.log('✏️ Editing gig:', gigId);
+      
       const companyId = Cookies.get('companyId');
       const userId = Cookies.get('userId');
       const gigIdCookie = Cookies.get('gigId');
 
-      console.log('🔑 Auth tokens:', { companyId, userId, gigId: gigIdCookie });
+      
 
       if (!companyId || !userId) {
         throw new Error('Missing authentication tokens');
       }
 
       const apiUrl = `${import.meta.env.VITE_GIGS_API}/gigs/${gigId}`;
-      console.log('🌐 API URL:', apiUrl);
+      
 
       // First, get the current gig data
       const getResponse = await fetch(apiUrl, {
@@ -1053,7 +1039,7 @@ const ApprovalPublishing = () => {
         }
       });
 
-      console.log('📡 Response status:', getResponse.status);
+      
 
       if (!getResponse.ok) {
         const errorText = await getResponse.text();
@@ -1062,11 +1048,8 @@ const ApprovalPublishing = () => {
       }
 
       const gigData = await getResponse.json();
-      console.log('📋 Current gig data for editing:', gigData);
-      console.log('📅 Date fields:', {
-        createdAt: gigData.data?.createdAt,
-        updatedAt: gigData.data?.updatedAt
-      });
+      
+      
 
       setCurrentGigData(gigData.data);
 
@@ -1087,7 +1070,7 @@ const ApprovalPublishing = () => {
   };
 
   const approveSelectedGigs = async () => {
-    console.log('🟢 Approving selected gigs:', selectedGigs);
+    
     for (const gigId of selectedGigs) {
       await approveGig(gigId);
     }
@@ -1095,7 +1078,7 @@ const ApprovalPublishing = () => {
   };
 
   const rejectSelectedGigs = async () => {
-    console.log('🔴 Rejecting selected gigs:', selectedGigs);
+    
     for (const gigId of selectedGigs) {
       await rejectGig(gigId);
     }
@@ -1108,7 +1091,7 @@ const ApprovalPublishing = () => {
   };
 
   const addCommissionOption = () => {
-    console.log('➕ Adding commission option');
+    
     // Cette fonction peut être étendue pour ajouter de nouvelles options de commission
     // Pour l'instant, elle affiche juste un log
   };
@@ -1218,7 +1201,7 @@ const ApprovalPublishing = () => {
         }
       };
 
-      console.log('💾 Saving gig changes:', updateData);
+      
 
       // Make API call to update the gig
       const response = await axios.put<{ success: boolean; message?: string }>(
@@ -1232,7 +1215,7 @@ const ApprovalPublishing = () => {
       );
 
       if (response.data.success) {
-        console.log('✅ Gig updated successfully');
+        
         // Update the local state
         setCurrentGigData({
           ...currentGigData,
@@ -1290,7 +1273,7 @@ const ApprovalPublishing = () => {
     );
   }
 
-  console.log('🎨 Rendering main component with', gigs.length, 'gigs');
+  
 
   // Preview View
   if (currentView === 'preview' && currentGigData) {
@@ -2487,7 +2470,7 @@ const ApprovalPublishing = () => {
           className={`flex-1 rounded-lg py-2 text-sm font-bold transition-all ${filter === 'all' ? 'bg-harx-50 text-harx-600' : 'text-gray-500 hover:bg-gray-50'
             }`}
           onClick={() => {
-            console.log('🔍 Filter changed to: all');
+            
             setFilter('all');
           }}
         >
@@ -2497,7 +2480,7 @@ const ApprovalPublishing = () => {
           className={`flex-1 rounded-lg py-2 text-sm font-bold transition-all ${filter === 'approved' ? 'bg-harx-50 text-harx-600' : 'text-gray-500 hover:bg-gray-50'
             }`}
           onClick={() => {
-            console.log('🔍 Filter changed to: approved');
+            
             setFilter('approved');
           }}
         >
@@ -2507,7 +2490,7 @@ const ApprovalPublishing = () => {
           className={`flex-1 rounded-lg py-2 text-sm font-bold transition-all ${filter === 'rejected' ? 'bg-harx-50 text-harx-600' : 'text-gray-500 hover:bg-gray-50'
             }`}
           onClick={() => {
-            console.log('🔍 Filter changed to: rejected');
+            
             setFilter('rejected');
           }}
         >
@@ -2517,7 +2500,7 @@ const ApprovalPublishing = () => {
           className={`flex-1 rounded-lg py-2 text-sm font-bold transition-all ${filter === 'archived' ? 'bg-harx-50 text-harx-600' : 'text-gray-500 hover:bg-gray-50'
             }`}
           onClick={() => {
-            console.log('🔍 Filter changed to: archived');
+            
             setFilter('archived');
           }}
         >

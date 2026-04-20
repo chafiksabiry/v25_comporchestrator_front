@@ -6,7 +6,7 @@ const GIGS_API_URL = import.meta.env.VITE_API_URL_GIGS || 'http://localhost:5012
 
 // ===== REPS API =====
 export const getReps = async (): Promise<Rep[]> => {
-    console.log('getReps called');
+    
     try {
         const response = await fetch(`${MATCHING_API_URL}/reps`, {
             method: 'GET',
@@ -21,7 +21,7 @@ export const getReps = async (): Promise<Rep[]> => {
         }
 
         const data = await response.json();
-        console.log('Parsed getReps response:', data);
+        
 
         if (!Array.isArray(data)) {
             throw new Error('Invalid response format: expected an array of reps');
@@ -36,7 +36,7 @@ export const getReps = async (): Promise<Rep[]> => {
 
 // ===== GIGS API =====
 export const getGigs = async (): Promise<Gig[]> => {
-    console.log('getGigs called');
+    
     try {
         const response = await fetch(`${MATCHING_API_URL}/gigs`);
 
@@ -46,7 +46,7 @@ export const getGigs = async (): Promise<Gig[]> => {
         }
 
         const data = await response.json();
-        console.log('Parsed getGigs response:', data);
+        
 
         if (!Array.isArray(data)) {
             throw new Error('Invalid response format: expected an array of gigs');
@@ -60,7 +60,7 @@ export const getGigs = async (): Promise<Gig[]> => {
 };
 
 export const getGigsByCompanyId = async (companyId: string): Promise<Gig[]> => {
-    console.log('getGigsByCompanyId called with:', companyId);
+    
     try {
         const response = await fetch(`${GIGS_API_URL}/gigs/company/${companyId}?populate=companyId`);
 
@@ -69,7 +69,7 @@ export const getGigsByCompanyId = async (companyId: string): Promise<Gig[]> => {
         }
 
         const result = await response.json();
-        console.log('Parsed getGigsByCompanyId response:', result);
+        
 
         return result.data || [];
     } catch (error) {
@@ -80,7 +80,7 @@ export const getGigsByCompanyId = async (companyId: string): Promise<Gig[]> => {
 
 // ===== MATCHING API =====
 export const findMatchesForGig = async (gigId: string, weights: MatchingWeights): Promise<MatchResponse> => {
-    console.log('findMatchesForGig called with:', { gigId, weights });
+    
     try {
         const response = await fetch(`${MATCHING_API_URL}/matches/gig/${gigId}`, {
             method: 'POST',
@@ -113,7 +113,7 @@ export const findMatchesForGig = async (gigId: string, weights: MatchingWeights)
         }
 
         const data = await response.json();
-        console.log('Parsed findMatchesForGig response:', data);
+        
 
         // Vérifier la structure de la réponse
         if (data.preferedmatches) {
@@ -144,7 +144,7 @@ export const findMatchesForGig = async (gigId: string, weights: MatchingWeights)
 };
 
 export const findGigsForRep = async (agentId: string, weights: MatchingWeights): Promise<{ matches: Match[] }> => {
-    console.log('findGigsForRep called with:', { agentId, weights });
+    
     try {
         const response = await fetch(`${MATCHING_API_URL}/matches/agent/${agentId}`, {
             method: 'POST',
@@ -160,7 +160,7 @@ export const findGigsForRep = async (agentId: string, weights: MatchingWeights):
         }
 
         const data = await response.json();
-        console.log('Parsed findGigsForRep response:', data);
+        
 
         return {
             matches: data.matches || []
@@ -172,7 +172,7 @@ export const findGigsForRep = async (agentId: string, weights: MatchingWeights):
 };
 
 export const generateOptimalMatches = async (weights: MatchingWeights): Promise<{ matches: Match[] }> => {
-    console.log('generateOptimalMatches called with weights:', weights);
+    
     try {
         const response = await fetch(`${MATCHING_API_URL}/matches/optimal`, {
             method: 'POST',
@@ -188,7 +188,7 @@ export const generateOptimalMatches = async (weights: MatchingWeights): Promise<
         }
 
         const data = await response.json();
-        console.log('Parsed generateOptimalMatches response:', data);
+        
 
         return {
             matches: data.matches || []
@@ -201,7 +201,7 @@ export const generateOptimalMatches = async (weights: MatchingWeights): Promise<
 
 // ===== GIG-AGENT API =====
 export const createGigAgent = async (request: GigAgentRequest) => {
-    console.log('createGigAgent called with:', request);
+    
     try {
         const response = await fetch(`${MATCHING_API_URL}/gig-agents`, {
             method: 'POST',
@@ -217,7 +217,7 @@ export const createGigAgent = async (request: GigAgentRequest) => {
         }
 
         const data = await response.json();
-        console.log('Parsed createGigAgent response:', data);
+        
 
         return data;
     } catch (error) {
@@ -227,7 +227,7 @@ export const createGigAgent = async (request: GigAgentRequest) => {
 };
 
 export const getGigAgentsForGig = async (gigId: string): Promise<any[]> => {
-    console.log('getGigAgentsForGig called with:', gigId);
+    
     try {
         const response = await fetch(`${MATCHING_API_URL}/gig-agents/gig/${gigId}`);
 
@@ -236,7 +236,7 @@ export const getGigAgentsForGig = async (gigId: string): Promise<any[]> => {
         }
 
         const data = await response.json();
-        console.log('Parsed getGigAgentsForGig response:', data);
+        
 
         return data || [];
     } catch (error) {
@@ -254,7 +254,7 @@ export const getInvitedAgentsForCompany = async (companyId: string): Promise<any
         }
 
         const data = await response.json();
-        console.log('📧 Invited agents for company:', data);
+        
         return data;
     } catch (error) {
         console.error('Error fetching invited agents for company:', error);
@@ -271,7 +271,7 @@ export const getActiveAgentsForCompany = async (companyId: string): Promise<any[
         }
 
         const data = await response.json();
-        console.log('✅ Active agents for company:', data);
+        
         return data;
     } catch (error) {
         console.error('Error fetching active agents for company:', error);
@@ -295,7 +295,7 @@ export const acceptEnrollmentRequest = async (gigAgentId: string, notes?: string
         }
 
         const data = await response.json();
-        console.log('✅ Enrollment request accepted:', data);
+        
         return data;
     } catch (error) {
         console.error('Error accepting enrollment request:', error);
@@ -319,7 +319,7 @@ export const rejectEnrollmentRequest = async (gigAgentId: string, notes?: string
         }
 
         const data = await response.json();
-        console.log('❌ Enrollment request rejected:', data);
+        
         return data;
     } catch (error) {
         console.error('Error rejecting enrollment request:', error);
@@ -336,7 +336,7 @@ export const getEnrollmentRequestsForCompany = async (companyId: string): Promis
         }
 
         const data = await response.json();
-        console.log('📋 Enrollment requests for company:', data);
+        
         return data;
     } catch (error) {
         console.error('Error fetching enrollment requests for company:', error);
@@ -362,7 +362,7 @@ export const getAllSkills = async (): Promise<{
     technical: Skill[];
     soft: Skill[];
 }> => {
-    console.log('getAllSkills called');
+    
 
     // Return mock data for now since the API endpoint doesn't exist
     const mockSkills = {
@@ -383,7 +383,7 @@ export const getAllSkills = async (): Promise<{
         ]
     };
 
-    console.log('Using mock skills data:', mockSkills);
+    
     return mockSkills;
 
     /* Commented out until API endpoint is available
@@ -395,7 +395,7 @@ export const getAllSkills = async (): Promise<{
       }
       
       const data = await response.json();
-      console.log('Parsed getAllSkills response:', data);
+      
       
       return {
         professional: data.professional || [],
@@ -410,7 +410,7 @@ export const getAllSkills = async (): Promise<{
 };
 
 export const getLanguages = async (): Promise<Language[]> => {
-    console.log('getLanguages called');
+    
 
     // Return mock data for now since the API endpoint doesn't exist
     const mockLanguages = [
@@ -426,7 +426,7 @@ export const getLanguages = async (): Promise<Language[]> => {
         { _id: '10', name: 'Japanese', code: 'ja' },
     ];
 
-    console.log('Using mock languages data:', mockLanguages);
+    
     return mockLanguages;
 
     /* Commented out until API endpoint is available
@@ -438,7 +438,7 @@ export const getLanguages = async (): Promise<Language[]> => {
       }
       
       const data = await response.json();
-      console.log('Parsed getLanguages response:', data);
+      
       
       return data || [];
     } catch (error) {
@@ -456,7 +456,7 @@ export const getLanguages = async (): Promise<Language[]> => {
  * @param status - Optional status filter (invited, enrolled, requested, rejected)
  */
 export const getAgentGigs = async (agentId: string, status?: string): Promise<any> => {
-    console.log('🆕 getAgentGigs called with:', { agentId, status });
+    
     try {
         const url = status
             ? `${MATCHING_API_URL}/gig-agents/agents/${agentId}/gigs?status=${status}`
@@ -469,7 +469,7 @@ export const getAgentGigs = async (agentId: string, status?: string): Promise<an
         }
 
         const data = await response.json();
-        console.log('✅ Agent gigs retrieved:', data);
+        
         return data;
     } catch (error) {
         console.error('❌ Error fetching agent gigs:', error);
@@ -483,7 +483,7 @@ export const getAgentGigs = async (agentId: string, status?: string): Promise<an
  * @param status - Optional status filter (invited, enrolled, requested, rejected)
  */
 export const getGigAgents = async (gigId: string, status?: string): Promise<any> => {
-    console.log('🆕 getGigAgents called with:', { gigId, status });
+    
     try {
         const url = status
             ? `${MATCHING_API_URL}/gig-agents/gigs/${gigId}/agents?status=${status}`
@@ -496,7 +496,7 @@ export const getGigAgents = async (gigId: string, status?: string): Promise<any>
         }
 
         const data = await response.json();
-        console.log('✅ Gig agents retrieved:', data);
+        
         return data;
     } catch (error) {
         console.error('❌ Error fetching gig agents:', error);
@@ -515,7 +515,7 @@ export interface GigWeights {
 
 // Save matching weights for a gig
 export const saveGigWeights = async (gigId: string, matchingWeights: MatchingWeights): Promise<GigWeights> => {
-    console.log('🚨 SAVE GIG WEIGHTS CALLED:', { gigId, matchingWeights });
+    
     try {
         const response = await fetch(`${MATCHING_API_URL}/gig-matching-weights/${gigId}`, {
             method: 'POST',
@@ -533,7 +533,7 @@ export const saveGigWeights = async (gigId: string, matchingWeights: MatchingWei
         }
 
         const data = await response.json();
-        console.log('✅ SAVE GIG WEIGHTS SUCCESS:', data);
+        
         return data.data || data;
     } catch (error) {
         console.error('❌ Error saving gig weights:', error);
@@ -543,7 +543,7 @@ export const saveGigWeights = async (gigId: string, matchingWeights: MatchingWei
 
 // Get matching weights for a gig
 export const getGigWeights = async (gigId: string): Promise<GigWeights> => {
-    console.log('🔄 GET GIG WEIGHTS CALLED:', gigId);
+    
     try {
         const response = await fetch(`${MATCHING_API_URL}/gig-matching-weights/${gigId}`);
 
@@ -556,7 +556,7 @@ export const getGigWeights = async (gigId: string): Promise<GigWeights> => {
         }
 
         const data = await response.json();
-        console.log('✅ GET GIG WEIGHTS SUCCESS:', data);
+        
         return data.data || data;
     } catch (error) {
         console.error('❌ Error getting gig weights:', error);
@@ -566,7 +566,7 @@ export const getGigWeights = async (gigId: string): Promise<GigWeights> => {
 
 // Reset weights to defaults for a gig
 export const resetGigWeights = async (gigId: string): Promise<void> => {
-    console.log('🔄 RESET GIG WEIGHTS CALLED:', gigId);
+    
     try {
         const response = await fetch(`${MATCHING_API_URL}/gig-matching-weights/${gigId}`, {
             method: 'DELETE',
@@ -577,7 +577,7 @@ export const resetGigWeights = async (gigId: string): Promise<void> => {
             throw new Error(errorData.message || 'Failed to reset gig weights');
         }
 
-        console.log('✅ RESET GIG WEIGHTS SUCCESS');
+        
     } catch (error) {
         console.error('❌ Error resetting gig weights:', error);
         throw error;
@@ -600,7 +600,7 @@ export const checkMatchRepsStepCompletion = async (companyId: string): Promise<{
     totalGigs: number;
     message: string;
 }> => {
-    console.log('🔍 CHECK MATCH REPS STEP COMPLETION CALLED:', companyId);
+    
     try {
         const response = await fetch(`${MATCHING_API_URL}/enrollment/company/${companyId}/step-completion`);
 
@@ -610,7 +610,7 @@ export const checkMatchRepsStepCompletion = async (companyId: string): Promise<{
         }
 
         const data = await response.json();
-        console.log('✅ MATCH REPS STEP COMPLETION STATUS:', data);
+        
         return data;
     } catch (error) {
         console.error('❌ Error checking Match REPS step completion:', error);

@@ -60,7 +60,7 @@ function DealManagementPanel() {
 
       const result = await response.json();
       const fetchedDeals = result.data.data;
-      console.log("Deals récupérés :", fetchedDeals);
+      
 
       // Afficher les deals un par un avec un délai
       for (let i = 0; i < fetchedDeals.length; i++) {

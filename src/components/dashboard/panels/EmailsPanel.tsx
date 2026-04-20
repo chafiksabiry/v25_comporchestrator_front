@@ -130,7 +130,7 @@ function EmailsPanel() {
   const handleSendEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implémenter l'envoi d'email
-    console.log('Email à envoyer:', emailForm);
+    
     setIsComposeOpen(false);
     setEmailForm({ to: '', subject: '', content: '' });
   };
@@ -199,7 +199,7 @@ Date: ${formatDate(email.receivedTime)}
         refreshToken: "xxxx" // Remplacer par votre vrai Refresh Token
       };
 
-      console.log("Tentative de configuration avec:", configData);
+      
 
       // Première étape : Configuration
       const configResponse = await fetch(`${import.meta.env.VITE_COMPANY_API_URL}/zoho/configure`, {
@@ -211,14 +211,14 @@ Date: ${formatDate(email.receivedTime)}
       });
 
       const configResult = await configResponse.json();
-      console.log("Configuration response:", configResult);
+      
 
       if (!configResponse.ok) {
         throw new Error(configResult.message || 'Erreur lors de la configuration de Zoho');
       }
 
       if (configResult.success) {
-        console.log("Configuration réussie, récupération du token...");
+        
         // Deuxième étape : Récupération du token
         const tokenResponse = await fetch(`${import.meta.env.VITE_COMPANY_API_URL}/zoho/token`, {
           method: 'GET',
@@ -232,10 +232,10 @@ Date: ${formatDate(email.receivedTime)}
         }
 
         const tokenResult = await tokenResponse.json();
-        console.log("Token response:", tokenResult);
+        
 
         if (tokenResult.access_token) {
-          console.log("Nouveau token récupéré:", tokenResult.access_token);
+          
           localStorage.setItem('zoho_access_token', tokenResult.access_token);
           setIsZohoConnected(true);
           // Vous pouvez ajouter ici d'autres actions après la connexion réussie
@@ -320,15 +320,15 @@ Date: ${formatDate(email.receivedTime)}
 
   useEffect(() => {
     const token = localStorage.getItem('zoho_access_token');
-    console.log("=== Initialisation ===");
-    console.log("Token au démarrage:", token ? "Présent" : "Absent");
+    
+    
 
     if (token) {
-      console.log("Token value:", token);
+      
       setIsZohoConnected(true);
       fetchAllCounts();
     } else {
-      console.log("Aucun token trouvé - Configuration de Zoho");
+      
       setIsZohoConnected(false);
       setIsLoading(false);
     }

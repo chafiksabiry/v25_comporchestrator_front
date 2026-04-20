@@ -57,18 +57,18 @@ export const OnboardingService = {
   async fetchGigsByIndustry(industryIdentifier: string, companyId?: string): Promise<GigApiResponse> {
     try {
       const effectiveCompanyId = companyId || this.getCompanyId();
-      console.log('[OnboardingService] Fetching gigs for companyId:', effectiveCompanyId);
-      console.log('[OnboardingService] Filtering by industry:', industryIdentifier);
+      
+      
 
       // First fetch all gigs for the company
       const response = await this.fetchGigsByCompany(companyId);
 
       if (!response.data || response.data.length === 0) {
-        console.log('[OnboardingService] No gigs found for this company at all');
+        
         return response;
       }
 
-      console.log('[OnboardingService] Total gigs fetched:', response.data.length);
+      
 
       // Check if industryIdentifier is an ID (ObjectId format: 24 hex characters) or a name
       if (!industryIdentifier) {
@@ -117,7 +117,7 @@ export const OnboardingService = {
         filteredGigs = response.data;
       }
 
-      console.log('[OnboardingService] Final gigs count:', filteredGigs.length);
+      
 
       return {
         ...response,

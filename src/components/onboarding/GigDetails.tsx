@@ -130,7 +130,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
   const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
   const companyId = Cookies.get('companyId');
 
-  console.log('GigDetails render - selectedGig:', selectedGig);
+  
 
   useEffect(() => {
     const fetchGigs = async () => {
@@ -271,7 +271,7 @@ const GigDetails: React.FC<GigDetailsProps> = ({ onAddNew }) => {
       }
     };
 
-    console.log('Rendering GigReview with gig:', mappedGig);
+    
     return (
       <GigReview
         data={mappedGig as any}

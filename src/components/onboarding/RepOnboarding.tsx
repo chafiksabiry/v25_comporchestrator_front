@@ -211,7 +211,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     if (url) {
       setLoadingPresentation(true);
       try {
-        console.log('[RepOnboarding] Fetching presentation JSON from:', url);
+        
         const response = await axios.get(url);
         const raw = response.data as Record<string, unknown> | null | undefined;
         const fromUrl =
@@ -236,10 +236,10 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     // Présentation embarquée (Mongo) : source de vérité pour titre, bullets, visualConfig
     let presentationToUse;
     if (journey.presentation && journey.presentation.slides && journey.presentation.slides.length > 0) {
-      console.log('[RepOnboarding] Using stored AI presentation from journey object');
+      
       presentationToUse = journey.presentation;
     } else {
-      console.log('[RepOnboarding] Using local mapping for presentation');
+      
       presentationToUse = mapJourneyToPresentation(journey);
     }
 
@@ -330,7 +330,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           },
         })
       );
-      console.log("[RepOnboarding] Step 9 synced with onboarding API");
+      
     } catch (error) {
       console.error("[RepOnboarding] Failed to reload onboarding after step 9:", error);
       window.dispatchEvent(new Event("refreshOnboardingProgress"));
@@ -340,7 +340,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   // Function to fetch trainings for the company
   const fetchCompanyTrainings = useCallback(async () => {
     if (!companyId) {
-      console.log('[RepOnboarding] No companyId available, skipping training fetch');
+      
       return;
     }
 
@@ -359,14 +359,14 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         idsToFetch.push(legacyCompanyId);
       }
 
-      console.log('[RepOnboarding] Fetching trainings for IDs:', idsToFetch, 'from URL:', baseUrl);
+      
       
       // Fetch from all identified IDs in parallel
       const fetchPromises = idsToFetch.map(async (id) => {
         try {
           const apiUrl = `${baseUrl}/training_journeys/trainer/companyId/${id}${gigParam}`;
           const response = (await axios.get(apiUrl)) as any;
-          console.log(`[RepOnboarding] API Response for ID ${id}:`, response.data);
+          
 
           let backendData = response.data as any;
           if (backendData && backendData.success && backendData.data) {
@@ -401,7 +401,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         const draftCompId = draft.company?.id;
         
         if (draftCompId && !idsToFetch.includes(draftCompId)) {
-          console.log('[RepOnboarding] ⚠️ 0 results, attempting fallback search with draftCompanyId:', draftCompId);
+          
           try {
             const fallbackUrl = `${baseUrl}/training_journeys/trainer/companyId/${draftCompId}${gigParam}`;
             const fallbackResponse = await axios.get(fallbackUrl) as any;
@@ -412,7 +412,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               : (fallbackData && fallbackData.data && Array.isArray(fallbackData.data) ? fallbackData.data : []);
               
             if (fallbackJourneys.length > 0) {
-              console.log('[RepOnboarding] ✅ Fallback found', fallbackJourneys.length, 'trainings! Merging.');
+              
               journeysArray = [...journeysArray, ...fallbackJourneys];
               
               // Second deduplication
@@ -430,7 +430,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         }
       }
 
-      console.log('[RepOnboarding] Total unique trainings found:', journeysArray.length);
+      
       setTrainings(journeysArray);
 
       // Auto-complete step 9 if trainings already exist (e.g. returning user)
@@ -438,21 +438,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         void updateOnboardingProgress();
         
         // --- DIAGNOSTIC: Log first journey structure ---
-        console.log('[RepOnboarding] Sample journey from backend:', {
-          id: journeysArray[0]._id || journeysArray[0].id,
-          companyId: journeysArray[0].companyId,
-          trainingName: journeysArray[0].name || journeysArray[0].title
-        });
+        
       }
 
       // --- DIAGNOSTIC: Check for local drafts ---
       if (DraftService.hasDraft()) {
         const draft = DraftService.getDraft();
-        console.log('[RepOnboarding] Local draft found in storage:', {
-          draftCompanyId: draft.company?.id,
-          currentCompanyId: companyId,
-          journeyName: draft.journey?.name
-        });
+        
       }
     } catch (error) {
       console.error('[RepOnboarding] Error fetching trainings:', error);
@@ -494,7 +486,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     const fetchLegacyId = async () => {
       if (!companyId) return;
       try {
-        console.log('[RepOnboarding] Fetching legacy ID for MongoDB ID:', companyId);
+        
         const data = await OnboardingService.fetchCompanyData(companyId);
         
         // Extract legacy/internal companyId if it exists (e.g. 1775669981637)
@@ -502,10 +494,10 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         const legacyId = data?.companyId || data?.data?.companyId;
 
         if (legacyId && legacyId !== companyId) {
-          console.log('[RepOnboarding] Found distinct legacy ID:', legacyId);
+          
           setLegacyCompanyId(legacyId);
         } else {
-          console.log('[RepOnboarding] No distinct legacy ID found, using standard ID.');
+          
           // Even if no distinct legacy ID, using the one from API might be safer
           if (idFromApi && idFromApi !== companyId) {
              setLegacyCompanyId(idFromApi);
@@ -525,7 +517,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       try {
         const gigs = await getGigsByCompanyId(companyId);
         setCompanyGigs(gigs || []);
-        console.log('[RepOnboarding] Gigs loaded for dropdown:', gigs.length);
+        
       } catch (error) {
         console.error('[RepOnboarding] Error fetching gigs:', error);
       }

@@ -291,7 +291,7 @@ export default function PresentationPreview({
   const handleExportPPTX = async () => {
     setIsExporting(true);
     try {
-      console.log('📦 Exporting to PPTX...');
+      
       const blob = await AIService.exportToPowerPoint(presentation);
 
       // Create Object URL and trigger download
@@ -304,7 +304,7 @@ export default function PresentationPreview({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      console.log('✅ PPTX exported successfully');
+      
     } catch (error) {
       console.error('❌ PPTX export failed:', error);
       alert('PowerPoint export failed. Please try again.');

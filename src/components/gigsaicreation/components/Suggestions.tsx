@@ -405,10 +405,10 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
     const loadCurrencies = async () => {
       setCurrenciesLoading(true);
       try {
-        console.log('💰 SUGGESTIONS - Loading currencies from API...');
+        
         const fetchedCurrencies = await fetchAllCurrencies();
         setCurrencies(fetchedCurrencies);
-        console.log('💰 SUGGESTIONS - Loaded currencies:', fetchedCurrencies.length);
+        
       } catch (error) {
         console.error('❌ Error loading currencies in Suggestions:', error);
       } finally {
@@ -435,7 +435,7 @@ export const Suggestions: React.FC<SuggestionsProps> = (props) => {
         } : null);
       }
 
-      console.log('💰 SUGGESTIONS - Set default currency:', defaultCurrencyId);
+      
     }
   }, [currencies, suggestions?.commission]);
 

@@ -273,20 +273,20 @@ export function TeamStructure({ data, onChange, errors, onPrevious, onNext, onSa
 
   const totalTeamSize = normalizedStructure.reduce((sum, role) => sum + role.count, 0);
 
-  console.log('👥 TEAM SECTION - Rendering TeamStructure component');
-  console.log('👥 TEAM SECTION - data:', data);
-  console.log('👥 TEAM SECTION - initializedTeam.team:', initializedTeam.team);
-  console.log('👥 TEAM SECTION - team.size:', initializedTeam.team.size);
-  console.log('👥 TEAM SECTION - team.structure:', initializedTeam.team.structure);
-  console.log('👥 TEAM SECTION - team.territories:', initializedTeam.team.territories);
-  console.log('👥 TEAM SECTION - team.reporting:', initializedTeam.team.reporting);
-  console.log('👥 TEAM SECTION - team.collaboration:', initializedTeam.team.collaboration);
-  console.log('👥 TEAM SECTION - normalizedStructure:', normalizedStructure);
-  console.log('👥 TEAM SECTION - totalTeamSize:', totalTeamSize);
-  console.log('👥 TEAM SECTION - territoriesFromAPI:', territoriesFromAPI);
-  console.log('👥 TEAM SECTION - territoriesLoading:', territoriesLoading);
-  console.log('👥 TEAM SECTION - territoryNames:', territoryNames);
-  console.log('👥 TEAM SECTION - errors:', errors);
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   return (
     <div className="w-full bg-white">

@@ -31,7 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userId = import.meta.env.VITE_ENV === 'test'
       ? '6807abfc2c1ca099fe2b13c5'
       : Cookies.get('userId');
-    console.log('Stored userId:', userId);
+    
 
     if (userId) {
       setCurrentUser({ id: userId });

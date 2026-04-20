@@ -71,7 +71,7 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
   useEffect(() => {
     // Skip auto-save during RehearsalMode (step 3) - quizzes are saved locally only
     if (currentStep === 3) {
-      console.log('[JourneyBuilder] Skipping auto-save - in RehearsalMode. Quizzes will be saved when journey is launched.');
+      
       return;
     }
 
@@ -82,7 +82,7 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
       // Only auto-save if we have a draftId (journey already created)
       // Première persistance backend : validation chat (ContentUploader), ou saveDraftImmediately après upload / curriculum — pas au seul wizard setup.
       if (currentDraft.draftId) {
-        console.log('[JourneyBuilder] Auto-saving with existing draftId:', currentDraft.draftId);
+        
         // Use debounced save to prevent multiple rapid saves
         DraftService.saveDraftToBackend({
           company,
@@ -95,7 +95,7 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
           draftId: currentDraft.draftId // Explicitly pass draftId
         });
       } else {
-        console.log('[JourneyBuilder] Skipping auto-save - no draftId yet. Initial save will be handled by explicit saveDraftImmediately calls.');
+        
       }
     }
   }, [company, journey, methodology, uploads, modules, currentStep, selectedGigId, isRestoringDraft]);
@@ -178,16 +178,12 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
           presentation: presentationData
         };
 
-        console.log('[JourneyBuilder] Finalizing journey with PPTX/Presentation:', {
-          filetraining,
-          hasPresentation: !!presentationData,
-          persistedJourneyId: persistedJourneyId || null
-        });
+        
 
         // ContentUploader a déjà fait POST/PUT via JourneyService : ne pas refaire saveDraftImmediately
         // sans draftId (sinon 2e POST = doublon liste REP onboarding).
         if (persistedJourneyId && /^[0-9a-fA-F]{24}$/.test(persistedJourneyId)) {
-          console.log('[JourneyBuilder] Skipping duplicate backend save — journey already persisted from ContentUploader');
+          
         } else {
           await DraftService.saveDraftImmediately({
             uploads: finalUploads,

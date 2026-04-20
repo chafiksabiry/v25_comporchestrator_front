@@ -29,13 +29,13 @@ export default function PowerPointViewer({ pptBlob, onClose }: PowerPointViewerP
       // qui convertit PPTX en images (par exemple, en utilisant Apache POI sur Java, 
       // ou une bibliothèque/service dédié).
       // Pour cette simulation, nous générons des images mock avec SVG.
-      console.log("🎨 Generating PowerPoint preview slides...");
+      
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate processing time
 
       // Générer des slides SVG embarquées (pas de dépendances externes)
       const mockImages = generateMockSlides();
       setSlideImages(mockImages);
-      console.log("✅ Mock PowerPoint slides generated:", mockImages.length, "slides");
+      
 
     } catch (err) {
       console.error("❌ Error loading PowerPoint:", err);

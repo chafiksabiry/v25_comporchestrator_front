@@ -446,12 +446,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
             uploadFolder,
             (progress) => {
               // Update progress if needed
-              console.log(`Upload progress for ${upload.name}: ${progress.percentage}%`);
+              
             }
           );
           cloudinaryUrl = uploadResult.secureUrl;
           publicId = uploadResult.publicId;
-          console.log(`✅ File uploaded to Cloudinary: ${upload.name}`, cloudinaryUrl);
+          
         } catch (uploadError) {
           console.warn('⚠️ Cloudinary upload failed, attempting fallback to backend storage:', uploadError);
           try {
@@ -459,7 +459,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             const backendResult = await AIService.uploadDocumentViaBackend(upload.file, currentAnalysisMetadata);
             cloudinaryUrl = backendResult.url;
             publicId = backendResult.publicId;
-            console.log(`✅ File uploaded via fallback to backend: ${upload.name}`, cloudinaryUrl);
+            
           } catch (fallbackError) {
             console.error('❌ Both Cloudinary and backend fallback failed:', fallbackError);
           }
@@ -613,7 +613,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         if (allAnalyses.length === 0) throw new Error('No analyzed content available');
 
         if (allAnalyses.length > 1) {
-          console.log(`🧠 Synthesizing ${allAnalyses.length} documents...`);
+          
           curriculum = await AIService.synthesizeAnalyses(allAnalyses as any);
         } else {
           const mainAnalysis = allAnalyses[0];
@@ -645,11 +645,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setGeneratedCurriculum(curriculum);
 
       const generationContext = await buildPresentationSourceContext(includeKbSource);
-      console.log('[ContentUploader] Generating presentation with source mode:', generationContext.sourceMode, {
-        uploads: generationContext.uploadAnalyses?.length || 0,
-        kbDocs: generationContext.knowledgeDocuments?.length || 0,
-        callRecordings: generationContext.callRecordings?.length || 0,
-      });
+      
       const presentation = normalizePresentationFromApi(
         await AIService.generatePresentation(curriculum, {
           gigId: gigId || undefined,
@@ -786,7 +782,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
     try {
       setIsSavingCloud(true);
-      console.log('💾 Saving generated training journey...');
+      
       const fileTrainingUrl: string | undefined = undefined;
       setFileTrainingUrl(undefined);
 
@@ -897,7 +893,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       if (regenerate) {
         setGeneratedPresentation(null);
       }
-      console.log('🤖 Génération de la présentation en cours...');
+      
 
       let curriculum = generatedCurriculum;
       const analyzedUploads = getAnalyzedUploads();
@@ -956,7 +952,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setIsPreviewOpen(false);
       setWorkspaceTab('artifact');
 
-      console.log('✅ Présentation générée avec succès !');
+      
     } catch (error: any) {
       console.error('Failed to generate presentation:', error);
       alert('Error generating presentation: ' + (error.message || 'Unknown error'));
@@ -996,7 +992,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
    */
   const fetchCurriculumFromGig = async (includeKbSource: boolean) => {
     if (!gigId) throw new Error('No Gig selected');
-    console.log('🎯 Generating from Gig:', gigId, 'useKnowledgeBase:', includeKbSource);
+    
     return await AIService.generateTrainingFromGig(gigId, {
       useKnowledgeBase: includeKbSource,
       includeCallRecordings: includeKbSource,

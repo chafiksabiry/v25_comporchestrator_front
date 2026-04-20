@@ -77,7 +77,7 @@ const DealOwnerPanel = () => {
       }
 
       const data: PipelinesResponse = await response.json();
-      console.log('Pipelines data:', data); // Pour déboguer
+       // Pour déboguer
 
       if (data.success && data.data && data.data.pipelines) {
         setPipelines(data.data.pipelines);

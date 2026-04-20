@@ -11,8 +11,8 @@ export default function TrainingModules({ modules, onModuleSelect }: TrainingMod
   const completedCount = modules.filter(m => m.completed).length;
   const totalCount = modules.length;
 
-  console.log('[TrainingModules] Received', modules.length, 'modules');
-  console.log('[TrainingModules] Modules sample:', modules.slice(0, 2));
+  
+  
 
   return (
     <div className="space-y-6">

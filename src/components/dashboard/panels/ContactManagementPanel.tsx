@@ -60,7 +60,7 @@ function ContactManagementPanel() {
 
       const result = await response.json();
       setContacts(result.data); // Backend returns the array in .data
-      console.log("Contacts récupérés :", result.data);
+      
     } catch (error) {
       console.error("Erreur :", error);
     }

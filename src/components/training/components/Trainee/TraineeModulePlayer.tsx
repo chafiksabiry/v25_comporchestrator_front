@@ -312,9 +312,7 @@ export default function TraineeModulePlayer({
 
   // Debug quiz state
   useEffect(() => {
-    console.log('[TraineeModulePlayer] Quiz state:', {
-      showModuleQuiz,
-      currentQuiz: currentQuiz ? { id: currentQuiz.id, question: currentQuiz.question?.substring(0, 50) } : null,
+     } : null,
       currentQuizIndex,
       hasAssessments: module.assessments && module.assessments.length > 0,
       assessments: module.assessments
@@ -393,18 +391,14 @@ export default function TraineeModulePlayer({
         }
       }
 
-      console.log('[TraineeModulePlayer] Module completed, checking for quizzes:', {
-        hasAssessments,
-        hasQuizzes,
-        assessments: module.assessments,
-        quizzes: (module as any).quizzes
+      .quizzes
       });
 
       // If quizzes exist, redirect automatically to quiz
       if (hasAssessments && module.assessments && module.assessments[0] && module.assessments[0].questions) {
-        console.log('[TraineeModulePlayer] Module completed, redirecting to quiz automatically');
+        
         const firstQuestion = module.assessments[0].questions[0];
-        console.log('[TraineeModulePlayer] First question:', firstQuestion);
+        
 
         if (firstQuestion) {
           const quizData = {
@@ -416,7 +410,7 @@ export default function TraineeModulePlayer({
             difficulty: firstQuestion.difficulty === 'easy' ? 3 : firstQuestion.difficulty === 'medium' ? 5 : 8,
             aiGenerated: true
           };
-          console.log('[TraineeModulePlayer] Setting quiz data:', quizData);
+          
 
           setCurrentQuiz(quizData);
           setShowModuleQuiz(true);
@@ -434,11 +428,11 @@ export default function TraineeModulePlayer({
         }
       } else if (hasQuizzes) {
         // If module has quizzes array, redirect to first quiz
-        console.log('[TraineeModulePlayer] Module completed, redirecting to quiz automatically (quizzes array)');
+        
         const questions = getQuizQuestions();
         if (questions.length > 0) {
           const firstQuestion = questions[0];
-          console.log('[TraineeModulePlayer] First question from quizzes:', firstQuestion);
+          
 
           if (firstQuestion) {
             const quizData = {
@@ -452,7 +446,7 @@ export default function TraineeModulePlayer({
               difficulty: firstQuestion.difficulty === 'easy' ? 3 : firstQuestion.difficulty === 'medium' ? 5 : 8,
               aiGenerated: true
             };
-            console.log('[TraineeModulePlayer] Setting quiz data from quizzes array:', quizData);
+            
 
             setCurrentQuiz(quizData);
             setShowModuleQuiz(true);
@@ -473,7 +467,7 @@ export default function TraineeModulePlayer({
         }
       } else {
         // No quizzes, complete immediately
-        console.log('[TraineeModulePlayer] Module completed, no quizzes available');
+        
         onComplete();
       }
     }
@@ -561,13 +555,7 @@ export default function TraineeModulePlayer({
                   attempts: 1
                 };
 
-                console.log('[TraineeModulePlayer] 💾 Saving quiz result in submitQuizAnswer:', {
-                  quizId,
-                  score: percentage,
-                  passed,
-                  correctAnswers,
-                  totalQuestions: questions.length
-                });
+                
 
                 // Save quiz results immediately
                 ProgressService.updateProgress({
@@ -576,7 +564,7 @@ export default function TraineeModulePlayer({
                   moduleId: moduleId,
                   quizz: quizz
                 }).then(() => {
-                  console.log('[TraineeModulePlayer] ✅ Quiz results saved successfully in submitQuizAnswer');
+                  
                   // Reload progress data after saving quiz
                   if (onQuizComplete) {
                     onQuizComplete();
@@ -587,10 +575,10 @@ export default function TraineeModulePlayer({
 
             if (passed) {
               setAllQuizzesPassed(true);
-              console.log('[TraineeModulePlayer] ✅ Quiz passed! Score:', score, '/', totalPoints, `(${percentage}%)`);
+              
             } else {
               setAllQuizzesPassed(false);
-              console.log('[TraineeModulePlayer] ⚠️ Quiz not passed. Score:', score, '/', totalPoints, `(${percentage}%)`);
+              
             }
           } else {
             setAllQuizzesPassed(false);
@@ -684,21 +672,12 @@ export default function TraineeModulePlayer({
           ? percentage >= passingScore
           : score >= passingScore;
 
-        console.log('[TraineeModulePlayer] Quiz completion check:', {
-          allAnswered,
-          score,
-          totalPoints,
-          percentage,
-          passingScore,
-          passingScoreIsPercentage,
-          passed,
-          totalQuestions: allQuestions.length,
-          answeredCount: Object.keys(quizAnswers).length
+        .length
         });
 
         if (passed) {
           setAllQuizzesPassed(true);
-          console.log('[TraineeModulePlayer] ✅ Quiz passed! Module can be completed.');
+          
 
           // Save final progress before completing
           if (journeyId && trainee.id) {
@@ -753,7 +732,7 @@ export default function TraineeModulePlayer({
                 engagementScore: engagementScore,
                 quizz: quizz
               }).then(() => {
-                console.log('[TraineeModulePlayer] ✅ Module marked as completed with quiz results');
+                
                 // Reload progress data after saving quiz and completing module
                 if (onQuizComplete) {
                   onQuizComplete();
@@ -765,7 +744,7 @@ export default function TraineeModulePlayer({
           // Don't auto-navigate, let user click "Next Module" button
           // The button will appear after all quizzes are passed
         } else {
-          console.log('[TraineeModulePlayer] ⚠️ Quiz not passed. Cannot proceed to next module.');
+          
           setAllQuizzesPassed(false);
 
           // ALWAYS save quiz result even if not passed (to track attempts)
@@ -802,7 +781,7 @@ export default function TraineeModulePlayer({
                 attempts: 1
               };
 
-              console.log('[TraineeModulePlayer] 💾 Saving quiz result (failed):', {
+              :', {
                 quizId,
                 score: percentage,
                 passed: false,
@@ -818,7 +797,7 @@ export default function TraineeModulePlayer({
                 status: 'in-progress',
                 quizz: quizz
               }).then(() => {
-                console.log('[TraineeModulePlayer] ✅ Quiz result (failed) saved successfully');
+                
                 // Reload progress data after saving quiz result
                 if (onQuizComplete) {
                   onQuizComplete();

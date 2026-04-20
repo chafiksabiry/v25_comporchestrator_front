@@ -258,7 +258,7 @@ export class DraftService {
     this.saveTimeout = setTimeout(async () => {
       // Prevent concurrent saves
       if (this.isSaving) {
-        console.log('[DraftService] Save already in progress, skipping debounced save...');
+        
         return;
       }
 
@@ -305,7 +305,7 @@ export class DraftService {
               existingJourneyId = null;
             }
 
-            console.log('[DraftService] DraftId sources (debounced):', {
+            :', {
               fromLatestDraft: latestDraft.draftId,
               fromUpdatedDraft: updatedDraft.draftId,
               fromJourneyId: (updatedDraft.journey as any).id,
@@ -317,10 +317,10 @@ export class DraftService {
             if (!existingJourneyId) {
               console.warn('[DraftService] ⚠️ No valid draftId found (debounced), will create new journey.');
             } else {
-              console.log('[DraftService] ✓ Found valid existing draftId (debounced):', existingJourneyId);
+              
             }
 
-            console.log('[DraftService] Saving draft (debounced) with journeyId:', existingJourneyId || 'NEW');
+            
 
             const response = await JourneyService.saveJourney(
               journeyToSave,
@@ -351,8 +351,8 @@ export class DraftService {
                 finalDraft.lastSaved = new Date().toISOString();
                 this.saveDraftLocally(finalDraft);
 
-                console.log('[DraftService] ✓ Draft saved successfully (debounced), journeyId:', savedJourneyId);
-                console.log('[DraftService] ✓ draftId saved to localStorage (debounced):', savedJourneyId);
+                
+                
               }
             }
           } catch (error) {
@@ -375,7 +375,7 @@ export class DraftService {
   static async saveDraftImmediately(draft: Partial<JourneyDraft>): Promise<void> {
     // Prevent concurrent saves
     if (this.isSaving) {
-      console.log('[DraftService] Save already in progress, skipping...');
+      
       return;
     }
 
@@ -402,7 +402,7 @@ export class DraftService {
       // Sauvegarder localement AVANT de sauvegarder dans le backend
       this.saveDraftLocally(updatedDraft);
 
-      console.log('[DraftService] Local draft updated, draftId:', updatedDraft.draftId);
+      
 
       // Sauvegarder dans le backend si possible (y compris modules vides après le wizard — sinon le parcours n’est jamais créé en base)
       if (updatedDraft.journey) {
@@ -437,10 +437,7 @@ export class DraftService {
             existingJourneyId = null;
           }
 
-          console.log('[DraftService] DraftId sources:', {
-            fromParam: draft.draftId,
-            fromLatestDraft: latestDraft.draftId,
-            fromJourneyId: (updatedDraft.journey as any).id,
+          .id,
             fromJourney_id: (updatedDraft.journey as any)._id,
             finalJourneyId: existingJourneyId,
             isValid: existingJourneyId ? isValidMongoId(existingJourneyId) : false
@@ -449,10 +446,10 @@ export class DraftService {
           if (!existingJourneyId) {
             console.warn('[DraftService] ⚠️ No valid draftId found, will create new journey. Make sure draftId is saved after first creation.');
           } else {
-            console.log('[DraftService] ✓ Found valid existing draftId:', existingJourneyId);
+            
           }
 
-          console.log('[DraftService] Saving draft with journeyId:', existingJourneyId || 'NEW');
+          
 
           const response = await JourneyService.saveJourney(
             journeyToSave,
@@ -484,8 +481,8 @@ export class DraftService {
               finalDraft.lastSaved = new Date().toISOString();
               this.saveDraftLocally(finalDraft);
 
-              console.log('[DraftService] ✓ Draft saved immediately, journeyId:', savedJourneyId);
-              console.log('[DraftService] ✓ draftId saved to localStorage:', savedJourneyId);
+              
+              
             }
           } else {
             console.error('[DraftService] ✗ Save failed - response:', response);
@@ -494,7 +491,7 @@ export class DraftService {
           console.warn('[DraftService] Could not save draft immediately to backend:', error);
         }
       } else {
-        console.log('[DraftService] Skipping backend save — no journey in draft');
+        
       }
     } catch (error) {
       console.error('[DraftService] Error saving draft immediately:', error);

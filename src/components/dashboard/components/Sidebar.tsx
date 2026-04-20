@@ -69,7 +69,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
 
               if (progressRes.ok) {
                 const progressData = await progressRes.json();
-                console.log("📊 Sidebar Onboarding Progress Data:", progressData);
+                
 
                 // Handle both direct object form and wrapped { data: { ... } } form
                 payload = progressData.data ? progressData.data : progressData;

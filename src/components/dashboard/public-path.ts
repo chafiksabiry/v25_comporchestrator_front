@@ -14,7 +14,7 @@ declare global {
     // Ensure the injected path is defined before assigning it
     if (window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__) {
       __webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
-      console.log('Injected Public Path: ', window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__);
+      
 
     } else {
       console.warn(

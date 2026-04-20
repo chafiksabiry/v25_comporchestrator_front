@@ -406,12 +406,7 @@ export default function InteractiveModule({ module, onProgress, onComplete, onBa
                 || currentSectionData.text
                 || (typeof currentSectionData.content === 'string' && !currentSectionData.content.startsWith('http') ? currentSectionData.content : null);
 
-              console.log('[InteractiveModule] Rendering section:', {
-                hasFileUrl: !!fileUrl,
-                fileUrl,
-                hasTextContent: !!textContent,
-                type: currentSectionData.type,
-                textContent: textContent?.substring(0, 100),
+              ,
                 currentSectionData
               });
 

@@ -174,7 +174,7 @@ export const simulateApiDelay = (ms: number = 2000): Promise<void> => {
 
 // Fonction pour générer des suggestions mockées
 export const generateMockGigSuggestions = async (input: string): Promise<GigSuggestion> => {
-  console.log('🎭 Using mock data instead of OpenAI API for input:', input);
+  
 
   // Simuler un délai d'API
   await simulateApiDelay(1500);

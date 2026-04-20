@@ -32,10 +32,7 @@ export default function TrainerDashboard({ dashboard: propDashboard, onTraineeSe
 
         const effectiveCompanyId = companyId || OnboardingService.getCompanyId();
         
-        console.log('[TrainerDashboard] Fetching dashboard with:', {
-          companyId: effectiveCompanyId,
-          gigId
-        });
+        
 
         if (!effectiveCompanyId) {
           throw new Error('Company ID is required');
@@ -52,7 +49,7 @@ export default function TrainerDashboard({ dashboard: propDashboard, onTraineeSe
               }
             });
             setGigMap(gigMap);
-            console.log('[TrainerDashboard] Loaded gig map:', gigMap.size, 'gigs');
+            
           }
         } catch (err) {
           console.warn('[TrainerDashboard] Could not fetch gigs:', err);
@@ -62,24 +59,24 @@ export default function TrainerDashboard({ dashboard: propDashboard, onTraineeSe
         // Fetch journeys using the new endpoints
         let journeysResponse;
         if (gigId) {
-          console.log('[TrainerDashboard] Fetching journeys by company and gig');
+          
           journeysResponse = await JourneyService.getJourneysByCompanyAndGig(effectiveCompanyId, gigId);
         } else {
-          console.log('[TrainerDashboard] Fetching journeys by company');
+          
           journeysResponse = await JourneyService.getJourneysByCompany(effectiveCompanyId);
         }
 
         if (journeysResponse.success && journeysResponse.data) {
           setJourneys((journeysResponse.data || []).filter((j: any) => j != null));
-          console.log('[TrainerDashboard] Found journeys:', journeysResponse.data.length);
+          
         } else {
           setJourneys([]);
-          console.log('[TrainerDashboard] No journeys found');
+          
         }
 
         // Fetch dashboard statistics
         const response = await JourneyService.getTrainerDashboard(effectiveCompanyId, gigId);
-        console.log('[TrainerDashboard] API Response:', response);
+        
 
         // The response structure is: {success: true, data: {...}}
         const dashboardData = response.success ? response.data : response;
@@ -129,7 +126,7 @@ export default function TrainerDashboard({ dashboard: propDashboard, onTraineeSe
             }))
           };
 
-          console.log('[TrainerDashboard] Mapped dashboard:', mappedDashboard);
+          
           setDashboard(mappedDashboard);
         } else {
           throw new Error(response.error || 'Failed to load dashboard');

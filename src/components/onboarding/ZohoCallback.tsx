@@ -46,7 +46,7 @@ const ZohoCallback = () => {
         }
 
         const data = await response.json();
-        console.log('Callback response:', data);
+        
 
         if (!data.access_token || !data.refresh_token || !data.expires_in) {
           throw new Error('Missing required fields in Zoho response');

@@ -10,9 +10,9 @@ export async function initializeAI() {
         // Load pre-trained model or create a new one
         try {
             matchingModel = await tf.loadLayersModel('indexeddb://rep-project-matching-model');
-            console.log('Loaded existing model from IndexedDB');
+            
         } catch (e) {
-            console.log('Creating new model');
+            
             matchingModel = createMatchingModel();
             await matchingModel.save('indexeddb://rep-project-matching-model');
         }

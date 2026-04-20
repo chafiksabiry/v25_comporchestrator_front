@@ -39,7 +39,7 @@ export function SectionContent({
   }, [section, data, errors]);
 
   const cleanSchedules = (schedules: DaySchedule[]): DaySchedule[] => {
-    console.log('🧹 CLEAN SCHEDULES - Input schedules:', schedules);
+    
     if (!schedules || schedules.length === 0) {
       return [];
     }
@@ -48,9 +48,9 @@ export function SectionContent({
     const cleaned: DaySchedule[] = [];
 
     schedules.forEach((schedule, index) => {
-      console.log(`🧹 CLEAN SCHEDULES - Processing schedule ${index}:`, schedule);
-      console.log(`🧹 CLEAN SCHEDULES - schedule.day:`, schedule?.day);
-      console.log(`🧹 CLEAN SCHEDULES - schedule.hours:`, schedule?.hours);
+      
+      
+      
       if (schedule && schedule.day && schedule.hours) {
         const key = `${schedule.day}-${schedule.hours.start}-${schedule.hours.end}`;
         if (!seen.has(key)) {
@@ -64,51 +64,51 @@ export function SectionContent({
           });
         }
       } else {
-        console.log(`🧹 CLEAN SCHEDULES - Schedule ${index} rejected - missing day or hours`);
+        
       }
     });
 
-    console.log('🧹 CLEAN SCHEDULES - Final cleaned schedules:', cleaned);
+    
     return cleaned;
   };
 
   // Ensure seniority object is properly initialized
   const initializedData = React.useMemo(() => {
     const schedulesToClean = data.schedule?.schedules || data.availability?.schedule || [];
-    console.log('🔧 SECTION CONTENT - Initializing data');
-    console.log('🔧 SECTION CONTENT - data.schedule?.schedules:', data.schedule?.schedules);
-    console.log('🔧 SECTION CONTENT - data.availability?.schedule:', data.availability?.schedule);
-    console.log('🔧 SECTION CONTENT - schedulesToClean:', schedulesToClean);
+    
+    
+    
+    
 
     const cleanedSchedules = cleanSchedules(schedulesToClean);
-    console.log('🔧 SECTION CONTENT - cleanedSchedules:', cleanedSchedules);
+    
 
     return {
       ...data,
       schedule: {
         schedules: cleanedSchedules,
         time_zone: (() => {
-          console.log('🕐 TIMEZONE INIT - data.schedule?.time_zone:', data.schedule?.time_zone);
-          console.log('🕐 TIMEZONE INIT - data.schedule?.timeZones:', data.schedule?.timeZones);
-          console.log('🕐 TIMEZONE INIT - data.availability?.time_zone:', data.availability?.time_zone);
+          
+          
+          
 
           if (data.schedule?.time_zone) {
-            console.log('🕐 TIMEZONE INIT - Using schedule.time_zone:', data.schedule.time_zone);
+            
             return data.schedule.time_zone;
           }
           if (Array.isArray(data.schedule?.timeZones) && data.schedule.timeZones.length > 0) {
             const firstTimezone = data.schedule.timeZones[0];
             if (typeof firstTimezone === 'string') {
-              console.log('🕐 TIMEZONE INIT - Using first from timeZones array:', firstTimezone);
+              
               return firstTimezone;
             }
           }
           // Also check availability as fallback
           if (data.availability?.time_zone) {
-            console.log('🕐 TIMEZONE INIT - Using availability.time_zone:', data.availability.time_zone);
+            
             return data.availability.time_zone;
           }
-          console.log('🕐 TIMEZONE INIT - No timezone found, using empty string');
+          
           return "";
         })(),
         timeZones: data.schedule?.time_zone ? [data.schedule?.time_zone] : [],
@@ -172,9 +172,9 @@ export function SectionContent({
         );
 
       case "schedule":
-        console.log('🔄 SECTION CONTENT - Schedule case triggered');
-        console.log('🔄 SECTION CONTENT - initializedData.schedule:', initializedData.schedule);
-        console.log('🔄 SECTION CONTENT - initializedData.schedule.schedules:', initializedData.schedule.schedules);
+        
+        
+        
 
         return (
           <ScheduleSection

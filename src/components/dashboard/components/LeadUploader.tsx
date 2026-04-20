@@ -134,7 +134,7 @@ export function LeadUploader({ onComplete, onClose }: LeadUploaderProps) {
         }
       );
 
-      console.log("Zoho API Response:", response.data);
+      
 
       Swal.fire({
         title: "Succès",

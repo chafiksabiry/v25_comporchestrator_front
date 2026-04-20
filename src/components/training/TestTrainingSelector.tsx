@@ -15,7 +15,7 @@ export const TestTrainingSelector: React.FC = () => {
     <TrainingHub 
       companyId="test-company-123"
       onBack={() => {
-        console.log('Retour demandé');
+        
         // Vous pouvez rediriger vers une autre page ici
         // window.location.href = '/';
       }}

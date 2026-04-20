@@ -294,7 +294,7 @@ export function GigReview({
 
       if (isEditMode && editGigId) {
         const gigUrl = `#/dashboard/gigs/${editGigId}`;
-        console.log('Redirecting to:', gigUrl);
+        
         window.location.hash = gigUrl;
       } else if (onPublishSuccess) {
         await onPublishSuccess();

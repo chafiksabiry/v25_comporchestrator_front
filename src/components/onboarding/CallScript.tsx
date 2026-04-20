@@ -41,7 +41,7 @@ const CallScript = () => {
   // Vérifier l'état de l'étape quand les données changent
   useEffect(() => {
     if (companyId && hasBasicInfo() && !isStepCompleted) {
-      console.log('🎯 Call script data changed, checking if step should be auto-completed...');
+      
       checkStepStatus();
     }
   }, [scripts, companyId, isStepCompleted]);
@@ -50,17 +50,17 @@ const CallScript = () => {
     try {
       if (!companyId) return;
 
-      console.log('🔍 Checking step 6 status for company:', companyId);
+      
 
       // Vérifier l'état de l'étape 6 via l'API d'onboarding
       const response = await axios.get(
         `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/2/steps/6`
       );
 
-      console.log('📡 API response for step 6:', response.data);
+      
 
       if (response.data && (response.data as any).status === 'completed') {
-        console.log('✅ Step 6 is already completed according to API');
+        
         setIsStepCompleted(true);
         return;
       }
@@ -71,7 +71,7 @@ const CallScript = () => {
         try {
           const progress = JSON.parse(storedProgress);
           if (progress.completedSteps && Array.isArray(progress.completedSteps) && progress.completedSteps.includes(6)) {
-            console.log('✅ Step 6 found in localStorage, setting as completed');
+            
             setIsStepCompleted(true);
             return;
           }
@@ -83,7 +83,7 @@ const CallScript = () => {
       // Si l'étape n'est pas marquée comme complétée mais que les informations de base sont présentes,
       // marquer automatiquement l'étape comme complétée localement
       if (hasBasicInfo() && !isStepCompleted) {
-        console.log('🎯 Auto-completing step 6 locally because basic info is present');
+        
 
         // Marquer l'étape comme complétée localement
         setIsStepCompleted(true);
@@ -110,7 +110,7 @@ const CallScript = () => {
           }
         }));
 
-        console.log('💾 Step 6 marked as completed locally and parent component notified');
+        
       }
 
     } catch (error) {
@@ -136,10 +136,7 @@ const CallScript = () => {
     const activeScripts = scripts.filter(script => script.status === 'active');
     const hasInfo = activeScripts.length >= 2 && activeScripts.every(script => script.sections && script.sections.length > 0);
 
-    console.log('🔍 Checking basic info for CallScript:', {
-      activeScripts: activeScripts.length,
-      hasInfo
-    });
+    
     return hasInfo;
   };
 
@@ -150,7 +147,7 @@ const CallScript = () => {
         return;
       }
 
-      console.log('🚀 Completing call script setup...');
+      
 
       // Marquer l'étape 6 comme complétée
       const stepResponse = await axios.put(
@@ -158,7 +155,7 @@ const CallScript = () => {
         { status: 'completed' }
       );
 
-      console.log('✅ Step 6 marked as completed:', stepResponse.data);
+      
 
       // Mettre à jour l'état local
       setIsStepCompleted(true);
@@ -184,7 +181,7 @@ const CallScript = () => {
         }
       }));
 
-      console.log('💾 Call script setup completed and step 6 marked as completed');
+      
 
     } catch (error) {
       console.error('❌ Error completing call script setup:', error);

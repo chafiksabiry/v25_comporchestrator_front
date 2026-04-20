@@ -32,10 +32,10 @@ export default function PPTExportTester() {
     setMessage('');
 
     try {
-      console.log('📊 Exporting curriculum to PowerPoint...');
+      
       const curriculum = getCurriculum();
 
-      console.log('Curriculum data:', curriculum);
+      
 
       // Appel à l'API pour générer le PPT
       const blob = await AIService.exportToPowerPoint(curriculum as any);
@@ -53,7 +53,7 @@ export default function PPTExportTester() {
       setExportStatus('success');
       setMessage('✅ PowerPoint exporté avec succès! Le fichier a été téléchargé.');
 
-      console.log('✅ Export completed successfully!');
+      
     } catch (error: any) {
       console.error('❌ Export failed:', error);
       setExportStatus('error');

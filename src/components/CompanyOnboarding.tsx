@@ -260,7 +260,7 @@ const CompanyOnboarding = () => {
   useEffect(() => {
     if (!showUploadContacts) {
       localStorage.removeItem("parsedLeads");
-      console.log("🚫 Set manual close flag - preventing auto-restoration");
+      
     }
   }, [showUploadContacts]);
 
@@ -310,24 +310,18 @@ const CompanyOnboarding = () => {
 
     // Only restore if we have leads AND we're not manually closed AND we're in the right phase
     if (hasParsedLeads && !wasManuallyClosed && displayedPhase >= 2 && !showUploadContacts) {
-      console.log("🔄 Restoring UploadContacts view - parsed leads exist and phase allows it");
+      
       setShowUploadContacts(true);
     }
 
     // Debug: log the current state
-    console.log("🔍 UploadContacts restoration check:", {
-      hasParsedLeads: !!hasParsedLeads,
-      wasManuallyClosed: !!wasManuallyClosed,
-      displayedPhase,
-      showUploadContacts,
-      shouldRestore: hasParsedLeads && !wasManuallyClosed && displayedPhase >= 2 && !showUploadContacts
-    });
+    
   }, [displayedPhase]); // Remove showUploadContacts to prevent loops
 
   // Clean up parsed leads when phase changes and component is not showing
   useEffect(() => {
     if (displayedPhase < 2 && showUploadContacts) {
-      console.log("🧹 Cleaning parsed leads - current phase too early:", displayedPhase);
+      
       localStorage.removeItem("parsedLeads");
       setShowUploadContacts(false);
     }
@@ -338,7 +332,7 @@ const CompanyOnboarding = () => {
     if (!showUploadContacts) {
       // Set the flag immediately when component is closed
       sessionStorage.setItem("uploadContactsManuallyClosed", "true");
-      console.log("🚫 Set manual close flag - preventing auto-restoration");
+      
     }
   }, [showUploadContacts]);
   const userId = Cookies.get("userId");
@@ -372,10 +366,7 @@ const CompanyOnboarding = () => {
           setCompanyId(response.data.data._id);
           // Store company ID in cookie for backward compatibility
           Cookies.set("companyId", response.data.data._id);
-          console.log(
-            "✅ Company ID fetched and stored:",
-            response.data.data._id
-          );
+          
         } else {
           console.error("No company data found for user:", userId);
           // Ne pas rediriger immédiatement, afficher un message d'erreur à la place
@@ -499,9 +490,9 @@ const CompanyOnboarding = () => {
   // Initial check: run auto-completions first, then load progress so state is consistent
   useEffect(() => {
     if (!companyId) return;
-    console.log("🔄 Company ID available, loading progress and checking gigs...");
+    
     const initOnboarding = async () => {
-      console.log("🔄 Running auto-completions before loading progress...");
+      
       // Run auto-completion + non-blocking checks in parallel
       await Promise.all([
         checkCompanyLeads(),
@@ -510,7 +501,7 @@ const CompanyOnboarding = () => {
         checkZohoConnection(),
       ]);
       // Then load final state from backend (which now has the updated steps)
-      console.log("🔄 Loading company progress on mount...");
+      
       await loadCompanyProgress();
     };
     initOnboarding();
@@ -630,7 +621,7 @@ const CompanyOnboarding = () => {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data.type === "STEP_COMPLETED") {
-        console.log("Received step completion message:", event.data);
+        
         const { stepId } = event.data;
 
         setCompletedSteps((prev: number[]) => {
@@ -641,7 +632,7 @@ const CompanyOnboarding = () => {
         });
 
         loadCompanyProgress();
-        console.log("Step", stepId, "completed successfully");
+        
       }
     };
 
@@ -654,7 +645,7 @@ const CompanyOnboarding = () => {
   useEffect(() => {
     const handleStepCompleted = (event: CustomEvent) => {
       const { stepId, phaseId, status, completedSteps } = event.detail;
-      console.log("Step completion event received:", { stepId, phaseId, status, completedSteps });
+      
 
       if (completedSteps && Array.isArray(completedSteps)) {
         setCompletedSteps(completedSteps);
@@ -666,17 +657,17 @@ const CompanyOnboarding = () => {
         };
         localStorage.setItem('companyOnboardingProgress', JSON.stringify(currentProgress));
 
-        console.log("Local state updated from step completion event");
+        
 
         setTimeout(() => {
-          console.log("Reloading onboarding progress after step completion");
+          
           loadCompanyProgress();
         }, 500);
       }
     };
 
     const handleContactsUploadCompleted = () => {
-      console.log("Contacts upload completed - refreshing onboarding state");
+      
       setShowUploadContacts(false);
       sessionStorage.removeItem("uploadContactsManuallyClosed");
       checkCompanyLeads();
@@ -718,7 +709,7 @@ const CompanyOnboarding = () => {
   useEffect(() => {
     const handleRefreshOnboardingProgress = async () => {
       if (!companyId) return;
-      console.log("🔄 refreshOnboardingProgress event received");
+      
       await loadCompanyProgress();
     };
 
@@ -775,7 +766,7 @@ const CompanyOnboarding = () => {
 
       // Log the status but don't auto-show UploadContacts
       if (isConfigured) {
-        console.log("✅ Zoho est configuré - ready for manual upload");
+        
       }
     } catch (error) {
       console.error("Error checking Zoho connection:", error);
@@ -795,7 +786,7 @@ const CompanyOnboarding = () => {
 
       // Si le step est déjà complété, ne pas changer son statut
       if (isStepCompleted) {
-        console.log(`✅ Step ${stepId} is already completed, not changing status`);
+        
       } else if (companyId) {
         // Mettre à jour le statut de l'étape à "in_progress" seulement si pas déjà complétée
         const phaseId =
@@ -807,7 +798,7 @@ const CompanyOnboarding = () => {
           `${import.meta.env.VITE_COMPANY_API_URL}/onboarding/companies/${companyId}/onboarding/phases/${phaseId}/steps/${stepId}`,
           { status: "in_progress" }
         );
-        console.log(`🔄 Step ${stepId} status updated to in_progress`);
+        
       }
 
       const allSteps = phases.flatMap((phase) => phase.steps);
@@ -888,7 +879,7 @@ const CompanyOnboarding = () => {
     }
 
     try {
-      console.log(`🔍 Reviewing step ${stepId} (already completed)`);
+      
 
       const allSteps = phases.flatMap((phase) => phase.steps);
       const step = allSteps.find((s) => s.id === stepId);
@@ -929,7 +920,7 @@ const CompanyOnboarding = () => {
       }
 
       if (stepId === 3) {
-        console.log("✅ Opening GigDetails for review");
+        
         setShowGigDetails(true);
         return;
       }
@@ -969,9 +960,7 @@ const CompanyOnboarding = () => {
       // Vérifier que toutes les phases précédentes sont complétées
       for (let phaseId = 1; phaseId < newPhase; phaseId++) {
         if (!isPhaseFullyCompleted(phaseId)) {
-          console.log(
-            `⚠️ Cannot access phase ${newPhase} - phase ${phaseId} is not fully completed`
-          );
+          
           canAccessPhase = false;
           break;
         }
@@ -997,19 +986,15 @@ const CompanyOnboarding = () => {
             { phase: newPhase }
           );
           setCurrentPhase(newPhase);
-          console.log(`✅ Successfully changed to phase ${newPhase}`);
+          
         } catch (error) {
           console.error("Error updating phase:", error);
         }
       }
     } else {
-      console.log(
-        `❌ Cannot change to phase ${newPhase} - previous phases not completed`
-      );
+      
       // Suppressed popup as requested by user
-      console.log(
-        `Vous devez compléter toutes les étapes de la phase précédente avant d'accéder à la phase ${newPhase}`
-      );
+      
     }
   };
 
@@ -1041,17 +1026,11 @@ const CompanyOnboarding = () => {
     // Vérifier si la phase actuelle est complétée avant d'avancer
     if (displayedPhase < 4) {
       if (isPhaseFullyCompleted(displayedPhase)) {
-        console.log(
-          `✅ Phase ${displayedPhase} is fully completed, proceeding to phase ${newPhase}`
-        );
+        
         handlePhaseChange(newPhase);
       } else {
-        console.log(
-          `⚠️ Cannot proceed to phase ${newPhase} - current phase ${displayedPhase} is not fully completed`
-        );
-        console.log(
-          `Vous devez compléter toutes les étapes de la phase ${displayedPhase} avant de passer à la phase suivante`
-        );
+        
+        
         return;
       }
     } else if (displayedPhase === 4) {
@@ -1105,24 +1084,22 @@ const CompanyOnboarding = () => {
   const handleBackToOnboarding = async () => {
     // If UploadContacts is showing, cancel processing and return immediately
     if (showUploadContacts) {
-      console.log(
-        "🛑 Back to onboarding clicked while UploadContacts is active - cancelling processing"
-      );
+      
 
       // Try to call the normal cancel processing function first
       if ((window as any).cancelUploadProcessing) {
-        console.log("✅ Calling cancelUploadProcessing function");
+        
         try {
           (window as any).cancelUploadProcessing();
-          console.log("✅ cancelUploadProcessing executed successfully");
+          
         } catch (error) {
           console.error("❌ Error calling cancelUploadProcessing:", error);
           // If normal cancellation fails, try emergency cancellation
           if ((window as any).emergencyCancelUpload) {
-            console.log("🚨 Trying emergency cancellation...");
+            
             try {
               (window as any).emergencyCancelUpload();
-              console.log("✅ Emergency cancellation executed successfully");
+              
             } catch (emergencyError) {
               console.error("❌ Emergency cancellation also failed:", emergencyError);
             }
@@ -1132,10 +1109,10 @@ const CompanyOnboarding = () => {
         console.warn("⚠️ cancelUploadProcessing function not found on window");
         // Try emergency cancellation as fallback
         if ((window as any).emergencyCancelUpload) {
-          console.log("🚨 Trying emergency cancellation as fallback...");
+          
           try {
             (window as any).emergencyCancelUpload();
-            console.log("✅ Emergency cancellation executed successfully");
+            
           } catch (emergencyError) {
             console.error("❌ Emergency cancellation failed:", emergencyError);
           }
@@ -1149,11 +1126,11 @@ const CompanyOnboarding = () => {
       sessionStorage.removeItem("uploadProcessing");
       sessionStorage.removeItem("parsedLeads");
       sessionStorage.removeItem("validationResults");
-      console.log("🧹 Removed all storage items");
+      
 
       // Force close the component immediately
       setShowUploadContacts(false);
-      console.log("✅ Set showUploadContacts to false");
+      
 
       // Refresh progress
       if (companyId) {
@@ -1161,9 +1138,7 @@ const CompanyOnboarding = () => {
       }
 
       // Simply close UploadContacts and return to normal CompanyOnboarding state
-      console.log(
-        "✅ Closing UploadContacts and returning to normal onboarding state"
-      );
+      
       return;
     }
 
@@ -1241,9 +1216,9 @@ const CompanyOnboarding = () => {
         const wasManuallyClosed = sessionStorage.getItem("uploadContactsManuallyClosed");
         if (!wasManuallyClosed) {
           setShowUploadContacts(true);
-          console.log("✅ Opening UploadContacts via step click");
+          
         } else {
-          console.log("🚫 UploadContacts was manually closed - not reopening");
+          
         }
       }
       return;
@@ -1257,7 +1232,7 @@ const CompanyOnboarding = () => {
 
   // Vérifier si l'utilisateur est authentifié
   if (!userId) {
-    console.log("User ID not found, redirecting to /auth");
+    
     window.location.href = "/auth";
     return (
       <div className="flex items-center justify-center min-h-[400px]">

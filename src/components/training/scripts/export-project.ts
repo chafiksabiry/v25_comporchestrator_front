@@ -35,7 +35,7 @@ class ProjectExporter {
 
     return new Promise((resolve, reject) => {
       output.on('close', () => {
-        console.log(`✅ Export complete: ${zipPath} (${archive.pointer()} bytes)`);
+        
         resolve(zipPath);
       });
 
@@ -208,12 +208,12 @@ if (require.main === module) {
   
   exporter.exportProject(exportType)
     .then((zipPath) => {
-      console.log(`\n🎉 Export successful!`);
-      console.log(`📦 File: ${zipPath}`);
-      console.log(`\n📋 Next steps:`);
-      console.log(`   1. Extract the ZIP file`);
-      console.log(`   2. Configure .env file`);
-      console.log(`   3. Run: npm install && npm run dev`);
+      
+      
+      
+      
+      
+      
     })
     .catch((error) => {
       console.error('❌ Export failed:', error);

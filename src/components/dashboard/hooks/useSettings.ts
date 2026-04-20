@@ -12,7 +12,7 @@ export function useSettings() {
     try {
       setLoading(true);
       const data = await settingsApi.getSettings();
-      console.log('Settings data:', data.data);
+      
       setSettings(data);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch settings';

@@ -395,13 +395,13 @@ export async function updateGigData(gigId: string, gigData: GigData): Promise<{ 
       if (fixedGigData.destination_zone) {
         // If it's a MongoDB ObjectId (24 characters), keep it
         if (typeof fixedGigData.destination_zone === 'string' && fixedGigData.destination_zone.length === 24) {
-          console.log('💾 UPDATE GIG - Using MongoDB ObjectId for destination_zone:', fixedGigData.destination_zone);
+          
           return fixedGigData.destination_zone;
         }
-        console.log('⚠️ UPDATE GIG - destination_zone is not a valid MongoDB ObjectId, omitting from request');
+        
         return undefined; // Don't send invalid ObjectId
       }
-      console.log('💾 UPDATE GIG - No destination_zone provided, omitting from request');
+      
       return undefined; // Don't send default value
     })();
 
@@ -417,12 +417,12 @@ export async function updateGigData(gigId: string, gigData: GigData): Promise<{ 
 
         // If it's already a valid MongoDB ObjectId (24 hex characters), keep it
         if (typeof currencyValue === 'string' && currencyValue.length === 24 && /^[a-f0-9]{24}$/i.test(currencyValue)) {
-          console.log('💾 UPDATE GIG - Using MongoDB ObjectId for commission.currency:', currencyValue);
+          
           commission.currency = currencyValue;
         }
         // If it's an object with $oid, extract the ObjectId
         else if (typeof currencyValue === 'object' && currencyValue.$oid) {
-          console.log('💾 UPDATE GIG - Extracting ObjectId from commission.currency.$oid:', currencyValue.$oid);
+          
           commission.currency = currencyValue.$oid;
         }
         // If it's a currency code (like "EUR"), we need to handle it
@@ -450,9 +450,9 @@ export async function updateGigData(gigId: string, gigData: GigData): Promise<{ 
     };
 
     // Debug: Log the data being sent
-    console.log('🔍 UPDATE GIG - Data being sent to backend:', JSON.stringify(gigDataWithIds, null, 2));
-    console.log('🔍 UPDATE GIG - Gig ID:', gigId);
-    console.log('🔍 UPDATE GIG - API URL:', `${API_URL}/gigs/${gigId}`);
+    
+    
+    
 
     const response = await fetch(`${API_URL}/gigs/${gigId}`, {
       method: 'PUT',
@@ -552,13 +552,13 @@ export async function saveGigData(gigData: GigData): Promise<{ data: any; error?
       if (fixedGigData.destination_zone) {
         // If it's a MongoDB ObjectId (24 characters), keep it
         if (typeof fixedGigData.destination_zone === 'string' && fixedGigData.destination_zone.length === 24) {
-          console.log('💾 SAVE GIG - Using MongoDB ObjectId for destination_zone:', fixedGigData.destination_zone);
+          
           return fixedGigData.destination_zone;
         }
-        console.log('⚠️ SAVE GIG - destination_zone is not a valid MongoDB ObjectId, omitting from request');
+        
         return undefined; // Don't send invalid ObjectId
       }
-      console.log('💾 SAVE GIG - No destination_zone provided, omitting from request');
+      
       return undefined; // Don't send default value
     })();
 
@@ -574,12 +574,12 @@ export async function saveGigData(gigData: GigData): Promise<{ data: any; error?
 
         // If it's already a valid MongoDB ObjectId (24 hex characters), keep it
         if (typeof currencyValue === 'string' && currencyValue.length === 24 && /^[a-f0-9]{24}$/i.test(currencyValue)) {
-          console.log('💾 SAVE GIG - Using MongoDB ObjectId for commission.currency:', currencyValue);
+          
           commission.currency = currencyValue;
         }
         // If it's an object with $oid, extract the ObjectId
         else if (typeof currencyValue === 'object' && currencyValue.$oid) {
-          console.log('💾 SAVE GIG - Extracting ObjectId from commission.currency.$oid:', currencyValue.$oid);
+          
           commission.currency = currencyValue.$oid;
         }
         // If it's a currency code (like "EUR"), we need to handle it
@@ -1021,7 +1021,7 @@ export async function fetchLanguages(): Promise<{ data: Language[]; error?: Erro
 // Currencies API functions
 export async function fetchAllCurrencies(): Promise<Currency[]> {
   try {
-    console.log('💰 Fetching all currencies from API...');
+    
     const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
     const response = await fetch(`${apiUrl}/currencies`);
 
@@ -1030,7 +1030,7 @@ export async function fetchAllCurrencies(): Promise<Currency[]> {
     }
 
     const result: CurrenciesResponse = await response.json();
-    console.log('💰 Currencies API response:', result);
+    
 
     if (!result.success) {
       throw new Error(result.message || 'Failed to fetch currencies');
@@ -1045,7 +1045,7 @@ export async function fetchAllCurrencies(): Promise<Currency[]> {
 
 export async function fetchCurrencyById(currencyId: string): Promise<Currency | null> {
   try {
-    console.log(`💰 Fetching currency by ID: ${currencyId}`);
+    
     const apiUrl = import.meta.env.VITE_API_URL_GIGS || 'https://v25gigsmanualcreationbackend-production.up.railway.app/api';
     const response = await fetch(`${apiUrl}/currencies/id/${currencyId}`);
 
@@ -1054,7 +1054,7 @@ export async function fetchCurrencyById(currencyId: string): Promise<Currency | 
     }
 
     const result: CurrencyResponse = await response.json();
-    console.log('💰 Currency by ID API response:', result);
+    
 
     if (!result.success) {
       throw new Error(result.message || 'Failed to fetch currency');

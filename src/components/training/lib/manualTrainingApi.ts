@@ -23,7 +23,7 @@ const getApiBaseUrl = () => {
 
 const API_BASE = getApiBaseUrl();
 
-console.log('🌐 API Base URL:', API_BASE);
+
 
 const api = axios.create({
   baseURL: API_BASE,

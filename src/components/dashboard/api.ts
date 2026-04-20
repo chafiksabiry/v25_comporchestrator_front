@@ -2,7 +2,7 @@ const API_BASE_URL = import.meta.env.MATCHING_API_URL
 
 // Fonction pour récupérer tous les reps
 export const getReps = async () => {
-  console.log('getReps called');
+  
   try {
     const response = await fetch(`${API_BASE_URL}/reps`, {
       method: 'GET',
@@ -17,7 +17,7 @@ export const getReps = async () => {
     }
 
     const data = await response.json();
-    console.log('Parsed getReps response:', data);
+    
     
     return data; // Retourne directement les données de l'API
   } catch (error) {
@@ -28,12 +28,12 @@ export const getReps = async () => {
 
 // Fonction pour récupérer tous les gigs
 export const getGigs = async () => {
-  console.log('getGigs called');
+  
   try {
     const response = await fetch(`${API_BASE_URL}/gigs`);
-    console.log('Raw getGigs response:', response);
+    
     const data = await response.json();
-    console.log('Parsed getGigs response:', data);
+    
     return data;
   } catch (error) {
     console.error('Error in getGigs:', error);
@@ -43,7 +43,7 @@ export const getGigs = async () => {
 
 // Fonction pour trouver les matches pour un gig
 export const findMatchesForGig = async (gigId: string, weights: any) => {
-  console.log('findMatchesForGig called with:', { gigId, weights });
+  
   try {
     const response = await fetch(`${API_BASE_URL}/matches/gig/${gigId}/matches`, {
       method: 'POST',
@@ -52,9 +52,9 @@ export const findMatchesForGig = async (gigId: string, weights: any) => {
       },
       body: JSON.stringify({ weights }),
     });
-    console.log('Raw API response:', response);
+    
     const data = await response.json();
-    console.log('Parsed API response:', data);
+    
     return data;
   } catch (error) {
     console.error('Error in findMatchesForGig:', error);
@@ -64,7 +64,7 @@ export const findMatchesForGig = async (gigId: string, weights: any) => {
 
 // Fonction pour trouver les gigs pour un rep
 export const findGigsForRep = async (repId: string, weights: any) => {
-  console.log('findGigsForRep called with:', { repId, weights });
+  
   try {
     const response = await fetch(`${API_BASE_URL}/matches/rep/${repId}/gigs`, {
       method: 'POST',
@@ -73,9 +73,9 @@ export const findGigsForRep = async (repId: string, weights: any) => {
       },
       body: JSON.stringify({ weights }),
     });
-    console.log('Raw API response:', response);
+    
     const data = await response.json();
-    console.log('Parsed API response:', data);
+    
     return data;
   } catch (error) {
     console.error('Error in findGigsForRep:', error);
@@ -85,7 +85,7 @@ export const findGigsForRep = async (repId: string, weights: any) => {
 
 // Fonction pour générer les matches optimaux
 export const generateOptimalMatches = async (weights: any) => {
-  console.log('generateOptimalMatches called with weights:', weights);
+  
   try {
     const response = await fetch(`${API_BASE_URL}/matches/optimize`, {
       method: 'POST',
@@ -94,9 +94,9 @@ export const generateOptimalMatches = async (weights: any) => {
       },
       body: JSON.stringify({ weights }),
     });
-    console.log('Raw API response:', response);
+    
     const data = await response.json();
-    console.log('Parsed API response:', data);
+    
     return data;
   } catch (error) {
     console.error('Error in generateOptimalMatches:', error);

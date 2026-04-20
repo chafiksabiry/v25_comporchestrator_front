@@ -4,7 +4,7 @@ const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'developme
 export const logger = {
   log: (...args: any[]) => {
     if (isDevelopment) {
-      console.log(...args);
+      
     }
   },
   warn: (...args: any[]) => {
@@ -23,7 +23,7 @@ export const logger = {
   },
   debug: (...args: any[]) => {
     if (isDevelopment) {
-      console.debug(...args);
+      
     }
   }
 };

@@ -16,7 +16,7 @@ export const useTrainingProgress = (initialData: {
   assessments: Assessment[];
 }) => {
   const [progress, setProgress] = useState<TrainingProgress>(() => {
-    console.log('[useTrainingProgress] Initializing with', initialData.modules.length, 'modules');
+    
     return {
     modules: initialData.modules,
     steps: initialData.steps,
@@ -34,10 +34,7 @@ export const useTrainingProgress = (initialData: {
     
     // Always update if length is different or IDs are different
     if (currentModuleIds !== newModuleIds || progress.modules.length !== initialData.modules.length) {
-      console.log('[useTrainingProgress] Updating modules:', {
-        currentLength: progress.modules.length,
-        newLength: initialData.modules.length,
-        currentIds: currentModuleIds.substring(0, 50),
+      ,
         newIds: newModuleIds.substring(0, 50)
       });
       setProgress(prev => ({

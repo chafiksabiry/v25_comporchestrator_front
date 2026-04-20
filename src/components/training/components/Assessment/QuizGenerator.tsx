@@ -28,12 +28,12 @@ export default function QuizGenerator({ moduleTitle, moduleDescription, moduleCo
     setIsGenerating(true);
     try {
       const content = moduleContent || `${moduleTitle}: ${moduleDescription}`;
-      console.log('📝 Generating quiz questions...');
+      
       
       const response = await AIService.generateQuiz(content, 5);
       setQuestions(response);
       setSelectedAnswers(new Array(response.length).fill(null));
-      console.log('✅ Quiz generated:', response.length, 'questions');
+      
     } catch (error) {
       console.error('❌ Error generating quiz:', error);
       // Fallback: Generate sample questions
@@ -75,7 +75,7 @@ export default function QuizGenerator({ moduleTitle, moduleDescription, moduleCo
       
       setQuestions(fallbackQuestions);
       setSelectedAnswers(new Array(fallbackQuestions.length).fill(null));
-      console.log('⚠️ Using fallback quiz questions');
+      
     } finally {
       setIsGenerating(false);
     }

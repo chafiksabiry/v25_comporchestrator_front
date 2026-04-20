@@ -17,7 +17,7 @@ class ZohoService {
   private constructor() {
     // Initialisation silencieuse
     this.initializeFromServer().catch(error => {
-      console.debug('ZohoService: Initial configuration not found', error);
+      
     });
   }
 
@@ -32,7 +32,7 @@ class ZohoService {
     try {
       const userId = Cookies.get('userId');
       if (!userId) {
-        console.debug('ZohoService: No userId found in cookies');
+        
         return;
       }
 
@@ -50,15 +50,15 @@ class ZohoService {
           this.config.refreshToken = config.refresh_token;
           this.config.tokenExpiry = Date.now() + (config.expires_in * 1000);
           this.config.isConfigured = true;
-          console.debug('ZohoService: Configuration loaded successfully');
+          
         }
       } else if (response.status === 404) {
-        console.debug('ZohoService: No configuration found for user');
+        
       } else {
-        console.debug('ZohoService: Failed to load configuration', response.status);
+        
       }
     } catch (error) {
-      console.debug('ZohoService: Error initializing from server', error);
+      
     }
   }
 
@@ -66,7 +66,7 @@ class ZohoService {
     try {
       const userId = Cookies.get('userId');
       if (!userId) {
-        console.debug('ZohoService: No userId found for token refresh');
+        
         return false;
       }
 
@@ -83,14 +83,14 @@ class ZohoService {
         this.config.accessToken = data.access_token;
         this.config.refreshToken = data.refresh_token;
         this.config.tokenExpiry = Date.now() + (data.expires_in * 1000);
-        console.debug('ZohoService: Token refreshed successfully');
+        
         return true;
       } else {
-        console.debug('ZohoService: Failed to refresh token', response.status);
+        
         return false;
       }
     } catch (error) {
-      console.debug('ZohoService: Error refreshing token', error);
+      
       return false;
     }
   }
@@ -108,13 +108,13 @@ class ZohoService {
       if (!this.config.accessToken || !this.config.tokenExpiry || Date.now() >= this.config.tokenExpiry) {
         const refreshed = await this.refreshToken();
         if (!refreshed) {
-          console.debug('ZohoService: Failed to get valid access token');
+          
           return null;
         }
       }
       return this.config.accessToken;
     } catch (error) {
-      console.debug('ZohoService: Error getting valid access token', error);
+      
       return null;
     }
   }
@@ -126,7 +126,7 @@ class ZohoService {
       tokenExpiry: null,
       isConfigured: false
     };
-    console.debug('ZohoService: Configuration reset');
+    
   }
 }
 

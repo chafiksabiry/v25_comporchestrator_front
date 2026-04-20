@@ -21,8 +21,8 @@ export default function DocumentTransformer({ onComplete }: DocumentTransformerP
   const [anthropicKey, setAnthropicKey] = useState(localStorage.getItem('anthropic_key') || '');
   const [showKey, setShowKey] = useState(false);
 
-  console.log('[DocumentTransformer] Current Program:', generatedProgram);
-  console.log('[DocumentTransformer] onComplete available:', !!onComplete);
+  
+  
 
   const tabs = [
     { id: 'upload', label: 'Upload Documents', icon: Upload },

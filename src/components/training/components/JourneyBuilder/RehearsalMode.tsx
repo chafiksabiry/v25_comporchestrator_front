@@ -142,12 +142,12 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
           // Use Cloudinary URL (persistent)
           fileUrl = upload.cloudinaryUrl;
           filePublicId = upload.publicId || upload.id;
-          console.log(`✅ Using Cloudinary URL for ${upload.name}:`, fileUrl);
+          
         } else if (upload.file) {
           // Fallback to blob URL (temporary, but works for now)
           try {
             fileUrl = URL.createObjectURL(upload.file);
-            console.log(`⚠️ Using blob URL for ${upload.name} (Cloudinary URL not available)`);
+            
           } catch (e) {
             console.warn('Could not create object URL for file:', upload.name, e);
           }
@@ -188,10 +188,10 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
         sections: sections.length > 0 ? sections : undefined
       };
 
-      console.log(`📦 Module ${moduleIndex} (${module.title}) - Created ${sections.length} sections from uploads`);
+      
       sections.forEach((section, idx) => {
         const fileUrl = section.content?.file?.url;
-        console.log(`  📄 Section ${idx} (${section.title}):`, fileUrl || 'NO URL');
+        
       });
 
       return result;
@@ -206,15 +206,7 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
   // Debug logs
   useEffect(() => {
     if (currentSection) {
-      console.log('📋 Current Section:', {
-        id: currentSection.id,
-        title: currentSection.title,
-        type: currentSection.type,
-        hasContent: !!currentSection.content,
-        hasFile: !!currentSection.content?.file,
-        fileUrl: currentSection.content?.file?.url,
-        fullSection: currentSection
-      });
+      
     } else {
       console.warn('⚠️ No current section available');
     }
@@ -423,7 +415,7 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
       ? { totalQuestions: 30, passingScore: 70, multipleChoice: 12, trueFalse: 9, multipleCorrect: 9 }
       : { totalQuestions: 10, passingScore: 70, multipleChoice: 4, trueFalse: 3, multipleCorrect: 3 });
 
-    console.log(`📊 ${isFinalExam ? 'Final Exam' : 'Quiz'} Configuration: ${finalConfig.totalQuestions} questions (${finalConfig.multipleChoice} QCM, ${finalConfig.trueFalse} True/False, ${finalConfig.multipleCorrect} Multiple Correct Answers)`);
+    
 
     try {
       // Prepare module content in the format expected by the backend
@@ -448,7 +440,7 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
 
       // Log only for final exam to track the issue
       if (isFinalExam) {
-        console.log(`[Final Exam] Requesting ${finalConfig.totalQuestions} questions (${finalConfig.multipleChoice} QCM, ${finalConfig.trueFalse} True/False, ${finalConfig.multipleCorrect} Multiple Correct)`);
+        
       }
 
       // Generate quiz using AI service with question type distribution
@@ -567,13 +559,13 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
       // This prevents deleting and recreating modules unnecessarily
       // The quizzes will be saved to backend when the journey is launched
       try {
-        console.log('[RehearsalMode] Saving quiz locally only (not to backend yet)');
+        
 
         // Save locally to preserve the quiz in localStorage
         DraftService.saveDraftLocally({
           modules: updatedModulesList
         });
-        console.log('[RehearsalMode] ✓ Quiz saved locally');
+        
       } catch (draftError) {
         console.warn('[RehearsalMode] Could not save quiz locally:', draftError);
       }
@@ -582,10 +574,10 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
       // 1. Modules might still have temporary IDs (module-1, module-2, etc.)
       // 2. Saving to backend would delete and recreate all modules unnecessarily
       // 3. Quizzes will be properly saved when the journey is launched via JourneyService.launchJourney
-      console.log('[RehearsalMode] Quiz will be saved to backend when journey is launched');
+      
 
       if (isFinalExam) {
-        console.log(`[Final Exam] Generated ${assessmentQuestions.length} questions (requested: ${finalConfig.totalQuestions})`);
+        
         if (assessmentQuestions.length !== finalConfig.totalQuestions) {
           console.error(`[Final Exam] ❌ ERROR: Expected ${finalConfig.totalQuestions} questions but got ${assessmentQuestions.length}`);
         }
@@ -628,7 +620,7 @@ export default function RehearsalMode({ journey, modules, uploads = [], methodol
     setShowContentViewer(true);
     setActiveTab('ppt');
     setIsPlaying(true);
-    console.log('▶️ Displaying content viewer');
+    
   };
 
   const handleContentComplete = () => {

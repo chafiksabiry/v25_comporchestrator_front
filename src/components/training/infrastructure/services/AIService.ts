@@ -183,7 +183,7 @@ export class AIService {
       if (metadata?.gigId) formData.append('gigId', metadata.gigId);
       if (metadata?.companyId) formData.append('companyId', metadata.companyId);
 
-      console.log('📄 Analyzing document:', file.name, 'Size:', file.size, 'Type:', file.type);
+      
 
       const response = await ApiClient.upload<AiResponse<any>>('/api/ai/analyze-document', formData);
 
@@ -193,7 +193,7 @@ export class AIService {
         throw new Error(errorMsg);
       }
 
-      console.log('✅ Document analyzed successfully');
+      
       // Support both structured analysis and nested data analysis
       const analysis = response.data.analysis || (response.data.data as any)?.aiAnalysis || response.data.data;
       if (!analysis) throw new Error('No analysis data received');
@@ -333,7 +333,7 @@ export class AIService {
       });
     } else if (count >= 20) {
       // Log success for large quizzes (like final exams)
-      console.log(`[AIService] ✅ Successfully received ${questions.length} questions`);
+      
     }
 
     if (!response.data.success) {
@@ -711,7 +711,7 @@ export class AIService {
       }
     }
 
-    console.log('[AIService] Extracted exam data:', examData);
+    
 
     // Assuming examData contains a 'questions' array that needs normalization
     const questions = examData.questions || [];
@@ -739,7 +739,7 @@ export class AIService {
       const apiUrl = import.meta.env.VITE_API_TRAINING_URL || 'https://v25platformtrainingbackend-production.up.railway.app';
       const baseUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
 
-      console.log('📤 Exporting presentation to PPTX (Python Premium Mode)...');
+      
 
       // Call the new Python-based premium export endpoint
       const response = await fetch(`${baseUrl}/api/ai/export-pptx-python`, {
@@ -765,7 +765,7 @@ export class AIService {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      console.log('✅ PPTX export successful');
+      
     } catch (error) {
       console.error('❌ Error exporting PPTX:', error);
       throw error;

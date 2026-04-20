@@ -154,7 +154,7 @@ export const phoneNumberService = {
   listPhoneNumbers: async (gigId: string): Promise<CheckNumberResponse> => {
     try {
       const response = await api.get<CheckNumberResponse>(`/phone-numbers/gig/${gigId}/check`);
-      console.log('📞 Listed phone numbers:', response.data);
+      
       return response.data;
     } catch (error) {
       throw handleApiError(error, 'listPhoneNumbers');
@@ -169,7 +169,7 @@ export const phoneNumberService = {
       const endpoint = provider === 'twilio'
         ? '/phone-numbers/search/twilio'
         : '/phone-numbers/search';
-      console.log(`🔍 Searching ${provider} numbers for ${countryCode}`);
+      
 
       const response = await api.get<AvailablePhoneNumber[]>(endpoint, {
         params: { countryCode }
@@ -187,7 +187,7 @@ export const phoneNumberService = {
         provider
       }));
 
-      console.log(`✅ Found ${numbers.length} numbers for ${countryCode}`);
+      
       return numbers;
     } catch (error) {
       // Special case: return empty array for 500 errors
@@ -243,8 +243,7 @@ export const phoneNumberService = {
       const endpoint = provider === 'twilio'
         ? '/phone-numbers/purchase/twilio'
         : '/phone-numbers/purchase';
-      console.log(`🛒 Purchasing ${provider} number ${phoneNumber} for gig ${gigId}`,
-        requirementGroupId ? `with requirement group ${requirementGroupId}` : '');
+      
 
       const payload: any = {
         phoneNumber,
@@ -261,7 +260,7 @@ export const phoneNumberService = {
 
       const response = await api.post<PhoneNumber>(endpoint, payload);
 
-      console.log('✅ Purchase successful:', response.data);
+      
       return response.data;
     } catch (error) {
       return handleApiError(error, 'purchasePhoneNumber');

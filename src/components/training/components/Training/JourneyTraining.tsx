@@ -23,7 +23,7 @@ export default function JourneyTraining({ journeys, onJourneySelect }: JourneyTr
   const completedCount = filteredJourneys.filter(j => j && j.status === 'completed').length;
   const totalCount = filteredJourneys.length;
 
-  console.log('[JourneyTraining] Received', journeys.length, 'journeys');
+  
 
   const calculateJourneyDuration = (journey: any): number => {
     // Check if using new structure (moduleIds) or old structure (modules array)

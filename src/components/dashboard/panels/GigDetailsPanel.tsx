@@ -27,7 +27,7 @@ function GigDetailsPanel() {
         }
 
         const data = await response.json();
-        console.log('Gig details raw response:', data);
+        
 
         if (data.message === "Gig retrieved successfully" && data.data) {
           const rawGig = data.data;

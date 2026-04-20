@@ -196,7 +196,7 @@ export const ModuleEditor: React.FC<ModuleEditorProps> = ({ training, onBack }) 
           // Uncomment when quota is recharged
           /*
           if (quizCount === 0 && module.sections && module.sections.length > 0 && !generatingQuizzes.has(module.id!)) {
-            console.log(`📝 Module "${module.title}" has sections but no quiz - auto-generating...`);
+            
             setGeneratingQuizzes(prev => new Set(prev).add(module.id!));
             generateQuizForModule(module.id!, module.title, module);
           }
@@ -291,7 +291,7 @@ export const ModuleEditor: React.FC<ModuleEditorProps> = ({ training, onBack }) 
   // ✨ Helper function to generate quiz for a single module (background, non-blocking)
   const generateQuizForModule = async (moduleId: string, moduleTitle: string, module?: ManualTrainingModule) => {
     try {
-      console.log(`🤖 Auto-generating quiz for module: ${moduleTitle}`);
+      
 
       // Calculate dynamic number of questions (5-15)
       let numberOfQuestions = 5; // Default
@@ -305,7 +305,7 @@ export const ModuleEditor: React.FC<ModuleEditorProps> = ({ training, onBack }) 
         }
       }
 
-      console.log(`📊 Generating ${numberOfQuestions} questions for module: ${moduleTitle}`);
+      
 
       const response = await axios.post(`${API_BASE}/manual-trainings/ai/generate-quiz`, {
         moduleId: moduleId,
@@ -319,7 +319,7 @@ export const ModuleEditor: React.FC<ModuleEditorProps> = ({ training, onBack }) 
       });
 
       if (response.data.success) {
-        console.log(`✅ Quiz auto-generated for ${moduleTitle}`);
+        
         // Remove from generating set
         setGeneratingQuizzes(prev => {
           const newSet = new Set(prev);
@@ -574,30 +574,26 @@ export const ModuleEditor: React.FC<ModuleEditorProps> = ({ training, onBack }) 
       return;
     }
 
-    console.log('Dropping section:', {
-      sectionId: section.id,
-      from: { moduleId: fromModuleId, index: sectionIndex },
-      to: { moduleId: targetModuleId, index: targetIndex }
-    });
+    
 
     try {
       if (fromModuleId === targetModuleId) {
         // Reorder within same module
-        console.log('Reordering within same module');
+        
         const response = await axios.post(`${API_BASE}/manual-trainings/modules/${targetModuleId}/sections/reorder`, {
           sectionId: section.id,
           newIndex: targetIndex
         });
-        console.log('Reorder response:', response.data);
+        
       } else {
         // Move to different module
-        console.log('Moving to different module');
+        
         const response = await axios.post(`${API_BASE}/manual-trainings/modules/${targetModuleId}/sections/move`, {
           sectionId: section.id,
           fromModuleId: fromModuleId,
           targetIndex: targetIndex
         });
-        console.log('Move response:', response.data);
+        
       }
 
       await loadModules();

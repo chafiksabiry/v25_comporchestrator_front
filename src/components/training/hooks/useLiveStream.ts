@@ -131,7 +131,7 @@ export const useLiveStream = (session: LiveStreamSession) => {
         const url = URL.createObjectURL(blob);
         
         // In a real implementation, upload to server
-        console.log('Recording saved:', url);
+        
       };
       
       mediaRecorderRef.current.start(1000); // Collect data every second
@@ -158,7 +158,7 @@ export const useLiveStream = (session: LiveStreamSession) => {
     setChatMessages(prev => [...prev, newMessage]);
     
     // In a real implementation, send to server via WebSocket
-    console.log('Sending message:', newMessage);
+    
   }, []);
 
   const createPoll = useCallback((question: string, options: string[]) => {
