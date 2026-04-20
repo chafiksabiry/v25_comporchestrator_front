@@ -273,7 +273,7 @@ function AppContent() {
               </div>
               <div className="flex items-center space-x-4 ml-auto">
                 <div className="flex items-center space-x-3 bg-gray-50 p-1.5 pr-4 rounded-2xl border border-gray-100 shadow-sm">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-harx flex items-center justify-center text-white font-black shadow-md overflow-hidden bg-white">
+                  <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-white font-black shadow-md overflow-hidden ${companyLogo && !logoError ? 'bg-white' : 'bg-gradient-harx'}`}>
                     {companyLogo && !logoError ? (
                       <img
                         src={companyLogo}
