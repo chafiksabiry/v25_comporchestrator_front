@@ -800,30 +800,18 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       <div className="mx-auto max-w-6xl">
         {selectedPresentation || selectedImageSet ? (
           <div className="overflow-hidden rounded-2xl border border-harx-100 bg-white">
-            <div className="grid min-h-[min(720px,calc(100dvh-8rem))] grid-cols-1 lg:grid-cols-[minmax(260px,300px)_1fr] lg:min-h-[calc(100dvh-10rem)]">
+            <div className={`grid min-h-[min(720px,calc(100dvh-8rem))] grid-cols-1 ${selectedImageSet ? 'lg:grid-cols-1' : 'lg:grid-cols-[minmax(260px,300px)_1fr]'} lg:min-h-[calc(100dvh-10rem)]`}>
+              {!selectedImageSet ? (
               <aside className="max-h-[40vh] overflow-y-auto border-b border-harx-100/60 p-4 lg:max-h-none lg:border-b-0 lg:border-r lg:border-harx-100/60">
                 <div className="mb-2 flex items-center gap-2 text-harx-600">
                   <BookOpen className="h-5 w-5 shrink-0" />
                   <span className="text-[10px] font-bold uppercase tracking-widest">Modules</span>
                 </div>
                 <h2 className="text-base font-bold leading-snug text-gray-900 line-clamp-2">
-                  {selectedImageSet?.trainingTitle || selectedImageSet?.title || previewJourney?.title || previewJourney?.name || selectedPresentation?.title || 'Training'}
+                  {previewJourney?.title || previewJourney?.name || selectedPresentation?.title || 'Training'}
                 </h2>
                 <ol className="mt-3 space-y-1.5">
-                  {selectedImageSet ? (
-                    selectedImageSet.items.map((item, idx) => (
-                      <li
-                        key={`${item.index}-${idx}`}
-                        className={`flex cursor-pointer gap-2 rounded-xl px-2 py-2 text-sm hover:bg-white/80 ${idx === selectedImageIndex ? 'bg-harx-50 text-harx-700' : 'text-gray-800'}`}
-                        onClick={() => setSelectedImageIndex(idx)}
-                      >
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-harx-50 text-xs font-bold text-harx-600">
-                          {item.index || idx + 1}
-                        </span>
-                        <span className="min-w-0 flex-1 font-medium leading-snug">{item.title || `Slide ${idx + 1}`}</span>
-                      </li>
-                    ))
-                  ) : Array.isArray(previewJourney?.modules) && previewJourney.modules.length > 0 ? (
+                  {Array.isArray(previewJourney?.modules) && previewJourney.modules.length > 0 ? (
                     previewJourney.modules.map((mod: any, idx: number) => (
                       <li
                         key={mod._id || mod.id || idx}
@@ -840,6 +828,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   )}
                 </ol>
               </aside>
+              ) : null}
               <div className="min-h-[360px] min-w-0 lg:min-h-0">
                 {selectedImageSet ? (
                   <div className="flex h-full flex-col">
