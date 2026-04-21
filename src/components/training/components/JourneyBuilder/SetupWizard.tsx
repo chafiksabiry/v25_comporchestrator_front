@@ -510,6 +510,14 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
           padding: embedCompact ? '12px 14px' : '18px 20px',
           animation: 'wizardFadeUp 260ms ease-out',
         }}>
+          <div style={{ textAlign: 'center', marginBottom: embedCompact ? 8 : 14 }}>
+            <h3 style={{ fontSize: 20, fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>
+              Welcome to your training journey
+            </h3>
+            <p style={{ fontSize: 12, color: '#64748b', marginTop: embedCompact ? 3 : 6, fontWeight: 600 }}>
+              Smart defaults · Compliance
+            </p>
+          </div>
 
           {currentStep === 1 && (
             <>
@@ -520,14 +528,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                 </div>
               ) : companyData ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minHeight: embedCompact ? 320 : 380, justifyContent: 'center' }}>
-                  <div style={{ textAlign: 'center', marginBottom: embedCompact ? 8 : 14 }}>
-                    <h3 style={{ fontSize: 20, fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>
-                      Welcome to your training journey
-                    </h3>
-                    <p style={{ fontSize: 12, color: '#64748b', marginTop: embedCompact ? 3 : 6, fontWeight: 600 }}>
-                      Smart defaults · Compliance
-                    </p>
-                  </div>
                   <div style={{ display: 'none' }}>
                     <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
                       Training industry <span style={{ color: HARX }}>*</span>
