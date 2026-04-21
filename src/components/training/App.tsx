@@ -915,7 +915,7 @@ export function AppContent({
 
   // Prevent reps from accessing Journey Builder
   if (showJourneyBuilder) {
-    if (userType === 'rep') {
+    if (userType === 'rep' && !isEmbedded) {
       console.warn('[App] Rep users cannot create journeys');
       setShowJourneyBuilder(false);
       return null;
