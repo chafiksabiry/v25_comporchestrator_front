@@ -404,6 +404,15 @@ function RepPodcastSidebarPanel({
 
 export default function ContentUploader(props: ContentUploaderProps) {
   const { onComplete, onBack, company, gigId, journey, methodology, repOnboardingLayout = false } = props;
+  /** Id Mongo `training_journeys` pour lier podcast / images (journey persisté ou brouillon sauvegardé). */
+  const linkedTrainingJourneyMongoId = (): string | undefined => {
+    const candidates = [(journey as any)?._id, (journey as any)?.id, DraftService.getDraft()?.draftId];
+    for (const c of candidates) {
+      const s = c != null ? String(c).trim() : '';
+      if (s && /^[a-f\d]{24}$/i.test(s)) return s;
+    }
+    return undefined;
+  };
   const analysisMetadata = {
     gigId: gigId || undefined,
     companyId: company?.id || company?._id || undefined
@@ -730,6 +739,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           gigId: activeChatGigId ? String(activeChatGigId) : undefined,
           companyId: company?.id || company?._id ? String(company.id || company._id) : undefined,
           chatMessages: [],
+          trainingJourneyId: linkedTrainingJourneyMongoId(),
         });
         setPodcastSavedHint('Podcast regenerated and saved to MongoDB and Cloudinary.');
         const refreshed = await AIService.listSavedPodcasts({
@@ -757,6 +767,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     currentSavedPodcastId,
     activeChatGigId,
     company,
+    journey,
   ]);
 
   const handleStopPodcastSpeak = useCallback(() => {
@@ -811,6 +822,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         gigId: activeChatGigId ? String(activeChatGigId) : undefined,
         companyId: company?.id || company?._id ? String(company.id || company._id) : undefined,
         chatMessages: [],
+        trainingJourneyId: linkedTrainingJourneyMongoId(),
       });
       setCurrentSavedPodcastId(String(saved._id || ''));
       setPodcastTitle(saved.title || title);
@@ -835,7 +847,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     podcastTitle,
     activeChatGigId,
     company,
-    activeChatGigId,
+    journey,
   ]);
 
   const refreshSavedPodcasts = useCallback(async () => {
@@ -910,6 +922,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         maxImages: 20,
         gigId: activeChatGigId ? String(activeChatGigId) : undefined,
         companyId: company?.id || company?._id ? String(company.id || company._id) : undefined,
+        trainingJourneyId: linkedTrainingJourneyMongoId(),
       });
       setImageGenerationJobId(result.jobId);
       setImageGenerationStatus(result.status === 'failed' ? 'failed' : 'generating');
@@ -936,6 +949,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     activeChatGigId,
     company,
     imagePrompt,
+    journey,
   ]);
 
   useEffect(() => {

@@ -503,6 +503,8 @@ export class AIService {
     audioUrl?: string;
     audioCloudinaryPublicId?: string;
     chatMessages?: Array<{ role: 'user' | 'assistant'; text: string; createdAt?: string }>;
+    /** training_journeys._id — met à jour le champ `podcast` sur le parcours */
+    trainingJourneyId?: string;
   }): Promise<SavedPodcastItem> {
     const response = await ApiClient.post<{
       success?: boolean;
@@ -650,6 +652,8 @@ export class AIService {
     gigId?: string;
     companyId?: string;
     maxImages?: number;
+    /** training_journeys._id — met à jour le champ `images` sur le parcours une fois la génération terminée */
+    trainingJourneyId?: string;
   }): Promise<TrainingImageJobStatus> {
     const response = await ApiClient.post<{
       success?: boolean;
