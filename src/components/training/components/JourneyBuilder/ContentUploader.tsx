@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, RotateCcw, Send, History, Bot, Mic, Square, Play } from 'lucide-react';
+import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, RotateCcw, Send, History, Bot, Mic, Square, Play, Target } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ContentUpload } from '../../types/core';
-import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef, type ChatHistoryItem, type SavedPodcastItem, type TrainingImageSet } from '../../infrastructure/services/AIService';
+import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef, type ChatHistoryItem, type SavedPodcastItem, type TrainingImageSet, type QuizQuestion } from '../../infrastructure/services/AIService';
 import { WebSpeechService } from '../../infrastructure/services/CanvasVideoService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
 import { DraftService } from '../../infrastructure/services/DraftService';
@@ -485,6 +485,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [generatedImageSet, setGeneratedImageSet] = useState<TrainingImageSet | null>(null);
   const [savedImageSets, setSavedImageSets] = useState<TrainingImageSet[]>([]);
   const [isSavedImageSetsLoading, setIsSavedImageSetsLoading] = useState(false);
+  const [showPresentationModal, setShowPresentationModal] = useState(false);
+  const [showImagePresentationModal, setShowImagePresentationModal] = useState(false);
+  const [activeImageSet, setActiveImageSet] = useState<TrainingImageSet | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [isQuizGenerating, setIsQuizGenerating] = useState(false);
+  const [showQuizModal, setShowQuizModal] = useState(false);
   const podcastSpeechRef = useRef<WebSpeechService | null>(null);
   const podcastSpeakAbortRef = useRef(false);
   const chatFileInputRef = useRef<HTMLInputElement | null>(null);
@@ -1003,11 +1010,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
   }, [activeChatGigId, refreshChatHistory]);
 
   useEffect(() => {
-    const usesKb =
-      kbGenerationChoice === 'kb_only' || kbGenerationChoice === 'kb_and_uploads';
-    if (!usesKb || !activeChatGigId) {
+    if (!activeChatGigId) {
       setIsChatKbLoading(false);
-      if (!usesKb) setChatKbDocuments([]);
+      setChatKbDocuments([]);
       return;
     }
     let cancelled = false;
@@ -1026,7 +1031,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     return () => {
       cancelled = true;
     };
-  }, [kbGenerationChoice, activeChatGigId]);
+  }, [activeChatGigId]);
 
   const getAnalyzedUploads = useCallback(
     () => uploads.filter((u) => u.status === 'analyzed' && !!u.aiAnalysis),
@@ -2181,13 +2186,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const displayName = String(company?.name || 'QARA EL HOUCINE').toUpperCase();
     const hasStartedChat = chatMessages.length > 0;
     const repSplitLayout = rep && hasStartedChat;
-    const shouldShowKbQuestionInChat = kbGenerationChoice === null;
-    /** Après Skip (KB ou perso), garder la zone thread pour ne pas masquer la salutation tant qu’il n’y a pas de message. */
-    const showComposerOnlyShell =
-      kbGenerationChoice !== null && !showPersonalizationCard && !hasStartedChat;
-    const shouldShowChatThread =
-      hasStartedChat || shouldShowKbQuestionInChat || showPersonalizationCard || showComposerOnlyShell;
-    // In REP split chat mode, keep only the chat workspace visible.
+    const shouldShowKbQuestionInChat = false;
+    const shouldShowChatThread = true;
+    // In REP split chat mode, keep only the chat workspace visible (actions moved into top toolbar).
     const showRepSplitSidebar = false;
     const kbOptions: Array<{ id: KbGenerationMode; label: string; hint: string }> = [
       { id: 'kb_only', label: 'KB only', hint: 'Use analyzed knowledge base documents only' },
@@ -2671,15 +2672,18 @@ export default function ContentUploader(props: ContentUploaderProps) {
           setChatUploadedSources((prev) => mergeUploadSources(prev, analyzedUploads));
         }
 
-        let effectiveGenerationMode = kbGenerationChoice;
-        // Safety: if user uploaded/analyzed files but mode is "none", auto-switch to uploads.
-        if (effectiveGenerationMode === 'none' && effectiveAnalyzedUploads.length > 0) {
-          effectiveGenerationMode = 'uploads_only';
-          setKbGenerationChoice('uploads_only');
-        }
-
-        const usesKbForChat = effectiveGenerationMode === 'kb_only' || effectiveGenerationMode === 'kb_and_uploads';
-        const usesUploadsForChat = effectiveGenerationMode === 'uploads_only' || effectiveGenerationMode === 'kb_and_uploads';
+        const hasKbForChat = chatKbDocuments.length > 0;
+        const hasUploadsForChat = effectiveAnalyzedUploads.length > 0;
+        const effectiveGenerationMode: KbGenerationMode =
+          hasKbForChat && hasUploadsForChat
+            ? 'kb_and_uploads'
+            : hasKbForChat
+              ? 'kb_only'
+              : hasUploadsForChat
+                ? 'uploads_only'
+                : 'none';
+        const usesKbForChat = hasKbForChat;
+        const usesUploadsForChat = hasUploadsForChat;
         const uploadsForChat = usesUploadsForChat ? effectiveAnalyzedUploads : [];
 
         const sourceHistory = options?.historyMessages || chatMessages;
@@ -2711,12 +2715,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
           selectedGigTitle: activeChatGigTitle,
           gigSnapshot: chatGigSnapshot,
           gigAnchoringRequired: !!activeChatGigId,
+          chatStyle: 'free_chat',
           generationMode: effectiveGenerationMode,
-          personalizationProfile: {
-            level: personalizationAnswers.level || '',
-            objective: personalizationAnswers.objective || '',
-            format: personalizationAnswers.format || '',
-          },
           analyzedUploadsCount: uploadsForChat.length,
           analyzedUploads: uploadsForChat,
           useKnowledgeBase: usesKbForChat,
@@ -2816,8 +2816,46 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
     };
 
-    /** Carte choix KB / perso collée au composer (même largeur que l’input), desktop uniquement */
-    const anchoredChoiceUi = !rep && (shouldShowKbQuestionInChat || showPersonalizationCard);
+    const openImagePresentationModal = () => {
+      const candidate = generatedImageSet || savedImageSets[0] || null;
+      if (!candidate) {
+        void handleGenerateTrainingImages();
+        return;
+      }
+      setActiveImageSet(candidate);
+      setActiveImageIndex(0);
+      setShowImagePresentationModal(true);
+    };
+
+    const openPresentationModal = async () => {
+      if (!generatedPresentation?.slides?.length) {
+        await handleGeneratePresentation();
+      }
+      setShowPresentationModal(true);
+    };
+
+    const handleGenerateQuizFromChat = async () => {
+      if (isQuizGenerating) return;
+      const chatDigest = chatMessages
+        .slice(-14)
+        .map((m) => `${m.role === 'assistant' ? 'Assistant' : 'User'}: ${m.text}`)
+        .join('\n\n')
+        .trim();
+      if (!chatDigest) return;
+      try {
+        setIsQuizGenerating(true);
+        const questions = await AIService.generateQuiz(chatDigest, 8);
+        setQuizQuestions(Array.isArray(questions) ? questions : []);
+        setShowQuizModal(true);
+      } catch (e: any) {
+        console.error('[ContentUploader] Quiz generation failed:', e);
+        alert(e?.message || 'Unable to generate quiz right now.');
+      } finally {
+        setIsQuizGenerating(false);
+      }
+    };
+
+    const anchoredChoiceUi = false;
 
     const renderComposerBody = () => (
       <>
@@ -2921,7 +2959,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     );
 
     return (
-    <div className={rep ? 'flex w-full min-w-0 flex-col bg-slate-50' : 'min-h-[92vh] bg-slate-50 p-2'}>
+    <div className={rep ? 'flex w-full min-w-0 flex-col bg-white' : 'min-h-[92vh] bg-white p-2'}>
       <div
         className={
           rep
@@ -3108,10 +3146,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
             <div
               className={
                 repSplitLayout
-                  ? 'relative flex min-h-0 flex-1 flex-col rounded-3xl border border-slate-200 bg-slate-50/40 shadow-sm'
+                  ? 'relative flex min-h-0 flex-1 flex-col rounded-3xl border border-slate-200 bg-white shadow-sm'
                   : rep
                     ? 'relative rounded-none border-0 bg-transparent p-0 shadow-none'
-                    : 'relative flex min-h-0 flex-1 flex-col rounded-3xl border border-slate-200 bg-slate-50/40 shadow-sm'
+                    : 'relative flex min-h-0 flex-1 flex-col rounded-3xl border border-slate-200 bg-white shadow-sm'
               }
             >
               <div
@@ -3161,6 +3199,44 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     New
                   </button>
                 </div>
+                {rep && (
+                  <div className="flex w-full flex-wrap items-center justify-end gap-2 rounded-2xl border border-slate-200 bg-white p-2">
+                    <button
+                      type="button"
+                      onClick={() => void handleGeneratePodcastScript()}
+                      disabled={isPodcastGenerating || isChatLoading}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      {isPodcastGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mic className="h-3.5 w-3.5" />}
+                      Generate audio overview
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void openPresentationModal()}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      <Presentation className="h-3.5 w-3.5" />
+                      Presentation
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void openImagePresentationModal()}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      <Image className="h-3.5 w-3.5" />
+                      View images as presentation
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleGenerateQuizFromChat()}
+                      disabled={isQuizGenerating || isChatLoading}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      {isQuizGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Target className="h-3.5 w-3.5" />}
+                      Quizzes
+                    </button>
+                  </div>
+                )}
                 {isHistoryOpen && (
                   <div className="absolute right-0 top-full z-30 mt-1.5 w-full max-w-[320px] rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
                   <div className="mb-2 flex items-center justify-between px-1">
@@ -3212,7 +3288,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 )}
               </div>
               {rep && showRepSourcePopup && (
-                <div className="absolute inset-0 z-20 flex bg-slate-900/20 p-2 backdrop-blur-[1px] sm:p-3">
+                <div className="absolute inset-0 z-20 flex bg-transparent p-2 sm:p-3">
                   <div className="flex h-full w-full flex-col rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-900/10 sm:p-6">
                     <div className="mb-5 flex items-start justify-between gap-3">
                       <div>
@@ -3630,11 +3706,11 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                           const title = lines[0] || 'Personalization summary';
                           const detailLines = lines.slice(1);
                           return (
-                            <div className="max-w-[72%] rounded-2xl border border-harx-alt-300/50 bg-gradient-to-br from-harx-500 to-harx-alt-500 px-4 py-3 text-white shadow-md shadow-harx-500/25">
+                            <div className="max-w-[72%] rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-slate-900">
                               <p className="mb-2 text-[15px] font-bold leading-tight">{title}</p>
                               <div className="space-y-1.5">
                                 {detailLines.map((line, idx) => (
-                                  <p key={`${msg.id}-line-${idx}`} className="text-[13px] leading-snug text-white/95">
+                                  <p key={`${msg.id}-line-${idx}`} className="text-[13px] leading-snug text-slate-700">
                                     {line}
                                   </p>
                                 ))}
@@ -3643,7 +3719,7 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                           );
                         }
                         return (
-                          <div className="max-w-[60%] rounded-xl border border-harx-alt-300/40 bg-gradient-to-br from-harx-500 to-harx-alt-500 px-3 py-2 text-sm font-medium text-white shadow-md shadow-harx-500/25">
+                          <div className="max-w-[60%] rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-900">
                             {msg.text}
                           </div>
                         );
@@ -3787,7 +3863,7 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                 </div>
               ) : (
                 <div
-                  className={`shrink-0 bg-white/95 pb-1 pt-2 backdrop-blur-sm ${rep ? 'sticky bottom-2 z-20 border-t border-slate-200/80' : 'sticky bottom-0 z-20 border-t border-slate-200/80 px-3'}`}
+                  className={`shrink-0 bg-white pb-1 pt-2 ${rep ? 'sticky bottom-2 z-20 border-t border-slate-200/80' : 'sticky bottom-0 z-20 border-t border-slate-200/80 px-3'}`}
                 >
                   <div
                     className={
@@ -3803,6 +3879,152 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
 
             </div>
           </div>
+
+          {rep && showPresentationModal && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/45 p-4">
+              <div className="flex h-[92vh] w-[min(1200px,96vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                  <div className="text-sm font-semibold text-slate-900">Presentation preview</div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void handleSavePresentation()}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPresentationModal(false)}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+                <div className="min-h-0 flex-1 overflow-hidden">
+                  {generatedPresentation?.slides?.length ? (
+                    <PresentationPreview
+                      presentation={generatedPresentation}
+                      isEmbedded
+                      showPagination={false}
+                      hideExportPptx
+                      embedLightCanvas
+                    />
+                  ) : (
+                    <div className="p-4 text-sm text-slate-600">No presentation generated yet.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {rep && showImagePresentationModal && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/45 p-4">
+              <div className="flex h-[90vh] w-[min(1200px,96vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                  <div className="text-sm font-semibold text-slate-900">
+                    {activeImageSet?.title || 'Presentation overview images'}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (activeImageSet) setGeneratedImageSet(activeImageSet);
+                        setPodcastSavedHint('Presentation overview saved in current session.');
+                      }}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowImagePresentationModal(false)}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+                <div className="flex min-h-0 flex-1 flex-col">
+                  <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2 text-xs font-medium text-slate-600">
+                    <span>
+                      {activeImageSet?.items?.length
+                        ? `Slide ${Math.min(activeImageIndex + 1, activeImageSet.items.length)} / ${activeImageSet.items.length}`
+                        : 'No images'}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setActiveImageIndex((prev) => Math.max(prev - 1, 0))}
+                        disabled={!activeImageSet?.items?.length || activeImageIndex <= 0}
+                        className="rounded-md border border-slate-200 px-2 py-1 disabled:opacity-40"
+                      >
+                        Prev
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveImageIndex((prev) => Math.min(prev + 1, Math.max((activeImageSet?.items?.length || 1) - 1, 0)))}
+                        disabled={!activeImageSet?.items?.length || activeImageIndex >= ((activeImageSet?.items?.length || 1) - 1)}
+                        className="rounded-md border border-slate-200 px-2 py-1 disabled:opacity-40"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex min-h-0 flex-1 items-center justify-center bg-slate-50 p-4">
+                    {activeImageSet?.items?.[activeImageIndex]?.imageUrl ? (
+                      <img
+                        src={activeImageSet.items[activeImageIndex].imageUrl}
+                        alt={activeImageSet.items[activeImageIndex].title || `Image ${activeImageIndex + 1}`}
+                        className="max-h-full w-full rounded-xl border border-slate-200 bg-white object-contain"
+                      />
+                    ) : (
+                      <div className="text-sm text-slate-500">No image available.</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {rep && showQuizModal && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/45 p-4">
+              <div className="flex h-[90vh] w-[min(920px,96vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                  <div className="text-sm font-semibold text-slate-900">Quizzes</div>
+                  <button
+                    type="button"
+                    onClick={() => setShowQuizModal(false)}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+                  {quizQuestions.length === 0 ? (
+                    <div className="text-sm text-slate-600">No quiz questions generated yet.</div>
+                  ) : (
+                    quizQuestions.map((q, idx) => (
+                      <div key={`${idx}-${q.text}`} className="rounded-xl border border-slate-200 bg-white p-3">
+                        <p className="text-sm font-semibold text-slate-900">{idx + 1}. {q.text}</p>
+                        <ul className="mt-2 space-y-1 text-sm text-slate-700">
+                          {(q.options || []).map((opt, optIdx) => (
+                            <li key={`${idx}-${optIdx}`} className={q.correctAnswer === optIdx ? 'font-semibold text-emerald-700' : ''}>
+                              {String.fromCharCode(65 + optIdx)}. {opt}
+                            </li>
+                          ))}
+                        </ul>
+                        {q.explanation ? (
+                          <p className="mt-2 text-xs text-slate-500">Explanation: {q.explanation}</p>
+                        ) : null}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Claude-like upload experience: attachment chips are displayed inside composer */}
 
