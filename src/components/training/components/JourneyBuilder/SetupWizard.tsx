@@ -428,7 +428,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
             : '16px 28px';
 
   const isThumbnailStep = currentStep === 2;
-  const setupContentMaxWidth = isStep4 ? 1120 : embedCompact && isThumbnailStep ? 380 : 500;
+  const setupContentMaxWidth = '100%';
   const thumbDropSize = embedCompact && isThumbnailStep ? 160 : 260;
   const thumbOuterPadding = embedCompact && isThumbnailStep ? '10px 10px 8px' : '20px 16px 18px';
   const thumbSectionGap = embedCompact && isThumbnailStep ? 8 : 18;
@@ -485,6 +485,15 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
         </div>
       </div>
 
+      <div style={{ flexShrink: 0, textAlign: 'center', padding: embedCompact ? '2px 16px 8px' : '4px 20px 10px' }}>
+        <h3 style={{ fontSize: 20, fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>
+          Welcome to your training journey
+        </h3>
+        <p style={{ fontSize: 12, color: '#64748b', marginTop: 4, fontWeight: 600 }}>
+          Smart defaults · Compliance
+        </p>
+      </div>
+
       {/* Body + footer column: footer stays at bottom of card; only the area above scrolls */}
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', width: '100%' }}>
         <div style={{
@@ -510,15 +519,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
           padding: embedCompact ? '12px 14px' : '18px 20px',
           animation: 'wizardFadeUp 260ms ease-out',
         }}>
-          <div style={{ textAlign: 'center', marginBottom: embedCompact ? 8 : 14 }}>
-            <h3 style={{ fontSize: 20, fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>
-              Welcome to your training journey
-            </h3>
-            <p style={{ fontSize: 12, color: '#64748b', marginTop: embedCompact ? 3 : 6, fontWeight: 600 }}>
-              Smart defaults · Compliance
-            </p>
-          </div>
-
           {currentStep === 1 && (
             <>
               {loadingCompany ? (
@@ -610,7 +610,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                     )}
                   </div>
 
-                  <div style={{ width: '100%', maxWidth: 640, margin: '0 auto', border: '1px solid rgba(15,23,42,0.08)', borderRadius: 12, padding: embedCompact ? '10px' : '12px', background: 'linear-gradient(180deg, #ffffff 0%, #fafbff 100%)' }}>
+                  <div style={{ width: '100%', border: '1px solid rgba(15,23,42,0.08)', borderRadius: 12, padding: embedCompact ? '10px' : '12px', background: 'linear-gradient(180deg, #ffffff 0%, #fafbff 100%)' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
                       <Briefcase style={{ width: 13, height: 13, color: HARX }} />
                       Your gig <span style={{ color: HARX }}>*</span>
@@ -624,7 +624,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                   </div>
 
                   {selectedGig && (
-                    <div style={{ width: '100%', maxWidth: 640, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 6, borderRadius: 10, padding: '10px 12px', fontSize: 12, color: '#065f46', border: '1px solid #a7f3d0', background: '#ecfdf5' }}>
+                    <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, borderRadius: 10, padding: '10px 12px', fontSize: 12, color: '#065f46', border: '1px solid #a7f3d0', background: '#ecfdf5' }}>
                       <CheckCircle style={{ width: 14, height: 14, color: '#059669', flexShrink: 0 }} />
                       <span style={{ fontWeight: 600 }}>{selectedGig.title}</span>
                     </div>
