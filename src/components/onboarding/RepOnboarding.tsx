@@ -641,7 +641,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     if (titleCandidates.length === 0) return undefined;
     return savedImageSets.find((set) => {
       const setCandidates = [set.title, set.trainingTitle].map(normalizeText).filter(Boolean);
-      return setCandidates.some((candidate) => titleCandidates.includes(candidate));
+      return setCandidates.some((candidate) =>
+        titleCandidates.some((journeyTitle) =>
+          candidate === journeyTitle ||
+          candidate.includes(journeyTitle) ||
+          journeyTitle.includes(candidate)
+        )
+      );
     });
   }, [savedImageSets]);
 
@@ -973,29 +979,78 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                     <p className="mt-4 text-sm font-medium text-gray-600">Loading available trainings...</p>
                   </div>
                 ) : trainings.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-harx-200 py-12 p-8 text-center">
-                    <div className="mb-4 rounded-2xl border border-harx-100 bg-white p-3">
-                      <Plus className="h-6 w-6 text-harx-500" />
+                  savedImageSets.length > 0 ? (
+                    <div className="space-y-5">
+                      <div className="rounded-xl border border-harx-100 bg-harx-50/40 px-4 py-3 text-sm font-medium text-harx-700">
+                        No training journeys found, but generated image trainings are available below.
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {savedImageSets.map((set) => (
+                          <div
+                            key={set._id}
+                            className="group relative overflow-hidden rounded-[26px] border border-[#f2d8e1] bg-white/95 p-0 shadow-[0_10px_24px_rgba(25,35,60,0.08)] transition-all duration-500 hover:-translate-y-1 hover:border-harx-300"
+                          >
+                            <div className="h-1.5 w-full bg-gradient-harx" aria-hidden />
+                            <div className="relative z-10 p-5">
+                              <div className="mb-3 flex items-start justify-between gap-2">
+                                <h3 className="line-clamp-2 text-[20px] font-black leading-[1.1] text-gray-900">
+                                  {set.trainingTitle || set.title || 'Training images'}
+                                </h3>
+                                <span className="rounded-lg bg-harx-50 px-2 py-1 text-xs font-bold text-harx-700">
+                                  {Array.isArray(set.items) ? set.items.length : 0} slides
+                                </span>
+                              </div>
+                              <p className="line-clamp-1 text-xs font-medium text-gray-500">
+                                {set.createdAt ? new Date(set.createdAt).toLocaleString() : 'Date unavailable'}
+                              </p>
+                              {Array.isArray(set.items) && set.items[0]?.imageUrl ? (
+                                <img
+                                  src={set.items[0].imageUrl}
+                                  alt={set.items[0].title || 'Training slide preview'}
+                                  className="mt-3 h-28 w-full rounded-xl border border-gray-100 object-cover"
+                                />
+                              ) : null}
+                              <div className="mt-4">
+                                <button
+                                  type="button"
+                                  onClick={() => openImageSlides(set)}
+                                  disabled={!Array.isArray(set.items) || set.items.length === 0}
+                                  className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-white px-3 py-2 text-sm font-bold text-harx-700 hover:bg-harx-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                  Contenu
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <h3 className="text-base font-bold text-gray-900">No training journeys yet</h3>
-                    <p className="mx-auto mt-2 max-w-xs text-sm text-gray-600">
-                      Add your first training journey to start onboarding your REPs.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowTraining({
-                          isOpen: true,
-                          newJourney: true,
-                          gigId: filterGigId !== 'all' ? String(filterGigId) : undefined
-                        })
-                      }
-                      className="mt-6 inline-flex items-center space-x-2 rounded-xl bg-gradient-harx px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span>Create First Journey</span>
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-harx-200 py-12 p-8 text-center">
+                      <div className="mb-4 rounded-2xl border border-harx-100 bg-white p-3">
+                        <Plus className="h-6 w-6 text-harx-500" />
+                      </div>
+                      <h3 className="text-base font-bold text-gray-900">No training journeys yet</h3>
+                      <p className="mx-auto mt-2 max-w-xs text-sm text-gray-600">
+                        Add your first training journey to start onboarding your REPs.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowTraining({
+                            isOpen: true,
+                            newJourney: true,
+                            gigId: filterGigId !== 'all' ? String(filterGigId) : undefined
+                          })
+                        }
+                        className="mt-6 inline-flex items-center space-x-2 rounded-xl bg-gradient-harx px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Create First Journey</span>
+                      </button>
+                    </div>
+                  )
                 ) : (
                   <div className="space-y-5">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
