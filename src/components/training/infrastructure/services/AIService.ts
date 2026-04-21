@@ -130,6 +130,17 @@ export interface ChatSessionDetails {
   messages: Array<{ role: 'user' | 'assistant'; text: string; createdAt?: string | null }>;
 }
 
+export interface SavedPodcastItem {
+  _id: string;
+  title: string;
+  trainingTitle?: string;
+  language: string;
+  script: string;
+  scriptCloudinaryUrl?: string;
+  audioUrl?: string;
+  createdAt?: string;
+}
+
 export interface AiBaseResponse {
   success: boolean;
   error?: string;
@@ -406,6 +417,92 @@ export class AIService {
       throw new Error(raw?.error || raw?.message || 'Empty podcast script');
     }
     return script;
+  }
+
+  static async podcastChat(params: {
+    message: string;
+    currentScript: string;
+    trainingDigest?: string;
+    trainingTitle?: string;
+    language?: string;
+    history?: Array<{ role: 'user' | 'assistant'; text: string; createdAt?: string }>;
+  }): Promise<{ assistantReply: string; updatedScript: string }> {
+    const response = await ApiClient.post<{
+      success?: boolean;
+      assistantReply?: string;
+      updatedScript?: string;
+      error?: string;
+      message?: string;
+    }>('/api/ai/podcast/chat', {
+      message: params.message,
+      currentScript: params.currentScript,
+      trainingDigest: params.trainingDigest || '',
+      trainingTitle: params.trainingTitle || '',
+      language: params.language || 'fr',
+      history: params.history || [],
+    });
+    const raw = response.data as any;
+    if (raw?.success === false) {
+      throw new Error(raw?.error || raw?.message || 'Podcast chat failed');
+    }
+    const assistantReply = String(raw?.assistantReply || '').trim() || 'Script mis à jour.';
+    const updatedScript = String(raw?.updatedScript || '').trim();
+    if (!updatedScript) {
+      throw new Error(raw?.error || raw?.message || 'Empty updated podcast script');
+    }
+    return { assistantReply, updatedScript };
+  }
+
+  static async savePodcast(params: {
+    title: string;
+    script: string;
+    trainingTitle?: string;
+    language?: string;
+    gigId?: string;
+    companyId?: string;
+    audioUrl?: string;
+    audioCloudinaryPublicId?: string;
+    chatMessages?: Array<{ role: 'user' | 'assistant'; text: string; createdAt?: string }>;
+  }): Promise<SavedPodcastItem> {
+    const response = await ApiClient.post<{
+      success?: boolean;
+      podcast?: SavedPodcastItem;
+      error?: string;
+      message?: string;
+    }>('/api/ai/podcast/save', {
+      ...params,
+      language: params.language || 'fr',
+      chatMessages: params.chatMessages || [],
+    });
+    const raw = response.data as any;
+    if (raw?.success === false) {
+      throw new Error(raw?.error || raw?.message || 'Podcast save failed');
+    }
+    const podcast = raw?.podcast as SavedPodcastItem | undefined;
+    if (!podcast?._id) throw new Error('Podcast save failed: invalid payload');
+    return podcast;
+  }
+
+  static async listSavedPodcasts(params?: {
+    gigId?: string;
+    companyId?: string;
+    limit?: number;
+  }): Promise<SavedPodcastItem[]> {
+    const qs = new URLSearchParams();
+    if (params?.gigId) qs.set('gigId', params.gigId);
+    if (params?.companyId) qs.set('companyId', params.companyId);
+    if (params?.limit != null) qs.set('limit', String(params.limit));
+    const suffix = qs.toString();
+    const response = await ApiClient.get<{
+      success?: boolean;
+      podcasts?: SavedPodcastItem[];
+      error?: string;
+    }>(`/api/ai/podcast/list${suffix ? `?${suffix}` : ''}`);
+    const raw = response.data as any;
+    if (raw?.success === false) {
+      throw new Error(raw?.error || 'Podcast list failed');
+    }
+    return Array.isArray(raw?.podcasts) ? (raw.podcasts as SavedPodcastItem[]) : [];
   }
 
   static async generateChatTitle(
