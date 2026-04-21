@@ -439,6 +439,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
   const headerSubtitle = isThumbnailStep
     ? 'Add a cover image for your training card, or describe one for AI.'
     : 'Smart defaults · Compliance';
+  const uniformStepBodyMinHeight = embedCompact ? 300 : 380;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%', width: '100%', background: WIZARD_BG, borderRadius: 18, overflow: 'hidden' }}>
@@ -505,7 +506,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
           overflowY: lockBodyScroll ? 'hidden' : 'auto',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
+          alignItems: 'stretch',
           justifyContent: embedCompact
             ? (currentStep === 1 ? 'center' : 'flex-start')
             : 'center',
@@ -516,12 +517,16 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
           maxWidth: setupContentMaxWidth,
           margin: '0 auto',
           width: '100%',
+          minHeight: uniformStepBodyMinHeight,
           borderRadius: 18,
           border: WIZARD_CARD_BORDER,
           background: WIZARD_CARD_BG,
           boxShadow: WIZARD_CARD_SHADOW,
           padding: embedCompact ? '12px 14px' : '18px 20px',
           animation: 'wizardFadeUp 260ms ease-out',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
         }}>
           {currentStep === 1 && (
             <>
