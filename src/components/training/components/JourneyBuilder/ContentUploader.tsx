@@ -250,7 +250,7 @@ function RepPodcastSidebarPanel({
           className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
         >
           {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {isGenerating ? 'Generating overview...' : hasSavedVersion ? 'Regenerate overview' : 'Generate overview'}
+          {isGenerating ? 'Generating audio overview...' : hasSavedVersion ? 'Regenerate audio overview' : 'Generate audio overview'}
         </button>
         <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white/90 px-3 py-2.5">
           <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-slate-600">
@@ -449,6 +449,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [chatKbDocuments, setChatKbDocuments] = useState<
     Array<{ _id: string; name: string; fileType?: string; summary?: string; keyTerms?: string[]; createdAt?: string }>
   >([]);
+  const [chatUploadedSources, setChatUploadedSources] = useState<Array<{ keyTopics: string[]; objectives: string[] }>>([]);
   const [isChatKbLoading, setIsChatKbLoading] = useState(false);
   /** KB chargée pour le digest podcast (même si le mode chat n’utilise pas la KB). */
   const [podcastKbDocuments, setPodcastKbDocuments] = useState<
@@ -2186,6 +2187,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
       kbGenerationChoice !== null && !showPersonalizationCard && !hasStartedChat;
     const shouldShowChatThread =
       hasStartedChat || shouldShowKbQuestionInChat || showPersonalizationCard || showComposerOnlyShell;
+    // In REP split chat mode, keep only the chat workspace visible.
+    const showRepSplitSidebar = false;
     const kbOptions: Array<{ id: KbGenerationMode; label: string; hint: string }> = [
       { id: 'kb_only', label: 'KB only', hint: 'Use analyzed knowledge base documents only' },
       { id: 'uploads_only', label: 'Uploaded files only', hint: 'Use only your attached files' },
@@ -2282,8 +2285,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
     };
 
     const startNewConversation = () => {
+      // Hard reset chat + generated artifacts so next generations are based only on the new chat.
       setChatMessages([]);
       setChatInput('');
+      setUploads([]);
+      setChatUploadedSources([]);
       setShowRepSourcePopup(repOnboardingLayout);
       setActiveChatSessionId(null);
       setIsHistoryOpen(false);
@@ -2292,6 +2298,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setShowPersonalizationCard(false);
       setPersonalizationStep(0);
       setPersonalizationAnswers({});
+      setGeneratedCurriculum(null);
+      setGeneratedPresentation(null);
+      setGeneratedImageSet(null);
+      setImageGenerationStatus('idle');
+      setImageGenerationJobId(null);
+      setImageGenerationCompleted(0);
+      setImageGenerationTotal(0);
+      setPodcastScript('');
+      setPodcastError(null);
+      setPodcastSavedHint(null);
+      setCurrentSavedPodcastId(null);
     };
 
     const openHistorySession = async (sessionId: string) => {
@@ -2632,17 +2649,38 @@ export default function ContentUploader(props: ContentUploaderProps) {
             keyTopics: u.aiAnalysis?.keyTopics || [],
             objectives: u.aiAnalysis?.learningObjectives || [],
           }));
+        const mergeUploadSources = (
+          prev: Array<{ keyTopics: string[]; objectives: string[] }>,
+          next: Array<{ keyTopics: string[]; objectives: string[] }>
+        ) => {
+          const fingerprint = (entry: { keyTopics: string[]; objectives: string[] }) =>
+            `${(entry.keyTopics || []).join('|')}::${(entry.objectives || []).join('|')}`;
+          const out = [...prev];
+          const seen = new Set(prev.map(fingerprint));
+          next.forEach((entry) => {
+            const key = fingerprint(entry);
+            if (!seen.has(key)) {
+              seen.add(key);
+              out.push(entry);
+            }
+          });
+          return out;
+        };
+        const effectiveAnalyzedUploads = mergeUploadSources(chatUploadedSources, analyzedUploads);
+        if (analyzedUploads.length > 0) {
+          setChatUploadedSources((prev) => mergeUploadSources(prev, analyzedUploads));
+        }
 
         let effectiveGenerationMode = kbGenerationChoice;
         // Safety: if user uploaded/analyzed files but mode is "none", auto-switch to uploads.
-        if (effectiveGenerationMode === 'none' && analyzedUploads.length > 0) {
+        if (effectiveGenerationMode === 'none' && effectiveAnalyzedUploads.length > 0) {
           effectiveGenerationMode = 'uploads_only';
           setKbGenerationChoice('uploads_only');
         }
 
         const usesKbForChat = effectiveGenerationMode === 'kb_only' || effectiveGenerationMode === 'kb_and_uploads';
         const usesUploadsForChat = effectiveGenerationMode === 'uploads_only' || effectiveGenerationMode === 'kb_and_uploads';
-        const uploadsForChat = usesUploadsForChat ? analyzedUploads : [];
+        const uploadsForChat = usesUploadsForChat ? effectiveAnalyzedUploads : [];
 
         const sourceHistory = options?.historyMessages || chatMessages;
         const historyForContext = sourceHistory
@@ -2739,6 +2777,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
               : m
           )
         );
+        if (analyzedUploads.length > 0) {
+          // Files were already captured for this chat context; keep input clean for next prompts.
+          setUploads([]);
+        }
         void refreshChatHistory();
       } catch (error: any) {
         console.error('[ContentUploader] Chat backend call failed:', error);
@@ -2972,7 +3014,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               </div>
             </aside>
           )}
-          {repSplitLayout && (
+          {repSplitLayout && showRepSplitSidebar && (
             <aside className="flex w-full shrink-0 flex-col gap-3 lg:h-full lg:w-[min(420px,38vw)] lg:min-w-[280px] lg:pr-1">
               <div className="rounded-2xl border border-fuchsia-200/80 bg-gradient-to-br from-fuchsia-50/90 to-white p-3 shadow-sm">
                 <RepPodcastSidebarPanel
@@ -3170,8 +3212,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 )}
               </div>
               {rep && showRepSourcePopup && (
-                <div className="absolute inset-0 z-20 flex items-start justify-center bg-slate-900/25 px-3 pt-6 backdrop-blur-[1px] sm:px-6 sm:pt-8">
-                  <div className="w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-900/10 sm:p-6">
+                <div className="absolute inset-0 z-20 flex bg-slate-900/20 p-2 backdrop-blur-[1px] sm:p-3">
+                  <div className="flex h-full w-full flex-col rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-900/10 sm:p-6">
                     <div className="mb-5 flex items-start justify-between gap-3">
                       <div>
                         <p className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[30px]">
@@ -3190,7 +3232,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         <X className="h-4 w-4" />
                       </button>
                     </div>
-                    <div className="mb-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-4 text-center">
+                    <div className="mb-4 flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-4 text-center">
                       <p className="text-lg font-semibold text-slate-900">Drop your files here</p>
                       <p className="mt-1 text-xs text-slate-500">pdf, images, docs, audio, and text</p>
                     </div>
