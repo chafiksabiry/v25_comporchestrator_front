@@ -20,16 +20,15 @@ import {
   BarChart3,
   Laptop,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Image,
 } from 'lucide-react';
 
 import { AppContent } from '../training/App';
-import PresentationPreview from '../training/components/Training/PresentationPreview';
 import { getGigsByCompanyId } from '../../api/matching';
 import { DraftService } from '../training/infrastructure/services/DraftService';
 import { OnboardingService } from '../training/infrastructure/services/OnboardingService';
 import { AIService, type SavedPodcastItem, type TrainingImageSet } from '../training/infrastructure/services/AIService';
-import { mapJourneyToPresentation } from '../training/utils/PresentationMapper';
 import { cloudinaryService } from '../training/lib/cloudinaryService';
 import '../training/index.css';
 
@@ -49,11 +48,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [selectedImageSet, setSelectedImageSet] = useState<TrainingImageSet | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string, gigId?: string, newJourney?: boolean }>({ isOpen: false });
-  const [selectedPresentation, setSelectedPresentation] = useState<any | null>(null);
-  /** Journey used for module sidebar when previewing slides */
+  /** Journey context when viewing generated slide images from a training card */
   const [previewJourney, setPreviewJourney] = useState<any | null>(null);
-  const [openClaudeEditorOnPreview, setOpenClaudeEditorOnPreview] = useState(false);
-  const [loadingPresentation, setLoadingPresentation] = useState(false);
   const [deletingJourneyId, setDeletingJourneyId] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -124,6 +120,32 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       trainingLogo: journey.trainingLogo || null
     };
   };
+
+  const resolveJourneyGigId = useCallback(
+    (journey: any): string => {
+      const resolveId = (value: any): string => {
+        if (!value) return '';
+        if (typeof value === 'string' || typeof value === 'number') return String(value).trim();
+        if (typeof value === 'object') {
+          const nestedId = value._id || value.id;
+          if (typeof nestedId === 'string' || typeof nestedId === 'number') {
+            return String(nestedId).trim();
+          }
+        }
+        return '';
+      };
+      return (
+        resolveId(journey?.gigId) ||
+        resolveId(journey?.gig) ||
+        resolveId(journey?.jobId) ||
+        resolveId(journey?.job) ||
+        resolveId(journey?.metadata?.gigId) ||
+        resolveId(journey?.context?.gigId) ||
+        (filterGigId !== 'all' ? String(filterGigId) : '')
+      );
+    },
+    [filterGigId]
+  );
 
   const logoIconByKey: Record<string, React.ComponentType<{ className?: string }>> = {
     'book-open': BookOpen,
@@ -214,50 +236,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     }
   };
 
-  const handleViewPresentation = async (
-    url: string | null,
-    _journeyId: string,
-    journey: any,
-    openEditor: boolean = false
-  ) => {
-    setSelectedImageSet(null);
-    setSelectedImageIndex(0);
-    setPreviewJourney(journey || null);
-    setOpenClaudeEditorOnPreview(openEditor);
-
-    if (url) {
-      setLoadingPresentation(true);
-      try {
-        const response = await axios.get(url);
-        const raw = response.data as Record<string, unknown> | null | undefined;
-        const fromUrl =
-          raw && Array.isArray(raw.slides)
-            ? (raw as { slides: unknown[] })
-            : raw && typeof raw.presentation === 'object' && raw.presentation !== null && Array.isArray((raw.presentation as { slides?: unknown[] }).slides)
-              ? (raw.presentation as { slides: unknown[] })
-              : null;
-        if (fromUrl?.slides?.length) {
-          setSelectedPresentation(fromUrl);
-          setLoadingPresentation(false);
-          return;
-        }
-      } catch (error) {
-        console.error('[RepOnboarding] Error fetching presentation JSON:', error);
-      } finally {
-        setLoadingPresentation(false);
-      }
-    }
-
-    let presentationToUse;
-    if (journey.presentation && journey.presentation.slides && journey.presentation.slides.length > 0) {
-      presentationToUse = journey.presentation;
-    } else {
-      presentationToUse = mapJourneyToPresentation(journey);
-    }
-
-    setSelectedPresentation(presentationToUse);
-  };
-
   // Function to get training backend URL
   const getTrainingBackendUrl = (): string => {
     const customUrl = import.meta.env.VITE_TRAINING_BACKEND_URL;
@@ -291,8 +269,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       await axios.delete(`${baseUrl}/training_journeys/${journeyId}`);
 
       if (previewJourney && String(previewJourney?._id || previewJourney?.id || '') === journeyId) {
-        setSelectedPresentation(null);
         setPreviewJourney(null);
+        setSelectedImageSet(null);
+        setSelectedImageIndex(0);
       }
 
       await fetchCompanyTrainings();
@@ -305,32 +284,12 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   };
 
   const handleOpenTrainingChat = (journey: any) => {
-    const resolveId = (value: any): string => {
-      if (!value) return '';
-      if (typeof value === 'string' || typeof value === 'number') return String(value).trim();
-      if (typeof value === 'object') {
-        const nestedId = value._id || value.id;
-        if (typeof nestedId === 'string' || typeof nestedId === 'number') {
-          return String(nestedId).trim();
-        }
-      }
-      return '';
-    };
-
     const journeyId = String(journey?._id || journey?.id || '').trim();
     if (!journeyId) {
       window.alert('Training ID not found.');
       return;
     }
-    const journeyGigId =
-      resolveId(journey?.gigId) ||
-      resolveId(journey?.gig) ||
-      resolveId(journey?.jobId) ||
-      resolveId(journey?.job) ||
-      resolveId(journey?.metadata?.gigId) ||
-      resolveId(journey?.context?.gigId);
-    const fallbackGigId = filterGigId !== 'all' ? String(filterGigId) : '';
-    const resolvedGigId = journeyGigId || fallbackGigId;
+    const resolvedGigId = resolveJourneyGigId(journey) || undefined;
     // Open journey chat directly on chat step, keeping journey context/history + gig context
     setShowTraining({ isOpen: true, newJourney: true, journeyId, gigId: resolvedGigId || undefined });
   };
@@ -625,47 +584,63 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
 
-  const findImageSetForJourney = useCallback((journey: any): TrainingImageSet | undefined => {
-    const titleCandidates = [
-      journey?.title,
-      journey?.name,
-      journey?.trainingTitle,
-      journey?.metadata?.title,
-    ]
-      .map(normalizeText)
-      .filter(Boolean);
+  const findImageSetForJourney = useCallback(
+    (journey: any): TrainingImageSet | undefined => {
+      const gigId = resolveJourneyGigId(journey);
+      if (gigId) {
+        const byGig = savedImageSets.find((set) => String(set.gigId || '').trim() === gigId);
+        if (byGig) return byGig;
+      }
 
-    if (titleCandidates.length === 0) return undefined;
-    return savedImageSets.find((set) => {
-      const setCandidates = [set.title, set.trainingTitle].map(normalizeText).filter(Boolean);
-      return setCandidates.some((candidate) =>
-        titleCandidates.some((journeyTitle) =>
-          candidate === journeyTitle ||
-          candidate.includes(journeyTitle) ||
-          journeyTitle.includes(candidate)
-        )
-      );
-    });
-  }, [savedImageSets]);
+      const titleCandidates = [
+        journey?.title,
+        journey?.name,
+        journey?.trainingTitle,
+        journey?.metadata?.title,
+      ]
+        .map(normalizeText)
+        .filter(Boolean);
 
-  const openImageSlides = (imageSet: TrainingImageSet) => {
-    setSelectedPresentation(null);
-    setOpenClaudeEditorOnPreview(false);
+      if (titleCandidates.length === 0) return undefined;
+      return savedImageSets.find((set) => {
+        const setCandidates = [set.title, set.trainingTitle].map(normalizeText).filter(Boolean);
+        return setCandidates.some((candidate) =>
+          titleCandidates.some((journeyTitle) =>
+            candidate === journeyTitle ||
+            candidate.includes(journeyTitle) ||
+            journeyTitle.includes(candidate)
+          )
+        );
+      });
+    },
+    [savedImageSets, resolveJourneyGigId]
+  );
+
+  const openImageSlides = (imageSet: TrainingImageSet, previewJourneyUpdate?: any) => {
+    if (previewJourneyUpdate !== undefined) {
+      setPreviewJourney(previewJourneyUpdate);
+    }
     setSelectedImageSet(imageSet);
     setSelectedImageIndex(0);
   };
 
-  const openJourneyContentOrImages = (
-    journey: any,
-    formatted: ReturnType<typeof formatTrainingJourney>,
-    imageSet: TrainingImageSet | undefined,
-    imageSlidesCount: number
-  ) => {
-    if (imageSet && imageSlidesCount > 0) {
-      openImageSlides(imageSet);
-      return;
-    }
-    void handleViewPresentation(formatted.presentationUrl, formatted.id, journey);
+  /** Always opens the image carousel (same UX as « Contenu »), never text/HTML slides. */
+  const openJourneyContentOrImages = (journey: any, formatted: ReturnType<typeof formatTrainingJourney>) => {
+    const imageSet = findImageSetForJourney(journey);
+    const hasItems = Array.isArray(imageSet?.items) && imageSet.items.length > 0;
+    const effectiveSet: TrainingImageSet =
+      hasItems && imageSet
+        ? imageSet
+        : imageSet && Array.isArray(imageSet.items)
+          ? imageSet
+          : {
+              _id: `no-images-${formatted.id}`,
+              title: formatted.title,
+              trainingTitle: formatted.title,
+              language: 'fr',
+              items: [],
+            };
+    openImageSlides(effectiveSet, journey);
   };
 
   const stopPodcastPlayback = useCallback(() => {
@@ -805,101 +780,100 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   return (
     <div className="space-y-6">
       <div className="mx-auto max-w-6xl">
-        {selectedPresentation || selectedImageSet ? (
+        {selectedImageSet ? (
           <div className="overflow-hidden rounded-2xl border border-harx-100 bg-white">
-            <div className={`grid min-h-[min(720px,calc(100dvh-8rem))] grid-cols-1 ${selectedImageSet ? 'lg:grid-cols-1' : 'lg:grid-cols-[minmax(260px,300px)_1fr]'} lg:min-h-[calc(100dvh-10rem)]`}>
-              {!selectedImageSet ? (
-              <aside className="max-h-[40vh] overflow-y-auto border-b border-harx-100/60 p-4 lg:max-h-none lg:border-b-0 lg:border-r lg:border-harx-100/60">
-                <div className="mb-2 flex items-center gap-2 text-harx-600">
-                  <BookOpen className="h-5 w-5 shrink-0" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Modules</span>
-                </div>
-                <h2 className="text-base font-bold leading-snug text-gray-900 line-clamp-2">
-                  {previewJourney?.title || previewJourney?.name || selectedPresentation?.title || 'Training'}
-                </h2>
-                <ol className="mt-3 space-y-1.5">
-                  {Array.isArray(previewJourney?.modules) && previewJourney.modules.length > 0 ? (
-                    previewJourney.modules.map((mod: any, idx: number) => (
-                      <li
-                        key={mod._id || mod.id || idx}
-                        className="flex gap-2 rounded-xl px-2 py-2 text-sm text-gray-800 hover:bg-white/80"
-                      >
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-harx-50 text-xs font-bold text-harx-600">
-                          {idx + 1}
-                        </span>
-                        <span className="min-w-0 flex-1 font-medium leading-snug">{mod.title || `Module ${idx + 1}`}</span>
-                      </li>
-                    ))
-                  ) : (
-                    <li className="text-xs text-gray-500">Module list unavailable — browse slides on the right.</li>
-                  )}
-                </ol>
-              </aside>
-              ) : null}
-              <div className="min-h-[360px] min-w-0 lg:min-h-0">
-                {selectedImageSet ? (
-                  <div className="flex h-full flex-col">
-                    <div className="flex items-center justify-between border-b border-harx-100 px-4 py-3">
+            <div className="grid min-h-[min(720px,calc(100dvh-8rem))] grid-cols-1 lg:min-h-[calc(100dvh-10rem)]">
+              <div className="flex min-h-[360px] min-w-0 flex-col lg:min-h-0">
+                <div className="flex h-full flex-col">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-harx-100 px-4 py-3">
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                      onClick={() => {
+                        setSelectedImageSet(null);
+                        setSelectedImageIndex(0);
+                        setPreviewJourney(null);
+                      }}
+                    >
+                      Back to trainings list
+                    </button>
+                    <div className="min-w-0 flex-1 px-2 text-center sm:text-left">
+                      <div className="truncate text-sm font-black text-harx-700">
+                        {previewJourney?.title ||
+                          previewJourney?.name ||
+                          selectedImageSet.trainingTitle ||
+                          selectedImageSet.title ||
+                          'Training'}
+                      </div>
+                      <div className="text-xs font-semibold text-gray-500">
+                        {selectedImageSet.items.length === 0
+                          ? 'Presentation images — 0 slides'
+                          : `Slide ${Math.min(selectedImageIndex + 1, selectedImageSet.items.length)} / ${selectedImageSet.items.length}`}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                        onClick={() => {
-                          setSelectedImageSet(null);
-                          setSelectedImageIndex(0);
-                        }}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                        disabled={selectedImageSet.items.length === 0 || selectedImageIndex <= 0}
+                        onClick={() => setSelectedImageIndex((prev) => Math.max(prev - 1, 0))}
                       >
-                        Back to trainings list
+                        <ChevronLeft className="h-4 w-4" />
                       </button>
-                      <div className="text-xs font-semibold text-gray-600">
-                        Slide {Math.min(selectedImageIndex + 1, selectedImageSet.items.length)} / {selectedImageSet.items.length}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                          disabled={selectedImageIndex <= 0}
-                          onClick={() => setSelectedImageIndex((prev) => Math.max(prev - 1, 0))}
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                          disabled={selectedImageIndex >= selectedImageSet.items.length - 1}
-                          onClick={() => setSelectedImageIndex((prev) => Math.min(prev + 1, Math.max(selectedImageSet.items.length - 1, 0)))}
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex min-h-[300px] flex-1 items-center justify-center bg-[#f7f9fc] p-4">
-                      {selectedImageSet.items[selectedImageIndex]?.imageUrl ? (
-                        <img
-                          src={selectedImageSet.items[selectedImageIndex].imageUrl}
-                          alt={selectedImageSet.items[selectedImageIndex].title || `Slide ${selectedImageIndex + 1}`}
-                          className="max-h-full w-full rounded-xl border border-gray-200 bg-white object-contain shadow-sm"
-                        />
-                      ) : (
-                        <div className="text-sm text-gray-500">Slide image unavailable.</div>
-                      )}
+                      <button
+                        type="button"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                        disabled={
+                          selectedImageSet.items.length === 0 ||
+                          selectedImageIndex >= selectedImageSet.items.length - 1
+                        }
+                        onClick={() =>
+                          setSelectedImageIndex((prev) =>
+                            Math.min(prev + 1, Math.max(selectedImageSet.items.length - 1, 0))
+                          )
+                        }
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
-                ) : (
-                  <PresentationPreview
-                    presentation={selectedPresentation}
-                    onClose={() => {
-                      setSelectedPresentation(null);
-                      setPreviewJourney(null);
-                      setOpenClaudeEditorOnPreview(false);
-                    }}
-                    isEmbedded={true}
-                    showPagination={false}
-                    hideExportPptx={true}
-                    embedLightCanvas={true}
-                    backLabel="Back to trainings list"
-                    openClaudeEditor={openClaudeEditorOnPreview}
-                  />
-                )}
+                  <div className="flex min-h-[300px] flex-1 items-center justify-center bg-[#f7f9fc] p-4">
+                    {selectedImageSet.items.length === 0 ? (
+                      <div className="max-w-md space-y-4 text-center">
+                        <Image className="mx-auto h-10 w-10 text-harx-400" aria-hidden />
+                        <p className="text-sm text-gray-600">
+                          Aucune image générée pour cette formation. Ouvrez le chat REP et utilisez{' '}
+                          <span className="font-semibold text-gray-800">Presentation</span> pour créer les slides
+                          images.
+                        </p>
+                        {previewJourney ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const j = previewJourney;
+                              setSelectedImageSet(null);
+                              setSelectedImageIndex(0);
+                              setPreviewJourney(null);
+                              handleOpenTrainingChat(j);
+                            }}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-harx px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-harx-500/20 transition hover:brightness-105"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                            Ouvrir le chat de formation
+                          </button>
+                        ) : null}
+                      </div>
+                    ) : selectedImageSet.items[selectedImageIndex]?.imageUrl ? (
+                      <img
+                        src={selectedImageSet.items[selectedImageIndex].imageUrl}
+                        alt={selectedImageSet.items[selectedImageIndex].title || `Slide ${selectedImageIndex + 1}`}
+                        className="max-h-full w-full rounded-xl border border-gray-200 bg-white object-contain shadow-sm"
+                      />
+                    ) : (
+                      <div className="text-sm text-gray-500">Slide image unavailable.</div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1001,7 +975,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               <div className="mt-4">
                                 <button
                                   type="button"
-                                  onClick={() => openImageSlides(set)}
+                                  onClick={() => openImageSlides(set, null)}
                                   disabled={!Array.isArray(set.items) || set.items.length === 0}
                                   className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-white px-3 py-2 text-sm font-bold text-harx-700 hover:bg-harx-50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
@@ -1120,33 +1094,25 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               <div className="flex items-center gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => openJourneyContentOrImages(journey, formatted, imageSet, imageSlidesCount)}
-                                  disabled={loadingPresentation || deletingJourneyId === formatted.id}
+                                  onClick={() => openJourneyContentOrImages(journey, formatted)}
+                                  disabled={deletingJourneyId === formatted.id}
                                   className={`inline-flex items-center space-x-2 rounded-xl px-3 py-2 text-xs font-bold transition-all ${formatted.status === 'completed'
                                     ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100 hover:bg-emerald-100'
                                     : 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20 hover:-translate-y-0.5 hover:shadow-harx-500/40'
                                     }`}
                                 >
-                                  {loadingPresentation ? (
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <Play className="h-4 w-4" />
-                                  )}
+                                  <Play className="h-4 w-4" />
                                   <span>
                                     {formatted.status === 'completed' ? 'Review' : formatted.status === 'in_progress' ? 'Continue' : 'Start'}
                                   </span>
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => openJourneyContentOrImages(journey, formatted, imageSet, imageSlidesCount)}
-                                  disabled={loadingPresentation || deletingJourneyId === formatted.id}
+                                  onClick={() => openJourneyContentOrImages(journey, formatted)}
+                                  disabled={deletingJourneyId === formatted.id}
                                   className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-white px-3 py-2 text-xs font-bold text-harx-700 hover:bg-harx-50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                  {loadingPresentation ? (
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <FileText className="h-4 w-4" />
-                                  )}
+                                  <FileText className="h-4 w-4" />
                                   Contenu
                                 </button>
                               </div>
@@ -1155,7 +1121,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleOpenTrainingChat(journey)}
-                                  disabled={loadingPresentation || deletingJourneyId === formatted.id}
+                                  disabled={deletingJourneyId === formatted.id}
                                   className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-sky-200 bg-white/85 text-sky-700 shadow-sm hover:bg-sky-50 disabled:opacity-50"
                                   title="Open training chat"
                                 >
@@ -1164,7 +1130,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                 <button
                                   type="button"
                                   onClick={() => openTrainingSettings(journey)}
-                                  disabled={loadingPresentation || deletingJourneyId === formatted.id}
+                                  disabled={deletingJourneyId === formatted.id}
                                   className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-harx-200 bg-white/85 text-harx-700 shadow-sm hover:bg-harx-50 disabled:opacity-50"
                                   title="Training settings"
                                 >
@@ -1173,7 +1139,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteJourney(journey)}
-                                  disabled={loadingPresentation || deletingJourneyId === formatted.id}
+                                  disabled={deletingJourneyId === formatted.id}
                                   className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-white/85 text-rose-600 shadow-sm hover:bg-rose-50 disabled:opacity-50"
                                   title="Delete training"
                                 >
