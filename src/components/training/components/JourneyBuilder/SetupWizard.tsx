@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import { createPortal } from 'react-dom';
-import { Building2, Loader2, Target, Users, Sparkles, Briefcase, AlertCircle, CheckCircle, ArrowRight, ArrowLeft, ChevronDown, Check, Search, ImagePlus, Brain } from 'lucide-react';
+import { Building2, Loader2, Target, Sparkles, Briefcase, AlertCircle, CheckCircle, ArrowRight, ArrowLeft, ChevronDown, Check, Search, ImagePlus, Brain } from 'lucide-react';
 import axios from 'axios';
 import { Company, TrainingJourney } from '../../types/core';
 import { Industry, GigFromApi } from '../../types';
@@ -41,7 +41,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
   const industryBtnRef = useRef<HTMLButtonElement>(null);
   const industryMenuRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 0 });
-  const [setupSummaryModulesExpanded, setSetupSummaryModulesExpanded] = useState(false);
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [thumbnailGenerating, setThumbnailGenerating] = useState(false);
@@ -56,10 +55,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
     const cid = String(companyId || OnboardingService.getCompanyId() || '').trim();
     return cid ? `repTrainingDraftJourneyId:${cid}` : 'repTrainingDraftJourneyId';
   }, []);
-
-  useEffect(() => {
-    if (currentStep !== 5) setSetupSummaryModulesExpanded(false);
-  }, [currentStep]);
 
   const updateMenuPos = useCallback(() => {
     if (industryBtnRef.current) {
@@ -317,7 +312,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
 
   const visionContinueDisabled =
     visionSubStep === 0 ? !visionName.trim() : !visionDuration;
-  const visionContinueLabel = visionSubStep === 1 ? 'Continue' : 'Next';
+  const visionContinueLabel = 'Continue';
 
   const handleVisionFooterBack = () => {
     if (visionSubStep > 0) setVisionSubStep(visionSubStep - 1);
@@ -772,13 +767,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
 
           {currentStep === 4 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <div style={{ textAlign: 'center' }}>
-                <h3 style={{ fontSize: 20, fontWeight: 900, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                  <Users style={{ width: 20, height: 20, color: HARX }} />
-                  Identify your learners
-                </h3>
-                <p style={{ fontSize: 13, color: '#64748b', marginTop: 6, fontWeight: 600 }}>Role-based paths · Skill assessments · Personalization</p>
-              </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#1f2937' }}>
@@ -1139,7 +1127,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                       padding: '8px 12px',
                       flex: 1,
                       minHeight: 0,
-                      overflowY: setupSummaryModulesExpanded ? 'auto' : 'hidden',
+                      overflowY: 'auto',
                       overflowX: 'hidden',
                       display: 'flex',
                       flexDirection: 'column',
@@ -1163,10 +1151,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                       Methodology
                     </h5>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, alignContent: 'start', flexShrink: 0 }}>
-                      {(setupSummaryModulesExpanded
-                        ? selectedMethodology.components
-                        : selectedMethodology.components?.slice(0, 4) || []
-                      ).map((c: MethodologyComponent, i: number) => (
+                      {(selectedMethodology.components || []).map((c: MethodologyComponent, i: number) => (
                         <div key={c.id || i} style={{ display: 'flex', alignItems: 'flex-start', gap: 4, minWidth: 0 }}>
                           <CheckCircle style={{ width: 11, height: 11, color: '#059669', flexShrink: 0, marginTop: 2 }} />
                           <span
@@ -1177,7 +1162,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               display: '-webkit-box',
-                              WebkitLineClamp: setupSummaryModulesExpanded ? 3 : 2,
+                              WebkitLineClamp: 3,
                               WebkitBoxOrient: 'vertical',
                             }}
                           >
@@ -1186,30 +1171,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                         </div>
                       ))}
                     </div>
-                    {selectedMethodology.components && selectedMethodology.components.length > 4 ? (
-                      <button
-                        type="button"
-                        onClick={() => setSetupSummaryModulesExpanded(!setupSummaryModulesExpanded)}
-                        style={{
-                          margin: '8px 0 0',
-                          fontSize: 10,
-                          fontWeight: 700,
-                          color: HARX,
-                          flexShrink: 0,
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          padding: 0,
-                          textAlign: 'left',
-                          textDecoration: 'underline',
-                          textUnderlineOffset: 2,
-                        }}
-                      >
-                        {setupSummaryModulesExpanded
-                          ? 'Show less'
-                          : `+${selectedMethodology.components.length - 4} more modules`}
-                      </button>
-                    ) : null}
                   </div>
                 ) : null}
               </div>

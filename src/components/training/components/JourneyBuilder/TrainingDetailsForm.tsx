@@ -51,42 +51,6 @@ export default function TrainingDetailsForm({
       }}
     >
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 8 }}>
-        <div style={{ textAlign: 'center', marginBottom: 16 }}>
-          <h3
-            style={{
-              fontSize: 17,
-              fontWeight: 800,
-              color: '#111827',
-              margin: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-            }}
-          >
-            <Target style={{ width: 18, height: 18, color: HARX }} />
-            Define your training vision
-          </h3>
-          <p style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-            {subStep === 0 && 'Step 1 of 2 — Name & description'}
-            {subStep === 1 && 'Step 2 of 2 — How long should it run?'}
-          </p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 10 }}>
-            {[0, 1].map((i) => (
-              <div
-                key={i}
-                style={{
-                  width: subStep === i ? 22 : 8,
-                  height: 8,
-                  borderRadius: 9999,
-                  background: subStep === i ? HARX : subStep > i ? '#059669' : '#e5e7eb',
-                  transition: 'all 200ms',
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
         {subStep === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -178,11 +142,11 @@ export default function TrainingDetailsForm({
         )}
 
         {subStep === 1 && (
-          <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 8 }}>
+          <div style={{ maxWidth: 560, margin: '0 auto', width: '100%' }}>
+            <label style={{ display: 'block', textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 10 }}>
               Expected Program Duration <span style={{ color: HARX }}>*</span>
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
               {VISION_DURATIONS.map((d) => {
                 const selected = estimatedDuration === d.value;
                 return (
@@ -196,7 +160,7 @@ export default function TrainingDetailsForm({
                       borderRadius: 8,
                       background: selected ? '#fff5f5' : 'transparent',
                       cursor: 'pointer',
-                      textAlign: 'left',
+                      textAlign: 'center',
                       transition: 'all 150ms',
                     }}
                   >

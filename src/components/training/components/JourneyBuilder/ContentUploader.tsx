@@ -222,9 +222,9 @@ function RepPodcastSidebarPanel({
             <Mic className="h-4 w-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-black text-slate-900">Podcast</p>
+            <p className="text-sm font-black text-slate-900">Overview</p>
             <p className="text-[11px] text-slate-600">
-              Generated on the server · browser voice playback (script text is hidden)
+              Generated from training context · browser playback enabled
             </p>
             {!canGenerateFromTraining ? (
               <p className="mt-1 text-[10px] font-medium leading-snug text-amber-800">
@@ -250,11 +250,11 @@ function RepPodcastSidebarPanel({
           className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
         >
           {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {isGenerating ? 'Generating...' : hasSavedVersion ? 'Regenerate podcast' : 'Generate podcast'}
+          {isGenerating ? 'Generating overview...' : hasSavedVersion ? 'Regenerate overview' : 'Generate overview'}
         </button>
         <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white/90 px-3 py-2.5">
           <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-slate-600">
-            {hasScript ? (isSpeaking ? 'Playing...' : 'Ready - press play') : 'No audio generated'}
+            {hasScript ? (isSpeaking ? 'Playing...' : 'Ready - press play') : 'No overview audio generated'}
           </span>
           <button
             type="button"
@@ -278,7 +278,7 @@ function RepPodcastSidebarPanel({
           </button>
         </div>
         <div className="mt-1 rounded-xl border border-slate-200 bg-white p-2.5">
-          <p className="mb-1 text-[11px] font-semibold text-slate-700">Podcast title</p>
+          <p className="mb-1 text-[11px] font-semibold text-slate-700">Overview title</p>
           <div className="flex items-center gap-2">
             <input
               value={title}
@@ -300,7 +300,7 @@ function RepPodcastSidebarPanel({
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-2.5">
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-[11px] font-semibold text-slate-700">Saved podcasts</p>
+            <p className="text-[11px] font-semibold text-slate-700">Saved overviews</p>
             <button
               type="button"
               onClick={onRefreshSavedPodcasts}
@@ -312,9 +312,9 @@ function RepPodcastSidebarPanel({
           </div>
           <div className="max-h-32 space-y-1 overflow-y-auto rounded-lg bg-slate-50 p-2">
             {isSavedPodcastsLoading ? (
-              <p className="text-[11px] text-slate-500">Loading saved podcasts...</p>
+              <p className="text-[11px] text-slate-500">Loading saved overviews...</p>
             ) : savedPodcasts.length === 0 ? (
-              <p className="text-[11px] text-slate-500">No saved podcast yet for this scope.</p>
+              <p className="text-[11px] text-slate-500">No saved overview yet for this scope.</p>
             ) : (
               savedPodcasts.map((p) => (
                 <button
@@ -323,20 +323,20 @@ function RepPodcastSidebarPanel({
                   onClick={() => onLoadSavedPodcast(p)}
                   className="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-left hover:bg-fuchsia-50"
                 >
-                  <p className="truncate text-[11px] font-semibold text-slate-800">{p.title || 'Untitled podcast'}</p>
-                  <p className="truncate text-[10px] text-slate-500">{p.trainingTitle || 'Training podcast'}</p>
+                  <p className="truncate text-[11px] font-semibold text-slate-800">{p.title || 'Untitled overview'}</p>
+                  <p className="truncate text-[10px] text-slate-500">{p.trainingTitle || 'Training overview'}</p>
                 </button>
               ))
             )}
           </div>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-2.5">
-          <p className="mb-2 text-[11px] font-semibold text-slate-700">Training images (max 20)</p>
+          <p className="mb-2 text-[11px] font-semibold text-slate-700">Presentation overview (max 20)</p>
           <textarea
             value={imagePrompt}
             onChange={(e) => onImagePromptChange(e.target.value)}
             rows={2}
-            placeholder="Optional style guidance for the generated training images."
+            placeholder="Optional style guidance for presentation overview visuals."
             className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-xs text-slate-800 outline-none ring-harx-500/20 focus:ring-2"
           />
           <div className="mt-2 flex items-center gap-2">
@@ -346,7 +346,7 @@ function RepPodcastSidebarPanel({
               disabled={isImagesGenerating}
               className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
             >
-              {isImagesGenerating ? 'Generating...' : 'Generate images'}
+              {isImagesGenerating ? 'Generating...' : 'Generate presentation overview'}
             </button>
             <span className="text-[10px] font-medium text-slate-500">
               {imageGenerationStatus}{imageProgressLabel ? ` (${imageProgressLabel})` : ''}
@@ -366,7 +366,7 @@ function RepPodcastSidebarPanel({
           ) : null}
           <div className="mt-2">
             <div className="mb-1 flex items-center justify-between">
-              <p className="text-[11px] font-semibold text-slate-700">Saved image sets</p>
+              <p className="text-[11px] font-semibold text-slate-700">Saved presentation overviews</p>
               <button
                 type="button"
                 onClick={onRefreshSavedImageSets}
@@ -378,9 +378,9 @@ function RepPodcastSidebarPanel({
             </div>
             <div className="max-h-28 space-y-1 overflow-y-auto rounded-lg bg-slate-50 p-2">
               {isSavedImageSetsLoading ? (
-                <p className="text-[11px] text-slate-500">Loading saved image sets...</p>
+                <p className="text-[11px] text-slate-500">Loading saved presentation overviews...</p>
               ) : savedImageSets.length === 0 ? (
-                <p className="text-[11px] text-slate-500">No saved image set yet.</p>
+                <p className="text-[11px] text-slate-500">No saved presentation overview yet.</p>
               ) : (
                 savedImageSets.map((v) => (
                   <button
@@ -443,6 +443,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     }>
   >([]);
   const [chatInput, setChatInput] = useState('');
+  const [showRepSourcePopup, setShowRepSourcePopup] = useState(repOnboardingLayout);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [kbGenerationChoice, setKbGenerationChoice] = useState<KbGenerationMode | null>(null);
   const [chatKbDocuments, setChatKbDocuments] = useState<
@@ -499,6 +500,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setSelectedChatGigId(String(gigId));
     }
   }, [gigId]);
+
+  useEffect(() => {
+    setShowRepSourcePopup(repOnboardingLayout && chatMessages.length === 0);
+  }, [repOnboardingLayout, chatMessages.length]);
 
   const activeChatGigId = selectedChatGigId || (gigId ? String(gigId) : '');
   const activeChatGigTitle =
@@ -2219,6 +2224,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       },
     ];
     const handleSelectKbMode = (mode: KbGenerationMode) => {
+      setShowRepSourcePopup(false);
       setKbGenerationChoice(mode);
       setShowPersonalizationCard(true);
       setPersonalizationStep(0);
@@ -2267,6 +2273,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const startNewConversation = () => {
       setChatMessages([]);
       setChatInput('');
+      setShowRepSourcePopup(repOnboardingLayout);
       setActiveChatSessionId(null);
       setIsHistoryOpen(false);
       setKbGenerationChoice(null);
@@ -2587,6 +2594,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       const message = chatInput.trim();
       if (!message || isChatLoading) return;
       setChatInput('');
+      setShowRepSourcePopup(false);
       await sendChatMessage(message);
     };
 
@@ -2768,6 +2776,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           onChange={(e) => {
             const files = Array.from(e.target.files || []);
             if (files.length > 0) {
+              setShowRepSourcePopup(false);
               void handleFileUpload(files);
             }
             e.currentTarget.value = '';
@@ -3149,6 +3158,65 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 </div>
                 )}
               </div>
+              {rep && showRepSourcePopup && (
+                <div className="absolute inset-0 z-20 flex items-start justify-center bg-slate-900/25 px-3 pt-6 backdrop-blur-[1px] sm:px-6 sm:pt-8">
+                  <div className="w-full max-w-3xl rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-900/10 sm:p-6">
+                    <div className="mb-5 flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[30px]">
+                          Create overview from your sources
+                        </p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          Upload files or write a prompt to start the chat.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowRepSourcePopup(false)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
+                        title="Close"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="mb-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-4 text-center">
+                      <p className="text-lg font-semibold text-slate-900">Drop your files here</p>
+                      <p className="mt-1 text-xs text-slate-500">pdf, images, docs, audio, and text</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowRepSourcePopup(false);
+                          chatFileInputRef.current?.click();
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        <Upload className="h-3.5 w-3.5" />
+                        Upload files
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowRepSourcePopup(false);
+                          chatTextareaRef.current?.focus();
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        <Search className="h-3.5 w-3.5" />
+                        Write prompt
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowRepSourcePopup(false)}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-harx px-3 py-2 text-xs font-bold text-white"
+                      >
+                        Continue
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
               {shouldShowChatThread && (
                 <div
                   className={
@@ -3177,8 +3245,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   )}
                   {rep && shouldShowKbQuestionInChat && (
                     <div className="w-full min-w-0">
-                      <div className="w-full rounded-2xl border border-slate-200 bg-white p-2.5 shadow-md shadow-slate-900/5 sm:p-3">
-                        <div className="mb-2 flex items-center justify-between gap-2">
+                      <div className="w-full rounded-2xl border border-slate-200 bg-white p-2 shadow-md shadow-slate-900/5 sm:p-2.5">
+                        <div className="mb-1.5 flex items-center justify-between gap-2">
                           <div className="flex min-w-0 items-center gap-1.5">
                             <div
                               className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-sm shadow-harx-500/20"
@@ -3193,7 +3261,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           </div>
                           <span className="shrink-0 text-[11px] font-semibold text-slate-400">1 of 1</span>
                         </div>
-                        <p className="mb-2 text-base font-semibold leading-snug text-slate-900 sm:text-lg">
+                        <p className="mb-1.5 text-sm font-semibold leading-snug text-slate-900 sm:text-base">
                           Do you want to generate a training plan and training content from your knowledge base?
                         </p>
                         <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50/80">
@@ -3202,14 +3270,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               key={option.id}
                               type="button"
                               onClick={() => handleSelectKbMode(option.id)}
-                              className="flex w-full items-center gap-2 border-b border-slate-200/90 px-2.5 py-2 text-left transition hover:bg-white last:border-b-0 sm:px-3"
+                              className="flex w-full items-center gap-2 border-b border-slate-200/90 px-2.5 py-1.5 text-left transition hover:bg-white last:border-b-0 sm:px-3"
                             >
                               <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#F43F5E] text-xs font-bold text-white shadow-sm">
                                 {idx + 1}
                               </span>
                               <span className="min-w-0 flex-1">
                                 <span className="block text-sm font-semibold leading-tight text-slate-900">{option.label}</span>
-                                <span className="mt-0.5 block text-[11px] leading-snug text-slate-600">{option.hint}</span>
+                                <span className="mt-0 block text-[10px] leading-snug text-slate-600">{option.hint}</span>
                               </span>
                               <span className="shrink-0 text-base leading-none text-slate-400">→</span>
                             </button>
@@ -3498,11 +3566,35 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                             </button>
                           </div>
                         </div>
-                      ) : (
-                        <div className="max-w-[60%] rounded-xl border border-harx-alt-300/40 bg-gradient-to-br from-harx-500 to-harx-alt-500 px-3 py-2 text-sm font-medium text-white shadow-md shadow-harx-500/25">
-                          {msg.text}
-                        </div>
-                      )}
+                      ) : (() => {
+                        const messageText = String(msg.text || '');
+                        const isPersonalizationSummary = messageText.startsWith('A few questions to personalize your training');
+                        if (isPersonalizationSummary) {
+                          const lines = messageText
+                            .split('\n')
+                            .map((line) => line.trim())
+                            .filter(Boolean);
+                          const title = lines[0] || 'Personalization summary';
+                          const detailLines = lines.slice(1);
+                          return (
+                            <div className="max-w-[72%] rounded-2xl border border-harx-alt-300/50 bg-gradient-to-br from-harx-500 to-harx-alt-500 px-4 py-3 text-white shadow-md shadow-harx-500/25">
+                              <p className="mb-2 text-[15px] font-bold leading-tight">{title}</p>
+                              <div className="space-y-1.5">
+                                {detailLines.map((line, idx) => (
+                                  <p key={`${msg.id}-line-${idx}`} className="text-[13px] leading-snug text-white/95">
+                                    {line}
+                                  </p>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="max-w-[60%] rounded-xl border border-harx-alt-300/40 bg-gradient-to-br from-harx-500 to-harx-alt-500 px-3 py-2 text-sm font-medium text-white shadow-md shadow-harx-500/25">
+                            {msg.text}
+                          </div>
+                        );
+                      })()}
                     </div>
                   ))}
                   {isChatLoading && !chatMessages.some((m) => m.isStreaming) && (

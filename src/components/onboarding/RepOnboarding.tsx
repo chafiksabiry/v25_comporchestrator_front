@@ -761,18 +761,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
           <header className="mb-2 shrink-0 overflow-hidden rounded-xl border border-harx-100 px-5 py-2">
             <div className="h-0.5 w-full -mx-5 -mt-2 mb-2 rounded-t-xl bg-gradient-harx" aria-hidden />
             <div className="flex items-center justify-between">
-              <div className="min-w-0">
-                <h1 className="text-lg font-extrabold tracking-tight text-harx-600">
-                  REP Onboarding
-                </h1>
-                <p className="text-xs text-gray-500">Complete your setup and start your journey</p>
-              </div>
+              <div className="min-w-0" />
               <button
                 type="button"
                 onClick={() => setShowTraining({ isOpen: false })}
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold text-gray-600 transition-all hover:border-harx-200 hover:text-harx-600"
               >
-                ← Back to list
+                Back to trainings list
               </button>
             </div>
           </header>
@@ -841,7 +836,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                           setSelectedImageIndex(0);
                         }}
                       >
-                        Back to list
+                        Back to trainings list
                       </button>
                       <div className="text-xs font-semibold text-gray-600">
                         Slide {Math.min(selectedImageIndex + 1, selectedImageSet.items.length)} / {selectedImageSet.items.length}
@@ -889,7 +884,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                     showPagination={false}
                     hideExportPptx={true}
                     embedLightCanvas={true}
-                    backLabel="Back to list"
+                    backLabel="Back to trainings list"
                     openClaudeEditor={openClaudeEditorOnPreview}
                   />
                 )}
@@ -901,12 +896,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
         <header className="mb-6 overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white px-6 py-5 shadow-2xl shadow-gray-200/40">
           <div className="h-1 w-full -mx-6 -mt-5 mb-5 rounded-t-2xl bg-gradient-harx" aria-hidden />
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <div className="min-w-0">
-              <h1 className="text-3xl font-black tracking-tight text-gray-900">
-                REP Onboarding
-              </h1>
-              <p className="mt-1 text-sm font-medium text-gray-500">Complete your setup and start your journey</p>
-            </div>
+            <div className="min-w-0" />
             <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-black uppercase tracking-wider text-gray-500">Gig:</span>
