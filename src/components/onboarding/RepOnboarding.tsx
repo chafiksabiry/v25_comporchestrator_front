@@ -66,6 +66,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   });
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const podcastUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const podcastAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Helper function to format training journey data for display
   const asUiString = (v: unknown, fallback: string): string => {
@@ -592,6 +593,11 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const stopPodcastPlayback = useCallback(() => {
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
+    if (podcastAudioRef.current) {
+      podcastAudioRef.current.pause();
+      podcastAudioRef.current.currentTime = 0;
+      podcastAudioRef.current = null;
+    }
     podcastUtteranceRef.current = null;
     setPodcastPlaybackProgress((prev) => (playingPodcastId ? { ...prev, [playingPodcastId]: 0 } : prev));
     setPlayingPodcastId(null);
@@ -634,6 +640,30 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
 
     const localScript = String(podcast?.script || '').trim();
     const cloudinaryUrl = String(podcast?.scriptCloudinaryUrl || '').trim();
+    const audioUrl = String(podcast?.audioUrl || '').trim();
+    if (audioUrl && typeof window !== 'undefined') {
+      const audio = new Audio(audioUrl);
+      podcastAudioRef.current = audio;
+      setPlayingPodcastId(podcast._id);
+      setPodcastPlaybackProgress((prev) => ({ ...prev, [podcast._id]: 0 }));
+      audio.ontimeupdate = () => {
+        const progress = audio.duration > 0 ? Math.round((audio.currentTime / audio.duration) * 100) : 0;
+        setPodcastPlaybackProgress((prev) => ({ ...prev, [podcast._id]: progress }));
+      };
+      audio.onended = () => {
+        setPodcastPlaybackProgress((prev) => ({ ...prev, [podcast._id]: 100 }));
+        setPlayingPodcastId((current) => (current === podcast._id ? null : current));
+      };
+      audio.onerror = () => {
+        setPodcastPlaybackProgress((prev) => ({ ...prev, [podcast._id]: 0 }));
+        setPlayingPodcastId((current) => (current === podcast._id ? null : current));
+      };
+      void audio.play().catch(() => {
+        setPlayingPodcastId(null);
+      });
+      return;
+    }
+
     if (!cloudinaryUrl) {
       runSpeak(localScript);
       return;
