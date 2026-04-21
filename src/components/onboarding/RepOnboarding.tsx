@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Plus,
   Trash2,
+  MessageSquare,
   GraduationCap,
   Briefcase,
   Shield,
@@ -290,6 +291,15 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     } finally {
       setDeletingJourneyId(null);
     }
+  };
+
+  const handleOpenTrainingChat = (journey: any) => {
+    const journeyId = String(journey?._id || journey?.id || '').trim();
+    if (!journeyId) {
+      window.alert('Training ID not found.');
+      return;
+    }
+    setShowTraining({ isOpen: true, newJourney: true, journeyId });
   };
 
   /** Mark Phase 3 Step 9 (REP Onboarding) complete and notify CompanyOnboarding like other steps. */
@@ -775,6 +785,15 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               </button>
 
                               <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenTrainingChat(journey)}
+                                  disabled={loadingPresentation || deletingJourneyId === formatted.id}
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-sky-200 bg-white/85 text-sky-700 shadow-sm hover:bg-sky-50 disabled:opacity-50"
+                                  title="Open training chat"
+                                >
+                                  <MessageSquare className="h-4 w-4" />
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => openTrainingSettings(journey)}
