@@ -943,26 +943,10 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                           {podcast.createdAt ? new Date(podcast.createdAt).toLocaleString() : 'Date unavailable'}
                         </p>
                         <div className="mt-3 flex items-center gap-2">
-                          {podcast.scriptCloudinaryUrl ? (
-                            <a
-                              href={podcast.scriptCloudinaryUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                            >
-                              View script
-                            </a>
-                          ) : null}
                           <button
                             type="button"
-                            onClick={() =>
-                              setShowTraining({
-                                isOpen: true,
-                                newJourney: true,
-                                gigId: filterGigId !== 'all' ? String(filterGigId) : undefined
-                              })
-                            }
-                            className="inline-flex items-center gap-1 rounded-lg bg-gradient-harx px-2.5 py-1.5 text-xs font-semibold text-white"
+                            disabled
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-400 cursor-not-allowed"
                           >
                             Open chat
                           </button>
