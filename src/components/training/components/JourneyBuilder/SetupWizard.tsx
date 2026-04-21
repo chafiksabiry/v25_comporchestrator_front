@@ -493,7 +493,9 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: embedCompact ? 'flex-start' : 'center',
+          justifyContent: embedCompact
+            ? (currentStep === 1 ? 'center' : 'flex-start')
+            : 'center',
           padding: bodyPadding,
           width: '100%',
         }}>
