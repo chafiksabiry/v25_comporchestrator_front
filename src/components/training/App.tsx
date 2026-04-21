@@ -73,6 +73,7 @@ export function AppContent({
   isEmbedded = false,
   startWithJourneyBuilder = false,
   startWithManualTraining = false,
+  startJourneyStep = 0,
   repOnboardingLayout = false,
   onJourneyLaunch
 }: {
@@ -80,6 +81,7 @@ export function AppContent({
   isEmbedded?: boolean,
   startWithJourneyBuilder?: boolean,
   startWithManualTraining?: boolean,
+  startJourneyStep?: number,
   /** Simpler modules + slides only (no PPTX download, fullscreen, or “Continue to AI enhancement”) */
   repOnboardingLayout?: boolean,
   onJourneyLaunch?: () => void
@@ -929,6 +931,7 @@ export function AppContent({
         <JourneyBuilder
           onComplete={handleJourneyComplete}
           forceNew={startWithJourneyBuilder}
+          initialStep={startJourneyStep}
           repOnboardingLayout={repOnboardingLayout}
         />
       </div>
