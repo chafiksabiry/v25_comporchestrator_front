@@ -717,6 +717,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                   id="training-thumbnail-input"
                   type="file"
                   accept="image/*"
+                  disabled={thumbnailUploading || thumbnailGenerating}
                   style={{ display: 'none' }}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -728,16 +729,18 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                   <label
                     htmlFor="training-thumbnail-input"
                     onDragOver={(e) => {
+                      if (thumbnailUploading || thumbnailGenerating) return;
                       e.preventDefault();
                       e.stopPropagation();
                     }}
                     onDrop={(e) => {
+                      if (thumbnailUploading || thumbnailGenerating) return;
                       e.preventDefault();
                       e.stopPropagation();
                       const file = e.dataTransfer.files?.[0];
                       if (file) void handleThumbnailUpload(file);
                     }}
-                    className={`transition-all duration-200 focus-within:ring-2 focus-within:ring-slate-200 focus-within:ring-offset-2 ${thumbnailUploading ? 'cursor-not-allowed' : 'cursor-pointer hover:border-slate-300 hover:shadow-sm'}`}
+                    className={`transition-all duration-200 focus-within:ring-2 focus-within:ring-slate-200 focus-within:ring-offset-2 ${(thumbnailUploading || thumbnailGenerating) ? 'cursor-not-allowed opacity-55' : 'cursor-pointer hover:border-slate-300 hover:shadow-sm'}`}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -751,7 +754,8 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                       background: '#f8fafc',
                       overflow: 'hidden',
                       boxSizing: 'border-box',
-                      boxShadow: thumbnailUrl ? '0 8px 20px rgba(17,24,39,0.10)' : 'none'
+                      boxShadow: thumbnailUrl ? '0 8px 20px rgba(17,24,39,0.10)' : 'none',
+                      filter: (thumbnailUploading || thumbnailGenerating) ? 'grayscale(0.35)' : 'none',
                     }}
                   >
                     {thumbnailUrl ? (
