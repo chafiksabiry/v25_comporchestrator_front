@@ -190,8 +190,8 @@ function RepPodcastTrainingCard({
               </p>
               {!canGenerateFromTraining ? (
                 <p className="mt-1 text-[10px] font-medium leading-snug text-amber-800">
-                  Génération activée dès que le fil contient assez de contenu (plan, modules…). Poursuivez la conversation
-                  avec l&apos;assistant.
+                  Choisissez un gig (liste en haut), ou attendez le chargement des documents KB. Sinon poursuivez la
+                  conversation (plan, modules…) jusqu&apos;à ce qu&apos;assez de contenu soit disponible.
                 </p>
               ) : null}
             </div>
@@ -294,6 +294,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
     Array<{ _id: string; name: string; fileType?: string; summary?: string; keyTerms?: string[]; createdAt?: string }>
   >([]);
   const [isChatKbLoading, setIsChatKbLoading] = useState(false);
+  /** KB chargée pour le digest podcast (même si le mode chat n’utilise pas la KB). */
+  const [podcastKbDocuments, setPodcastKbDocuments] = useState<
+    Array<{ _id: string; name: string; fileType?: string; summary?: string; keyTerms?: string[]; createdAt?: string }>
+  >([]);
   const [showPersonalizationCard, setShowPersonalizationCard] = useState(false);
   const [personalizationStep, setPersonalizationStep] = useState(0);
   const [personalizationAnswers, setPersonalizationAnswers] = useState<{
@@ -338,6 +342,34 @@ export default function ContentUploader(props: ContentUploaderProps) {
     return row ? buildGigSnapshotForAi(row) : null;
   }, [companyGigs, gigId]);
 
+  /** Gig sélectionné dans le chat REP (liste gigs ou gig du journey aligné sur la sélection). */
+  const activeGigSnapshotForPodcast = useMemo(() => {
+    const gid = String(activeChatGigId || '').trim();
+    if (!gid) return null;
+    const row = companyGigs.find((g: any) => String(g?._id || g?.id || '') === gid);
+    if (row) return buildGigSnapshotForAi(row);
+    if (gigId && String(gigId) === gid && gigSnapshotForBuilder) return gigSnapshotForBuilder;
+    return null;
+  }, [activeChatGigId, companyGigs, gigId, gigSnapshotForBuilder]);
+
+  useEffect(() => {
+    if (!repOnboardingLayout || !String(activeChatGigId || '').trim()) {
+      setPodcastKbDocuments([]);
+      return;
+    }
+    let cancelled = false;
+    AIService.listGigKnowledgeDocuments(String(activeChatGigId))
+      .then((docs) => {
+        if (!cancelled) setPodcastKbDocuments(Array.isArray(docs) ? docs : []);
+      })
+      .catch(() => {
+        if (!cancelled) setPodcastKbDocuments([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [repOnboardingLayout, activeChatGigId]);
+
   useEffect(() => {
     podcastSpeechRef.current = new WebSpeechService();
     return () => {
@@ -371,11 +403,26 @@ export default function ContentUploader(props: ContentUploaderProps) {
     return chunks.join('\n\n---\n\n').slice(0, 12000);
   }, [repOnboardingLayout, chatMessages]);
 
+  /** Préfère la KB déjà chargée pour le chat ; sinon la liste chargée pour le podcast. */
+  const kbDocumentsForPodcast = useMemo(
+    () => (chatKbDocuments.length > 0 ? chatKbDocuments : podcastKbDocuments),
+    [chatKbDocuments, podcastKbDocuments]
+  );
+
   const showRepPodcastPanel = useMemo(
     () =>
       repOnboardingLayout &&
-      (hasStructuredPodcastSource || repChatPodcastDigest.length >= 600),
-    [repOnboardingLayout, hasStructuredPodcastSource, repChatPodcastDigest]
+      (hasStructuredPodcastSource ||
+        repChatPodcastDigest.length >= 600 ||
+        Boolean(activeGigSnapshotForPodcast) ||
+        kbDocumentsForPodcast.length > 0),
+    [
+      repOnboardingLayout,
+      hasStructuredPodcastSource,
+      repChatPodcastDigest,
+      activeGigSnapshotForPodcast,
+      kbDocumentsForPodcast,
+    ]
   );
 
   const buildTrainingDigestForPodcast = useCallback((): string => {
@@ -416,15 +463,43 @@ export default function ContentUploader(props: ContentUploaderProps) {
         parts.push(`${head}\n${body}`);
       });
     }
+
+    if (repOnboardingLayout) {
+      if (activeGigSnapshotForPodcast) {
+        parts.push(
+          '\n--- Gig (mission / contexte poste) ---\n' +
+            JSON.stringify(activeGigSnapshotForPodcast).slice(0, 5500)
+        );
+      }
+      if (kbDocumentsForPodcast.length > 0) {
+        parts.push('\n--- Base de connaissances (documents) ---');
+        kbDocumentsForPodcast.slice(0, 28).forEach((doc) => {
+          const terms = Array.isArray(doc.keyTerms) ? doc.keyTerms.slice(0, 14).join(', ') : '';
+          parts.push(
+            `\n• ${String(doc.name || 'Document').slice(0, 200)}\n${String(doc.summary || '').slice(0, 900)}${
+              terms ? `\nTermes: ${terms}` : ''
+            }`
+          );
+        });
+      }
+    }
+
     let out = parts.join('\n\n').trim();
     if (out.length < 400 && repChatPodcastDigest.trim()) {
-      out = `--- Synthèse issue de la conversation (onboarding) ---\n\n${repChatPodcastDigest}`;
+      out = `${out ? `${out}\n\n` : ''}--- Synthèse issue de la conversation (onboarding) ---\n\n${repChatPodcastDigest}`;
     }
     if (out.length > 14000) {
       out = `${out.slice(0, 14000)}\n\n[… contenu tronqué pour limite technique]`;
     }
     return out;
-  }, [generatedCurriculum, generatedPresentation, repChatPodcastDigest]);
+  }, [
+    generatedCurriculum,
+    generatedPresentation,
+    repChatPodcastDigest,
+    repOnboardingLayout,
+    activeGigSnapshotForPodcast,
+    kbDocumentsForPodcast,
+  ]);
 
   const handleGeneratePodcastScript = useCallback(async () => {
     if (!repOnboardingLayout || !showRepPodcastPanel || isPodcastGenerating) return;
@@ -443,11 +518,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
         task: 'podcast_script_fr',
         language: 'fr',
         trainingDigest: digest,
-        trainingTitle: String(generatedCurriculum?.title || generatedPresentation?.title || ''),
+        trainingTitle: String(
+          generatedCurriculum?.title ||
+            generatedPresentation?.title ||
+            (activeGigSnapshotForPodcast && String((activeGigSnapshotForPodcast as Record<string, unknown>).title || '')) ||
+            ''
+        ),
       });
       const message = [
         "Tu rédiges le SCRIPT ORAL d'un seul podcast de formation, en français.",
-        'Entrée : le champ trainingDigest dans le contexte JSON (formation déjà structurée).',
+        'Entrée : le champ trainingDigest dans le contexte JSON (programme / slides si présents, sinon ou en complément : gig, base de connaissances, synthèse du chat).',
         'Sortie : uniquement le texte à lire à voix haute, sans markdown (# ** liste), sans numérotation technique de slides.',
         'Structure : une ligne titre accrocheur, puis introduction courte, puis 3 à 5 chapitres avec titres annoncés oralement, puis conclusion.',
         'Ton : professionnel, chaleureux, clair, phrases relativement courtes.',
@@ -478,6 +558,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     buildTrainingDigestForPodcast,
     generatedCurriculum?.title,
     generatedPresentation?.title,
+    activeGigSnapshotForPodcast,
     company,
     activeChatGigId,
   ]);
