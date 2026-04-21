@@ -1054,13 +1054,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                             {playingPodcastId === podcast._id ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
                             {playingPodcastId === podcast._id ? 'Stop audio' : 'Play audio'}
                           </button>
-                          <button
-                            type="button"
-                            disabled
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-400 cursor-not-allowed"
-                          >
-                            Open chat
-                          </button>
                         </div>
                         {podcast.audioUrl ? (
                           <div className="mt-2">
@@ -1074,18 +1067,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                             </audio>
                           </div>
                         ) : null}
-                        <div className="mt-2">
-                          <div className="mb-1 flex items-center justify-between text-[10px] font-semibold text-slate-500">
-                            <span>Audio progress</span>
-                            <span>{podcastPlaybackProgress[podcast._id] || 0}%</span>
-                          </div>
-                          <div className="h-1.5 w-full rounded-full bg-slate-200">
-                            <div
-                              className="h-1.5 rounded-full bg-gradient-harx transition-all"
-                              style={{ width: `${podcastPlaybackProgress[podcast._id] || 0}%` }}
-                            />
-                          </div>
-                        </div>
                       </div>
                     ))}
                   </div>
