@@ -13,10 +13,11 @@ interface JourneyBuilderProps {
   onComplete: (journey: TrainingJourney, modules: TrainingModule[], enrolledReps: Rep[]) => void;
   forceNew?: boolean;
   repOnboardingLayout?: boolean;
+  initialStep?: number;
 }
 
-export default function JourneyBuilder({ onComplete, forceNew = false, repOnboardingLayout = false }: JourneyBuilderProps) {
-  const [currentStep, setCurrentStep] = useState(0);
+export default function JourneyBuilder({ onComplete, forceNew = false, repOnboardingLayout = false, initialStep = 0 }: JourneyBuilderProps) {
+  const [currentStep, setCurrentStep] = useState(initialStep);
   const [company, setCompany] = useState<Company | null>(null);
   const [journey, setJourney] = useState<TrainingJourney | null>(null);
   const [methodology, setMethodology] = useState<TrainingMethodology | null>(null);

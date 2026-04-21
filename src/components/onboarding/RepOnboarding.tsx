@@ -565,6 +565,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 initialJourneyId={showTraining.journeyId}
                 isEmbedded={true}
                 startWithJourneyBuilder={true}
+                startJourneyStep={1}
                 repOnboardingLayout={true}
                 onJourneyLaunch={handleEmbeddedJourneyComplete}
               />
