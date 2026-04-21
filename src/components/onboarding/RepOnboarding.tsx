@@ -1062,6 +1062,18 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                             Open chat
                           </button>
                         </div>
+                        {podcast.audioUrl ? (
+                          <div className="mt-2">
+                            <audio
+                              controls
+                              preload="none"
+                              src={podcast.audioUrl}
+                              className="w-full"
+                            >
+                              Your browser does not support audio playback.
+                            </audio>
+                          </div>
+                        ) : null}
                         <div className="mt-2">
                           <div className="mb-1 flex items-center justify-between text-[10px] font-semibold text-slate-500">
                             <span>Audio progress</span>
