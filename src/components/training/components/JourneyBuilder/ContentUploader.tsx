@@ -153,6 +153,8 @@ type RepPodcastTrainingCardProps = {
   isGenerating: boolean;
   /** When true, disables "Générer le script" (e.g. chat busy or slides regenerating) */
   disableGenerateExtra?: boolean;
+  /** Assez de contenu formation / chat pour envoyer un digest à Claude */
+  canGenerateFromTraining?: boolean;
   isSpeaking: boolean;
   error: string | null;
   onGenerate: () => void;
@@ -165,12 +167,14 @@ function RepPodcastTrainingCard({
   onScriptChange,
   isGenerating,
   disableGenerateExtra,
+  canGenerateFromTraining = true,
   isSpeaking,
   error,
   onGenerate,
   onPlay,
   onStop,
 }: RepPodcastTrainingCardProps) {
+  const generateLocked = isGenerating || !!disableGenerateExtra || !canGenerateFromTraining;
   return (
     <div className="w-full min-w-0">
       <div className="w-full rounded-2xl border border-fuchsia-200/80 bg-gradient-to-br from-fuchsia-50/90 to-white p-3 shadow-md shadow-fuchsia-900/5 sm:p-4">
@@ -184,13 +188,24 @@ function RepPodcastTrainingCard({
               <p className="text-[11px] text-slate-600">
                 Script généré par Claude à partir du programme · lecture gratuite (voix du navigateur)
               </p>
+              {!canGenerateFromTraining ? (
+                <p className="mt-1 text-[10px] font-medium leading-snug text-amber-800">
+                  Génération activée dès que le fil contient assez de contenu (plan, modules…). Poursuivez la conversation
+                  avec l&apos;assistant.
+                </p>
+              ) : null}
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={onGenerate}
-              disabled={isGenerating || disableGenerateExtra}
+              disabled={generateLocked}
+              title={
+                !canGenerateFromTraining
+                  ? 'Ajoutez du contenu de formation dans la conversation pour activer la génération.'
+                  : undefined
+              }
               className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
             >
               {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
@@ -331,11 +346,36 @@ export default function ContentUploader(props: ContentUploaderProps) {
     };
   }, []);
 
-  const hasPodcastSource = useMemo(
+  /** Programme / slides persistés (hors chat). */
+  const hasStructuredPodcastSource = useMemo(
     () =>
       (Array.isArray(generatedCurriculum?.modules) && generatedCurriculum.modules.length > 0) ||
       (Array.isArray(generatedPresentation?.slides) && generatedPresentation.slides.length > 0),
     [generatedCurriculum, generatedPresentation]
+  );
+
+  /** Flux REP : le plan vit souvent uniquement dans les réponses assistant — on en fait une synthèse pour le podcast. */
+  const repChatPodcastDigest = useMemo(() => {
+    if (!repOnboardingLayout) return '';
+    const stripAssistant = (raw: string) =>
+      String(raw || '')
+        .replace(/<harx-style>[\s\S]*?<\/harx-style>/gi, '')
+        .replace(/<harx-html>[\s\S]*?<\/harx-html>/gi, '')
+        .replace(HARX_TRAINING_STATUS_REGEX, '')
+        .trim();
+    const chunks = chatMessages
+      .filter((m) => m.role === 'assistant' && stripAssistant(String(m.text || '')).length > 120)
+      .slice(-10)
+      .map((m) => stripAssistant(String(m.text || '')))
+      .filter(Boolean);
+    return chunks.join('\n\n---\n\n').slice(0, 12000);
+  }, [repOnboardingLayout, chatMessages]);
+
+  const showRepPodcastPanel = useMemo(
+    () =>
+      repOnboardingLayout &&
+      (hasStructuredPodcastSource || repChatPodcastDigest.length >= 600),
+    [repOnboardingLayout, hasStructuredPodcastSource, repChatPodcastDigest]
   );
 
   const buildTrainingDigestForPodcast = useCallback((): string => {
@@ -376,15 +416,18 @@ export default function ContentUploader(props: ContentUploaderProps) {
         parts.push(`${head}\n${body}`);
       });
     }
-    let out = parts.join('\n\n');
+    let out = parts.join('\n\n').trim();
+    if (out.length < 400 && repChatPodcastDigest.trim()) {
+      out = `--- Synthèse issue de la conversation (onboarding) ---\n\n${repChatPodcastDigest}`;
+    }
     if (out.length > 14000) {
       out = `${out.slice(0, 14000)}\n\n[… contenu tronqué pour limite technique]`;
     }
     return out;
-  }, [generatedCurriculum, generatedPresentation]);
+  }, [generatedCurriculum, generatedPresentation, repChatPodcastDigest]);
 
   const handleGeneratePodcastScript = useCallback(async () => {
-    if (!repOnboardingLayout || !hasPodcastSource || isPodcastGenerating) return;
+    if (!repOnboardingLayout || !showRepPodcastPanel || isPodcastGenerating) return;
     const digest = buildTrainingDigestForPodcast();
     if (!digest.trim()) {
       setPodcastError('Pas assez de contenu de formation pour générer un podcast.');
@@ -430,7 +473,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     }
   }, [
     repOnboardingLayout,
-    hasPodcastSource,
+    showRepPodcastPanel,
     isPodcastGenerating,
     buildTrainingDigestForPodcast,
     generatedCurriculum?.title,
@@ -1395,21 +1438,20 @@ export default function ContentUploader(props: ContentUploaderProps) {
             </div>
           </div>
 
-          {hasPodcastSource && (
-            <div className="shrink-0 border-b border-fuchsia-100/80 bg-gradient-to-r from-fuchsia-50/50 to-white px-3 py-2 sm:px-4">
-              <RepPodcastTrainingCard
-                podcastScript={podcastScript}
-                onScriptChange={setPodcastScript}
-                isGenerating={isPodcastGenerating}
-                disableGenerateExtra={isGeneratingPresentation || isSavingCloud}
-                isSpeaking={isPodcastSpeaking}
-                error={podcastError}
-                onGenerate={() => void handleGeneratePodcastScript()}
-                onPlay={() => void handlePlayPodcastSpeak()}
-                onStop={handleStopPodcastSpeak}
-              />
-            </div>
-          )}
+          <div className="shrink-0 border-b border-fuchsia-100/80 bg-gradient-to-r from-fuchsia-50/50 to-white px-3 py-2 sm:px-4">
+            <RepPodcastTrainingCard
+              podcastScript={podcastScript}
+              onScriptChange={setPodcastScript}
+              isGenerating={isPodcastGenerating}
+              disableGenerateExtra={isGeneratingPresentation || isSavingCloud}
+              canGenerateFromTraining={showRepPodcastPanel}
+              isSpeaking={isPodcastSpeaking}
+              error={podcastError}
+              onGenerate={() => void handleGeneratePodcastScript()}
+              onPlay={() => void handlePlayPodcastSpeak()}
+              onStop={handleStopPodcastSpeak}
+            />
+          </div>
 
           <section className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden rounded-none border-0 bg-white shadow-none">
             <PresentationPreview
@@ -2505,7 +2547,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   : 'relative flex min-h-0 flex-1 flex-col rounded-3xl border border-slate-200 bg-slate-50/40 shadow-sm'
               }
             >
-              <div className={`relative mb-2 flex w-full shrink-0 justify-end ${rep ? 'px-0.5 pt-0.5' : 'px-3 pt-3'}`}>
+              <div
+                className={`relative mb-2 flex w-full shrink-0 ${rep ? 'flex-col gap-2 px-0.5 pt-0.5' : 'justify-end px-3 pt-3'}`}
+              >
                 <div className="flex w-full max-w-full flex-wrap items-center justify-end gap-2 rounded-2xl border border-slate-200/90 bg-white/95 p-1.5 shadow-sm ring-1 ring-slate-900/[0.04] backdrop-blur-sm sm:inline-flex sm:w-auto sm:flex-nowrap sm:gap-1.5">
                   <select
                     value={activeChatGigId}
@@ -2547,6 +2591,20 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     New
                   </button>
                 </div>
+                {rep && (
+                  <RepPodcastTrainingCard
+                    podcastScript={podcastScript}
+                    onScriptChange={setPodcastScript}
+                    isGenerating={isPodcastGenerating}
+                    disableGenerateExtra={isChatLoading}
+                    canGenerateFromTraining={showRepPodcastPanel}
+                    isSpeaking={isPodcastSpeaking}
+                    error={podcastError}
+                    onGenerate={() => void handleGeneratePodcastScript()}
+                    onPlay={() => void handlePlayPodcastSpeak()}
+                    onStop={handleStopPodcastSpeak}
+                  />
+                )}
                 {isHistoryOpen && (
                   <div className="absolute right-0 top-full z-30 mt-1.5 w-full max-w-[320px] rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
                   <div className="mb-2 flex items-center justify-between px-1">
@@ -2742,19 +2800,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         </div>
                       </div>
                     </div>
-                  )}
-                  {rep && hasPodcastSource && (
-                    <RepPodcastTrainingCard
-                      podcastScript={podcastScript}
-                      onScriptChange={setPodcastScript}
-                      isGenerating={isPodcastGenerating}
-                      disableGenerateExtra={isChatLoading}
-                      isSpeaking={isPodcastSpeaking}
-                      error={podcastError}
-                      onGenerate={() => void handleGeneratePodcastScript()}
-                      onPlay={() => void handlePlayPodcastSpeak()}
-                      onStop={handleStopPodcastSpeak}
-                    />
                   )}
                   {chatMessages.map((msg) => (
                     <div key={msg.id} className={msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
