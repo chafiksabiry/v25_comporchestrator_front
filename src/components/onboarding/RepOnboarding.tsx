@@ -889,31 +889,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   </div>
                 ) : (
                   <>
-                    {/* Flèches latérales (grand écran) */}
-                    <button
-                      type="button"
-                      className="absolute left-2 top-1/2 z-20 hidden -translate-y-1/2 rounded-full border border-white/10 bg-slate-950/80 p-3 text-white shadow-xl backdrop-blur-md transition hover:bg-slate-800/90 disabled:pointer-events-none disabled:opacity-0 sm:left-4 md:flex"
-                      disabled={selectedImageIndex <= 0}
-                      onClick={() => setSelectedImageIndex((prev) => Math.max(prev - 1, 0))}
-                      aria-label="Précédent"
-                    >
-                      <ChevronLeft className="h-6 w-6" />
-                    </button>
-                    <button
-                      type="button"
-                      className="absolute right-2 top-1/2 z-20 hidden -translate-y-1/2 rounded-full border border-white/10 bg-slate-950/80 p-3 text-white shadow-xl backdrop-blur-md transition hover:bg-slate-800/90 disabled:pointer-events-none disabled:opacity-0 sm:right-4 md:flex"
-                      disabled={selectedImageIndex >= selectedImageSet.items.length - 1}
-                      onClick={() =>
-                        setSelectedImageIndex((prev) =>
-                          Math.min(prev + 1, Math.max(selectedImageSet.items.length - 1, 0))
-                        )
-                      }
-                      aria-label="Suivant"
-                    >
-                      <ChevronRight className="h-6 w-6" />
-                    </button>
-
-                    <div className="relative w-full max-w-[min(100%,56rem)] [perspective:1400px]">
+                    {/* Contenu slide en premier (couche basse) ; flèches rendues après pour rester au-dessus et recevoir les clics */}
+                    <div className="relative z-0 w-full max-w-[min(100%,56rem)] [perspective:1400px]">
                       {/* Reflet sol léger sous l’écran */}
                       <div
                         className="pointer-events-none absolute -bottom-8 left-1/2 h-24 w-[88%] -translate-x-1/2 bg-gradient-to-b from-white/[0.07] to-transparent opacity-60 blur-md"
@@ -940,6 +917,29 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         </div>
                       </div>
                     </div>
+
+                    <button
+                      type="button"
+                      className="absolute left-1 top-1/2 z-[60] flex -translate-y-1/2 rounded-full border border-white/20 bg-slate-950/90 p-3 text-white shadow-xl backdrop-blur-md transition hover:bg-slate-800 hover:ring-2 hover:ring-white/20 disabled:pointer-events-none disabled:opacity-25 sm:left-3 md:left-5"
+                      disabled={selectedImageIndex <= 0}
+                      onClick={() => setSelectedImageIndex((prev) => Math.max(prev - 1, 0))}
+                      aria-label="Diapositive précédente"
+                    >
+                      <ChevronLeft className="h-6 w-6" />
+                    </button>
+                    <button
+                      type="button"
+                      className="absolute right-1 top-1/2 z-[60] flex -translate-y-1/2 rounded-full border border-white/20 bg-slate-950/90 p-3 text-white shadow-xl backdrop-blur-md transition hover:bg-slate-800 hover:ring-2 hover:ring-white/20 disabled:pointer-events-none disabled:opacity-25 sm:right-3 md:right-5"
+                      disabled={selectedImageIndex >= selectedImageSet.items.length - 1}
+                      onClick={() =>
+                        setSelectedImageIndex((prev) =>
+                          Math.min(prev + 1, Math.max(selectedImageSet.items.length - 1, 0))
+                        )
+                      }
+                      aria-label="Diapositive suivante"
+                    >
+                      <ChevronRight className="h-6 w-6" />
+                    </button>
 
                     {/* Barre de progression type timeline */}
                     <div className="relative z-10 mt-8 flex w-full max-w-[min(100%,56rem)] flex-col items-center gap-2 px-2">
