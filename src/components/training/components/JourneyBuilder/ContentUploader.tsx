@@ -492,6 +492,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [isQuizGenerating, setIsQuizGenerating] = useState(false);
   const [showQuizModal, setShowQuizModal] = useState(false);
+  const [showPodcastModal, setShowPodcastModal] = useState(false);
   const podcastSpeechRef = useRef<WebSpeechService | null>(null);
   const podcastSpeakAbortRef = useRef(false);
   const chatFileInputRef = useRef<HTMLInputElement | null>(null);
@@ -691,7 +692,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   ]);
 
   const handleGeneratePodcastScript = useCallback(async () => {
-    if (!repOnboardingLayout || !showRepPodcastPanel || isPodcastGenerating) return;
+    if (!repOnboardingLayout || isPodcastGenerating) return;
     const digest = buildTrainingDigestForPodcast();
     if (!digest.trim()) {
       setPodcastError('Not enough training content to generate a podcast.');
@@ -2187,7 +2188,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const hasStartedChat = chatMessages.length > 0;
     const repSplitLayout = rep && hasStartedChat;
     const shouldShowKbQuestionInChat = false;
-    const shouldShowChatThread = true;
+    const shouldShowChatThread = !showRepSourcePopup;
     // In REP split chat mode, keep only the chat workspace visible (actions moved into top toolbar).
     const showRepSplitSidebar = false;
     const kbOptions: Array<{ id: KbGenerationMode; label: string; hint: string }> = [
@@ -3288,8 +3289,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 )}
               </div>
               {rep && showRepSourcePopup && (
-                <div className="absolute inset-0 z-20 flex bg-transparent p-2 sm:p-3">
-                  <div className="flex h-full w-full flex-col rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-900/10 sm:p-6">
+                <div className="absolute inset-0 z-50 flex bg-white p-2 sm:p-3">
+                  <div className="flex h-full w-full flex-col rounded-3xl border border-slate-200 bg-white p-4 shadow-xl sm:p-6">
                     <div className="mb-5 flex items-start justify-between gap-3">
                       <div>
                         <p className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[30px]">
@@ -3501,183 +3502,34 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               const textWithoutStyle = stripPromptEcho(stripResourceSections(
                                 stripStyleBlueprint(String(msg.text || '').replace(/<harx-html>[\s\S]*?<\/harx-html>/gi, ''))
                               ));
-                              const styleBlueprint = extractStyleBlueprint(msg.text);
-                              const hasStyleBlueprint = /<harx-style>[\s\S]*?<\/harx-style>/i.test(String(msg.text || ''));
-                              const looksLikeTrainingContent =
-                                /\b(module|objectifs?|deroulement|d[ée]roulement|[ée]tape|activit[ée]s?|[ée]valuation|programme|parcours|plan)\b/i.test(
-                                  textWithoutStyle
-                                );
-                              if (!hasStyleBlueprint && !looksLikeTrainingContent) {
-                                return (
-                                  <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                    components={{
-                                      h1: ({ children }) => <h3 className="mb-3 mt-1 border-l-4 border-slate-900 pl-3 text-[24px] font-semibold text-slate-900">{children}</h3>,
-                                      h2: ({ children }) => <h4 className="mb-2 mt-3 text-[20px] font-semibold text-slate-900">{children}</h4>,
-                                      h3: ({ children }) => <h5 className="mb-2 mt-2 text-[17px] font-semibold text-slate-900">{children}</h5>,
-                                      p: ({ children }) => <p className="my-2 text-[16px] leading-7 text-slate-700">{children}</p>,
-                                      ul: ({ children }) => <ul className="my-2 list-disc space-y-1 pl-6 text-[16px] leading-7 text-slate-700">{children}</ul>,
-                                      ol: ({ children }) => <ol className="my-2 list-decimal space-y-1 pl-6 text-[16px] leading-7 text-slate-700">{children}</ol>,
-                                      table: ({ children }) => (
-                                        <div className="my-4 overflow-x-auto rounded-xl border border-slate-200">
-                                          <table className="min-w-full border-collapse bg-white">{children}</table>
-                                        </div>
-                                      ),
-                                      thead: ({ children }) => <thead className="bg-slate-100">{children}</thead>,
-                                      tbody: ({ children }) => <tbody className="divide-y divide-slate-200">{children}</tbody>,
-                                      tr: ({ children }) => <tr className="align-top">{children}</tr>,
-                                      th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-slate-900">{children}</th>,
-                                      td: ({ children }) => <td className="px-3 py-2 text-sm text-slate-700">{children}</td>,
-                                      li: ({ children }) => <li>{children}</li>,
-                                      strong: ({ children }) => <strong className="font-semibold text-slate-900">{children}</strong>,
-                                      code: ({ children }) => <code className="rounded bg-slate-100 px-1 py-0.5 text-[14px] text-slate-800 ring-1 ring-slate-200">{children}</code>,
-                                    }}
-                                  >
-                                    {textWithoutStyle}
-                                  </ReactMarkdown>
-                                );
-                              }
-                              const parsed = parseTrainingPlan(textWithoutStyle);
-                              const hasDesignedPlan = parsed.modules.length >= 2;
-
-                              if (!hasDesignedPlan) {
-                                const contentTheme = styleBlueprint.contentTheme || {
-                                  bodyColor: '#334155',
-                                  headingColor: '#be185d',
-                                  tableBorder: '#ffc2c2',
-                                  tableHeaderBg: '#fff5f5',
-                                  tableHeaderText: '#9f1239',
-                                  tableRowBg: '#ffffff',
-                                  kpiBg: '#fff5f5',
-                                  kpiBorder: '#fbcfe8',
-                                  kpiLabel: '#be185d',
-                                  kpiValue: '#1e293b',
-                                  moduleShape: 'rounded' as const,
-                                  panelBg: '#fff5f5',
-                                  panelBorder: '#fbcfe8',
-                                  badgeBg: '#fce7f3',
-                                  badgeText: '#9d174d',
-                                };
-                                return (
-                                  <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                    components={{
-                                      h1: ({ children }) => (
-                                        <h3 className="mb-3 mt-1 text-[28px] font-semibold tracking-tight" style={{ color: contentTheme.headingColor }}>
-                                          {children}
-                                        </h3>
-                                      ),
-                                      h2: ({ children }) => (
-                                        <h4 className="mb-2 mt-3 text-[22px] font-semibold" style={{ color: contentTheme.headingColor }}>
-                                          {children}
-                                        </h4>
-                                      ),
-                                      h3: ({ children }) => (
-                                        <h5 className="mb-2 mt-2 text-[17px] font-semibold" style={{ color: contentTheme.headingColor }}>
-                                          {children}
-                                        </h5>
-                                      ),
-                                      p: ({ children }) => (
-                                        <p className="my-2 text-[16px] leading-7" style={{ color: contentTheme.bodyColor }}>{children}</p>
-                                      ),
-                                      ul: ({ children }) => (
-                                        <ul className="my-2 list-disc space-y-1 pl-6 text-[16px] leading-7" style={{ color: contentTheme.bodyColor }}>
-                                          {children}
-                                        </ul>
-                                      ),
-                                      ol: ({ children }) => (
-                                        <ol className="my-2 list-decimal space-y-1 pl-6 text-[16px] leading-7" style={{ color: contentTheme.bodyColor }}>
-                                          {children}
-                                        </ol>
-                                      ),
-                                      table: ({ children }) => (
-                                        <div className="my-4 overflow-x-auto rounded-xl border" style={{ borderColor: contentTheme.tableBorder }}>
-                                          <table className="min-w-full border-collapse" style={{ backgroundColor: contentTheme.tableRowBg }}>{children}</table>
-                                        </div>
-                                      ),
-                                      thead: ({ children }) => <thead style={{ backgroundColor: contentTheme.tableHeaderBg }}>{children}</thead>,
-                                      tbody: ({ children }) => <tbody className="divide-y" style={{ borderColor: contentTheme.tableBorder }}>{children}</tbody>,
-                                      tr: ({ children }) => <tr className="align-top">{children}</tr>,
-                                      th: ({ children }) => (
-                                        <th className="px-3 py-2 text-left text-sm font-semibold" style={{ color: contentTheme.tableHeaderText }}>{children}</th>
-                                      ),
-                                      td: ({ children }) => (
-                                        <td className="px-3 py-2 text-sm" style={{ color: contentTheme.bodyColor }}>{children}</td>
-                                      ),
-                                      li: ({ children }) => <li>{children}</li>,
-                                      strong: ({ children }) => (
-                                        <strong className="font-semibold" style={{ color: contentTheme.headingColor }}>{children}</strong>
-                                      ),
-                                      code: ({ children }) => (
-                                        <code className="rounded bg-slate-100 px-1 py-0.5 text-[14px] text-slate-800 ring-1 ring-slate-200">
-                                          {children}
-                                        </code>
-                                      ),
-                                    }}
-                                  >
-                                    {textWithoutStyle}
-                                  </ReactMarkdown>
-                                );
-                              }
-
                               return (
-                                <div className="mt-4 space-y-3">
-                                  {parsed.intro && (
-                                    <p className="text-[16px] leading-7" style={{ color: styleBlueprint.contentTheme?.bodyColor || '#1f1d18' }}>{parsed.intro}</p>
-                                  )}
-                                  {parsed.title && (
-                                    <div className="text-center text-[15px] font-semibold" style={{ color: styleBlueprint.titleColor || '#1b1914' }}>
-                                      {parsed.title}
-                                    </div>
-                                  )}
-                                  {parsed.modules.map((module, idx) => (
-                                    (() => {
-                                      const theme = styleBlueprint.moduleCardThemes[idx % styleBlueprint.moduleCardThemes.length];
-                                      const moduleShapeClass = styleBlueprint.contentTheme?.moduleShape === 'square'
-                                        ? 'rounded-none'
-                                        : styleBlueprint.contentTheme?.moduleShape === 'soft'
-                                          ? 'rounded-2xl'
-                                          : 'rounded-xl';
-                                      return (
-                                    <button
-                                      key={`${module.title}-${idx}`}
-                                      type="button"
-                                      disabled={isChatLoading}
-                                      onClick={() => {
-                                        const moduleSummary =
-                                          module.bullets.length > 0
-                                            ? `\nPoints du module:\n- ${module.bullets.slice(0, 4).join('\n- ')}`
-                                            : '';
-                                        const ask = `Detail the module "${module.title}" as a standard training response.
-Provide a clear pedagogical explanation with objectives, content, practical activities, and evaluation.
-Keep the total module duration and suggest a simple step-by-step breakdown.
-Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
-                                        void sendChatMessage(ask);
-                                      }}
-                                      className={`w-full border px-3 py-2 text-left transition-all duration-150 hover:-translate-y-[1px] hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${moduleShapeClass}`}
-                                      style={{
-                                        backgroundColor: theme?.bg || '#f9f9f9',
-                                        borderColor: theme?.border || '#ddd',
-                                        color: theme?.text || '#1f1d18',
-                                      }}
-                                      title={`Click to detail ${module.title}`}
-                                    >
-                                      <div className="text-[15px] font-semibold" style={{ color: theme?.text || '#1f1d18' }}>{module.title}</div>
-                                      {module.duration && (
-                                        <div className="text-[13px]" style={{ color: theme?.text || '#3f3b31' }}>Duration: {module.duration}</div>
-                                      )}
-                                      {module.bullets.length > 0 && (
-                                        <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[13px] leading-5" style={{ color: theme?.text || '#2d2a22' }}>
-                                          {module.bullets.slice(0, 5).map((bullet, bIdx) => (
-                                            <li key={`${idx}-${bIdx}`}>{bullet}</li>
-                                          ))}
-                                        </ul>
-                                      )}
-                                    </button>
-                                      );
-                                    })()
-                                  ))}
-                                </div>
+                                <ReactMarkdown
+                                  remarkPlugins={[remarkGfm]}
+                                  components={{
+                                    h1: ({ children }) => <h3 className="mb-2 mt-3 text-[22px] font-semibold text-slate-900">{children}</h3>,
+                                    h2: ({ children }) => <h4 className="mb-1.5 mt-3 text-[18px] font-semibold text-slate-900">{children}</h4>,
+                                    h3: ({ children }) => <h5 className="mb-1 mt-2 text-[16px] font-semibold text-slate-800">{children}</h5>,
+                                    p: ({ children }) => <p className="my-1.5 text-[15px] leading-7 text-slate-700">{children}</p>,
+                                    ul: ({ children }) => <ul className="my-1.5 list-disc space-y-0.5 pl-5 text-[15px] leading-7 text-slate-700">{children}</ul>,
+                                    ol: ({ children }) => <ol className="my-1.5 list-decimal space-y-0.5 pl-5 text-[15px] leading-7 text-slate-700">{children}</ol>,
+                                    li: ({ children }) => <li className="text-slate-700">{children}</li>,
+                                    strong: ({ children }) => <strong className="font-semibold text-slate-900">{children}</strong>,
+                                    table: ({ children }) => (
+                                      <div className="my-3 overflow-x-auto rounded-lg border border-slate-200">
+                                        <table className="min-w-full border-collapse bg-white">{children}</table>
+                                      </div>
+                                    ),
+                                    thead: ({ children }) => <thead className="bg-slate-50">{children}</thead>,
+                                    tbody: ({ children }) => <tbody className="divide-y divide-slate-200">{children}</tbody>,
+                                    tr: ({ children }) => <tr className="align-top">{children}</tr>,
+                                    th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-slate-900">{children}</th>,
+                                    td: ({ children }) => <td className="px-3 py-2 text-sm text-slate-700">{children}</td>,
+                                    code: ({ children }) => <code className="rounded bg-slate-100 px-1 py-0.5 text-[13px] text-slate-800 ring-1 ring-slate-200">{children}</code>,
+                                    blockquote: ({ children }) => <blockquote className="my-2 border-l-4 border-slate-300 pl-3 text-slate-600 italic">{children}</blockquote>,
+                                  }}
+                                >
+                                  {textWithoutStyle}
+                                </ReactMarkdown>
                               );
                             })()}
                             {msg.isStreaming && (
@@ -3743,7 +3595,7 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                 </div>
               )}
 
-              {anchoredChoiceUi ? (
+              {!showRepSourcePopup && (anchoredChoiceUi ? (
                 <div className="sticky bottom-0 z-20 shrink-0 bg-white/95 px-3 pb-2 pt-1 backdrop-blur-sm">
                   <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
                     {shouldShowKbQuestionInChat && (
@@ -3875,7 +3727,7 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                     {renderComposerBody()}
                   </div>
                 </div>
-              )}
+              ))}
 
             </div>
           </div>
