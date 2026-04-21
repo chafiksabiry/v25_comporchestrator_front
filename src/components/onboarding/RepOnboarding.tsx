@@ -25,6 +25,7 @@ import PresentationPreview from '../training/components/Training/PresentationPre
 import { getGigsByCompanyId } from '../../api/matching';
 import { DraftService } from '../training/infrastructure/services/DraftService';
 import { OnboardingService } from '../training/infrastructure/services/OnboardingService';
+import { AIService, type SavedPodcastItem } from '../training/infrastructure/services/AIService';
 import { mapJourneyToPresentation } from '../training/utils/PresentationMapper';
 import { cloudinaryService } from '../training/lib/cloudinaryService';
 import '../training/index.css';
@@ -38,6 +39,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [legacyCompanyId, setLegacyCompanyId] = useState<string | null>(null);
   const [companyGigs, setCompanyGigs] = useState<any[]>([]);
   const [filterGigId, setFilterGigId] = useState<string>('all');
+  const [savedPodcasts, setSavedPodcasts] = useState<SavedPodcastItem[]>([]);
+  const [loadingPodcasts, setLoadingPodcasts] = useState(false);
   const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string, gigId?: string, newJourney?: boolean }>({ isOpen: false });
   const [selectedPresentation, setSelectedPresentation] = useState<any | null>(null);
   /** Journey used for module sidebar when previewing slides */
@@ -557,6 +560,31 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     fetchGigs();
   }, [companyId]);
 
+  const fetchSavedPodcasts = useCallback(async () => {
+    if (!companyId) {
+      setSavedPodcasts([]);
+      return;
+    }
+    setLoadingPodcasts(true);
+    try {
+      const rows = await AIService.listSavedPodcasts({
+        companyId,
+        gigId: filterGigId !== 'all' ? filterGigId : undefined,
+        limit: 50,
+      });
+      setSavedPodcasts(Array.isArray(rows) ? rows : []);
+    } catch (error) {
+      console.error('[RepOnboarding] Error fetching saved podcasts:', error);
+      setSavedPodcasts([]);
+    } finally {
+      setLoadingPodcasts(false);
+    }
+  }, [companyId, filterGigId]);
+
+  useEffect(() => {
+    void fetchSavedPodcasts();
+  }, [fetchSavedPodcasts]);
+
   if (showTraining.isOpen && showTraining.newJourney) {
     return (
       <div className="flex min-h-[calc(100dvh-5.5rem)] w-full min-w-0 flex-col px-4 pt-0 pb-4 md:px-8 md:pt-1 md:pb-6">
@@ -859,6 +887,88 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         );
                       })}
                     </div>
+                  </div>
+                )}
+              </div>
+            </section>
+            <section className="relative overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white p-6 shadow-2xl shadow-gray-200/50">
+              <div className="h-1 w-full bg-gradient-harx" aria-hidden />
+              <div className="relative z-10 p-6">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="rounded-2xl bg-gradient-harx p-3 text-white shadow-lg shadow-harx-500/30">
+                      <BookOpen className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-black tracking-tight text-gray-900">Saved podcasts</h2>
+                      <p className="text-sm font-medium text-gray-500">Generated and saved from REP training chat</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void fetchSavedPodcasts()}
+                    className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${loadingPodcasts ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </button>
+                </div>
+
+                {loadingPodcasts ? (
+                  <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-harx-100 py-10">
+                    <RefreshCw className="h-8 w-8 animate-spin text-harx-500" />
+                    <p className="mt-4 text-sm font-medium text-gray-600">Loading saved podcasts...</p>
+                  </div>
+                ) : savedPodcasts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-harx-200 py-10 p-8 text-center">
+                    <h3 className="text-base font-bold text-gray-900">No saved podcasts yet</h3>
+                    <p className="mx-auto mt-2 max-w-xs text-sm text-gray-600">
+                      Generate and save a podcast from the training chat, it will appear here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {savedPodcasts.map((podcast) => (
+                      <div
+                        key={podcast._id}
+                        className="rounded-2xl border border-[#f2d8e1] bg-white p-4 shadow-[0_10px_24px_rgba(25,35,60,0.08)]"
+                      >
+                        <h3 className="line-clamp-2 text-base font-black text-gray-900">
+                          {podcast.title || 'Untitled podcast'}
+                        </h3>
+                        <p className="mt-1 line-clamp-1 text-xs font-medium text-gray-600">
+                          {podcast.trainingTitle || 'Training podcast'}
+                        </p>
+                        <p className="mt-2 text-[11px] text-gray-500">
+                          {podcast.createdAt ? new Date(podcast.createdAt).toLocaleString() : 'Date unavailable'}
+                        </p>
+                        <div className="mt-3 flex items-center gap-2">
+                          {podcast.scriptCloudinaryUrl ? (
+                            <a
+                              href={podcast.scriptCloudinaryUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                            >
+                              View script
+                            </a>
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowTraining({
+                                isOpen: true,
+                                newJourney: true,
+                                gigId: filterGigId !== 'all' ? String(filterGigId) : undefined
+                              })
+                            }
+                            className="inline-flex items-center gap-1 rounded-lg bg-gradient-harx px-2.5 py-1.5 text-xs font-semibold text-white"
+                          >
+                            Open chat
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

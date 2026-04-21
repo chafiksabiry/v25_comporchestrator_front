@@ -466,6 +466,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const activeChatGigTitle =
     companyGigs.find((g: any) => String(g?._id || g?.id || '') === String(activeChatGigId))?.title ||
     (activeChatGigId ? `Gig ${activeChatGigId.slice(0, 8)}` : 'No gig');
+  const hasActiveGigInOptions = useMemo(
+    () =>
+      !!activeChatGigId &&
+      companyGigs.some((g: any) => String(g?._id || g?.id || '') === String(activeChatGigId)),
+    [companyGigs, activeChatGigId]
+  );
 
   const gigSnapshotForBuilder = useMemo(() => {
     const gid = gigId ? String(gigId) : '';
@@ -2929,6 +2935,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     title="Choose gig for chat"
                   >
                     <option value="">Choose a gig</option>
+                    {!!activeChatGigId && !hasActiveGigInOptions ? (
+                      <option value={activeChatGigId}>{activeChatGigTitle}</option>
+                    ) : null}
                     {companyGigs.map((gig: any) => {
                       const id = String(gig?._id || gig?.id || '');
                       return (
