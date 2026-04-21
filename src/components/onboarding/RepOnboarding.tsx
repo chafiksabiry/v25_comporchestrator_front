@@ -29,6 +29,7 @@ import { getGigsByCompanyId } from '../../api/matching';
 import { DraftService } from '../training/infrastructure/services/DraftService';
 import { OnboardingService } from '../training/infrastructure/services/OnboardingService';
 import { AIService, type SavedPodcastItem, type TrainingImageSet } from '../training/infrastructure/services/AIService';
+import { mapJourneyToPresentation } from '../training/utils/PresentationMapper';
 import { cloudinaryService } from '../training/lib/cloudinaryService';
 import '../training/index.css';
 
@@ -52,6 +53,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   /** Journey used for module sidebar when previewing slides */
   const [previewJourney, setPreviewJourney] = useState<any | null>(null);
   const [openClaudeEditorOnPreview, setOpenClaudeEditorOnPreview] = useState(false);
+  const [loadingPresentation, setLoadingPresentation] = useState(false);
   const [deletingJourneyId, setDeletingJourneyId] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -210,6 +212,50 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     } finally {
       setIsSavingSettings(false);
     }
+  };
+
+  const handleViewPresentation = async (
+    url: string | null,
+    _journeyId: string,
+    journey: any,
+    openEditor: boolean = false
+  ) => {
+    setSelectedImageSet(null);
+    setSelectedImageIndex(0);
+    setPreviewJourney(journey || null);
+    setOpenClaudeEditorOnPreview(openEditor);
+
+    if (url) {
+      setLoadingPresentation(true);
+      try {
+        const response = await axios.get(url);
+        const raw = response.data as Record<string, unknown> | null | undefined;
+        const fromUrl =
+          raw && Array.isArray(raw.slides)
+            ? (raw as { slides: unknown[] })
+            : raw && typeof raw.presentation === 'object' && raw.presentation !== null && Array.isArray((raw.presentation as { slides?: unknown[] }).slides)
+              ? (raw.presentation as { slides: unknown[] })
+              : null;
+        if (fromUrl?.slides?.length) {
+          setSelectedPresentation(fromUrl);
+          setLoadingPresentation(false);
+          return;
+        }
+      } catch (error) {
+        console.error('[RepOnboarding] Error fetching presentation JSON:', error);
+      } finally {
+        setLoadingPresentation(false);
+      }
+    }
+
+    let presentationToUse;
+    if (journey.presentation && journey.presentation.slides && journey.presentation.slides.length > 0) {
+      presentationToUse = journey.presentation;
+    } else {
+      presentationToUse = mapJourneyToPresentation(journey);
+    }
+
+    setSelectedPresentation(presentationToUse);
   };
 
   // Function to get training backend URL
@@ -603,8 +649,23 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   }, [savedImageSets]);
 
   const openImageSlides = (imageSet: TrainingImageSet) => {
+    setSelectedPresentation(null);
+    setOpenClaudeEditorOnPreview(false);
     setSelectedImageSet(imageSet);
     setSelectedImageIndex(0);
+  };
+
+  const openJourneyContentOrImages = (
+    journey: any,
+    formatted: ReturnType<typeof formatTrainingJourney>,
+    imageSet: TrainingImageSet | undefined,
+    imageSlidesCount: number
+  ) => {
+    if (imageSet && imageSlidesCount > 0) {
+      openImageSlides(imageSet);
+      return;
+    }
+    void handleViewPresentation(formatted.presentationUrl, formatted.id, journey);
   };
 
   const stopPodcastPlayback = useCallback(() => {
@@ -1059,25 +1120,33 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               <div className="flex items-center gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => imageSet && openImageSlides(imageSet)}
-                                  disabled={!imageSet || imageSlidesCount === 0 || deletingJourneyId === formatted.id}
+                                  onClick={() => openJourneyContentOrImages(journey, formatted, imageSet, imageSlidesCount)}
+                                  disabled={loadingPresentation || deletingJourneyId === formatted.id}
                                   className={`inline-flex items-center space-x-2 rounded-xl px-3 py-2 text-xs font-bold transition-all ${formatted.status === 'completed'
                                     ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100 hover:bg-emerald-100'
                                     : 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20 hover:-translate-y-0.5 hover:shadow-harx-500/40'
                                     }`}
                                 >
-                                  <Play className="h-4 w-4" />
+                                  {loadingPresentation ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Play className="h-4 w-4" />
+                                  )}
                                   <span>
                                     {formatted.status === 'completed' ? 'Review' : formatted.status === 'in_progress' ? 'Continue' : 'Start'}
                                   </span>
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => imageSet && openImageSlides(imageSet)}
-                                  disabled={!imageSet || imageSlidesCount === 0 || deletingJourneyId === formatted.id}
+                                  onClick={() => openJourneyContentOrImages(journey, formatted, imageSet, imageSlidesCount)}
+                                  disabled={loadingPresentation || deletingJourneyId === formatted.id}
                                   className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-white px-3 py-2 text-xs font-bold text-harx-700 hover:bg-harx-50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                  <FileText className="h-4 w-4" />
+                                  {loadingPresentation ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <FileText className="h-4 w-4" />
+                                  )}
                                   Contenu
                                 </button>
                               </div>
@@ -1086,7 +1155,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleOpenTrainingChat(journey)}
-                                  disabled={deletingJourneyId === formatted.id}
+                                  disabled={loadingPresentation || deletingJourneyId === formatted.id}
                                   className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-sky-200 bg-white/85 text-sky-700 shadow-sm hover:bg-sky-50 disabled:opacity-50"
                                   title="Open training chat"
                                 >
@@ -1095,7 +1164,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                 <button
                                   type="button"
                                   onClick={() => openTrainingSettings(journey)}
-                                  disabled={deletingJourneyId === formatted.id}
+                                  disabled={loadingPresentation || deletingJourneyId === formatted.id}
                                   className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-harx-200 bg-white/85 text-harx-700 shadow-sm hover:bg-harx-50 disabled:opacity-50"
                                   title="Training settings"
                                 >
@@ -1104,7 +1173,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteJourney(journey)}
-                                  disabled={deletingJourneyId === formatted.id}
+                                  disabled={loadingPresentation || deletingJourneyId === formatted.id}
                                   className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 bg-white/85 text-rose-600 shadow-sm hover:bg-rose-50 disabled:opacity-50"
                                   title="Delete training"
                                 >
