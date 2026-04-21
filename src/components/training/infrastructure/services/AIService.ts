@@ -170,6 +170,16 @@ export interface TrainingImageSet {
   createdAt?: string;
 }
 
+export interface TrainingImageJobStatus {
+  jobId: string;
+  status: 'queued' | 'running' | 'completed' | 'failed';
+  total: number;
+  completed: number;
+  items: TrainingImageSetItem[];
+  savedImageSetId?: string;
+  error?: string;
+}
+
 export interface AiBaseResponse {
   success: boolean;
   error?: string;
@@ -635,21 +645,57 @@ export class AIService {
     trainingTitle?: string;
     title?: string;
     language?: string;
+    styleGuidance?: string;
     gigId?: string;
     companyId?: string;
     maxImages?: number;
-  }): Promise<TrainingImageSet> {
+  }): Promise<TrainingImageJobStatus> {
     const response = await ApiClient.post<{
       success?: boolean;
-      imageSet?: TrainingImageSet;
+      jobId?: string;
+      status?: 'queued' | 'running' | 'completed' | 'failed';
+      total?: number;
+      completed?: number;
+      items?: TrainingImageSetItem[];
       error?: string;
       message?: string;
     }>('/api/ai/training-images/generate', params);
     const raw = response.data as any;
     if (raw?.success === false) throw new Error(raw?.error || raw?.message || 'Training images generation failed');
-    const imageSet = raw?.imageSet as TrainingImageSet | undefined;
-    if (!imageSet?._id) throw new Error('Training images generation failed: invalid payload');
-    return imageSet;
+    const jobId = String(raw?.jobId || '').trim();
+    if (!jobId) throw new Error('Training images generation failed: invalid payload');
+    return {
+      jobId,
+      status: (raw?.status || 'queued') as any,
+      total: Number(raw?.total || 0),
+      completed: Number(raw?.completed || 0),
+      items: Array.isArray(raw?.items) ? (raw.items as TrainingImageSetItem[]) : [],
+    };
+  }
+
+  static async getTrainingImagesStatus(jobId: string): Promise<TrainingImageJobStatus> {
+    const response = await ApiClient.get<{
+      success?: boolean;
+      jobId?: string;
+      status?: 'queued' | 'running' | 'completed' | 'failed';
+      total?: number;
+      completed?: number;
+      items?: TrainingImageSetItem[];
+      savedImageSetId?: string;
+      error?: string;
+      message?: string;
+    }>(`/api/ai/training-images/status/${encodeURIComponent(jobId)}?t=${Date.now()}`);
+    const raw = response.data as any;
+    if (raw?.success === false) throw new Error(raw?.error || raw?.message || 'Training images status failed');
+    return {
+      jobId: String(raw?.jobId || jobId),
+      status: (raw?.status || 'queued') as any,
+      total: Number(raw?.total || 0),
+      completed: Number(raw?.completed || 0),
+      items: Array.isArray(raw?.items) ? (raw.items as TrainingImageSetItem[]) : [],
+      savedImageSetId: raw?.savedImageSetId ? String(raw.savedImageSetId) : undefined,
+      error: raw?.error ? String(raw.error) : undefined,
+    };
   }
 
   static async listTrainingImages(params?: {
