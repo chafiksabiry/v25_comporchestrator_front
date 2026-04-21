@@ -18,7 +18,9 @@ import {
   Briefcase,
   Shield,
   BarChart3,
-  Laptop
+  Laptop,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 import { AppContent } from '../training/App';
@@ -26,7 +28,7 @@ import PresentationPreview from '../training/components/Training/PresentationPre
 import { getGigsByCompanyId } from '../../api/matching';
 import { DraftService } from '../training/infrastructure/services/DraftService';
 import { OnboardingService } from '../training/infrastructure/services/OnboardingService';
-import { AIService, type SavedPodcastItem } from '../training/infrastructure/services/AIService';
+import { AIService, type SavedPodcastItem, type TrainingImageSet } from '../training/infrastructure/services/AIService';
 import { mapJourneyToPresentation } from '../training/utils/PresentationMapper';
 import { cloudinaryService } from '../training/lib/cloudinaryService';
 import '../training/index.css';
@@ -42,6 +44,10 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [filterGigId, setFilterGigId] = useState<string>('all');
   const [savedPodcasts, setSavedPodcasts] = useState<SavedPodcastItem[]>([]);
   const [loadingPodcasts, setLoadingPodcasts] = useState(false);
+  const [savedImageSets, setSavedImageSets] = useState<TrainingImageSet[]>([]);
+  const [loadingImageSets, setLoadingImageSets] = useState(false);
+  const [selectedImageSet, setSelectedImageSet] = useState<TrainingImageSet | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string, gigId?: string, newJourney?: boolean }>({ isOpen: false });
   const [selectedPresentation, setSelectedPresentation] = useState<any | null>(null);
   /** Journey used for module sidebar when previewing slides */
@@ -586,9 +592,63 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     }
   }, [companyId, filterGigId]);
 
+  const fetchSavedImageSets = useCallback(async () => {
+    if (!companyId) {
+      setSavedImageSets([]);
+      return;
+    }
+    setLoadingImageSets(true);
+    try {
+      const rows = await AIService.listTrainingImages({
+        companyId,
+        gigId: filterGigId !== 'all' ? filterGigId : undefined,
+        limit: 100,
+      });
+      setSavedImageSets(Array.isArray(rows) ? rows : []);
+    } catch (error) {
+      console.error('[RepOnboarding] Error fetching training image sets:', error);
+      setSavedImageSets([]);
+    } finally {
+      setLoadingImageSets(false);
+    }
+  }, [companyId, filterGigId]);
+
   useEffect(() => {
     void fetchSavedPodcasts();
   }, [fetchSavedPodcasts]);
+
+  useEffect(() => {
+    void fetchSavedImageSets();
+  }, [fetchSavedImageSets]);
+
+  const normalizeText = (value: unknown): string =>
+    String(value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+
+  const findImageSetForJourney = useCallback((journey: any): TrainingImageSet | undefined => {
+    const titleCandidates = [
+      journey?.title,
+      journey?.name,
+      journey?.trainingTitle,
+      journey?.metadata?.title,
+    ]
+      .map(normalizeText)
+      .filter(Boolean);
+
+    if (titleCandidates.length === 0) return undefined;
+    return savedImageSets.find((set) => {
+      const setCandidates = [set.title, set.trainingTitle].map(normalizeText).filter(Boolean);
+      return setCandidates.some((candidate) => titleCandidates.includes(candidate));
+    });
+  }, [savedImageSets]);
+
+  const openImageSlides = (imageSet: TrainingImageSet) => {
+    setSelectedImageSet(imageSet);
+    setSelectedImageIndex(0);
+  };
 
   const stopPodcastPlayback = useCallback(() => {
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
@@ -732,7 +792,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   return (
     <div className="space-y-6">
       <div className="mx-auto max-w-6xl">
-        {selectedPresentation ? (
+        {selectedPresentation || selectedImageSet ? (
           <div className="overflow-hidden rounded-2xl border border-harx-100 bg-white">
             <div className="grid min-h-[min(720px,calc(100dvh-8rem))] grid-cols-1 lg:grid-cols-[minmax(260px,300px)_1fr] lg:min-h-[calc(100dvh-10rem)]">
               <aside className="max-h-[40vh] overflow-y-auto border-b border-harx-100/60 p-4 lg:max-h-none lg:border-b-0 lg:border-r lg:border-harx-100/60">
@@ -741,10 +801,23 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   <span className="text-[10px] font-bold uppercase tracking-widest">Modules</span>
                 </div>
                 <h2 className="text-base font-bold leading-snug text-gray-900 line-clamp-2">
-                  {previewJourney?.title || previewJourney?.name || selectedPresentation?.title || 'Training'}
+                  {selectedImageSet?.trainingTitle || selectedImageSet?.title || previewJourney?.title || previewJourney?.name || selectedPresentation?.title || 'Training'}
                 </h2>
                 <ol className="mt-3 space-y-1.5">
-                  {Array.isArray(previewJourney?.modules) && previewJourney.modules.length > 0 ? (
+                  {selectedImageSet ? (
+                    selectedImageSet.items.map((item, idx) => (
+                      <li
+                        key={`${item.index}-${idx}`}
+                        className={`flex cursor-pointer gap-2 rounded-xl px-2 py-2 text-sm hover:bg-white/80 ${idx === selectedImageIndex ? 'bg-harx-50 text-harx-700' : 'text-gray-800'}`}
+                        onClick={() => setSelectedImageIndex(idx)}
+                      >
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-harx-50 text-xs font-bold text-harx-600">
+                          {item.index || idx + 1}
+                        </span>
+                        <span className="min-w-0 flex-1 font-medium leading-snug">{item.title || `Slide ${idx + 1}`}</span>
+                      </li>
+                    ))
+                  ) : Array.isArray(previewJourney?.modules) && previewJourney.modules.length > 0 ? (
                     previewJourney.modules.map((mod: any, idx: number) => (
                       <li
                         key={mod._id || mod.id || idx}
@@ -762,20 +835,69 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 </ol>
               </aside>
               <div className="min-h-[360px] min-w-0 lg:min-h-0">
-                <PresentationPreview
-                  presentation={selectedPresentation}
-                  onClose={() => {
-                    setSelectedPresentation(null);
-                    setPreviewJourney(null);
-                    setOpenClaudeEditorOnPreview(false);
-                  }}
-                  isEmbedded={true}
-                  showPagination={false}
-                  hideExportPptx={true}
-                  embedLightCanvas={true}
-                  backLabel="Back to list"
-                  openClaudeEditor={openClaudeEditorOnPreview}
-                />
+                {selectedImageSet ? (
+                  <div className="flex h-full flex-col">
+                    <div className="flex items-center justify-between border-b border-harx-100 px-4 py-3">
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                        onClick={() => {
+                          setSelectedImageSet(null);
+                          setSelectedImageIndex(0);
+                        }}
+                      >
+                        Back to list
+                      </button>
+                      <div className="text-xs font-semibold text-gray-600">
+                        Slide {Math.min(selectedImageIndex + 1, selectedImageSet.items.length)} / {selectedImageSet.items.length}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                          disabled={selectedImageIndex <= 0}
+                          onClick={() => setSelectedImageIndex((prev) => Math.max(prev - 1, 0))}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                          disabled={selectedImageIndex >= selectedImageSet.items.length - 1}
+                          onClick={() => setSelectedImageIndex((prev) => Math.min(prev + 1, Math.max(selectedImageSet.items.length - 1, 0)))}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex min-h-[300px] flex-1 items-center justify-center bg-[#f7f9fc] p-4">
+                      {selectedImageSet.items[selectedImageIndex]?.imageUrl ? (
+                        <img
+                          src={selectedImageSet.items[selectedImageIndex].imageUrl}
+                          alt={selectedImageSet.items[selectedImageIndex].title || `Slide ${selectedImageIndex + 1}`}
+                          className="max-h-full w-full rounded-xl border border-gray-200 bg-white object-contain shadow-sm"
+                        />
+                      ) : (
+                        <div className="text-sm text-gray-500">Slide image unavailable.</div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <PresentationPreview
+                    presentation={selectedPresentation}
+                    onClose={() => {
+                      setSelectedPresentation(null);
+                      setPreviewJourney(null);
+                      setOpenClaudeEditorOnPreview(false);
+                    }}
+                    isEmbedded={true}
+                    showPagination={false}
+                    hideExportPptx={true}
+                    embedLightCanvas={true}
+                    backLabel="Back to list"
+                    openClaudeEditor={openClaudeEditorOnPreview}
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -879,6 +1001,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                       {trainings.filter(Boolean).map((journey) => {
                         const formatted = formatTrainingJourney(journey);
+                        const imageSet = findImageSetForJourney(journey);
+                        const imageSlidesCount = Array.isArray(imageSet?.items) ? imageSet.items.length : 0;
                         const trainingBgImage =
                           String(formatted?.trainingLogo?.type || '').toLowerCase() === 'image'
                             ? String(formatted?.trainingLogo?.value || '').trim()
@@ -930,26 +1054,41 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                 <FileText className="mr-1.5 inline h-3.5 w-3.5 text-harx-alt-500" />
                                 {formatted.modulesCount} modules
                               </div>
+                              <div className="col-span-2 rounded-xl border border-harx-100 bg-harx-50/50 px-3 py-2 text-xs font-semibold text-harx-700">
+                                Slides images: {imageSlidesCount}
+                                {loadingImageSets ? ' (loading...)' : ''}
+                              </div>
                             </div>
                             <div className="flex items-center justify-between gap-3 border-t border-white/70 pt-3">
-                              <button
-                                type="button"
-                                onClick={() => handleViewPresentation(formatted.presentationUrl, formatted.id, journey)}
-                                disabled={loadingPresentation || deletingJourneyId === formatted.id}
-                                className={`inline-flex items-center space-x-2 rounded-xl px-4 py-2 text-sm font-bold transition-all ${formatted.status === 'completed'
-                                  ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100 hover:bg-emerald-100'
-                                  : 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20 hover:-translate-y-0.5 hover:shadow-harx-500/40'
-                                  }`}
-                              >
-                                {loadingPresentation ? (
-                                  <RefreshCw className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Play className="h-4 w-4" />
-                                )}
-                                <span>
-                                  {formatted.status === 'completed' ? 'Review' : formatted.status === 'in_progress' ? 'Continue' : 'Start'}
-                                </span>
-                              </button>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleViewPresentation(formatted.presentationUrl, formatted.id, journey)}
+                                  disabled={loadingPresentation || deletingJourneyId === formatted.id}
+                                  className={`inline-flex items-center space-x-2 rounded-xl px-4 py-2 text-sm font-bold transition-all ${formatted.status === 'completed'
+                                    ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-100 hover:bg-emerald-100'
+                                    : 'bg-gradient-harx text-white shadow-lg shadow-harx-500/20 hover:-translate-y-0.5 hover:shadow-harx-500/40'
+                                    }`}
+                                >
+                                  {loadingPresentation ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Play className="h-4 w-4" />
+                                  )}
+                                  <span>
+                                    {formatted.status === 'completed' ? 'Review' : formatted.status === 'in_progress' ? 'Continue' : 'Start'}
+                                  </span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => imageSet && openImageSlides(imageSet)}
+                                  disabled={!imageSet || imageSlidesCount === 0 || deletingJourneyId === formatted.id}
+                                  className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-white px-3 py-2 text-sm font-bold text-harx-700 hover:bg-harx-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                  Contenu
+                                </button>
+                              </div>
 
                               <div className="flex items-center gap-2">
                                 <button
