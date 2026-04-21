@@ -152,6 +152,7 @@ type RepPodcastSidebarPanelProps = {
   isGenerating: boolean;
   disableGenerateExtra?: boolean;
   canGenerateFromTraining?: boolean;
+  hasSavedVersion?: boolean;
   isSpeaking: boolean;
   error: string | null;
   title: string;
@@ -159,11 +160,6 @@ type RepPodcastSidebarPanelProps = {
   onSave: () => void;
   isSaving: boolean;
   savedHint?: string | null;
-  chatMessages: Array<{ id: string; role: 'user' | 'assistant'; text: string }>;
-  chatInput: string;
-  onChatInputChange: (v: string) => void;
-  onChatSend: () => void;
-  isChatLoading: boolean;
   onGenerate: () => void;
   onPlay: () => void;
   onStop: () => void;
@@ -179,6 +175,7 @@ function RepPodcastSidebarPanel({
   isGenerating,
   disableGenerateExtra,
   canGenerateFromTraining = true,
+  hasSavedVersion = false,
   isSpeaking,
   error,
   title,
@@ -186,11 +183,6 @@ function RepPodcastSidebarPanel({
   onSave,
   isSaving,
   savedHint,
-  chatMessages,
-  chatInput,
-  onChatInputChange,
-  onChatSend,
-  isChatLoading,
   onGenerate,
   onPlay,
   onStop,
@@ -236,7 +228,7 @@ function RepPodcastSidebarPanel({
           className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
         >
           {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {isGenerating ? 'Generating...' : 'Generate podcast'}
+          {isGenerating ? 'Generating...' : hasSavedVersion ? 'Regenerate podcast' : 'Generate podcast'}
         </button>
         <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white/90 px-3 py-2.5">
           <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-slate-600">
@@ -316,54 +308,6 @@ function RepPodcastSidebarPanel({
             )}
           </div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-2.5">
-          <p className="mb-2 text-[11px] font-semibold text-slate-700">Podcast chat</p>
-          <div className="max-h-36 space-y-1 overflow-y-auto rounded-lg bg-slate-50 p-2">
-            {chatMessages.length === 0 ? (
-              <p className="text-[11px] text-slate-500">Ask for script edits (tone, length, structure...).</p>
-            ) : (
-              chatMessages.map((m) => (
-                <div
-                  key={m.id}
-                  className={`rounded-md px-2 py-1.5 text-[11px] ${
-                    m.role === 'assistant' ? 'bg-white text-slate-700' : 'bg-fuchsia-50 text-slate-900'
-                  }`}
-                >
-                  <span className="mr-1 font-semibold">{m.role === 'assistant' ? 'AI' : 'You'}:</span>
-                  {m.text}
-                </div>
-              ))
-            )}
-            {isChatLoading ? (
-              <div className="inline-flex items-center gap-1 text-[11px] text-slate-500">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Updating script...
-              </div>
-            ) : null}
-          </div>
-          <div className="mt-2 flex items-center gap-2">
-            <input
-              value={chatInput}
-              onChange={(e) => onChatInputChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  onChatSend();
-                }
-              }}
-              placeholder="e.g. Shorten the intro and add a real-world case."
-              className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2.5 py-2 text-xs text-slate-800 outline-none ring-harx-500/20 focus:ring-2"
-            />
-            <button
-              type="button"
-              onClick={onChatSend}
-              disabled={!chatInput.trim() || isChatLoading || !hasScript}
-              className="inline-flex shrink-0 items-center justify-center rounded-lg bg-slate-900 px-2.5 py-2 text-xs font-semibold text-white disabled:opacity-50"
-            >
-              Send
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -438,11 +382,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [podcastTitle, setPodcastTitle] = useState('');
   const [isPodcastSaving, setIsPodcastSaving] = useState(false);
   const [podcastSavedHint, setPodcastSavedHint] = useState<string | null>(null);
-  const [podcastChatMessages, setPodcastChatMessages] = useState<
-    Array<{ id: string; role: 'user' | 'assistant'; text: string; createdAt?: string }>
-  >([]);
-  const [podcastChatInput, setPodcastChatInput] = useState('');
-  const [isPodcastChatLoading, setIsPodcastChatLoading] = useState(false);
+  const [currentSavedPodcastId, setCurrentSavedPodcastId] = useState<string | null>(null);
   const [savedPodcasts, setSavedPodcasts] = useState<SavedPodcastItem[]>([]);
   const [isSavedPodcastsLoading, setIsSavedPodcastsLoading] = useState(false);
   const podcastSpeechRef = useRef<WebSpeechService | null>(null);
@@ -666,14 +606,25 @@ export default function ContentUploader(props: ContentUploaderProps) {
       if (!podcastTitle.trim()) {
         setPodcastTitle(trainingTitle ? `${trainingTitle} - Podcast` : 'Podcast formation');
       }
-      setPodcastChatMessages([
-        {
-          id: `pchat-${Date.now()}`,
-          role: 'assistant',
-          text: 'Script generated. You can ask for edits before saving.',
-          createdAt: new Date().toISOString(),
-        },
-      ]);
+      if (currentSavedPodcastId) {
+        const titleToSave = (podcastTitle.trim() || `${trainingTitle || 'Training podcast'} - Podcast`).slice(0, 240);
+        await AIService.savePodcast({
+          title: titleToSave,
+          script,
+          trainingTitle: trainingTitle || 'Training podcast',
+          language: 'fr',
+          gigId: activeChatGigId ? String(activeChatGigId) : undefined,
+          companyId: company?.id || company?._id ? String(company.id || company._id) : undefined,
+          chatMessages: [],
+        });
+        setPodcastSavedHint('Podcast regenerated and saved to MongoDB and Cloudinary.');
+        const refreshed = await AIService.listSavedPodcasts({
+          gigId: activeChatGigId ? String(activeChatGigId) : undefined,
+          companyId: company?.id || company?._id ? String(company.id || company._id) : undefined,
+          limit: 20,
+        });
+        setSavedPodcasts(Array.isArray(refreshed) ? refreshed : []);
+      }
     } catch (e: any) {
       console.error('[ContentUploader] Podcast script generation failed:', e);
       setPodcastError(e?.message || 'Unable to generate script right now.');
@@ -689,6 +640,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
     generatedPresentation?.title,
     activeGigSnapshotForPodcast,
     podcastTitle,
+    currentSavedPodcastId,
+    activeChatGigId,
+    company,
   ]);
 
   const handleStopPodcastSpeak = useCallback(() => {
@@ -721,65 +675,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
     }
   }, [podcastScript, isPodcastSpeaking]);
 
-  const handlePodcastChatSend = useCallback(async () => {
-    const text = podcastChatInput.trim();
-    if (!text || !podcastScript.trim() || isPodcastChatLoading) return;
-    const userMsg = {
-      id: `pchat-${Date.now()}-u`,
-      role: 'user' as const,
-      text,
-      createdAt: new Date().toISOString(),
-    };
-    setPodcastChatInput('');
-    setPodcastSavedHint(null);
-    setPodcastChatMessages((prev) => [...prev, userMsg]);
-    setIsPodcastChatLoading(true);
-    setPodcastError(null);
-    try {
-      const trainingTitle = String(
-        generatedCurriculum?.title ||
-          generatedPresentation?.title ||
-          (activeGigSnapshotForPodcast && String((activeGigSnapshotForPodcast as Record<string, unknown>).title || '')) ||
-          ''
-      );
-      const result = await AIService.podcastChat({
-        message: text,
-        currentScript: podcastScript,
-        trainingDigest: buildTrainingDigestForPodcast(),
-        trainingTitle,
-        language: 'fr',
-        history: [...podcastChatMessages, userMsg].map((m) => ({
-          role: m.role,
-          text: m.text,
-          createdAt: m.createdAt,
-        })),
-      });
-      setPodcastScript(result.updatedScript);
-      setPodcastChatMessages((prev) => [
-        ...prev,
-        {
-          id: `pchat-${Date.now()}-a`,
-          role: 'assistant',
-          text: result.assistantReply,
-          createdAt: new Date().toISOString(),
-        },
-      ]);
-    } catch (e: any) {
-      setPodcastError(e?.message || 'Unable to update script via podcast chat.');
-    } finally {
-      setIsPodcastChatLoading(false);
-    }
-  }, [
-    podcastChatInput,
-    podcastScript,
-    isPodcastChatLoading,
-    generatedCurriculum?.title,
-    generatedPresentation?.title,
-    activeGigSnapshotForPodcast,
-    buildTrainingDigestForPodcast,
-    podcastChatMessages,
-  ]);
-
   const handleSavePodcast = useCallback(async () => {
     const script = podcastScript.trim();
     if (!script || isPodcastSaving) return;
@@ -801,12 +696,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
         language: 'fr',
         gigId: activeChatGigId ? String(activeChatGigId) : undefined,
         companyId: company?.id || company?._id ? String(company.id || company._id) : undefined,
-        chatMessages: podcastChatMessages.map((m) => ({
-          role: m.role,
-          text: m.text,
-          createdAt: m.createdAt,
-        })),
+        chatMessages: [],
       });
+      setCurrentSavedPodcastId(String(saved._id || ''));
       setPodcastTitle(saved.title || title);
       setPodcastSavedHint('Podcast saved to MongoDB and Cloudinary.');
       const refreshed = await AIService.listSavedPodcasts({
@@ -829,7 +721,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
     podcastTitle,
     activeChatGigId,
     company,
-    podcastChatMessages,
     activeChatGigId,
   ]);
 
@@ -2846,6 +2737,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   isGenerating={isPodcastGenerating}
                   disableGenerateExtra={isChatLoading}
                   canGenerateFromTraining={showRepPodcastPanel}
+                  hasSavedVersion={!!currentSavedPodcastId}
                   isSpeaking={isPodcastSpeaking}
                   error={podcastError}
                   title={podcastTitle}
@@ -2853,11 +2745,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   onSave={() => void handleSavePodcast()}
                   isSaving={isPodcastSaving}
                   savedHint={podcastSavedHint}
-                  chatMessages={podcastChatMessages}
-                  chatInput={podcastChatInput}
-                  onChatInputChange={setPodcastChatInput}
-                  onChatSend={() => void handlePodcastChatSend()}
-                  isChatLoading={isPodcastChatLoading}
                   onGenerate={() => void handleGeneratePodcastScript()}
                   onPlay={() => void handlePlayPodcastSpeak()}
                   onStop={handleStopPodcastSpeak}
@@ -2867,6 +2754,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   onLoadSavedPodcast={(podcast) => {
                     setPodcastScript(String(podcast.script || '').trim());
                     setPodcastTitle(String(podcast.title || ''));
+                    setCurrentSavedPodcastId(String(podcast._id || ''));
                     setPodcastSavedHint(`Loaded: ${podcast.title || 'Podcast'}`);
                     setPodcastError(null);
                   }}
