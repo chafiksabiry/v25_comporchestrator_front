@@ -513,22 +513,21 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
 
           {currentStep === 1 && (
             <>
-              <div style={{ textAlign: 'center', marginBottom: embedCompact ? 10 : 18 }}>
-                <h3 style={{ fontSize: 20, fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>
-                  Welcome to your training journey
-                </h3>
-                <p style={{ fontSize: 12, color: '#64748b', marginTop: embedCompact ? 3 : 6, fontWeight: 600 }}>
-                  Smart defaults · Compliance
-                </p>
-              </div>
-
               {loadingCompany ? (
-                <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                <div style={{ textAlign: 'center', padding: '32px 0', minHeight: embedCompact ? 300 : 360, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <Loader2 className="animate-spin" style={{ width: 24, height: 24, color: HARX, margin: '0 auto 10px' }} />
                   <p style={{ fontSize: 13, color: '#6b7280' }}>Loading company information...</p>
                 </div>
               ) : companyData ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minHeight: embedCompact ? 320 : 380, justifyContent: 'center' }}>
+                  <div style={{ textAlign: 'center', marginBottom: embedCompact ? 8 : 14 }}>
+                    <h3 style={{ fontSize: 20, fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>
+                      Welcome to your training journey
+                    </h3>
+                    <p style={{ fontSize: 12, color: '#64748b', marginTop: embedCompact ? 3 : 6, fontWeight: 600 }}>
+                      Smart defaults · Compliance
+                    </p>
+                  </div>
                   <div style={{ display: 'none' }}>
                     <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
                       Training industry <span style={{ color: HARX }}>*</span>
@@ -611,7 +610,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                     )}
                   </div>
 
-                  <div style={{ border: '1px solid rgba(15,23,42,0.08)', borderRadius: 12, padding: embedCompact ? '10px' : '12px', background: 'linear-gradient(180deg, #ffffff 0%, #fafbff 100%)' }}>
+                  <div style={{ width: '100%', maxWidth: 640, margin: '0 auto', border: '1px solid rgba(15,23,42,0.08)', borderRadius: 12, padding: embedCompact ? '10px' : '12px', background: 'linear-gradient(180deg, #ffffff 0%, #fafbff 100%)' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
                       <Briefcase style={{ width: 13, height: 13, color: HARX }} />
                       Your gig <span style={{ color: HARX }}>*</span>
@@ -625,7 +624,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                   </div>
 
                   {selectedGig && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 10, padding: '10px 12px', fontSize: 12, color: '#065f46', border: '1px solid #a7f3d0', background: '#ecfdf5' }}>
+                    <div style={{ width: '100%', maxWidth: 640, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 6, borderRadius: 10, padding: '10px 12px', fontSize: 12, color: '#065f46', border: '1px solid #a7f3d0', background: '#ecfdf5' }}>
                       <CheckCircle style={{ width: 14, height: 14, color: '#059669', flexShrink: 0 }} />
                       <span style={{ fontWeight: 600 }}>{selectedGig.title}</span>
                     </div>
