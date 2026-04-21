@@ -557,7 +557,7 @@ export class AIService {
       model?: string;
       error?: string;
       message?: string;
-    }>(`/api/ai/video/status/${encodeURIComponent(jobId)}`);
+    }>(`/api/ai/video/status/${encodeURIComponent(jobId)}?t=${Date.now()}`);
     const raw = response.data as any;
     if (raw?.success === false) throw new Error(raw?.error || raw?.message || 'Video status failed');
     return {
