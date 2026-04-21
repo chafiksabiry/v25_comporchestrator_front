@@ -50,6 +50,12 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
   const [visionTitleGenerating, setVisionTitleGenerating] = useState(false);
   const [visionDescriptionGenerating, setVisionDescriptionGenerating] = useState(false);
   const autoRolesSuggestionKeyRef = useRef('');
+  const [draftJourneyId, setDraftJourneyId] = useState<string | null>(null);
+
+  const getDraftStorageKey = useCallback((companyId?: string) => {
+    const cid = String(companyId || OnboardingService.getCompanyId() || '').trim();
+    return cid ? `repTrainingDraftJourneyId:${cid}` : 'repTrainingDraftJourneyId';
+  }, []);
 
   useEffect(() => {
     if (currentStep !== 5) setSetupSummaryModulesExpanded(false);
@@ -151,7 +157,49 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
     { id: 5, label: 'Methodology' },
   ];
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    const persistDraftJourney = async () => {
+      const realCompanyId = OnboardingService.getCompanyId();
+      if (!realCompanyId || !selectedGig?._id) return;
+
+      const baseTitle =
+        (trainingDetails?.trainingName || visionName || selectedGig.title || 'Training draft').trim();
+      const payload: Record<string, unknown> = {
+        _id: draftJourneyId || undefined,
+        name: baseTitle,
+        title: baseTitle,
+        description: (trainingDetails?.trainingDescription || visionDesc || selectedGig.description || '').trim(),
+        status: 'draft',
+        companyId: realCompanyId,
+        gigId: selectedGig._id,
+        industry: company.industry || undefined,
+        estimatedDuration:
+          trainingDetails?.estimatedDuration || visionDuration || journey.estimatedDuration || '120',
+        targetRoles: journey.targetRoles || [],
+        trainingLogo: thumbnailUrl
+          ? {
+              type: 'image',
+              value: thumbnailUrl
+            }
+          : undefined
+      };
+
+      try {
+        const trainingBackendUrl = getTrainingBackendUrl();
+        const baseUrl = trainingBackendUrl.endsWith('/api') ? trainingBackendUrl : `${trainingBackendUrl}/api`;
+        const response: any = draftJourneyId
+          ? await axios.put(`${baseUrl}/training_journeys/${draftJourneyId}`, payload)
+          : await axios.post(`${baseUrl}/training_journeys`, payload);
+        const savedId = String(response?.data?.journey?._id || response?.data?.journey?.id || '').trim();
+        if (savedId) {
+          setDraftJourneyId(savedId);
+          localStorage.setItem(getDraftStorageKey(realCompanyId), savedId);
+        }
+      } catch (error) {
+        console.error('[SetupWizard] Draft save failed:', error);
+      }
+    };
+
     if (currentStep === 6) {
       const realCompanyId = OnboardingService.getCompanyId();
       if (!realCompanyId) { alert('Internal Error: Company ID not found.'); return; }
@@ -181,17 +229,82 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
       };
       onComplete(completeCompany, completeJourney, selectedMethodology || undefined, selectedGig?._id);
     } else if (currentStep === 5) {
+      await persistDraftJourney();
       setCurrentStep(6);
     } else if (currentStep === 4 && selectedMethodology) {
+      await persistDraftJourney();
       setCurrentStep(5);
     } else if (currentStep === 3) {
+      await persistDraftJourney();
       setCurrentStep(4);
+    } else if (currentStep === 1) {
+      await persistDraftJourney();
+      setCurrentStep(2);
     } else if (currentStep < steps.length) {
+      await persistDraftJourney();
       setCurrentStep(currentStep + 1);
     }
   };
 
   const handleGigSelect = (gig: GigFromApi) => { setSelectedGig(gig); };
+
+  useEffect(() => {
+    const hydrateDraft = async () => {
+      const realCompanyId = OnboardingService.getCompanyId();
+      const storedId = localStorage.getItem(getDraftStorageKey(realCompanyId || undefined));
+      if (!storedId) return;
+      try {
+        const trainingBackendUrl = getTrainingBackendUrl();
+        const baseUrl = trainingBackendUrl.endsWith('/api') ? trainingBackendUrl : `${trainingBackendUrl}/api`;
+        const response: any = await axios.get(`${baseUrl}/training_journeys/${storedId}`);
+        const draft: any = response?.data || {};
+        const isDraft = String(draft.status || '').toLowerCase() === 'draft';
+        if (!isDraft) return;
+
+        setDraftJourneyId(String(draft._id || storedId));
+        if (draft.trainingLogo?.type === 'image' && draft.trainingLogo?.value) {
+          setThumbnailUrl(String(draft.trainingLogo.value));
+        }
+        if (Array.isArray(draft.targetRoles)) {
+          setJourney((prev) => ({ ...prev, targetRoles: draft.targetRoles as string[] }));
+        }
+
+        const gidRaw = draft.gigId;
+        const gigId = typeof gidRaw === 'string'
+          ? gidRaw
+          : typeof gidRaw === 'object' && gidRaw && '_id' in gidRaw
+            ? String((gidRaw as { _id?: string })._id || '')
+            : '';
+        const gigTitle = typeof gidRaw === 'object' && gidRaw && 'title' in gidRaw
+          ? String((gidRaw as { title?: string }).title || 'Draft gig')
+          : 'Draft gig';
+        if (gigId) {
+          setSelectedGig({
+            _id: gigId,
+            title: gigTitle,
+            description: String(draft.description || ''),
+            category: '',
+            status: 'active',
+            companyId: String(realCompanyId || ''),
+            userId: '',
+            seniority: { level: '', yearsExperience: '' },
+            skills: { professional: [], technical: [], soft: [], languages: [] },
+            availability: { minimumHours: { daily: 0, weekly: 0, monthly: 0 }, schedule: [], time_zone: '', flexibility: [] },
+            commission: { minimumVolume: null, transactionCommission: null, base: '', baseAmount: '', bonus: '', bonusAmount: '', currency: { code: '', name: '', symbol: '' }, additionalDetails: '' },
+            industries: [],
+            activities: [],
+            destination_zone: null,
+            createdAt: '',
+            updatedAt: ''
+          });
+        }
+        setCurrentStep(2);
+      } catch (error) {
+        console.warn('[SetupWizard] Draft restore skipped:', error);
+      }
+    };
+    void hydrateDraft();
+  }, [getDraftStorageKey]);
 
   const visionContinueDisabled =
     visionSubStep === 0 ? !visionName.trim() : !visionDuration;
