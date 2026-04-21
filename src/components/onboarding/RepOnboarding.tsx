@@ -1044,10 +1044,15 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         const formatted = formatTrainingJourney(journey);
                         const imageSet = findImageSetForJourney(journey);
                         const imageSlidesCount = Array.isArray(imageSet?.items) ? imageSet.items.length : 0;
+                        const imageSetPreview =
+                          imageSet && Array.isArray(imageSet.items) && imageSet.items[0]?.imageUrl
+                            ? String(imageSet.items[0].imageUrl).trim()
+                            : '';
                         const trainingBgImage =
                           String(formatted?.trainingLogo?.type || '').toLowerCase() === 'image'
                             ? String(formatted?.trainingLogo?.value || '').trim()
                             : '';
+                        const trainingPreviewImage = imageSetPreview || trainingBgImage;
                         return (
                           <div
                           key={formatted.id}
@@ -1086,6 +1091,15 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                 </div>
                               </div>
                             </div>
+                            {trainingPreviewImage ? (
+                              <div className="mb-4 overflow-hidden rounded-xl border border-gray-100 bg-white/90 shadow-sm">
+                                <img
+                                  src={trainingPreviewImage}
+                                  alt={`${formatted.title} preview`}
+                                  className="h-32 w-full object-cover"
+                                />
+                              </div>
+                            ) : null}
                             <div className="mb-4 grid grid-cols-2 gap-2">
                               <div className="rounded-xl border border-gray-100 bg-white/90 px-3 py-2 text-xs font-semibold text-gray-600 shadow-sm backdrop-blur">
                                 <Clock className="mr-1.5 inline h-3.5 w-3.5 text-harx-500" />
