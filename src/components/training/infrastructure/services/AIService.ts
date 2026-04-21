@@ -153,6 +153,23 @@ export interface SavedVideoItem {
   createdAt?: string;
 }
 
+export interface TrainingImageSetItem {
+  index: number;
+  title: string;
+  prompt: string;
+  imageUrl: string;
+  imageCloudinaryPublicId?: string;
+}
+
+export interface TrainingImageSet {
+  _id: string;
+  title: string;
+  trainingTitle?: string;
+  language: string;
+  items: TrainingImageSetItem[];
+  createdAt?: string;
+}
+
 export interface AiBaseResponse {
   success: boolean;
   error?: string;
@@ -611,6 +628,49 @@ export class AIService {
     const raw = response.data as any;
     if (raw?.success === false) throw new Error(raw?.error || 'Video list failed');
     return Array.isArray(raw?.videos) ? (raw.videos as SavedVideoItem[]) : [];
+  }
+
+  static async generateTrainingImages(params: {
+    trainingDigest: string;
+    trainingTitle?: string;
+    title?: string;
+    language?: string;
+    gigId?: string;
+    companyId?: string;
+    maxImages?: number;
+  }): Promise<TrainingImageSet> {
+    const response = await ApiClient.post<{
+      success?: boolean;
+      imageSet?: TrainingImageSet;
+      error?: string;
+      message?: string;
+    }>('/api/ai/training-images/generate', params);
+    const raw = response.data as any;
+    if (raw?.success === false) throw new Error(raw?.error || raw?.message || 'Training images generation failed');
+    const imageSet = raw?.imageSet as TrainingImageSet | undefined;
+    if (!imageSet?._id) throw new Error('Training images generation failed: invalid payload');
+    return imageSet;
+  }
+
+  static async listTrainingImages(params?: {
+    gigId?: string;
+    companyId?: string;
+    limit?: number;
+  }): Promise<TrainingImageSet[]> {
+    const qs = new URLSearchParams();
+    if (params?.gigId) qs.set('gigId', params.gigId);
+    if (params?.companyId) qs.set('companyId', params.companyId);
+    if (params?.limit != null) qs.set('limit', String(params.limit));
+    const suffix = qs.toString();
+    const response = await ApiClient.get<{
+      success?: boolean;
+      imageSets?: TrainingImageSet[];
+      error?: string;
+      message?: string;
+    }>(`/api/ai/training-images/list${suffix ? `?${suffix}` : ''}`);
+    const raw = response.data as any;
+    if (raw?.success === false) throw new Error(raw?.error || raw?.message || 'Training images list failed');
+    return Array.isArray(raw?.imageSets) ? (raw.imageSets as TrainingImageSet[]) : [];
   }
 
   static async generateChatTitle(
