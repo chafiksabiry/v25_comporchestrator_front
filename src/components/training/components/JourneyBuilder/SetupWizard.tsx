@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import { createPortal } from 'react-dom';
-import { Building2, Loader2, Target, Users, Sparkles, Briefcase, AlertCircle, CheckCircle, ArrowRight, ArrowLeft, ChevronDown, Check, Search, ImagePlus } from 'lucide-react';
+import { Building2, Loader2, Target, Users, Sparkles, Briefcase, AlertCircle, CheckCircle, ArrowRight, ArrowLeft, ChevronDown, Check, Search, ImagePlus, Brain } from 'lucide-react';
 import axios from 'axios';
 import { Company, TrainingJourney } from '../../types/core';
 import { Industry, GigFromApi } from '../../types';
@@ -46,9 +46,9 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [thumbnailGenerating, setThumbnailGenerating] = useState(false);
   const [thumbnailPrompt, setThumbnailPrompt] = useState('');
+  const [thumbnailAiPromptOpen, setThumbnailAiPromptOpen] = useState(false);
   const [visionTitleGenerating, setVisionTitleGenerating] = useState(false);
   const [visionDescriptionGenerating, setVisionDescriptionGenerating] = useState(false);
-  const [targetRolesGenerating, setTargetRolesGenerating] = useState(false);
   const autoRolesSuggestionKeyRef = useRef('');
 
   useEffect(() => {
@@ -224,7 +224,10 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
     }
   };
 
-  const handleMethodologySelect = (m: TrainingMethodology) => { setSelectedMethodology(m); setCurrentStep(6); };
+  const handleMethodologySelect = (m: TrainingMethodology) => {
+    // Keep user on methodology step: selection first, then explicit Continue.
+    setSelectedMethodology(m);
+  };
   const handleMethodologyApply = (m: TrainingMethodology) => { setSelectedMethodology(m); setShowMethodologyBuilder(false); setCurrentStep(6); };
   const handleCustomMethodology = () => { setCurrentStep(6); };
 
@@ -326,46 +329,14 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
     { role: 'All Employees', dept: 'Company-wide', icon: '🏢' }
   ];
 
-  const handleSuggestTargetRoles = async (showAlert: boolean = true) => {
-    if (!selectedGig) {
-      if (showAlert) alert('Please select a gig first.');
-      return;
-    }
-    try {
-      setTargetRolesGenerating(true);
-      const trainingBackendUrl = getTrainingBackendUrl();
-      const baseUrl = trainingBackendUrl.endsWith('/api') ? trainingBackendUrl : `${trainingBackendUrl}/api`;
-      const response = await axios.post(`${baseUrl}/training_journeys/suggest-target-roles`, {
-        gig: selectedGig,
-        industry: industries.find(i => i._id === company.industry)?.name || String(company.industry || ''),
-        allowedRoles: roleOptions.map(r => r.role)
-      });
-      const roles = ((response?.data as any)?.data?.roles || []) as string[];
-      if (!roles.length) throw new Error('No role suggestions returned');
-      setJourney(prev => ({ ...prev, targetRoles: roles }));
-    } catch (error: any) {
-      const backendMessage =
-        error?.response?.data?.error ||
-        error?.response?.data?.message ||
-        error?.message;
-      if (showAlert) alert(backendMessage || 'Could not generate target roles.');
-    } finally {
-      setTargetRolesGenerating(false);
-    }
-  };
-
   useEffect(() => {
+    // AI auto-suggestion disabled on Team step: roles are selected manually.
     if (currentStep !== 4 || !selectedGig) return;
-    const alreadyHasRoles = (journey.targetRoles?.length || 0) > 0;
     const key = `${selectedGig._id || selectedGig.title || 'gig'}::${String(company.industry || '')}`;
-    if (autoRolesSuggestionKeyRef.current === key) return;
-    if (alreadyHasRoles) {
+    if (autoRolesSuggestionKeyRef.current !== key) {
       autoRolesSuggestionKeyRef.current = key;
-      return;
     }
-    autoRolesSuggestionKeyRef.current = key;
-    void handleSuggestTargetRoles(false);
-  }, [currentStep, selectedGig?._id, selectedGig?.title, company.industry, journey.targetRoles]);
+  }, [currentStep, selectedGig?._id, selectedGig?.title, company.industry]);
 
   if (showMethodologyBuilder) {
     return <MethodologyBuilder onApplyMethodology={handleMethodologyApply} selectedIndustry={company.industry} />;
@@ -435,11 +406,23 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
   const thumbTextareaRows = embedCompact && isThumbnailStep ? 2 : 4;
   const thumbTextareaMinH = embedCompact && isThumbnailStep ? 64 : 100;
   const lockBodyScroll = embedCompact && currentStep === 1;
-  const headerTitle = isThumbnailStep ? 'Upload training thumbnail' : 'Welcome to your training journey';
-  const headerSubtitle = isThumbnailStep
-    ? 'Add a cover image for your training card, or describe one for AI.'
-    : 'Smart defaults · Compliance';
-  const uniformStepBodyMinHeight = embedCompact ? '100%' : 380;
+  const headerTitle = isVisionStep
+    ? 'Define your training vision'
+    : currentStep === 4
+      ? 'Identify your learners'
+    : isThumbnailStep
+      ? 'Upload training thumbnail'
+      : 'Welcome to your training journey';
+  const headerSubtitle = isVisionStep
+    ? (visionSubStep === 0
+      ? 'Step 1 of 2 — Name & description'
+      : 'Step 2 of 2 — How long should it run?')
+    : currentStep === 4
+      ? 'Role-based paths · Skill assessments · Personalization'
+    : isThumbnailStep
+      ? 'Add a cover image for your training card, or describe one for AI.'
+      : 'Smart defaults · Compliance';
+  const uniformStepBodyMinHeight = embedCompact ? '100%' : '100%';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%', width: '100%', background: WIZARD_BG, borderRadius: 18, overflow: 'hidden' }}>
@@ -512,11 +495,12 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
           width: '100%',
         }}>
         <div style={{
+          flex: 1,
           maxWidth: setupContentMaxWidth,
           margin: '0 auto',
           width: '100%',
           minHeight: uniformStepBodyMinHeight,
-          height: embedCompact ? '100%' : undefined,
+          height: '100%',
           borderRadius: 18,
           border: WIZARD_CARD_BORDER,
           background: WIZARD_CARD_BG,
@@ -525,17 +509,17 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
           animation: 'wizardFadeUp 260ms ease-out',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center',
+          justifyContent: 'flex-start',
         }}>
           {currentStep === 1 && (
             <>
               {loadingCompany ? (
-                <div style={{ textAlign: 'center', padding: '32px 0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{ textAlign: 'center', padding: '32px 0', display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1 }}>
                   <Loader2 className="animate-spin" style={{ width: 24, height: 24, color: HARX, margin: '0 auto 10px' }} />
                   <p style={{ fontSize: 13, color: '#6b7280' }}>Loading company information...</p>
                 </div>
               ) : companyData ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, justifyContent: 'center' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, justifyContent: 'center', flex: 1 }}>
                   <div style={{ display: 'none' }}>
                     <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
                       Training industry <span style={{ color: HARX }}>*</span>
@@ -618,7 +602,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                     )}
                   </div>
 
-                  <div style={{ width: '100%', border: '1px solid rgba(15,23,42,0.08)', borderRadius: 12, padding: embedCompact ? '10px' : '12px', background: 'linear-gradient(180deg, #ffffff 0%, #fafbff 100%)' }}>
+                  <div style={{ width: '100%', maxWidth: 980, margin: '0 auto', border: '1px solid rgba(15,23,42,0.08)', borderRadius: 12, padding: embedCompact ? '10px' : '12px', background: 'linear-gradient(180deg, #ffffff 0%, #fafbff 100%)' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
                       <Briefcase style={{ width: 13, height: 13, color: HARX }} />
                       Your gig <span style={{ color: HARX }}>*</span>
@@ -632,7 +616,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                   </div>
 
                   {selectedGig && (
-                    <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, borderRadius: 10, padding: '10px 12px', fontSize: 12, color: '#065f46', border: '1px solid #a7f3d0', background: '#ecfdf5' }}>
+                    <div style={{ width: '100%', maxWidth: 980, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 6, borderRadius: 10, padding: '10px 12px', fontSize: 12, color: '#065f46', border: '1px solid #a7f3d0', background: '#ecfdf5' }}>
                       <CheckCircle style={{ width: 14, height: 14, color: '#059669', flexShrink: 0 }} />
                       <span style={{ fontWeight: 600 }}>{selectedGig.title}</span>
                     </div>
@@ -678,12 +662,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#1f2937' }}>
                     Target roles & departments <span style={{ color: HARX }}>*</span>
                   </label>
-                  {targetRolesGenerating ? (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700, color: HARX }}>
-                      <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" />
-                      AI selecting roles...
-                    </span>
-                  ) : null}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
                   {roleOptions.map(item => {
@@ -806,30 +784,65 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                 </div>
 
                 <div style={{ marginTop: thumbAiBlockMarginTop, width: '100%', display: 'flex', flexDirection: 'column', gap: embedCompact ? 6 : 10 }}>
-                  <label htmlFor="thumbnail-ai-prompt" style={{ fontSize: embedCompact ? 11 : 12, fontWeight: 700, color: '#334155' }}>
-                    Describe an AI thumbnail <span style={{ fontWeight: 500, color: '#94a3b8' }}>(optional)</span>
-                  </label>
-                  <textarea
-                    id="thumbnail-ai-prompt"
-                    value={thumbnailPrompt}
-                    onChange={(e) => setThumbnailPrompt(e.target.value)}
-                    placeholder="E.g. modern dashboard mockup, soft gradients, professional training cover…"
-                    rows={thumbTextareaRows}
-                    style={{
-                      width: '100%',
-                      minHeight: thumbTextareaMinH,
-                      resize: 'vertical',
-                      border: '1px solid #dbe2ea',
-                      borderRadius: 10,
-                      padding: embedCompact ? '8px 10px' : '12px 14px',
-                      fontSize: embedCompact ? 12 : 13,
-                      lineHeight: 1.5,
-                      color: '#1e293b',
-                      outline: 'none',
-                      fontFamily: 'inherit',
-                      boxSizing: 'border-box',
-                    }}
-                  />
+                  {thumbnailAiPromptOpen && (
+                    <>
+                      <label htmlFor="thumbnail-ai-prompt" style={{ fontSize: embedCompact ? 11 : 12, fontWeight: 700, color: '#334155' }}>
+                        Describe an AI thumbnail <span style={{ fontWeight: 500, color: '#94a3b8' }}>(optional)</span>
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <textarea
+                          id="thumbnail-ai-prompt"
+                          value={thumbnailPrompt}
+                          onChange={(e) => setThumbnailPrompt(e.target.value)}
+                          placeholder="E.g. modern dashboard mockup, soft gradients, professional training cover…"
+                          rows={thumbTextareaRows}
+                          style={{
+                            width: '100%',
+                            minHeight: thumbTextareaMinH,
+                            resize: 'vertical',
+                            border: '1px solid #dbe2ea',
+                            borderRadius: 10,
+                            padding: embedCompact ? '8px 38px 8px 10px' : '12px 44px 12px 14px',
+                            fontSize: embedCompact ? 12 : 13,
+                            lineHeight: 1.5,
+                            color: '#1e293b',
+                            outline: 'none',
+                            fontFamily: 'inherit',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void handleGenerateThumbnailWithAI()}
+                          disabled={thumbnailGenerating}
+                          style={{
+                            position: 'absolute',
+                            right: 8,
+                            bottom: 8,
+                            width: 30,
+                            height: 30,
+                            borderRadius: 8,
+                            border: '1px solid #0f172a',
+                            background: '#0f172a',
+                            color: '#fff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: thumbnailGenerating ? 'not-allowed' : 'pointer',
+                            opacity: thumbnailGenerating ? 0.65 : 1,
+                          }}
+                          title={thumbnailGenerating ? 'Generating…' : 'Generate image'}
+                          aria-label="Generate image with AI"
+                        >
+                          {thumbnailGenerating ? (
+                            <Loader2 className="animate-spin" style={{ width: 14, height: 14 }} />
+                          ) : (
+                            <Brain style={{ width: 14, height: 14 }} />
+                          )}
+                        </button>
+                      </div>
+                    </>
+                  )}
                   <div
                     style={{
                       display: 'flex',
@@ -858,25 +871,25 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                         Remove image
                       </button>
                     ) : null}
-                    <button
-                      type="button"
-                      onClick={() => void handleGenerateThumbnailWithAI()}
-                      disabled={thumbnailGenerating}
-                      style={{
-                        padding: '9px 16px',
-                        borderRadius: 10,
-                        border: '1px solid #0f172a',
-                        background: '#0f172a',
-                        color: '#fff',
-                        fontSize: 12,
-                        fontWeight: 700,
-                        cursor: thumbnailGenerating ? 'not-allowed' : 'pointer',
-                        opacity: thumbnailGenerating ? 0.65 : 1,
-                        boxShadow: thumbnailGenerating ? 'none' : '0 2px 8px rgba(15, 23, 42, 0.18)',
-                      }}
-                    >
-                      {thumbnailGenerating ? 'Generating…' : 'Generate with AI'}
-                    </button>
+                    {!thumbnailAiPromptOpen && (
+                      <button
+                        type="button"
+                        onClick={() => setThumbnailAiPromptOpen(true)}
+                        style={{
+                          padding: '9px 16px',
+                          borderRadius: 10,
+                          border: '1px solid #0f172a',
+                          background: '#0f172a',
+                          color: '#fff',
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.18)',
+                        }}
+                      >
+                        Generate with AI
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
