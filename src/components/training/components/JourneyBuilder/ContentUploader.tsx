@@ -2937,7 +2937,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 <div
                   className={
                     rep
-                      ? 'mb-3 space-y-6 rounded-xl bg-transparent p-0'
+                      ? 'mb-2 min-h-0 flex-1 space-y-6 overflow-y-auto rounded-xl bg-transparent p-0 pr-1'
                       : anchoredChoiceUi
                         ? 'mb-0 min-h-0 flex-1 space-y-6 overflow-y-auto px-3 pb-2 pt-2'
                         : 'mb-2 min-h-0 flex-1 space-y-6 overflow-y-auto px-3 pb-3 pt-2'
