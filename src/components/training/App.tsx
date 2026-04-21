@@ -368,7 +368,7 @@ export function AppContent({
           
           setUserRole('trainee');
 
-          const detectedAgentId = getAgentId();
+          const detectedAgentId = getAgentId() || Cookies.get('userId') || null;
           if (detectedAgentId) {
             
             setAgentId(detectedAgentId);
@@ -442,6 +442,9 @@ export function AppContent({
           } else if (detectedAgentId) {
             setUserRole('trainee');
             setAgentId(detectedAgentId);
+          } else if (type === 'rep') {
+            // Keep rep mode even when id is not available yet.
+            setUserRole('trainee');
           }
         }
       } catch (error) {

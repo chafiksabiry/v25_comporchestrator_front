@@ -77,6 +77,12 @@ export const getAgentId = (): string | null => {
     return agentIdFromCookie.trim();
   }
 
+  // Common fallback used across apps: userId cookie
+  const userIdFromCookie = Cookies.get('userId');
+  if (userIdFromCookie) {
+    return userIdFromCookie.trim();
+  }
+
   // Fallback: try to get from localStorage profileData
   try {
     const profileDataString = localStorage.getItem('profileData');
@@ -91,6 +97,18 @@ export const getAgentId = (): string | null => {
     }
   } catch (error) {
     console.error('[UserUtils] Error reading profileData from localStorage:', error);
+  }
+
+  // Additional fallback: persisted auth/user payloads
+  try {
+    const rawUser = localStorage.getItem('user');
+    if (rawUser) {
+      const parsedUser = JSON.parse(rawUser);
+      const id = parsedUser?._id || parsedUser?.id || parsedUser?.userId;
+      if (id) return String(id);
+    }
+  } catch (error) {
+    console.error('[UserUtils] Error reading user from localStorage:', error);
   }
 
   console.warn('[UserUtils] AgentId not found in cookies or localStorage');
