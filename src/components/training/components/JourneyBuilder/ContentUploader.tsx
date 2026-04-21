@@ -1665,13 +1665,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
     }
   };
 
-  const generatePresentationFromState = async (regenerate: boolean) => {
-    if (uploads.length === 0 && !gigId) return;
+  const generatePresentationFromState = async (regenerate: boolean): Promise<any | null> => {
+    if (uploads.length === 0 && !gigId) return null;
 
-    if (!regenerate && generatedPresentation) {
+    const hasExistingSlides =
+      Array.isArray(generatedPresentation?.slides) && generatedPresentation.slides.length > 0;
+    if (!regenerate && hasExistingSlides) {
       setIsPreviewOpen(false);
       setWorkspaceTab('artifact');
-      return;
+      return generatedPresentation;
     }
 
     try {
@@ -1734,23 +1736,25 @@ export default function ContentUploader(props: ContentUploaderProps) {
         sourceContext: generationContext,
       });
 
-      setGeneratedPresentation(normalizePresentationFromApi(presentation) || presentation);
+      const normalized = normalizePresentationFromApi(presentation) || presentation;
+      setGeneratedPresentation(normalized);
       setIsPreviewOpen(false);
       setWorkspaceTab('artifact');
 
-      
+      return normalized;
     } catch (error: any) {
       console.error('Failed to generate presentation:', error);
       alert('Error generating presentation: ' + (error.message || 'Unknown error'));
       setIsProcessing(false);
+      return null;
     } finally {
       setIsGeneratingPresentation(false);
     }
   };
 
-  const handleGeneratePresentation = () => generatePresentationFromState(false);
+  const handleGeneratePresentation = () => void generatePresentationFromState(false);
 
-  const handleRegeneratePresentation = () => generatePresentationFromState(true);
+  const handleRegeneratePresentation = () => void generatePresentationFromState(true);
 
   const handleDownloadPptx = async () => {
     if (!generatedPresentation) return;
@@ -2821,21 +2825,30 @@ export default function ContentUploader(props: ContentUploaderProps) {
     };
 
     const openImagePresentationModal = () => {
-      const candidate = generatedImageSet || savedImageSets[0] || null;
-      if (!candidate) {
-        void handleGenerateTrainingImages();
-        return;
-      }
+      const candidate =
+        generatedImageSet?.items?.length ? generatedImageSet : null;
+      if (!candidate) return;
       setActiveImageSet(candidate);
       setActiveImageIndex(0);
       setShowImagePresentationModal(true);
     };
 
     const openPresentationModal = async () => {
-      if (!generatedPresentation?.slides?.length) {
-        await handleGeneratePresentation();
+      const hasSlides =
+        Array.isArray(generatedPresentation?.slides) &&
+        generatedPresentation.slides.length > 0;
+      if (!hasSlides) {
+        const pres = await generatePresentationFromState(false);
+        if (!pres?.slides?.length) return;
       }
       setShowPresentationModal(true);
+    };
+
+    const regeneratePresentationFromRep = async () => {
+      const pres = await generatePresentationFromState(true);
+      if (pres?.slides?.length) {
+        setShowPresentationModal(true);
+      }
     };
 
     const handleGenerateQuizFromChat = async () => {
@@ -3212,7 +3225,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                     >
                       {isPodcastGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mic className="h-3.5 w-3.5" />}
-                      Generate audio overview
+                      {podcastScript.trim() ? 'Regenerate audio overview' : 'Generate audio overview'}
                     </button>
                     {podcastScript.trim() ? (
                       <button
@@ -3224,22 +3237,55 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         View audio overview
                       </button>
                     ) : null}
-                    <button
-                      type="button"
-                      onClick={() => void openPresentationModal()}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                    >
-                      <Presentation className="h-3.5 w-3.5" />
-                      Presentation
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void openImagePresentationModal()}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                    >
-                      <Image className="h-3.5 w-3.5" />
-                      View images as presentation
-                    </button>
+                    {generatedPresentation?.slides?.length ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setShowPresentationModal(true)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                          <Presentation className="h-3.5 w-3.5" />
+                          Presentation
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void regeneratePresentationFromRep()}
+                          disabled={isGeneratingPresentation}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                        >
+                          {isGeneratingPresentation ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-3.5 w-3.5" />
+                          )}
+                          Regenerate presentation
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => void openPresentationModal()}
+                        disabled={isGeneratingPresentation}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        {isGeneratingPresentation ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Presentation className="h-3.5 w-3.5" />
+                        )}
+                        Generate presentation
+                      </button>
+                    )}
+                    {generatedImageSet?.items?.length ? (
+                      <button
+                        type="button"
+                        onClick={() => void openImagePresentationModal()}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        <Image className="h-3.5 w-3.5" />
+                        View images as presentation
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       onClick={() => void handleGenerateQuizFromChat()}
