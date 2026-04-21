@@ -488,34 +488,76 @@ export default function RepTrainingJourneyWizard({
     const analyzed = documents.filter((d) => d.status === 'done').length;
     const anyAnalyzing = documents.some((d) => d.status === 'analyzing' || d.status === 'queued');
     const canGenerateDocs = documents.length > 0 && analyzed === documents.length && !anyAnalyzing;
+    const progress = documents.length > 0 ? Math.round((analyzed / documents.length) * 100) : 0;
+    const withErrors = documents.filter((d) => d.status === 'error').length;
 
     return (
-      <div className={shellClass}>
-        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+      <div className={`${shellClass} relative overflow-hidden`}>
+        <div className="pointer-events-none absolute -left-24 top-28 h-64 w-64 rounded-full bg-fuchsia-300/20 blur-3xl" />
+        <div className="pointer-events-none absolute -right-20 top-16 h-72 w-72 rounded-full bg-sky-300/25 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-10 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-indigo-300/20 blur-3xl" />
+
+        <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
           <button
             type="button"
             onClick={() => setStep('setup')}
-            className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-sky-700 hover:text-sky-900"
+            className="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur transition hover:border-slate-300 hover:text-slate-900"
           >
             <ArrowLeft className="h-4 w-4" /> Back
           </button>
 
-          <div className="mb-8 text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600">Step 2</p>
-            <h2 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">Upload your training materials</h2>
-            <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">
-              Upload documents — each file is analyzed individually. Then generate your curriculum and slides.
-            </p>
+          <div className="mb-8 rounded-3xl border border-white/70 bg-white/75 p-6 shadow-[0_16px_50px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:p-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-fuchsia-600">Step 2 · Content Lab</p>
+                <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+                  Upload your content
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+                  Drop your files, let AI analyze them, then generate the training and slides.
+                </p>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-2xl border border-sky-200 bg-sky-50 px-3 py-2">
+                  <p className="text-lg font-black text-sky-700">{documents.length}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-700/80">Files</p>
+                </div>
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2">
+                  <p className="text-lg font-black text-emerald-700">{analyzed}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700/80">Analyzed</p>
+                </div>
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2">
+                  <p className="text-lg font-black text-rose-700">{withErrors}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-rose-700/80">Errors</p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-5">
+              <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-600">
+                <span>Analysis progress</span>
+                <span>{progress}%</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-sky-500 via-fuchsia-500 to-indigo-500 transition-all duration-500 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
           </div>
 
           {error && (
-            <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
+            <div className="mb-6 rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-red-800 shadow-sm">
+              {error}
+            </div>
           )}
 
-          <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-[0_8px_30px_rgb(15,23,42,0.06)] sm:p-8">
+          <div className="rounded-3xl border border-white/70 bg-white/85 p-6 shadow-[0_16px_50px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:p-8">
             <div
-              className={`rounded-2xl border-2 border-dashed p-10 text-center transition ${
-                dragOver ? 'scale-[1.01] border-sky-500 bg-sky-50' : 'border-slate-300 bg-slate-50/50 hover:border-sky-400'
+              className={`rounded-3xl border-2 border-dashed p-10 text-center transition-all duration-300 ${
+                dragOver
+                  ? 'scale-[1.01] border-fuchsia-500 bg-fuchsia-50 shadow-inner'
+                  : 'border-slate-300 bg-gradient-to-br from-slate-50 to-sky-50/60 hover:border-fuchsia-400 hover:shadow-lg'
               }`}
               onDragOver={(e) => {
                 e.preventDefault();
@@ -533,12 +575,14 @@ export default function RepTrainingJourneyWizard({
             >
               <div className="mb-4 flex justify-center">
                 <div className="relative">
-                  <Upload className="h-14 w-14 text-slate-400" />
-                  <Sparkles className="absolute -right-1 -top-1 h-6 w-6 animate-pulse text-sky-500" />
+                  <div className="absolute inset-0 animate-pulse rounded-full bg-fuchsia-200/70 blur-xl" />
+                  <div className="relative rounded-2xl border border-white/70 bg-white/90 p-4 shadow-md">
+                    <Upload className="h-10 w-10 text-fuchsia-600" />
+                  </div>
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-slate-900">Add your files</h3>
-              <p className="mt-2 text-slate-600">or browse from your computer</p>
+              <h3 className="text-2xl font-black tracking-tight text-slate-900">Drag & drop files here</h3>
+              <p className="mt-2 text-sm text-slate-600">or click below to browse from your computer</p>
               <input
                 type="file"
                 multiple
@@ -552,16 +596,16 @@ export default function RepTrainingJourneyWizard({
               />
               <label
                 htmlFor="rep-training-files"
-                className="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg hover:from-sky-700 hover:to-indigo-700"
+                className="mt-6 inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 via-purple-600 to-indigo-600 px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-purple-500/25 transition hover:translate-y-[-1px] hover:shadow-xl"
               >
                 <Upload className="h-4 w-4" />
-                Choose files
+                Browse files
               </label>
               <div className="mt-6 flex flex-wrap justify-center gap-2">
-                {['PDF', 'Word', 'Text'].map((tag) => (
+                {['PDF', 'Word', 'Text', 'AI Ready'].map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-900"
+                    className="rounded-full border border-fuchsia-200 bg-fuchsia-50 px-3 py-1 text-xs font-semibold text-fuchsia-800"
                   >
                     {tag}
                   </span>
@@ -571,38 +615,41 @@ export default function RepTrainingJourneyWizard({
           </div>
 
           {documents.length > 0 && (
-            <div className="mt-8 rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-[0_8px_30px_rgb(15,23,42,0.06)] sm:p-8">
+            <div className="mt-8 rounded-3xl border border-white/70 bg-white/85 p-6 shadow-[0_16px_50px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:p-8">
               <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-                <h3 className="text-lg font-bold text-slate-900">Documents ({documents.length})</h3>
-                {analyzed > 0 && (
-                  <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
-                    <CheckCircle className="h-4 w-4" />
-                    {analyzed} analyzed
+                <h3 className="text-xl font-black tracking-tight text-slate-900">Uploaded documents</h3>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+                    {documents.length} total
                   </span>
-                )}
+                  {analyzed > 0 && (
+                    <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
+                      <CheckCircle className="h-4 w-4" />
+                      {analyzed} analyzed
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="grid gap-4 lg:grid-cols-2">
                 {documents.map((doc) => (
                   <div
                     key={doc.id}
-                    className={`rounded-xl border-2 p-5 transition ${
+                    className={`rounded-2xl border p-5 transition-all ${
                       doc.status === 'done'
-                        ? 'border-emerald-200 bg-emerald-50/40'
+                        ? 'border-emerald-200 bg-gradient-to-br from-emerald-50 to-white shadow-sm'
                         : doc.status === 'error'
-                          ? 'border-red-200 bg-red-50/50'
+                          ? 'border-red-200 bg-gradient-to-br from-red-50 to-white shadow-sm'
                           : doc.status === 'analyzing' || doc.status === 'queued'
-                            ? 'border-sky-200 bg-sky-50/40'
+                            ? 'border-sky-200 bg-gradient-to-br from-sky-50 to-white shadow-sm'
                             : 'border-slate-200 bg-white'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex min-w-0 gap-3">
-                        <FileText className="h-8 w-8 shrink-0 text-sky-600" />
+                        <FileText className="h-8 w-8 shrink-0 text-fuchsia-600" />
                         <div className="min-w-0">
-                          <p className="truncate font-semibold text-slate-900">{doc.name}</p>
-                          <p className="text-xs text-slate-500">
-                            {(doc.size / 1024 / 1024).toFixed(2)} MB
-                          </p>
+                          <p className="truncate text-sm font-bold text-slate-900">{doc.name}</p>
+                          <p className="text-xs text-slate-500">{(doc.size / 1024 / 1024).toFixed(2)} MB</p>
                         </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
@@ -614,7 +661,7 @@ export default function RepTrainingJourneyWizard({
                         <button
                           type="button"
                           onClick={() => removeDocument(doc.id)}
-                          className="text-slate-400 hover:text-red-600"
+                          className="rounded-full p-1 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
                           aria-label="Remove file"
                         >
                           <X className="h-4 w-4" />
@@ -623,7 +670,7 @@ export default function RepTrainingJourneyWizard({
                     </div>
 
                     {doc.status === 'error' && doc.error && (
-                      <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+                      <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">
                         {doc.error}
                         <button
                           type="button"
@@ -636,11 +683,11 @@ export default function RepTrainingJourneyWizard({
                     )}
 
                     {(doc.status === 'analyzing' || doc.status === 'queued') && (
-                      <div className="mt-4 flex items-center gap-3 rounded-lg border border-sky-200 bg-white p-3">
+                      <div className="mt-4 flex items-center gap-3 rounded-xl border border-sky-200 bg-white p-3">
                         <Wand2 className="h-5 w-5 animate-spin text-sky-600" />
                         <div className="text-xs text-sky-900">
-                          <p className="font-semibold">AI is analyzing this document…</p>
-                          <p className="text-sky-700">Extracting topics, objectives, and structure.</p>
+                          <p className="font-semibold">AI is analyzing this file...</p>
+                          <p className="text-sky-700">Extracting topics, objectives, and module ideas.</p>
                         </div>
                       </div>
                     )}
@@ -648,36 +695,36 @@ export default function RepTrainingJourneyWizard({
                     {doc.status === 'done' && doc.analysis && (
                       <div className="mt-4 space-y-4">
                         <div className="grid grid-cols-2 gap-3">
-                          <div className="rounded-lg border border-emerald-200 bg-white p-3 text-center">
+                          <div className="rounded-xl border border-emerald-200 bg-white p-3 text-center">
                             <BarChart3 className="mx-auto mb-1 h-5 w-5 text-emerald-600" />
-                            <div className="text-lg font-bold text-emerald-700">
+                            <div className="text-lg font-black text-emerald-700">
                               {typeof doc.analysis.difficulty === 'number' ? doc.analysis.difficulty : '—'}
                               {typeof doc.analysis.difficulty === 'number' ? '/10' : ''}
                             </div>
-                            <div className="text-[10px] font-medium uppercase tracking-wide text-slate-500">
+                            <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                               Difficulty
                             </div>
                           </div>
-                          <div className="rounded-lg border border-emerald-200 bg-white p-3 text-center">
+                          <div className="rounded-xl border border-emerald-200 bg-white p-3 text-center">
                             <Clock className="mx-auto mb-1 h-5 w-5 text-emerald-600" />
-                            <div className="text-lg font-bold text-emerald-700">
+                            <div className="text-lg font-black text-emerald-700">
                               {typeof doc.analysis.estimatedReadTime === 'number'
                                 ? `${doc.analysis.estimatedReadTime}m`
                                 : '—'}
                             </div>
-                            <div className="text-[10px] font-medium uppercase tracking-wide text-slate-500">
+                            <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                               Est. read
                             </div>
                           </div>
                         </div>
                         {Array.isArray(doc.analysis.keyTopics) && doc.analysis.keyTopics.length > 0 && (
                           <div>
-                            <p className="text-xs font-semibold text-slate-800">Key topics</p>
+                            <p className="text-xs font-bold text-slate-800">Key topics</p>
                             <div className="mt-2 flex flex-wrap gap-1.5">
                               {(doc.analysis.keyTopics as string[]).map((topic, i) => (
                                 <span
                                   key={i}
-                                  className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-medium text-sky-900"
+                                  className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold text-indigo-900"
                                 >
                                   {topic}
                                 </span>
@@ -688,7 +735,7 @@ export default function RepTrainingJourneyWizard({
                         {Array.isArray(doc.analysis.learningObjectives) &&
                           doc.analysis.learningObjectives.length > 0 && (
                             <div>
-                              <p className="text-xs font-semibold text-slate-800">Learning objectives</p>
+                              <p className="text-xs font-bold text-slate-800">Learning objectives</p>
                               <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-slate-700">
                                 {(doc.analysis.learningObjectives as string[]).slice(0, 8).map((o, i) => (
                                   <li key={i}>{o}</li>
@@ -699,9 +746,9 @@ export default function RepTrainingJourneyWizard({
                         {Array.isArray(doc.analysis.suggestedModules) &&
                           doc.analysis.suggestedModules.length > 0 && (
                             <div>
-                              <p className="text-xs font-semibold text-slate-800">Suggested modules</p>
+                              <p className="text-xs font-bold text-slate-800">Suggested modules</p>
                               <p className="mt-1 text-xs text-slate-600">
-                                {(doc.analysis.suggestedModules as string[]).join(' → ')}
+                                {(doc.analysis.suggestedModules as string[]).join(' -> ')}
                               </p>
                             </div>
                           )}
@@ -713,31 +760,33 @@ export default function RepTrainingJourneyWizard({
             </div>
           )}
 
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
-            <button
-              type="button"
-              disabled={loading || !canGenerateDocs}
-              onClick={runGenerateFromDocuments}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:min-w-[240px]"
-            >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              Generate from documents
-            </button>
-            {gigId && (
+          <div className="mt-8 rounded-3xl border border-white/70 bg-white/85 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur sm:p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
               <button
                 type="button"
-                disabled={loading}
-                onClick={runGenerateFromGig}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-slate-300 bg-white py-3.5 text-sm font-bold text-slate-800 shadow-sm hover:bg-slate-50 disabled:opacity-50 sm:flex-none sm:min-w-[240px]"
+                disabled={loading || !canGenerateDocs}
+                onClick={runGenerateFromDocuments}
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 via-purple-600 to-indigo-600 py-3.5 text-sm font-black text-white shadow-lg shadow-purple-500/25 transition hover:translate-y-[-1px] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:min-w-[250px]"
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                Generate from gig only
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                Generate from documents
               </button>
-            )}
+              {gigId && (
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={runGenerateFromGig}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white py-3.5 text-sm font-bold text-slate-800 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 disabled:opacity-50 sm:flex-none sm:min-w-[250px]"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Generate from gig only
+                </button>
+              )}
+            </div>
+            <p className="mt-3 text-center text-xs text-slate-500">
+              Knowledge-base merge applies when enabled in step 1.
+            </p>
           </div>
-          <p className="mt-4 text-center text-xs text-slate-500">
-            Knowledge-base merging applies to document generation when enabled on the previous step.
-          </p>
         </div>
       </div>
     );

@@ -970,9 +970,6 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 ) : trainings.length === 0 ? (
                   savedImageSets.length > 0 ? (
                     <div className="space-y-5">
-                      <div className="rounded-xl border border-harx-100 bg-harx-50/40 px-4 py-3 text-sm font-medium text-harx-700">
-                        No training journeys found, but generated image trainings are available below.
-                      </div>
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                         {savedImageSets.map((set) => (
                           <div
