@@ -165,6 +165,7 @@ export interface TrainingImageSet {
   _id: string;
   title: string;
   trainingTitle?: string;
+  gigId?: string;
   language: string;
   items: TrainingImageSetItem[];
   createdAt?: string;
