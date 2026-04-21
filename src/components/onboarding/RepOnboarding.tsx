@@ -299,8 +299,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       window.alert('Training ID not found.');
       return;
     }
-    // Open Claude-like journey chat directly (avoid loading existing dashboard view)
-    setShowTraining({ isOpen: true, newJourney: true });
+    // Open journey chat directly on chat step, keeping journey context/history
+    setShowTraining({ isOpen: true, newJourney: true, journeyId });
   };
 
   /** Mark Phase 3 Step 9 (REP Onboarding) complete and notify CompanyOnboarding like other steps. */
