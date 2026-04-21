@@ -169,7 +169,7 @@ type RepPodcastSidebarPanelProps = {
   onStop: () => void;
 };
 
-/** Podcast REP : génération + lecteur (pas d’affichage du script). */
+/** REP podcast: generation + player (script hidden). */
 function RepPodcastSidebarPanel({
   hasScript,
   isGenerating,
@@ -202,11 +202,11 @@ function RepPodcastSidebarPanel({
           <div className="min-w-0">
             <p className="text-sm font-black text-slate-900">Podcast</p>
             <p className="text-[11px] text-slate-600">
-              Généré sur le serveur · lecture voix du navigateur (le texte du script n’est pas affiché)
+              Generated on the server · browser voice playback (script text is hidden)
             </p>
             {!canGenerateFromTraining ? (
               <p className="mt-1 text-[10px] font-medium leading-snug text-amber-800">
-                Choisissez un gig ou poursuivez la conversation jusqu&apos;à ce qu&apos;assez de contenu soit disponible.
+                Choose a gig or continue the conversation until enough content is available.
               </p>
             ) : null}
           </div>
@@ -222,25 +222,25 @@ function RepPodcastSidebarPanel({
           disabled={generateLocked}
           title={
             !canGenerateFromTraining
-              ? 'Ajoutez du contenu de formation dans la conversation pour activer la génération.'
+              ? 'Add training content in the conversation to enable generation.'
               : undefined
           }
           className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
         >
           {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {isGenerating ? 'Génération…' : 'Générer le podcast'}
+          {isGenerating ? 'Generating...' : 'Generate podcast'}
         </button>
         <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white/90 px-3 py-2.5">
           <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-slate-600">
-            {hasScript ? (isSpeaking ? 'Lecture en cours…' : 'Prêt — appuyez sur lecture') : 'Aucun audio généré'}
+            {hasScript ? (isSpeaking ? 'Playing...' : 'Ready - press play') : 'No audio generated'}
           </span>
           <button
             type="button"
             onClick={onPlay}
             disabled={!hasScript || isGenerating || isSpeaking}
             className="inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-harx p-2 text-white shadow-sm disabled:opacity-40"
-            title="Lire"
-            aria-label="Lire le podcast"
+            title="Play"
+            aria-label="Play podcast"
           >
             <Play className="h-4 w-4" />
           </button>
@@ -249,14 +249,14 @@ function RepPodcastSidebarPanel({
             onClick={onStop}
             disabled={!isSpeaking}
             className="inline-flex shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white p-2 text-slate-700 disabled:opacity-30"
-            title="Arrêter"
-            aria-label="Arrêter la lecture"
+            title="Stop"
+            aria-label="Stop playback"
           >
             <Square className="h-4 w-4" />
           </button>
         </div>
         <div className="mt-1 rounded-xl border border-slate-200 bg-white p-2.5">
-          <p className="mb-1 text-[11px] font-semibold text-slate-700">Titre du podcast</p>
+          <p className="mb-1 text-[11px] font-semibold text-slate-700">Podcast title</p>
           <div className="flex items-center gap-2">
             <input
               value={title}
@@ -269,7 +269,7 @@ function RepPodcastSidebarPanel({
               onClick={onSave}
               disabled={!hasScript || isSaving || isGenerating}
               className="inline-flex shrink-0 items-center justify-center rounded-lg border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-xs font-semibold text-fuchsia-800 disabled:opacity-50"
-              title="Sauvegarder dans la base et Cloudinary"
+              title="Save to database and Cloudinary"
             >
               {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Save'}
             </button>
@@ -277,10 +277,10 @@ function RepPodcastSidebarPanel({
           {savedHint ? <p className="mt-1 text-[10px] text-emerald-700">{savedHint}</p> : null}
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-2.5">
-          <p className="mb-2 text-[11px] font-semibold text-slate-700">Chat podcast</p>
+          <p className="mb-2 text-[11px] font-semibold text-slate-700">Podcast chat</p>
           <div className="max-h-36 space-y-1 overflow-y-auto rounded-lg bg-slate-50 p-2">
             {chatMessages.length === 0 ? (
-              <p className="text-[11px] text-slate-500">Demandez des ajustements du script (ton, durée, structure...).</p>
+              <p className="text-[11px] text-slate-500">Ask for script edits (tone, length, structure...).</p>
             ) : (
               chatMessages.map((m) => (
                 <div
@@ -289,7 +289,7 @@ function RepPodcastSidebarPanel({
                     m.role === 'assistant' ? 'bg-white text-slate-700' : 'bg-fuchsia-50 text-slate-900'
                   }`}
                 >
-                  <span className="mr-1 font-semibold">{m.role === 'assistant' ? 'AI' : 'Vous'}:</span>
+                  <span className="mr-1 font-semibold">{m.role === 'assistant' ? 'AI' : 'You'}:</span>
                   {m.text}
                 </div>
               ))
@@ -297,7 +297,7 @@ function RepPodcastSidebarPanel({
             {isChatLoading ? (
               <div className="inline-flex items-center gap-1 text-[11px] text-slate-500">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                Mise à jour du script...
+                Updating script...
               </div>
             ) : null}
           </div>
@@ -311,7 +311,7 @@ function RepPodcastSidebarPanel({
                   onChatSend();
                 }
               }}
-              placeholder="Ex: Raccourcis l'intro et ajoute un cas terrain."
+              placeholder="e.g. Shorten the intro and add a real-world case."
               className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2.5 py-2 text-xs text-slate-800 outline-none ring-harx-500/20 focus:ring-2"
             />
             <button
@@ -320,7 +320,7 @@ function RepPodcastSidebarPanel({
               disabled={!chatInput.trim() || isChatLoading || !hasScript}
               className="inline-flex shrink-0 items-center justify-center rounded-lg bg-slate-900 px-2.5 py-2 text-xs font-semibold text-white disabled:opacity-50"
             >
-              Envoyer
+              Send
             </button>
           </div>
         </div>
@@ -423,7 +423,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const activeChatGigId = selectedChatGigId || (gigId ? String(gigId) : '');
   const activeChatGigTitle =
     companyGigs.find((g: any) => String(g?._id || g?.id || '') === String(activeChatGigId))?.title ||
-    (activeChatGigId ? `Gig ${activeChatGigId.slice(0, 8)}` : 'Aucun gig');
+    (activeChatGigId ? `Gig ${activeChatGigId.slice(0, 8)}` : 'No gig');
 
   const gigSnapshotForBuilder = useMemo(() => {
     const gid = gigId ? String(gigId) : '';
@@ -576,10 +576,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
     let out = parts.join('\n\n').trim();
     if (out.length < 400 && repChatPodcastDigest.trim()) {
-      out = `${out ? `${out}\n\n` : ''}--- Synthèse issue de la conversation (onboarding) ---\n\n${repChatPodcastDigest}`;
+      out = `${out ? `${out}\n\n` : ''}--- Summary from onboarding conversation ---\n\n${repChatPodcastDigest}`;
     }
     if (out.length > 14000) {
-      out = `${out.slice(0, 14000)}\n\n[… contenu tronqué pour limite technique]`;
+      out = `${out.slice(0, 14000)}\n\n[... content truncated due to technical limit]`;
     }
     return out;
   }, [
@@ -595,7 +595,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     if (!repOnboardingLayout || !showRepPodcastPanel || isPodcastGenerating) return;
     const digest = buildTrainingDigestForPodcast();
     if (!digest.trim()) {
-      setPodcastError('Pas assez de contenu de formation pour générer un podcast.');
+      setPodcastError('Not enough training content to generate a podcast.');
       return;
     }
     setIsPodcastGenerating(true);
@@ -622,13 +622,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
         {
           id: `pchat-${Date.now()}`,
           role: 'assistant',
-          text: 'Script généré. Vous pouvez me demander des ajustements avant sauvegarde.',
+          text: 'Script generated. You can ask for edits before saving.',
           createdAt: new Date().toISOString(),
         },
       ]);
     } catch (e: any) {
       console.error('[ContentUploader] Podcast script generation failed:', e);
-      setPodcastError(e?.message || 'Génération du script impossible pour le moment.');
+      setPodcastError(e?.message || 'Unable to generate script right now.');
     } finally {
       setIsPodcastGenerating(false);
     }
@@ -665,8 +665,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
       const msg = String(e?.message || e?.error || '');
       setPodcastError(
         /not-allowed|interrupted/i.test(msg)
-          ? "Lecture bloquée ou interrompue : cliquez à nouveau sur « Lire » après interaction avec la page."
-          : 'Lecture vocale indisponible sur ce navigateur.'
+          ? 'Playback blocked or interrupted: click Play again after interacting with the page.'
+          : 'Voice playback is unavailable in this browser.'
       );
     } finally {
       setIsPodcastSpeaking(false);
@@ -717,7 +717,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         },
       ]);
     } catch (e: any) {
-      setPodcastError(e?.message || 'Impossible de mettre à jour le script via chat podcast.');
+      setPodcastError(e?.message || 'Unable to update script via podcast chat.');
     } finally {
       setIsPodcastChatLoading(false);
     }
@@ -739,7 +739,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       generatedCurriculum?.title ||
         generatedPresentation?.title ||
         (activeGigSnapshotForPodcast && String((activeGigSnapshotForPodcast as Record<string, unknown>).title || '')) ||
-        'Podcast formation'
+        'Training podcast'
     );
     const title = (podcastTitle.trim() || `${fallbackTitle} - Podcast`).slice(0, 240);
     setIsPodcastSaving(true);
@@ -760,9 +760,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
         })),
       });
       setPodcastTitle(saved.title || title);
-      setPodcastSavedHint('Podcast sauvegardé dans MongoDB et Cloudinary.');
+      setPodcastSavedHint('Podcast saved to MongoDB and Cloudinary.');
     } catch (e: any) {
-      setPodcastError(e?.message || 'Sauvegarde podcast impossible.');
+      setPodcastError(e?.message || 'Unable to save podcast.');
     } finally {
       setIsPodcastSaving(false);
     }
@@ -2789,7 +2789,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               </div>
               <div className="flex min-h-[260px] flex-1 flex-col overflow-hidden rounded-2xl border border-rose-100/80 bg-white shadow-sm lg:min-h-0">
                 <p className="shrink-0 border-b border-rose-100/80 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-fuchsia-700">
-                  Formation (slides)
+                  Training (slides)
                 </p>
                 <div className="min-h-[220px] flex-1 overflow-y-auto lg:min-h-[280px]">
                   {generatedPresentation?.slides?.length ? (
@@ -2804,7 +2804,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     </div>
                   ) : (
                     <div className="p-4 text-sm leading-relaxed text-slate-600">
-                      L&apos;aperçu des diapositives apparaîtra ici lorsque la formation sera générée dans le chat.
+                      The slide preview will appear here once the training is generated in chat.
                     </div>
                   )}
                 </div>
