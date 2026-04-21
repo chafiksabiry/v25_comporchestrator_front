@@ -696,9 +696,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const digest = buildTrainingDigestForPodcast();
     if (!digest.trim()) {
       setPodcastError('Not enough training content to generate a podcast.');
+      setShowPodcastModal(true);
       return;
     }
     setIsPodcastGenerating(true);
+    setShowPodcastModal(true);
     setPodcastError(null);
     setPodcastSavedHint(null);
     setPodcastScript('');
@@ -740,12 +742,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
     } catch (e: any) {
       console.error('[ContentUploader] Podcast script generation failed:', e);
       setPodcastError(e?.message || 'Unable to generate script right now.');
+      setShowPodcastModal(true);
     } finally {
       setIsPodcastGenerating(false);
     }
   }, [
     repOnboardingLayout,
-    showRepPodcastPanel,
     isPodcastGenerating,
     buildTrainingDigestForPodcast,
     generatedCurriculum?.title,
@@ -2311,6 +2313,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setPodcastError(null);
       setPodcastSavedHint(null);
       setCurrentSavedPodcastId(null);
+      setShowPodcastModal(false);
     };
 
     const openHistorySession = async (sessionId: string) => {
@@ -3211,6 +3214,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       {isPodcastGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mic className="h-3.5 w-3.5" />}
                       Generate audio overview
                     </button>
+                    {podcastScript.trim() ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowPodcastModal(true)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        <Music className="h-3.5 w-3.5" />
+                        View audio overview
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       onClick={() => void openPresentationModal()}
@@ -3835,6 +3848,91 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       <div className="text-sm text-slate-500">No image available.</div>
                     )}
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {rep && showPodcastModal && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/45 p-4">
+              <div className="flex h-[min(88vh,720px)] w-[min(720px,96vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                  <div className="text-sm font-semibold text-slate-900">Audio overview</div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void handlePlayPodcastSpeak()}
+                      disabled={!podcastScript.trim() || isPodcastSpeaking || isPodcastGenerating}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      <Play className="h-3.5 w-3.5" />
+                      Play
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStopPodcastSpeak()}
+                      disabled={!isPodcastSpeaking}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      <Square className="h-3.5 w-3.5" />
+                      Stop
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleSavePodcast()}
+                      disabled={!podcastScript.trim() || isPodcastSaving}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      {isPodcastSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleStopPodcastSpeak();
+                        setShowPodcastModal(false);
+                      }}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+                <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-4">
+                  <label className="block text-xs font-semibold text-slate-600" htmlFor="podcast-modal-title">
+                    Title (optional)
+                  </label>
+                  <input
+                    id="podcast-modal-title"
+                    type="text"
+                    value={podcastTitle}
+                    onChange={(e) => setPodcastTitle(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-300"
+                    placeholder="Audio overview title"
+                  />
+                  {podcastError ? (
+                    <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{podcastError}</div>
+                  ) : null}
+                  {podcastSavedHint ? (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">{podcastSavedHint}</div>
+                  ) : null}
+                  {isPodcastGenerating ? (
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <Loader2 className="h-4 w-4 animate-spin text-harx-500" />
+                      Generating audio overview script…
+                    </div>
+                  ) : null}
+                  <label className="block text-xs font-semibold text-slate-600" htmlFor="podcast-modal-script">
+                    Script
+                  </label>
+                  <textarea
+                    id="podcast-modal-script"
+                    readOnly={isPodcastGenerating}
+                    value={podcastScript}
+                    onChange={(e) => setPodcastScript(e.target.value)}
+                    className="min-h-[220px] w-full resize-y rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 font-mono text-xs leading-relaxed text-slate-800 outline-none focus:border-slate-300"
+                    placeholder="Generated script will appear here."
+                  />
                 </div>
               </div>
             </div>
