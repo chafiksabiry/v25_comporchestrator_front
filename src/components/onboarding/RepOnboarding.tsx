@@ -587,7 +587,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 initialGigId={showTraining.gigId}
                 isEmbedded={true}
                 startWithJourneyBuilder={true}
-                startJourneyStep={1}
+                startJourneyStep={showTraining.journeyId ? 1 : 0}
                 repOnboardingLayout={true}
                 onJourneyLaunch={handleEmbeddedJourneyComplete}
               />
@@ -678,7 +678,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setShowTraining({ isOpen: true, newJourney: true })}
+                onClick={() =>
+                  setShowTraining({
+                    isOpen: true,
+                    newJourney: true,
+                    gigId: filterGigId !== 'all' ? String(filterGigId) : undefined
+                  })
+                }
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-harx px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-harx-500/20 transition-all hover:-translate-y-0.5 hover:shadow-harx-500/40 sm:w-auto"
               >
                 <Plus className="h-4 w-4" />
@@ -724,7 +730,13 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                     </p>
                     <button
                       type="button"
-                      onClick={() => setShowTraining({ isOpen: true, newJourney: true })}
+                      onClick={() =>
+                        setShowTraining({
+                          isOpen: true,
+                          newJourney: true,
+                          gigId: filterGigId !== 'all' ? String(filterGigId) : undefined
+                        })
+                      }
                       className="mt-6 inline-flex items-center space-x-2 rounded-xl bg-gradient-harx px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md"
                     >
                       <Plus className="h-4 w-4" />
