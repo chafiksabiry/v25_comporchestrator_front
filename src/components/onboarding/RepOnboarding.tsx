@@ -624,7 +624,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     setSelectedImageIndex(0);
   };
 
-  /** Always opens the image carousel (same UX as « Contenu »), never text/HTML slides. */
+  /** Always opens the image carousel (same UX as Content), never text/HTML slides. */
   const openJourneyContentOrImages = (journey: any, formatted: ReturnType<typeof formatTrainingJourney>) => {
     const imageSet = findImageSetForJourney(journey);
     const hasItems = Array.isArray(imageSet?.items) && imageSet.items.length > 0;
@@ -801,7 +801,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
             />
 
             <div className="relative z-20 flex min-h-[min(720px,calc(100dvh-8rem))] flex-col lg:min-h-[calc(100dvh-10rem)]">
-              {/* Barre de navigation — textes en français uniquement */}
+              {/* Viewer toolbar */}
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-harx-500/25 bg-black/45 px-4 py-3 backdrop-blur-xl sm:px-5">
                 <button
                   type="button"
@@ -813,16 +813,16 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   }}
                 >
                   <ChevronLeft className="h-3.5 w-3.5 opacity-90" />
-                  Retour aux formations
+                  Back to training
                 </button>
                 <div className="flex flex-1 flex-wrap items-center justify-end gap-3">
                   {selectedImageSet.items.length > 0 ? (
                     <span className="text-xs font-bold tabular-nums text-white/90">
-                      Diapositive {Math.min(selectedImageIndex + 1, selectedImageSet.items.length)} sur{' '}
+                      {Math.min(selectedImageIndex + 1, selectedImageSet.items.length)} /{' '}
                       {selectedImageSet.items.length}
                     </span>
                   ) : (
-                    <span className="text-xs font-semibold text-white/60">Aucune diapositive</span>
+                    <span className="text-xs font-semibold text-white/60">No images</span>
                   )}
                   <div className="flex items-center gap-2">
                     <button
@@ -830,7 +830,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                       className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-harx-400/35 bg-harx-950/70 text-white shadow-lg shadow-harx-900/40 transition hover:bg-harx-900/80 disabled:cursor-not-allowed disabled:opacity-35"
                       disabled={selectedImageSet.items.length === 0 || selectedImageIndex <= 0}
                       onClick={() => setSelectedImageIndex((prev) => Math.max(prev - 1, 0))}
-                      aria-label="Diapositive précédente"
+                      aria-label="Previous"
                     >
                       <ChevronLeft className="h-5 w-5" />
                     </button>
@@ -846,7 +846,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                           Math.min(prev + 1, Math.max(selectedImageSet.items.length - 1, 0))
                         )
                       }
-                      aria-label="Diapositive suivante"
+                      aria-label="Next"
                     >
                       <ChevronRight className="h-5 w-5" />
                     </button>
@@ -854,7 +854,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                 </div>
               </div>
 
-              {/* Scène + écran PPT (perspective) */}
+              {/* Stage + slide frame */}
               <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-3 pb-10 pt-6 sm:px-8">
                 {selectedImageSet.items.length === 0 ? (
                   <div className="relative z-10 mx-auto max-w-md space-y-5 rounded-2xl border border-harx-500/30 bg-harx-950/70 p-8 text-center shadow-[0_0_40px_-10px_rgba(236,72,153,0.35)] backdrop-blur-md">
@@ -864,8 +864,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                       </div>
                     </div>
                     <p className="text-sm leading-relaxed text-harx-50/90">
-                      Aucune image pour l’instant. Ouvrez le chat de formation REP et utilisez le bouton{' '}
-                      <span className="font-semibold text-white">Présentation</span> pour générer les diapositives.
+                      No images yet. Open the REP training chat and use the{' '}
+                      <span className="font-semibold text-white">Presentation</span> action to generate them.
                     </p>
                     {previewJourney ? (
                       <button
@@ -880,15 +880,15 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-harx px-4 py-3 text-xs font-bold text-white shadow-lg shadow-harx-600/35 transition hover:brightness-110"
                       >
                         <MessageSquare className="h-4 w-4" />
-                        Ouvrir le chat de formation
+                        Open training chat
                       </button>
                     ) : null}
                   </div>
                 ) : (
                   <>
-                    {/* Contenu slide en premier (couche basse) ; flèches rendues après pour rester au-dessus et recevoir les clics */}
+                    {/* Slide content first (lower z); arrows above for hit targets */}
                     <div className="relative z-0 w-full max-w-[min(100%,56rem)] [perspective:1400px]">
-                      {/* Reflet sol léger sous l’écran */}
+                      {/* Subtle floor reflection */}
                       <div
                         className="pointer-events-none absolute -bottom-8 left-1/2 h-24 w-[88%] -translate-x-1/2 bg-gradient-to-b from-white/[0.07] to-transparent opacity-60 blur-md"
                         aria-hidden
@@ -899,12 +899,12 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                             {selectedImageSet.items[selectedImageIndex]?.imageUrl ? (
                               <img
                                 src={selectedImageSet.items[selectedImageIndex].imageUrl}
-                                alt={`Diapositive ${selectedImageIndex + 1}`}
+                                alt={`Image ${selectedImageIndex + 1}`}
                                 className="max-h-[min(72vh,640px)] w-full bg-harx-950 object-contain"
                               />
                             ) : (
                               <div className="flex min-h-[240px] items-center justify-center bg-harx-950 px-6 py-16 text-sm text-harx-200/80">
-                                Image indisponible pour cette diapositive.
+                                Image unavailable.
                               </div>
                             )}
                           </div>
@@ -917,7 +917,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                       className="absolute left-1 top-1/2 z-[60] flex -translate-y-1/2 rounded-full border border-harx-400/40 bg-harx-950/90 p-3 text-white shadow-xl shadow-harx-900/50 backdrop-blur-md transition hover:bg-harx-900 hover:ring-2 hover:ring-harx-400/30 disabled:pointer-events-none disabled:opacity-25 sm:left-3 md:left-5"
                       disabled={selectedImageIndex <= 0}
                       onClick={() => setSelectedImageIndex((prev) => Math.max(prev - 1, 0))}
-                      aria-label="Diapositive précédente"
+                      aria-label="Previous"
                     >
                       <ChevronLeft className="h-6 w-6" />
                     </button>
@@ -930,12 +930,12 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                           Math.min(prev + 1, Math.max(selectedImageSet.items.length - 1, 0))
                         )
                       }
-                      aria-label="Diapositive suivante"
+                      aria-label="Next"
                     >
                       <ChevronRight className="h-6 w-6" />
                     </button>
 
-                    {/* Barre de progression type timeline */}
+                    {/* Progress bar */}
                     <div className="relative z-10 mt-8 flex w-full max-w-[min(100%,56rem)] flex-col items-center gap-2 px-2">
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-harx-950/80 ring-1 ring-harx-500/20">
                         <div
@@ -969,7 +969,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                   onChange={(e) => setFilterGigId(e.target.value)}
                   className="min-w-[170px] rounded-xl border-2 border-gray-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none transition-all focus:border-harx-400 focus:ring-2 focus:ring-harx-500/20"
                 >
-                  <option value="all">Tous les Gigs</option>
+                  <option value="all">All gigs</option>
                   {companyGigs.map((gig: any) => (
                     <option key={gig._id || gig.id} value={gig._id || gig.id}>
                       {gig.title}
@@ -1057,7 +1057,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                   className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-white px-3 py-2 text-sm font-bold text-harx-700 hover:bg-harx-50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   <FileText className="h-4 w-4" />
-                                  Contenu
+                                  Content
                                 </button>
                               </div>
                             </div>
@@ -1190,7 +1190,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                   className="inline-flex items-center gap-2 rounded-xl border border-harx-200 bg-white px-3 py-2 text-xs font-bold text-harx-700 hover:bg-harx-50 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   <FileText className="h-4 w-4" />
-                                  Contenu
+                                  Content
                                 </button>
                               </div>
 
