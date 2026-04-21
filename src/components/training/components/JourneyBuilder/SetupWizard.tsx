@@ -719,15 +719,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
 
           {isStep5 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: thumbSectionGap, width: '100%' }}>
-              <div style={{ textAlign: 'center' }}>
-                <h3 style={{ fontSize: embedCompact ? 18 : 20, fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.015em' }}>
-                  Upload training thumbnail
-                </h3>
-                <p style={{ fontSize: embedCompact ? 12 : 13, color: '#64748b', marginTop: embedCompact ? 3 : 6, lineHeight: 1.45, fontWeight: 500 }}>
-                  Add a cover image for your training card, or describe one for AI.
-                </p>
-              </div>
-
               <div
                 style={{
                   width: '100%',
