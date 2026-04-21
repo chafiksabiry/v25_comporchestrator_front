@@ -141,6 +141,18 @@ export interface SavedPodcastItem {
   createdAt?: string;
 }
 
+export interface SavedVideoItem {
+  _id: string;
+  title: string;
+  trainingTitle?: string;
+  prompt: string;
+  provider: string;
+  model: string;
+  status: string;
+  videoUrl?: string;
+  createdAt?: string;
+}
+
 export interface AiBaseResponse {
   success: boolean;
   error?: string;
@@ -503,6 +515,102 @@ export class AIService {
       throw new Error(raw?.error || 'Podcast list failed');
     }
     return Array.isArray(raw?.podcasts) ? (raw.podcasts as SavedPodcastItem[]) : [];
+  }
+
+  static async generateTrainingVideo(params: {
+    prompt: string;
+    trainingTitle?: string;
+    aspectRatio?: string;
+    durationSeconds?: number;
+  }): Promise<{ jobId: string; provider: string; model: string }> {
+    const response = await ApiClient.post<{
+      success?: boolean;
+      jobId?: string;
+      provider?: string;
+      model?: string;
+      error?: string;
+      message?: string;
+    }>('/api/ai/video/generate', params);
+    const raw = response.data as any;
+    if (raw?.success === false) throw new Error(raw?.error || raw?.message || 'Video generation failed');
+    const jobId = String(raw?.jobId || '').trim();
+    if (!jobId) throw new Error('Video generation failed: missing job id');
+    return {
+      jobId,
+      provider: String(raw?.provider || 'veo'),
+      model: String(raw?.model || ''),
+    };
+  }
+
+  static async getTrainingVideoStatus(jobId: string): Promise<{
+    status: 'queued' | 'running' | 'completed' | 'failed';
+    videoUrl?: string;
+    provider?: string;
+    model?: string;
+    error?: string;
+  }> {
+    const response = await ApiClient.get<{
+      success?: boolean;
+      status?: 'queued' | 'running' | 'completed' | 'failed';
+      videoUrl?: string;
+      provider?: string;
+      model?: string;
+      error?: string;
+      message?: string;
+    }>(`/api/ai/video/status/${encodeURIComponent(jobId)}`);
+    const raw = response.data as any;
+    if (raw?.success === false) throw new Error(raw?.error || raw?.message || 'Video status failed');
+    return {
+      status: (raw?.status as any) || 'running',
+      videoUrl: raw?.videoUrl ? String(raw.videoUrl) : undefined,
+      provider: raw?.provider ? String(raw.provider) : undefined,
+      model: raw?.model ? String(raw.model) : undefined,
+      error: raw?.error ? String(raw.error) : undefined,
+    };
+  }
+
+  static async saveTrainingVideo(params: {
+    title: string;
+    prompt: string;
+    trainingTitle?: string;
+    provider?: string;
+    model?: string;
+    gigId?: string;
+    companyId?: string;
+    jobId?: string;
+    videoUrl?: string;
+  }): Promise<SavedVideoItem> {
+    const response = await ApiClient.post<{
+      success?: boolean;
+      video?: SavedVideoItem;
+      error?: string;
+      message?: string;
+    }>('/api/ai/video/save', params);
+    const raw = response.data as any;
+    if (raw?.success === false) throw new Error(raw?.error || raw?.message || 'Video save failed');
+    const video = raw?.video as SavedVideoItem | undefined;
+    if (!video?._id) throw new Error('Video save failed: invalid payload');
+    return video;
+  }
+
+  static async listSavedTrainingVideos(params?: {
+    gigId?: string;
+    companyId?: string;
+    limit?: number;
+  }): Promise<SavedVideoItem[]> {
+    const qs = new URLSearchParams();
+    if (params?.gigId) qs.set('gigId', params.gigId);
+    if (params?.companyId) qs.set('companyId', params.companyId);
+    if (params?.limit != null) qs.set('limit', String(params.limit));
+    const suffix = qs.toString();
+    const response = await ApiClient.get<{
+      success?: boolean;
+      videos?: SavedVideoItem[];
+      error?: string;
+    }>(`/api/ai/video/list${suffix ? `?${suffix}` : ''}`);
+    const raw = response.data as any;
+    if (raw?.success === false) throw new Error(raw?.error || 'Video list failed');
+    return Array.isArray(raw?.videos) ? (raw.videos as SavedVideoItem[]) : [];
   }
 
   static async generateChatTitle(

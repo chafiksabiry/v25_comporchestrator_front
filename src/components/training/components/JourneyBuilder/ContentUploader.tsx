@@ -3,7 +3,7 @@ import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, C
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ContentUpload } from '../../types/core';
-import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef, type ChatHistoryItem, type SavedPodcastItem } from '../../infrastructure/services/AIService';
+import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef, type ChatHistoryItem, type SavedPodcastItem, type SavedVideoItem } from '../../infrastructure/services/AIService';
 import { WebSpeechService } from '../../infrastructure/services/CanvasVideoService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
 import { DraftService } from '../../infrastructure/services/DraftService';
@@ -167,6 +167,18 @@ type RepPodcastSidebarPanelProps = {
   isSavedPodcastsLoading: boolean;
   onRefreshSavedPodcasts: () => void;
   onLoadSavedPodcast: (podcast: SavedPodcastItem) => void;
+  videoPrompt: string;
+  onVideoPromptChange: (v: string) => void;
+  onGenerateVideo: () => void;
+  isVideoGenerating: boolean;
+  videoStatus: 'idle' | 'queued' | 'running' | 'completed' | 'failed';
+  generatedVideoUrl: string;
+  savedVideos: SavedVideoItem[];
+  isSavedVideosLoading: boolean;
+  onRefreshSavedVideos: () => void;
+  onLoadSavedVideo: (video: SavedVideoItem) => void;
+  onSaveVideo: () => void;
+  isVideoSaving: boolean;
 };
 
 /** REP podcast: generation + player (script hidden). */
@@ -190,6 +202,18 @@ function RepPodcastSidebarPanel({
   isSavedPodcastsLoading,
   onRefreshSavedPodcasts,
   onLoadSavedPodcast,
+  videoPrompt,
+  onVideoPromptChange,
+  onGenerateVideo,
+  isVideoGenerating,
+  videoStatus,
+  generatedVideoUrl,
+  savedVideos,
+  isSavedVideosLoading,
+  onRefreshSavedVideos,
+  onLoadSavedVideo,
+  onSaveVideo,
+  isVideoSaving,
 }: RepPodcastSidebarPanelProps) {
   const generateLocked = isGenerating || !!disableGenerateExtra || !canGenerateFromTraining;
   return (
@@ -308,6 +332,72 @@ function RepPodcastSidebarPanel({
             )}
           </div>
         </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-2.5">
+          <p className="mb-2 text-[11px] font-semibold text-slate-700">Video (Veo)</p>
+          <textarea
+            value={videoPrompt}
+            onChange={(e) => onVideoPromptChange(e.target.value)}
+            rows={2}
+            placeholder="Describe the training video style, scene and message."
+            className="w-full rounded-lg border border-slate-200 px-2.5 py-2 text-xs text-slate-800 outline-none ring-harx-500/20 focus:ring-2"
+          />
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onGenerateVideo}
+              disabled={!videoPrompt.trim() || isVideoGenerating}
+              className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {isVideoGenerating ? 'Generating...' : 'Generate video'}
+            </button>
+            <button
+              type="button"
+              onClick={onSaveVideo}
+              disabled={!generatedVideoUrl || isVideoSaving}
+              className="inline-flex items-center justify-center rounded-lg border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-xs font-semibold text-fuchsia-800 disabled:opacity-50"
+            >
+              {isVideoSaving ? 'Saving...' : 'Save video'}
+            </button>
+            <span className="text-[10px] font-medium text-slate-500">{videoStatus}</span>
+          </div>
+          {generatedVideoUrl ? (
+            <video controls src={generatedVideoUrl} className="mt-2 w-full rounded-lg border border-slate-200 bg-black/90">
+              Your browser does not support video playback.
+            </video>
+          ) : null}
+          <div className="mt-2">
+            <div className="mb-1 flex items-center justify-between">
+              <p className="text-[11px] font-semibold text-slate-700">Saved videos</p>
+              <button
+                type="button"
+                onClick={onRefreshSavedVideos}
+                className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                <RefreshCw className={`h-3 w-3 ${isSavedVideosLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
+            <div className="max-h-28 space-y-1 overflow-y-auto rounded-lg bg-slate-50 p-2">
+              {isSavedVideosLoading ? (
+                <p className="text-[11px] text-slate-500">Loading saved videos...</p>
+              ) : savedVideos.length === 0 ? (
+                <p className="text-[11px] text-slate-500">No saved video yet.</p>
+              ) : (
+                savedVideos.map((v) => (
+                  <button
+                    key={v._id}
+                    type="button"
+                    onClick={() => onLoadSavedVideo(v)}
+                    className="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-left hover:bg-fuchsia-50"
+                  >
+                    <p className="truncate text-[11px] font-semibold text-slate-800">{v.title || 'Untitled video'}</p>
+                    <p className="truncate text-[10px] text-slate-500">{v.trainingTitle || v.provider || 'Video'}</p>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -385,6 +475,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [currentSavedPodcastId, setCurrentSavedPodcastId] = useState<string | null>(null);
   const [savedPodcasts, setSavedPodcasts] = useState<SavedPodcastItem[]>([]);
   const [isSavedPodcastsLoading, setIsSavedPodcastsLoading] = useState(false);
+  const [videoPrompt, setVideoPrompt] = useState('');
+  const [videoGenerationJobId, setVideoGenerationJobId] = useState<string | null>(null);
+  const [videoGenerationStatus, setVideoGenerationStatus] = useState<'idle' | 'queued' | 'running' | 'completed' | 'failed'>('idle');
+  const [generatedVideoUrl, setGeneratedVideoUrl] = useState('');
+  const [generatedVideoModel, setGeneratedVideoModel] = useState('');
+  const [isVideoGenerating, setIsVideoGenerating] = useState(false);
+  const [isVideoSaving, setIsVideoSaving] = useState(false);
+  const [savedVideos, setSavedVideos] = useState<SavedVideoItem[]>([]);
+  const [isSavedVideosLoading, setIsSavedVideosLoading] = useState(false);
   const podcastSpeechRef = useRef<WebSpeechService | null>(null);
   const podcastSpeakAbortRef = useRef(false);
   const chatFileInputRef = useRef<HTMLInputElement | null>(null);
@@ -744,6 +843,137 @@ export default function ContentUploader(props: ContentUploaderProps) {
     if (!repOnboardingLayout) return;
     void refreshSavedPodcasts();
   }, [repOnboardingLayout, refreshSavedPodcasts]);
+
+  const refreshSavedVideos = useCallback(async () => {
+    setIsSavedVideosLoading(true);
+    try {
+      const rows = await AIService.listSavedTrainingVideos({
+        gigId: activeChatGigId ? String(activeChatGigId) : undefined,
+        companyId: company?.id || company?._id ? String(company.id || company._id) : undefined,
+        limit: 20,
+      });
+      setSavedVideos(Array.isArray(rows) ? rows : []);
+    } catch {
+      setSavedVideos([]);
+    } finally {
+      setIsSavedVideosLoading(false);
+    }
+  }, [activeChatGigId, company]);
+
+  useEffect(() => {
+    if (!repOnboardingLayout) return;
+    void refreshSavedVideos();
+  }, [repOnboardingLayout, refreshSavedVideos]);
+
+  const handleGenerateVideo = useCallback(async () => {
+    const prompt = videoPrompt.trim();
+    if (!prompt || isVideoGenerating) return;
+    const trainingTitle = String(
+      generatedCurriculum?.title ||
+        generatedPresentation?.title ||
+        (activeGigSnapshotForPodcast && String((activeGigSnapshotForPodcast as Record<string, unknown>).title || '')) ||
+        'Training video'
+    );
+    setIsVideoGenerating(true);
+    setVideoGenerationStatus('queued');
+    setPodcastError(null);
+    setGeneratedVideoUrl('');
+    try {
+      const start = await AIService.generateTrainingVideo({
+        prompt,
+        trainingTitle,
+        aspectRatio: '16:9',
+        durationSeconds: 8,
+      });
+      setVideoGenerationJobId(start.jobId);
+      setGeneratedVideoModel(start.model || '');
+      setVideoGenerationStatus('running');
+    } catch (e: any) {
+      setVideoGenerationStatus('failed');
+      setPodcastError(e?.message || 'Unable to start video generation.');
+      setIsVideoGenerating(false);
+    }
+  }, [videoPrompt, isVideoGenerating, generatedCurriculum?.title, generatedPresentation?.title, activeGigSnapshotForPodcast]);
+
+  useEffect(() => {
+    if (!videoGenerationJobId || (videoGenerationStatus !== 'running' && videoGenerationStatus !== 'queued')) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const st = await AIService.getTrainingVideoStatus(videoGenerationJobId);
+        if (cancelled) return;
+        if (st.status === 'completed' && st.videoUrl) {
+          setVideoGenerationStatus('completed');
+          setGeneratedVideoUrl(st.videoUrl);
+          setIsVideoGenerating(false);
+          return;
+        }
+        if (st.status === 'failed') {
+          setVideoGenerationStatus('failed');
+          setPodcastError(st.error || 'Video generation failed.');
+          setIsVideoGenerating(false);
+          return;
+        }
+        setVideoGenerationStatus(st.status);
+        window.setTimeout(() => {
+          void tick();
+        }, 2500);
+      } catch (e: any) {
+        if (!cancelled) {
+          setVideoGenerationStatus('failed');
+          setPodcastError(e?.message || 'Unable to get video status.');
+          setIsVideoGenerating(false);
+        }
+      }
+    };
+    void tick();
+    return () => {
+      cancelled = true;
+    };
+  }, [videoGenerationJobId, videoGenerationStatus]);
+
+  const handleSaveGeneratedVideo = useCallback(async () => {
+    if (!generatedVideoUrl || isVideoSaving) return;
+    const titleBase = String(
+      generatedCurriculum?.title ||
+        generatedPresentation?.title ||
+        (activeGigSnapshotForPodcast && String((activeGigSnapshotForPodcast as Record<string, unknown>).title || '')) ||
+        'Training'
+    );
+    const title = `${titleBase} - Video`.slice(0, 240);
+    try {
+      setIsVideoSaving(true);
+      await AIService.saveTrainingVideo({
+        title,
+        prompt: videoPrompt.trim() || `Training video for ${titleBase}`,
+        trainingTitle: titleBase,
+        provider: 'veo',
+        model: generatedVideoModel || 'veo-2.0-generate-001',
+        gigId: activeChatGigId ? String(activeChatGigId) : undefined,
+        companyId: company?.id || company?._id ? String(company.id || company._id) : undefined,
+        jobId: videoGenerationJobId || undefined,
+        videoUrl: generatedVideoUrl,
+      });
+      await refreshSavedVideos();
+      setPodcastSavedHint('Video saved to MongoDB and Cloudinary.');
+    } catch (e: any) {
+      setPodcastError(e?.message || 'Unable to save video.');
+    } finally {
+      setIsVideoSaving(false);
+    }
+  }, [
+    generatedVideoUrl,
+    isVideoSaving,
+    generatedCurriculum?.title,
+    generatedPresentation?.title,
+    activeGigSnapshotForPodcast,
+    videoPrompt,
+    generatedVideoModel,
+    activeChatGigId,
+    company,
+    videoGenerationJobId,
+    refreshSavedVideos,
+  ]);
 
   const refreshChatHistory = useCallback(async () => {
     if (!activeChatGigId) {
@@ -2758,6 +2988,24 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     setPodcastSavedHint(`Loaded: ${podcast.title || 'Podcast'}`);
                     setPodcastError(null);
                   }}
+                  videoPrompt={videoPrompt}
+                  onVideoPromptChange={setVideoPrompt}
+                  onGenerateVideo={() => void handleGenerateVideo()}
+                  isVideoGenerating={isVideoGenerating}
+                  videoStatus={videoGenerationStatus}
+                  generatedVideoUrl={generatedVideoUrl}
+                  savedVideos={savedVideos}
+                  isSavedVideosLoading={isSavedVideosLoading}
+                  onRefreshSavedVideos={() => void refreshSavedVideos()}
+                  onLoadSavedVideo={(video) => {
+                    setGeneratedVideoUrl(String(video.videoUrl || ''));
+                    setVideoPrompt(String(video.prompt || ''));
+                    setVideoGenerationStatus(video.videoUrl ? 'completed' : 'idle');
+                    setPodcastSavedHint(`Loaded video: ${video.title || 'Video'}`);
+                    setPodcastError(null);
+                  }}
+                  onSaveVideo={() => void handleSaveGeneratedVideo()}
+                  isVideoSaving={isVideoSaving}
                 />
               </div>
               <div className="flex min-h-[260px] flex-1 flex-col overflow-hidden rounded-2xl border border-rose-100/80 bg-white shadow-sm lg:min-h-0">
