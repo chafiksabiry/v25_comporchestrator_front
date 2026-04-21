@@ -67,7 +67,7 @@ export class DraftService {
           // Extract and validate module ID
           const moduleId = extractObjectId(cleanedModule.id);
           if (moduleId && !isValidMongoId(moduleId)) {
-            delete cleanedModule.id;
+            delete (cleanedModule as any).id;
           } else if (moduleId) {
             cleanedModule.id = moduleId; // Ensure it's a string, not Extended JSON
           }
@@ -326,9 +326,9 @@ export class DraftService {
               journeyToSave,
               updatedDraft.modules,
               companyId,
-              gigId,
+              gigId ?? undefined,
               undefined, // finalExam
-              existingJourneyId, // Pass existing journeyId to update instead of create
+              existingJourneyId ?? undefined, // Pass existing journeyId to update instead of create
               updatedDraft.presentation // Pass presentation data
             );
 
