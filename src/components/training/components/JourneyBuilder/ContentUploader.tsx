@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, RotateCcw, Send, History, Bot } from 'lucide-react';
+import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, RotateCcw, Send, History, Bot, Mic, Square, Play } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ContentUpload } from '../../types/core';
 import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef, type ChatHistoryItem } from '../../infrastructure/services/AIService';
+import { WebSpeechService } from '../../infrastructure/services/CanvasVideoService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
 import { DraftService } from '../../infrastructure/services/DraftService';
 import { cloudinaryService } from '../../lib/cloudinaryService';
@@ -111,6 +112,126 @@ function extractTrainingReadinessBlock(raw: string): {
   }
 }
 
+/** Lecture TTS gratuite (Web Speech API) — découpe le texte pour éviter les limites du moteur. */
+async function speakPlainTextWithWebSpeech(
+  service: WebSpeechService,
+  text: string,
+  lang = 'fr-FR',
+  isAborted?: () => boolean
+) {
+  const normalized = String(text || '')
+    .replace(/[#*_`]/g, ' ')
+    .replace(/\r\n/g, '\n')
+    .trim();
+  if (!normalized) return;
+  const blocks = normalized.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+  const maxLen = 360;
+  for (const block of blocks) {
+    if (isAborted?.()) return;
+    if (block.length <= maxLen) {
+      await service.speak(block, { lang, rate: 0.97 });
+    } else {
+      let start = 0;
+      while (start < block.length) {
+        if (isAborted?.()) return;
+        let end = Math.min(start + maxLen, block.length);
+        if (end < block.length) {
+          const space = block.lastIndexOf(' ', end);
+          if (space > start + 80) end = space;
+        }
+        const piece = block.slice(start, end).trim();
+        if (piece) await service.speak(piece, { lang, rate: 0.97 });
+        start = end;
+      }
+    }
+  }
+}
+
+type RepPodcastTrainingCardProps = {
+  podcastScript: string;
+  onScriptChange: (v: string) => void;
+  isGenerating: boolean;
+  /** When true, disables "Générer le script" (e.g. chat busy or slides regenerating) */
+  disableGenerateExtra?: boolean;
+  isSpeaking: boolean;
+  error: string | null;
+  onGenerate: () => void;
+  onPlay: () => void;
+  onStop: () => void;
+};
+
+function RepPodcastTrainingCard({
+  podcastScript,
+  onScriptChange,
+  isGenerating,
+  disableGenerateExtra,
+  isSpeaking,
+  error,
+  onGenerate,
+  onPlay,
+  onStop,
+}: RepPodcastTrainingCardProps) {
+  return (
+    <div className="w-full min-w-0">
+      <div className="w-full rounded-2xl border border-fuchsia-200/80 bg-gradient-to-br from-fuchsia-50/90 to-white p-3 shadow-md shadow-fuchsia-900/5 sm:p-4">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-rose-500 text-white shadow-sm">
+              <Mic className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-black text-slate-900">Podcast de formation</p>
+              <p className="text-[11px] text-slate-600">
+                Script généré par Claude à partir du programme · lecture gratuite (voix du navigateur)
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={onGenerate}
+              disabled={isGenerating || disableGenerateExtra}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50"
+            >
+              {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              Générer le script
+            </button>
+            <button
+              type="button"
+              onClick={onPlay}
+              disabled={!podcastScript.trim() || isGenerating || isSpeaking}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-harx px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm disabled:opacity-50"
+            >
+              <Play className="h-3.5 w-3.5" />
+              Lire
+            </button>
+            <button
+              type="button"
+              onClick={onStop}
+              disabled={!isSpeaking}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-slate-700 disabled:opacity-40"
+            >
+              <Square className="h-3.5 w-3.5" />
+              Stop
+            </button>
+          </div>
+        </div>
+        {error ? (
+          <p className="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] text-amber-900">{error}</p>
+        ) : null}
+        <textarea
+          value={podcastScript}
+          onChange={(e) => onScriptChange(e.target.value)}
+          readOnly={isGenerating}
+          rows={6}
+          placeholder="Le script du podcast apparaîtra ici après génération. Vous pouvez le modifier avant lecture."
+          className="w-full resize-y rounded-xl border border-slate-200 bg-white/90 px-3 py-2 text-[13px] leading-relaxed text-slate-800 outline-none ring-harx-500/20 focus:ring-2"
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function ContentUploader(props: ContentUploaderProps) {
   const { onComplete, onBack, company, gigId, journey, methodology, repOnboardingLayout = false } = props;
   const analysisMetadata = {
@@ -169,6 +290,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
+  const [podcastScript, setPodcastScript] = useState('');
+  const [isPodcastGenerating, setIsPodcastGenerating] = useState(false);
+  const [podcastError, setPodcastError] = useState<string | null>(null);
+  const [isPodcastSpeaking, setIsPodcastSpeaking] = useState(false);
+  const podcastSpeechRef = useRef<WebSpeechService | null>(null);
+  const podcastSpeakAbortRef = useRef(false);
   const chatFileInputRef = useRef<HTMLInputElement | null>(null);
   const chatTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -195,6 +322,152 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const row = companyGigs.find((g: any) => String(g?._id || g?.id || '') === gid);
     return row ? buildGigSnapshotForAi(row) : null;
   }, [companyGigs, gigId]);
+
+  useEffect(() => {
+    podcastSpeechRef.current = new WebSpeechService();
+    return () => {
+      podcastSpeakAbortRef.current = true;
+      podcastSpeechRef.current?.stop();
+    };
+  }, []);
+
+  const hasPodcastSource = useMemo(
+    () =>
+      (Array.isArray(generatedCurriculum?.modules) && generatedCurriculum.modules.length > 0) ||
+      (Array.isArray(generatedPresentation?.slides) && generatedPresentation.slides.length > 0),
+    [generatedCurriculum, generatedPresentation]
+  );
+
+  const buildTrainingDigestForPodcast = useCallback((): string => {
+    const parts: string[] = [];
+    if (generatedCurriculum?.title) {
+      parts.push(`Titre: ${String(generatedCurriculum.title)}`);
+    }
+    if (generatedCurriculum?.description) {
+      parts.push(`Description: ${String(generatedCurriculum.description).slice(0, 1500)}`);
+    }
+    const modules = Array.isArray(generatedCurriculum?.modules) ? generatedCurriculum.modules : [];
+    modules.slice(0, 24).forEach((m: any, i: number) => {
+      const title = m?.title || `Module ${i + 1}`;
+      const desc = String(m?.description || '').slice(0, 700);
+      const objectives = Array.isArray(m?.learningObjectives)
+        ? m.learningObjectives.slice(0, 8).join(' · ')
+        : '';
+      const sections = Array.isArray(m?.sections) ? m.sections : [];
+      const secBits = sections
+        .slice(0, 5)
+        .map((s: any) => {
+          const st = String(s?.title || '').slice(0, 120);
+          const sc = String(s?.content || s?.text || s?.body || '').slice(0, 450);
+          return st ? `${st}: ${sc}` : sc;
+        })
+        .filter(Boolean)
+        .join('\n');
+      parts.push(
+        `\n--- Module ${i + 1}: ${title} ---\n${desc}${objectives ? `\nObjectifs: ${objectives}` : ''}${secBits ? `\n${secBits}` : ''}`
+      );
+    });
+    const slides = Array.isArray(generatedPresentation?.slides) ? generatedPresentation.slides : [];
+    if (slides.length > 0) {
+      parts.push('\n--- Slides (extraits) ---');
+      slides.slice(0, 28).forEach((s: any, i: number) => {
+        const head = String(s?.title || s?.heading || `Slide ${i + 1}`).slice(0, 140);
+        const body = String(s?.content || s?.body || s?.notes || s?.text || '').slice(0, 400);
+        parts.push(`${head}\n${body}`);
+      });
+    }
+    let out = parts.join('\n\n');
+    if (out.length > 14000) {
+      out = `${out.slice(0, 14000)}\n\n[… contenu tronqué pour limite technique]`;
+    }
+    return out;
+  }, [generatedCurriculum, generatedPresentation]);
+
+  const handleGeneratePodcastScript = useCallback(async () => {
+    if (!repOnboardingLayout || !hasPodcastSource || isPodcastGenerating) return;
+    const digest = buildTrainingDigestForPodcast();
+    if (!digest.trim()) {
+      setPodcastError('Pas assez de contenu de formation pour générer un podcast.');
+      return;
+    }
+    setIsPodcastGenerating(true);
+    setPodcastError(null);
+    setPodcastScript('');
+    try {
+      const companyId = company?.id || company?._id ? String(company.id || company._id) : undefined;
+      const context = JSON.stringify({
+        app: 'HARX REP Onboarding',
+        task: 'podcast_script_fr',
+        language: 'fr',
+        trainingDigest: digest,
+        trainingTitle: String(generatedCurriculum?.title || generatedPresentation?.title || ''),
+      });
+      const message = [
+        "Tu rédiges le SCRIPT ORAL d'un seul podcast de formation, en français.",
+        'Entrée : le champ trainingDigest dans le contexte JSON (formation déjà structurée).',
+        'Sortie : uniquement le texte à lire à voix haute, sans markdown (# ** liste), sans numérotation technique de slides.',
+        'Structure : une ligne titre accrocheur, puis introduction courte, puis 3 à 5 chapitres avec titres annoncés oralement, puis conclusion.',
+        'Ton : professionnel, chaleureux, clair, phrases relativement courtes.',
+        "Durée cible à la lecture : environ 8 à 15 minutes (densité moyenne, pas d'excès de détails techniques).",
+        'Ne cite pas "trainingDigest" ni "JSON" dans le script.',
+      ].join('\n');
+
+      let full = '';
+      await AIService.chatStream(message, context, (chunk) => {
+        full += chunk;
+        setPodcastScript(full);
+      }, {
+        gigId: activeChatGigId ? String(activeChatGigId) : undefined,
+        companyId,
+        sessionId: undefined,
+      });
+      setPodcastScript((full || '').trim());
+    } catch (e: any) {
+      console.error('[ContentUploader] Podcast script generation failed:', e);
+      setPodcastError(e?.message || 'Génération du script impossible pour le moment.');
+    } finally {
+      setIsPodcastGenerating(false);
+    }
+  }, [
+    repOnboardingLayout,
+    hasPodcastSource,
+    isPodcastGenerating,
+    buildTrainingDigestForPodcast,
+    generatedCurriculum?.title,
+    generatedPresentation?.title,
+    company,
+    activeChatGigId,
+  ]);
+
+  const handleStopPodcastSpeak = useCallback(() => {
+    podcastSpeakAbortRef.current = true;
+    podcastSpeechRef.current?.stop();
+    setIsPodcastSpeaking(false);
+  }, []);
+
+  const handlePlayPodcastSpeak = useCallback(async () => {
+    const text = podcastScript.trim();
+    if (!text) return;
+    const svc = podcastSpeechRef.current;
+    if (!svc) return;
+    if (isPodcastSpeaking) return;
+    podcastSpeakAbortRef.current = false;
+    setIsPodcastSpeaking(true);
+    setPodcastError(null);
+    try {
+      await speakPlainTextWithWebSpeech(svc, text, 'fr-FR', () => podcastSpeakAbortRef.current);
+    } catch (e: any) {
+      console.warn('[ContentUploader] Web Speech playback issue:', e);
+      const msg = String(e?.message || e?.error || '');
+      setPodcastError(
+        /not-allowed|interrupted/i.test(msg)
+          ? "Lecture bloquée ou interrompue : cliquez à nouveau sur « Lire » après interaction avec la page."
+          : 'Lecture vocale indisponible sur ce navigateur.'
+      );
+    } finally {
+      setIsPodcastSpeaking(false);
+    }
+  }, [podcastScript, isPodcastSpeaking]);
 
   const refreshChatHistory = useCallback(async () => {
     if (!activeChatGigId) {
@@ -1121,6 +1394,22 @@ export default function ContentUploader(props: ContentUploaderProps) {
               </button>
             </div>
           </div>
+
+          {hasPodcastSource && (
+            <div className="shrink-0 border-b border-fuchsia-100/80 bg-gradient-to-r from-fuchsia-50/50 to-white px-3 py-2 sm:px-4">
+              <RepPodcastTrainingCard
+                podcastScript={podcastScript}
+                onScriptChange={setPodcastScript}
+                isGenerating={isPodcastGenerating}
+                disableGenerateExtra={isGeneratingPresentation || isSavingCloud}
+                isSpeaking={isPodcastSpeaking}
+                error={podcastError}
+                onGenerate={() => void handleGeneratePodcastScript()}
+                onPlay={() => void handlePlayPodcastSpeak()}
+                onStop={handleStopPodcastSpeak}
+              />
+            </div>
+          )}
 
           <section className="flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden rounded-none border-0 bg-white shadow-none">
             <PresentationPreview
@@ -2453,6 +2742,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         </div>
                       </div>
                     </div>
+                  )}
+                  {rep && hasPodcastSource && (
+                    <RepPodcastTrainingCard
+                      podcastScript={podcastScript}
+                      onScriptChange={setPodcastScript}
+                      isGenerating={isPodcastGenerating}
+                      disableGenerateExtra={isChatLoading}
+                      isSpeaking={isPodcastSpeaking}
+                      error={podcastError}
+                      onGenerate={() => void handleGeneratePodcastScript()}
+                      onPlay={() => void handlePlayPodcastSpeak()}
+                      onStop={handleStopPodcastSpeak}
+                    />
                   )}
                   {chatMessages.map((msg) => (
                     <div key={msg.id} className={msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
