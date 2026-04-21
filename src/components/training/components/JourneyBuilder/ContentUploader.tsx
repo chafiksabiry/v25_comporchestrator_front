@@ -3,7 +3,7 @@ import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, C
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ContentUpload } from '../../types/core';
-import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef, type ChatHistoryItem } from '../../infrastructure/services/AIService';
+import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef, type ChatHistoryItem, type SavedPodcastItem } from '../../infrastructure/services/AIService';
 import { WebSpeechService } from '../../infrastructure/services/CanvasVideoService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
 import { DraftService } from '../../infrastructure/services/DraftService';
@@ -167,6 +167,10 @@ type RepPodcastSidebarPanelProps = {
   onGenerate: () => void;
   onPlay: () => void;
   onStop: () => void;
+  savedPodcasts: SavedPodcastItem[];
+  isSavedPodcastsLoading: boolean;
+  onRefreshSavedPodcasts: () => void;
+  onLoadSavedPodcast: (podcast: SavedPodcastItem) => void;
 };
 
 /** REP podcast: generation + player (script hidden). */
@@ -190,6 +194,10 @@ function RepPodcastSidebarPanel({
   onGenerate,
   onPlay,
   onStop,
+  savedPodcasts,
+  isSavedPodcastsLoading,
+  onRefreshSavedPodcasts,
+  onLoadSavedPodcast,
 }: RepPodcastSidebarPanelProps) {
   const generateLocked = isGenerating || !!disableGenerateExtra || !canGenerateFromTraining;
   return (
@@ -275,6 +283,38 @@ function RepPodcastSidebarPanel({
             </button>
           </div>
           {savedHint ? <p className="mt-1 text-[10px] text-emerald-700">{savedHint}</p> : null}
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-2.5">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-slate-700">Saved podcasts</p>
+            <button
+              type="button"
+              onClick={onRefreshSavedPodcasts}
+              className="inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              <RefreshCw className={`h-3 w-3 ${isSavedPodcastsLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
+          <div className="max-h-32 space-y-1 overflow-y-auto rounded-lg bg-slate-50 p-2">
+            {isSavedPodcastsLoading ? (
+              <p className="text-[11px] text-slate-500">Loading saved podcasts...</p>
+            ) : savedPodcasts.length === 0 ? (
+              <p className="text-[11px] text-slate-500">No saved podcast yet for this scope.</p>
+            ) : (
+              savedPodcasts.map((p) => (
+                <button
+                  key={p._id}
+                  type="button"
+                  onClick={() => onLoadSavedPodcast(p)}
+                  className="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-left hover:bg-fuchsia-50"
+                >
+                  <p className="truncate text-[11px] font-semibold text-slate-800">{p.title || 'Untitled podcast'}</p>
+                  <p className="truncate text-[10px] text-slate-500">{p.trainingTitle || 'Training podcast'}</p>
+                </button>
+              ))
+            )}
+          </div>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-2.5">
           <p className="mb-2 text-[11px] font-semibold text-slate-700">Podcast chat</p>
@@ -403,6 +443,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
   >([]);
   const [podcastChatInput, setPodcastChatInput] = useState('');
   const [isPodcastChatLoading, setIsPodcastChatLoading] = useState(false);
+  const [savedPodcasts, setSavedPodcasts] = useState<SavedPodcastItem[]>([]);
+  const [isSavedPodcastsLoading, setIsSavedPodcastsLoading] = useState(false);
   const podcastSpeechRef = useRef<WebSpeechService | null>(null);
   const podcastSpeakAbortRef = useRef(false);
   const chatFileInputRef = useRef<HTMLInputElement | null>(null);
@@ -761,6 +803,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
       });
       setPodcastTitle(saved.title || title);
       setPodcastSavedHint('Podcast saved to MongoDB and Cloudinary.');
+      const refreshed = await AIService.listSavedPodcasts({
+        gigId: activeChatGigId ? String(activeChatGigId) : undefined,
+        companyId: company?.id || company?._id ? String(company.id || company._id) : undefined,
+        limit: 20,
+      });
+      setSavedPodcasts(Array.isArray(refreshed) ? refreshed : []);
     } catch (e: any) {
       setPodcastError(e?.message || 'Unable to save podcast.');
     } finally {
@@ -776,7 +824,29 @@ export default function ContentUploader(props: ContentUploaderProps) {
     activeChatGigId,
     company,
     podcastChatMessages,
+    activeChatGigId,
   ]);
+
+  const refreshSavedPodcasts = useCallback(async () => {
+    setIsSavedPodcastsLoading(true);
+    try {
+      const rows = await AIService.listSavedPodcasts({
+        gigId: activeChatGigId ? String(activeChatGigId) : undefined,
+        companyId: company?.id || company?._id ? String(company.id || company._id) : undefined,
+        limit: 20,
+      });
+      setSavedPodcasts(Array.isArray(rows) ? rows : []);
+    } catch {
+      setSavedPodcasts([]);
+    } finally {
+      setIsSavedPodcastsLoading(false);
+    }
+  }, [activeChatGigId, company]);
+
+  useEffect(() => {
+    if (!repOnboardingLayout) return;
+    void refreshSavedPodcasts();
+  }, [repOnboardingLayout, refreshSavedPodcasts]);
 
   const refreshChatHistory = useCallback(async () => {
     if (!activeChatGigId) {
@@ -2785,6 +2855,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   onGenerate={() => void handleGeneratePodcastScript()}
                   onPlay={() => void handlePlayPodcastSpeak()}
                   onStop={handleStopPodcastSpeak}
+                  savedPodcasts={savedPodcasts}
+                  isSavedPodcastsLoading={isSavedPodcastsLoading}
+                  onRefreshSavedPodcasts={() => void refreshSavedPodcasts()}
+                  onLoadSavedPodcast={(podcast) => {
+                    setPodcastScript(String(podcast.script || '').trim());
+                    setPodcastTitle(String(podcast.title || ''));
+                    setPodcastSavedHint(`Loaded: ${podcast.title || 'Podcast'}`);
+                    setPodcastError(null);
+                  }}
                 />
               </div>
               <div className="flex min-h-[260px] flex-1 flex-col overflow-hidden rounded-2xl border border-rose-100/80 bg-white shadow-sm lg:min-h-0">
