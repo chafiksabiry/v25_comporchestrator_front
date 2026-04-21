@@ -2833,24 +2833,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setShowImagePresentationModal(true);
     };
 
-    const openPresentationModal = async () => {
-      const hasSlides =
-        Array.isArray(generatedPresentation?.slides) &&
-        generatedPresentation.slides.length > 0;
-      if (!hasSlides) {
-        const pres = await generatePresentationFromState(false);
-        if (!pres?.slides?.length) return;
-      }
-      setShowPresentationModal(true);
-    };
-
-    const regeneratePresentationFromRep = async () => {
-      const pres = await generatePresentationFromState(true);
-      if (pres?.slides?.length) {
-        setShowPresentationModal(true);
-      }
-    };
-
     const handleGenerateQuizFromChat = async () => {
       if (isQuizGenerating) return;
       const chatDigest = chatMessages
@@ -3237,45 +3219,24 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         View audio overview
                       </button>
                     ) : null}
-                    {generatedPresentation?.slides?.length ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setShowPresentationModal(true)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                        >
-                          <Presentation className="h-3.5 w-3.5" />
-                          Presentation
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void regeneratePresentationFromRep()}
-                          disabled={isGeneratingPresentation}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                        >
-                          {isGeneratingPresentation ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <RefreshCw className="h-3.5 w-3.5" />
-                          )}
-                          Regenerate presentation
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => void openPresentationModal()}
-                        disabled={isGeneratingPresentation}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                      >
-                        {isGeneratingPresentation ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Presentation className="h-3.5 w-3.5" />
-                        )}
-                        Generate presentation
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => void handleGenerateTrainingImages()}
+                      disabled={isImagesGenerating || isChatLoading}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                      title="Generate training images for this conversation"
+                    >
+                      {isImagesGenerating ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : generatedImageSet?.items?.length ? (
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      ) : (
+                        <Presentation className="h-3.5 w-3.5" />
+                      )}
+                      {generatedImageSet?.items?.length
+                        ? 'Regenerate presentation'
+                        : 'Presentation'}
+                    </button>
                     {generatedImageSet?.items?.length ? (
                       <button
                         type="button"
