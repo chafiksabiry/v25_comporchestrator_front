@@ -294,23 +294,30 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   };
 
   const handleOpenTrainingChat = (journey: any) => {
+    const resolveId = (value: any): string => {
+      if (!value) return '';
+      if (typeof value === 'string' || typeof value === 'number') return String(value).trim();
+      if (typeof value === 'object') {
+        const nestedId = value._id || value.id;
+        if (typeof nestedId === 'string' || typeof nestedId === 'number') {
+          return String(nestedId).trim();
+        }
+      }
+      return '';
+    };
+
     const journeyId = String(journey?._id || journey?.id || '').trim();
     if (!journeyId) {
       window.alert('Training ID not found.');
       return;
     }
-    const journeyGigId = String(
-      journey?.gigId ||
-      journey?.gig?._id ||
-      journey?.gig?.id ||
-      journey?.gig ||
-      journey?.jobId ||
-      journey?.job?._id ||
-      journey?.job?.id ||
-      journey?.metadata?.gigId ||
-      journey?.context?.gigId ||
-      ''
-    ).trim();
+    const journeyGigId =
+      resolveId(journey?.gigId) ||
+      resolveId(journey?.gig) ||
+      resolveId(journey?.jobId) ||
+      resolveId(journey?.job) ||
+      resolveId(journey?.metadata?.gigId) ||
+      resolveId(journey?.context?.gigId);
     const fallbackGigId = filterGigId !== 'all' ? String(filterGigId) : '';
     const resolvedGigId = journeyGigId || fallbackGigId;
     // Open journey chat directly on chat step, keeping journey context/history + gig context
