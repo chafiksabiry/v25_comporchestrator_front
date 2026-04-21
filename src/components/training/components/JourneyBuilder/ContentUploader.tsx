@@ -172,6 +172,7 @@ type RepPodcastSidebarPanelProps = {
   onGenerateImages: () => void;
   isImagesGenerating: boolean;
   imageGenerationStatus: 'idle' | 'generating' | 'completed' | 'failed';
+  imageProgressLabel: string;
   generatedImageSet: TrainingImageSet | null;
   savedImageSets: TrainingImageSet[];
   isSavedImageSetsLoading: boolean;
@@ -205,6 +206,7 @@ function RepPodcastSidebarPanel({
   onGenerateImages,
   isImagesGenerating,
   imageGenerationStatus,
+  imageProgressLabel,
   generatedImageSet,
   savedImageSets,
   isSavedImageSetsLoading,
@@ -346,7 +348,9 @@ function RepPodcastSidebarPanel({
             >
               {isImagesGenerating ? 'Generating...' : 'Generate images'}
             </button>
-            <span className="text-[10px] font-medium text-slate-500">{imageGenerationStatus}</span>
+            <span className="text-[10px] font-medium text-slate-500">
+              {imageGenerationStatus}{imageProgressLabel ? ` (${imageProgressLabel})` : ''}
+            </span>
           </div>
           {generatedImageSet?.items?.length ? (
             <div className="mt-2 grid grid-cols-2 gap-2">
@@ -473,6 +477,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [imagePrompt, setImagePrompt] = useState('');
   const [imageGenerationStatus, setImageGenerationStatus] = useState<'idle' | 'generating' | 'completed' | 'failed'>('idle');
   const [isImagesGenerating, setIsImagesGenerating] = useState(false);
+  const [imageGenerationJobId, setImageGenerationJobId] = useState<string | null>(null);
+  const [imageGenerationTotal, setImageGenerationTotal] = useState(0);
+  const [imageGenerationCompleted, setImageGenerationCompleted] = useState(0);
   const [generatedImageSet, setGeneratedImageSet] = useState<TrainingImageSet | null>(null);
   const [savedImageSets, setSavedImageSets] = useState<TrainingImageSet[]>([]);
   const [isSavedImageSetsLoading, setIsSavedImageSetsLoading] = useState(false);
@@ -872,6 +879,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
     );
     setIsImagesGenerating(true);
     setImageGenerationStatus('generating');
+    setImageGenerationJobId(null);
+    setImageGenerationTotal(0);
+    setImageGenerationCompleted(0);
     setPodcastError(null);
     setGeneratedImageSet(null);
     try {
@@ -880,18 +890,25 @@ export default function ContentUploader(props: ContentUploaderProps) {
         trainingTitle,
         title: `${trainingTitle} - Images`,
         language: 'fr',
+        styleGuidance: imagePrompt.trim() || undefined,
         maxImages: 20,
         gigId: activeChatGigId ? String(activeChatGigId) : undefined,
         companyId: company?.id || company?._id ? String(company.id || company._id) : undefined,
       });
-      setGeneratedImageSet(result);
-      setImageGenerationStatus('completed');
-      setPodcastSavedHint('Training images generated and saved.');
-      await refreshSavedImageSets();
+      setImageGenerationJobId(result.jobId);
+      setImageGenerationStatus(result.status === 'failed' ? 'failed' : 'generating');
+      setImageGenerationTotal(result.total || 0);
+      setImageGenerationCompleted(result.completed || 0);
+      setGeneratedImageSet({
+        _id: result.jobId,
+        title: `${trainingTitle} - Images`,
+        trainingTitle,
+        language: 'fr',
+        items: Array.isArray(result.items) ? result.items : [],
+      });
     } catch (e: any) {
       setImageGenerationStatus('failed');
       setPodcastError(e?.message || 'Unable to generate training images.');
-    } finally {
       setIsImagesGenerating(false);
     }
   }, [
@@ -902,8 +919,54 @@ export default function ContentUploader(props: ContentUploaderProps) {
     activeGigSnapshotForPodcast,
     activeChatGigId,
     company,
-    refreshSavedImageSets,
+    imagePrompt,
   ]);
+
+  useEffect(() => {
+    if (!imageGenerationJobId || imageGenerationStatus !== 'generating') return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const st = await AIService.getTrainingImagesStatus(imageGenerationJobId);
+        if (cancelled) return;
+        setImageGenerationTotal(st.total || 0);
+        setImageGenerationCompleted(st.completed || 0);
+        setGeneratedImageSet((prev) => ({
+          _id: st.savedImageSetId || prev?._id || st.jobId,
+          title: prev?.title || 'Training images',
+          trainingTitle: prev?.trainingTitle,
+          language: prev?.language || 'fr',
+          items: Array.isArray(st.items) ? st.items : [],
+          createdAt: prev?.createdAt,
+        }));
+        if (st.status === 'completed') {
+          setImageGenerationStatus('completed');
+          setIsImagesGenerating(false);
+          setPodcastSavedHint('Training images generated and saved.');
+          await refreshSavedImageSets();
+          return;
+        }
+        if (st.status === 'failed') {
+          setImageGenerationStatus('failed');
+          setPodcastError(st.error || 'Unable to generate training images.');
+          setIsImagesGenerating(false);
+          return;
+        }
+        window.setTimeout(() => {
+          void tick();
+        }, 1800);
+      } catch (e: any) {
+        if (cancelled) return;
+        setImageGenerationStatus('failed');
+        setPodcastError(e?.message || 'Unable to fetch image generation status.');
+        setIsImagesGenerating(false);
+      }
+    };
+    void tick();
+    return () => {
+      cancelled = true;
+    };
+  }, [imageGenerationJobId, imageGenerationStatus, refreshSavedImageSets]);
 
   const refreshChatHistory = useCallback(async () => {
     if (!activeChatGigId) {
@@ -2923,6 +2986,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   onGenerateImages={() => void handleGenerateTrainingImages()}
                   isImagesGenerating={isImagesGenerating}
                   imageGenerationStatus={imageGenerationStatus}
+                  imageProgressLabel={imageGenerationTotal > 0 ? `${imageGenerationCompleted}/${imageGenerationTotal}` : ''}
                   generatedImageSet={generatedImageSet}
                   savedImageSets={savedImageSets}
                   isSavedImageSetsLoading={isSavedImageSetsLoading}
