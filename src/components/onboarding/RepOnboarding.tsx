@@ -299,9 +299,22 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       window.alert('Training ID not found.');
       return;
     }
-    const journeyGigId = String(journey?.gigId || journey?.gig?._id || journey?.gig?.id || '').trim();
+    const journeyGigId = String(
+      journey?.gigId ||
+      journey?.gig?._id ||
+      journey?.gig?.id ||
+      journey?.gig ||
+      journey?.jobId ||
+      journey?.job?._id ||
+      journey?.job?.id ||
+      journey?.metadata?.gigId ||
+      journey?.context?.gigId ||
+      ''
+    ).trim();
+    const fallbackGigId = filterGigId !== 'all' ? String(filterGigId) : '';
+    const resolvedGigId = journeyGigId || fallbackGigId;
     // Open journey chat directly on chat step, keeping journey context/history + gig context
-    setShowTraining({ isOpen: true, newJourney: true, journeyId, gigId: journeyGigId || undefined });
+    setShowTraining({ isOpen: true, newJourney: true, journeyId, gigId: resolvedGigId || undefined });
   };
 
   /** Mark Phase 3 Step 9 (REP Onboarding) complete and notify CompanyOnboarding like other steps. */
