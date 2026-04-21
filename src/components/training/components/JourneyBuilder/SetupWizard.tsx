@@ -435,9 +435,10 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
   const thumbAiBlockMarginTop = embedCompact && isThumbnailStep ? 10 : 18;
   const thumbTextareaRows = embedCompact && isThumbnailStep ? 2 : 4;
   const thumbTextareaMinH = embedCompact && isThumbnailStep ? 64 : 100;
+  const lockBodyScroll = embedCompact && currentStep === 1;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%', width: '100%', background: WIZARD_BG, borderRadius: 18 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%', width: '100%', background: WIZARD_BG, borderRadius: 18, overflow: 'hidden' }}>
       <style>{`
         @keyframes wizardFadeUp {
           from { opacity: 0; transform: translateY(8px); }
@@ -498,7 +499,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', width: '100%' }}>
         <div style={{
           flex: 1, minHeight: 0,
-          overflowY: 'auto',
+          overflowY: lockBodyScroll ? 'hidden' : 'auto',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -522,12 +523,12 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
           {currentStep === 1 && (
             <>
               {loadingCompany ? (
-                <div style={{ textAlign: 'center', padding: '32px 0', minHeight: embedCompact ? 300 : 360, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{ textAlign: 'center', padding: '32px 0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <Loader2 className="animate-spin" style={{ width: 24, height: 24, color: HARX, margin: '0 auto 10px' }} />
                   <p style={{ fontSize: 13, color: '#6b7280' }}>Loading company information...</p>
                 </div>
               ) : companyData ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minHeight: embedCompact ? 320 : 380, justifyContent: 'center' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, justifyContent: 'center' }}>
                   <div style={{ display: 'none' }}>
                     <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
                       Training industry <span style={{ color: HARX }}>*</span>
