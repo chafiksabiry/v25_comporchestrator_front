@@ -38,7 +38,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [legacyCompanyId, setLegacyCompanyId] = useState<string | null>(null);
   const [companyGigs, setCompanyGigs] = useState<any[]>([]);
   const [filterGigId, setFilterGigId] = useState<string>('all');
-  const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string, newJourney?: boolean }>({ isOpen: false });
+  const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string, gigId?: string, newJourney?: boolean }>({ isOpen: false });
   const [selectedPresentation, setSelectedPresentation] = useState<any | null>(null);
   /** Journey used for module sidebar when previewing slides */
   const [previewJourney, setPreviewJourney] = useState<any | null>(null);
@@ -299,8 +299,9 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       window.alert('Training ID not found.');
       return;
     }
-    // Open journey chat directly on chat step, keeping journey context/history
-    setShowTraining({ isOpen: true, newJourney: true, journeyId });
+    const journeyGigId = String(journey?.gigId || journey?.gig?._id || journey?.gig?.id || '').trim();
+    // Open journey chat directly on chat step, keeping journey context/history + gig context
+    setShowTraining({ isOpen: true, newJourney: true, journeyId, gigId: journeyGigId || undefined });
   };
 
   /** Mark Phase 3 Step 9 (REP Onboarding) complete and notify CompanyOnboarding like other steps. */
@@ -563,6 +564,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
             <div className="flex min-h-0 flex-1 flex-col">
               <AppContent
                 initialJourneyId={showTraining.journeyId}
+                initialGigId={showTraining.gigId}
                 isEmbedded={true}
                 startWithJourneyBuilder={true}
                 startJourneyStep={1}

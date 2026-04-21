@@ -70,6 +70,7 @@ const EMPTY_ARRAY: any[] = [];
 
 export function AppContent({
   initialJourneyId,
+  initialGigId,
   isEmbedded = false,
   startWithJourneyBuilder = false,
   startWithManualTraining = false,
@@ -78,6 +79,7 @@ export function AppContent({
   onJourneyLaunch
 }: {
   initialJourneyId?: string,
+  initialGigId?: string,
   isEmbedded?: boolean,
   startWithJourneyBuilder?: boolean,
   startWithManualTraining?: boolean,
@@ -932,6 +934,7 @@ export function AppContent({
           onComplete={handleJourneyComplete}
           forceNew={startWithJourneyBuilder}
           initialStep={startJourneyStep}
+          initialGigId={initialGigId}
           repOnboardingLayout={repOnboardingLayout}
         />
       </div>
