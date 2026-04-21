@@ -130,10 +130,19 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
   useEffect(() => {
     const prev = prevWizardStepRef.current;
     if (currentStep === 3 && prev === 2) {
-      setVisionSubStep(0);
-      setVisionName('');
-      setVisionDesc('');
-      setVisionDuration('');
+      // Preserve already-entered values when user navigates back/forth.
+      // Only initialize empty state the very first time.
+      const hasExistingVision =
+        !!String(visionName || '').trim() ||
+        !!String(visionDesc || '').trim() ||
+        !!String(visionDuration || '').trim() ||
+        !!trainingDetails;
+      if (!hasExistingVision) {
+        setVisionSubStep(0);
+        setVisionName('');
+        setVisionDesc('');
+        setVisionDuration('');
+      }
     } else if (currentStep === 3 && prev === 4 && trainingDetails) {
       setVisionSubStep(1);
       setVisionName(trainingDetails.trainingName);
@@ -142,7 +151,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
       setVisionDuration(VISION_DURATIONS.some((d) => d.value === ed) ? ed : '');
     }
     prevWizardStepRef.current = currentStep;
-  }, [currentStep, trainingDetails]);
+  }, [currentStep, trainingDetails, visionName, visionDesc, visionDuration]);
 
   useEffect(() => {
     if (currentStep !== 3) return;
