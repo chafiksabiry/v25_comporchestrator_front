@@ -465,17 +465,32 @@ export class JourneyService {
 
   /**
    * Get all available journeys for trainees (active and completed only)
-   * This endpoint returns all journeys that trainees can see, regardless of enrollment
+   * Backend does not expose /trainee/available; use /training_journeys then filter.
    */
   static async getAllAvailableJourneysForTrainees(): Promise<any> {
-    const endpoint = `/training_journeys/trainee/available`;
+    const endpoint = `/training_journeys`;
     
     try {
       const response = await ApiClient.get(endpoint) as any;
-      
-      // The backend returns {success: true, data: [...], count: N}
-      // ApiClient wraps it in response.data, so we have response.data = {success: true, data: [...], count: N}
-      return response.data;
+      const raw = response?.data;
+      const list = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.data)
+          ? raw.data
+          : [];
+
+      // Keep only journeys that are expected to be visible to reps.
+      const visibleStatuses = new Set(['active', 'completed', 'published', 'launched']);
+      const filtered = list.filter((journey: any) => {
+        const status = String(journey?.status || '').toLowerCase();
+        return status ? visibleStatuses.has(status) : true;
+      });
+
+      return {
+        success: true,
+        data: filtered,
+        count: filtered.length,
+      };
     } catch (error: any) {
       console.error('[JourneyService] Error fetching available journeys for trainees:', error);
       throw error;
