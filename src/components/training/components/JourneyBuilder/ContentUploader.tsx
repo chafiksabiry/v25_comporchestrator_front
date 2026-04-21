@@ -2226,6 +2226,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const handleSelectKbMode = (mode: KbGenerationMode) => {
       setShowRepSourcePopup(false);
       setKbGenerationChoice(mode);
+      if (mode === 'none' || mode === 'uploads_only' || mode === 'kb_and_uploads') {
+        // These modes should not trigger any automatic flow.
+        // Keep the chat idle and wait for the user's manual prompt.
+        setShowPersonalizationCard(false);
+        setPersonalizationStep(0);
+        setPersonalizationAnswers({});
+        window.requestAnimationFrame(() => {
+          chatTextareaRef.current?.focus();
+        });
+        return;
+      }
       setShowPersonalizationCard(true);
       setPersonalizationStep(0);
       setPersonalizationAnswers({});

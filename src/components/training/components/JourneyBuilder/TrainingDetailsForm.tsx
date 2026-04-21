@@ -142,7 +142,17 @@ export default function TrainingDetailsForm({
         )}
 
         {subStep === 1 && (
-          <div style={{ maxWidth: 560, margin: '0 auto', width: '100%' }}>
+          <div
+            style={{
+              maxWidth: 560,
+              margin: '0 auto',
+              width: '100%',
+              minHeight: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+            }}
+          >
             <label style={{ display: 'block', textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 10 }}>
               Expected Program Duration <span style={{ color: HARX }}>*</span>
             </label>
