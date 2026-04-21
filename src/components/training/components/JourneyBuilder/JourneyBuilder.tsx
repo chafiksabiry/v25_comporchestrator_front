@@ -14,9 +14,10 @@ interface JourneyBuilderProps {
   forceNew?: boolean;
   repOnboardingLayout?: boolean;
   initialStep?: number;
+  initialGigId?: string;
 }
 
-export default function JourneyBuilder({ onComplete, forceNew = false, repOnboardingLayout = false, initialStep = 0 }: JourneyBuilderProps) {
+export default function JourneyBuilder({ onComplete, forceNew = false, repOnboardingLayout = false, initialStep = 0, initialGigId = null }: JourneyBuilderProps) {
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [company, setCompany] = useState<Company | null>(null);
   const [journey, setJourney] = useState<TrainingJourney | null>(null);
@@ -26,7 +27,7 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
   const [rehearsalFeedback, setRehearsalFeedback] = useState<RehearsalFeedback[]>([]);
   const [rehearsalRating, setRehearsalRating] = useState(0);
   const [showLaunchApproval, setShowLaunchApproval] = useState(false);
-  const [selectedGigId, setSelectedGigId] = useState<string | null>(null);
+  const [selectedGigId, setSelectedGigId] = useState<string | null>(initialGigId);
   const [isRestoringDraft, setIsRestoringDraft] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
   const mainScrollRef = useRef<HTMLDivElement>(null);
