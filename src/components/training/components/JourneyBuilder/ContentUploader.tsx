@@ -2329,37 +2329,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
     };
 
-    const handleTrainingReadinessAction = async (
-      actionId: string,
-      readiness: TrainingReadinessPayload | null | undefined
-    ) => {
-      const r = readiness;
-      if (!r?.actions?.length) return;
-      if (actionId === 'validate_training') {
-        await handleSavePresentation();
-        return;
-      }
-      if (actionId === 'save_without_missing') {
-        const titles = r.missingModules?.map((m) => m.title).filter(Boolean) || [];
-        await handleSavePresentation({ omitModuleTitles: titles });
-        return;
-      }
-      if (actionId === 'generate_missing_modules') {
-        const titles = r.missingModules?.map((m) => m.title).filter(Boolean) || [];
-        if (!titles.length) return;
-        const list = titles.join(', ');
-        const prompt = [
-          'En français : rédige le contenu destiné aux slides pour les modules suivants du parcours en cours, au format **Markdown** (titres ## ou ###, listes -, **gras**, paragraphes, tableaux uniquement si pédagogiquement utiles) :',
-          list,
-          '',
-          'Pour chaque module : structure claire en Markdown (sous-titres ##, sous-parties ###, puces) avec pédagogie concrète, exemples et points clés.',
-          'Ne pas inclure : durées (minutes, « Durée totale », etc.), ligne « Rappel — durée / méthodologie », sections génériques vides type objectifs, grilles d’évaluation, tableaux récap admin, ni méta hors contenu visible.',
-          'Reste cohérent avec le plan déjà proposé dans la conversation. Ne réécris pas tout le programme : concentre-toi sur ces modules.',
-        ].join('\n');
-        await sendChatMessage(prompt);
-      }
-    };
-
     const handleRegenerateMessage = async (assistantId: string) => {
       const assistantIndex = chatMessages.findIndex((m) => m.id === assistantId && m.role === 'assistant');
       if (assistantIndex < 0) return;
@@ -2505,7 +2474,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           <div
             className={
               repSplitLayout
-                ? 'flex min-h-[72vh] w-full flex-col-reverse gap-3 lg:flex-row lg:items-stretch lg:gap-4'
+                ? 'flex min-h-[72vh] w-full flex-col-reverse gap-3 lg:h-[calc(100dvh-5.5rem)] lg:flex-row lg:items-stretch lg:gap-4 lg:overflow-hidden'
                 : rep
                   ? 'flex min-h-[72vh] w-full flex-col'
                   : 'grid min-h-[88vh] gap-3 lg:grid-cols-[265px_minmax(0,1fr)]'
@@ -2579,7 +2548,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             </aside>
           )}
           {repSplitLayout && (
-            <aside className="flex w-full shrink-0 flex-col gap-3 lg:max-h-[calc(100dvh-4.5rem)] lg:w-[min(420px,38vw)] lg:min-w-[280px] lg:overflow-y-auto lg:pr-1">
+            <aside className="flex w-full shrink-0 flex-col gap-3 lg:h-full lg:w-[min(420px,38vw)] lg:min-w-[280px] lg:pr-1">
               <div className="rounded-2xl border border-fuchsia-200/80 bg-gradient-to-br from-fuchsia-50/90 to-white p-3 shadow-sm">
                 <RepPodcastSidebarPanel
                   hasScript={!!podcastScript.trim()}
@@ -2620,7 +2589,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           <div
             className={
               repSplitLayout
-                ? 'flex min-h-0 min-w-0 flex-1 flex-col rounded-2xl border border-slate-200 bg-white px-3 py-4 shadow-sm md:px-5 md:py-5'
+                ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white px-3 py-4 shadow-sm md:px-5 md:py-5'
                 : rep
                   ? 'flex w-full flex-col rounded-2xl border border-slate-200 bg-white px-4 py-6 shadow-sm md:px-8 md:py-8'
                   : 'flex max-h-[90vh] min-h-0 flex-col rounded-2xl border border-slate-200 bg-white px-4 py-6 shadow-sm md:px-8 md:py-8'
@@ -2638,9 +2607,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
           >
             <div
               className={
-                rep
-                  ? 'relative rounded-none border-0 bg-transparent p-0 shadow-none'
-                  : 'relative flex min-h-0 flex-1 flex-col rounded-3xl border border-slate-200 bg-slate-50/40 shadow-sm'
+                repSplitLayout
+                  ? 'relative flex min-h-0 flex-1 flex-col rounded-3xl border border-slate-200 bg-slate-50/40 shadow-sm'
+                  : rep
+                    ? 'relative rounded-none border-0 bg-transparent p-0 shadow-none'
+                    : 'relative flex min-h-0 flex-1 flex-col rounded-3xl border border-slate-200 bg-slate-50/40 shadow-sm'
               }
             >
               <div
@@ -3085,41 +3056,6 @@ Do not use slide format (no "Slide 1", "Slide 2", etc.).${moduleSummary}`;
                               <RotateCcw className="h-3.5 w-3.5" />
                             </button>
                           </div>
-                          {msg.trainingReadiness && msg.trainingReadiness.actions?.length > 0 ? (
-                            <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-                              <p className="text-sm font-medium text-slate-900">{msg.trainingReadiness.messageFr}</p>
-                              {msg.trainingReadiness.missingModules?.length > 0 ? (
-                                <ul className="mt-2 list-disc space-y-0.5 pl-4 text-xs text-slate-700">
-                                  {msg.trainingReadiness.missingModules.map((mod, mi) => (
-                                    <li key={`${msg.id}-miss-${mi}`}>
-                                      <span className="font-semibold">{mod.title}</span>
-                                      {mod.reason ? <span className="text-slate-500"> — {mod.reason}</span> : null}
-                                    </li>
-                                  ))}
-                                </ul>
-                              ) : null}
-                              <div className="mt-3 flex flex-wrap gap-2">
-                                {msg.trainingReadiness.actions.map((act) => (
-                                  <button
-                                    key={`${msg.id}-${act.id}`}
-                                    type="button"
-                                    disabled={isChatLoading || isSavingCloud}
-                                    onClick={() => void handleTrainingReadinessAction(act.id, msg.trainingReadiness)}
-                                    className={
-                                      act.id === 'validate_training'
-                                        ? 'inline-flex items-center gap-1 rounded-xl bg-gradient-to-r from-harx-500 to-harx-alt-500 px-3 py-2 text-xs font-bold text-white shadow-md shadow-harx-500/20 disabled:opacity-50'
-                                        : 'inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-white disabled:opacity-50'
-                                    }
-                                  >
-                                    {act.id === 'validate_training' ? (
-                                      <CheckCircle className="h-3.5 w-3.5" />
-                                    ) : null}
-                                    {act.label}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          ) : null}
                         </div>
                       ) : (
                         <div className="max-w-[60%] rounded-xl border border-harx-alt-300/40 bg-gradient-to-br from-harx-500 to-harx-alt-500 px-3 py-2 text-sm font-medium text-white shadow-md shadow-harx-500/25">
