@@ -255,6 +255,18 @@ export default function PresentationPreview({
   }, [openClaudeEditor]);
 
   const slides = localPresentation.slides ?? [];
+  const slideCount = slides.length;
+  const maxSlidesTarget = 8;
+
+  const trimToMaxSlides = () => {
+    if (!Array.isArray(slides) || slides.length <= maxSlidesTarget) return;
+    const trimmed = slides.slice(0, maxSlidesTarget).map((s: any, idx: number) => ({
+      ...s,
+      id: typeof s?.id === 'number' ? s.id : idx + 1
+    }));
+    setLocalPresentation({ ...localPresentation, slides: trimmed });
+    setActiveSlide((prev) => Math.min(prev, trimmed.length - 1));
+  };
 
   const handleAiEdit = async (promptText: string) => {
     if (!promptText.trim()) return;
@@ -280,11 +292,11 @@ export default function PresentationPreview({
   const actualUrl = fileTrainingUrl || (presentation as any).filetraining || (presentation as any).fileTrainingUrl || (presentation as any).presentationUrl;
 
   const handleDownloadJSON = () => {
-    const blob = new Blob([JSON.stringify(presentation, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(localPresentation, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${presentation.title || 'presentation'}.json`;
+    a.download = `${localPresentation.title || 'presentation'}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -293,13 +305,13 @@ export default function PresentationPreview({
     setIsExporting(true);
     try {
       
-      const blob = await AIService.exportToPowerPoint(presentation);
+      const blob = await AIService.exportToPowerPoint(localPresentation);
 
       // Create Object URL and trigger download
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${presentation.title || 'Training'}.pptx`;
+      a.download = `${localPresentation.title || 'Training'}.pptx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -541,9 +553,35 @@ export default function PresentationPreview({
               >
                 {toSlideText(localPresentation.title)}
               </h2>
+              <div className="hidden items-center gap-2 sm:flex">
+                <span className="rounded-full border border-rose-100 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-600">
+                  {slideCount} slide{slideCount === 1 ? '' : 's'}
+                </span>
+                {slideCount > maxSlidesTarget && !actualUrl && (
+                  <button
+                    type="button"
+                    onClick={trimToMaxSlides}
+                    className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-black text-amber-800 hover:bg-amber-100"
+                    title={`Reduce to ${maxSlidesTarget} slides`}
+                  >
+                    Reduce to {maxSlidesTarget}
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
+              {!actualUrl && (
+                <button
+                  type="button"
+                  onClick={handleDownloadJSON}
+                  className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 md:flex"
+                  title="Download JSON (includes edits)"
+                >
+                  <FileDown size={18} />
+                  <span>JSON</span>
+                </button>
+              )}
               {!hideExportPptx && (
                 <button
                   type="button"

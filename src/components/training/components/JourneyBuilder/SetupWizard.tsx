@@ -398,8 +398,13 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
     return `${m} minute(s)`;
   };
 
-  const HARX = '#ff4d4d';
-  const HARX_GRADIENT = 'linear-gradient(to right, #ff4d4d, #ec4899)';
+  const HARX = '#dc2626';
+  const HARX_GRADIENT = 'linear-gradient(135deg, #b91c1c 0%, #dc2626 100%)';
+  const WIZARD_BG = 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)';
+  const WIZARD_CARD_BG = 'rgba(255,255,255,0.96)';
+  const WIZARD_CARD_BORDER = '1px solid rgba(15, 23, 42, 0.08)';
+  const WIZARD_CARD_SHADOW = '0 8px 24px rgba(15, 23, 42, 0.08)';
+  const STEP_ACTIVE_RING = '0 0 0 3px rgba(15, 23, 42, 0.08)';
   const embedCompact = repOnboardingLayout;
   const stepperPadding = embedCompact ? '2px 24px 4px' : '8px 24px';
   const bodyPadding = embedCompact
@@ -432,11 +437,17 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
   const thumbTextareaMinH = embedCompact && isThumbnailStep ? 64 : 100;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%', width: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%', width: '100%', background: WIZARD_BG, borderRadius: 18 }}>
+      <style>{`
+        @keyframes wizardFadeUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
 
       {/* ── Stepper ── */}
       <div style={{ flexShrink: 0, padding: stepperPadding }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#ffffff', border: '1px solid rgba(15, 23, 42, 0.08)', borderRadius: 9999, padding: '8px 12px', backdropFilter: 'blur(8px)' }}>
           {steps.map((step, i) => {
             const done = currentStep > step.id;
             const active = currentStep === step.id || (currentStep === 6 && step.id === 5);
@@ -447,25 +458,26 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                   onClick={() => { if (done) setCurrentStep(step.id); }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 5,
-                    padding: '3px 8px', borderRadius: 9999, border: 'none',
+                    padding: '4px 10px', borderRadius: 9999, border: 'none',
                     fontSize: 11, fontWeight: 600, cursor: done ? 'pointer' : 'default',
-                    background: 'transparent',
+                    background: active ? 'rgba(15, 23, 42, 0.05)' : 'transparent',
                     color: done ? '#059669' : active ? HARX : '#9ca3af',
                     transition: 'all 150ms',
                   }}
                 >
                   <span style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    width: 20, height: 20, borderRadius: '50%', fontSize: 10, fontWeight: 700,
+                    width: 22, height: 22, borderRadius: '50%', fontSize: 10, fontWeight: 800,
                     background: done ? '#059669' : active ? HARX : '#d1d5db',
                     color: '#fff',
+                    boxShadow: active ? STEP_ACTIVE_RING : 'none'
                   }}>
                     {done ? <Check style={{ width: 11, height: 11 }} /> : step.id}
                   </span>
-                  <span>{step.label}</span>
+                  <span style={{ fontWeight: 700 }}>{step.label}</span>
                 </button>
                 {i < steps.length - 1 && (
-                  <div style={{ width: 20, height: 2, borderRadius: 1, background: done ? '#059669' : '#e5e7eb' }} />
+                  <div style={{ width: 22, height: 2, borderRadius: 1, background: done ? '#0f766e' : '#e5e7eb' }} />
                 )}
               </Fragment>
             );
@@ -489,15 +501,21 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
           maxWidth: setupContentMaxWidth,
           margin: '0 auto',
           width: '100%',
+          borderRadius: 18,
+          border: WIZARD_CARD_BORDER,
+          background: WIZARD_CARD_BG,
+          boxShadow: WIZARD_CARD_SHADOW,
+          padding: embedCompact ? '12px 14px' : '18px 20px',
+          animation: 'wizardFadeUp 260ms ease-out',
         }}>
 
           {currentStep === 1 && (
             <>
               <div style={{ textAlign: 'center', marginBottom: embedCompact ? 10 : 18 }}>
-                <h3 style={{ fontSize: 17, fontWeight: 800, color: '#111827', margin: 0, letterSpacing: '-0.01em' }}>
+                <h3 style={{ fontSize: 20, fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>
                   Welcome to your training journey
                 </h3>
-                <p style={{ fontSize: 12, color: '#6b7280', marginTop: embedCompact ? 2 : 4 }}>
+                <p style={{ fontSize: 12, color: '#64748b', marginTop: embedCompact ? 3 : 6, fontWeight: 600 }}>
                   Smart defaults · Compliance
                 </p>
               </div>
@@ -591,7 +609,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                     )}
                   </div>
 
-                  <div>
+                  <div style={{ border: '1px solid rgba(15,23,42,0.08)', borderRadius: 12, padding: embedCompact ? '10px' : '12px', background: 'linear-gradient(180deg, #ffffff 0%, #fafbff 100%)' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
                       <Briefcase style={{ width: 13, height: 13, color: HARX }} />
                       Your gig <span style={{ color: HARX }}>*</span>
@@ -605,7 +623,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                   </div>
 
                   {selectedGig && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#065f46', border: '1px solid #d1fae5' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 10, padding: '10px 12px', fontSize: 12, color: '#065f46', border: '1px solid #a7f3d0', background: '#ecfdf5' }}>
                       <CheckCircle style={{ width: 14, height: 14, color: '#059669', flexShrink: 0 }} />
                       <span style={{ fontWeight: 600 }}>{selectedGig.title}</span>
                     </div>
@@ -640,11 +658,11 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
           {currentStep === 4 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <div style={{ textAlign: 'center' }}>
-                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <h3 style={{ fontSize: 20, fontWeight: 900, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                   <Users style={{ width: 20, height: 20, color: HARX }} />
                   Identify your learners
                 </h3>
-                <p style={{ fontSize: 13, color: '#6b7280', marginTop: 6 }}>Role-based paths · Skill assessments · Personalization</p>
+                <p style={{ fontSize: 13, color: '#64748b', marginTop: 6, fontWeight: 600 }}>Role-based paths · Skill assessments · Personalization</p>
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
@@ -662,7 +680,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                   {roleOptions.map(item => {
                     const checked = journey.targetRoles?.includes(item.role) || false;
                     return (
-                      <label key={item.role} style={{ display: 'flex', alignItems: 'center', padding: 10, border: `1.5px solid ${checked ? HARX : '#e5e7eb'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 150ms' }}>
+                      <label key={item.role} style={{ display: 'flex', alignItems: 'center', padding: 10, border: `1.5px solid ${checked ? HARX : '#e5e7eb'}`, borderRadius: 12, cursor: 'pointer', transition: 'all 150ms', background: checked ? '#fef2f2' : '#ffffff', boxShadow: checked ? '0 4px 12px rgba(185,28,28,0.10)' : 'none' }}>
                         <input
                           type="checkbox"
                           checked={checked}
@@ -697,10 +715,10 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
           {isStep5 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: thumbSectionGap, width: '100%' }}>
               <div style={{ textAlign: 'center' }}>
-                <h3 style={{ fontSize: embedCompact ? 16 : 18, fontWeight: 800, color: '#111827', margin: 0 }}>
+                <h3 style={{ fontSize: embedCompact ? 18 : 20, fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>
                   Upload training thumbnail
                 </h3>
-                <p style={{ fontSize: embedCompact ? 12 : 13, color: '#6b7280', marginTop: embedCompact ? 3 : 6, lineHeight: 1.45 }}>
+                <p style={{ fontSize: embedCompact ? 12 : 13, color: '#64748b', marginTop: embedCompact ? 3 : 6, lineHeight: 1.45, fontWeight: 600 }}>
                   Add a cover image for your training card, or describe one for AI.
                 </p>
               </div>
@@ -713,7 +731,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                   border: '1px dashed #cbd5e1',
                   borderRadius: embedCompact ? 12 : 16,
                   padding: thumbOuterPadding,
-                  background: 'transparent',
+                  background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
                 }}
               >
                 <input
@@ -754,6 +772,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                       background: '#ffffff',
                       overflow: 'hidden',
                       boxSizing: 'border-box',
+                      boxShadow: thumbnailUrl ? '0 12px 28px rgba(17,24,39,0.12)' : 'none'
                     }}
                   >
                     {thumbnailUrl ? (
@@ -878,8 +897,8 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
               <div style={{ textAlign: 'center', flexShrink: 0 }}>
                 <h3
                   style={{
-                    fontSize: 16,
-                    fontWeight: 800,
+                    fontSize: 18,
+                    fontWeight: 900,
                     color: '#111827',
                     margin: 0,
                     display: 'flex',
@@ -1067,8 +1086,9 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: embedCompact ? '8px 20px' : '10px 28px',
-          borderTop: '1px solid #f3f4f6',
-          background: '#fff',
+          borderTop: '1px solid rgba(15,23,42,0.08)',
+          background: '#ffffff',
+          backdropFilter: 'blur(10px)',
         }}
       >
         {isVisionStep ? (
@@ -1078,8 +1098,8 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
               onClick={handleVisionFooterBack}
               style={{
                 display: 'flex', alignItems: 'center', gap: 5,
-                padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
-                border: '1px solid #d1d5db', background: 'transparent', color: '#374151',
+                padding: '8px 14px', borderRadius: 10, fontSize: 12, fontWeight: 700,
+                border: '1px solid #d1d5db', background: '#fff', color: '#374151',
                 cursor: 'pointer',
               }}
             >
@@ -1093,10 +1113,10 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
               disabled={visionContinueDisabled}
               style={{
                 display: 'flex', alignItems: 'center', gap: 5,
-                padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                padding: '8px 16px', borderRadius: 10, fontSize: 12, fontWeight: 800,
                 border: 'none', color: '#fff', cursor: visionContinueDisabled ? 'not-allowed' : 'pointer',
                 background: visionContinueDisabled ? '#d1d5db' : HARX_GRADIENT,
-                boxShadow: visionContinueDisabled ? 'none' : '0 2px 8px rgba(255,77,77,0.25)',
+                boxShadow: visionContinueDisabled ? 'none' : '0 6px 16px rgba(185,28,28,0.22)',
               }}
             >
               {visionContinueLabel}
@@ -1111,9 +1131,9 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
               disabled={currentStep === 1}
               style={{
                 display: 'flex', alignItems: 'center', gap: 5,
-                padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                padding: '8px 14px', borderRadius: 10, fontSize: 12, fontWeight: 700,
                 border: currentStep === 1 ? 'none' : '1px solid #d1d5db',
-                background: 'transparent', color: currentStep === 1 ? '#d1d5db' : '#374151',
+                background: currentStep === 1 ? 'transparent' : '#fff', color: currentStep === 1 ? '#d1d5db' : '#374151',
                 cursor: currentStep === 1 ? 'not-allowed' : 'pointer',
               }}
             >
@@ -1129,10 +1149,10 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
               disabled={!isStepValid()}
               style={{
                 display: 'flex', alignItems: 'center', gap: 5,
-                padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                padding: '8px 16px', borderRadius: 10, fontSize: 12, fontWeight: 800,
                 border: 'none', color: '#fff', cursor: isStepValid() ? 'pointer' : 'not-allowed',
                 background: isStepValid() ? HARX_GRADIENT : '#d1d5db',
-                boxShadow: isStepValid() ? '0 2px 8px rgba(255,77,77,0.25)' : 'none',
+                boxShadow: isStepValid() ? '0 6px 16px rgba(185,28,28,0.22)' : 'none',
               }}
             >
               {currentStep === 6 ? 'Start building' : 'Continue'}
