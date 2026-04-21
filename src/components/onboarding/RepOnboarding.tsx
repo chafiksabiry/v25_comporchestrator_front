@@ -781,99 +781,187 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     <div className="space-y-6">
       <div className="mx-auto max-w-6xl">
         {selectedImageSet ? (
-          <div className="overflow-hidden rounded-2xl border border-harx-100 bg-white">
-            <div className="grid min-h-[min(720px,calc(100dvh-8rem))] grid-cols-1 lg:min-h-[calc(100dvh-10rem)]">
-              <div className="flex min-h-[360px] min-w-0 flex-col lg:min-h-0">
-                <div className="flex h-full flex-col">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-harx-100 px-4 py-3">
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                      onClick={() => {
-                        setSelectedImageSet(null);
-                        setSelectedImageIndex(0);
-                        setPreviewJourney(null);
-                      }}
-                    >
-                      Back to trainings list
-                    </button>
-                    <div className="min-w-0 flex-1 px-2 text-center sm:text-left">
-                      <div className="truncate text-sm font-black text-harx-700">
-                        {previewJourney?.title ||
-                          previewJourney?.name ||
-                          selectedImageSet.trainingTitle ||
-                          selectedImageSet.title ||
-                          'Training'}
-                      </div>
-                      <div className="text-xs font-semibold text-gray-500">
-                        {selectedImageSet.items.length === 0
-                          ? 'Presentation images — 0 slides'
-                          : `Slide ${Math.min(selectedImageIndex + 1, selectedImageSet.items.length)} / ${selectedImageSet.items.length}`}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                        disabled={selectedImageSet.items.length === 0 || selectedImageIndex <= 0}
-                        onClick={() => setSelectedImageIndex((prev) => Math.max(prev - 1, 0))}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                        disabled={
-                          selectedImageSet.items.length === 0 ||
-                          selectedImageIndex >= selectedImageSet.items.length - 1
-                        }
-                        onClick={() =>
-                          setSelectedImageIndex((prev) =>
-                            Math.min(prev + 1, Math.max(selectedImageSet.items.length - 1, 0))
-                          )
-                        }
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
-                    </div>
+          <div className="relative overflow-hidden rounded-[1.75rem] border border-slate-800/90 bg-slate-950 shadow-[0_32px_120px_-24px_rgba(0,0,0,0.65)] ring-1 ring-white/[0.06]">
+            {/* Salle virtuelle : éclairage d’ambiance */}
+            <div
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_55%_at_50%_-15%,rgba(244,63,94,0.18),transparent_55%)]"
+              aria-hidden
+            />
+            <div
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_45%_at_50%_105%,rgba(99,102,241,0.14),transparent_50%)]"
+              aria-hidden
+            />
+            <div
+              className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.45)_0%,transparent_18%,transparent_82%,rgba(0,0,0,0.45)_100%)]"
+              aria-hidden
+            />
+            <div
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-[38%] bg-gradient-to-t from-black via-black/50 to-transparent"
+              aria-hidden
+            />
+
+            <div className="relative z-20 flex min-h-[min(720px,calc(100dvh-8rem))] flex-col lg:min-h-[calc(100dvh-10rem)]">
+              {/* Barre type HUD / salle de contrôle */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-slate-950/70 px-4 py-3 backdrop-blur-xl sm:px-5">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-white/25 hover:bg-white/10"
+                  onClick={() => {
+                    setSelectedImageSet(null);
+                    setSelectedImageIndex(0);
+                    setPreviewJourney(null);
+                  }}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5 opacity-80" />
+                  Retour aux formations
+                </button>
+                <div className="min-w-0 flex-1 text-center sm:px-4">
+                  <div className="truncate text-sm font-black tracking-tight text-white drop-shadow-sm">
+                    {previewJourney?.title ||
+                      previewJourney?.name ||
+                      selectedImageSet.trainingTitle ||
+                      selectedImageSet.title ||
+                      'Présentation'}
                   </div>
-                  <div className="flex min-h-[300px] flex-1 items-center justify-center bg-[#f7f9fc] p-4">
-                    {selectedImageSet.items.length === 0 ? (
-                      <div className="max-w-md space-y-4 text-center">
-                        <Image className="mx-auto h-10 w-10 text-harx-400" aria-hidden />
-                        <p className="text-sm text-gray-600">
-                          Aucune image générée pour cette formation. Ouvrez le chat REP et utilisez{' '}
-                          <span className="font-semibold text-gray-800">Presentation</span> pour créer les slides
-                          images.
-                        </p>
-                        {previewJourney ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const j = previewJourney;
-                              setSelectedImageSet(null);
-                              setSelectedImageIndex(0);
-                              setPreviewJourney(null);
-                              handleOpenTrainingChat(j);
-                            }}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-harx px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-harx-500/20 transition hover:brightness-105"
-                          >
-                            <MessageSquare className="h-4 w-4" />
-                            Ouvrir le chat de formation
-                          </button>
-                        ) : null}
-                      </div>
-                    ) : selectedImageSet.items[selectedImageIndex]?.imageUrl ? (
-                      <img
-                        src={selectedImageSet.items[selectedImageIndex].imageUrl}
-                        alt={selectedImageSet.items[selectedImageIndex].title || `Slide ${selectedImageIndex + 1}`}
-                        className="max-h-full w-full rounded-xl border border-gray-200 bg-white object-contain shadow-sm"
-                      />
-                    ) : (
-                      <div className="text-sm text-gray-500">Slide image unavailable.</div>
-                    )}
+                  <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                    Salle virtuelle ·{' '}
+                    {selectedImageSet.items.length === 0
+                      ? '0 diapositive'
+                      : `Diapositive ${Math.min(selectedImageIndex + 1, selectedImageSet.items.length)} / ${selectedImageSet.items.length}`}
                   </div>
                 </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white shadow-lg shadow-black/30 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35"
+                    disabled={selectedImageSet.items.length === 0 || selectedImageIndex <= 0}
+                    onClick={() => setSelectedImageIndex((prev) => Math.max(prev - 1, 0))}
+                    aria-label="Diapositive précédente"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white shadow-lg shadow-black/30 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35"
+                    disabled={
+                      selectedImageSet.items.length === 0 ||
+                      selectedImageIndex >= selectedImageSet.items.length - 1
+                    }
+                    onClick={() =>
+                      setSelectedImageIndex((prev) =>
+                        Math.min(prev + 1, Math.max(selectedImageSet.items.length - 1, 0))
+                      )
+                    }
+                    aria-label="Diapositive suivante"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Scène + écran PPT (perspective) */}
+              <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-3 pb-10 pt-6 sm:px-8">
+                {selectedImageSet.items.length === 0 ? (
+                  <div className="relative z-10 mx-auto max-w-md space-y-5 rounded-2xl border border-white/10 bg-slate-900/60 p-8 text-center shadow-[0_0_40px_-10px_rgba(244,63,94,0.35)] backdrop-blur-md">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500/30 to-indigo-500/25 ring-1 ring-white/20">
+                      <Image className="h-7 w-7 text-fuchsia-200/90" aria-hidden />
+                    </div>
+                    <p className="text-sm leading-relaxed text-slate-300">
+                      Aucune image dans cette salle pour l’instant. Ouvrez le chat REP et utilisez{' '}
+                      <span className="font-semibold text-white">Presentation</span> pour générer les diapositives.
+                    </p>
+                    {previewJourney ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const j = previewJourney;
+                          setSelectedImageSet(null);
+                          setSelectedImageIndex(0);
+                          setPreviewJourney(null);
+                          handleOpenTrainingChat(j);
+                        }}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 to-fuchsia-600 px-4 py-3 text-xs font-bold text-white shadow-lg shadow-rose-900/40 transition hover:brightness-110"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        Ouvrir le chat de formation
+                      </button>
+                    ) : null}
+                  </div>
+                ) : (
+                  <>
+                    {/* Flèches latérales (grand écran) */}
+                    <button
+                      type="button"
+                      className="absolute left-2 top-1/2 z-20 hidden -translate-y-1/2 rounded-full border border-white/10 bg-slate-950/80 p-3 text-white shadow-xl backdrop-blur-md transition hover:bg-slate-800/90 disabled:pointer-events-none disabled:opacity-0 sm:left-4 md:flex"
+                      disabled={selectedImageIndex <= 0}
+                      onClick={() => setSelectedImageIndex((prev) => Math.max(prev - 1, 0))}
+                      aria-label="Précédent"
+                    >
+                      <ChevronLeft className="h-6 w-6" />
+                    </button>
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 z-20 hidden -translate-y-1/2 rounded-full border border-white/10 bg-slate-950/80 p-3 text-white shadow-xl backdrop-blur-md transition hover:bg-slate-800/90 disabled:pointer-events-none disabled:opacity-0 sm:right-4 md:flex"
+                      disabled={selectedImageIndex >= selectedImageSet.items.length - 1}
+                      onClick={() =>
+                        setSelectedImageIndex((prev) =>
+                          Math.min(prev + 1, Math.max(selectedImageSet.items.length - 1, 0))
+                        )
+                      }
+                      aria-label="Suivant"
+                    >
+                      <ChevronRight className="h-6 w-6" />
+                    </button>
+
+                    <div className="relative w-full max-w-[min(100%,56rem)] [perspective:1400px]">
+                      {/* Reflet sol léger sous l’écran */}
+                      <div
+                        className="pointer-events-none absolute -bottom-8 left-1/2 h-24 w-[88%] -translate-x-1/2 bg-gradient-to-b from-white/[0.07] to-transparent opacity-60 blur-md"
+                        aria-hidden
+                      />
+                      <div className="relative mx-auto w-full origin-top [transform-style:preserve-3d] [transform:rotateX(4.5deg)] transition-transform duration-500 ease-out">
+                        <div className="rounded-[0.65rem] bg-gradient-to-b from-slate-700/90 to-slate-950 p-[5px] shadow-[0_4px_0_0_rgba(15,23,42,0.9),0_28px_70px_-8px_rgba(0,0,0,0.75),inset_0_1px_0_0_rgba(255,255,255,0.12)] ring-1 ring-white/[0.08]">
+                          <div className="overflow-hidden rounded-[0.45rem] bg-black ring-1 ring-black/80">
+                            {selectedImageSet.items[selectedImageIndex]?.imageUrl ? (
+                              <img
+                                src={selectedImageSet.items[selectedImageIndex].imageUrl}
+                                alt={
+                                  selectedImageSet.items[selectedImageIndex].title ||
+                                  `Diapositive ${selectedImageIndex + 1}`
+                                }
+                                className="max-h-[min(72vh,640px)] w-full bg-slate-950 object-contain"
+                              />
+                            ) : (
+                              <div className="flex min-h-[240px] items-center justify-center bg-slate-950 px-6 py-16 text-sm text-slate-500">
+                                Image indisponible pour cette diapositive.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Barre de progression type timeline */}
+                    <div className="relative z-10 mt-8 flex w-full max-w-[min(100%,56rem)] flex-col items-center gap-2 px-2">
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-rose-400 via-fuchsia-500 to-indigo-500 transition-[width] duration-300 ease-out"
+                          style={{
+                            width:
+                              selectedImageSet.items.length > 0
+                                ? `${((selectedImageIndex + 1) / selectedImageSet.items.length) * 100}%`
+                                : '0%',
+                          }}
+                        />
+                      </div>
+                      <p className="text-center text-[11px] font-medium text-slate-500">
+                        {selectedImageSet.items[selectedImageIndex]?.title
+                          ? String(selectedImageSet.items[selectedImageIndex].title)
+                          : 'Mode présentation immersive'}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
