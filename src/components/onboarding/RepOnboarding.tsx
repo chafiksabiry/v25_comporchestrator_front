@@ -584,6 +584,53 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
 
+  const placeholderTrainingTitles = React.useMemo(
+    () =>
+      new Set(
+        ['draft gig', 'training draft', 'new training journey', 'untitled training'].map((s) =>
+          s
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+        )
+      ),
+    []
+  );
+
+  const isPlaceholderTrainingTitle = useCallback(
+    (value: unknown) => {
+      const t = normalizeText(value);
+      return !t || placeholderTrainingTitles.has(t);
+    },
+    [placeholderTrainingTitles]
+  );
+
+  /** Prefer real training name over gig placeholder titles (e.g. "Draft gig"). */
+  const resolveCardTrainingTitle = useCallback(
+    (journey: any, formatted: ReturnType<typeof formatTrainingJourney>, imageSet?: TrainingImageSet) => {
+      if (!isPlaceholderTrainingTitle(formatted.title)) return formatted.title;
+
+      const fromImageSet = String(imageSet?.trainingTitle || imageSet?.title || '').trim();
+      if (fromImageSet && !isPlaceholderTrainingTitle(fromImageSet)) return fromImageSet;
+
+      const gigId = resolveJourneyGigId(journey);
+      const gig = gigId
+        ? companyGigs.find((g: any) => String(g._id || g.id || '').trim() === gigId)
+        : undefined;
+      const fromGig = String(gig?.title || gig?.name || '').trim();
+      if (fromGig && !isPlaceholderTrainingTitle(fromGig)) return fromGig;
+
+      const rawDesc = String(journey?.description || '').trim();
+      if (rawDesc) {
+        const first = rawDesc.split(/\r?\n/)[0].trim();
+        if (first.length > 8) return first.length > 140 ? `${first.slice(0, 137)}…` : first;
+      }
+
+      return formatted.title;
+    },
+    [companyGigs, isPlaceholderTrainingTitle, resolveJourneyGigId]
+  );
+
   const findImageSetForJourney = useCallback(
     (journey: any): TrainingImageSet | undefined => {
       const gigId = resolveJourneyGigId(journey);
@@ -1096,6 +1143,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                       {trainings.filter(Boolean).map((journey) => {
                         const formatted = formatTrainingJourney(journey);
                         const imageSet = findImageSetForJourney(journey);
+                        const displayTitle = resolveCardTrainingTitle(journey, formatted, imageSet);
                         const imageSlidesCount = Array.isArray(imageSet?.items) ? imageSet.items.length : 0;
                         const imageSetPreview =
                           imageSet && Array.isArray(imageSet.items) && imageSet.items[0]?.imageUrl
@@ -1135,7 +1183,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                                       {renderTrainingLogo(formatted.trainingLogo)}
                                     </span>
                                     <h3 className="truncate text-lg font-black leading-tight text-gray-900 transition-colors group-hover:text-harx-700">
-                                      {formatted.title}
+                                      {displayTitle}
                                     </h3>
                                   </div>
                                   <p className="mt-1 truncate text-xs font-medium text-gray-500">
@@ -1148,7 +1196,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                               <div className="mb-3 overflow-hidden rounded-xl border border-gray-100 bg-white/90 shadow-sm">
                                 <img
                                   src={trainingPreviewImage}
-                                  alt={`${formatted.title} preview`}
+                                  alt={`${displayTitle} preview`}
                                   className="h-28 w-full object-cover"
                                 />
                               </div>
