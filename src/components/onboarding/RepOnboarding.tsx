@@ -598,36 +598,58 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   }, [playingPodcastId]);
 
   const playPodcastAudio = useCallback((podcast: SavedPodcastItem) => {
-    const script = String(podcast?.script || '').trim();
-    if (!script) return;
+    const runSpeak = (textToSpeak: string) => {
+      const script = String(textToSpeak || '').trim();
+      if (!script) return;
+      if (typeof window === 'undefined' || !window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(script);
+      utterance.lang = 'fr-FR';
+      utterance.rate = 0.95;
+      utterance.onstart = () => {
+        setPodcastPlaybackProgress((prev) => ({ ...prev, [podcast._id]: 0 }));
+      };
+      utterance.onboundary = (event: SpeechSynthesisEvent) => {
+        const idx = typeof event.charIndex === 'number' ? event.charIndex : 0;
+        const ratio = Math.max(0, Math.min(1, idx / Math.max(script.length, 1)));
+        setPodcastPlaybackProgress((prev) => ({ ...prev, [podcast._id]: Math.round(ratio * 100) }));
+      };
+      utterance.onend = () => {
+        setPodcastPlaybackProgress((prev) => ({ ...prev, [podcast._id]: 100 }));
+        setPlayingPodcastId((current) => (current === podcast._id ? null : current));
+      };
+      utterance.onerror = () => {
+        setPodcastPlaybackProgress((prev) => ({ ...prev, [podcast._id]: 0 }));
+        setPlayingPodcastId((current) => (current === podcast._id ? null : current));
+      };
+      podcastUtteranceRef.current = utterance;
+      setPlayingPodcastId(podcast._id);
+      window.speechSynthesis.speak(utterance);
+    };
+
     if (playingPodcastId === podcast._id) {
       stopPodcastPlayback();
       return;
     }
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(script);
-    utterance.lang = 'fr-FR';
-    utterance.rate = 0.95;
-    utterance.onstart = () => {
-      setPodcastPlaybackProgress((prev) => ({ ...prev, [podcast._id]: 0 }));
-    };
-    utterance.onboundary = (event: SpeechSynthesisEvent) => {
-      const idx = typeof event.charIndex === 'number' ? event.charIndex : 0;
-      const ratio = Math.max(0, Math.min(1, idx / Math.max(script.length, 1)));
-      setPodcastPlaybackProgress((prev) => ({ ...prev, [podcast._id]: Math.round(ratio * 100) }));
-    };
-    utterance.onend = () => {
-      setPodcastPlaybackProgress((prev) => ({ ...prev, [podcast._id]: 100 }));
-      setPlayingPodcastId((current) => (current === podcast._id ? null : current));
-    };
-    utterance.onerror = () => {
-      setPodcastPlaybackProgress((prev) => ({ ...prev, [podcast._id]: 0 }));
-      setPlayingPodcastId((current) => (current === podcast._id ? null : current));
-    };
-    podcastUtteranceRef.current = utterance;
-    setPlayingPodcastId(podcast._id);
-    window.speechSynthesis.speak(utterance);
+
+    const localScript = String(podcast?.script || '').trim();
+    const cloudinaryUrl = String(podcast?.scriptCloudinaryUrl || '').trim();
+    if (!cloudinaryUrl) {
+      runSpeak(localScript);
+      return;
+    }
+
+    fetch(cloudinaryUrl)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((payload: any) => {
+        const fromCloudinary = String(
+          payload?.script || payload?.transcript || payload?.content || ''
+        ).trim();
+        runSpeak(fromCloudinary || localScript);
+      })
+      .catch(() => {
+        runSpeak(localScript);
+      });
   }, [playingPodcastId, stopPodcastPlayback]);
 
   useEffect(() => {
