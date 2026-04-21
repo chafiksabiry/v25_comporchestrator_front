@@ -166,8 +166,21 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
       const realCompanyId = OnboardingService.getCompanyId();
       if (!realCompanyId || !selectedGig?._id) return;
 
-      const baseTitle =
-        (trainingDetails?.trainingName || visionName || selectedGig.title || 'Training draft').trim();
+      const rawGigTitle = String(selectedGig?.title || '').trim();
+      const safeGigTitle =
+        rawGigTitle && rawGigTitle.toLowerCase() !== 'draft gig' ? rawGigTitle : '';
+      const persistedJourneyTitle = String(journey.name || '').trim();
+      const safeJourneyTitle =
+        persistedJourneyTitle && persistedJourneyTitle.toLowerCase() !== 'draft gig'
+          ? persistedJourneyTitle
+          : '';
+      const baseTitle = (
+        trainingDetails?.trainingName ||
+        visionName ||
+        safeGigTitle ||
+        safeJourneyTitle ||
+        'Training draft'
+      ).trim();
       const payload: Record<string, unknown> = {
         _id: draftJourneyId || undefined,
         name: baseTitle,
@@ -210,7 +223,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
       const completeCompany: Company = { id: realCompanyId, name: companyData?.name || companyData?.data?.name || company.name || '', industry: company.industry || '', size: company.size || 'medium', setupComplete: true };
       const completeJourney: TrainingJourney = {
         id: Date.now().toString(), companyId: completeCompany.id,
-        title: trainingDetails?.trainingName || selectedGig?.title || 'New Training Journey',
         name: trainingDetails?.trainingName || selectedGig?.title || 'New Training Journey',
         description: trainingDetails?.trainingDescription || selectedGig?.description || '',
         status: 'draft',
@@ -279,9 +291,19 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
           : typeof gidRaw === 'object' && gidRaw && '_id' in gidRaw
             ? String((gidRaw as { _id?: string })._id || '')
             : '';
-        const gigTitle = typeof gidRaw === 'object' && gidRaw && 'title' in gidRaw
-          ? String((gidRaw as { title?: string }).title || 'Draft gig')
-          : 'Draft gig';
+        const draftTitle = String(draft.title || draft.name || '').trim();
+        const embeddedGigTitle =
+          typeof gidRaw === 'object' && gidRaw && 'title' in gidRaw
+            ? String((gidRaw as { title?: string }).title || '').trim()
+            : '';
+        const isDraftGigPlaceholder = (s: string) => s.trim().toLowerCase() === 'draft gig';
+        const gigTitle =
+          (draftTitle && !isDraftGigPlaceholder(draftTitle)
+            ? draftTitle
+            : embeddedGigTitle) ||
+          embeddedGigTitle ||
+          draftTitle ||
+          'Untitled gig';
         if (gigId) {
           setSelectedGig({
             _id: gigId,
@@ -301,6 +323,25 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
             createdAt: '',
             updatedAt: ''
           });
+        }
+        const persistedTitle = String(draft.title || draft.name || '').trim();
+        const persistedDesc = String(draft.description || '').trim();
+        setJourney((prev) => ({
+          ...prev,
+          name: persistedTitle || prev.name,
+          description: persistedDesc || prev.description,
+          estimatedDuration: draft.estimatedDuration || prev.estimatedDuration,
+        }));
+        if (persistedTitle && !isDraftGigPlaceholder(persistedTitle)) {
+          setTrainingDetails({
+            trainingName: persistedTitle,
+            trainingDescription: persistedDesc,
+            estimatedDuration: String(draft.estimatedDuration || '120'),
+          });
+          setVisionName(persistedTitle);
+          setVisionDesc(persistedDesc);
+          const ed = String(draft.estimatedDuration || '');
+          if (ed && VISION_DURATIONS.some((d) => d.value === ed)) setVisionDuration(ed);
         }
         setCurrentStep(2);
       } catch (error) {
@@ -332,8 +373,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
       });
       setJourney((prev) => ({
         ...prev,
-        title: cleanVisionName || prev.title || prev.name,
-        name: cleanVisionName || prev.name || prev.title,
+        name: cleanVisionName || prev.name,
         description: cleanVisionDesc || prev.description || '',
         estimatedDuration: visionDuration || prev.estimatedDuration,
       }));
