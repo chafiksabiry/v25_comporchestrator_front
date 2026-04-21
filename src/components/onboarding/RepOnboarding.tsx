@@ -8,6 +8,7 @@ import {
   FileText,
   Clock,
   Play,
+  Square,
   Settings,
   RefreshCw,
   Plus,
@@ -51,6 +52,8 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [playingPodcastId, setPlayingPodcastId] = useState<string | null>(null);
+  const [podcastPlaybackProgress, setPodcastPlaybackProgress] = useState<Record<string, number>>({});
   const [settingsJourney, setSettingsJourney] = useState<any | null>(null);
   const [settingsForm, setSettingsForm] = useState<{
     title: string;
@@ -62,6 +65,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     logoUrl: '',
   });
   const logoInputRef = useRef<HTMLInputElement | null>(null);
+  const podcastUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Helper function to format training journey data for display
   const asUiString = (v: unknown, fallback: string): string => {
@@ -585,6 +589,53 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     void fetchSavedPodcasts();
   }, [fetchSavedPodcasts]);
 
+  const stopPodcastPlayback = useCallback(() => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    podcastUtteranceRef.current = null;
+    setPodcastPlaybackProgress((prev) => (playingPodcastId ? { ...prev, [playingPodcastId]: 0 } : prev));
+    setPlayingPodcastId(null);
+  }, [playingPodcastId]);
+
+  const playPodcastAudio = useCallback((podcast: SavedPodcastItem) => {
+    const script = String(podcast?.script || '').trim();
+    if (!script) return;
+    if (playingPodcastId === podcast._id) {
+      stopPodcastPlayback();
+      return;
+    }
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(script);
+    utterance.lang = 'fr-FR';
+    utterance.rate = 0.95;
+    utterance.onstart = () => {
+      setPodcastPlaybackProgress((prev) => ({ ...prev, [podcast._id]: 0 }));
+    };
+    utterance.onboundary = (event: SpeechSynthesisEvent) => {
+      const idx = typeof event.charIndex === 'number' ? event.charIndex : 0;
+      const ratio = Math.max(0, Math.min(1, idx / Math.max(script.length, 1)));
+      setPodcastPlaybackProgress((prev) => ({ ...prev, [podcast._id]: Math.round(ratio * 100) }));
+    };
+    utterance.onend = () => {
+      setPodcastPlaybackProgress((prev) => ({ ...prev, [podcast._id]: 100 }));
+      setPlayingPodcastId((current) => (current === podcast._id ? null : current));
+    };
+    utterance.onerror = () => {
+      setPodcastPlaybackProgress((prev) => ({ ...prev, [podcast._id]: 0 }));
+      setPlayingPodcastId((current) => (current === podcast._id ? null : current));
+    };
+    podcastUtteranceRef.current = utterance;
+    setPlayingPodcastId(podcast._id);
+    window.speechSynthesis.speak(utterance);
+  }, [playingPodcastId, stopPodcastPlayback]);
+
+  useEffect(() => {
+    return () => {
+      stopPodcastPlayback();
+    };
+  }, [stopPodcastPlayback]);
+
   if (showTraining.isOpen && showTraining.newJourney) {
     return (
       <div className="flex min-h-[calc(100dvh-5.5rem)] w-full min-w-0 flex-col px-4 pt-0 pb-4 md:px-8 md:pt-1 md:pb-6">
@@ -945,11 +996,31 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                         <div className="mt-3 flex items-center gap-2">
                           <button
                             type="button"
+                            onClick={() => playPodcastAudio(podcast)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                          >
+                            {playingPodcastId === podcast._id ? <Square className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                            {playingPodcastId === podcast._id ? 'Stop audio' : 'Play audio'}
+                          </button>
+                          <button
+                            type="button"
                             disabled
                             className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-400 cursor-not-allowed"
                           >
                             Open chat
                           </button>
+                        </div>
+                        <div className="mt-2">
+                          <div className="mb-1 flex items-center justify-between text-[10px] font-semibold text-slate-500">
+                            <span>Audio progress</span>
+                            <span>{podcastPlaybackProgress[podcast._id] || 0}%</span>
+                          </div>
+                          <div className="h-1.5 w-full rounded-full bg-slate-200">
+                            <div
+                              className="h-1.5 rounded-full bg-gradient-harx transition-all"
+                              style={{ width: `${podcastPlaybackProgress[podcast._id] || 0}%` }}
+                            />
+                          </div>
                         </div>
                       </div>
                     ))}
