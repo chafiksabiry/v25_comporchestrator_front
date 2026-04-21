@@ -144,7 +144,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
   }, [currentStep, visionSubStep]);
 
   const steps = [
-    { id: 1, label: 'Industry' },
+    { id: 1, label: 'Gig' },
     { id: 2, label: 'Thumbnail' },
     { id: 3, label: 'Vision' },
     { id: 4, label: 'Team' },
@@ -158,6 +158,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
       const completeCompany: Company = { id: realCompanyId, name: companyData?.name || companyData?.data?.name || company.name || '', industry: company.industry || '', size: company.size || 'medium', setupComplete: true };
       const completeJourney: TrainingJourney = {
         id: Date.now().toString(), companyId: completeCompany.id,
+        title: trainingDetails?.trainingName || selectedGig?.title || 'New Training Journey',
         name: trainingDetails?.trainingName || selectedGig?.title || 'New Training Journey',
         description: trainingDetails?.trainingDescription || selectedGig?.description || '',
         status: 'draft',
@@ -205,11 +206,20 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
     if (visionSubStep === 0) {
       if (visionName.trim()) setVisionSubStep(1);
     } else if (visionDuration) {
+      const cleanVisionName = String(visionName || '').trim();
+      const cleanVisionDesc = String(visionDesc || '').trim();
       setTrainingDetails({
-        trainingName: visionName,
-        trainingDescription: visionDesc,
+        trainingName: cleanVisionName,
+        trainingDescription: cleanVisionDesc,
         estimatedDuration: visionDuration,
       });
+      setJourney((prev) => ({
+        ...prev,
+        title: cleanVisionName || prev.title || prev.name,
+        name: cleanVisionName || prev.name || prev.title,
+        description: cleanVisionDesc || prev.description || '',
+        estimatedDuration: visionDuration || prev.estimatedDuration,
+      }));
       setCurrentStep(4);
     }
   };
@@ -363,7 +373,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
 
   const isStepValid = () => {
     switch (currentStep) {
-      case 1: return companyData && company.industry && selectedGig !== null;
+      case 1: return !!companyData && selectedGig !== null;
       case 2: return !!thumbnailUrl && !thumbnailUploading;
       case 3: return trainingDetails !== null;
       case 4: return journey.targetRoles && journey.targetRoles.length > 0;
@@ -488,7 +498,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                   Welcome to your training journey
                 </h3>
                 <p style={{ fontSize: 12, color: '#6b7280', marginTop: embedCompact ? 2 : 4 }}>
-                  Industry templates · Smart defaults · Compliance
+                  Smart defaults · Compliance
                 </p>
               </div>
 
@@ -499,7 +509,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                 </div>
               ) : companyData ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <div>
+                  <div style={{ display: 'none' }}>
                     <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1f2937', marginBottom: 6 }}>
                       Training industry <span style={{ color: HARX }}>*</span>
                     </label>
@@ -587,8 +597,8 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                       Your gig <span style={{ color: HARX }}>*</span>
                     </label>
                     <GigSelector
-                      industryFilter={company.industry}
-                      industryName={industries.find(ind => ind._id === company.industry)?.name || company.industry}
+                      industryFilter=""
+                      industryName=""
                       onGigSelect={handleGigSelect}
                       selectedGigId={selectedGig?._id}
                     />
@@ -914,12 +924,11 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                     }}
                   >
                     <Building2 style={{ width: 12, height: 12, color: HARX }} />
-                    Industry & gig
+                    Gig
                   </h5>
                   <p style={{ fontSize: 13, color: '#111827', margin: 0, fontWeight: 600, lineHeight: 1.25 }}>
-                    {company.industry ? industries.find(i => i._id === company.industry)?.name || company.industry : 'N/A'}
+                    {selectedGig?.title || 'No gig selected'}
                   </p>
-                  <p style={{ fontSize: 11, color: '#6b7280', margin: '2px 0 0', lineHeight: 1.3 }}>{selectedGig?.title || 'No gig selected'}</p>
                 </div>
 
                 <div style={{ padding: '8px 12px', borderBottom: '1px solid #fce8e8', flexShrink: 0 }}>
