@@ -430,12 +430,15 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
   const isThumbnailStep = currentStep === 2;
   const setupContentMaxWidth = '100%';
   const thumbDropSize = embedCompact && isThumbnailStep ? 160 : 260;
-  const thumbOuterPadding = embedCompact && isThumbnailStep ? '10px 10px 8px' : '20px 16px 18px';
   const thumbSectionGap = embedCompact && isThumbnailStep ? 8 : 18;
   const thumbAiBlockMarginTop = embedCompact && isThumbnailStep ? 10 : 18;
   const thumbTextareaRows = embedCompact && isThumbnailStep ? 2 : 4;
   const thumbTextareaMinH = embedCompact && isThumbnailStep ? 64 : 100;
   const lockBodyScroll = embedCompact && currentStep === 1;
+  const headerTitle = isThumbnailStep ? 'Upload training thumbnail' : 'Welcome to your training journey';
+  const headerSubtitle = isThumbnailStep
+    ? 'Add a cover image for your training card, or describe one for AI.'
+    : 'Smart defaults · Compliance';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, height: '100%', width: '100%', background: WIZARD_BG, borderRadius: 18, overflow: 'hidden' }}>
@@ -488,10 +491,10 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
 
       <div style={{ flexShrink: 0, textAlign: 'center', padding: embedCompact ? '2px 16px 8px' : '4px 20px 10px' }}>
         <h3 style={{ fontSize: 20, fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>
-          Welcome to your training journey
+          {headerTitle}
         </h3>
         <p style={{ fontSize: 12, color: '#64748b', marginTop: 4, fontWeight: 600 }}>
-          Smart defaults · Compliance
+          {headerSubtitle}
         </p>
       </div>
 
@@ -717,10 +720,10 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
           {isStep5 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: thumbSectionGap, width: '100%' }}>
               <div style={{ textAlign: 'center' }}>
-                <h3 style={{ fontSize: embedCompact ? 18 : 20, fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>
+                <h3 style={{ fontSize: embedCompact ? 18 : 20, fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.015em' }}>
                   Upload training thumbnail
                 </h3>
-                <p style={{ fontSize: embedCompact ? 12 : 13, color: '#64748b', marginTop: embedCompact ? 3 : 6, lineHeight: 1.45, fontWeight: 600 }}>
+                <p style={{ fontSize: embedCompact ? 12 : 13, color: '#64748b', marginTop: embedCompact ? 3 : 6, lineHeight: 1.45, fontWeight: 500 }}>
                   Add a cover image for your training card, or describe one for AI.
                 </p>
               </div>
@@ -730,10 +733,11 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                   width: '100%',
                   maxWidth: embedCompact && isThumbnailStep ? 360 : undefined,
                   margin: embedCompact && isThumbnailStep ? '0 auto' : undefined,
-                  border: '1px dashed #cbd5e1',
-                  borderRadius: embedCompact ? 12 : 16,
-                  padding: thumbOuterPadding,
-                  background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: embedCompact ? 12 : 14,
+                  padding: embedCompact ? '10px 10px 8px' : '14px 14px 12px',
+                  background: '#ffffff',
+                  boxShadow: '0 4px 14px rgba(15,23,42,0.06)',
                 }}
               >
                 <input
@@ -760,7 +764,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                       const file = e.dataTransfer.files?.[0];
                       if (file) void handleThumbnailUpload(file);
                     }}
-                    className={`transition-all duration-200 focus-within:ring-2 focus-within:ring-rose-200 focus-within:ring-offset-2 ${thumbnailUploading ? 'cursor-not-allowed' : 'cursor-pointer hover:border-rose-300 hover:shadow-md'}`}
+                    className={`transition-all duration-200 focus-within:ring-2 focus-within:ring-slate-200 focus-within:ring-offset-2 ${thumbnailUploading ? 'cursor-not-allowed' : 'cursor-pointer hover:border-slate-300 hover:shadow-sm'}`}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -769,12 +773,12 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                       height: thumbDropSize,
                       maxWidth: '100%',
                       aspectRatio: '1',
-                      border: '2px dashed #e2e8f0',
+                      border: '1.5px dashed #cbd5e1',
                       borderRadius: embedCompact ? 12 : 14,
-                      background: '#ffffff',
+                      background: '#f8fafc',
                       overflow: 'hidden',
                       boxSizing: 'border-box',
-                      boxShadow: thumbnailUrl ? '0 12px 28px rgba(17,24,39,0.12)' : 'none'
+                      boxShadow: thumbnailUrl ? '0 8px 20px rgba(17,24,39,0.10)' : 'none'
                     }}
                   >
                     {thumbnailUrl ? (
@@ -793,7 +797,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                         {thumbnailUploading ? (
                           <Loader2 className="animate-spin" style={{ width: embedCompact ? 18 : 22, height: embedCompact ? 18 : 22, color: HARX, margin: embedCompact ? '0 auto 6px' : '0 auto 10px' }} />
                         ) : (
-                          <ImagePlus style={{ width: embedCompact ? 22 : 28, height: embedCompact ? 22 : 28, color: '#94a3b8', margin: embedCompact ? '0 auto 6px' : '0 auto 10px' }} strokeWidth={1.5} />
+                          <ImagePlus style={{ width: embedCompact ? 22 : 26, height: embedCompact ? 22 : 26, color: '#94a3b8', margin: embedCompact ? '0 auto 6px' : '0 auto 10px' }} strokeWidth={1.5} />
                         )}
                         <div style={{ fontSize: embedCompact ? 12 : 13, fontWeight: 700, color: '#0f172a' }}>
                           {thumbnailUploading ? 'Uploading…' : 'Import or drop image'}
@@ -807,7 +811,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                 </div>
 
                 <div style={{ marginTop: thumbAiBlockMarginTop, width: '100%', display: 'flex', flexDirection: 'column', gap: embedCompact ? 6 : 10 }}>
-                  <label htmlFor="thumbnail-ai-prompt" style={{ fontSize: embedCompact ? 11 : 12, fontWeight: 700, color: '#475569' }}>
+                  <label htmlFor="thumbnail-ai-prompt" style={{ fontSize: embedCompact ? 11 : 12, fontWeight: 700, color: '#334155' }}>
                     Describe an AI thumbnail <span style={{ fontWeight: 500, color: '#94a3b8' }}>(optional)</span>
                   </label>
                   <textarea
@@ -820,7 +824,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                       width: '100%',
                       minHeight: thumbTextareaMinH,
                       resize: 'vertical',
-                      border: '1px solid #e2e8f0',
+                      border: '1px solid #dbe2ea',
                       borderRadius: 10,
                       padding: embedCompact ? '8px 10px' : '12px 14px',
                       fontSize: embedCompact ? 12 : 13,
@@ -846,7 +850,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                         type="button"
                         onClick={() => setThumbnailUrl('')}
                         style={{
-                          padding: '10px 14px',
+                          padding: '9px 13px',
                           borderRadius: 10,
                           border: '1px solid #e2e8f0',
                           background: '#fff',
@@ -864,16 +868,16 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                       onClick={() => void handleGenerateThumbnailWithAI()}
                       disabled={thumbnailGenerating}
                       style={{
-                        padding: '10px 18px',
+                        padding: '9px 16px',
                         borderRadius: 10,
-                        border: `1px solid ${HARX}`,
-                        background: '#fff',
-                        color: HARX,
-                        fontSize: 13,
+                        border: '1px solid #0f172a',
+                        background: '#0f172a',
+                        color: '#fff',
+                        fontSize: 12,
                         fontWeight: 700,
                         cursor: thumbnailGenerating ? 'not-allowed' : 'pointer',
                         opacity: thumbnailGenerating ? 0.65 : 1,
-                        boxShadow: thumbnailGenerating ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.06)',
+                        boxShadow: thumbnailGenerating ? 'none' : '0 2px 8px rgba(15, 23, 42, 0.18)',
                       }}
                     >
                       {thumbnailGenerating ? 'Generating…' : 'Generate with AI'}
