@@ -19,7 +19,8 @@ import { AIService } from '../../infrastructure/services/AIService';
 
 interface PresentationPreviewProps {
   presentation: IPresentation;
-  onClose: () => void;
+  /** Absent en embarqué compact (ex. colonne latérale) : pas d’en-tête retour. */
+  onClose?: () => void;
   onSave?: () => void;
   isSaving?: boolean;
   fileTrainingUrl?: string; // Optional PPTX URL

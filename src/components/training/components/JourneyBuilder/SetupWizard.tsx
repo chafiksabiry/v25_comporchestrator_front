@@ -9,7 +9,7 @@ import MethodologySelector from './MethodologySelector';
 import MethodologyBuilder from '../Methodology/MethodologyBuilder';
 import { OnboardingService } from '../../infrastructure/services/OnboardingService';
 import GigSelector from '../Dashboard/GigSelector';
-import TrainingDetailsForm from './TrainingDetailsForm';
+import TrainingDetailsForm, { VISION_DURATIONS } from './TrainingDetailsForm';
 import { scrollJourneyMainToTop } from './journeyScroll';
 import { cloudinaryService } from '../../lib/cloudinaryService';
 
@@ -50,7 +50,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
   const [visionDescriptionGenerating, setVisionDescriptionGenerating] = useState(false);
   const [targetRolesGenerating, setTargetRolesGenerating] = useState(false);
   const autoRolesSuggestionKeyRef = useRef('');
-  const isCloudinaryThumbnail = thumbnailUrl.includes('res.cloudinary.com');
 
   useEffect(() => {
     if (currentStep !== 5) setSetupSummaryModulesExpanded(false);
@@ -133,7 +132,8 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
       setVisionSubStep(1);
       setVisionName(trainingDetails.trainingName);
       setVisionDesc(trainingDetails.trainingDescription);
-      setVisionDuration(trainingDetails.estimatedDuration);
+      const ed = trainingDetails.estimatedDuration;
+      setVisionDuration(VISION_DURATIONS.some((d) => d.value === ed) ? ed : '');
     }
     prevWizardStepRef.current = currentStep;
   }, [currentStep, trainingDetails]);
@@ -849,49 +849,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
                     </button>
                   </div>
                 </div>
-
-                {thumbnailUrl ? (
-                  <div style={{ marginTop: embedCompact ? 10 : 16, display: 'flex', flexDirection: 'column', gap: embedCompact ? 6 : 8 }}>
-                    <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, letterSpacing: '0.02em' }}>
-                      {isCloudinaryThumbnail ? 'Cloudinary image link' : 'Image link'}
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, width: '100%' }}>
-                      <input
-                        value={thumbnailUrl}
-                        readOnly
-                        style={{
-                          flex: '1 1 200px',
-                          minWidth: 0,
-                          border: '1px solid #e2e8f0',
-                          borderRadius: 10,
-                          padding: '10px 12px',
-                          fontSize: 12,
-                          color: '#334155',
-                          background: '#f8fafc',
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void navigator.clipboard.writeText(thumbnailUrl);
-                        }}
-                        style={{
-                          padding: '10px 14px',
-                          borderRadius: 10,
-                          border: '1px solid #e2e8f0',
-                          background: '#fff',
-                          color: '#334155',
-                          fontSize: 12,
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        Copy link
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
               </div>
             </div>
           )}

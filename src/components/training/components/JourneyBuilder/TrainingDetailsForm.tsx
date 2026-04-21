@@ -7,9 +7,6 @@ export const VISION_DURATIONS = [
   { value: '120', label: 'Quick Start', desc: '1-2 hours' },
   { value: '240', label: 'Half Day', desc: '3-4 hours' },
   { value: '480', label: 'Full Day', desc: '6-8 hours' },
-  { value: '2400', label: 'One Week', desc: 'Multi-session' },
-  { value: '4800', label: 'Two Weeks', desc: 'Comprehensive' },
-  { value: '9600', label: 'One Month', desc: 'Deep Learning' },
 ] as const;
 
 interface TrainingDetailsFormProps {
