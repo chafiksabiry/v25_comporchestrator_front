@@ -379,6 +379,35 @@ export class AIService {
     return response.data.response || '';
   }
 
+  /**
+   * Génère le script oral du podcast côté backend (Claude).
+   */
+  static async generatePodcastScript(params: {
+    trainingDigest: string;
+    trainingTitle?: string;
+    language?: string;
+  }): Promise<string> {
+    const response = await ApiClient.post<{
+      success?: boolean;
+      script?: string;
+      error?: string;
+      message?: string;
+    }>('/api/ai/generate-podcast-script', {
+      trainingDigest: params.trainingDigest,
+      trainingTitle: params.trainingTitle || '',
+      language: params.language || 'fr',
+    });
+    const raw = response.data as any;
+    if (raw?.success === false) {
+      throw new Error(raw?.error || raw?.message || 'Podcast script generation failed');
+    }
+    const script = String(raw?.script ?? '').trim();
+    if (!script) {
+      throw new Error(raw?.error || raw?.message || 'Empty podcast script');
+    }
+    return script;
+  }
+
   static async generateChatTitle(
     messages: Array<{ role: 'user' | 'assistant'; text: string }>
   ): Promise<string> {
