@@ -2708,11 +2708,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
       for (const line of lines) {
         const normalized = clean(line);
+        const emojiModuleMatch = normalized.match(
+          /^[🟢🟡🟠🔵🟣🟤]\s*module\s*\d+\s*[—:-]?\s*(.+)$/i
+        );
         const moduleMatch = normalized.match(/^module\s*\d+\s*[—:-]?\s*(.+)$/i);
-        if (moduleMatch) {
+        if (emojiModuleMatch || moduleMatch) {
           if (current) modules.push(current);
+          const tail = String((emojiModuleMatch || moduleMatch)?.[1] || '').trim();
+          const idx = modules.length + 1;
           current = {
-            title: `Module ${modules.length + 1} - ${moduleMatch[1].trim()}`,
+            title: tail ? `Module ${idx} - ${tail}` : `Module ${idx}`,
             bullets: [],
             sections: {
               objectives: [],
@@ -2763,6 +2768,24 @@ export default function ContentUploader(props: ContentUploaderProps) {
           continue;
         }
 
+        if (activeSection === 'objectives' && !/^[-•*]/.test(line)) {
+          const lower = normalized.toLowerCase();
+          if (/^(contenu|notions|definitions?|pr[eé]requis|parcours|th[eè]matiques?)$/i.test(lower)) {
+            activeNestedTitle = normalized;
+            continue;
+          }
+          if (/^livrables?$/i.test(lower)) {
+            activeNestedTitle = 'Livrables';
+            activeSection = 'evaluation';
+            continue;
+          }
+          if (/^activit[eé]s?$/i.test(lower)) {
+            activeNestedTitle = null;
+            activeSection = 'activities';
+            continue;
+          }
+        }
+
         const isNestedTitle = activeSection && /^[-•*]?\s*[^:]{3,}:\s*$/.test(line);
         const isNestedNumberedTitle =
           !!activeSection && /^[-•*]\s*(?:[📌🎯🧩📊]\s*)?\d+(\.\d+)+\s+.+$/i.test(line);
@@ -2794,12 +2817,23 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
 
       if (current) modules.push(current);
+      const finalizedModules = modules.map((m) => {
+        let title = String(m.title || '').trim();
+        let duration = m.duration;
+        const durationFromTitle = title.match(/⏱️\s*([^\n]+)$/i);
+        if (durationFromTitle?.[1]) {
+          duration = String(durationFromTitle[1]).trim();
+          title = title.replace(/\s*⏱️\s*[^\n]+$/i, '').trim();
+        }
+        title = title.replace(/^[🟢🟡🟠🔵🟣🟤]\s*/u, '').trim();
+        return { ...m, title, duration };
+      });
       const resolvedTitle = titleLine ? clean(titleLine) : undefined;
       const resolvedIntro = introLines.slice(0, 2).join(' ');
       return {
         title: resolvedTitle,
         intro: resolvedTitle && resolvedIntro === resolvedTitle ? '' : resolvedIntro,
-        modules,
+        modules: finalizedModules,
       };
     };
 
