@@ -260,7 +260,7 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
   const renderCurrentStep = () => {
     switch (currentStep) {
       case 0:
-        return <SetupWizard onComplete={handleSetupComplete} repOnboardingLayout={repOnboardingLayout} />;
+        return <SetupWizard onComplete={handleSetupComplete} repOnboardingLayout={repOnboardingLayout} forceNew={forceNew} />;
       case 1:
         return (
           <ContentUploader
