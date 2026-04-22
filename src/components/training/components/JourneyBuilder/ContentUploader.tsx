@@ -2706,6 +2706,57 @@ export default function ContentUploader(props: ContentUploaderProps) {
       let activeSection: 'objectives' | 'keyTopics' | 'activities' | 'evaluation' | null = null;
       let activeNestedTitle: string | null = null;
 
+      const splitMdRow = (row: string) =>
+        row
+          .trim()
+          .replace(/^\|/, '')
+          .replace(/\|$/, '')
+          .split('|')
+          .map((c) => c.replace(/\*\*/g, '').replace(/`/g, '').trim());
+
+      const parseModulesFromMarkdownTable = (): typeof modules => {
+        const out: typeof modules = [];
+        let header: string[] | null = null;
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+          if (!line.startsWith('|') || !line.includes('|')) continue;
+          if (/^\|[\s:-]+\|/.test(line)) continue;
+          const cells = splitMdRow(line);
+          if (!cells.length) continue;
+          const joined = cells.join(' ').toLowerCase();
+          if (!header) {
+            if (/\bmodule\b/.test(joined) && (/\btitre\b/.test(joined) || /\btitle\b/.test(joined))) {
+              header = cells.map((c) => c.toLowerCase());
+              continue;
+            }
+            continue;
+          }
+          const idxMod = header.findIndex((h) => /\bmodule\b/.test(h));
+          const idxTitle = header.findIndex((h) => /\btitre\b/.test(h) || /\btitle\b/.test(h));
+          const idxDur = header.findIndex((h) => /\bdur[eé]e\b/.test(h) || /\bduration\b/.test(h));
+          const idxObj = header.findIndex((h) => /objectif/.test(h));
+          if (idxMod < 0 || idxTitle < 0) continue;
+          const modCell = cells[idxMod] || '';
+          const titleCell = cells[idxTitle] || '';
+          const durCell = idxDur >= 0 ? cells[idxDur] || '' : '';
+          const objCell = idxObj >= 0 ? cells[idxObj] || '' : '';
+          const modNum = modCell.replace(/[^0-9]/g, '');
+          if (!modNum || !titleCell) continue;
+          out.push({
+            title: `Module ${modNum} - ${titleCell}`,
+            duration: durCell || undefined,
+            bullets: [],
+            sections: {
+              objectives: objCell ? [objCell] : [],
+              keyTopics: titleCell ? [`Parcours: ${titleCell}`] : [],
+              activities: [],
+              evaluation: [],
+            },
+          });
+        }
+        return out;
+      };
+
       for (const line of lines) {
         const normalized = clean(line);
         const emojiModuleMatch = normalized.match(
@@ -2817,7 +2868,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
 
       if (current) modules.push(current);
-      const finalizedModules = modules.map((m) => {
+      let effectiveModules = modules;
+      if (effectiveModules.length < 2) {
+        const fromTable = parseModulesFromMarkdownTable();
+        if (fromTable.length >= 2) {
+          effectiveModules = fromTable;
+        }
+      }
+      const finalizedModules = effectiveModules.map((m) => {
         let title = String(m.title || '').trim();
         let duration = m.duration;
         const durationFromTitle = title.match(/⏱️\s*([^\n]+)$/i);
