@@ -183,6 +183,20 @@ export interface TrainingImageJobStatus {
   error?: string;
 }
 
+export interface StructuredTrainingSlide {
+  index: number;
+  kind: 'cover' | 'agenda' | 'content' | 'conclusion';
+  title: string;
+  bullets: string[];
+  notes?: string;
+}
+
+export interface StructuredTrainingSlidesPayload {
+  title: string;
+  language: string;
+  slides: StructuredTrainingSlide[];
+}
+
 export interface AiBaseResponse {
   success: boolean;
   error?: string;
@@ -727,6 +741,36 @@ export class AIService {
     const raw = response.data as any;
     if (raw?.success === false) throw new Error(raw?.error || raw?.message || 'Training images list failed');
     return Array.isArray(raw?.imageSets) ? (raw.imageSets as TrainingImageSet[]) : [];
+  }
+
+  static async generateTrainingSlidesJson(params: {
+    trainingDigest: string;
+    trainingTitle?: string;
+    language?: string;
+    maxSlides?: number;
+  }): Promise<StructuredTrainingSlidesPayload> {
+    const response = await ApiClient.post<{
+      success?: boolean;
+      title?: string;
+      language?: string;
+      slides?: StructuredTrainingSlide[];
+      error?: string;
+      message?: string;
+    }>('/api/ai/training-slides-json/generate', {
+      trainingDigest: params.trainingDigest,
+      trainingTitle: params.trainingTitle || '',
+      language: params.language || 'fr',
+      maxSlides: params.maxSlides ?? 12,
+    });
+    const raw = response.data as any;
+    if (raw?.success === false) {
+      throw new Error(raw?.error || raw?.message || 'Structured slides generation failed');
+    }
+    return {
+      title: String(raw?.title || params.trainingTitle || 'Formation'),
+      language: String(raw?.language || params.language || 'fr'),
+      slides: Array.isArray(raw?.slides) ? (raw.slides as StructuredTrainingSlide[]) : [],
+    };
   }
 
   static async generateChatTitle(
