@@ -2519,7 +2519,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const handleSelectPersonalizationOption = (value: string) => {
       const current = personalizationQuestions[personalizationStep];
       if (!current) return;
-      appendChatMessage('user', value);
       const nextAnswers = { ...personalizationAnswers, [current.key]: value };
       setPersonalizationAnswers(nextAnswers);
       if (current.key === 'source') {
