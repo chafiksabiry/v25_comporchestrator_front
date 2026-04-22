@@ -3021,6 +3021,18 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
         const chatGigRow = companyGigs.find((g: any) => String(g?._id || g?.id || '') === String(activeChatGigId));
         const chatGigSnapshot = chatGigRow ? buildGigSnapshotForAi(chatGigRow) : null;
+        const requestedOutput: 'training_plan' | 'full_training_content' | 'module_content' | 'general_chat' =
+          /(contenu\s+d[’']?un\s+module|contenu\s+du\s+module|module\s+\d+|d[ée]taille\s+le\s+module|detaille\s+le\s+module)/i.test(cleanMessage)
+            ? 'module_content'
+            : /(contenu\s+de\s+formation|formation\s+compl[eè]te|g[ée]n[ée]rer\s+une\s+formation|creer\s+une\s+formation)/i.test(cleanMessage)
+              ? 'full_training_content'
+              : /(plan\s+de\s+formation|g[ée]n[ée]rer\s+un\s+plan|cr[ée]er\s+un\s+plan)/i.test(cleanMessage)
+                ? 'training_plan'
+                : 'general_chat';
+        const requestedModuleReference =
+          requestedOutput === 'module_content'
+            ? (cleanMessage.match(/module\s+\d+/i)?.[0] || cleanMessage.match(/module\s*[:\-]\s*([^\n]+)/i)?.[1] || '').trim()
+            : '';
 
         const chatContext = JSON.stringify({
           app: 'HARX Journey Builder',
@@ -3045,6 +3057,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
             format: personalizationAnswers.format || null,
           },
           sourceModeRequested: requestedMode || null,
+          requestedOutput,
+          requestedModuleReference: requestedModuleReference || null,
           conversationHistory: historyForContext,
           canGenerateTraining: canProceed,
           curriculumOutline: Array.isArray(generatedCurriculum?.modules)
@@ -3960,7 +3974,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             <div
               className={
                 repSplitLayout
-                  ? 'relative flex min-h-0 flex-1 flex-col rounded-3xl border border-harx-100 bg-white shadow-[0_12px_36px_rgba(25,25,50,0.08)]'
+                  ? 'relative flex min-h-0 flex-1 flex-col rounded-none border-0 bg-transparent p-0 shadow-none'
                   : rep
                     ? 'relative rounded-none border-0 bg-transparent p-0 shadow-none'
                     : 'relative flex min-h-0 flex-1 flex-col rounded-3xl border border-harx-100 bg-white shadow-[0_12px_36px_rgba(25,25,50,0.08)]'
@@ -3969,7 +3983,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
               <div
                 className={`relative mb-2 flex w-full shrink-0 ${rep ? 'flex-col gap-2 px-0.5 pt-0.5' : 'justify-end px-3 pt-3'}`}
               >
-                <div className="flex w-full max-w-full flex-wrap items-center justify-end gap-2 rounded-2xl border border-harx-100/90 bg-white p-1.5 shadow-sm transition-all duration-300 sm:inline-flex sm:w-auto sm:flex-nowrap sm:gap-1.5">
+                <div className={`flex w-full max-w-full flex-wrap items-center justify-end gap-2 transition-all duration-300 sm:inline-flex sm:w-auto sm:flex-nowrap sm:gap-1.5 ${
+                  rep ? 'rounded-none border-0 bg-transparent p-0 shadow-none' : 'rounded-2xl border border-harx-100/90 bg-white p-1.5 shadow-sm'
+                }`}>
                   <select
                     value={activeChatGigId}
                     onChange={(e) => setSelectedChatGigId(e.target.value)}
