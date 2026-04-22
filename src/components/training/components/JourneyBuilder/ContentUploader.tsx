@@ -432,9 +432,9 @@ function RepPodcastSidebarPanel({
 
 export default function ContentUploader(props: ContentUploaderProps) {
   const { onComplete, onBack, company, gigId, journey, methodology, repOnboardingLayout = false } = props;
-  /** Id Mongo `training_journeys` pour lier podcast / images (journey persisté ou brouillon sauvegardé). */
+  /** Id Mongo `training_journeys` du parcours courant uniquement (pas de fallback sur anciens drafts). */
   const linkedTrainingJourneyMongoId = (): string | undefined => {
-    const candidates = [(journey as any)?._id, (journey as any)?.id, DraftService.getDraft()?.draftId];
+    const candidates = [(journey as any)?._id, (journey as any)?.id];
     for (const c of candidates) {
       const s = c != null ? String(c).trim() : '';
       if (s && /^[a-f\d]{24}$/i.test(s)) return s;
