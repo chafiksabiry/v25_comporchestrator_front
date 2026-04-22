@@ -4298,6 +4298,28 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     const s = structuredSlides?.slides?.[idx];
                     if (!s) return null;
                     const kindLabel = String(s.kind || 'content').toUpperCase();
+                    const theme = structuredSlides?.theme;
+                    const template = theme?.template || 'corporate';
+                    const accent = /^#[0-9a-f]{6}$/i.test(String(theme?.accentColor || '')) ? String(theme?.accentColor) : '#be123c';
+                    const isDark = template === 'dark' || theme?.backgroundStyle === 'dark';
+                    const sectionBg =
+                      template === 'minimal'
+                        ? 'bg-white'
+                        : template === 'learning'
+                          ? 'bg-gradient-to-br from-indigo-50 via-white to-cyan-50'
+                          : template === 'executive'
+                            ? 'bg-gradient-to-br from-slate-50 via-white to-slate-100'
+                            : isDark
+                              ? 'bg-slate-900'
+                              : 'bg-white';
+                    const bodyText = isDark ? 'text-slate-100' : 'text-slate-800';
+                    const noteClass = isDark
+                      ? 'mt-6 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-300'
+                      : 'mt-6 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600';
+                    const headerStyle: React.CSSProperties = theme?.backgroundStyle === 'gradient'
+                      ? { background: `linear-gradient(90deg, ${accent}, #7c3aed)` }
+                      : { background: accent };
+                    const useSplit = s.layout === 'split' && (s.bullets || []).length >= 4;
                     return (
                       <>
                         <div className="mb-3 flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2">
@@ -4323,24 +4345,39 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         </div>
 
                         {/* HTML/CSS slide template: fixed layout; chat-based text injected here */}
-                        <section className="mx-auto flex h-full w-full max-w-[1100px] flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                          <header className="flex items-center justify-between bg-gradient-to-r from-rose-700 to-rose-600 px-6 py-4 text-white">
+                        <section className={`mx-auto flex h-full w-full max-w-[1100px] flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 ${sectionBg} shadow-sm`}>
+                          <header className="flex items-center justify-between px-6 py-4 text-white" style={headerStyle}>
                             <h3 className="truncate text-xl font-bold">{s.title}</h3>
                             <span className="rounded-full bg-white/15 px-2 py-1 text-[10px] font-semibold tracking-wide">{kindLabel}</span>
                           </header>
                           <div className="min-h-0 flex-1 overflow-y-auto p-6">
-                            <ul className="list-disc space-y-3 pl-6 text-[20px] leading-8 text-slate-800">
-                              {(s.bullets || []).map((b, i) => (
-                                <li key={`b-${s.index}-${i}`}>{b}</li>
-                              ))}
-                            </ul>
+                            {useSplit ? (
+                              <div className="grid grid-cols-2 gap-6">
+                                <ul className={`list-disc space-y-3 pl-6 text-[20px] leading-8 ${bodyText}`}>
+                                  {(s.bullets || []).slice(0, Math.ceil((s.bullets || []).length / 2)).map((b, i) => (
+                                    <li key={`b-left-${s.index}-${i}`}>{b}</li>
+                                  ))}
+                                </ul>
+                                <ul className={`list-disc space-y-3 pl-6 text-[20px] leading-8 ${bodyText}`}>
+                                  {(s.bullets || []).slice(Math.ceil((s.bullets || []).length / 2)).map((b, i) => (
+                                    <li key={`b-right-${s.index}-${i}`}>{b}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ) : (
+                              <ul className={`list-disc space-y-3 pl-6 text-[20px] leading-8 ${bodyText}`}>
+                                {(s.bullets || []).map((b, i) => (
+                                  <li key={`b-${s.index}-${i}`}>{b}</li>
+                                ))}
+                              </ul>
+                            )}
                             {s.notes ? (
-                              <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                              <div className={noteClass}>
                                 {s.notes}
                               </div>
                             ) : null}
                           </div>
-                          <footer className="border-t border-slate-200 px-6 py-2 text-center text-xs text-slate-500">
+                          <footer className={`border-t border-slate-200 px-6 py-2 text-center text-xs ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
                             {structuredSlides?.title || 'Training'} • {`Slide ${idx + 1}/${total}`}
                           </footer>
                         </section>

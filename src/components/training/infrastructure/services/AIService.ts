@@ -186,14 +186,22 @@ export interface TrainingImageJobStatus {
 export interface StructuredTrainingSlide {
   index: number;
   kind: 'cover' | 'agenda' | 'content' | 'conclusion';
+  layout?: 'standard' | 'split' | 'highlight' | 'timeline';
   title: string;
   bullets: string[];
   notes?: string;
 }
 
+export interface StructuredTrainingTheme {
+  template: 'corporate' | 'dark' | 'minimal' | 'learning' | 'executive';
+  accentColor: string;
+  backgroundStyle?: 'light' | 'gradient' | 'dark';
+}
+
 export interface StructuredTrainingSlidesPayload {
   title: string;
   language: string;
+  theme?: StructuredTrainingTheme;
   slides: StructuredTrainingSlide[];
 }
 
@@ -754,6 +762,7 @@ export class AIService {
       success?: boolean;
       title?: string;
       language?: string;
+      theme?: StructuredTrainingTheme;
       slides?: StructuredTrainingSlide[];
       error?: string;
       message?: string;
@@ -771,6 +780,7 @@ export class AIService {
     return {
       title: String(raw?.title || params.trainingTitle || 'Formation'),
       language: String(raw?.language || params.language || 'fr'),
+      theme: raw?.theme as StructuredTrainingTheme | undefined,
       slides: Array.isArray(raw?.slides) ? (raw.slides as StructuredTrainingSlide[]) : [],
     };
   }
