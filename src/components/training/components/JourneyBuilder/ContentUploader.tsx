@@ -545,6 +545,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [quizSavedHint, setQuizSavedHint] = useState<string | null>(null);
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showPodcastModal, setShowPodcastModal] = useState(false);
+  const [interactiveDrafts, setInteractiveDrafts] = useState<
+    Record<
+      string,
+      {
+        title: string;
+        mode: 'timeline' | 'cards';
+        blocks: Array<{ heading: string; items: string[] }>;
+      }
+    >
+  >({});
+  const [editingInteractiveMessageId, setEditingInteractiveMessageId] = useState<string | null>(null);
   const podcastSpeechRef = useRef<WebSpeechService | null>(null);
   const podcastSpeakAbortRef = useRef(false);
   /** After a successful “Regenerate audio overview”, chat length at that moment — View syncs when new messages arrive. */
@@ -3403,33 +3414,152 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
     };
 
-    const renderInteractiveTrainingTimeline = (rawText: string): React.ReactNode | null => {
+    const renderInteractiveTrainingTimeline = (messageId: string, rawText: string): React.ReactNode | null => {
       const text = String(rawText || '').trim();
       if (!text) return null;
+      if (text.length < 140) return null;
+      const draft = interactiveDrafts[messageId];
       const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
-      const moduleLines = lines.filter((line) => /^(module|m\d+|séance|session)\b/i.test(line));
-      if (moduleLines.length < 2) return null;
-      const sections = moduleLines.slice(0, 10).map((line, idx) => {
-        const cleanLine = line.replace(/^[-*]\s*/, '').trim();
-        const split = cleanLine.split(':');
-        const head = split[0] || `Module ${idx + 1}`;
-        const subtitle = split.slice(1).join(':').trim();
-        return { head, subtitle };
-      });
+      const headingRegex = /^(module|m\d+|séance|session|partie|chapitre|#{1,4}\s+)/i;
+      const bulletRegex = /^[-*•→]\s+/;
+      const parsedBlocks: Array<{ heading: string; items: string[] }> = [];
+      let current: { heading: string; items: string[] } | null = null;
+
+      for (const rawLine of lines) {
+        const line = rawLine.replace(/^#{1,4}\s+/, '').trim();
+        if (headingRegex.test(rawLine)) {
+          if (current) parsedBlocks.push(current);
+          current = { heading: line, items: [] };
+          continue;
+        }
+        if (bulletRegex.test(rawLine)) {
+          if (!current) current = { heading: 'Bloc', items: [] };
+          current.items.push(rawLine.replace(bulletRegex, '').trim());
+          continue;
+        }
+        if (/^\d+[.)]\s+/.test(rawLine) && /:/.test(rawLine)) {
+          if (current) parsedBlocks.push(current);
+          current = { heading: rawLine.replace(/^\d+[.)]\s+/, '').trim(), items: [] };
+          continue;
+        }
+        if (current && current.items.length < 8) {
+          current.items.push(line);
+        }
+      }
+      if (current) parsedBlocks.push(current);
+
+      const normalizedBlocks = (draft?.blocks || parsedBlocks)
+        .map((b, idx) => ({
+          heading: String(b?.heading || `Bloc ${idx + 1}`).trim(),
+          items: Array.isArray(b?.items)
+            ? b.items.map((it) => String(it || '').trim()).filter(Boolean).slice(0, 8)
+            : [],
+        }))
+        .filter((b) => b.heading || b.items.length > 0)
+        .slice(0, 10);
+
+      if (normalizedBlocks.length < 2) return null;
+
+      const joined = normalizedBlocks.map((b) => `${b.heading} ${b.items.join(' ')}`).join(' ').toLowerCase();
+      const prefersTimeline = /\b(\d{1,2}h\d{0,2}|\d{1,2}:\d{2}|pause|déjeuner|module|session|séance)\b/.test(joined);
+      const mode: 'timeline' | 'cards' = draft?.mode || (prefersTimeline ? 'timeline' : 'cards');
+      const title = draft?.title || 'Plan interactif';
+      const isEditing = editingInteractiveMessageId === messageId;
+
+      const updateDraft = (updater: (prev: { title: string; mode: 'timeline' | 'cards'; blocks: Array<{ heading: string; items: string[] }> }) => { title: string; mode: 'timeline' | 'cards'; blocks: Array<{ heading: string; items: string[] }> }) => {
+        setInteractiveDrafts((prev) => {
+          const base = prev[messageId] || { title, mode, blocks: normalizedBlocks };
+          return { ...prev, [messageId]: updater(base) };
+        });
+      };
+
       return (
         <div className="rounded-2xl border border-harx-100 bg-gradient-to-b from-white to-rose-50/40 p-3 shadow-sm">
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-bold uppercase tracking-wide text-harx-600">Interactive Timeline</p>
-            <span className="text-[11px] font-medium text-slate-500">{`${sections.length} modules`}</span>
+            {isEditing ? (
+              <input
+                value={title}
+                onChange={(e) => updateDraft((prev) => ({ ...prev, title: e.target.value }))}
+                className="w-full max-w-[60%] rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-800 outline-none focus:border-harx-300 focus:ring-2 focus:ring-harx-500/20"
+              />
+            ) : (
+              <p className="text-xs font-bold uppercase tracking-wide text-harx-600">{mode === 'timeline' ? 'Interactive Timeline' : 'Interactive Blocks'}</p>
+            )}
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => updateDraft((prev) => ({ ...prev, mode: prev.mode === 'timeline' ? 'cards' : 'timeline' }))}
+                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                {mode === 'timeline' ? 'Cards view' : 'Timeline view'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingInteractiveMessageId((prev) => (prev === messageId ? null : messageId))}
+                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                {isEditing ? 'Done' : 'Edit blocks'}
+              </button>
+            </div>
           </div>
-          <div className="space-y-2">
-            {sections.map((section, idx) => (
-              <div key={`it-${idx}`} className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-                <p className="text-sm font-semibold text-slate-900">{section.head}</p>
-                {section.subtitle ? <p className="text-xs text-slate-600">{section.subtitle}</p> : null}
+          <div className={mode === 'timeline' ? 'space-y-2' : 'grid gap-2 md:grid-cols-2'}>
+            {normalizedBlocks.map((block, idx) => (
+              <div key={`it-${idx}`} className={`rounded-xl border border-slate-200 bg-white px-3 py-2 ${mode === 'timeline' ? '' : 'h-full'}`}>
+                {isEditing ? (
+                  <input
+                    value={block.heading}
+                    onChange={(e) =>
+                      updateDraft((prev) => ({
+                        ...prev,
+                        blocks: prev.blocks.map((b, bi) => (bi === idx ? { ...b, heading: e.target.value } : b)),
+                      }))
+                    }
+                    className="mb-1 w-full rounded-md border border-slate-200 px-2 py-1 text-sm font-semibold text-slate-900 outline-none focus:border-harx-300 focus:ring-2 focus:ring-harx-500/20"
+                  />
+                ) : (
+                  <p className="text-sm font-semibold text-slate-900">{block.heading}</p>
+                )}
+                {isEditing ? (
+                  <textarea
+                    value={block.items.join('\n')}
+                    onChange={(e) =>
+                      updateDraft((prev) => ({
+                        ...prev,
+                        blocks: prev.blocks.map((b, bi) =>
+                          bi === idx
+                            ? { ...b, items: e.target.value.split('\n').map((it) => it.trim()).filter(Boolean) }
+                            : b
+                        ),
+                      }))
+                    }
+                    className="mt-1 min-h-[64px] w-full resize-y rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-700 outline-none focus:border-harx-300 focus:ring-2 focus:ring-harx-500/20"
+                  />
+                ) : block.items.length > 0 ? (
+                  <ul className="mt-1 space-y-0.5 pl-4 text-xs text-slate-600">
+                    {block.items.slice(0, 6).map((it, ii) => (
+                      <li key={`it-li-${idx}-${ii}`} className="list-disc">{it}</li>
+                    ))}
+                  </ul>
+                ) : null}
               </div>
             ))}
           </div>
+          {isEditing ? (
+            <div className="mt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() =>
+                  updateDraft((prev) => ({
+                    ...prev,
+                    blocks: [...prev.blocks, { heading: `Bloc ${prev.blocks.length + 1}`, items: [''] }],
+                  }))
+                }
+                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                + Add block
+              </button>
+            </div>
+          ) : null}
         </div>
       );
     };
@@ -4149,7 +4279,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   </div>
                                 );
                               }
-                              const interactiveTimeline = renderInteractiveTrainingTimeline(textWithoutStyle);
+                              const interactiveTimeline = renderInteractiveTrainingTimeline(msg.id, textWithoutStyle);
                               return (
                                 <>
                                   {interactiveTimeline ? (
