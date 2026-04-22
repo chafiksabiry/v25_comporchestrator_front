@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, RotateCcw, Send, History, Bot, Mic, Square, Play, Target } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -45,6 +46,14 @@ export type TrainingReadinessPayload = {
 };
 
 const HARX_TRAINING_STATUS_REGEX = /<harx-training-status>\s*([\s\S]*?)\s*<\/harx-training-status>/i;
+
+function stripAssistantTrainingTags(raw: string): string {
+  return String(raw || '')
+    .replace(/<harx-style>[\s\S]*?<\/harx-style>/gi, '')
+    .replace(/<harx-html>[\s\S]*?<\/harx-html>/gi, '')
+    .replace(HARX_TRAINING_STATUS_REGEX, '')
+    .trim();
+}
 
 function extractTrainingReadinessBlock(raw: string): {
   displayText: string;
@@ -504,6 +513,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [showPodcastModal, setShowPodcastModal] = useState(false);
   const podcastSpeechRef = useRef<WebSpeechService | null>(null);
   const podcastSpeakAbortRef = useRef(false);
+  /** After a successful “Regenerate audio overview”, chat length at that moment — View syncs when new messages arrive. */
+  const lastPodcastGenChatLengthRef = useRef(0);
   const chatFileInputRef = useRef<HTMLInputElement | null>(null);
   const chatTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -588,18 +599,54 @@ export default function ContentUploader(props: ContentUploaderProps) {
   /** Flux REP : le plan vit souvent uniquement dans les réponses assistant — on en fait une synthèse pour le podcast. */
   const repChatPodcastDigest = useMemo(() => {
     if (!repOnboardingLayout) return '';
-    const stripAssistant = (raw: string) =>
-      String(raw || '')
-        .replace(/<harx-style>[\s\S]*?<\/harx-style>/gi, '')
-        .replace(/<harx-html>[\s\S]*?<\/harx-html>/gi, '')
-        .replace(HARX_TRAINING_STATUS_REGEX, '')
-        .trim();
     const chunks = chatMessages
-      .filter((m) => m.role === 'assistant' && stripAssistant(String(m.text || '')).length > 120)
+      .filter((m) => m.role === 'assistant' && stripAssistantTrainingTags(String(m.text || '')).length > 120)
       .slice(-10)
-      .map((m) => stripAssistant(String(m.text || '')))
+      .map((m) => stripAssistantTrainingTags(String(m.text || '')))
       .filter(Boolean);
     return chunks.join('\n\n---\n\n').slice(0, 12000);
+  }, [repOnboardingLayout, chatMessages]);
+
+  /** Full user + assistant thread for podcast digest (REP). */
+  const repChatTranscriptForPodcast = useMemo(() => {
+    if (!repOnboardingLayout) return '';
+    const lines: string[] = [];
+    for (const m of chatMessages) {
+      if (m.role !== 'user' && m.role !== 'assistant') continue;
+      let text = String(m.text || '').trim();
+      if (m.role === 'assistant') text = stripAssistantTrainingTags(text);
+      if (!text) continue;
+      lines.push(`${m.role === 'user' ? 'User' : 'Assistant'}: ${text}`);
+    }
+    return lines.join('\n\n').slice(0, 12000);
+  }, [repOnboardingLayout, chatMessages]);
+
+  /** Best assistant script visible in chat (after user asked for audio/script), else longest recent reply. */
+  const repChatScriptCandidate = useMemo(() => {
+    if (!repOnboardingLayout || !chatMessages.length) return '';
+    const userWantsAudio = (t: string) =>
+      /audio|script|podcast|narration|\boral\b|génère|générer|écouter|micro|voix|spoken/i.test(String(t || '').toLowerCase());
+    for (let i = chatMessages.length - 2; i >= 0; i--) {
+      const u = chatMessages[i];
+      if (u.role !== 'user' || !userWantsAudio(String(u.text || ''))) continue;
+      const a = chatMessages[i + 1];
+      if (a?.role === 'assistant') {
+        const body = stripAssistantTrainingTags(String(a.text || ''));
+        if (body.length >= 200) return body.slice(0, 12000);
+      }
+    }
+    let best = '';
+    let bestLen = 0;
+    for (let i = Math.max(0, chatMessages.length - 15); i < chatMessages.length; i++) {
+      const m = chatMessages[i];
+      if (m.role !== 'assistant') continue;
+      const body = stripAssistantTrainingTags(String(m.text || ''));
+      if (body.length > bestLen) {
+        bestLen = body.length;
+        best = body;
+      }
+    }
+    return bestLen >= 400 ? best.slice(0, 12000) : '';
   }, [repOnboardingLayout, chatMessages]);
 
   /** Préfère la KB déjà chargée pour le chat ; sinon la liste chargée pour le podcast. */
@@ -613,12 +660,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
       repOnboardingLayout &&
       (hasStructuredPodcastSource ||
         repChatPodcastDigest.length >= 600 ||
+        repChatTranscriptForPodcast.length >= 200 ||
         Boolean(activeGigSnapshotForPodcast) ||
         kbDocumentsForPodcast.length > 0),
     [
       repOnboardingLayout,
       hasStructuredPodcastSource,
       repChatPodcastDigest,
+      repChatTranscriptForPodcast,
       activeGigSnapshotForPodcast,
       kbDocumentsForPodcast,
     ]
@@ -684,7 +733,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
     }
 
     let out = parts.join('\n\n').trim();
-    if (out.length < 400 && repChatPodcastDigest.trim()) {
+    if (repOnboardingLayout) {
+      const chatTx = repChatTranscriptForPodcast.trim();
+      if (chatTx) {
+        out = `--- Training chat (PRIMARY: align the spoken script with this thread) ---\n\n${chatTx}\n\n--- Supporting reference (curriculum, gig, knowledge base — use only if needed) ---\n\n${out}`.trim();
+      } else if (out.length < 400 && repChatPodcastDigest.trim()) {
+        out = `${out ? `${out}\n\n` : ''}--- Summary from onboarding conversation ---\n\n${repChatPodcastDigest}`;
+      }
+    } else if (out.length < 400 && repChatPodcastDigest.trim()) {
       out = `${out ? `${out}\n\n` : ''}--- Summary from onboarding conversation ---\n\n${repChatPodcastDigest}`;
     }
     if (out.length > 14000) {
@@ -695,6 +751,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     generatedCurriculum,
     generatedPresentation,
     repChatPodcastDigest,
+    repChatTranscriptForPodcast,
     repOnboardingLayout,
     activeGigSnapshotForPodcast,
     kbDocumentsForPodcast,
@@ -726,6 +783,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         language: 'fr',
       });
       setPodcastScript(script);
+      lastPodcastGenChatLengthRef.current = chatMessages.length;
       if (!podcastTitle.trim()) {
         setPodcastTitle(trainingTitle ? `${trainingTitle} - Podcast` : 'Podcast formation');
       }
@@ -768,6 +826,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     activeChatGigId,
     company,
     journey,
+    chatMessages.length,
   ]);
 
   const handleStopPodcastSpeak = useCallback(() => {
@@ -2332,6 +2391,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setPodcastSavedHint(null);
       setCurrentSavedPodcastId(null);
       setShowPodcastModal(false);
+      lastPodcastGenChatLengthRef.current = 0;
     };
 
     const openHistorySession = async (sessionId: string) => {
@@ -2354,6 +2414,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         setChatMessages(mappedMessages);
         setActiveChatSessionId(session._id || sessionId);
         setIsHistoryOpen(false);
+        lastPodcastGenChatLengthRef.current = 0;
       } catch (error) {
         console.error('[ContentUploader] Failed to open history session:', error);
       } finally {
@@ -3226,7 +3287,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     {podcastScript.trim() ? (
                       <button
                         type="button"
-                        onClick={() => setShowPodcastModal(true)}
+                        onClick={() => {
+                          const fromChat = repChatScriptCandidate.trim();
+                          const chatGrew = chatMessages.length > lastPodcastGenChatLengthRef.current;
+                          if (fromChat && chatGrew) {
+                            setPodcastScript(fromChat);
+                          }
+                          setShowPodcastModal(true);
+                        }}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                       >
                         <Music className="h-3.5 w-3.5" />
@@ -3322,65 +3390,87 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 </div>
                 )}
               </div>
-              {rep && showRepSourcePopup && (
-                <div className="absolute inset-0 z-50 flex bg-white p-2 sm:p-3">
-                  <div className="flex h-full w-full flex-col rounded-3xl border border-slate-200 bg-white p-4 shadow-xl sm:p-6">
-                    <div className="mb-5 flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[30px]">
-                          Create overview from your sources
-                        </p>
-                        <p className="mt-1 text-sm text-slate-500">
-                          Upload files or write a prompt to start the chat.
-                        </p>
+              {rep &&
+                showRepSourcePopup &&
+                typeof document !== 'undefined' &&
+                createPortal(
+                  <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-[2px] sm:p-6"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="rep-source-popup-title"
+                    onClick={(e) => {
+                      if (e.target === e.currentTarget) setShowRepSourcePopup(false);
+                    }}
+                  >
+                    <div
+                      className="flex max-h-[min(92dvh,720px)] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="shrink-0 border-b border-slate-100 px-4 pb-4 pt-4 sm:px-6 sm:pt-6">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 pr-2">
+                            <p
+                              id="rep-source-popup-title"
+                              className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl"
+                            >
+                              Create overview from your sources
+                            </p>
+                            <p className="mt-1 text-sm text-slate-500">
+                              Upload files or write a prompt to start the chat.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowRepSourcePopup(false)}
+                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
+                            title="Close"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowRepSourcePopup(false)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
-                        title="Close"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+                      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-6">
+                        <div className="flex min-h-[200px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/90 p-6 text-center sm:min-h-[240px] sm:p-8">
+                          <p className="text-lg font-semibold text-slate-900">Drop your files here</p>
+                          <p className="mt-1 text-xs text-slate-500">pdf, images, docs, audio, and text</p>
+                        </div>
+                        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowRepSourcePopup(false);
+                              chatFileInputRef.current?.click();
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                          >
+                            <Upload className="h-3.5 w-3.5" />
+                            Upload files
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowRepSourcePopup(false);
+                              chatTextareaRef.current?.focus();
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                          >
+                            <Search className="h-3.5 w-3.5" />
+                            Write prompt
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowRepSourcePopup(false)}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-harx px-3 py-2 text-xs font-bold text-white shadow-sm shadow-harx-500/20"
+                          >
+                            Continue
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="mb-4 flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-4 text-center">
-                      <p className="text-lg font-semibold text-slate-900">Drop your files here</p>
-                      <p className="mt-1 text-xs text-slate-500">pdf, images, docs, audio, and text</p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowRepSourcePopup(false);
-                          chatFileInputRef.current?.click();
-                        }}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                      >
-                        <Upload className="h-3.5 w-3.5" />
-                        Upload files
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowRepSourcePopup(false);
-                          chatTextareaRef.current?.focus();
-                        }}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                      >
-                        <Search className="h-3.5 w-3.5" />
-                        Write prompt
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowRepSourcePopup(false)}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-harx px-3 py-2 text-xs font-bold text-white"
-                      >
-                        Continue
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
+                  </div>,
+                  document.body
+                )}
               {shouldShowChatThread && (
                 <div
                   className={
@@ -4037,30 +4127,32 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
           {isGigOnly && null}
 
-          {/* Navigation */}
-          <div
-            className={
-              rep
-                ? 'mt-4 flex flex-col gap-2 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between'
-                : 'mt-8 flex flex-col gap-4 border-t border-slate-200 pt-6 md:flex-row md:items-center md:justify-between'
-            }
-          >
-            <button
-              type="button"
-              onClick={onBack}
+          {/* Navigation — hidden while REP source intro modal is open (full-screen overlay replaces it) */}
+          {!(rep && showRepSourcePopup) ? (
+            <div
               className={
                 rep
-                  ? 'rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 shadow-sm transition-colors hover:border-harx-200 hover:text-harx-600'
-                  : 'rounded-xl border border-slate-200 bg-white px-6 py-2 font-medium text-slate-800 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50'
+                  ? 'mt-4 flex flex-col gap-2 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between'
+                  : 'mt-8 flex flex-col gap-4 border-t border-slate-200 pt-6 md:flex-row md:items-center md:justify-between'
               }
             >
-              Back to setup
-            </button>
+              <button
+                type="button"
+                onClick={onBack}
+                className={
+                  rep
+                    ? 'rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 shadow-sm transition-colors hover:border-harx-200 hover:text-harx-600'
+                    : 'rounded-xl border border-slate-200 bg-white px-6 py-2 font-medium text-slate-800 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50'
+                }
+              >
+                Back to setup
+              </button>
 
-            <div className={rep ? 'order-3 flex flex-1 justify-center sm:order-none' : 'order-3 flex flex-1 justify-center md:order-none'} />
+              <div className={rep ? 'order-3 flex flex-1 justify-center sm:order-none' : 'order-3 flex flex-1 justify-center md:order-none'} />
 
-            <div className={rep ? 'flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center' : 'flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center md:w-auto'} />
-          </div>
+              <div className={rep ? 'flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center' : 'flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center md:w-auto'} />
+            </div>
+          ) : null}
           </div>
           </div>
         </div>
