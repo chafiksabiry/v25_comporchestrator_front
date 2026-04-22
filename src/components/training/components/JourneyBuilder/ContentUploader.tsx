@@ -2764,8 +2764,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
         }
 
         const isNestedTitle = activeSection && /^[-•*]?\s*[^:]{3,}:\s*$/.test(line);
+        const isNestedNumberedTitle =
+          !!activeSection && /^[-•*]\s*(?:[📌🎯🧩📊]\s*)?\d+(\.\d+)+\s+.+$/i.test(line);
         if (isNestedTitle) {
           activeNestedTitle = normalized.replace(/:\s*$/, '').trim();
+          continue;
+        }
+        if (isNestedNumberedTitle) {
+          activeNestedTitle = normalized.replace(/^[-•*]\s*/, '').trim();
           continue;
         }
 
@@ -3534,6 +3540,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           { bg: 'bg-rose-50', border: 'border-rose-200', badge: 'bg-rose-600' },
           { bg: 'bg-cyan-50', border: 'border-cyan-200', badge: 'bg-cyan-600' },
         ];
+        const moduleEmojis = ['🟢', '🟡', '🟠', '🔵', '🟣', '🟤'];
         return (
           <div className="mb-3 rounded-2xl border border-harx-100 bg-white p-3 shadow-sm">
             <div className="mb-2">
@@ -3546,6 +3553,60 @@ export default function ContentUploader(props: ContentUploaderProps) {
             <div className="flex flex-col gap-2">
               {parsedPlan.modules.map((module, idx) => {
                 const theme = moduleThemes[idx % moduleThemes.length];
+                const moduleEmoji = moduleEmojis[idx % moduleEmojis.length];
+                const renderSectionWithIndent = (
+                  items: string[],
+                  label: string,
+                  emoji: string,
+                  sectionKey: string
+                ) => {
+                  if (!items.length) return null;
+                  const groups: Array<{ title: string | null; values: string[] }> = [];
+                  items.forEach((raw) => {
+                    const parts = raw.split(' > ');
+                    if (parts.length >= 2) {
+                      const title = parts[0].trim();
+                      const value = parts.slice(1).join(' > ').trim();
+                      const last = groups[groups.length - 1];
+                      if (last && last.title === title) {
+                        last.values.push(value);
+                      } else {
+                        groups.push({ title, values: [value] });
+                      }
+                    } else {
+                      groups.push({ title: null, values: [raw] });
+                    }
+                  });
+                  return (
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">{`${emoji} ${label}`}</p>
+                      <div className="mt-0.5 space-y-1">
+                        {groups.map((g, gIdx) =>
+                          g.title ? (
+                            <div key={`plan-sec-${messageId}-${idx}-${sectionKey}-${gIdx}`} className="ml-1">
+                              <p className="text-[11px] font-semibold text-slate-700">{g.title}</p>
+                              <ul className="ml-4 space-y-0.5 pl-4 text-xs text-slate-700">
+                                {g.values.map((v, vIdx) => (
+                                  <li key={`plan-sec-item-${messageId}-${idx}-${sectionKey}-${gIdx}-${vIdx}`} className="list-disc">
+                                    {v}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : (
+                            <ul key={`plan-flat-${messageId}-${idx}-${sectionKey}-${gIdx}`} className="space-y-0.5 pl-4 text-xs text-slate-700">
+                              {g.values.map((v, vIdx) => (
+                                <li key={`plan-flat-item-${messageId}-${idx}-${sectionKey}-${gIdx}-${vIdx}`} className="list-disc">
+                                  {v}
+                                </li>
+                              ))}
+                            </ul>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  );
+                };
                 return (
                   <button
                     key={`plan-card-${messageId}-${idx}`}
@@ -3567,76 +3628,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         </span>
                       ) : null}
                     </div>
-                    <p className="text-sm font-semibold text-slate-900">{module.title}</p>
+                    <p className="text-sm font-semibold text-slate-900">{`${moduleEmoji} ${module.title}`}</p>
                     <div className="mt-2 space-y-2">
-                      {module.sections.objectives.length > 0 ? (
-                        <div>
-                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Objectifs</p>
-                          <ul className="mt-0.5 space-y-0.5 pl-4 text-xs text-slate-700">
-                            {module.sections.objectives.slice(0, 5).map((item, itemIdx) => (
-                              <li key={`plan-card-obj-${messageId}-${idx}-${itemIdx}`} className="list-disc">
-                                {item.includes(' > ') ? (
-                                  <>
-                                    <span className="font-semibold">{item.split(' > ')[0]}:</span>{' '}
-                                    {item.split(' > ').slice(1).join(' > ')}
-                                  </>
-                                ) : item}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : null}
-                      {module.sections.keyTopics.length > 0 ? (
-                        <div>
-                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Key Topics</p>
-                          <ul className="mt-0.5 space-y-0.5 pl-4 text-xs text-slate-700">
-                            {module.sections.keyTopics.slice(0, 6).map((item, itemIdx) => (
-                              <li key={`plan-card-topic-${messageId}-${idx}-${itemIdx}`} className="list-disc">
-                                {item.includes(' > ') ? (
-                                  <>
-                                    <span className="font-semibold">{item.split(' > ')[0]}:</span>{' '}
-                                    {item.split(' > ').slice(1).join(' > ')}
-                                  </>
-                                ) : item}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : null}
-                      {module.sections.activities.length > 0 ? (
-                        <div>
-                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Activites</p>
-                          <ul className="mt-0.5 space-y-0.5 pl-4 text-xs text-slate-700">
-                            {module.sections.activities.slice(0, 4).map((item, itemIdx) => (
-                              <li key={`plan-card-act-${messageId}-${idx}-${itemIdx}`} className="list-disc">
-                                {item.includes(' > ') ? (
-                                  <>
-                                    <span className="font-semibold">{item.split(' > ')[0]}:</span>{' '}
-                                    {item.split(' > ').slice(1).join(' > ')}
-                                  </>
-                                ) : item}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : null}
-                      {module.sections.evaluation.length > 0 ? (
-                        <div>
-                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Indicateur d'evaluation</p>
-                          <ul className="mt-0.5 space-y-0.5 pl-4 text-xs text-slate-700">
-                            {module.sections.evaluation.slice(0, 3).map((item, itemIdx) => (
-                              <li key={`plan-card-eval-${messageId}-${idx}-${itemIdx}`} className="list-disc">
-                                {item.includes(' > ') ? (
-                                  <>
-                                    <span className="font-semibold">{item.split(' > ')[0]}:</span>{' '}
-                                    {item.split(' > ').slice(1).join(' > ')}
-                                  </>
-                                ) : item}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : null}
+                      {renderSectionWithIndent(module.sections.objectives.slice(0, 10), 'Objectifs', '🎯', 'objectives')}
+                      {renderSectionWithIndent(module.sections.keyTopics.slice(0, 12), 'Key Topics', '📌', 'topics')}
+                      {renderSectionWithIndent(module.sections.activities.slice(0, 10), 'Activites', '🧩', 'activities')}
+                      {renderSectionWithIndent(module.sections.evaluation.slice(0, 8), "Indicateur d'evaluation", '📊', 'evaluation')}
                       {module.sections.objectives.length === 0 &&
                       module.sections.keyTopics.length === 0 &&
                       module.sections.activities.length === 0 &&
