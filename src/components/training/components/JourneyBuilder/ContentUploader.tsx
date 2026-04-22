@@ -604,10 +604,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
       .slice(-10)
       .map((m) => stripAssistantTrainingTags(String(m.text || '')))
       .filter(Boolean);
-    return chunks.join('\n\n---\n\n').slice(0, 12000);
+    const joined = chunks.join('\n\n---\n\n');
+    // Keep the **end** of the thread so a new request (e.g. 30‑min formation) is not dropped after a long podcast exchange.
+    return joined.length <= 12000 ? joined : joined.slice(-12000);
   }, [repOnboardingLayout, chatMessages]);
 
-  /** Full user + assistant thread for podcast digest (REP). */
+  /** Full user + assistant thread for podcast / images digest (REP). Long threads: keep the tail (latest intent). */
   const repChatTranscriptForPodcast = useMemo(() => {
     if (!repOnboardingLayout) return '';
     const lines: string[] = [];
@@ -618,7 +620,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
       if (!text) continue;
       lines.push(`${m.role === 'user' ? 'User' : 'Assistant'}: ${text}`);
     }
-    return lines.join('\n\n').slice(0, 12000);
+    const joined = lines.join('\n\n');
+    const max = 16000;
+    if (joined.length <= max) return joined;
+    return (
+      '…(earlier messages omitted)\n\n' +
+      '--- Most recent conversation (follow this — supersedes older turns) ---\n\n' +
+      joined.slice(-max)
+    );
   }, [repOnboardingLayout, chatMessages]);
 
   /** Best assistant script visible in chat (after user asked for audio/script), else longest recent reply. */
@@ -736,15 +745,37 @@ export default function ContentUploader(props: ContentUploaderProps) {
     if (repOnboardingLayout) {
       const chatTx = repChatTranscriptForPodcast.trim();
       if (chatTx) {
-        out = `--- Training chat (PRIMARY: align the spoken script with this thread) ---\n\n${chatTx}\n\n--- Supporting reference (curriculum, gig, knowledge base — use only if needed) ---\n\n${out}`.trim();
+        out = `--- Training chat (PRIMARY: align outputs with this thread; latest messages override earlier ones) ---\n\n${chatTx}\n\n--- Supporting reference (curriculum, gig, knowledge base — use only if needed) ---\n\n${out}`.trim();
       } else if (out.length < 400 && repChatPodcastDigest.trim()) {
         out = `${out ? `${out}\n\n` : ''}--- Summary from onboarding conversation ---\n\n${repChatPodcastDigest}`;
       }
     } else if (out.length < 400 && repChatPodcastDigest.trim()) {
       out = `${out ? `${out}\n\n` : ''}--- Summary from onboarding conversation ---\n\n${repChatPodcastDigest}`;
     }
-    if (out.length > 14000) {
-      out = `${out.slice(0, 14000)}\n\n[... content truncated due to technical limit]`;
+    const digestMax = 36000;
+    if (out.length > digestMax) {
+      const primaryMark = '--- Training chat (PRIMARY';
+      const supMark = '\n\n--- Supporting reference';
+      const p = out.indexOf(primaryMark);
+      const s = out.indexOf(supMark);
+      if (p !== -1 && s !== -1 && s > p) {
+        let primary = out.slice(p, s).trimEnd();
+        let supporting = out.slice(s);
+        if (primary.length > digestMax - 400) {
+          primary =
+            primary.slice(-(digestMax - 400)) +
+            '\n\n[... older PRIMARY chat truncated — tail kept for latest learner instructions ...]';
+        }
+        const budget = Math.max(200, digestMax - primary.length - 120);
+        if (supporting.length > budget) {
+          supporting =
+            supporting.slice(0, budget) +
+            '\n\n[... supporting reference truncated — chat PRIMARY above is authoritative ...]';
+        }
+        out = `${primary}\n\n${supporting}`.trim();
+      } else {
+        out = `${out.slice(-digestMax)}\n\n[... digest truncated — tail kept for latest context ...]`;
+      }
     }
     return out;
   }, [
