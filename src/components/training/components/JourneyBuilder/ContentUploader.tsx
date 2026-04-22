@@ -545,6 +545,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [quizSavedHint, setQuizSavedHint] = useState<string | null>(null);
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showPodcastModal, setShowPodcastModal] = useState(false);
+  const [interactiveQuestionAnswers, setInteractiveQuestionAnswers] = useState<Record<string, Record<number, string>>>({});
   const podcastSpeechRef = useRef<WebSpeechService | null>(null);
   const podcastSpeakAbortRef = useRef(false);
   /** After a successful “Regenerate audio overview”, chat length at that moment — View syncs when new messages arrive. */
@@ -3856,7 +3857,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               repSplitLayout
                 ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-harx-100 bg-white px-3 py-4 shadow-[0_10px_30px_rgba(20,20,40,0.08)] md:px-5 md:py-5'
                 : rep
-                  ? 'flex w-full flex-col rounded-2xl border border-harx-100 bg-white px-4 py-6 shadow-[0_10px_30px_rgba(20,20,40,0.08)] md:px-8 md:py-8'
+                  ? 'flex w-full flex-col bg-white px-0 py-0 shadow-none'
                   : 'flex max-h-[90vh] min-h-0 flex-col rounded-2xl border border-harx-100 bg-white px-4 py-6 shadow-[0_10px_30px_rgba(20,20,40,0.08)] md:px-8 md:py-8'
             }
           >
@@ -3866,7 +3867,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               repSplitLayout
                 ? 'mx-auto mb-2 flex min-h-0 w-full min-w-0 max-w-none flex-1 flex-col'
                 : rep
-                  ? 'mx-auto mb-2 w-full min-w-0 max-w-5xl'
+                  ? 'mx-auto mb-0 w-full min-w-0 max-w-5xl'
                   : 'mx-auto flex min-h-0 w-full min-w-0 max-w-5xl flex-1 flex-col pb-2'
             }
           >
