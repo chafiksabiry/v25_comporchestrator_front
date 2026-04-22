@@ -3978,23 +3978,50 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   ))}
                   {rep && showPersonalizationCard && currentPersonalizationQuestion && (
                     <div className="flex justify-start">
-                      <div className="max-w-[88%] rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                        <div className="mb-2 text-[13px] font-semibold text-slate-700">
-                          {`Question ${Math.min(personalizationStep + 1, personalizationQuestions.length)}/${personalizationQuestions.length}`}
+                      <div className="w-full max-w-[96%] overflow-hidden rounded-[22px] border border-slate-200 bg-[#f3f3f3] shadow-sm">
+                        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                          <p className="pr-3 text-[34px] leading-tight text-slate-900">
+                            {currentPersonalizationQuestion.question}
+                          </p>
+                          <div className="flex shrink-0 items-center gap-3">
+                            <span className="text-[28px] text-slate-300">‹</span>
+                            <span className="text-[28px] text-slate-300">›</span>
+                            <span className="text-[13px] font-medium text-slate-500">
+                              {`${Math.min(personalizationStep + 1, personalizationQuestions.length)} sur ${personalizationQuestions.length}`}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowPersonalizationCard(false);
+                                setPersonalizationStep(0);
+                                setPersonalizationAnswers({});
+                              }}
+                              className="rounded-md p-1 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
+                              title="Fermer"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          {currentPersonalizationQuestion.options.map((option) => (
+                        <div className="px-4 py-3">
+                          {currentPersonalizationQuestion.options.map((option, idx) => (
                             <button
                               key={`chat-question-${personalizationStep}-${option}`}
                               type="button"
                               onClick={() => handleSelectPersonalizationOption(option)}
-                              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left text-sm font-semibold text-slate-900 transition hover:bg-white"
+                              className="group mb-2 flex w-full items-center gap-3 rounded-2xl border border-transparent bg-[#ececec] px-4 py-4 text-left transition hover:border-slate-300 hover:bg-white last:mb-0"
                             >
-                              {option}
+                              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#dddddd] text-[20px] font-semibold text-slate-700">
+                                {idx + 1}
+                              </span>
+                              <span className="min-w-0 flex-1 text-[31px] font-medium leading-tight text-slate-800">
+                                {option}
+                              </span>
+                              <span className="shrink-0 text-[28px] text-slate-400 transition group-hover:text-slate-700">→</span>
                             </button>
                           ))}
                         </div>
-                        <div className="mt-2 flex justify-end">
+                        <div className="flex items-center justify-end border-t border-slate-200 px-4 py-3">
                           <button
                             type="button"
                             onClick={() => {
@@ -4002,9 +4029,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               setPersonalizationStep(0);
                               setPersonalizationAnswers({});
                             }}
-                            className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+                            className="rounded-xl border border-slate-300 bg-white px-5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                           >
-                            Skip
+                            Passer
                           </button>
                         </div>
                       </div>
