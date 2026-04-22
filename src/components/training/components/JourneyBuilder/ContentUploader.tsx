@@ -3462,7 +3462,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               </p>
               {parsedPlan.intro ? <p className="mt-1 text-xs text-slate-600">{parsedPlan.intro}</p> : null}
             </div>
-            <div className="grid gap-2 md:grid-cols-2">
+            <div className="flex flex-col gap-2">
               {parsedPlan.modules.map((module, idx) => {
                 const theme = moduleThemes[idx % moduleThemes.length];
                 const isActive = activeIdx === idx;
@@ -3477,7 +3477,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       }));
                       if (isChatLoading) return;
                       const modulePrompt = `Donne le contenu detaille du ${module.title} avec exemples pratiques.`;
-                      setChatInput(modulePrompt);
                       void sendChatMessage(modulePrompt);
                     }}
                     className={`w-full rounded-xl border p-3 text-left transition hover:-translate-y-0.5 ${theme.bg} ${theme.border}`}
@@ -3507,15 +3506,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           tabIndex={0}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setChatInput(`Donne le contenu detaille du ${module.title} avec exemples pratiques.`);
-                            window.setTimeout(() => chatTextareaRef.current?.focus(), 0);
+                            if (isChatLoading) return;
+                            void sendChatMessage(`Donne le contenu detaille du ${module.title} avec exemples pratiques.`);
                           }}
                           onKeyDown={(e) => {
                             if (e.key !== 'Enter' && e.key !== ' ') return;
                             e.preventDefault();
                             e.stopPropagation();
-                            setChatInput(`Donne le contenu detaille du ${module.title} avec exemples pratiques.`);
-                            window.setTimeout(() => chatTextareaRef.current?.focus(), 0);
+                            if (isChatLoading) return;
+                            void sendChatMessage(`Donne le contenu detaille du ${module.title} avec exemples pratiques.`);
                           }}
                           className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
                         >
@@ -3892,6 +3891,98 @@ export default function ContentUploader(props: ContentUploaderProps) {
             >
               Use selected answers
             </button>
+          </div>
+        </div>
+      );
+    };
+
+    const parseChoiceOptionsFromText = (
+      rawText: string
+    ): Array<{ title: string; details: string[] }> => {
+      const lines = String(rawText || '')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+      const options: Array<{ title: string; details: string[] }> = [];
+      let current: { title: string; details: string[] } | null = null;
+
+      for (const line of lines) {
+        const optionMatch = line.match(/^option\s*(\d+)\s*[:\-]\s*(.+)$/i);
+        if (optionMatch) {
+          if (current) options.push(current);
+          current = { title: `Option ${optionMatch[1]}: ${optionMatch[2]}`, details: [] };
+          continue;
+        }
+        if (!current) continue;
+        if (/^option\s*\d+/i.test(line)) {
+          if (current) options.push(current);
+          current = null;
+          continue;
+        }
+        current.details.push(line.replace(/^[-*•]\s*/, '').trim());
+      }
+      if (current) options.push(current);
+      return options
+        .map((o) => ({ ...o, details: o.details.filter(Boolean).slice(0, 3) }))
+        .filter((o) => o.title.length > 8)
+        .slice(0, 6);
+    };
+
+    const renderInteractiveChoiceCards = (
+      messageId: string,
+      rawText: string,
+      styleSourceText?: string
+    ): React.ReactNode | null => {
+      const options = parseChoiceOptionsFromText(rawText);
+      if (options.length < 2) return null;
+      const styleBlueprint = extractStyleBlueprint(String(styleSourceText || rawText || ''));
+      const contentTheme = styleBlueprint.contentTheme;
+      const shapeClass =
+        contentTheme?.moduleShape === 'square'
+          ? 'rounded-none'
+          : contentTheme?.moduleShape === 'soft'
+            ? 'rounded-3xl'
+            : 'rounded-2xl';
+      return (
+        <div
+          className={`mb-2 ${shapeClass} border p-3`}
+          style={{
+            borderColor: contentTheme?.panelBorder || '#e2e8f0',
+            backgroundColor: contentTheme?.panelBg || '#ffffff',
+          }}
+        >
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide" style={{ color: styleBlueprint.accentColor || '#be123c' }}>
+            Actions proposees
+          </p>
+          <div className="space-y-2">
+            {options.map((opt, idx) => (
+              <button
+                key={`choice-${messageId}-${idx}`}
+                type="button"
+                onClick={() => {
+                  if (isChatLoading) return;
+                  void sendChatMessage(`Je choisis ${opt.title}. Continue avec ce choix.`);
+                }}
+                className={`${shapeClass} w-full border px-3 py-2 text-left transition hover:-translate-y-0.5`}
+                style={{
+                  borderColor: contentTheme?.tableBorder || '#cbd5e1',
+                  backgroundColor: contentTheme?.tableRowBg || '#ffffff',
+                }}
+              >
+                <p className="text-sm font-semibold" style={{ color: contentTheme?.headingColor || '#0f172a' }}>
+                  {opt.title}
+                </p>
+                {opt.details.length > 0 ? (
+                  <ul className="mt-1 space-y-0.5 pl-4 text-xs" style={{ color: contentTheme?.bodyColor || '#334155' }}>
+                    {opt.details.map((d, dIdx) => (
+                      <li key={`choice-d-${messageId}-${idx}-${dIdx}`} className="list-disc">
+                        {d}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </button>
+            ))}
           </div>
         </div>
       );
@@ -4622,6 +4713,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               const interactiveTimeline = renderInteractiveTrainingTimeline(msg.id, textWithoutStyle);
                               const presentationArtifact = renderPresentationArtifact(textWithoutStyle);
                               const interactiveQuestionnaire = renderInteractiveQuestionnaire(msg.id, textWithoutStyle, String(msg.text || ''));
+                              const interactiveChoiceCards = renderInteractiveChoiceCards(msg.id, textWithoutStyle, String(msg.text || ''));
                               const hideMarkdownForInteractivePlan = !!interactiveTimeline;
                               return (
                                 <>
@@ -4633,6 +4725,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   ) : null}
                                   {interactiveQuestionnaire ? (
                                     <div className="mb-2">{interactiveQuestionnaire}</div>
+                                  ) : null}
+                                  {interactiveChoiceCards ? (
+                                    <div className="mb-2">{interactiveChoiceCards}</div>
                                   ) : null}
                                   {!hideMarkdownForInteractivePlan ? (
                                     <div
