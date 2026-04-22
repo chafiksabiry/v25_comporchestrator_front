@@ -4,7 +4,7 @@ import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, C
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ContentUpload } from '../../types/core';
-import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef, type ChatHistoryItem, type SavedPodcastItem, type TrainingImageSet, type QuizQuestion } from '../../infrastructure/services/AIService';
+import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef, type ChatHistoryItem, type SavedPodcastItem, type TrainingImageSet, type QuizQuestion, type StructuredTrainingSlidesPayload } from '../../infrastructure/services/AIService';
 import { WebSpeechService } from '../../infrastructure/services/CanvasVideoService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
 import { DraftService } from '../../infrastructure/services/DraftService';
@@ -531,6 +531,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [showImagePresentationModal, setShowImagePresentationModal] = useState(false);
   const [activeImageSet, setActiveImageSet] = useState<TrainingImageSet | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isStructuredSlidesGenerating, setIsStructuredSlidesGenerating] = useState(false);
+  const [showStructuredSlidesModal, setShowStructuredSlidesModal] = useState(false);
+  const [structuredSlides, setStructuredSlides] = useState<StructuredTrainingSlidesPayload | null>(null);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [isQuizGenerating, setIsQuizGenerating] = useState(false);
   const [showQuizModal, setShowQuizModal] = useState(false);
@@ -1142,6 +1145,33 @@ export default function ContentUploader(props: ContentUploaderProps) {
     imagePrompt,
     journey,
   ]);
+
+  const handleGenerateStructuredSlides = useCallback(async () => {
+    if (isStructuredSlidesGenerating) return;
+    const digest = buildTrainingDigestForPodcast();
+    if (!digest.trim()) {
+      setPodcastError('Not enough training content to generate slides.');
+      return;
+    }
+    const trainingTitle = resolvedTrainingMaterialTitle;
+    setIsStructuredSlidesGenerating(true);
+    setPodcastError(null);
+    try {
+      const data = await AIService.generateTrainingSlidesJson({
+        trainingDigest: digest,
+        trainingTitle,
+        language: 'fr',
+        maxSlides: 16,
+      });
+      setStructuredSlides(data);
+      setShowStructuredSlidesModal(true);
+      setPodcastSavedHint('Structured HTML slides generated.');
+    } catch (e: any) {
+      setPodcastError(e?.message || 'Unable to generate structured slides.');
+    } finally {
+      setIsStructuredSlidesGenerating(false);
+    }
+  }, [isStructuredSlidesGenerating, buildTrainingDigestForPodcast, resolvedTrainingMaterialTitle]);
 
   useEffect(() => {
     if (!imageGenerationJobId || imageGenerationStatus !== 'generating') return;
@@ -3054,6 +3084,48 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setShowImagePresentationModal(true);
     };
 
+    const openStructuredSlidesExportPptx = async () => {
+      if (!structuredSlides?.slides?.length) return;
+      const presentation = {
+        title: structuredSlides.title || 'Training slides',
+        slides: structuredSlides.slides.map((s: any) => ({
+          title: s.title,
+          content: Array.isArray(s.bullets) ? s.bullets.map((b: string) => `• ${b}`).join('\n') : '',
+          notes: s.notes || '',
+        })),
+      };
+      await AIService.exportPresentationToPPTX(presentation);
+    };
+
+    const openStructuredSlidesExportPdf = () => {
+      if (!structuredSlides?.slides?.length) return;
+      const html = `
+        <html><head><title>${String(structuredSlides.title || 'Slides')}</title>
+        <style>
+          body{font-family:Arial,sans-serif;padding:20px;background:#f8fafc}
+          .slide{page-break-after:always;border:1px solid #e2e8f0;border-radius:12px;background:#fff;padding:20px;margin:0 0 20px}
+          h2{margin:0 0 10px;color:#0f172a} ul{margin:0;padding-left:20px} li{margin:8px 0}
+        </style></head><body>
+        ${structuredSlides.slides
+          .map(
+            (s: any) =>
+              `<section class="slide"><h2>${String(s.title || '').replace(/</g, '&lt;')}</h2><ul>${
+                (s.bullets || [])
+                  .map((b: string) => `<li>${String(b || '').replace(/</g, '&lt;')}</li>`)
+                  .join('')
+              }</ul></section>`
+          )
+          .join('')}
+        </body></html>`;
+      const w = window.open('', '_blank');
+      if (!w) return;
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      w.focus();
+      w.print();
+    };
+
     const handleGenerateQuizFromChat = async () => {
       if (isQuizGenerating) return;
       const chatDigest = chatMessages
@@ -3456,6 +3528,26 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       >
                         <Music className="h-3.5 w-3.5" />
                         View audio overview
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => void handleGenerateStructuredSlides()}
+                      disabled={isStructuredSlidesGenerating || isChatLoading}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                      title="Generate HTML/CSS slides from chat"
+                    >
+                      {isStructuredSlidesGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LayoutGrid className="h-3.5 w-3.5" />}
+                      {structuredSlides?.slides?.length ? 'Regenerate HTML slides' : 'HTML slides'}
+                    </button>
+                    {structuredSlides?.slides?.length ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowStructuredSlidesModal(true)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                        View HTML slides
                       </button>
                     ) : null}
                     <button
@@ -4154,6 +4246,62 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       <div className="text-sm text-slate-500">No image available.</div>
                     )}
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {rep && showStructuredSlidesModal && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/45 p-4">
+              <div className="flex h-[90vh] w-[min(1200px,96vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                  <div className="text-sm font-semibold text-slate-900">
+                    {structuredSlides?.title || 'Structured slides'}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void openStructuredSlidesExportPptx()}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Export PPTX
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openStructuredSlidesExportPdf()}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Export PDF
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowStructuredSlidesModal(false)}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+                <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-slate-50 p-4">
+                  {(structuredSlides?.slides || []).map((s) => (
+                    <section key={`structured-${s.index}-${s.title}`} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <div className="mb-2 flex items-center justify-between">
+                        <h3 className="text-base font-semibold text-slate-900">{s.title}</h3>
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-600">{s.kind}</span>
+                      </div>
+                      <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
+                        {(s.bullets || []).map((b, i) => (
+                          <li key={`b-${s.index}-${i}`}>{b}</li>
+                        ))}
+                      </ul>
+                      {s.notes ? <p className="mt-2 text-xs text-slate-500">{s.notes}</p> : null}
+                    </section>
+                  ))}
+                  {!(structuredSlides?.slides || []).length ? (
+                    <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+                      No structured slides generated yet.
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
