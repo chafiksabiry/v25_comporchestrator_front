@@ -165,6 +165,7 @@ export interface TrainingImageSet {
   _id: string;
   title: string;
   trainingTitle?: string;
+  renderMode?: 'ai_images' | 'template_slides';
   gigId?: string;
   language: string;
   items: TrainingImageSetItem[];
@@ -174,6 +175,7 @@ export interface TrainingImageSet {
 export interface TrainingImageJobStatus {
   jobId: string;
   status: 'queued' | 'running' | 'completed' | 'failed';
+  renderMode?: 'ai_images' | 'template_slides';
   total: number;
   completed: number;
   items: TrainingImageSetItem[];
@@ -648,6 +650,7 @@ export class AIService {
     trainingTitle?: string;
     title?: string;
     language?: string;
+    renderMode?: 'ai_images' | 'template_slides';
     styleGuidance?: string;
     gigId?: string;
     companyId?: string;
@@ -672,6 +675,7 @@ export class AIService {
     return {
       jobId,
       status: (raw?.status || 'queued') as any,
+      renderMode: raw?.renderMode === 'template_slides' ? 'template_slides' : 'ai_images',
       total: Number(raw?.total || 0),
       completed: Number(raw?.completed || 0),
       items: Array.isArray(raw?.items) ? (raw.items as TrainingImageSetItem[]) : [],
@@ -695,6 +699,7 @@ export class AIService {
     return {
       jobId: String(raw?.jobId || jobId),
       status: (raw?.status || 'queued') as any,
+      renderMode: raw?.renderMode === 'template_slides' ? 'template_slides' : 'ai_images',
       total: Number(raw?.total || 0),
       completed: Number(raw?.completed || 0),
       items: Array.isArray(raw?.items) ? (raw.items as TrainingImageSetItem[]) : [],

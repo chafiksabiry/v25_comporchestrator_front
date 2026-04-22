@@ -178,6 +178,8 @@ type RepPodcastSidebarPanelProps = {
   onLoadSavedPodcast: (podcast: SavedPodcastItem) => void;
   imagePrompt: string;
   onImagePromptChange: (v: string) => void;
+  imageRenderMode: 'ai_images' | 'template_slides';
+  onImageRenderModeChange: (v: 'ai_images' | 'template_slides') => void;
   onGenerateImages: () => void;
   isImagesGenerating: boolean;
   imageGenerationStatus: 'idle' | 'generating' | 'completed' | 'failed';
@@ -212,6 +214,8 @@ function RepPodcastSidebarPanel({
   onLoadSavedPodcast,
   imagePrompt,
   onImagePromptChange,
+  imageRenderMode,
+  onImageRenderModeChange,
   onGenerateImages,
   isImagesGenerating,
   imageGenerationStatus,
@@ -341,6 +345,19 @@ function RepPodcastSidebarPanel({
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-2.5">
           <p className="mb-2 text-[11px] font-semibold text-slate-700">Presentation overview (max 20)</p>
+          <div className="mb-2">
+            <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+              Rendering mode
+            </label>
+            <select
+              value={imageRenderMode}
+              onChange={(e) => onImageRenderModeChange(e.target.value === 'template_slides' ? 'template_slides' : 'ai_images')}
+              className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-800 outline-none ring-harx-500/20 focus:ring-2"
+            >
+              <option value="ai_images">AI images (visual generation)</option>
+              <option value="template_slides">Template slides (no AI image generation)</option>
+            </select>
+          </div>
           <textarea
             value={imagePrompt}
             onChange={(e) => onImagePromptChange(e.target.value)}
@@ -399,7 +416,9 @@ function RepPodcastSidebarPanel({
                     className="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-left hover:bg-fuchsia-50"
                   >
                     <p className="truncate text-[11px] font-semibold text-slate-800">{v.title || 'Untitled image set'}</p>
-                    <p className="truncate text-[10px] text-slate-500">{(v.items || []).length} images</p>
+                    <p className="truncate text-[10px] text-slate-500">
+                      {(v.items || []).length} slides · {v.renderMode === 'template_slides' ? 'template' : 'ai'}
+                    </p>
                   </button>
                 ))
               )}
@@ -463,11 +482,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [chatInput, setChatInput] = useState('');
   const [showRepSourcePopup, setShowRepSourcePopup] = useState(repOnboardingLayout);
   const [isChatLoading, setIsChatLoading] = useState(false);
+  /** Rotates while the assistant request is in flight (including first-token wait on an empty streaming bubble). */
+  const [assistantWaitPhase, setAssistantWaitPhase] = useState(0);
   const [kbGenerationChoice, setKbGenerationChoice] = useState<KbGenerationMode | null>(null);
   const [chatKbDocuments, setChatKbDocuments] = useState<
     Array<{ _id: string; name: string; fileType?: string; summary?: string; keyTerms?: string[]; createdAt?: string }>
   >([]);
   const [chatUploadedSources, setChatUploadedSources] = useState<Array<{ keyTopics: string[]; objectives: string[] }>>([]);
+  /** Fichiers déjà envoyés au chat REP (les `uploads` sont vidés après envoi — on garde les noms pour titres podcast/images). */
+  const [repSessionAnalyzedFileNames, setRepSessionAnalyzedFileNames] = useState<string[]>([]);
   const [isChatKbLoading, setIsChatKbLoading] = useState(false);
   /** KB chargée pour le digest podcast (même si le mode chat n’utilise pas la KB). */
   const [podcastKbDocuments, setPodcastKbDocuments] = useState<
@@ -495,6 +518,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [savedPodcasts, setSavedPodcasts] = useState<SavedPodcastItem[]>([]);
   const [isSavedPodcastsLoading, setIsSavedPodcastsLoading] = useState(false);
   const [imagePrompt, setImagePrompt] = useState('');
+  const [imageRenderMode, setImageRenderMode] = useState<'ai_images' | 'template_slides'>('ai_images');
   const [imageGenerationStatus, setImageGenerationStatus] = useState<'idle' | 'generating' | 'completed' | 'failed'>('idle');
   const [isImagesGenerating, setIsImagesGenerating] = useState(false);
   const [imageGenerationJobId, setImageGenerationJobId] = useState<string | null>(null);
@@ -534,7 +558,26 @@ export default function ContentUploader(props: ContentUploaderProps) {
     setShowRepSourcePopup(repOnboardingLayout && chatMessages.length === 0);
   }, [repOnboardingLayout, chatMessages.length]);
 
+  useEffect(() => {
+    if (!isChatLoading) {
+      setAssistantWaitPhase(0);
+      return;
+    }
+    const id = window.setInterval(() => {
+      setAssistantWaitPhase((p) => (p + 1) % 3);
+    }, 1800);
+    return () => window.clearInterval(id);
+  }, [isChatLoading]);
+
+  const assistantWaitLabels = ['Thinking…', 'Generating…', 'Analyzing…'];
+  const assistantWaitLabel = assistantWaitLabels[assistantWaitPhase % assistantWaitLabels.length];
+
   const activeChatGigId = selectedChatGigId || (gigId ? String(gigId) : '');
+
+  useEffect(() => {
+    setRepSessionAnalyzedFileNames([]);
+  }, [activeChatGigId]);
+
   const activeChatGigTitle =
     companyGigs.find((g: any) => String(g?._id || g?.id || '') === String(activeChatGigId))?.title ||
     (activeChatGigId ? `Gig ${activeChatGigId.slice(0, 8)}` : 'No gig');
@@ -663,6 +706,82 @@ export default function ContentUploader(props: ContentUploaderProps) {
     () => (chatKbDocuments.length > 0 ? chatKbDocuments : podcastKbDocuments),
     [chatKbDocuments, podcastKbDocuments]
   );
+
+  /**
+   * Titre matériel pour podcast / images / sauvegardes : aligné sur le contenu réellement digéré
+   * (curriculum, présentation, fichiers uploadés, docs KB), pas seulement sur le gig sélectionné.
+   */
+  const resolvedTrainingMaterialTitle = useMemo(() => {
+    const curriculumTitle = String(generatedCurriculum?.title || '').trim();
+    if (curriculumTitle) return curriculumTitle.slice(0, 200);
+    const presentationTitle = String(generatedPresentation?.title || '').trim();
+    if (presentationTitle) return presentationTitle.slice(0, 200);
+
+    const stripExt = (n: string) => String(n || '').replace(/\.[^.]+$/, '').trim();
+    const uploadNames = uploads
+      .filter((u) => u.status === 'analyzed' && !!u.aiAnalysis)
+      .map((u) => String(u.name || '').trim())
+      .filter(Boolean);
+    const sessionNames = repSessionAnalyzedFileNames.map((n) => String(n || '').trim()).filter(Boolean);
+    const effectiveUploadNames = uploadNames.length > 0 ? uploadNames : sessionNames;
+    if (effectiveUploadNames.length === 1) return stripExt(effectiveUploadNames[0]).slice(0, 200) || effectiveUploadNames[0].slice(0, 200);
+    if (effectiveUploadNames.length > 1) {
+      const joined = effectiveUploadNames
+        .slice(0, 3)
+        .map((n) => stripExt(n) || n)
+        .join(' · ');
+      return (effectiveUploadNames.length > 3 ? `${joined}…` : joined).slice(0, 200);
+    }
+
+    const kbNames = kbDocumentsForPodcast.map((d) => String(d.name || '').trim()).filter(Boolean);
+    if (kbNames.length === 1) return stripExt(kbNames[0]).slice(0, 200) || kbNames[0].slice(0, 200);
+    if (kbNames.length > 1) {
+      const joined = kbNames.slice(0, 3).join(' · ');
+      return (kbNames.length > 3 ? `${joined}…` : joined).slice(0, 200);
+    }
+
+    const gigTitle =
+      activeGigSnapshotForPodcast && String((activeGigSnapshotForPodcast as Record<string, unknown>).title || '').trim();
+    if (gigTitle) return gigTitle.slice(0, 200);
+    return 'Training';
+  }, [
+    generatedCurriculum?.title,
+    generatedPresentation?.title,
+    uploads,
+    repSessionAnalyzedFileNames,
+    kbDocumentsForPodcast,
+    activeGigSnapshotForPodcast,
+  ]);
+
+  /** En-tête modal images : corrige les jeux sauvegardés quand le titre stocké = gig alors que la source réelle est KB/upload. */
+  const trainingImageModalPrimaryTitle = useMemo(() => {
+    if (!activeImageSet) return 'Presentation overview images';
+    const gigT = String((activeGigSnapshotForPodcast as Record<string, unknown>)?.title || '').trim();
+    const storedTT = String(activeImageSet.trainingTitle || '').trim();
+    const storedFull = String(activeImageSet.title || '').trim();
+    const live = resolvedTrainingMaterialTitle;
+    if (
+      repOnboardingLayout &&
+      gigT &&
+      storedTT === gigT &&
+      live &&
+      live !== gigT &&
+      (uploads.some((u) => u.status === 'analyzed' && !!u.aiAnalysis) ||
+        repSessionAnalyzedFileNames.length > 0 ||
+        kbDocumentsForPodcast.length > 0)
+    ) {
+      return `${live} - Images`.slice(0, 240);
+    }
+    return storedFull || `${live} - Images`.slice(0, 240);
+  }, [
+    activeImageSet,
+    repOnboardingLayout,
+    activeGigSnapshotForPodcast,
+    resolvedTrainingMaterialTitle,
+    uploads,
+    repSessionAnalyzedFileNames,
+    kbDocumentsForPodcast,
+  ]);
 
   const showRepPodcastPanel = useMemo(
     () =>
@@ -802,12 +921,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     setPodcastSavedHint(null);
     setPodcastScript('');
     try {
-      const trainingTitle = String(
-        generatedCurriculum?.title ||
-          generatedPresentation?.title ||
-          (activeGigSnapshotForPodcast && String((activeGigSnapshotForPodcast as Record<string, unknown>).title || '')) ||
-          ''
-      );
+      const trainingTitle = resolvedTrainingMaterialTitle;
       const script = await AIService.generatePodcastScript({
         trainingDigest: digest,
         trainingTitle,
@@ -849,9 +963,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     repOnboardingLayout,
     isPodcastGenerating,
     buildTrainingDigestForPodcast,
-    generatedCurriculum?.title,
-    generatedPresentation?.title,
-    activeGigSnapshotForPodcast,
+    resolvedTrainingMaterialTitle,
     podcastTitle,
     currentSavedPodcastId,
     activeChatGigId,
@@ -893,12 +1005,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const handleSavePodcast = useCallback(async () => {
     const script = podcastScript.trim();
     if (!script || isPodcastSaving) return;
-    const fallbackTitle = String(
-      generatedCurriculum?.title ||
-        generatedPresentation?.title ||
-        (activeGigSnapshotForPodcast && String((activeGigSnapshotForPodcast as Record<string, unknown>).title || '')) ||
-        'Training podcast'
-    );
+    const fallbackTitle = resolvedTrainingMaterialTitle || 'Training podcast';
     const title = (podcastTitle.trim() || `${fallbackTitle} - Podcast`).slice(0, 240);
     setIsPodcastSaving(true);
     setPodcastError(null);
@@ -931,9 +1038,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   }, [
     podcastScript,
     isPodcastSaving,
-    generatedCurriculum?.title,
-    generatedPresentation?.title,
-    activeGigSnapshotForPodcast,
+    resolvedTrainingMaterialTitle,
     podcastTitle,
     activeChatGigId,
     company,
@@ -989,12 +1094,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setPodcastError('Not enough training content to generate images.');
       return;
     }
-    const trainingTitle = String(
-      generatedCurriculum?.title ||
-        generatedPresentation?.title ||
-        (activeGigSnapshotForPodcast && String((activeGigSnapshotForPodcast as Record<string, unknown>).title || '')) ||
-        'Training'
-    );
+    const trainingTitle = resolvedTrainingMaterialTitle;
     setIsImagesGenerating(true);
     setImageGenerationStatus('generating');
     setImageGenerationJobId(null);
@@ -1006,8 +1106,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
       const result = await AIService.generateTrainingImages({
         trainingDigest: digest,
         trainingTitle,
-        title: `${trainingTitle} - Images`,
+        title: `${trainingTitle} - ${imageRenderMode === 'template_slides' ? 'Slides' : 'Images'}`,
         language: 'fr',
+        renderMode: imageRenderMode,
         styleGuidance: imagePrompt.trim() || undefined,
         maxImages: 20,
         gigId: activeChatGigId ? String(activeChatGigId) : undefined,
@@ -1020,8 +1121,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setImageGenerationCompleted(result.completed || 0);
       setGeneratedImageSet({
         _id: result.jobId,
-        title: `${trainingTitle} - Images`,
+        title: `${trainingTitle} - ${imageRenderMode === 'template_slides' ? 'Slides' : 'Images'}`,
         trainingTitle,
+        renderMode: result.renderMode || imageRenderMode,
         language: 'fr',
         items: Array.isArray(result.items) ? result.items : [],
       });
@@ -1033,11 +1135,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
   }, [
     isImagesGenerating,
     buildTrainingDigestForPodcast,
-    generatedCurriculum?.title,
-    generatedPresentation?.title,
-    activeGigSnapshotForPodcast,
+    resolvedTrainingMaterialTitle,
     activeChatGigId,
     company,
+    imageRenderMode,
     imagePrompt,
     journey,
   ]);
@@ -1055,6 +1156,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           _id: st.savedImageSetId || prev?._id || st.jobId,
           title: prev?.title || 'Training images',
           trainingTitle: prev?.trainingTitle,
+          renderMode: st.renderMode || prev?.renderMode || imageRenderMode,
           language: prev?.language || 'fr',
           items: Array.isArray(st.items) ? st.items : [],
           createdAt: prev?.createdAt,
@@ -1086,7 +1188,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     return () => {
       cancelled = true;
     };
-  }, [imageGenerationJobId, imageGenerationStatus, refreshSavedImageSets]);
+  }, [imageGenerationJobId, imageGenerationStatus, imageRenderMode, refreshSavedImageSets]);
 
   const refreshChatHistory = useCallback(async () => {
     if (!activeChatGigId) {
@@ -2892,6 +2994,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
           )
         );
         if (analyzedUploads.length > 0) {
+          const namesThisRound = uploads
+            .filter((u) => u.status === 'analyzed' && !!u.aiAnalysis)
+            .map((u) => String(u.name || '').trim())
+            .filter(Boolean);
+          if (namesThisRound.length > 0) {
+            setRepSessionAnalyzedFileNames((prev) => {
+              const next = [...prev];
+              for (const n of namesThisRound) {
+                if (n && !next.includes(n)) next.push(n);
+              }
+              return next.slice(0, 20);
+            });
+          }
           // Files were already captured for this chat context; keep input clean for next prompts.
           setUploads([]);
         }
@@ -3188,6 +3303,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   }}
                   imagePrompt={imagePrompt}
                   onImagePromptChange={setImagePrompt}
+                  imageRenderMode={imageRenderMode}
+                  onImageRenderModeChange={setImageRenderMode}
                   onGenerateImages={() => void handleGenerateTrainingImages()}
                   isImagesGenerating={isImagesGenerating}
                   imageGenerationStatus={imageGenerationStatus}
@@ -3306,6 +3423,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 </div>
                 {rep && (
                   <div className="flex w-full flex-wrap items-center justify-end gap-2 rounded-2xl border border-slate-200 bg-white p-2">
+                    <select
+                      value={imageRenderMode}
+                      onChange={(e) => setImageRenderMode(e.target.value === 'template_slides' ? 'template_slides' : 'ai_images')}
+                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700"
+                      title="Presentation rendering mode"
+                    >
+                      <option value="ai_images">AI images</option>
+                      <option value="template_slides">Template slides</option>
+                    </select>
                     <button
                       type="button"
                       onClick={() => void handleGeneratePodcastScript()}
@@ -3337,7 +3463,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       onClick={() => void handleGenerateTrainingImages()}
                       disabled={isImagesGenerating || isChatLoading}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                      title="Generate training images for this conversation"
+                      title={
+                        imageRenderMode === 'template_slides'
+                          ? 'Generate deterministic template slides (no AI image generation)'
+                          : 'Generate training images for this conversation'
+                      }
                     >
                       {isImagesGenerating ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -3347,8 +3477,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         <Presentation className="h-3.5 w-3.5" />
                       )}
                       {generatedImageSet?.items?.length
-                        ? 'Regenerate presentation'
-                        : 'Presentation'}
+                        ? imageRenderMode === 'template_slides'
+                          ? 'Regenerate template slides'
+                          : 'Regenerate presentation'
+                        : imageRenderMode === 'template_slides'
+                          ? 'Template slides'
+                          : 'Presentation'}
                     </button>
                     {generatedImageSet?.items?.length ? (
                       <button
@@ -3357,7 +3491,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                       >
                         <Image className="h-3.5 w-3.5" />
-                        View images as presentation
+                        {generatedImageSet?.renderMode === 'template_slides' ? 'View template slides' : 'View images as presentation'}
                       </button>
                     ) : null}
                     <button
@@ -3657,39 +3791,58 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               const textWithoutStyle = stripPromptEcho(stripResourceSections(
                                 stripStyleBlueprint(String(msg.text || '').replace(/<harx-html>[\s\S]*?<\/harx-html>/gi, ''))
                               ));
+                              const pendingStream = Boolean(msg.isStreaming && !String(textWithoutStyle || '').trim());
+                              if (pendingStream) {
+                                return (
+                                  <div
+                                    className="flex min-h-[3.5rem] flex-col justify-center gap-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
+                                    role="status"
+                                    aria-live="polite"
+                                    aria-label={assistantWaitLabel}
+                                  >
+                                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                                      <Loader2 className="h-4 w-4 shrink-0 animate-spin text-harx-500" />
+                                      {assistantWaitLabel}
+                                    </div>
+                                    <p className="text-xs text-slate-500">HARX assistant is preparing your answer.</p>
+                                  </div>
+                                );
+                              }
                               return (
-                                <ReactMarkdown
-                                  remarkPlugins={[remarkGfm]}
-                                  components={{
-                                    h1: ({ children }) => <h3 className="mb-2 mt-3 text-[22px] font-semibold text-slate-900">{children}</h3>,
-                                    h2: ({ children }) => <h4 className="mb-1.5 mt-3 text-[18px] font-semibold text-slate-900">{children}</h4>,
-                                    h3: ({ children }) => <h5 className="mb-1 mt-2 text-[16px] font-semibold text-slate-800">{children}</h5>,
-                                    p: ({ children }) => <p className="my-1.5 text-[15px] leading-7 text-slate-700">{children}</p>,
-                                    ul: ({ children }) => <ul className="my-1.5 list-disc space-y-0.5 pl-5 text-[15px] leading-7 text-slate-700">{children}</ul>,
-                                    ol: ({ children }) => <ol className="my-1.5 list-decimal space-y-0.5 pl-5 text-[15px] leading-7 text-slate-700">{children}</ol>,
-                                    li: ({ children }) => <li className="text-slate-700">{children}</li>,
-                                    strong: ({ children }) => <strong className="font-semibold text-slate-900">{children}</strong>,
-                                    table: ({ children }) => (
-                                      <div className="my-3 overflow-x-auto rounded-lg border border-slate-200">
-                                        <table className="min-w-full border-collapse bg-white">{children}</table>
-                                      </div>
-                                    ),
-                                    thead: ({ children }) => <thead className="bg-slate-50">{children}</thead>,
-                                    tbody: ({ children }) => <tbody className="divide-y divide-slate-200">{children}</tbody>,
-                                    tr: ({ children }) => <tr className="align-top">{children}</tr>,
-                                    th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-slate-900">{children}</th>,
-                                    td: ({ children }) => <td className="px-3 py-2 text-sm text-slate-700">{children}</td>,
-                                    code: ({ children }) => <code className="rounded bg-slate-100 px-1 py-0.5 text-[13px] text-slate-800 ring-1 ring-slate-200">{children}</code>,
-                                    blockquote: ({ children }) => <blockquote className="my-2 border-l-4 border-slate-300 pl-3 text-slate-600 italic">{children}</blockquote>,
-                                  }}
-                                >
-                                  {textWithoutStyle}
-                                </ReactMarkdown>
+                                <>
+                                  <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                      h1: ({ children }) => <h3 className="mb-2 mt-3 text-[22px] font-semibold text-slate-900">{children}</h3>,
+                                      h2: ({ children }) => <h4 className="mb-1.5 mt-3 text-[18px] font-semibold text-slate-900">{children}</h4>,
+                                      h3: ({ children }) => <h5 className="mb-1 mt-2 text-[16px] font-semibold text-slate-800">{children}</h5>,
+                                      p: ({ children }) => <p className="my-1.5 text-[15px] leading-7 text-slate-700">{children}</p>,
+                                      ul: ({ children }) => <ul className="my-1.5 list-disc space-y-0.5 pl-5 text-[15px] leading-7 text-slate-700">{children}</ul>,
+                                      ol: ({ children }) => <ol className="my-1.5 list-decimal space-y-0.5 pl-5 text-[15px] leading-7 text-slate-700">{children}</ol>,
+                                      li: ({ children }) => <li className="text-slate-700">{children}</li>,
+                                      strong: ({ children }) => <strong className="font-semibold text-slate-900">{children}</strong>,
+                                      table: ({ children }) => (
+                                        <div className="my-3 overflow-x-auto rounded-lg border border-slate-200">
+                                          <table className="min-w-full border-collapse bg-white">{children}</table>
+                                        </div>
+                                      ),
+                                      thead: ({ children }) => <thead className="bg-slate-50">{children}</thead>,
+                                      tbody: ({ children }) => <tbody className="divide-y divide-slate-200">{children}</tbody>,
+                                      tr: ({ children }) => <tr className="align-top">{children}</tr>,
+                                      th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-slate-900">{children}</th>,
+                                      td: ({ children }) => <td className="px-3 py-2 text-sm text-slate-700">{children}</td>,
+                                      code: ({ children }) => <code className="rounded bg-slate-100 px-1 py-0.5 text-[13px] text-slate-800 ring-1 ring-slate-200">{children}</code>,
+                                      blockquote: ({ children }) => <blockquote className="my-2 border-l-4 border-slate-300 pl-3 text-slate-600 italic">{children}</blockquote>,
+                                    }}
+                                  >
+                                    {textWithoutStyle}
+                                  </ReactMarkdown>
+                                  {msg.isStreaming && !!textWithoutStyle.trim() ? (
+                                    <span className="ml-1 inline-block h-4 w-1 animate-pulse rounded bg-harx-400 align-middle" />
+                                  ) : null}
+                                </>
                               );
                             })()}
-                            {msg.isStreaming && (
-                              <span className="ml-1 inline-block h-4 w-1 animate-pulse rounded bg-harx-400 align-middle" />
-                            )}
                           </div>
                           <div className={`mt-2 flex items-center gap-2 text-slate-500 ${msg.isStreaming || !msg.text.trim() ? 'opacity-40 pointer-events-none' : ''}`}>
                             <button
@@ -3741,9 +3894,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       >
                         <Bot className="h-4 w-4" />
                       </div>
-                      <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm">
-                        <Loader2 className="h-4 w-4 animate-spin text-harx-500" />
-                        HARX is thinking…
+                      <div
+                        className="inline-flex min-w-[12rem] flex-col gap-0.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm"
+                        role="status"
+                        aria-live="polite"
+                        aria-label={assistantWaitLabel}
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-harx-500" />
+                          {assistantWaitLabel}
+                        </span>
+                        <span className="text-[11px] font-normal text-slate-500">Please wait — response will appear below.</span>
                       </div>
                     </div>
                   )}
@@ -3930,8 +4091,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
             <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/45 p-4">
               <div className="flex h-[90vh] w-[min(1200px,96vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
                 <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-                  <div className="text-sm font-semibold text-slate-900">
-                    {activeImageSet?.title || 'Presentation overview images'}
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-semibold text-slate-900">{trainingImageModalPrimaryTitle}</div>
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+                      {activeImageSet?.renderMode === 'template_slides' ? 'Template slides' : 'AI images'}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
