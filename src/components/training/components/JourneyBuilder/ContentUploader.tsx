@@ -2644,7 +2644,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const parseTrainingPlan = (rawText: string): {
       title?: string;
       intro?: string;
-      modules: Array<{ title: string; duration?: string; bullets: string[] }>;
+      modules: Array<{
+        title: string;
+        duration?: string;
+        bullets: string[];
+        sections: {
+          objectives: string[];
+          keyTopics: string[];
+          activities: string[];
+          evaluation: string[];
+        };
+      }>;
     } => {
       const lines = String(rawText || '')
         .split('\n')
@@ -2661,10 +2671,39 @@ export default function ContentUploader(props: ContentUploaderProps) {
           .replace(/^[-•*]\s*/, '')
           .trim();
 
-      const titleLine = lines.find((line) => /plan de formation|training plan/i.test(line));
+      const titleLine = lines.find((line) => {
+        const normalized = clean(line);
+        // Keep only explicit heading-like titles, not conversational sentences.
+        if (!/(plan de formation|training plan)/i.test(normalized)) return false;
+        if (/^#+\s*/.test(line)) return true;
+        if (/^(plan de formation|training plan)\s*[:\-]?\s*$/i.test(normalized)) return true;
+        if (/^(plan de formation|training plan)\s*[:\-]\s+.+$/i.test(normalized)) return true;
+        return false;
+      });
       const introLines: string[] = [];
-      const modules: Array<{ title: string; duration?: string; bullets: string[] }> = [];
-      let current: { title: string; duration?: string; bullets: string[] } | null = null;
+      const modules: Array<{
+        title: string;
+        duration?: string;
+        bullets: string[];
+        sections: {
+          objectives: string[];
+          keyTopics: string[];
+          activities: string[];
+          evaluation: string[];
+        };
+      }> = [];
+      let current: {
+        title: string;
+        duration?: string;
+        bullets: string[];
+        sections: {
+          objectives: string[];
+          keyTopics: string[];
+          activities: string[];
+          evaluation: string[];
+        };
+      } | null = null;
+      let activeSection: 'objectives' | 'keyTopics' | 'activities' | 'evaluation' | null = null;
 
       for (const line of lines) {
         const normalized = clean(line);
@@ -2674,7 +2713,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
           current = {
             title: `Module ${modules.length + 1} - ${moduleMatch[1].trim()}`,
             bullets: [],
+            sections: {
+              objectives: [],
+              keyTopics: [],
+              activities: [],
+              evaluation: [],
+            },
           };
+          activeSection = null;
           continue;
         }
         if (!current) {
@@ -2694,6 +2740,23 @@ export default function ContentUploader(props: ContentUploaderProps) {
           continue;
         }
 
+        if (/^(🎯\s*)?objectifs?/i.test(normalized)) {
+          activeSection = 'objectives';
+          continue;
+        }
+        if (/^(📌\s*)?(key topics|topics|th[eè]mes cl[eé]s?)/i.test(normalized)) {
+          activeSection = 'keyTopics';
+          continue;
+        }
+        if (/^(🧩\s*)?activit[eé]s?/i.test(normalized)) {
+          activeSection = 'activities';
+          continue;
+        }
+        if (/^(📊\s*)?indicateur d['’]?[eé]valuation/i.test(normalized)) {
+          activeSection = 'evaluation';
+          continue;
+        }
+
         if (/^[-•*]\s+/.test(line) || normalized.includes(':')) {
           const stripped = normalized
             .replace(/^(objectifs?|objectives?)\s*:\s*/i, '')
@@ -2703,13 +2766,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
           if (!stripped) continue;
           if (['objectif', 'objectifs', 'contenu', 'content'].includes(lower)) continue;
           current.bullets.push(stripped);
+          if (activeSection) current.sections[activeSection].push(stripped);
         }
       }
 
       if (current) modules.push(current);
+      const resolvedTitle = titleLine ? clean(titleLine) : undefined;
+      const resolvedIntro = introLines.slice(0, 2).join(' ');
       return {
-        title: titleLine ? clean(titleLine) : undefined,
-        intro: introLines.slice(0, 2).join(' '),
+        title: resolvedTitle,
+        intro: resolvedTitle && resolvedIntro === resolvedTitle ? '' : resolvedIntro,
         modules,
       };
     };
@@ -3486,13 +3552,66 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     </div>
                     <p className="text-sm font-semibold text-slate-900">{module.title}</p>
                     <div className="mt-2 space-y-2">
-                      <ul className="space-y-0.5 pl-4 text-xs text-slate-700">
-                        {(module.bullets || []).slice(0, 6).map((item, itemIdx) => (
-                          <li key={`plan-card-item-${messageId}-${idx}-${itemIdx}`} className="list-disc">
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
+                      {module.sections.objectives.length > 0 ? (
+                        <div>
+                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Objectifs</p>
+                          <ul className="mt-0.5 space-y-0.5 pl-4 text-xs text-slate-700">
+                            {module.sections.objectives.slice(0, 5).map((item, itemIdx) => (
+                              <li key={`plan-card-obj-${messageId}-${idx}-${itemIdx}`} className="list-disc">
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                      {module.sections.keyTopics.length > 0 ? (
+                        <div>
+                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Key Topics</p>
+                          <ul className="mt-0.5 space-y-0.5 pl-4 text-xs text-slate-700">
+                            {module.sections.keyTopics.slice(0, 6).map((item, itemIdx) => (
+                              <li key={`plan-card-topic-${messageId}-${idx}-${itemIdx}`} className="list-disc">
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                      {module.sections.activities.length > 0 ? (
+                        <div>
+                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Activites</p>
+                          <ul className="mt-0.5 space-y-0.5 pl-4 text-xs text-slate-700">
+                            {module.sections.activities.slice(0, 4).map((item, itemIdx) => (
+                              <li key={`plan-card-act-${messageId}-${idx}-${itemIdx}`} className="list-disc">
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                      {module.sections.evaluation.length > 0 ? (
+                        <div>
+                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">Indicateur d'evaluation</p>
+                          <ul className="mt-0.5 space-y-0.5 pl-4 text-xs text-slate-700">
+                            {module.sections.evaluation.slice(0, 3).map((item, itemIdx) => (
+                              <li key={`plan-card-eval-${messageId}-${idx}-${itemIdx}`} className="list-disc">
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                      {module.sections.objectives.length === 0 &&
+                      module.sections.keyTopics.length === 0 &&
+                      module.sections.activities.length === 0 &&
+                      module.sections.evaluation.length === 0 ? (
+                        <ul className="space-y-0.5 pl-4 text-xs text-slate-700">
+                          {(module.bullets || []).slice(0, 8).map((item, itemIdx) => (
+                            <li key={`plan-card-item-${messageId}-${idx}-${itemIdx}`} className="list-disc">
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
                     </div>
                   </button>
                 );
