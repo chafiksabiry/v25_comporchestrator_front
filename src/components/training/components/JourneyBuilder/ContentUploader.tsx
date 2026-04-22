@@ -3544,7 +3544,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         return (
           <div className="mb-3 rounded-2xl border border-harx-100 bg-white p-3 shadow-sm">
             <div className="mb-2">
-              <p className="text-xs font-bold uppercase tracking-wide text-harx-600">Plan interactif</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-harx-600">Plan</p>
               <p className="text-sm font-semibold text-slate-900">
                 {parsedPlan.title || 'Plan de formation'}
               </p>
@@ -3613,7 +3613,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     type="button"
                     onClick={() => {
                       if (isChatLoading) return;
-                      const modulePrompt = `Donne le contenu detaille du ${module.title} avec exemples pratiques.`;
+                      const modulePrompt = `Donne le contenu du ${module.title}.`;
                       void sendChatMessage(modulePrompt);
                     }}
                     className={`w-full rounded-xl border p-3 text-left transition hover:-translate-y-0.5 ${theme.bg} ${theme.border}`}
@@ -3937,7 +3937,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             className="mb-2 text-xs font-bold uppercase tracking-wide"
             style={{ color: styleBlueprint.accentColor || '#be123c' }}
           >
-            Interactive Questions
+            Questions
           </p>
           <div className="space-y-2.5">
             {questions.map((q, qIdx) => (
@@ -4012,7 +4012,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 color: contentTheme?.bodyColor || '#334155',
               }}
             >
-              Use selected answers
+              Utiliser mes reponses
             </button>
           </div>
         </div>
@@ -4075,7 +4075,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           }}
         >
           <p className="mb-2 text-xs font-bold uppercase tracking-wide" style={{ color: styleBlueprint.accentColor || '#be123c' }}>
-            Actions proposees
+            Options
           </p>
           <div className="space-y-2">
             {options.map((opt, idx) => (
@@ -4084,7 +4084,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 type="button"
                 onClick={() => {
                   if (isChatLoading) return;
-                  void sendChatMessage(`Je choisis ${opt.title}. Continue avec ce choix.`);
+                  void sendChatMessage(`Je choisis ${opt.title}.`);
                 }}
                 className={`${shapeClass} w-full border px-3 py-2 text-left transition hover:-translate-y-0.5`}
                 style={{
