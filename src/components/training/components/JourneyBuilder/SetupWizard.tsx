@@ -17,9 +17,11 @@ interface SetupWizardProps {
   onComplete: (company: Company, journey: TrainingJourney, methodology?: TrainingMethodology, gigId?: string) => void;
   /** Embedded in REP Onboarding: less top padding, content top-aligned (no vertical centering gap). */
   repOnboardingLayout?: boolean;
+  /** Force a blank wizard and ignore any stored draft. */
+  forceNew?: boolean;
 }
 
-export default function SetupWizard({ onComplete, repOnboardingLayout = false }: SetupWizardProps) {
+export default function SetupWizard({ onComplete, repOnboardingLayout = false, forceNew = false }: SetupWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [company, setCompany] = useState<Partial<Company>>({});
   const [companyData, setCompanyData] = useState<any>(null);
@@ -267,6 +269,11 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
   useEffect(() => {
     const hydrateDraft = async () => {
       const realCompanyId = OnboardingService.getCompanyId();
+      if (forceNew) {
+        localStorage.removeItem(getDraftStorageKey(realCompanyId || undefined));
+        setDraftJourneyId(null);
+        return;
+      }
       const storedId = localStorage.getItem(getDraftStorageKey(realCompanyId || undefined));
       if (!storedId) return;
       try {
@@ -349,7 +356,7 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false }:
       }
     };
     void hydrateDraft();
-  }, [getDraftStorageKey]);
+  }, [forceNew, getDraftStorageKey]);
 
   const visionContinueDisabled =
     visionSubStep === 0 ? !visionName.trim() : !visionDuration;
