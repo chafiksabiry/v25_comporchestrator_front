@@ -190,12 +190,25 @@ export interface StructuredTrainingSlide {
   title: string;
   bullets: string[];
   notes?: string;
+  blocks?: Array<{
+    type: 'paragraph' | 'bullets' | 'kpi' | 'quote' | 'table' | 'stat' | 'image_prompt';
+    title?: string;
+    text?: string;
+    items?: string[];
+    value?: string;
+    label?: string;
+    headers?: string[];
+    rows?: string[][];
+    source?: string;
+  }>;
 }
 
 export interface StructuredTrainingTheme {
   template: 'corporate' | 'dark' | 'minimal' | 'learning' | 'executive';
   accentColor: string;
   backgroundStyle?: 'light' | 'gradient' | 'dark';
+  coverImageUrl?: string;
+  coverImagePrompt?: string;
 }
 
 export interface StructuredTrainingSlidesPayload {
@@ -757,6 +770,7 @@ export class AIService {
     language?: string;
     maxSlides?: number;
     generator?: 'ai' | 'deterministic';
+    withCoverImage?: boolean;
   }): Promise<StructuredTrainingSlidesPayload> {
     const response = await ApiClient.post<{
       success?: boolean;
@@ -772,6 +786,7 @@ export class AIService {
       language: params.language || 'fr',
       maxSlides: params.maxSlides ?? 12,
       generator: params.generator || 'ai',
+      withCoverImage: params.withCoverImage !== false,
     });
     const raw = response.data as any;
     if (raw?.success === false) {

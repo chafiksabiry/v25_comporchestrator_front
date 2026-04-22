@@ -1164,6 +1164,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         language: 'fr',
         maxSlides: 16,
         generator: 'ai',
+        withCoverImage: true,
       });
       setStructuredSlides(data);
       setStructuredSlideIndex(0);
@@ -4301,6 +4302,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     const theme = structuredSlides?.theme;
                     const template = theme?.template || 'corporate';
                     const accent = /^#[0-9a-f]{6}$/i.test(String(theme?.accentColor || '')) ? String(theme?.accentColor) : '#be123c';
+                    const coverImageUrl = String(theme?.coverImageUrl || '').trim();
                     const isDark = template === 'dark' || theme?.backgroundStyle === 'dark';
                     const sectionBg =
                       template === 'minimal'
@@ -4320,6 +4322,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       ? { background: `linear-gradient(90deg, ${accent}, #7c3aed)` }
                       : { background: accent };
                     const useSplit = s.layout === 'split' && (s.bullets || []).length >= 4;
+                    const useCoverHero = s.kind === 'cover' && !!coverImageUrl;
                     return (
                       <>
                         <div className="mb-3 flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2">
@@ -4344,39 +4347,158 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           </div>
                         </div>
 
-                        {/* HTML/CSS slide template: fixed layout; chat-based text injected here */}
+                        {/* HTML/CSS slide template: premium dynamic layout; chat-based content injected here */}
                         <section className={`mx-auto flex h-full w-full max-w-[1100px] flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 ${sectionBg} shadow-sm`}>
-                          <header className="flex items-center justify-between px-6 py-4 text-white" style={headerStyle}>
-                            <h3 className="truncate text-xl font-bold">{s.title}</h3>
-                            <span className="rounded-full bg-white/15 px-2 py-1 text-[10px] font-semibold tracking-wide">{kindLabel}</span>
-                          </header>
-                          <div className="min-h-0 flex-1 overflow-y-auto p-6">
-                            {useSplit ? (
-                              <div className="grid grid-cols-2 gap-6">
-                                <ul className={`list-disc space-y-3 pl-6 text-[20px] leading-8 ${bodyText}`}>
-                                  {(s.bullets || []).slice(0, Math.ceil((s.bullets || []).length / 2)).map((b, i) => (
-                                    <li key={`b-left-${s.index}-${i}`}>{b}</li>
-                                  ))}
-                                </ul>
-                                <ul className={`list-disc space-y-3 pl-6 text-[20px] leading-8 ${bodyText}`}>
-                                  {(s.bullets || []).slice(Math.ceil((s.bullets || []).length / 2)).map((b, i) => (
-                                    <li key={`b-right-${s.index}-${i}`}>{b}</li>
-                                  ))}
-                                </ul>
+                          {useCoverHero ? (
+                            <div className="relative min-h-0 flex-1 overflow-hidden">
+                              <img src={coverImageUrl} alt={s.title} className="h-full w-full object-cover" />
+                              <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/60" />
+                              <div className="absolute inset-x-0 top-0 flex items-center justify-between px-6 py-4 text-white">
+                                <h3 className="truncate text-2xl font-extrabold">{s.title}</h3>
+                                <span className="rounded-full bg-white/20 px-2 py-1 text-[10px] font-semibold tracking-wide">{kindLabel}</span>
                               </div>
-                            ) : (
-                              <ul className={`list-disc space-y-3 pl-6 text-[20px] leading-8 ${bodyText}`}>
-                                {(s.bullets || []).map((b, i) => (
-                                  <li key={`b-${s.index}-${i}`}>{b}</li>
-                                ))}
-                              </ul>
-                            )}
-                            {s.notes ? (
-                              <div className={noteClass}>
-                                {s.notes}
+                              <div className="absolute inset-x-0 bottom-0 p-6">
+                                <div className="rounded-xl border border-white/30 bg-black/35 p-4 backdrop-blur-sm">
+                                  <ul className="list-disc space-y-2 pl-5 text-[19px] leading-7 text-white">
+                                    {(s.bullets || []).slice(0, 4).map((b, i) => (
+                                      <li key={`hero-b-${s.index}-${i}`}>{b}</li>
+                                    ))}
+                                  </ul>
+                                </div>
                               </div>
-                            ) : null}
-                          </div>
+                            </div>
+                          ) : (
+                            <>
+                              <header className="flex items-center justify-between px-6 py-4 text-white" style={headerStyle}>
+                                <h3 className="truncate text-xl font-bold">{s.title}</h3>
+                                <span className="rounded-full bg-white/15 px-2 py-1 text-[10px] font-semibold tracking-wide">{kindLabel}</span>
+                              </header>
+                              <div className="min-h-0 flex-1 overflow-y-auto p-6">
+                                {(() => {
+                                  const blocks = Array.isArray(s.blocks) ? s.blocks : [];
+                                  const bullets = Array.isArray(s.bullets) ? s.bullets : [];
+                                  const agendaMode = s.kind === 'agenda' || s.layout === 'timeline';
+                                  const conclusionMode = s.kind === 'conclusion';
+                                  const rightBlocks = blocks.filter((b) => {
+                                    const t = String(b?.type || '');
+                                    return t === 'kpi' || t === 'stat' || t === 'quote' || t === 'table' || t === 'image_prompt';
+                                  });
+                                  const leftBlocks = blocks.filter((b) => String(b?.type || '') === 'paragraph' || String(b?.type || '') === 'bullets');
+
+                                  if (agendaMode) {
+                                    return (
+                                      <div className="space-y-4">
+                                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                          {bullets.slice(0, 8).map((item, i) => (
+                                            <div key={`ag-${s.index}-${i}`} className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                                              <div className="mb-1 inline-flex h-6 min-w-6 items-center justify-center rounded-full text-xs font-bold text-white" style={{ backgroundColor: accent }}>
+                                                {i + 1}
+                                              </div>
+                                              <p className="text-sm font-semibold text-slate-800">{item}</p>
+                                            </div>
+                                          ))}
+                                        </div>
+                                        {s.notes ? <div className={noteClass}>{s.notes}</div> : null}
+                                      </div>
+                                    );
+                                  }
+
+                                  return (
+                                    <div className="grid grid-cols-12 gap-5">
+                                      <div className={useSplit ? 'col-span-12 md:col-span-7' : 'col-span-12 md:col-span-8'}>
+                                        <ul className={`list-disc space-y-3 pl-6 text-[20px] leading-8 ${bodyText}`}>
+                                          {bullets.slice(0, 8).map((b, i) => (
+                                            <li key={`b-${s.index}-${i}`}>{b}</li>
+                                          ))}
+                                        </ul>
+                                        {leftBlocks.map((block, bi) => (
+                                          <div key={`left-${s.index}-${bi}`} className="mt-3">
+                                            {block.title ? <p className="mb-1 text-sm font-bold text-slate-800">{block.title}</p> : null}
+                                            {block.text ? <p className={`text-sm leading-6 ${bodyText}`}>{block.text}</p> : null}
+                                            {Array.isArray(block.items) && block.items.length > 0 ? (
+                                              <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                                                {block.items.slice(0, 6).map((it, ii) => (
+                                                  <li key={`left-it-${s.index}-${bi}-${ii}`}>{it}</li>
+                                                ))}
+                                              </ul>
+                                            ) : null}
+                                          </div>
+                                        ))}
+                                        {s.notes ? <div className={noteClass}>{s.notes}</div> : null}
+                                      </div>
+
+                                      <div className={useSplit ? 'col-span-12 md:col-span-5 space-y-3' : 'col-span-12 md:col-span-4 space-y-3'}>
+                                        {rightBlocks.length === 0 && !conclusionMode ? (
+                                          <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                                            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">A retenir</p>
+                                            <p className="mt-1 text-sm text-slate-700">{bullets[0] || s.title}</p>
+                                          </div>
+                                        ) : null}
+                                        {rightBlocks.map((block, bi) => {
+                                          const t = String(block?.type || '');
+                                          if ((t === 'kpi' || t === 'stat') && (block.value || block.label || block.source)) {
+                                            return (
+                                              <div key={`rb-${s.index}-${bi}`} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                                                <p className="text-2xl font-extrabold text-slate-900">{block.value || '--'}</p>
+                                                <p className="text-xs font-medium text-slate-600">{block.label || block.source || 'Indicateur'}</p>
+                                              </div>
+                                            );
+                                          }
+                                          if (t === 'quote' && block.text) {
+                                            return (
+                                              <blockquote key={`rb-${s.index}-${bi}`} className="rounded-xl border-l-4 border-slate-300 bg-slate-50 px-3 py-2 text-sm italic text-slate-700">
+                                                {block.text}
+                                              </blockquote>
+                                            );
+                                          }
+                                          if (t === 'table' && Array.isArray(block.rows) && block.rows.length > 0) {
+                                            return (
+                                              <div key={`rb-${s.index}-${bi}`} className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+                                                <table className="min-w-full text-xs">
+                                                  {Array.isArray(block.headers) && block.headers.length > 0 ? (
+                                                    <thead className="bg-slate-100">
+                                                      <tr>
+                                                        {block.headers.slice(0, 4).map((h, hi) => (
+                                                          <th key={`h-${hi}`} className="px-2 py-1 text-left font-semibold text-slate-700">{h}</th>
+                                                        ))}
+                                                      </tr>
+                                                    </thead>
+                                                  ) : null}
+                                                  <tbody>
+                                                    {block.rows.slice(0, 5).map((row, ri) => (
+                                                      <tr key={`r-${ri}`} className="border-t border-slate-200">
+                                                        {row.slice(0, 4).map((c, ci) => (
+                                                          <td key={`c-${ri}-${ci}`} className="px-2 py-1 text-slate-700">{c}</td>
+                                                        ))}
+                                                      </tr>
+                                                    ))}
+                                                  </tbody>
+                                                </table>
+                                              </div>
+                                            );
+                                          }
+                                          if (t === 'image_prompt' && block.text) {
+                                            return (
+                                              <div key={`rb-${s.index}-${bi}`} className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-xs text-slate-600">
+                                                <p className="mb-1 font-semibold">Visual idea</p>
+                                                <p>{block.text}</p>
+                                              </div>
+                                            );
+                                          }
+                                          return null;
+                                        })}
+                                        {conclusionMode ? (
+                                          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800">
+                                            Objectif: finir avec des actions claires et mesurables.
+                                          </div>
+                                        ) : null}
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            </>
+                          )}
                           <footer className={`border-t border-slate-200 px-6 py-2 text-center text-xs ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
                             {structuredSlides?.title || 'Training'} • {`Slide ${idx + 1}/${total}`}
                           </footer>
