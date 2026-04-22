@@ -546,6 +546,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showPodcastModal, setShowPodcastModal] = useState(false);
   const [interactiveQuestionAnswers, setInteractiveQuestionAnswers] = useState<Record<string, Record<number, string>>>({});
+  const [activePlanModuleByMessage, setActivePlanModuleByMessage] = useState<Record<string, number | undefined>>({});
   const podcastSpeechRef = useRef<WebSpeechService | null>(null);
   const podcastSpeakAbortRef = useRef(false);
   /** After a successful “Regenerate audio overview”, chat length at that moment — View syncs when new messages arrive. */
@@ -3395,9 +3396,95 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
     };
 
-    const renderInteractiveTrainingTimeline = (_messageId: string, rawText: string): React.ReactNode | null => {
+    const renderInteractiveTrainingTimeline = (messageId: string, rawText: string): React.ReactNode | null => {
       const text = String(rawText || '').trim();
       if (!text) return null;
+      const parsedPlan = parseTrainingPlan(text);
+      if (parsedPlan.modules.length >= 2) {
+        const moduleThemes = [
+          { bg: 'bg-emerald-50', border: 'border-emerald-200', badge: 'bg-emerald-600' },
+          { bg: 'bg-sky-50', border: 'border-sky-200', badge: 'bg-sky-600' },
+          { bg: 'bg-violet-50', border: 'border-violet-200', badge: 'bg-violet-600' },
+          { bg: 'bg-amber-50', border: 'border-amber-200', badge: 'bg-amber-600' },
+          { bg: 'bg-rose-50', border: 'border-rose-200', badge: 'bg-rose-600' },
+          { bg: 'bg-cyan-50', border: 'border-cyan-200', badge: 'bg-cyan-600' },
+        ];
+        const activeIdx = activePlanModuleByMessage[messageId];
+        return (
+          <div className="mb-3 rounded-2xl border border-harx-100 bg-white p-3 shadow-sm">
+            <div className="mb-2">
+              <p className="text-xs font-bold uppercase tracking-wide text-harx-600">Plan interactif</p>
+              <p className="text-sm font-semibold text-slate-900">
+                {parsedPlan.title || 'Plan de formation'}
+              </p>
+              {parsedPlan.intro ? <p className="mt-1 text-xs text-slate-600">{parsedPlan.intro}</p> : null}
+            </div>
+            <div className="grid gap-2 md:grid-cols-2">
+              {parsedPlan.modules.map((module, idx) => {
+                const theme = moduleThemes[idx % moduleThemes.length];
+                const isActive = activeIdx === idx;
+                return (
+                  <button
+                    key={`plan-card-${messageId}-${idx}`}
+                    type="button"
+                    onClick={() =>
+                      setActivePlanModuleByMessage((prev) => ({
+                        ...prev,
+                        [messageId]: prev[messageId] === idx ? undefined : idx,
+                      }))
+                    }
+                    className={`w-full rounded-xl border p-3 text-left transition hover:-translate-y-0.5 ${theme.bg} ${theme.border}`}
+                  >
+                    <div className="mb-1.5 flex items-center justify-between gap-2">
+                      <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-[10px] font-bold text-white ${theme.badge}`}>
+                        {idx + 1}
+                      </span>
+                      {module.duration ? (
+                        <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 ring-1 ring-slate-200">
+                          {module.duration}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-sm font-semibold text-slate-900">{module.title}</p>
+                    {isActive ? (
+                      <div className="mt-2 space-y-2">
+                        <ul className="space-y-0.5 pl-4 text-xs text-slate-700">
+                          {(module.bullets || []).slice(0, 6).map((item, itemIdx) => (
+                            <li key={`plan-card-item-${messageId}-${idx}-${itemIdx}`} className="list-disc">
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setChatInput(`Donne le contenu detaille du ${module.title} avec exemples pratiques.`);
+                            window.setTimeout(() => chatTextareaRef.current?.focus(), 0);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key !== 'Enter' && e.key !== ' ') return;
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setChatInput(`Donne le contenu detaille du ${module.title} avec exemples pratiques.`);
+                            window.setTimeout(() => chatTextareaRef.current?.focus(), 0);
+                          }}
+                          className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                          Generer le contenu de ce module
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="mt-1.5 text-[11px] font-medium text-slate-500">Cliquer pour voir le detail</p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      }
       const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
       if (lines.length < 8) return null;
 
@@ -4385,6 +4472,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               const interactiveTimeline = renderInteractiveTrainingTimeline(msg.id, textWithoutStyle);
                               const presentationArtifact = renderPresentationArtifact(textWithoutStyle);
                               const interactiveQuestionnaire = renderInteractiveQuestionnaire(msg.id, textWithoutStyle);
+                              const hideMarkdownForInteractivePlan = !!interactiveTimeline;
                               return (
                                 <>
                                   {presentationArtifact ? (
@@ -4396,33 +4484,35 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   {interactiveQuestionnaire ? (
                                     <div className="mb-2">{interactiveQuestionnaire}</div>
                                   ) : null}
-                                  <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                    components={{
-                                      h1: ({ children }) => <h3 className="mb-2 mt-3 text-[22px] font-semibold text-slate-900">{children}</h3>,
-                                      h2: ({ children }) => <h4 className="mb-1.5 mt-3 text-[18px] font-semibold text-slate-900">{children}</h4>,
-                                      h3: ({ children }) => <h5 className="mb-1 mt-2 text-[16px] font-semibold text-slate-800">{children}</h5>,
-                                      p: ({ children }) => <p className="my-1.5 text-[15px] leading-7 text-slate-700">{children}</p>,
-                                      ul: ({ children }) => <ul className="my-1.5 list-disc space-y-0.5 pl-5 text-[15px] leading-7 text-slate-700">{children}</ul>,
-                                      ol: ({ children }) => <ol className="my-1.5 list-decimal space-y-0.5 pl-5 text-[15px] leading-7 text-slate-700">{children}</ol>,
-                                      li: ({ children }) => <li className="text-slate-700">{children}</li>,
-                                      strong: ({ children }) => <strong className="font-semibold text-slate-900">{children}</strong>,
-                                      table: ({ children }) => (
-                                        <div className="my-3 overflow-x-auto rounded-lg border border-slate-200">
-                                          <table className="min-w-full border-collapse bg-white">{children}</table>
-                                        </div>
-                                      ),
-                                      thead: ({ children }) => <thead className="bg-slate-50">{children}</thead>,
-                                      tbody: ({ children }) => <tbody className="divide-y divide-slate-200">{children}</tbody>,
-                                      tr: ({ children }) => <tr className="align-top">{children}</tr>,
-                                      th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-slate-900">{children}</th>,
-                                      td: ({ children }) => <td className="px-3 py-2 text-sm text-slate-700">{children}</td>,
-                                      code: ({ children }) => <code className="rounded bg-slate-100 px-1 py-0.5 text-[13px] text-slate-800 ring-1 ring-slate-200">{children}</code>,
-                                      blockquote: ({ children }) => <blockquote className="my-2 border-l-4 border-slate-300 pl-3 text-slate-600 italic">{children}</blockquote>,
-                                    }}
-                                  >
-                                    {textWithoutStyle}
-                                  </ReactMarkdown>
+                                  {!hideMarkdownForInteractivePlan ? (
+                                    <ReactMarkdown
+                                      remarkPlugins={[remarkGfm]}
+                                      components={{
+                                        h1: ({ children }) => <h3 className="mb-2 mt-3 text-[22px] font-semibold text-slate-900">{children}</h3>,
+                                        h2: ({ children }) => <h4 className="mb-1.5 mt-3 text-[18px] font-semibold text-slate-900">{children}</h4>,
+                                        h3: ({ children }) => <h5 className="mb-1 mt-2 text-[16px] font-semibold text-slate-800">{children}</h5>,
+                                        p: ({ children }) => <p className="my-1.5 text-[15px] leading-7 text-slate-700">{children}</p>,
+                                        ul: ({ children }) => <ul className="my-1.5 list-disc space-y-0.5 pl-5 text-[15px] leading-7 text-slate-700">{children}</ul>,
+                                        ol: ({ children }) => <ol className="my-1.5 list-decimal space-y-0.5 pl-5 text-[15px] leading-7 text-slate-700">{children}</ol>,
+                                        li: ({ children }) => <li className="text-slate-700">{children}</li>,
+                                        strong: ({ children }) => <strong className="font-semibold text-slate-900">{children}</strong>,
+                                        table: ({ children }) => (
+                                          <div className="my-3 overflow-x-auto rounded-lg border border-slate-200">
+                                            <table className="min-w-full border-collapse bg-white">{children}</table>
+                                          </div>
+                                        ),
+                                        thead: ({ children }) => <thead className="bg-slate-50">{children}</thead>,
+                                        tbody: ({ children }) => <tbody className="divide-y divide-slate-200">{children}</tbody>,
+                                        tr: ({ children }) => <tr className="align-top">{children}</tr>,
+                                        th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-slate-900">{children}</th>,
+                                        td: ({ children }) => <td className="px-3 py-2 text-sm text-slate-700">{children}</td>,
+                                        code: ({ children }) => <code className="rounded bg-slate-100 px-1 py-0.5 text-[13px] text-slate-800 ring-1 ring-slate-200">{children}</code>,
+                                        blockquote: ({ children }) => <blockquote className="my-2 border-l-4 border-slate-300 pl-3 text-slate-600 italic">{children}</blockquote>,
+                                      }}
+                                    >
+                                      {textWithoutStyle}
+                                    </ReactMarkdown>
+                                  ) : null}
                                   {msg.isStreaming && !!textWithoutStyle.trim() ? (
                                     <span className="ml-1 inline-block h-4 w-1 animate-pulse rounded bg-harx-400 align-middle" />
                                   ) : null}
