@@ -596,6 +596,38 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
   const assistantWaitLabels = ['Thinking…', 'Generating…', 'Analyzing…'];
   const assistantWaitLabel = assistantWaitLabels[assistantWaitPhase % assistantWaitLabels.length];
+  const quickPrompts = useMemo(() => {
+    const recentText = chatMessages
+      .slice(-6)
+      .map((m) => String(m.text || '').toLowerCase())
+      .join('\n');
+    if (/quiz|question|qcm|évaluation/.test(recentText)) {
+      return [
+        'Génère 8 questions supplémentaires avec correction.',
+        'Rends les questions plus concrètes et basées sur des cas réels.',
+        'Ajoute une explication plus courte pour chaque bonne réponse.',
+      ];
+    }
+    if (/slide|presentation|présentation|html/.test(recentText)) {
+      return [
+        'Transforme ce plan en slides visuelles (titre + objectifs + activités).',
+        'Ajoute des exemples concrets par module pour les slides.',
+        'Rends les slides plus interactives avec exercices rapides.',
+      ];
+    }
+    if (/podcast|audio|script/.test(recentText)) {
+      return [
+        'Transforme ce plan en script audio de 5 minutes.',
+        'Ton conversationnel et concret pour débutants.',
+        'Ajoute une intro et une conclusion motivante.',
+      ];
+    }
+    return [
+      'Crée un plan de formation clair en modules horaires.',
+      'Ajoute objectifs pédagogiques + exercices pratiques.',
+      'Adapte le plan pour débutants en 1 journée.',
+    ];
+  }, [chatMessages]);
 
   const activeChatGigId = selectedChatGigId || (gigId ? String(gigId) : '');
 
@@ -3371,6 +3403,37 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
     };
 
+    const renderInteractiveTrainingTimeline = (rawText: string): React.ReactNode | null => {
+      const text = String(rawText || '').trim();
+      if (!text) return null;
+      const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
+      const moduleLines = lines.filter((line) => /^(module|m\d+|séance|session)\b/i.test(line));
+      if (moduleLines.length < 2) return null;
+      const sections = moduleLines.slice(0, 10).map((line, idx) => {
+        const cleanLine = line.replace(/^[-*]\s*/, '').trim();
+        const split = cleanLine.split(':');
+        const head = split[0] || `Module ${idx + 1}`;
+        const subtitle = split.slice(1).join(':').trim();
+        return { head, subtitle };
+      });
+      return (
+        <div className="rounded-2xl border border-harx-100 bg-gradient-to-b from-white to-rose-50/40 p-3 shadow-sm">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-bold uppercase tracking-wide text-harx-600">Interactive Timeline</p>
+            <span className="text-[11px] font-medium text-slate-500">{`${sections.length} modules`}</span>
+          </div>
+          <div className="space-y-2">
+            {sections.map((section, idx) => (
+              <div key={`it-${idx}`} className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+                <p className="text-sm font-semibold text-slate-900">{section.head}</p>
+                {section.subtitle ? <p className="text-xs text-slate-600">{section.subtitle}</p> : null}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
     const anchoredChoiceUi = false;
 
     const renderComposerBody = () => (
@@ -3449,6 +3512,22 @@ export default function ContentUploader(props: ContentUploaderProps) {
           placeholder={hasStartedChat ? 'Reply...' : 'How can I help you?'}
           className="mb-3 w-full resize-none bg-transparent text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
         />
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {quickPrompts.map((prompt) => (
+            <button
+              key={prompt}
+              type="button"
+              onClick={() => {
+                setChatInput(prompt);
+                window.setTimeout(() => chatTextareaRef.current?.focus(), 0);
+              }}
+              className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 transition hover:border-harx-200 hover:bg-harx-50/60 hover:text-harx-700"
+              title={prompt}
+            >
+              {prompt.length > 58 ? `${prompt.slice(0, 58)}…` : prompt}
+            </button>
+          ))}
+        </div>
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -4070,8 +4149,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   </div>
                                 );
                               }
+                              const interactiveTimeline = renderInteractiveTrainingTimeline(textWithoutStyle);
                               return (
                                 <>
+                                  {interactiveTimeline ? (
+                                    <div className="mb-2">{interactiveTimeline}</div>
+                                  ) : null}
                                   <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
                                     components={{

@@ -429,7 +429,31 @@ export class AIService {
       throw new Error(response.data.error || response.data.message || 'Quiz generation failed');
     }
 
-    return response.data.data?.questions || response.data.questions || [];
+    const rawQuestions = response.data.data?.questions || response.data.questions || [];
+    return (Array.isArray(rawQuestions) ? rawQuestions : [])
+      .map((q: any) => {
+        const rawOptions = Array.isArray(q?.options)
+          ? q.options
+          : Array.isArray(q?.choices)
+            ? q.choices
+            : [];
+        const options = rawOptions.map((opt: any) => String(opt || '').trim()).filter(Boolean);
+        const correctAnswerRaw =
+          q?.correctAnswer !== undefined ? q.correctAnswer
+            : q?.correct_answer !== undefined ? q.correct_answer
+              : 0;
+        const correctAnswer =
+          Number.isFinite(Number(correctAnswerRaw)) && Number(correctAnswerRaw) >= 0
+            ? Number(correctAnswerRaw)
+            : 0;
+        return {
+          text: String(q?.text || q?.question || '').trim(),
+          options,
+          correctAnswer: Math.min(correctAnswer, Math.max(options.length - 1, 0)),
+          explanation: String(q?.explanation || '').trim(),
+        } as QuizQuestion;
+      })
+      .filter((q: QuizQuestion) => q.text && q.options.length >= 2);
   }
 
   /**
