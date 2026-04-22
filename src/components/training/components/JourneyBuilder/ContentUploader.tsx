@@ -565,6 +565,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
   }, [repOnboardingLayout, chatMessages.length]);
 
   useEffect(() => {
+    // REP onboarding: start directly with the 4-question flow (no KB 1/1 card).
+    if (!repOnboardingLayout) return;
+    if (chatMessages.length > 0) return;
+    if (showPersonalizationCard) return;
+    setShowPersonalizationCard(true);
+    setPersonalizationStep(0);
+    setPersonalizationAnswers({});
+  }, [repOnboardingLayout, chatMessages.length, showPersonalizationCard]);
+
+  useEffect(() => {
     if (!isChatLoading) {
       setAssistantWaitPhase(0);
       return;
@@ -2435,8 +2445,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const displayName = String(company?.name || 'QARA EL HOUCINE').toUpperCase();
     const hasStartedChat = chatMessages.length > 0;
     const repSplitLayout = rep && hasStartedChat;
-    const shouldShowKbQuestionInChat =
-      rep && !hasStartedChat && !showPersonalizationCard && !isChatLoading;
+    const shouldShowKbQuestionInChat = false;
     const shouldShowChatThread = !showRepSourcePopup;
     // In REP split chat mode, keep only the chat workspace visible (actions moved into top toolbar).
     const showRepSplitSidebar = false;
