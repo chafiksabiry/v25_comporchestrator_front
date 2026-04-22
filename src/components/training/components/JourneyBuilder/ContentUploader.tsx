@@ -536,6 +536,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [showStructuredSlidesModal, setShowStructuredSlidesModal] = useState(false);
   const [structuredSlides, setStructuredSlides] = useState<StructuredTrainingSlidesPayload | null>(null);
   const [structuredSlideIndex, setStructuredSlideIndex] = useState(0);
+  const [mediaEditHint, setMediaEditHint] = useState<string | null>(null);
+  const [isMediaSaving, setIsMediaSaving] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [editableQuizQuestions, setEditableQuizQuestions] = useState<QuizQuestion[]>([]);
   const [isQuizGenerating, setIsQuizGenerating] = useState(false);
@@ -3270,6 +3272,105 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
     };
 
+    const updateActiveImageItemField = (field: 'title' | 'prompt', value: string) => {
+      if (!activeImageSet?.items?.length) return;
+      const idx = Math.max(0, Math.min(activeImageIndex, activeImageSet.items.length - 1));
+      const nextItems = activeImageSet.items.map((item, itemIdx) =>
+        itemIdx === idx
+          ? { ...item, [field]: value }
+          : item
+      );
+      const nextSet = { ...activeImageSet, items: nextItems };
+      setActiveImageSet(nextSet);
+      setGeneratedImageSet(nextSet);
+      setMediaEditHint(null);
+    };
+
+    const handleSaveImageSet = async () => {
+      if (!activeImageSet || isMediaSaving) return;
+      try {
+        setIsMediaSaving(true);
+        const saved = await AIService.saveTrainingImageSet({
+          imageSetId: activeImageSet._id,
+          title: String(activeImageSet.title || 'Training images').trim() || 'Training images',
+          trainingTitle: activeImageSet.trainingTitle || resolvedTrainingMaterialTitle || undefined,
+          language: activeImageSet.language || 'fr',
+          renderMode: activeImageSet.renderMode || imageRenderMode,
+          gigId: activeChatGigId ? String(activeChatGigId) : undefined,
+          companyId: company?.id || company?._id ? String(company.id || company._id) : undefined,
+          trainingJourneyId: linkedTrainingJourneyMongoId(),
+          items: Array.isArray(activeImageSet.items) ? activeImageSet.items : [],
+        });
+        setActiveImageSet(saved);
+        setGeneratedImageSet(saved);
+        setMediaEditHint('Image changes saved to backend.');
+        await refreshSavedImageSets();
+      } catch (e: any) {
+        setPodcastError(e?.message || 'Unable to save image set.');
+      } finally {
+        setIsMediaSaving(false);
+      }
+    };
+
+    const handleDeleteActiveImage = () => {
+      if (!activeImageSet?.items?.length) return;
+      const idx = Math.max(0, Math.min(activeImageIndex, activeImageSet.items.length - 1));
+      const nextItems = activeImageSet.items.filter((_, itemIdx) => itemIdx !== idx);
+      const nextSet = { ...activeImageSet, items: nextItems };
+      setActiveImageSet(nextSet);
+      setGeneratedImageSet(nextSet);
+      setActiveImageIndex((prev) => Math.max(0, Math.min(prev, Math.max(nextItems.length - 1, 0))));
+      setMediaEditHint('Image removed from current presentation.');
+    };
+
+    const updateStructuredSlideField = (slideIdx: number, field: 'title' | 'notes' | 'bullets', value: string) => {
+      if (!structuredSlides?.slides?.length) return;
+      const nextSlides = structuredSlides.slides.map((slide, idx) => {
+        if (idx !== slideIdx) return slide;
+        if (field === 'bullets') {
+          const parsedBullets = String(value || '')
+            .split('\n')
+            .map((line) => line.trim())
+            .filter(Boolean);
+          return { ...slide, bullets: parsedBullets };
+        }
+        return { ...slide, [field]: value } as any;
+      });
+      setStructuredSlides({ ...structuredSlides, slides: nextSlides });
+      setMediaEditHint(null);
+    };
+
+    const handleDeleteStructuredSlide = (slideIdx: number) => {
+      if (!structuredSlides?.slides?.length) return;
+      const nextSlides = structuredSlides.slides.filter((_, idx) => idx !== slideIdx);
+      setStructuredSlides({ ...structuredSlides, slides: nextSlides });
+      setStructuredSlideIndex((prev) => Math.max(0, Math.min(prev, Math.max(nextSlides.length - 1, 0))));
+      setMediaEditHint('HTML slide removed.');
+    };
+
+    const handleSaveStructuredSlides = async () => {
+      if (!structuredSlides || isMediaSaving) return;
+      try {
+        setIsMediaSaving(true);
+        const saved = await AIService.saveStructuredSlides({
+          slidesSetId: structuredSlides._id,
+          title: String(structuredSlides.title || resolvedTrainingMaterialTitle || 'Structured slides').trim(),
+          language: structuredSlides.language || 'fr',
+          theme: structuredSlides.theme,
+          slides: Array.isArray(structuredSlides.slides) ? structuredSlides.slides : [],
+          gigId: activeChatGigId ? String(activeChatGigId) : undefined,
+          companyId: company?.id || company?._id ? String(company.id || company._id) : undefined,
+          trainingJourneyId: linkedTrainingJourneyMongoId(),
+        });
+        setStructuredSlides(saved);
+        setMediaEditHint('HTML slides saved to backend.');
+      } catch (e: any) {
+        setPodcastError(e?.message || 'Unable to save HTML slides.');
+      } finally {
+        setIsMediaSaving(false);
+      }
+    };
+
     const anchoredChoiceUi = false;
 
     const renderComposerBody = () => (
@@ -4263,12 +4364,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => {
-                        if (activeImageSet) setGeneratedImageSet(activeImageSet);
-                        setPodcastSavedHint('Presentation overview saved in current session.');
-                      }}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      onClick={() => void handleSaveImageSet()}
+                      disabled={isMediaSaving}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                     >
+                      {isMediaSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
                       Save
                     </button>
                     <button
@@ -4306,6 +4406,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       </button>
                     </div>
                   </div>
+                  {mediaEditHint ? (
+                    <div className="border-b border-emerald-200 bg-emerald-50 px-4 py-2 text-xs text-emerald-800">
+                      {mediaEditHint}
+                    </div>
+                  ) : null}
                   <div className="flex min-h-0 flex-1 items-center justify-center bg-slate-50 p-4">
                     {activeImageSet?.items?.[activeImageIndex]?.imageUrl ? (
                       <img
@@ -4317,6 +4422,51 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       <div className="text-sm text-slate-500">No image available.</div>
                     )}
                   </div>
+                  {activeImageSet?.items?.[activeImageIndex] ? (
+                    <div className="space-y-2 border-t border-slate-200 bg-white px-4 py-3">
+                      <label className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                        Image title
+                      </label>
+                      <input
+                        value={String(activeImageSet.items[activeImageIndex]?.title || '')}
+                        onChange={(e) => updateActiveImageItemField('title', e.target.value)}
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-harx-300 focus:ring-2 focus:ring-harx-500/20"
+                        placeholder="Slide title"
+                      />
+                      <label className="block pt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                        Image prompt
+                      </label>
+                      <textarea
+                        value={String(activeImageSet.items[activeImageIndex]?.prompt || '')}
+                        onChange={(e) => updateActiveImageItemField('prompt', e.target.value)}
+                        className="min-h-[84px] w-full resize-y rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-harx-300 focus:ring-2 focus:ring-harx-500/20"
+                        placeholder="Prompt used for this image"
+                      />
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const prompt = String(activeImageSet.items[activeImageIndex]?.prompt || '').trim();
+                            if (prompt) setImagePrompt(prompt);
+                            void handleGenerateTrainingImages();
+                          }}
+                          disabled={isImagesGenerating || isChatLoading}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-harx-200 bg-harx-50/70 px-3 py-1.5 text-xs font-semibold text-harx-700 hover:bg-harx-100 disabled:opacity-50"
+                        >
+                          {isImagesGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                          Regenerate from this prompt
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleDeleteActiveImage}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          Delete image
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -4330,6 +4480,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     {structuredSlides?.title || 'Structured slides'}
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void handleSaveStructuredSlides()}
+                      disabled={isMediaSaving}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      {isMediaSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                      Save
+                    </button>
                     <button
                       type="button"
                       onClick={() => void openStructuredSlidesExportPptx()}
@@ -4408,7 +4567,50 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             >
                               Next
                             </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteStructuredSlide(idx)}
+                              className="rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                            >
+                              Delete slide
+                            </button>
                           </div>
+                        </div>
+                        <div className="mb-3 rounded-lg border border-slate-200 bg-white p-3">
+                          {mediaEditHint ? (
+                            <div className="mb-2 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs text-emerald-800">
+                              {mediaEditHint}
+                            </div>
+                          ) : null}
+                          <div className="grid gap-2 md:grid-cols-2">
+                            <label className="text-xs font-semibold text-slate-600">
+                              Slide title
+                              <input
+                                value={String(s.title || '')}
+                                onChange={(e) => updateStructuredSlideField(idx, 'title', e.target.value)}
+                                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-harx-300 focus:ring-2 focus:ring-harx-500/20"
+                                placeholder="Slide title"
+                              />
+                            </label>
+                            <label className="text-xs font-semibold text-slate-600">
+                              Notes
+                              <input
+                                value={String(s.notes || '')}
+                                onChange={(e) => updateStructuredSlideField(idx, 'notes', e.target.value)}
+                                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-harx-300 focus:ring-2 focus:ring-harx-500/20"
+                                placeholder="Optional presenter note"
+                              />
+                            </label>
+                          </div>
+                          <label className="mt-2 block text-xs font-semibold text-slate-600">
+                            Slide content (one bullet per line)
+                            <textarea
+                              value={Array.isArray(s.bullets) ? s.bullets.join('\n') : ''}
+                              onChange={(e) => updateStructuredSlideField(idx, 'bullets', e.target.value)}
+                              className="mt-1 min-h-[88px] w-full resize-y rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-harx-300 focus:ring-2 focus:ring-harx-500/20"
+                              placeholder="Write slide bullets here..."
+                            />
+                          </label>
                         </div>
 
                         {/* HTML/CSS slide template: premium dynamic layout; chat-based content injected here */}
