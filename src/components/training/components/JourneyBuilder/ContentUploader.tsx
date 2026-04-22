@@ -480,7 +480,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     }>
   >([]);
   const [chatInput, setChatInput] = useState('');
-  const [showRepSourcePopup, setShowRepSourcePopup] = useState(repOnboardingLayout);
+  const [showRepSourcePopup, setShowRepSourcePopup] = useState(false);
   const [isChatLoading, setIsChatLoading] = useState(false);
   /** Rotates while the assistant request is in flight (including first-token wait on an empty streaming bubble). */
   const [assistantWaitPhase, setAssistantWaitPhase] = useState(0);
@@ -560,7 +560,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
   }, [gigId]);
 
   useEffect(() => {
-    setShowRepSourcePopup(repOnboardingLayout && chatMessages.length === 0);
+    // Questions now live directly in chat; keep popup disabled.
+    setShowRepSourcePopup(false);
   }, [repOnboardingLayout, chatMessages.length]);
 
   useEffect(() => {
@@ -2434,7 +2435,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const displayName = String(company?.name || 'QARA EL HOUCINE').toUpperCase();
     const hasStartedChat = chatMessages.length > 0;
     const repSplitLayout = rep && hasStartedChat;
-    const shouldShowKbQuestionInChat = false;
+    const shouldShowKbQuestionInChat =
+      rep && !hasStartedChat && !showPersonalizationCard && !isChatLoading;
     const shouldShowChatThread = !showRepSourcePopup;
     // In REP split chat mode, keep only the chat workspace visible (actions moved into top toolbar).
     const showRepSplitSidebar = false;
@@ -2567,7 +2569,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setChatInput('');
       setUploads([]);
       setChatUploadedSources([]);
-      setShowRepSourcePopup(repOnboardingLayout);
+      setShowRepSourcePopup(false);
       setActiveChatSessionId(null);
       setIsHistoryOpen(false);
       setKbGenerationChoice(null);
