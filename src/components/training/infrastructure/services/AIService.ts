@@ -212,6 +212,7 @@ export interface StructuredTrainingTheme {
 }
 
 export interface StructuredTrainingSlidesPayload {
+  _id?: string;
   title: string;
   language: string;
   theme?: StructuredTrainingTheme;
@@ -793,11 +794,65 @@ export class AIService {
       throw new Error(raw?.error || raw?.message || 'Structured slides generation failed');
     }
     return {
+      _id: raw?._id ? String(raw._id) : undefined,
       title: String(raw?.title || params.trainingTitle || 'Formation'),
       language: String(raw?.language || params.language || 'fr'),
       theme: raw?.theme as StructuredTrainingTheme | undefined,
       slides: Array.isArray(raw?.slides) ? (raw.slides as StructuredTrainingSlide[]) : [],
     };
+  }
+
+  static async saveTrainingImageSet(params: {
+    imageSetId?: string;
+    title: string;
+    trainingTitle?: string;
+    language?: string;
+    renderMode?: 'ai_images' | 'template_slides';
+    gigId?: string;
+    companyId?: string;
+    trainingJourneyId?: string;
+    items: TrainingImageSetItem[];
+  }): Promise<TrainingImageSet> {
+    const response = await ApiClient.post<{
+      success?: boolean;
+      imageSet?: TrainingImageSet;
+      error?: string;
+      message?: string;
+    }>('/api/ai/training-images/save', params);
+    const raw = response.data as any;
+    if (raw?.success === false) {
+      throw new Error(raw?.error || raw?.message || 'Training image set save failed');
+    }
+    if (!raw?.imageSet || typeof raw.imageSet !== 'object') {
+      throw new Error('Training image set save failed: invalid payload');
+    }
+    return raw.imageSet as TrainingImageSet;
+  }
+
+  static async saveStructuredSlides(params: {
+    slidesSetId?: string;
+    title: string;
+    language?: string;
+    theme?: StructuredTrainingTheme;
+    slides: StructuredTrainingSlide[];
+    gigId?: string;
+    companyId?: string;
+    trainingJourneyId?: string;
+  }): Promise<StructuredTrainingSlidesPayload> {
+    const response = await ApiClient.post<{
+      success?: boolean;
+      slidesSet?: StructuredTrainingSlidesPayload;
+      error?: string;
+      message?: string;
+    }>('/api/ai/training-slides-json/save', params);
+    const raw = response.data as any;
+    if (raw?.success === false) {
+      throw new Error(raw?.error || raw?.message || 'Structured slides save failed');
+    }
+    if (!raw?.slidesSet || typeof raw.slidesSet !== 'object') {
+      throw new Error('Structured slides save failed: invalid payload');
+    }
+    return raw.slidesSet as StructuredTrainingSlidesPayload;
   }
 
   static async generateChatTitle(
