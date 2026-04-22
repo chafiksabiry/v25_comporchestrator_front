@@ -3988,6 +3988,85 @@ export default function ContentUploader(props: ContentUploaderProps) {
       );
     };
 
+    const parseClickablePromptLines = (rawText: string): string[] => {
+      const source = String(rawText || '').trim();
+      if (!source) return [];
+      if (/^option\s*\d+/im.test(source)) return [];
+      if (/module\s*\d+/i.test(source)) return [];
+
+      const lines = source
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      const prompts = lines
+        .map((line) =>
+          line
+            .replace(/^\d+[.)]\s*/, '')
+            .replace(/^[-*•]\s*/, '')
+            .replace(/^question\s*\d+\s*[:\-]\s*/i, '')
+            .trim()
+        )
+        .filter((line) => /\?\s*$/.test(line))
+        .filter((line) => line.length >= 12 && line.length <= 220)
+        .filter((line) => !/^quel(le)?\s+est\s+la\s+priorit[ée]/i.test(line))
+        .slice(0, 8);
+
+      return Array.from(new Set(prompts));
+    };
+
+    const renderInteractivePromptChoices = (
+      messageId: string,
+      rawText: string,
+      styleSourceText?: string
+    ): React.ReactNode | null => {
+      const prompts = parseClickablePromptLines(rawText);
+      if (prompts.length < 2) return null;
+
+      const styleBlueprint = extractStyleBlueprint(String(styleSourceText || rawText || ''));
+      const contentTheme = styleBlueprint.contentTheme;
+      const shapeClass =
+        contentTheme?.moduleShape === 'square'
+          ? 'rounded-none'
+          : contentTheme?.moduleShape === 'soft'
+            ? 'rounded-3xl'
+            : 'rounded-2xl';
+
+      return (
+        <div
+          className={`mb-2 ${shapeClass} border p-3`}
+          style={{
+            borderColor: contentTheme?.panelBorder || '#e2e8f0',
+            backgroundColor: contentTheme?.panelBg || '#ffffff',
+          }}
+        >
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide" style={{ color: styleBlueprint.accentColor || '#be123c' }}>
+            Choix rapides
+          </p>
+          <div className="space-y-1.5">
+            {prompts.map((prompt, idx) => (
+              <button
+                key={`prompt-choice-${messageId}-${idx}`}
+                type="button"
+                onClick={() => {
+                  if (isChatLoading) return;
+                  void sendChatMessage(prompt);
+                }}
+                className={`${shapeClass} w-full border px-3 py-2 text-left text-sm transition hover:-translate-y-0.5`}
+                style={{
+                  borderColor: contentTheme?.tableBorder || '#cbd5e1',
+                  backgroundColor: contentTheme?.tableRowBg || '#ffffff',
+                  color: contentTheme?.bodyColor || '#334155',
+                }}
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
     const anchoredChoiceUi = false;
 
     const renderComposerBody = () => (
@@ -4714,6 +4793,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               const presentationArtifact = renderPresentationArtifact(textWithoutStyle);
                               const interactiveQuestionnaire = renderInteractiveQuestionnaire(msg.id, textWithoutStyle, String(msg.text || ''));
                               const interactiveChoiceCards = renderInteractiveChoiceCards(msg.id, textWithoutStyle, String(msg.text || ''));
+                              const interactivePromptChoices = renderInteractivePromptChoices(msg.id, textWithoutStyle, String(msg.text || ''));
                               const hideMarkdownForInteractivePlan = !!interactiveTimeline;
                               return (
                                 <>
@@ -4728,6 +4808,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   ) : null}
                                   {interactiveChoiceCards ? (
                                     <div className="mb-2">{interactiveChoiceCards}</div>
+                                  ) : null}
+                                  {interactivePromptChoices ? (
+                                    <div className="mb-2">{interactivePromptChoices}</div>
                                   ) : null}
                                   {!hideMarkdownForInteractivePlan ? (
                                     <div
