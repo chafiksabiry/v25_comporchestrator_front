@@ -2503,10 +2503,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 ? 'Uploaded files only'
                 : 'No KB, no documents',
       });
-      const firstQuestion = personalizationQuestions[0]?.question;
-      if (firstQuestion) {
-        appendChatMessage('assistant', `Question 1/${personalizationQuestions.length}: ${firstQuestion}`);
-      }
       window.requestAnimationFrame(() => {
         chatTextareaRef.current?.focus();
       });
@@ -2545,10 +2541,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
       const nextStep = personalizationStep + 1;
       setPersonalizationStep(nextStep);
-      const nextQuestion = personalizationQuestions[nextStep]?.question;
-      if (nextQuestion) {
-        appendChatMessage('assistant', `Question ${nextStep + 1}/${personalizationQuestions.length}: ${nextQuestion}`);
-      }
     };
     const appendChatMessage = (
       role: 'user' | 'assistant',
