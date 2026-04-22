@@ -3980,50 +3980,46 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   ))}
                   {rep && showPersonalizationCard && currentPersonalizationQuestion && (
                     <div className="flex justify-start">
-                      <div className="w-full max-w-[96%] overflow-hidden rounded-[22px] border border-slate-200 bg-[#f3f3f3] shadow-sm">
-                        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-                          <p className="pr-3 text-[34px] leading-tight text-slate-900">
-                            {currentPersonalizationQuestion.question}
-                          </p>
-                          <div className="flex shrink-0 items-center gap-3">
-                            <span className="text-[28px] text-slate-300">‹</span>
-                            <span className="text-[28px] text-slate-300">›</span>
-                            <span className="text-[13px] font-medium text-slate-500">
-                              {`${Math.min(personalizationStep + 1, personalizationQuestions.length)} sur ${personalizationQuestions.length}`}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setShowPersonalizationCard(false);
-                                setPersonalizationStep(0);
-                                setPersonalizationAnswers({});
-                              }}
-                              className="rounded-md p-1 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
-                              title="Fermer"
+                      <div className="w-full rounded-2xl border border-slate-200 bg-white p-2.5 shadow-md shadow-slate-900/5 sm:p-3">
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <div className="flex min-w-0 items-center gap-1.5">
+                            <div
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-sm shadow-harx-500/20"
+                              aria-hidden
                             >
-                              <X className="h-4 w-4" />
-                            </button>
+                              <Bot className="h-3.5 w-3.5" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">HARX</span>
+                              <span className="ml-1.5 text-[11px] font-medium text-slate-400">Assistant</span>
+                            </div>
                           </div>
+                          <span className="shrink-0 text-[11px] font-semibold text-slate-400">
+                            {`${Math.min(personalizationStep + 1, personalizationQuestions.length)} of ${personalizationQuestions.length}`}
+                          </span>
                         </div>
-                        <div className="px-4 py-3">
+                        <p className="mb-2 text-sm font-semibold leading-snug text-slate-900 sm:text-base">
+                          {currentPersonalizationQuestion.question}
+                        </p>
+                        <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50/80">
                           {currentPersonalizationQuestion.options.map((option, idx) => (
                             <button
                               key={`chat-question-${personalizationStep}-${option}`}
                               type="button"
                               onClick={() => handleSelectPersonalizationOption(option)}
-                              className="group mb-2 flex w-full items-center gap-3 rounded-2xl border border-transparent bg-[#ececec] px-4 py-4 text-left transition hover:border-slate-300 hover:bg-white last:mb-0"
+                              className="flex w-full items-center gap-2 border-b border-slate-200/90 px-2.5 py-2 text-left transition hover:bg-white last:border-b-0 sm:px-3"
                             >
-                              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#dddddd] text-[20px] font-semibold text-slate-700">
+                              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#F43F5E] text-xs font-bold text-white shadow-sm">
                                 {idx + 1}
                               </span>
-                              <span className="min-w-0 flex-1 text-[31px] font-medium leading-tight text-slate-800">
-                                {option}
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-sm font-semibold leading-tight text-slate-900">{option}</span>
                               </span>
-                              <span className="shrink-0 text-[28px] text-slate-400 transition group-hover:text-slate-700">→</span>
+                              <span className="shrink-0 text-base leading-none text-slate-400">→</span>
                             </button>
                           ))}
                         </div>
-                        <div className="flex items-center justify-end border-t border-slate-200 px-4 py-3">
+                        <div className="mt-2 flex justify-end">
                           <button
                             type="button"
                             onClick={() => {
@@ -4031,9 +4027,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               setPersonalizationStep(0);
                               setPersonalizationAnswers({});
                             }}
-                            className="rounded-xl border border-slate-300 bg-white px-5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                            className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
                           >
-                            Passer
+                            Skip
                           </button>
                         </div>
                       </div>
