@@ -537,7 +537,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [structuredSlides, setStructuredSlides] = useState<StructuredTrainingSlidesPayload | null>(null);
   const [structuredSlideIndex, setStructuredSlideIndex] = useState(0);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [editableQuizQuestions, setEditableQuizQuestions] = useState<QuizQuestion[]>([]);
   const [isQuizGenerating, setIsQuizGenerating] = useState(false);
+  const [isQuizSaving, setIsQuizSaving] = useState(false);
+  const [quizSavedHint, setQuizSavedHint] = useState<string | null>(null);
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showPodcastModal, setShowPodcastModal] = useState(false);
   const podcastSpeechRef = useRef<WebSpeechService | null>(null);
@@ -563,6 +566,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
     // Questions now live directly in chat; keep popup disabled.
     setShowRepSourcePopup(false);
   }, [repOnboardingLayout, chatMessages.length]);
+
+  useEffect(() => {
+    setEditableQuizQuestions(Array.isArray(quizQuestions) ? quizQuestions : []);
+  }, [quizQuestions, showQuizModal]);
 
   useEffect(() => {
     // REP onboarding: start directly with the 4-question flow (no KB 1/1 card).
@@ -3202,6 +3209,67 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
     };
 
+    const handleQuizQuestionFieldChange = (
+      questionIndex: number,
+      field: 'text' | 'explanation' | 'correctAnswer',
+      value: string | number
+    ) => {
+      setEditableQuizQuestions((prev) =>
+        prev.map((q, idx) => {
+          if (idx !== questionIndex) return q;
+          if (field === 'correctAnswer') {
+            return { ...q, correctAnswer: Number(value) };
+          }
+          return { ...q, [field]: String(value) } as QuizQuestion;
+        })
+      );
+      setQuizSavedHint(null);
+    };
+
+    const handleQuizOptionChange = (questionIndex: number, optionIndex: number, value: string) => {
+      setEditableQuizQuestions((prev) =>
+        prev.map((q, idx) => {
+          if (idx !== questionIndex) return q;
+          const nextOptions = Array.isArray(q.options) ? [...q.options] : [];
+          nextOptions[optionIndex] = value;
+          return { ...q, options: nextOptions };
+        })
+      );
+      setQuizSavedHint(null);
+    };
+
+    const handleDeleteQuizQuestion = (questionIndex: number) => {
+      setEditableQuizQuestions((prev) => prev.filter((_, idx) => idx !== questionIndex));
+      setQuizSavedHint(null);
+    };
+
+    const handleSaveAllQuizzes = async () => {
+      if (isQuizSaving) return;
+      try {
+        setIsQuizSaving(true);
+        const cleaned = editableQuizQuestions
+          .map((q) => {
+            const options = Array.isArray(q.options)
+              ? q.options.map((opt) => String(opt || '').trim()).filter(Boolean)
+              : [];
+            const boundedCorrectAnswer = Math.min(Math.max(Number(q.correctAnswer) || 0, 0), Math.max(options.length - 1, 0));
+            return {
+              ...q,
+              text: String(q.text || '').trim(),
+              explanation: String(q.explanation || '').trim(),
+              options,
+              correctAnswer: boundedCorrectAnswer,
+            };
+          })
+          .filter((q) => q.text && q.options.length >= 2);
+        setQuizQuestions(cleaned);
+        setEditableQuizQuestions(cleaned);
+        setQuizSavedHint(`${cleaned.length} question(s) saved.`);
+      } finally {
+        setIsQuizSaving(false);
+      }
+    };
+
     const anchoredChoiceUi = false;
 
     const renderComposerBody = () => (
@@ -4601,31 +4669,99 @@ export default function ContentUploader(props: ContentUploaderProps) {
               <div className="flex h-[90vh] w-[min(920px,96vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
                 <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                   <div className="text-sm font-semibold text-slate-900">Quizzes</div>
-                  <button
-                    type="button"
-                    onClick={() => setShowQuizModal(false)}
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    Close
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void handleGenerateQuizFromChat()}
+                      disabled={isQuizGenerating}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-harx-200 bg-harx-50/70 px-3 py-1.5 text-xs font-semibold text-harx-700 transition hover:bg-harx-100 disabled:opacity-50"
+                    >
+                      {isQuizGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                      Regenerate quizzes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleSaveAllQuizzes()}
+                      disabled={isQuizSaving}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white shadow-sm shadow-harx-500/20 transition hover:brightness-105 disabled:opacity-50"
+                    >
+                      {isQuizSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                      Save all
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowQuizModal(false)}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
                 <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
-                  {quizQuestions.length === 0 ? (
+                  {quizSavedHint ? (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">{quizSavedHint}</div>
+                  ) : null}
+                  {editableQuizQuestions.length === 0 ? (
                     <div className="text-sm text-slate-600">No quiz questions generated yet.</div>
                   ) : (
-                    quizQuestions.map((q, idx) => (
+                    editableQuizQuestions.map((q, idx) => (
                       <div key={`${idx}-${q.text}`} className="rounded-xl border border-slate-200 bg-white p-3">
-                        <p className="text-sm font-semibold text-slate-900">{idx + 1}. {q.text}</p>
-                        <ul className="mt-2 space-y-1 text-sm text-slate-700">
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <div className="text-[11px] font-bold uppercase tracking-wide text-harx-600">{`Question ${idx + 1}`}</div>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteQuizQuestion(idx)}
+                            className="rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-100"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                        <textarea
+                          value={q.text}
+                          onChange={(e) => handleQuizQuestionFieldChange(idx, 'text', e.target.value)}
+                          className="min-h-[64px] w-full resize-y rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-900 outline-none transition focus:border-harx-300 focus:ring-2 focus:ring-harx-500/20"
+                          placeholder="Question text..."
+                        />
+                        <div className="mt-2 space-y-2">
                           {(q.options || []).map((opt, optIdx) => (
-                            <li key={`${idx}-${optIdx}`} className={q.correctAnswer === optIdx ? 'font-semibold text-emerald-700' : ''}>
-                              {String.fromCharCode(65 + optIdx)}. {opt}
-                            </li>
+                            <div key={`${idx}-${optIdx}`} className="flex items-center gap-2">
+                              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-100 text-xs font-bold text-slate-700">
+                                {String.fromCharCode(65 + optIdx)}
+                              </span>
+                              <input
+                                value={opt}
+                                onChange={(e) => handleQuizOptionChange(idx, optIdx, e.target.value)}
+                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-harx-300 focus:ring-2 focus:ring-harx-500/20"
+                                placeholder={`Option ${optIdx + 1}`}
+                              />
+                            </div>
                           ))}
-                        </ul>
-                        {q.explanation ? (
-                          <p className="mt-2 text-xs text-slate-500">Explanation: {q.explanation}</p>
-                        ) : null}
+                        </div>
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+                            Correct answer
+                            <select
+                              value={String(Math.min(Math.max(Number(q.correctAnswer) || 0, 0), Math.max((q.options?.length || 1) - 1, 0)))}
+                              onChange={(e) => handleQuizQuestionFieldChange(idx, 'correctAnswer', Number(e.target.value))}
+                              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-800 outline-none focus:border-harx-300 focus:ring-2 focus:ring-harx-500/20"
+                            >
+                              {(q.options || []).map((_, optIdx) => (
+                                <option key={`correct-${idx}-${optIdx}`} value={optIdx}>
+                                  {`Option ${String.fromCharCode(65 + optIdx)}`}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600">
+                            Explanation
+                            <input
+                              value={q.explanation || ''}
+                              onChange={(e) => handleQuizQuestionFieldChange(idx, 'explanation', e.target.value)}
+                              className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-harx-300 focus:ring-2 focus:ring-harx-500/20"
+                              placeholder="Why this answer is correct..."
+                            />
+                          </label>
+                        </div>
                       </div>
                     ))
                   )}
