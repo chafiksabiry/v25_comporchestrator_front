@@ -546,7 +546,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showPodcastModal, setShowPodcastModal] = useState(false);
   const [interactiveQuestionAnswers, setInteractiveQuestionAnswers] = useState<Record<string, Record<number, string>>>({});
-  const [activePlanModuleByMessage, setActivePlanModuleByMessage] = useState<Record<string, number | undefined>>({});
   const podcastSpeechRef = useRef<WebSpeechService | null>(null);
   const podcastSpeakAbortRef = useRef(false);
   /** After a successful “Regenerate audio overview”, chat length at that moment — View syncs when new messages arrive. */
@@ -3452,7 +3451,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
           { bg: 'bg-rose-50', border: 'border-rose-200', badge: 'bg-rose-600' },
           { bg: 'bg-cyan-50', border: 'border-cyan-200', badge: 'bg-cyan-600' },
         ];
-        const activeIdx = activePlanModuleByMessage[messageId];
         return (
           <div className="mb-3 rounded-2xl border border-harx-100 bg-white p-3 shadow-sm">
             <div className="mb-2">
@@ -3465,16 +3463,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
             <div className="flex flex-col gap-2">
               {parsedPlan.modules.map((module, idx) => {
                 const theme = moduleThemes[idx % moduleThemes.length];
-                const isActive = activeIdx === idx;
                 return (
                   <button
                     key={`plan-card-${messageId}-${idx}`}
                     type="button"
                     onClick={() => {
-                      setActivePlanModuleByMessage((prev) => ({
-                        ...prev,
-                        [messageId]: prev[messageId] === idx ? undefined : idx,
-                      }));
                       if (isChatLoading) return;
                       const modulePrompt = `Donne le contenu detaille du ${module.title} avec exemples pratiques.`;
                       void sendChatMessage(modulePrompt);
@@ -3492,38 +3485,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       ) : null}
                     </div>
                     <p className="text-sm font-semibold text-slate-900">{module.title}</p>
-                    {isActive ? (
-                      <div className="mt-2 space-y-2">
-                        <ul className="space-y-0.5 pl-4 text-xs text-slate-700">
-                          {(module.bullets || []).slice(0, 6).map((item, itemIdx) => (
-                            <li key={`plan-card-item-${messageId}-${idx}-${itemIdx}`} className="list-disc">
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (isChatLoading) return;
-                            void sendChatMessage(`Donne le contenu detaille du ${module.title} avec exemples pratiques.`);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key !== 'Enter' && e.key !== ' ') return;
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (isChatLoading) return;
-                            void sendChatMessage(`Donne le contenu detaille du ${module.title} avec exemples pratiques.`);
-                          }}
-                          className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
-                        >
-                          Generer le contenu de ce module
-                        </span>
-                      </div>
-                    ) : (
-                      <p className="mt-1.5 text-[11px] font-medium text-slate-500">Cliquer pour voir le detail</p>
-                    )}
+                    <div className="mt-2 space-y-2">
+                      <ul className="space-y-0.5 pl-4 text-xs text-slate-700">
+                        {(module.bullets || []).slice(0, 6).map((item, itemIdx) => (
+                          <li key={`plan-card-item-${messageId}-${idx}-${itemIdx}`} className="list-disc">
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </button>
                 );
               })}
