@@ -51,7 +51,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
   const [visionTitleGenerating, setVisionTitleGenerating] = useState(false);
   const [visionDescriptionGenerating, setVisionDescriptionGenerating] = useState(false);
   const autoRolesSuggestionKeyRef = useRef('');
-  const [draftJourneyId, setDraftJourneyId] = useState<string | null>(null);
 
   const getDraftStorageKey = useCallback((companyId?: string) => {
     const cid = String(companyId || OnboardingService.getCompanyId() || '').trim();
@@ -164,61 +163,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
   ];
 
   const handleNext = async () => {
-    const persistDraftJourney = async () => {
-      const realCompanyId = OnboardingService.getCompanyId();
-      if (!realCompanyId || !selectedGig?._id) return;
-
-      const rawGigTitle = String(selectedGig?.title || '').trim();
-      const safeGigTitle =
-        rawGigTitle && rawGigTitle.toLowerCase() !== 'draft gig' ? rawGigTitle : '';
-      const persistedJourneyTitle = String(journey.name || '').trim();
-      const safeJourneyTitle =
-        persistedJourneyTitle && persistedJourneyTitle.toLowerCase() !== 'draft gig'
-          ? persistedJourneyTitle
-          : '';
-      const baseTitle = (
-        trainingDetails?.trainingName ||
-        visionName ||
-        safeGigTitle ||
-        safeJourneyTitle ||
-        'Training draft'
-      ).trim();
-      const payload: Record<string, unknown> = {
-        _id: draftJourneyId || undefined,
-        name: baseTitle,
-        title: baseTitle,
-        description: (trainingDetails?.trainingDescription || visionDesc || selectedGig.description || '').trim(),
-        status: 'draft',
-        companyId: realCompanyId,
-        gigId: selectedGig._id,
-        industry: company.industry || undefined,
-        estimatedDuration:
-          trainingDetails?.estimatedDuration || visionDuration || journey.estimatedDuration || '120',
-        targetRoles: journey.targetRoles || [],
-        trainingLogo: thumbnailUrl
-          ? {
-              type: 'image',
-              value: thumbnailUrl
-            }
-          : undefined
-      };
-
-      try {
-        const trainingBackendUrl = getTrainingBackendUrl();
-        const baseUrl = trainingBackendUrl.endsWith('/api') ? trainingBackendUrl : `${trainingBackendUrl}/api`;
-        const response: any = draftJourneyId
-          ? await axios.put(`${baseUrl}/training_journeys/${draftJourneyId}`, payload)
-          : await axios.post(`${baseUrl}/training_journeys`, payload);
-        const savedId = String(response?.data?.journey?._id || response?.data?.journey?.id || '').trim();
-        if (savedId) {
-          setDraftJourneyId(savedId);
-          localStorage.setItem(getDraftStorageKey(realCompanyId), savedId);
-        }
-      } catch (error) {
-        console.error('[SetupWizard] Draft save failed:', error);
-      }
-    };
-
     if (currentStep === 6) {
       const realCompanyId = OnboardingService.getCompanyId();
       if (!realCompanyId) { alert('Internal Error: Company ID not found.'); return; }
@@ -247,19 +191,14 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
       };
       onComplete(completeCompany, completeJourney, selectedMethodology || undefined, selectedGig?._id);
     } else if (currentStep === 5) {
-      await persistDraftJourney();
       setCurrentStep(6);
     } else if (currentStep === 4 && selectedMethodology) {
-      await persistDraftJourney();
       setCurrentStep(5);
     } else if (currentStep === 3) {
-      await persistDraftJourney();
       setCurrentStep(4);
     } else if (currentStep === 1) {
-      await persistDraftJourney();
       setCurrentStep(2);
     } else if (currentStep < steps.length) {
-      await persistDraftJourney();
       setCurrentStep(currentStep + 1);
     }
   };
@@ -271,7 +210,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
       const realCompanyId = OnboardingService.getCompanyId();
       if (forceNew) {
         localStorage.removeItem(getDraftStorageKey(realCompanyId || undefined));
-        setDraftJourneyId(null);
         return;
       }
       const storedId = localStorage.getItem(getDraftStorageKey(realCompanyId || undefined));
@@ -284,7 +222,6 @@ export default function SetupWizard({ onComplete, repOnboardingLayout = false, f
         const isDraft = String(draft.status || '').toLowerCase() === 'draft';
         if (!isDraft) return;
 
-        setDraftJourneyId(String(draft._id || storedId));
         if (draft.trainingLogo?.type === 'image' && draft.trainingLogo?.value) {
           setThumbnailUrl(String(draft.trainingLogo.value));
         }
