@@ -2485,6 +2485,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         ],
       },
     ];
+    const currentPersonalizationQuestion = personalizationQuestions[personalizationStep];
     const handleSelectKbMode = (mode: KbGenerationMode) => {
       setShowRepSourcePopup(false);
       setKbGenerationChoice(mode);
@@ -2500,6 +2501,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 ? 'Uploaded files only'
                 : 'No KB, no documents',
       });
+      const firstQuestion = personalizationQuestions[0]?.question;
+      if (firstQuestion) {
+        appendChatMessage('assistant', `Question 1/${personalizationQuestions.length}: ${firstQuestion}`);
+      }
       window.requestAnimationFrame(() => {
         chatTextareaRef.current?.focus();
       });
@@ -2507,6 +2512,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const handleSelectPersonalizationOption = (value: string) => {
       const current = personalizationQuestions[personalizationStep];
       if (!current) return;
+      appendChatMessage('user', value);
       const nextAnswers = { ...personalizationAnswers, [current.key]: value };
       setPersonalizationAnswers(nextAnswers);
       if (current.key === 'source') {
@@ -2535,7 +2541,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
         }
         return;
       }
-      setPersonalizationStep((prev) => prev + 1);
+      const nextStep = personalizationStep + 1;
+      setPersonalizationStep(nextStep);
+      const nextQuestion = personalizationQuestions[nextStep]?.question;
+      if (nextQuestion) {
+        appendChatMessage('assistant', `Question ${nextStep + 1}/${personalizationQuestions.length}: ${nextQuestion}`);
+      }
     };
     const appendChatMessage = (
       role: 'user' | 'assistant',
@@ -3861,64 +3872,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       </div>
                     </div>
                   )}
-                  {rep && showPersonalizationCard && (
-                    <div className="w-full min-w-0">
-                      <div className="w-full rounded-2xl border border-slate-200 bg-white p-2.5 shadow-md shadow-slate-900/5 sm:p-3">
-                        <div className="mb-2 flex items-center justify-between gap-2">
-                          <div className="flex min-w-0 items-center gap-1.5">
-                            <div
-                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-sm shadow-harx-500/20"
-                              aria-hidden
-                            >
-                              <Bot className="h-3.5 w-3.5" />
-                            </div>
-                            <div className="min-w-0">
-                              <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">HARX</span>
-                              <span className="ml-1.5 text-[11px] font-medium text-slate-400">Assistant</span>
-                            </div>
-                          </div>
-                          <span className="shrink-0 text-[11px] font-semibold text-slate-400">
-                            {`${Math.min(personalizationStep + 1, personalizationQuestions.length)} of ${personalizationQuestions.length}`}
-                          </span>
-                        </div>
-                        <p className="mb-2 text-sm font-semibold leading-snug text-slate-900 sm:text-base">
-                          {personalizationQuestions[personalizationStep]?.question ||
-                            'A few questions to personalize your training'}
-                        </p>
-                        <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50/80">
-                          {(personalizationQuestions[personalizationStep]?.options || []).map((option, idx) => (
-                            <button
-                              key={`${personalizationStep}-${option}`}
-                              type="button"
-                              onClick={() => handleSelectPersonalizationOption(option)}
-                              className="flex w-full items-center gap-2 border-b border-slate-200/90 px-2.5 py-2 text-left transition hover:bg-white last:border-b-0 sm:px-3"
-                            >
-                              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#F43F5E] text-xs font-bold text-white shadow-sm">
-                                {idx + 1}
-                              </span>
-                              <span className="min-w-0 flex-1">
-                                <span className="block text-sm font-semibold leading-tight text-slate-900">{option}</span>
-                              </span>
-                              <span className="shrink-0 text-base leading-none text-slate-400">→</span>
-                            </button>
-                          ))}
-                        </div>
-                        <div className="mt-2 flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowPersonalizationCard(false);
-                              setPersonalizationStep(0);
-                              setPersonalizationAnswers({});
-                            }}
-                            className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
-                          >
-                            Skip
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                   {chatMessages.map((msg) => (
                     <div key={msg.id} className={msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
                       {msg.role === 'assistant' ? (
@@ -4023,6 +3976,40 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       })()}
                     </div>
                   ))}
+                  {rep && showPersonalizationCard && currentPersonalizationQuestion && (
+                    <div className="flex justify-start">
+                      <div className="max-w-[88%] rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                        <div className="mb-2 text-[13px] font-semibold text-slate-700">
+                          {`Question ${Math.min(personalizationStep + 1, personalizationQuestions.length)}/${personalizationQuestions.length}`}
+                        </div>
+                        <div className="space-y-2">
+                          {currentPersonalizationQuestion.options.map((option) => (
+                            <button
+                              key={`chat-question-${personalizationStep}-${option}`}
+                              type="button"
+                              onClick={() => handleSelectPersonalizationOption(option)}
+                              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left text-sm font-semibold text-slate-900 transition hover:bg-white"
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="mt-2 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowPersonalizationCard(false);
+                              setPersonalizationStep(0);
+                              setPersonalizationAnswers({});
+                            }}
+                            className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+                          >
+                            Skip
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   {isChatLoading && !chatMessages.some((m) => m.isStreaming) && (
                     <div className="flex justify-start gap-3">
                       <div
@@ -4101,61 +4088,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           <button
                             type="button"
                             onClick={() => handleSelectKbMode('none')}
-                            className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 text-xs font-semibold text-slate-800 transition hover:bg-white"
-                          >
-                            Skip
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    {showPersonalizationCard && (
-                      <div
-                        className={`px-3 pb-2 pt-3 ${shouldShowKbQuestionInChat ? 'border-b border-slate-100' : ''}`}
-                      >
-                        <div className="mb-2 flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5">
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-harx-500 to-harx-alt-500 text-white shadow-sm">
-                              <Bot className="h-3.5 w-3.5" />
-                            </div>
-                            <div>
-                              <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500">HARX</span>
-                              <span className="ml-1.5 text-[11px] font-medium text-slate-400">Assistant</span>
-                            </div>
-                          </div>
-                          <span className="shrink-0 text-[11px] font-semibold text-slate-400">
-                            {`${Math.min(personalizationStep + 1, personalizationQuestions.length)} of ${personalizationQuestions.length}`}
-                          </span>
-                        </div>
-                        <p className="mb-2 text-sm font-semibold leading-snug text-slate-900 sm:text-base">
-                          {personalizationQuestions[personalizationStep]?.question ||
-                            'A few questions to personalize your training'}
-                        </p>
-                        <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50/80">
-                          {(personalizationQuestions[personalizationStep]?.options || []).map((option, idx) => (
-                            <button
-                              key={`${personalizationStep}-${option}`}
-                              type="button"
-                              onClick={() => handleSelectPersonalizationOption(option)}
-                              className="flex w-full items-center gap-2 border-b border-slate-200/90 px-2.5 py-2 text-left transition hover:bg-white last:border-b-0 sm:px-3"
-                            >
-                              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#F43F5E] text-xs font-bold text-white shadow-sm">
-                                {idx + 1}
-                              </span>
-                              <span className="min-w-0 flex-1">
-                                <span className="block text-sm font-semibold leading-tight text-slate-900">{option}</span>
-                              </span>
-                              <span className="shrink-0 text-base leading-none text-slate-400">→</span>
-                            </button>
-                          ))}
-                        </div>
-                        <div className="mt-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowPersonalizationCard(false);
-                              setPersonalizationStep(0);
-                              setPersonalizationAnswers({});
-                            }}
                             className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 text-xs font-semibold text-slate-800 transition hover:bg-white"
                           >
                             Skip
