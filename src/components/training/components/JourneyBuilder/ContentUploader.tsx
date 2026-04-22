@@ -885,7 +885,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       });
       setCurrentSavedPodcastId(String(saved._id || ''));
       setPodcastTitle(saved.title || title);
-      setPodcastSavedHint('Podcast saved to MongoDB and Cloudinary.');
+      setPodcastSavedHint('Podcast saved');
       const refreshed = await AIService.listSavedPodcasts({
         gigId: activeChatGigId ? String(activeChatGigId) : undefined,
         companyId: company?.id || company?._id ? String(company.id || company._id) : undefined,
