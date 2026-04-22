@@ -2704,6 +2704,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         };
       } | null = null;
       let activeSection: 'objectives' | 'keyTopics' | 'activities' | 'evaluation' | null = null;
+      let activeNestedTitle: string | null = null;
 
       for (const line of lines) {
         const normalized = clean(line);
@@ -2721,6 +2722,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             },
           };
           activeSection = null;
+          activeNestedTitle = null;
           continue;
         }
         if (!current) {
@@ -2742,31 +2744,46 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
         if (/^(🎯\s*)?objectifs?/i.test(normalized)) {
           activeSection = 'objectives';
+          activeNestedTitle = null;
           continue;
         }
         if (/^(📌\s*)?(key topics|topics|th[eè]mes cl[eé]s?)/i.test(normalized)) {
           activeSection = 'keyTopics';
+          activeNestedTitle = null;
           continue;
         }
         if (/^(🧩\s*)?activit[eé]s?/i.test(normalized)) {
           activeSection = 'activities';
+          activeNestedTitle = null;
           continue;
         }
         if (/^(📊\s*)?indicateur d['’]?[eé]valuation/i.test(normalized)) {
           activeSection = 'evaluation';
+          activeNestedTitle = null;
           continue;
         }
 
-        if (/^[-•*]\s+/.test(line) || normalized.includes(':')) {
+        const isNestedTitle = activeSection && /^[-•*]?\s*[^:]{3,}:\s*$/.test(line);
+        if (isNestedTitle) {
+          activeNestedTitle = normalized.replace(/:\s*$/, '').trim();
+          continue;
+        }
+
+        if (/^[-•*]\s+/.test(line) || /^\d+[.)]\s+/.test(line) || normalized.includes(':')) {
           const stripped = normalized
             .replace(/^(objectifs?|objectives?)\s*:\s*/i, '')
             .replace(/^(contenu|content)\s*:\s*/i, '')
+            .replace(/^\d+[.)]\s+/, '')
             .trim();
           const lower = stripped.toLowerCase();
           if (!stripped) continue;
           if (['objectif', 'objectifs', 'contenu', 'content'].includes(lower)) continue;
           current.bullets.push(stripped);
-          if (activeSection) current.sections[activeSection].push(stripped);
+          if (activeSection) {
+            current.sections[activeSection].push(
+              activeNestedTitle ? `${activeNestedTitle} > ${stripped}` : stripped
+            );
+          }
         }
       }
 
@@ -3558,7 +3575,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           <ul className="mt-0.5 space-y-0.5 pl-4 text-xs text-slate-700">
                             {module.sections.objectives.slice(0, 5).map((item, itemIdx) => (
                               <li key={`plan-card-obj-${messageId}-${idx}-${itemIdx}`} className="list-disc">
-                                {item}
+                                {item.includes(' > ') ? (
+                                  <>
+                                    <span className="font-semibold">{item.split(' > ')[0]}:</span>{' '}
+                                    {item.split(' > ').slice(1).join(' > ')}
+                                  </>
+                                ) : item}
                               </li>
                             ))}
                           </ul>
@@ -3570,7 +3592,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           <ul className="mt-0.5 space-y-0.5 pl-4 text-xs text-slate-700">
                             {module.sections.keyTopics.slice(0, 6).map((item, itemIdx) => (
                               <li key={`plan-card-topic-${messageId}-${idx}-${itemIdx}`} className="list-disc">
-                                {item}
+                                {item.includes(' > ') ? (
+                                  <>
+                                    <span className="font-semibold">{item.split(' > ')[0]}:</span>{' '}
+                                    {item.split(' > ').slice(1).join(' > ')}
+                                  </>
+                                ) : item}
                               </li>
                             ))}
                           </ul>
@@ -3582,7 +3609,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           <ul className="mt-0.5 space-y-0.5 pl-4 text-xs text-slate-700">
                             {module.sections.activities.slice(0, 4).map((item, itemIdx) => (
                               <li key={`plan-card-act-${messageId}-${idx}-${itemIdx}`} className="list-disc">
-                                {item}
+                                {item.includes(' > ') ? (
+                                  <>
+                                    <span className="font-semibold">{item.split(' > ')[0]}:</span>{' '}
+                                    {item.split(' > ').slice(1).join(' > ')}
+                                  </>
+                                ) : item}
                               </li>
                             ))}
                           </ul>
@@ -3594,7 +3626,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           <ul className="mt-0.5 space-y-0.5 pl-4 text-xs text-slate-700">
                             {module.sections.evaluation.slice(0, 3).map((item, itemIdx) => (
                               <li key={`plan-card-eval-${messageId}-${idx}-${itemIdx}`} className="list-disc">
-                                {item}
+                                {item.includes(' > ') ? (
+                                  <>
+                                    <span className="font-semibold">{item.split(' > ')[0]}:</span>{' '}
+                                    {item.split(' > ').slice(1).join(' > ')}
+                                  </>
+                                ) : item}
                               </li>
                             ))}
                           </ul>
