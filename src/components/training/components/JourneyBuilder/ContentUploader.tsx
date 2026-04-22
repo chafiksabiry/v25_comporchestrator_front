@@ -2719,6 +2719,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
       moduleCardThemes: Array<{ bg: string; border: string; text?: string }>;
       titleColor?: string;
       accentColor?: string;
+      typography?: {
+        bodyFont: string;
+        headingFont: string;
+      };
+      layoutPreset?: 'cards' | 'editorial' | 'minimal';
       contentTheme?: {
         bodyColor: string;
         headingColor: string;
@@ -2735,6 +2740,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         panelBorder: string;
         badgeBg: string;
         badgeText: string;
+        canvasBg: string;
       };
     } => {
       const isHex = (v: unknown) => typeof v === 'string' && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v);
@@ -2765,7 +2771,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
             panelBorder: '#cdece4',
             badgeBg: '#e5f8f2',
             badgeText: '#0f766e',
+            canvasBg: '#ffffff',
           },
+          typography: {
+            bodyFont: 'Inter, system-ui, sans-serif',
+            headingFont: 'Inter, system-ui, sans-serif',
+          },
+          layoutPreset: 'cards' as const,
         },
         {
           moduleCardThemes: [
@@ -2792,7 +2804,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
             panelBorder: '#d8e0f6',
             badgeBg: '#e8eeff',
             badgeText: '#3949ab',
+            canvasBg: '#ffffff',
           },
+          typography: {
+            bodyFont: '"Segoe UI", Inter, system-ui, sans-serif',
+            headingFont: '"Segoe UI", Inter, system-ui, sans-serif',
+          },
+          layoutPreset: 'editorial' as const,
         },
         {
           moduleCardThemes: [
@@ -2819,7 +2837,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
             panelBorder: '#ecdab8',
             badgeBg: '#fff1da',
             badgeText: '#b86f09',
+            canvasBg: '#fffdf8',
           },
+          typography: {
+            bodyFont: '"Trebuchet MS", "Segoe UI", sans-serif',
+            headingFont: '"Trebuchet MS", "Segoe UI", sans-serif',
+          },
+          layoutPreset: 'minimal' as const,
         },
       ];
       const hash = String(rawText || '')
@@ -2856,16 +2880,35 @@ export default function ContentUploader(props: ContentUploaderProps) {
               panelBorder: safeHex(parsed.contentTheme.panelBorder, defaults.contentTheme.panelBorder),
               badgeBg: safeHex(parsed.contentTheme.badgeBg, defaults.contentTheme.badgeBg),
               badgeText: safeHex(parsed.contentTheme.badgeText, defaults.contentTheme.badgeText),
+              canvasBg: safeHex(parsed.contentTheme.canvasBg, defaults.contentTheme.canvasBg),
               moduleShape:
                 parsed.contentTheme.moduleShape === 'square' || parsed.contentTheme.moduleShape === 'soft'
                   ? parsed.contentTheme.moduleShape
                   : 'rounded',
             }
           : defaults.contentTheme;
+        const typography = parsed?.typography && typeof parsed.typography === 'object'
+          ? {
+              bodyFont:
+                typeof parsed.typography.bodyFont === 'string' && parsed.typography.bodyFont.trim()
+                  ? parsed.typography.bodyFont.trim()
+                  : defaults.typography.bodyFont,
+              headingFont:
+                typeof parsed.typography.headingFont === 'string' && parsed.typography.headingFont.trim()
+                  ? parsed.typography.headingFont.trim()
+                  : defaults.typography.headingFont,
+            }
+          : defaults.typography;
+        const layoutPreset =
+          parsed?.layoutPreset === 'cards' || parsed?.layoutPreset === 'editorial' || parsed?.layoutPreset === 'minimal'
+            ? parsed.layoutPreset
+            : defaults.layoutPreset;
         return {
           moduleCardThemes: themes.length > 0 ? themes : defaults.moduleCardThemes,
           titleColor: safeHex(parsed?.titleColor, defaults.titleColor),
           accentColor: safeHex(parsed?.accentColor, defaults.accentColor),
+          typography,
+          layoutPreset,
           contentTheme,
         };
       } catch {
@@ -3689,25 +3732,59 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const parseInteractiveQuestionsFromText = (
       rawText: string
     ): Array<{ question: string; options: string[] }> => {
-      const lines = String(rawText || '')
+      const source = String(rawText || '').trim();
+      if (!source) return [];
+      // Guardrails: never treat module/course content as a questionnaire.
+      if (
+        /module\s*\d+/i.test(source) ||
+        /##?\s*module/i.test(source) ||
+        /(contenu|objectif|objectifs|kpi|indicateur|campagne|performance|exemple)s?/i.test(source)
+      ) {
+        return [];
+      }
+
+      const lines = source
         .split('\n')
         .map((line) => line.trim())
         .filter(Boolean);
       const result: Array<{ question: string; options: string[] }> = [];
       let current: { question: string; options: string[] } | null = null;
       for (const line of lines) {
-        if (/^\d+[.)]\s+/.test(line) || /^\s*quel(le)?\s+/i.test(line)) {
+        const isQuestionHeader =
+          /^\d+[.)]\s+/.test(line) ||
+          /^\s*quel(le)?\s+/i.test(line) ||
+          /^q\s*[:\-]\s+/i.test(line) ||
+          /\?\s*$/.test(line);
+        if (isQuestionHeader) {
           if (current && current.options.length >= 2) result.push(current);
-          current = { question: line.replace(/^\d+[.)]\s+/, '').trim(), options: [] };
+          current = {
+            question: line
+              .replace(/^\d+[.)]\s+/, '')
+              .replace(/^q\s*[:\-]\s+/i, '')
+              .trim(),
+            options: [],
+          };
           continue;
         }
-        if (/^[-*•]\s+/.test(line) && current) {
-          const opt = line.replace(/^[-*•]\s+/, '').trim();
+        if (/^([a-d]\)|[a-d]\.|[-*•])\s+/i.test(line) && current) {
+          const opt = line.replace(/^([a-d]\)|[a-d]\.|[-*•])\s+/i, '').trim();
           if (opt) current.options.push(opt);
         }
       }
       if (current && current.options.length >= 2) result.push(current);
-      return result.slice(0, 4);
+      const normalized = result
+        .map((entry) => ({
+          question: entry.question,
+          options: entry.options
+            .map((opt) => opt.replace(/^["'`]+|["'`]+$/g, '').trim())
+            .filter(Boolean)
+            .slice(0, 6),
+        }))
+        .filter((entry) => entry.question.length >= 8 && entry.options.length >= 2);
+      // Require at least one explicit question mark to avoid false positives.
+      const hasQuestionMark = normalized.some((entry) => /\?/.test(entry.question));
+      if (!hasQuestionMark) return [];
+      return normalized.slice(0, 4);
     };
 
     const renderInteractiveQuestionnaire = (messageId: string, rawText: string): React.ReactNode | null => {
@@ -4456,6 +4533,27 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               const textWithoutStyle = stripPromptEcho(stripResourceSections(
                                 stripStyleBlueprint(String(msg.text || '').replace(/<harx-html>[\s\S]*?<\/harx-html>/gi, ''))
                               ));
+                              const styleBlueprint = extractStyleBlueprint(String(msg.text || ''));
+                              const contentTheme = styleBlueprint.contentTheme;
+                              const typography = styleBlueprint.typography || {
+                                bodyFont: 'Inter, system-ui, sans-serif',
+                                headingFont: 'Inter, system-ui, sans-serif',
+                              };
+                              const layoutPreset = styleBlueprint.layoutPreset || 'cards';
+                              const moduleShapeClass =
+                                contentTheme?.moduleShape === 'square'
+                                  ? 'rounded-none'
+                                  : contentTheme?.moduleShape === 'soft'
+                                    ? 'rounded-3xl'
+                                    : 'rounded-2xl';
+                              const cardParagraphs = layoutPreset === 'cards';
+                              const editorialParagraphs = layoutPreset === 'editorial';
+                              const wrapperBackground =
+                                layoutPreset === 'cards'
+                                  ? `linear-gradient(180deg, ${contentTheme?.canvasBg || '#ffffff'} 0%, #f8fafc 100%)`
+                                  : layoutPreset === 'editorial'
+                                    ? `linear-gradient(145deg, ${contentTheme?.canvasBg || '#ffffff'} 0%, #f1f5f9 100%)`
+                                    : (contentTheme?.canvasBg || '#ffffff');
                               const pendingStream = Boolean(msg.isStreaming && !String(textWithoutStyle || '').trim());
                               if (pendingStream) {
                                 return (
@@ -4489,33 +4587,151 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                     <div className="mb-2">{interactiveQuestionnaire}</div>
                                   ) : null}
                                   {!hideMarkdownForInteractivePlan ? (
-                                    <ReactMarkdown
-                                      remarkPlugins={[remarkGfm]}
-                                      components={{
-                                        h1: ({ children }) => <h3 className="mb-2 mt-3 text-[22px] font-semibold text-slate-900">{children}</h3>,
-                                        h2: ({ children }) => <h4 className="mb-1.5 mt-3 text-[18px] font-semibold text-slate-900">{children}</h4>,
-                                        h3: ({ children }) => <h5 className="mb-1 mt-2 text-[16px] font-semibold text-slate-800">{children}</h5>,
-                                        p: ({ children }) => <p className="my-1.5 text-[15px] leading-7 text-slate-700">{children}</p>,
-                                        ul: ({ children }) => <ul className="my-1.5 list-disc space-y-0.5 pl-5 text-[15px] leading-7 text-slate-700">{children}</ul>,
-                                        ol: ({ children }) => <ol className="my-1.5 list-decimal space-y-0.5 pl-5 text-[15px] leading-7 text-slate-700">{children}</ol>,
-                                        li: ({ children }) => <li className="text-slate-700">{children}</li>,
-                                        strong: ({ children }) => <strong className="font-semibold text-slate-900">{children}</strong>,
-                                        table: ({ children }) => (
-                                          <div className="my-3 overflow-x-auto rounded-lg border border-slate-200">
-                                            <table className="min-w-full border-collapse bg-white">{children}</table>
-                                          </div>
-                                        ),
-                                        thead: ({ children }) => <thead className="bg-slate-50">{children}</thead>,
-                                        tbody: ({ children }) => <tbody className="divide-y divide-slate-200">{children}</tbody>,
-                                        tr: ({ children }) => <tr className="align-top">{children}</tr>,
-                                        th: ({ children }) => <th className="px-3 py-2 text-left text-sm font-semibold text-slate-900">{children}</th>,
-                                        td: ({ children }) => <td className="px-3 py-2 text-sm text-slate-700">{children}</td>,
-                                        code: ({ children }) => <code className="rounded bg-slate-100 px-1 py-0.5 text-[13px] text-slate-800 ring-1 ring-slate-200">{children}</code>,
-                                        blockquote: ({ children }) => <blockquote className="my-2 border-l-4 border-slate-300 pl-3 text-slate-600 italic">{children}</blockquote>,
+                                    <div
+                                      className={`${moduleShapeClass} border p-3`}
+                                      style={{
+                                        borderColor: contentTheme?.panelBorder || '#e2e8f0',
+                                        background: wrapperBackground,
+                                        fontFamily: typography.bodyFont,
                                       }}
                                     >
-                                      {textWithoutStyle}
-                                    </ReactMarkdown>
+                                      <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
+                                        components={{
+                                          h1: ({ children }) => (
+                                            <h3
+                                              className={`${moduleShapeClass} mb-2 mt-3 border px-3 py-2 text-[22px] font-bold`}
+                                              style={{
+                                                borderColor: styleBlueprint.accentColor || '#f9a8d4',
+                                                color: styleBlueprint.titleColor || contentTheme?.headingColor || '#0f172a',
+                                                background: `linear-gradient(90deg, ${contentTheme?.badgeBg || '#fdf2f8'} 0%, ${contentTheme?.tableHeaderBg || '#eff6ff'} 100%)`,
+                                                fontFamily: typography.headingFont,
+                                              }}
+                                            >
+                                              {children}
+                                            </h3>
+                                          ),
+                                          h2: ({ children }) => (
+                                            <h4
+                                              className={`${moduleShapeClass} mb-2 mt-3 border px-3 py-1.5 text-[18px] font-semibold`}
+                                              style={{
+                                                borderColor: contentTheme?.tableBorder || '#bae6fd',
+                                                background: contentTheme?.tableHeaderBg || '#eff6ff',
+                                                color: contentTheme?.headingColor || '#0f172a',
+                                                fontFamily: typography.headingFont,
+                                              }}
+                                            >
+                                              {children}
+                                            </h4>
+                                          ),
+                                          h3: ({ children }) => (
+                                            <h5
+                                              className="mb-1.5 mt-2 text-[16px] font-semibold"
+                                              style={{
+                                                color: styleBlueprint.accentColor || '#be123c',
+                                                fontFamily: typography.headingFont,
+                                              }}
+                                            >
+                                              {children}
+                                            </h5>
+                                          ),
+                                          p: ({ children }) => (
+                                            <p
+                                              className={`my-1.5 text-[15px] leading-7 ${cardParagraphs ? `${moduleShapeClass} border px-2.5 py-1.5` : ''} ${editorialParagraphs ? 'pl-3 border-l-2' : ''}`}
+                                              style={{
+                                                color: contentTheme?.bodyColor || '#334155',
+                                                borderColor: cardParagraphs
+                                                  ? (contentTheme?.panelBorder || '#e2e8f0')
+                                                  : (editorialParagraphs ? (styleBlueprint.accentColor || '#be123c') : undefined),
+                                                backgroundColor: cardParagraphs ? (contentTheme?.panelBg || '#f8fafc') : 'transparent',
+                                              }}
+                                            >
+                                              {children}
+                                            </p>
+                                          ),
+                                          ul: ({ children }) => (
+                                            <ul
+                                              className="my-2 space-y-1 pl-4 text-[15px] leading-7"
+                                              style={{ color: contentTheme?.bodyColor || '#334155' }}
+                                            >
+                                              {children}
+                                            </ul>
+                                          ),
+                                          ol: ({ children }) => (
+                                            <ol
+                                              className="my-2 space-y-1 pl-5 text-[15px] leading-7 marker:font-semibold"
+                                              style={{ color: contentTheme?.bodyColor || '#334155' }}
+                                            >
+                                              {children}
+                                            </ol>
+                                          ),
+                                          li: ({ children }) => (
+                                            <li
+                                              className={`${moduleShapeClass} px-2 py-1`}
+                                              style={{
+                                                color: contentTheme?.bodyColor || '#334155',
+                                                backgroundColor: contentTheme?.panelBg || '#f8fafc',
+                                              }}
+                                            >
+                                              {children}
+                                            </li>
+                                          ),
+                                          strong: ({ children }) => <strong className="font-semibold text-slate-900">{children}</strong>,
+                                          table: ({ children }) => (
+                                            <div
+                                              className={`${moduleShapeClass} my-3 overflow-x-auto border bg-white`}
+                                              style={{ borderColor: contentTheme?.tableBorder || '#cbd5e1' }}
+                                            >
+                                              <table className="min-w-full border-collapse">{children}</table>
+                                            </div>
+                                          ),
+                                          thead: ({ children }) => (
+                                            <thead style={{ backgroundColor: contentTheme?.tableHeaderBg || '#f1f5f9' }}>{children}</thead>
+                                          ),
+                                          tbody: ({ children }) => <tbody className="divide-y" style={{ borderColor: contentTheme?.tableBorder || '#cbd5e1' }}>{children}</tbody>,
+                                          tr: ({ children }) => <tr className="align-top">{children}</tr>,
+                                          th: ({ children }) => (
+                                            <th
+                                              className="px-3 py-2 text-left text-sm font-semibold"
+                                              style={{ color: contentTheme?.tableHeaderText || contentTheme?.headingColor || '#0f172a' }}
+                                            >
+                                              {children}
+                                            </th>
+                                          ),
+                                          td: ({ children }) => (
+                                            <td className="px-3 py-2 text-sm" style={{ color: contentTheme?.bodyColor || '#334155' }}>
+                                              {children}
+                                            </td>
+                                          ),
+                                          code: ({ children }) => (
+                                            <code
+                                              className={`${moduleShapeClass} px-1.5 py-0.5 text-[13px] ring-1`}
+                                              style={{
+                                                color: contentTheme?.headingColor || '#1e293b',
+                                                backgroundColor: contentTheme?.tableRowBg || '#f8fafc',
+                                                borderColor: contentTheme?.tableBorder || '#cbd5e1',
+                                              }}
+                                            >
+                                              {children}
+                                            </code>
+                                          ),
+                                          blockquote: ({ children }) => (
+                                            <blockquote
+                                              className={`${moduleShapeClass} my-2 border-l-4 px-3 py-2 italic`}
+                                              style={{
+                                                borderLeftColor: styleBlueprint.accentColor || '#be123c',
+                                                backgroundColor: contentTheme?.badgeBg || '#fdf2f8',
+                                                color: contentTheme?.bodyColor || '#334155',
+                                              }}
+                                            >
+                                              {children}
+                                            </blockquote>
+                                          ),
+                                        }}
+                                      >
+                                        {textWithoutStyle}
+                                      </ReactMarkdown>
+                                    </div>
                                   ) : null}
                                   {msg.isStreaming && !!textWithoutStyle.trim() ? (
                                     <span className="ml-1 inline-block h-4 w-1 animate-pulse rounded bg-harx-400 align-middle" />
