@@ -499,6 +499,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [showPersonalizationCard, setShowPersonalizationCard] = useState(false);
   const [personalizationStep, setPersonalizationStep] = useState(0);
   const [personalizationAnswers, setPersonalizationAnswers] = useState<{
+    source?: string;
     level?: string;
     objective?: string;
     format?: string;
@@ -2444,10 +2445,20 @@ export default function ContentUploader(props: ContentUploaderProps) {
       { id: 'none', label: 'No documents', hint: 'Generate without KB or analyzed files' },
     ];
     const personalizationQuestions: Array<{
-      key: 'level' | 'objective' | 'format';
+      key: 'source' | 'level' | 'objective' | 'format';
       question: string;
       options: string[];
     }> = [
+      {
+        key: 'source',
+        question: 'What source should we use for this training?',
+        options: [
+          'KB only',
+          'KB + uploaded files',
+          'Uploaded files only',
+          'No KB, no documents',
+        ],
+      },
       {
         key: 'level',
         question: 'What is your current level?',
@@ -2477,20 +2488,18 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const handleSelectKbMode = (mode: KbGenerationMode) => {
       setShowRepSourcePopup(false);
       setKbGenerationChoice(mode);
-      if (mode === 'none' || mode === 'uploads_only' || mode === 'kb_and_uploads') {
-        // These modes should not trigger any automatic flow.
-        // Keep the chat idle and wait for the user's manual prompt.
-        setShowPersonalizationCard(false);
-        setPersonalizationStep(0);
-        setPersonalizationAnswers({});
-        window.requestAnimationFrame(() => {
-          chatTextareaRef.current?.focus();
-        });
-        return;
-      }
       setShowPersonalizationCard(true);
       setPersonalizationStep(0);
-      setPersonalizationAnswers({});
+      setPersonalizationAnswers({
+        source:
+          mode === 'kb_only'
+            ? 'KB only'
+            : mode === 'kb_and_uploads'
+              ? 'KB + uploaded files'
+              : mode === 'uploads_only'
+                ? 'Uploaded files only'
+                : 'No KB, no documents',
+      });
       window.requestAnimationFrame(() => {
         chatTextareaRef.current?.focus();
       });
@@ -2500,10 +2509,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
       if (!current) return;
       const nextAnswers = { ...personalizationAnswers, [current.key]: value };
       setPersonalizationAnswers(nextAnswers);
+      if (current.key === 'source') {
+        const selectedSource = String(value || '').toLowerCase();
+        if (selectedSource.includes('kb +')) setKbGenerationChoice('kb_and_uploads');
+        else if (selectedSource.includes('uploaded')) setKbGenerationChoice('uploads_only');
+        else if (selectedSource.includes('no kb')) setKbGenerationChoice('none');
+        else setKbGenerationChoice('kb_only');
+      }
       if (personalizationStep >= personalizationQuestions.length - 1) {
-        if (nextAnswers.level && nextAnswers.objective && nextAnswers.format) {
+        if (nextAnswers.source && nextAnswers.level && nextAnswers.objective && nextAnswers.format) {
           const summary = [
             'A few questions to personalize your training',
+            'Q: What source should we use for this training?',
+            `R : ${nextAnswers.source}`,
             'Q: What is your current level?',
             `R : ${nextAnswers.level}`,
             'Q: What is your main objective?',
@@ -2924,7 +2942,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
         const hasKbForChat = chatKbDocuments.length > 0;
         const hasUploadsForChat = effectiveAnalyzedUploads.length > 0;
-        const effectiveGenerationMode: KbGenerationMode =
+        const sourcePreference = String(personalizationAnswers.source || '').toLowerCase();
+        const sourceChoiceFromQuestions: KbGenerationMode | null =
+          sourcePreference.includes('kb +') || sourcePreference.includes('kb et')
+            ? 'kb_and_uploads'
+            : sourcePreference.includes('uploaded') || sourcePreference.includes('docs only')
+              ? 'uploads_only'
+              : sourcePreference.includes('no kb') || sourcePreference.includes('no documents')
+                ? 'none'
+                : sourcePreference.includes('kb')
+                  ? 'kb_only'
+                  : null;
+        const requestedMode = kbGenerationChoice || sourceChoiceFromQuestions;
+        const autoMode: KbGenerationMode =
           hasKbForChat && hasUploadsForChat
             ? 'kb_and_uploads'
             : hasKbForChat
@@ -2932,8 +2962,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
               : hasUploadsForChat
                 ? 'uploads_only'
                 : 'none';
-        const usesKbForChat = hasKbForChat;
-        const usesUploadsForChat = hasUploadsForChat;
+        const effectiveGenerationMode: KbGenerationMode = requestedMode || autoMode;
+        const usesKbForChat = effectiveGenerationMode === 'kb_only' || effectiveGenerationMode === 'kb_and_uploads';
+        const usesUploadsForChat = effectiveGenerationMode === 'uploads_only' || effectiveGenerationMode === 'kb_and_uploads';
         const uploadsForChat = usesUploadsForChat ? effectiveAnalyzedUploads : [];
 
         const sourceHistory = options?.historyMessages || chatMessages;
@@ -2975,6 +3006,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
           knowledgeBaseDocuments: kbDocsSummary,
           selectedDuration: generationPreferences.selectedDuration,
           selectedMethodology: generationPreferences.methodologyName,
+          personalizationProfile: {
+            source: personalizationAnswers.source || null,
+            level: personalizationAnswers.level || null,
+            objective: personalizationAnswers.objective || null,
+            format: personalizationAnswers.format || null,
+          },
+          sourceModeRequested: requestedMode || null,
           conversationHistory: historyForContext,
           canGenerateTraining: canProceed,
           curriculumOutline: Array.isArray(generatedCurriculum?.modules)
