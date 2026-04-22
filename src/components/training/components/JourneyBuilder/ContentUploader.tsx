@@ -3854,10 +3854,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
           <div
             className={
               repSplitLayout
-                ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-harx-100 bg-gradient-to-b from-white via-rose-50/20 to-white px-3 py-4 shadow-[0_10px_30px_rgba(20,20,40,0.08)] md:px-5 md:py-5'
+                ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-harx-100 bg-white px-3 py-4 shadow-[0_10px_30px_rgba(20,20,40,0.08)] md:px-5 md:py-5'
                 : rep
-                  ? 'flex w-full flex-col rounded-2xl border border-harx-100 bg-gradient-to-b from-white via-rose-50/20 to-white px-4 py-6 shadow-[0_10px_30px_rgba(20,20,40,0.08)] md:px-8 md:py-8'
-                  : 'flex max-h-[90vh] min-h-0 flex-col rounded-2xl border border-harx-100 bg-gradient-to-b from-white via-rose-50/20 to-white px-4 py-6 shadow-[0_10px_30px_rgba(20,20,40,0.08)] md:px-8 md:py-8'
+                  ? 'flex w-full flex-col rounded-2xl border border-harx-100 bg-white px-4 py-6 shadow-[0_10px_30px_rgba(20,20,40,0.08)] md:px-8 md:py-8'
+                  : 'flex max-h-[90vh] min-h-0 flex-col rounded-2xl border border-harx-100 bg-white px-4 py-6 shadow-[0_10px_30px_rgba(20,20,40,0.08)] md:px-8 md:py-8'
             }
           >
 
@@ -3873,20 +3873,20 @@ export default function ContentUploader(props: ContentUploaderProps) {
             <div
               className={
                 repSplitLayout
-                  ? 'relative flex min-h-0 flex-1 flex-col rounded-3xl border border-harx-100 bg-white/95 shadow-[0_12px_36px_rgba(25,25,50,0.08)]'
+                  ? 'relative flex min-h-0 flex-1 flex-col rounded-3xl border border-harx-100 bg-white shadow-[0_12px_36px_rgba(25,25,50,0.08)]'
                   : rep
                     ? 'relative rounded-none border-0 bg-transparent p-0 shadow-none'
-                    : 'relative flex min-h-0 flex-1 flex-col rounded-3xl border border-harx-100 bg-white/95 shadow-[0_12px_36px_rgba(25,25,50,0.08)]'
+                    : 'relative flex min-h-0 flex-1 flex-col rounded-3xl border border-harx-100 bg-white shadow-[0_12px_36px_rgba(25,25,50,0.08)]'
               }
             >
               <div
                 className={`relative mb-2 flex w-full shrink-0 ${rep ? 'flex-col gap-2 px-0.5 pt-0.5' : 'justify-end px-3 pt-3'}`}
               >
-                <div className="flex w-full max-w-full flex-wrap items-center justify-end gap-2 rounded-2xl border border-harx-100/90 bg-white/95 p-1.5 shadow-sm ring-1 ring-harx-500/10 backdrop-blur-sm transition-all duration-300 sm:inline-flex sm:w-auto sm:flex-nowrap sm:gap-1.5">
+                <div className="flex w-full max-w-full flex-wrap items-center justify-end gap-2 rounded-2xl border border-harx-100/90 bg-white p-1.5 shadow-sm transition-all duration-300 sm:inline-flex sm:w-auto sm:flex-nowrap sm:gap-1.5">
                   <select
                     value={activeChatGigId}
                     onChange={(e) => setSelectedChatGigId(e.target.value)}
-                    className="min-w-0 flex-1 truncate rounded-xl border-0 bg-slate-50/90 px-3 py-2 text-xs font-semibold text-slate-800 outline-none transition-all duration-200 hover:bg-white focus:bg-white focus:ring-2 focus:ring-harx-500/30 sm:min-w-[12rem] sm:max-w-[min(20rem,50vw)] sm:flex-none sm:shrink-0"
+                    className="min-w-0 flex-1 truncate rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 outline-none transition-all duration-200 hover:bg-white focus:bg-white focus:ring-2 focus:ring-harx-500/30 sm:min-w-[12rem] sm:max-w-[min(20rem,50vw)] sm:flex-none sm:shrink-0"
                     title="Choose gig for chat"
                   >
                     <option value="">Choose a gig</option>
@@ -3908,8 +3908,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     onClick={() => setIsHistoryOpen((prev) => !prev)}
                     className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all duration-200 sm:px-2.5 ${
                       isHistoryOpen
-                        ? 'bg-harx-50 text-harx-700 ring-1 ring-harx-300/80'
-                        : 'text-slate-600 hover:bg-harx-50/70 hover:text-harx-700'
+                        ? 'bg-white text-harx-700 ring-1 ring-harx-300/80'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-harx-700'
                     }`}
                     title="Open history"
                   >
@@ -4212,13 +4212,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         <p className="mb-1.5 text-sm font-semibold leading-snug text-slate-900 sm:text-base">
                           Do you want to generate a training plan and training content from your knowledge base?
                         </p>
-                        <div className="overflow-hidden rounded-lg border border-harx-100 bg-gradient-to-b from-rose-50/50 to-white">
+                        <div className="overflow-hidden rounded-lg border border-harx-100 bg-white">
                           {kbOptions.map((option, idx) => (
                             <button
                               key={option.id}
                               type="button"
                               onClick={() => handleSelectKbMode(option.id)}
-                              className="flex w-full items-center gap-2 border-b border-harx-100/90 px-2.5 py-1.5 text-left transition-all duration-200 hover:bg-harx-50/60 last:border-b-0 sm:px-3"
+                              className="flex w-full items-center gap-2 border-b border-harx-100/90 px-2.5 py-1.5 text-left transition-all duration-200 hover:bg-slate-50 last:border-b-0 sm:px-3"
                             >
                               <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#F43F5E] text-xs font-bold text-white shadow-sm">
                                 {idx + 1}
@@ -4245,7 +4245,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           <button
                             type="button"
                             onClick={() => handleSelectKbMode('none')}
-                            className="rounded-md border border-harx-100 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:bg-harx-50/60"
+                            className="rounded-md border border-harx-100 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:bg-slate-50"
                           >
                             Skip
                           </button>
@@ -4388,13 +4388,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         <p className="mb-2 text-sm font-semibold leading-snug text-slate-900 sm:text-base">
                           {currentPersonalizationQuestion.question}
                         </p>
-                        <div className="overflow-hidden rounded-lg border border-harx-100 bg-gradient-to-b from-rose-50/50 to-white">
+                        <div className="overflow-hidden rounded-lg border border-harx-100 bg-white">
                           {currentPersonalizationQuestion.options.map((option, idx) => (
                             <button
                               key={`chat-question-${personalizationStep}-${option}`}
                               type="button"
                               onClick={() => handleSelectPersonalizationOption(option)}
-                              className="flex w-full items-center gap-2 border-b border-harx-100/90 px-2.5 py-2 text-left transition-all duration-200 hover:bg-harx-50/60 last:border-b-0 sm:px-3"
+                              className="flex w-full items-center gap-2 border-b border-harx-100/90 px-2.5 py-2 text-left transition-all duration-200 hover:bg-slate-50 last:border-b-0 sm:px-3"
                             >
                               <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#F43F5E] text-xs font-bold text-white shadow-sm">
                                 {idx + 1}
@@ -4414,7 +4414,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               setPersonalizationStep(0);
                               setPersonalizationAnswers({});
                             }}
-                            className="rounded-md border border-harx-100 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:bg-harx-50/60"
+                            className="rounded-md border border-harx-100 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition-colors hover:bg-slate-50"
                           >
                             Skip
                           </button>
@@ -4448,7 +4448,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               )}
 
               {!showRepSourcePopup && (anchoredChoiceUi ? (
-                <div className="sticky bottom-0 z-20 shrink-0 bg-white/95 px-3 pb-2 pt-1 backdrop-blur-sm">
+                <div className="sticky bottom-0 z-20 shrink-0 bg-white px-3 pb-2 pt-1">
                   <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
                     {shouldShowKbQuestionInChat && (
                       <div className="border-b border-slate-100 px-3 pb-2 pt-3">
@@ -4512,7 +4512,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 </div>
               ) : (
                 <div
-                  className={`shrink-0 bg-white/95 pb-1 pt-2 backdrop-blur-sm ${rep ? 'sticky bottom-0 z-20 border-t border-harx-100/80' : 'sticky bottom-0 z-20 border-t border-harx-100/80 px-3'}`}
+                  className={`shrink-0 bg-white pb-1 pt-2 ${rep ? 'sticky bottom-0 z-20 border-t border-harx-100/80' : 'sticky bottom-0 z-20 border-t border-harx-100/80 px-3'}`}
                 >
                   <div
                     className={
