@@ -748,6 +748,7 @@ export class AIService {
     trainingTitle?: string;
     language?: string;
     maxSlides?: number;
+    generator?: 'ai' | 'deterministic';
   }): Promise<StructuredTrainingSlidesPayload> {
     const response = await ApiClient.post<{
       success?: boolean;
@@ -761,6 +762,7 @@ export class AIService {
       trainingTitle: params.trainingTitle || '',
       language: params.language || 'fr',
       maxSlides: params.maxSlides ?? 12,
+      generator: params.generator || 'ai',
     });
     const raw = response.data as any;
     if (raw?.success === false) {
