@@ -3581,6 +3581,92 @@ export default function ContentUploader(props: ContentUploaderProps) {
       );
     };
 
+    const parseInteractiveQuestionsFromText = (
+      rawText: string
+    ): Array<{ question: string; options: string[] }> => {
+      const lines = String(rawText || '')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+      const result: Array<{ question: string; options: string[] }> = [];
+      let current: { question: string; options: string[] } | null = null;
+      for (const line of lines) {
+        if (/^\d+[.)]\s+/.test(line) || /^\s*quel(le)?\s+/i.test(line)) {
+          if (current && current.options.length >= 2) result.push(current);
+          current = { question: line.replace(/^\d+[.)]\s+/, '').trim(), options: [] };
+          continue;
+        }
+        if (/^[-*•]\s+/.test(line) && current) {
+          const opt = line.replace(/^[-*•]\s+/, '').trim();
+          if (opt) current.options.push(opt);
+        }
+      }
+      if (current && current.options.length >= 2) result.push(current);
+      return result.slice(0, 4);
+    };
+
+    const renderInteractiveQuestionnaire = (messageId: string, rawText: string): React.ReactNode | null => {
+      const questions = parseInteractiveQuestionsFromText(rawText);
+      if (questions.length === 0) return null;
+      const answers = interactiveQuestionAnswers[messageId] || {};
+      return (
+        <div className="mb-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-harx-600">Interactive Questions</p>
+          <div className="space-y-2.5">
+            {questions.map((q, qIdx) => (
+              <div key={`iq-${messageId}-${qIdx}`} className="rounded-xl border border-slate-200 p-2.5">
+                <p className="mb-1.5 text-sm font-semibold text-slate-900">{q.question}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {q.options.map((opt, oIdx) => {
+                    const selected = answers[qIdx] === opt;
+                    return (
+                      <button
+                        key={`iqo-${messageId}-${qIdx}-${oIdx}`}
+                        type="button"
+                        onClick={() =>
+                          setInteractiveQuestionAnswers((prev) => ({
+                            ...prev,
+                            [messageId]: { ...(prev[messageId] || {}), [qIdx]: opt },
+                          }))
+                        }
+                        className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition ${
+                          selected
+                            ? 'border-harx-300 bg-harx-50 text-harx-700'
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-2 flex justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                const composed = questions
+                  .map((q, idx) => {
+                    const selected = (interactiveQuestionAnswers[messageId] || {})[idx];
+                    return selected ? `${q.question}\n${selected}` : '';
+                  })
+                  .filter(Boolean)
+                  .join('\n\n');
+                if (!composed) return;
+                setChatInput(composed);
+                window.setTimeout(() => chatTextareaRef.current?.focus(), 0);
+              }}
+              className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Use selected answers
+            </button>
+          </div>
+        </div>
+      );
+    };
+
     const anchoredChoiceUi = false;
 
     const renderComposerBody = () => (
@@ -3855,7 +3941,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           <div
             className={
               repSplitLayout
-                ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-harx-100 bg-white px-3 py-4 shadow-[0_10px_30px_rgba(20,20,40,0.08)] md:px-5 md:py-5'
+                ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-transparent px-0 py-0 shadow-none'
                 : rep
                   ? 'flex w-full flex-col bg-white px-0 py-0 shadow-none'
                   : 'flex max-h-[90vh] min-h-0 flex-col rounded-2xl border border-harx-100 bg-white px-4 py-6 shadow-[0_10px_30px_rgba(20,20,40,0.08)] md:px-8 md:py-8'
@@ -4282,6 +4368,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               }
                               const interactiveTimeline = renderInteractiveTrainingTimeline(msg.id, textWithoutStyle);
                               const presentationArtifact = renderPresentationArtifact(textWithoutStyle);
+                              const interactiveQuestionnaire = renderInteractiveQuestionnaire(msg.id, textWithoutStyle);
                               return (
                                 <>
                                   {presentationArtifact ? (
@@ -4289,6 +4376,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   ) : null}
                                   {interactiveTimeline ? (
                                     <div className="mb-2">{interactiveTimeline}</div>
+                                  ) : null}
+                                  {interactiveQuestionnaire ? (
+                                    <div className="mb-2">{interactiveQuestionnaire}</div>
                                   ) : null}
                                   <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
