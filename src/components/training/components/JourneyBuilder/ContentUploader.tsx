@@ -3427,12 +3427,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   <button
                     key={`plan-card-${messageId}-${idx}`}
                     type="button"
-                    onClick={() =>
+                    onClick={() => {
                       setActivePlanModuleByMessage((prev) => ({
                         ...prev,
                         [messageId]: prev[messageId] === idx ? undefined : idx,
-                      }))
-                    }
+                      }));
+                      if (isChatLoading) return;
+                      const modulePrompt = `Donne le contenu detaille du ${module.title} avec exemples pratiques.`;
+                      setChatInput(modulePrompt);
+                      void sendChatMessage(modulePrompt);
+                    }}
                     className={`w-full rounded-xl border p-3 text-left transition hover:-translate-y-0.5 ${theme.bg} ${theme.border}`}
                   >
                     <div className="mb-1.5 flex items-center justify-between gap-2">
