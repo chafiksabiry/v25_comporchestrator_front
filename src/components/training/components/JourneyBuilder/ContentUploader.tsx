@@ -545,17 +545,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [quizSavedHint, setQuizSavedHint] = useState<string | null>(null);
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showPodcastModal, setShowPodcastModal] = useState(false);
-  const [interactiveDrafts, setInteractiveDrafts] = useState<
-    Record<
-      string,
-      {
-        title: string;
-        mode: 'timeline' | 'cards';
-        blocks: Array<{ heading: string; items: string[] }>;
-      }
-    >
-  >({});
-  const [editingInteractiveMessageId, setEditingInteractiveMessageId] = useState<string | null>(null);
   const podcastSpeechRef = useRef<WebSpeechService | null>(null);
   const podcastSpeakAbortRef = useRef(false);
   /** After a successful “Regenerate audio overview”, chat length at that moment — View syncs when new messages arrive. */
@@ -607,38 +596,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
   const assistantWaitLabels = ['Thinking…', 'Generating…', 'Analyzing…'];
   const assistantWaitLabel = assistantWaitLabels[assistantWaitPhase % assistantWaitLabels.length];
-  const quickPrompts = useMemo(() => {
-    const recentText = chatMessages
-      .slice(-6)
-      .map((m) => String(m.text || '').toLowerCase())
-      .join('\n');
-    if (/quiz|question|qcm|évaluation/.test(recentText)) {
-      return [
-        'Génère 8 questions supplémentaires avec correction.',
-        'Rends les questions plus concrètes et basées sur des cas réels.',
-        'Ajoute une explication plus courte pour chaque bonne réponse.',
-      ];
-    }
-    if (/slide|presentation|présentation|html/.test(recentText)) {
-      return [
-        'Transforme ce plan en slides visuelles (titre + objectifs + activités).',
-        'Ajoute des exemples concrets par module pour les slides.',
-        'Rends les slides plus interactives avec exercices rapides.',
-      ];
-    }
-    if (/podcast|audio|script/.test(recentText)) {
-      return [
-        'Transforme ce plan en script audio de 5 minutes.',
-        'Ton conversationnel et concret pour débutants.',
-        'Ajoute une intro et une conclusion motivante.',
-      ];
-    }
-    return [
-      'Crée un plan de formation clair en modules horaires.',
-      'Ajoute objectifs pédagogiques + exercices pratiques.',
-      'Adapte le plan pour débutants en 1 journée.',
-    ];
-  }, [chatMessages]);
 
   const activeChatGigId = selectedChatGigId || (gigId ? String(gigId) : '');
 
@@ -2957,6 +2914,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
       if (!message || isChatLoading) return;
       setChatInput('');
       setShowRepSourcePopup(false);
+      // If user starts typing freely, do not keep onboarding source card visible.
+      if (showPersonalizationCard) {
+        setShowPersonalizationCard(false);
+        setKbGenerationChoice((prev) => prev || 'none');
+        setPersonalizationAnswers((prev) => ({
+          ...prev,
+          source: prev.source || 'No KB, no documents',
+        }));
+      }
       await sendChatMessage(message);
     };
 
@@ -3414,152 +3380,202 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
     };
 
-    const renderInteractiveTrainingTimeline = (messageId: string, rawText: string): React.ReactNode | null => {
+    const renderInteractiveTrainingTimeline = (_messageId: string, rawText: string): React.ReactNode | null => {
       const text = String(rawText || '').trim();
       if (!text) return null;
-      if (text.length < 140) return null;
-      const draft = interactiveDrafts[messageId];
       const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
-      const headingRegex = /^(module|m\d+|séance|session|partie|chapitre|#{1,4}\s+)/i;
-      const bulletRegex = /^[-*•→]\s+/;
-      const parsedBlocks: Array<{ heading: string; items: string[] }> = [];
-      let current: { heading: string; items: string[] } | null = null;
+      if (lines.length < 8) return null;
 
-      for (const rawLine of lines) {
-        const line = rawLine.replace(/^#{1,4}\s+/, '').trim();
-        if (headingRegex.test(rawLine)) {
-          if (current) parsedBlocks.push(current);
-          current = { heading: line, items: [] };
-          continue;
-        }
-        if (bulletRegex.test(rawLine)) {
-          if (!current) current = { heading: 'Bloc', items: [] };
-          current.items.push(rawLine.replace(bulletRegex, '').trim());
-          continue;
-        }
-        if (/^\d+[.)]\s+/.test(rawLine) && /:/.test(rawLine)) {
-          if (current) parsedBlocks.push(current);
-          current = { heading: rawLine.replace(/^\d+[.)]\s+/, '').trim(), items: [] };
-          continue;
-        }
-        if (current && current.items.length < 8) {
-          current.items.push(line);
-        }
-      }
-      if (current) parsedBlocks.push(current);
+      const blockHeaderRegex = /^(bloc|module)\s*\d+[\s:.-]*/i;
+      const timeRangeRegex = /(\d{1,2}[:h]\d{0,2}\s*[-–]\s*\d{1,2}[:h]\d{0,2})/i;
+      const sectionHeaderRegex = /^(contenu|format|objectif)s?\s*:?\s*$/i;
 
-      const normalizedBlocks = (draft?.blocks || parsedBlocks)
-        .map((b, idx) => ({
-          heading: String(b?.heading || `Bloc ${idx + 1}`).trim(),
-          items: Array.isArray(b?.items)
-            ? b.items.map((it) => String(it || '').trim()).filter(Boolean).slice(0, 8)
-            : [],
-        }))
-        .filter((b) => b.heading || b.items.length > 0)
-        .slice(0, 10);
+      const titleCandidate =
+        lines.find((line) => /formation|programme|initiation|atelier|cours/i.test(line)) || 'Plan de formation';
 
-      if (normalizedBlocks.length < 2) return null;
+      const blocks: Array<{
+        title: string;
+        time?: string;
+        sections: Array<{ label: string; items: string[] }>;
+      }> = [];
 
-      const joined = normalizedBlocks.map((b) => `${b.heading} ${b.items.join(' ')}`).join(' ').toLowerCase();
-      const prefersTimeline = /\b(\d{1,2}h\d{0,2}|\d{1,2}:\d{2}|pause|déjeuner|module|session|séance)\b/.test(joined);
-      const mode: 'timeline' | 'cards' = draft?.mode || (prefersTimeline ? 'timeline' : 'cards');
-      const title = draft?.title || 'Plan interactif';
-      const isEditing = editingInteractiveMessageId === messageId;
+      let current: { title: string; time?: string; sections: Array<{ label: string; items: string[] }> } | null = null;
+      let activeSection: { label: string; items: string[] } | null = null;
 
-      const updateDraft = (updater: (prev: { title: string; mode: 'timeline' | 'cards'; blocks: Array<{ heading: string; items: string[] }> }) => { title: string; mode: 'timeline' | 'cards'; blocks: Array<{ heading: string; items: string[] }> }) => {
-        setInteractiveDrafts((prev) => {
-          const base = prev[messageId] || { title, mode, blocks: normalizedBlocks };
-          return { ...prev, [messageId]: updater(base) };
-        });
+      const pushSection = () => {
+        if (!current || !activeSection) return;
+        if (activeSection.items.length > 0) current.sections.push(activeSection);
+        activeSection = null;
       };
 
+      const pushBlock = () => {
+        if (!current) return;
+        pushSection();
+        if (current.sections.length > 0) blocks.push(current);
+        current = null;
+      };
+
+      for (const line of lines) {
+        if (blockHeaderRegex.test(line)) {
+          pushBlock();
+          const title = line.replace(blockHeaderRegex, '').replace(/^[:.\-]\s*/, '').trim() || line;
+          const timeMatch = line.match(timeRangeRegex);
+          current = { title, time: timeMatch ? timeMatch[1] : undefined, sections: [] };
+          continue;
+        }
+        if (!current) continue;
+        if (sectionHeaderRegex.test(line)) {
+          pushSection();
+          activeSection = { label: line.replace(':', '').trim(), items: [] };
+          continue;
+        }
+        if (!activeSection) {
+          activeSection = { label: 'Points clés', items: [] };
+        }
+        const cleaned = line.replace(/^[-*•]\s*/, '').trim();
+        if (cleaned) activeSection.items.push(cleaned);
+      }
+      pushBlock();
+
+      if (blocks.length < 2) return null;
+
       return (
-        <div className="rounded-2xl border border-harx-100 bg-gradient-to-b from-white to-rose-50/40 p-3 shadow-sm">
-          <div className="mb-2 flex items-center justify-between">
-            {isEditing ? (
-              <input
-                value={title}
-                onChange={(e) => updateDraft((prev) => ({ ...prev, title: e.target.value }))}
-                className="w-full max-w-[60%] rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-800 outline-none focus:border-harx-300 focus:ring-2 focus:ring-harx-500/20"
-              />
-            ) : (
-              <p className="text-xs font-bold uppercase tracking-wide text-harx-600">{mode === 'timeline' ? 'Interactive Timeline' : 'Interactive Blocks'}</p>
-            )}
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => updateDraft((prev) => ({ ...prev, mode: prev.mode === 'timeline' ? 'cards' : 'timeline' }))}
-                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                {mode === 'timeline' ? 'Cards view' : 'Timeline view'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditingInteractiveMessageId((prev) => (prev === messageId ? null : messageId))}
-                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                {isEditing ? 'Done' : 'Edit blocks'}
-              </button>
-            </div>
+        <div className="mb-3 rounded-2xl border border-harx-100 bg-gradient-to-b from-white to-indigo-50/30 p-3 shadow-sm">
+          <div className="mb-3 rounded-xl border border-indigo-200 bg-indigo-50/60 px-3 py-2 text-center">
+            <p className="text-sm font-bold text-slate-900">{titleCandidate}</p>
           </div>
-          <div className={mode === 'timeline' ? 'space-y-2' : 'grid gap-2 md:grid-cols-2'}>
-            {normalizedBlocks.map((block, idx) => (
-              <div key={`it-${idx}`} className={`rounded-xl border border-slate-200 bg-white px-3 py-2 ${mode === 'timeline' ? '' : 'h-full'}`}>
-                {isEditing ? (
-                  <input
-                    value={block.heading}
-                    onChange={(e) =>
-                      updateDraft((prev) => ({
-                        ...prev,
-                        blocks: prev.blocks.map((b, bi) => (bi === idx ? { ...b, heading: e.target.value } : b)),
-                      }))
-                    }
-                    className="mb-1 w-full rounded-md border border-slate-200 px-2 py-1 text-sm font-semibold text-slate-900 outline-none focus:border-harx-300 focus:ring-2 focus:ring-harx-500/20"
-                  />
-                ) : (
-                  <p className="text-sm font-semibold text-slate-900">{block.heading}</p>
-                )}
-                {isEditing ? (
-                  <textarea
-                    value={block.items.join('\n')}
-                    onChange={(e) =>
-                      updateDraft((prev) => ({
-                        ...prev,
-                        blocks: prev.blocks.map((b, bi) =>
-                          bi === idx
-                            ? { ...b, items: e.target.value.split('\n').map((it) => it.trim()).filter(Boolean) }
-                            : b
-                        ),
-                      }))
-                    }
-                    className="mt-1 min-h-[64px] w-full resize-y rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-700 outline-none focus:border-harx-300 focus:ring-2 focus:ring-harx-500/20"
-                  />
-                ) : block.items.length > 0 ? (
-                  <ul className="mt-1 space-y-0.5 pl-4 text-xs text-slate-600">
-                    {block.items.slice(0, 6).map((it, ii) => (
-                      <li key={`it-li-${idx}-${ii}`} className="list-disc">{it}</li>
-                    ))}
-                  </ul>
-                ) : null}
+          <div className="grid gap-2 md:grid-cols-3">
+            {blocks.slice(0, 3).map((block, idx) => (
+              <div key={`plan-block-${idx}`} className="rounded-xl border border-slate-200 bg-white p-2.5">
+                <div className="mb-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-center">
+                  <p className="text-xs font-extrabold text-slate-800">{`Bloc ${idx + 1}`}</p>
+                  {block.time ? <p className="text-[10px] font-semibold text-slate-500">{block.time}</p> : null}
+                </div>
+                <p className="mb-1.5 text-sm font-semibold text-slate-900">{block.title}</p>
+                <div className="space-y-1.5">
+                  {block.sections.slice(0, 3).map((section, sIdx) => (
+                    <div key={`plan-sec-${idx}-${sIdx}`}>
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{section.label}</p>
+                      <ul className="mt-0.5 space-y-0.5 pl-4 text-[11px] text-slate-700">
+                        {section.items.slice(0, 4).map((item, iIdx) => (
+                          <li key={`plan-item-${idx}-${sIdx}-${iIdx}`} className="list-disc">{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
-          {isEditing ? (
-            <div className="mt-2 flex justify-end">
+        </div>
+      );
+    };
+
+    const extractPresentationArtifactFromText = (rawText: string): {
+      title: string;
+      slides: Array<{ title: string; bullets: string[] }>;
+    } | null => {
+      const txt = String(rawText || '').trim();
+      if (!txt) return null;
+      const candidates: string[] = [];
+      const fenced = txt.match(/```(?:json)?\s*([\s\S]*?)```/gi);
+      if (Array.isArray(fenced)) {
+        fenced.forEach((block) => {
+          const cleaned = block.replace(/```(?:json)?/i, '').replace(/```$/, '').trim();
+          if (cleaned) candidates.push(cleaned);
+        });
+      }
+      if (txt.startsWith('{') || txt.startsWith('[')) candidates.push(txt);
+      for (const candidate of candidates) {
+        try {
+          const parsed = JSON.parse(candidate);
+          const payload = parsed?.slides ? parsed : parsed?.presentation || parsed?.data;
+          const slidesRaw = Array.isArray(payload?.slides) ? payload.slides : [];
+          const slides = slidesRaw
+            .map((s: any) => {
+              const title = String(s?.title || '').trim();
+              const bullets = Array.isArray(s?.bullets)
+                ? s.bullets.map((b: any) => String(b || '').trim()).filter(Boolean)
+                : String(s?.content || '')
+                    .split('\n')
+                    .map((line) => line.replace(/^[-*•]\s*/, '').trim())
+                    .filter(Boolean);
+              return { title, bullets: bullets.slice(0, 8) };
+            })
+            .filter((s: any) => s.title || s.bullets.length > 0)
+            .slice(0, 20);
+          if (slides.length >= 3) {
+            return {
+              title: String(payload?.title || 'Presentation').trim() || 'Presentation',
+              slides,
+            };
+          }
+        } catch {
+          // Ignore invalid JSON snippets.
+        }
+      }
+      return null;
+    };
+
+    const renderPresentationArtifact = (rawText: string): React.ReactNode | null => {
+      const artifact = extractPresentationArtifactFromText(rawText);
+      if (!artifact) return null;
+      return (
+        <div className="mb-2 rounded-2xl border border-indigo-200 bg-gradient-to-b from-white to-indigo-50/40 p-3 shadow-sm">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">Presentation Artifact</p>
+              <p className="text-sm font-semibold text-slate-900">{artifact.title}</p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  const presentation = normalizePresentationFromApi({
+                    title: artifact.title,
+                    slides: artifact.slides.map((s, idx) => ({
+                      title: s.title || `Slide ${idx + 1}`,
+                      content: s.bullets.map((b) => `• ${b}`).join('\n'),
+                    })),
+                  });
+                  if (presentation) {
+                    setGeneratedPresentation(presentation);
+                    setShowPresentationModal(true);
+                  }
+                }}
+                className="rounded-md border border-indigo-200 bg-white px-2 py-1 text-[10px] font-semibold text-indigo-700 hover:bg-indigo-50"
+              >
+                Open preview
+              </button>
               <button
                 type="button"
                 onClick={() =>
-                  updateDraft((prev) => ({
-                    ...prev,
-                    blocks: [...prev.blocks, { heading: `Bloc ${prev.blocks.length + 1}`, items: [''] }],
-                  }))
+                  void AIService.exportPresentationToPPTX({
+                    title: artifact.title,
+                    slides: artifact.slides.map((s, idx) => ({
+                      title: s.title || `Slide ${idx + 1}`,
+                      content: s.bullets.map((b) => `• ${b}`).join('\n'),
+                    })),
+                  })
                 }
                 className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-50"
               >
-                + Add block
+                Export PPTX
               </button>
             </div>
-          ) : null}
+          </div>
+          <div className="grid gap-2 md:grid-cols-3">
+            {artifact.slides.slice(0, 6).map((slide, idx) => (
+              <div key={`artifact-slide-${idx}`} className="rounded-xl border border-slate-200 bg-white p-2">
+                <p className="mb-1 text-xs font-semibold text-slate-900">{slide.title || `Slide ${idx + 1}`}</p>
+                <ul className="space-y-0.5 pl-4 text-[11px] text-slate-600">
+                  {slide.bullets.slice(0, 3).map((b, bi) => (
+                    <li key={`artifact-b-${idx}-${bi}`} className="list-disc">{b}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
       );
     };
@@ -3642,22 +3658,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
           placeholder={hasStartedChat ? 'Reply...' : 'How can I help you?'}
           className="mb-3 w-full resize-none bg-transparent text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
         />
-        <div className="mb-3 flex flex-wrap gap-1.5">
-          {quickPrompts.map((prompt) => (
-            <button
-              key={prompt}
-              type="button"
-              onClick={() => {
-                setChatInput(prompt);
-                window.setTimeout(() => chatTextareaRef.current?.focus(), 0);
-              }}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 transition hover:border-harx-200 hover:bg-harx-50/60 hover:text-harx-700"
-              title={prompt}
-            >
-              {prompt.length > 58 ? `${prompt.slice(0, 58)}…` : prompt}
-            </button>
-          ))}
-        </div>
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -4280,8 +4280,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                 );
                               }
                               const interactiveTimeline = renderInteractiveTrainingTimeline(msg.id, textWithoutStyle);
+                              const presentationArtifact = renderPresentationArtifact(textWithoutStyle);
                               return (
                                 <>
+                                  {presentationArtifact ? (
+                                    <div className="mb-2">{presentationArtifact}</div>
+                                  ) : null}
                                   {interactiveTimeline ? (
                                     <div className="mb-2">{interactiveTimeline}</div>
                                   ) : null}
@@ -4508,7 +4512,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 </div>
               ) : (
                 <div
-                  className={`shrink-0 bg-white/95 pb-1 pt-2 backdrop-blur-sm ${rep ? 'sticky bottom-2 z-20 border-t border-harx-100/80' : 'sticky bottom-0 z-20 border-t border-harx-100/80 px-3'}`}
+                  className={`shrink-0 bg-white/95 pb-1 pt-2 backdrop-blur-sm ${rep ? 'sticky bottom-0 z-20 border-t border-harx-100/80' : 'sticky bottom-0 z-20 border-t border-harx-100/80 px-3'}`}
                 >
                   <div
                     className={
@@ -5225,32 +5229,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
           {isGigOnly && null}
 
-          {/* Navigation — hidden while REP source intro modal is open (full-screen overlay replaces it) */}
-          {!(rep && showRepSourcePopup) ? (
-            <div
-              className={
-                rep
-                  ? 'mt-4 flex flex-col gap-2 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between'
-                  : 'mt-8 flex flex-col gap-4 border-t border-slate-200 pt-6 md:flex-row md:items-center md:justify-between'
-              }
-            >
-              <button
-                type="button"
-                onClick={onBack}
-                className={
-                  rep
-                    ? 'rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 shadow-sm transition-colors hover:border-harx-200 hover:text-harx-600'
-                    : 'rounded-xl border border-slate-200 bg-white px-6 py-2 font-medium text-slate-800 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50'
-                }
-              >
-                Back to setup
-              </button>
-
-              <div className={rep ? 'order-3 flex flex-1 justify-center sm:order-none' : 'order-3 flex flex-1 justify-center md:order-none'} />
-
-              <div className={rep ? 'flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center' : 'flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center md:w-auto'} />
-            </div>
-          ) : null}
+          {/* Bottom navigation intentionally hidden to keep REP chat UI clean. */}
           </div>
           </div>
         </div>
