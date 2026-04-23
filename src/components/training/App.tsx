@@ -937,6 +937,7 @@ export function AppContent({
           onComplete={handleJourneyComplete}
           forceNew={startWithJourneyBuilder}
           initialStep={startJourneyStep}
+          initialJourneyId={initialJourneyId}
           initialGigId={initialGigId}
           repOnboardingLayout={repOnboardingLayout}
         />
