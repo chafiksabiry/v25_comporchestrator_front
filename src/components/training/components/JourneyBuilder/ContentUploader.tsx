@@ -46,40 +46,15 @@ export type TrainingReadinessPayload = {
 };
 
 const HARX_TRAINING_STATUS_REGEX = /<harx-training-status>\s*([\s\S]*?)\s*<\/harx-training-status>/i;
-const HARX_PLAN_CONFIRM_REGEX = /<harx-plan-confirm>\s*([\s\S]*?)\s*<\/harx-plan-confirm>/i;
-const HIDDEN_CHAT_COMMAND_REGEX = /^__(?:CONFIRM_PLAN_SAVE__|VALIDATE_MODULE_CONTENT__|VALIDATE_ALL_MODULES_CONTENT__)/i;
-
-type PlanConfirmPayload = {
-  token: string;
-  label: string;
-};
+const HIDDEN_CHAT_COMMAND_REGEX = /^__(?:VALIDATE_MODULE_CONTENT__|VALIDATE_ALL_MODULES_CONTENT__)/i;
 
 function stripAssistantTrainingTags(raw: string): string {
   return String(raw || '')
     .replace(/<harx-style>[\s\S]*?<\/harx-style>/gi, '')
     .replace(/<harx-html>[\s\S]*?<\/harx-html>/gi, '')
     .replace(HARX_TRAINING_STATUS_REGEX, '')
-    .replace(HARX_PLAN_CONFIRM_REGEX, '')
+    .replace(/<harx-plan-confirm>[\s\S]*?<\/harx-plan-confirm>/gi, '')
     .trim();
-}
-
-function extractPlanConfirmBlock(raw: string): {
-  displayText: string;
-  planConfirm: PlanConfirmPayload | null;
-} {
-  const full = String(raw || '');
-  const m = full.match(HARX_PLAN_CONFIRM_REGEX);
-  if (!m?.[1]) return { displayText: full.trim(), planConfirm: null };
-  const displayText = full.replace(HARX_PLAN_CONFIRM_REGEX, '').trim();
-  try {
-    const parsed = JSON.parse(m[1]);
-    const token = String(parsed?.token || '').trim();
-    const label = String(parsed?.label || '').trim() || 'Confirmer le plan';
-    if (!token) return { displayText, planConfirm: null };
-    return { displayText, planConfirm: { token, label } };
-  } catch {
-    return { displayText, planConfirm: null };
-  }
 }
 
 function isHiddenSystemCommandMessage(raw: string): boolean {
@@ -512,7 +487,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
       text: string;
       isStreaming?: boolean;
       trainingReadiness?: TrainingReadinessPayload | null;
-      planConfirm?: PlanConfirmPayload | null;
       /** Masque le texte de confirmation après clic sur le bouton. */
       suppressText?: boolean;
       /** Après « oui » / validation : le plan n’est plus affiché en cartes cliquables. */
@@ -2678,13 +2652,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
           .map((m, idx) => {
           const raw = m.text || '';
           const readinessParsed = extractTrainingReadinessBlock(raw);
-          const confirmParsed = extractPlanConfirmBlock(readinessParsed.displayText);
           return {
             id: `history-${sessionId}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
             role: (m.role === 'assistant' ? 'assistant' : 'user') as 'assistant' | 'user',
-            text: confirmParsed.displayText,
+            text: readinessParsed.displayText,
             trainingReadiness: readinessParsed.trainingReadiness || undefined,
-            planConfirm: confirmParsed.planConfirm || undefined,
             isStreaming: false,
           };
           });
@@ -3462,7 +3434,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           setChatMessages((prev) =>
             prev.map((m) =>
               m.id === options.replaceAssistantId
-                ? { ...m, text: '', isStreaming: true, trainingReadiness: undefined, planConfirm: undefined }
+                ? { ...m, text: '', isStreaming: true, trainingReadiness: undefined }
                 : m
             )
           );
@@ -3490,15 +3462,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
         }
         const rawAssistant = streamResult.text?.trim() || "Je n'ai pas pu generer une reponse pour le moment.";
         const readinessParsed = extractTrainingReadinessBlock(rawAssistant);
-        const confirmParsed = extractPlanConfirmBlock(readinessParsed.displayText);
         setChatMessages((prev) => {
           const next = prev.map((m) =>
             m.id === streamingAssistantId
               ? {
                   ...m,
-                  text: confirmParsed.displayText,
+                  text: readinessParsed.displayText,
                   trainingReadiness: readinessParsed.trainingReadiness || undefined,
-                  planConfirm: confirmParsed.planConfirm || undefined,
                   isStreaming: false,
                 }
               : { ...m }
@@ -4389,51 +4359,18 @@ export default function ContentUploader(props: ContentUploaderProps) {
       );
     };
 
-    const renderPlanConfirmCard = (
-      messageId: string,
-      planConfirm?: PlanConfirmPayload | null
-    ): React.ReactNode | null => {
-      if (!planConfirm?.token) return null;
-      return (
-        <div className="mb-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-800">Confirmation</p>
-          <button
-            key={`plan-confirm-${messageId}`}
-            type="button"
-            disabled={isChatLoading}
-            onClick={() => {
-              if (isChatLoading) return;
-              setChatMessages((prev) =>
-                prev.map((m) =>
-                  m.id === messageId
-                    ? { ...m, planConfirm: undefined, suppressText: true }
-                    : m
-                )
-              );
-              void sendChatMessage(`__CONFIRM_PLAN_SAVE__:${planConfirm.token}`, { appendUser: false });
-            }}
-            className="rounded-lg border border-emerald-300 bg-white px-3 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {planConfirm.label || 'Confirmer le plan'}
-          </button>
-        </div>
-      );
-    };
-
     const renderPlanNextStepHint = (
       show: boolean,
-      hasConfirmButton: boolean
+      _hasConfirmButton: boolean
     ): React.ReactNode | null => {
       if (!show) return null;
       return (
         <div className="mb-2 rounded-2xl border border-sky-200 bg-sky-50 p-3">
           <p className="text-[11px] font-bold uppercase tracking-wide text-sky-800">Next step</p>
           <p className="mt-1 text-xs text-sky-900">
-            {hasConfirmButton
-              ? "Confirmez le plan avec le bouton ci-dessus pour l'enregistrer dans la base."
-              : isPlanSavedForChat
-                ? 'Cliquez sur un module pour générer son contenu.'
-                : "Le clic module est désactivé tant que le plan n'est pas enregistré. Répondez 'oui' puis confirmez le plan."}
+            {isPlanSavedForChat
+              ? 'Cliquez sur un module pour générer son contenu.'
+              : "Le clic module est désactivé tant que le plan n'est pas enregistré."}
           </p>
         </div>
       );
@@ -5230,11 +5167,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               const presentationArtifact = renderPresentationArtifact(textWithoutStyle);
                               const interactiveQuestionnaire = renderInteractiveQuestionnaire(msg.id, textWithoutStyle, String(msg.text || ''));
                               const interactiveChoiceCards = renderInteractiveChoiceCards(msg.id, textWithoutStyle, String(msg.text || ''));
-                              const planConfirmCard = renderPlanConfirmCard(msg.id, msg.planConfirm);
                               const trainingReadinessCard = renderTrainingReadinessCard(msg.id, msg.trainingReadiness);
                               const nextStepHint = renderPlanNextStepHint(
-                                !!interactiveTimeline || !!msg.planConfirm,
-                                !!msg.planConfirm
+                                !!interactiveTimeline,
+                                false
                               );
                               const hideMarkdownForInteractivePlan = !!interactiveTimeline;
                               const shouldShowMarkdownBody = !hideMarkdownForInteractivePlan && !msg.suppressText;
@@ -5245,9 +5181,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   ) : null}
                                   {interactiveTimeline ? (
                                     <div className="mb-2">{interactiveTimeline}</div>
-                                  ) : null}
-                                  {planConfirmCard ? (
-                                    <div className="mb-2">{planConfirmCard}</div>
                                   ) : null}
                                   {trainingReadinessCard ? (
                                     <div className="mb-2">{trainingReadinessCard}</div>
