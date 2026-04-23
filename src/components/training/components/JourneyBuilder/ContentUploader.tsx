@@ -3392,12 +3392,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
         const isPlanEditIntent =
           /(modifi|modifier|change|changer|ajuste|ajouter|supprim|retir|update|edit|corrig|restructur|reorganis|adapt)/i.test(cleanMessage) &&
           (/\bmodule\s*\d+\b/i.test(cleanMessage) || /\bmodule\b/i.test(cleanMessage));
+        const isFullTrainingIntentByText =
+          /(contenu\s+de\s+formation|formation\s+compl[eè]te|g[ée]n[ée]rer\s+une\s+formation|creer\s+une\s+formation)/i.test(cleanMessage) ||
+          /(je\s+veux|donne|g[ée]n[ée]r\w*|cr[ée]e\w*|produi\w*|pr[ée]par\w*|lance\w*)[\s\S]{0,40}(la\s+)?formation/i.test(cleanMessage) ||
+          /(tout\s+le\s+contenu|tous\s+les\s+modules|formation\s+enti[eè]re)/i.test(cleanMessage);
         const requestedOutput: 'training_plan' | 'full_training_content' | 'module_content' | 'general_chat' =
           isPlanEditIntent
             ? 'training_plan'
             : /(contenu\s+d[’']?un\s+module|contenu\s+du\s+module|module\s+\d+|d[ée]taille\s+le\s+module|detaille\s+le\s+module)/i.test(cleanMessage)
             ? 'module_content'
-            : /(contenu\s+de\s+formation|formation\s+compl[eè]te|g[ée]n[ée]rer\s+une\s+formation|creer\s+une\s+formation)/i.test(cleanMessage)
+            : isFullTrainingIntentByText
               ? 'full_training_content'
               : /(plan\s+de\s+formation|g[ée]n[ée]rer\s+un\s+plan|cr[ée]er\s+un\s+plan)/i.test(cleanMessage)
                 ? 'training_plan'
