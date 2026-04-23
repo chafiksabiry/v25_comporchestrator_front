@@ -4308,6 +4308,23 @@ export default function ContentUploader(props: ContentUploaderProps) {
       );
     };
 
+    const renderPlanNextStepHint = (
+      show: boolean,
+      hasConfirmButton: boolean
+    ): React.ReactNode | null => {
+      if (!show) return null;
+      return (
+        <div className="mb-2 rounded-2xl border border-sky-200 bg-sky-50 p-3">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-sky-800">Next step</p>
+          <p className="mt-1 text-xs text-sky-900">
+            {hasConfirmButton
+              ? "Confirmez le plan avec le bouton ci-dessus pour l'enregistrer dans la base."
+              : "Cliquez sur un module pour générer son contenu, ou répondez 'oui' pour afficher la confirmation du plan."}
+          </p>
+        </div>
+      );
+    };
+
 
     const anchoredChoiceUi = false;
 
@@ -5038,6 +5055,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               const interactiveQuestionnaire = renderInteractiveQuestionnaire(msg.id, textWithoutStyle, String(msg.text || ''));
                               const interactiveChoiceCards = renderInteractiveChoiceCards(msg.id, textWithoutStyle, String(msg.text || ''));
                               const planConfirmCard = renderPlanConfirmCard(msg.id, msg.planConfirm);
+                              const nextStepHint = renderPlanNextStepHint(
+                                !!interactiveTimeline || !!msg.planConfirm,
+                                !!msg.planConfirm
+                              );
                               const hideMarkdownForInteractivePlan = !!interactiveTimeline;
                               return (
                                 <>
@@ -5049,6 +5070,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   ) : null}
                                   {planConfirmCard ? (
                                     <div className="mb-2">{planConfirmCard}</div>
+                                  ) : null}
+                                  {nextStepHint ? (
+                                    <div className="mb-2">{nextStepHint}</div>
                                   ) : null}
                                   {interactiveQuestionnaire ? (
                                     <div className="mb-2">{interactiveQuestionnaire}</div>
