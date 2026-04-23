@@ -2803,10 +2803,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
         if (i < 0 || i > 24) return null;
         const prefix = n.slice(0, i);
         if (/[a-zà-ÿæœ]/i.test(prefix)) return null;
-        const tail = String(m[1])
+        let tail = String(m[1])
           .trim()
           .replace(/^[:\s–-]+/u, '')
           .trim();
+        // Guard against malformed headings like "Module 5 - -> Module 2 -> Module 3".
+        if ((tail.match(/\bmodule\s*\d+\b/gi) || []).length >= 2) return null;
+        if (/^[→>-]*\s*module\s*\d+\b/i.test(tail)) return null;
+        if (/^souhaitez[-\s]*vous/i.test(tail)) return null;
+        tail = tail.replace(/\s*[→>-]+\s*module\s*\d+[\s\S]*$/i, '').trim();
+        if (!tail) return null;
         return { tail };
       };
 
