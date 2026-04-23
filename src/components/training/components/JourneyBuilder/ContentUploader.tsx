@@ -2710,11 +2710,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setSelectedChatGigId(nextGigId);
       const changed = prevGigId && nextGigId && prevGigId !== nextGigId;
       if (!changed) return;
+      autoOpenedHistoryForJourneyRef.current = null;
       const nextGigTitle =
         companyGigs.find((g: any) => String(g?._id || g?.id || '') === String(nextGigId))?.title ||
         `Gig ${String(nextGigId).slice(0, 8)}`;
       setGigSwitchHint(
-        `Gig changé vers "${nextGigTitle}". Ouvrez History pour charger les conversations de ce gig.`
+        `Gig changé vers "${nextGigTitle}". La conversation la plus récente sera chargée automatiquement.`
       );
     };
 
@@ -2733,6 +2734,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
       autoOpenedHistoryForJourneyRef.current = journeyId;
       void openHistorySession(match._id);
     }, [repOnboardingLayout, chatHistorySessions, activeChatSessionId]);
+
+    useEffect(() => {
+      if (!repOnboardingLayout) return;
+      if (isHistoryLoading) return;
+      if (activeChatSessionId) return;
+      if (!Array.isArray(chatHistorySessions) || chatHistorySessions.length === 0) return;
+
+      const latest = chatHistorySessions[0];
+      if (!latest?._id) return;
+      void openHistorySession(latest._id);
+    }, [repOnboardingLayout, isHistoryLoading, chatHistorySessions, activeChatSessionId]);
 
     const generationPreferences = {
       selectedDuration: formatDurationForAi(journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined),
