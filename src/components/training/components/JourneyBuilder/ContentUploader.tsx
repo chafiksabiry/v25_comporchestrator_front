@@ -46,7 +46,7 @@ export type TrainingReadinessPayload = {
 };
 
 const HARX_TRAINING_STATUS_REGEX = /<harx-training-status>\s*([\s\S]*?)\s*<\/harx-training-status>/i;
-const HIDDEN_CHAT_COMMAND_REGEX = /^__(?:VALIDATE_MODULE_CONTENT__|VALIDATE_ALL_MODULES_CONTENT__)/i;
+const HIDDEN_CHAT_COMMAND_REGEX = /^__(?:VALIDATE_PLAN__|VALIDATE_MODULE_CONTENT__|VALIDATE_ALL_MODULES_CONTENT__)/i;
 
 function stripAssistantTrainingTags(raw: string): string {
   return String(raw || '')
@@ -98,7 +98,8 @@ function extractTrainingReadinessBlock(raw: string): {
           .filter(
             (a) =>
               a &&
-              (a.id === 'validate_training' ||
+              (a.id === 'validate_plan' ||
+                a.id === 'validate_training' ||
                 a.id === 'save_without_missing' ||
                 a.id === 'generate_missing_modules')
           )
@@ -501,6 +502,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [chatInput, setChatInput] = useState('');
   const [showRepSourcePopup, setShowRepSourcePopup] = useState(false);
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [isPlanValidationSubmitting, setIsPlanValidationSubmitting] = useState(false);
+  const [planValidationHint, setPlanValidationHint] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
   /** Rotates while the assistant request is in flight (including first-token wait on an empty streaming bubble). */
   const [assistantWaitPhase, setAssistantWaitPhase] = useState(0);
   const [kbGenerationChoice, setKbGenerationChoice] = useState<KbGenerationMode | null>(null);
@@ -3272,9 +3278,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
         replaceAssistantId?: string;
         historyMessages?: Array<{ id: string; role: 'user' | 'assistant'; text: string; isStreaming?: boolean }>;
       }
-    ) => {
+    ): Promise<{ ok: boolean; planSaved?: boolean; error?: string }> => {
       const cleanMessage = message.trim();
-      if (!cleanMessage || isChatLoading) return;
+      if (!cleanMessage || isChatLoading) return { ok: false, error: 'busy_or_empty' };
       const shouldAppendUser = options?.appendUser !== false;
       if (shouldAppendUser) {
         appendChatMessage('user', cleanMessage);
@@ -3502,14 +3508,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
           setUploads([]);
         }
         void refreshChatHistory();
+        return { ok: true, planSaved: !!streamResult.planSaved };
       } catch (error: any) {
         console.error('[ContentUploader] Chat backend call failed:', error);
+        const errorMessage = error?.message
+          ? `Erreur backend: ${error.message}`
+          : "Impossible de contacter le backend Claude pour l'instant.";
         appendChatMessage(
           'assistant',
-          error?.message
-            ? `Erreur backend: ${error.message}`
-            : "Impossible de contacter le backend Claude pour l'instant."
+          errorMessage
         );
+        return { ok: false, error: errorMessage };
       } finally {
         setIsChatLoading(false);
       }
@@ -4380,7 +4389,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
       messageId: string,
       readiness?: TrainingReadinessPayload | null
     ): React.ReactNode | null => {
-      if (!readiness || !Array.isArray(readiness.actions) || readiness.actions.length === 0) return null;
+      if (!readiness || !Array.isArray(readiness.actions)) return null;
+      const visibleActions = readiness.actions.filter(
+        (action) => !(action.id === 'validate_plan' && isPlanSavedForChat)
+      );
+      if (visibleActions.length === 0 && !planValidationHint) return null;
       return (
         <div className="mb-2 rounded-2xl border border-violet-200 bg-violet-50 p-3">
           <p className="text-[11px] font-bold uppercase tracking-wide text-violet-800">Validation contenu</p>
@@ -4388,15 +4401,40 @@ export default function ContentUploader(props: ContentUploaderProps) {
             <p className="mt-1 text-xs text-violet-900">{readiness.messageFr}</p>
           ) : null}
           <div className="mt-2 flex flex-wrap gap-2">
-            {readiness.actions.map((action, idx) => (
+            {visibleActions.map((action, idx) => (
               <button
                 key={`readiness-action-${messageId}-${idx}-${action.id}`}
                 type="button"
-                disabled={isChatLoading}
-                onClick={() => {
+                disabled={isChatLoading || (action.id === 'validate_plan' && isPlanValidationSubmitting)}
+                onClick={async () => {
                   if (isChatLoading) return;
                   if (action.id === 'validate_module_content') {
                     void sendChatMessage('__VALIDATE_MODULE_CONTENT__', { appendUser: false });
+                    return;
+                  }
+                  if (action.id === 'validate_plan') {
+                    if (isPlanSavedForChat) {
+                      setPlanValidationHint({
+                        type: 'success',
+                        text: 'Plan déjà validé et enregistré.',
+                      });
+                      return;
+                    }
+                    setIsPlanValidationSubmitting(true);
+                    setPlanValidationHint(null);
+                    const result = await sendChatMessage('__VALIDATE_PLAN__', { appendUser: false });
+                    if (result.ok && result.planSaved) {
+                      setPlanValidationHint({
+                        type: 'success',
+                        text: 'Plan validé et enregistré en base.',
+                      });
+                    } else {
+                      setPlanValidationHint({
+                        type: 'error',
+                        text: result.error || 'La validation du plan a échoué.',
+                      });
+                    }
+                    setIsPlanValidationSubmitting(false);
                     return;
                   }
                   if (action.id === 'validate_all_modules_content') {
@@ -4417,10 +4455,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 }}
                 className="rounded-lg border border-violet-300 bg-white px-3 py-1.5 text-xs font-semibold text-violet-900 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {action.label}
+                {action.id === 'validate_plan' && isPlanValidationSubmitting ? 'Validation...' : action.label}
               </button>
             ))}
           </div>
+          {planValidationHint ? (
+            <p
+              className={`mt-2 text-xs ${
+                planValidationHint.type === 'success' ? 'text-emerald-700' : 'text-rose-700'
+              }`}
+            >
+              {planValidationHint.text}
+            </p>
+          ) : null}
         </div>
       );
     };
