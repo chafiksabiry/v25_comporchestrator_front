@@ -5218,9 +5218,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   </div>
                                 );
                               }
-                              const interactiveTimeline = msg.planInteractiveDisabled
-                                ? null
-                                : renderInteractiveTrainingTimeline(msg.id, textWithoutStyle, isPlanSavedForChat);
+                              const isTrainingGenerationMessage =
+                                /(plan de formation|formation\s+compl[eè]te|module\s*\d+|🎯|📌|🧩|📊|learning objectives|mini quiz|self-assessment)/i.test(
+                                  String(textWithoutStyle || '')
+                                );
+                              const disableDecorativeTrainingUi = isTrainingGenerationMessage;
+                              const interactiveTimeline =
+                                msg.planInteractiveDisabled || disableDecorativeTrainingUi
+                                  ? null
+                                  : renderInteractiveTrainingTimeline(msg.id, textWithoutStyle, isPlanSavedForChat);
                               const presentationArtifact = renderPresentationArtifact(textWithoutStyle);
                               const interactiveQuestionnaire = renderInteractiveQuestionnaire(msg.id, textWithoutStyle, String(msg.text || ''));
                               const interactiveChoiceCards = renderInteractiveChoiceCards(msg.id, textWithoutStyle, String(msg.text || ''));
@@ -5256,17 +5262,24 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                     <div className="mb-2">{interactiveChoiceCards}</div>
                                   ) : null}
                                   {shouldShowMarkdownBody ? (
-                                    <div
-                                      className={`${moduleShapeClass} border p-3`}
-                                      style={{
-                                        borderColor: contentTheme?.panelBorder || '#e2e8f0',
-                                        background: wrapperBackground,
-                                        fontFamily: typography.bodyFont,
-                                      }}
-                                    >
-                                      <ReactMarkdown
-                                        remarkPlugins={[remarkGfm]}
-                                        components={{
+                                    disableDecorativeTrainingUi ? (
+                                      <div className="text-sm leading-7 text-slate-800" style={{ fontFamily: typography.bodyFont }}>
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                          {textWithoutStyle}
+                                        </ReactMarkdown>
+                                      </div>
+                                    ) : (
+                                      <div
+                                        className={`${moduleShapeClass} border p-3`}
+                                        style={{
+                                          borderColor: contentTheme?.panelBorder || '#e2e8f0',
+                                          background: wrapperBackground,
+                                          fontFamily: typography.bodyFont,
+                                        }}
+                                      >
+                                        <ReactMarkdown
+                                          remarkPlugins={[remarkGfm]}
+                                          components={{
                                           h1: ({ children }) => (
                                             <h3
                                               className={`${moduleShapeClass} mb-2 mt-3 border px-3 py-2 text-[22px] font-bold`}
@@ -5396,11 +5409,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                               {children}
                                             </blockquote>
                                           ),
-                                        }}
-                                      >
-                                        {textWithoutStyle}
-                                      </ReactMarkdown>
-                                    </div>
+                                          }}
+                                        >
+                                          {textWithoutStyle}
+                                        </ReactMarkdown>
+                                      </div>
+                                    )
                                   ) : null}
                                   {msg.isStreaming && !!textWithoutStyle.trim() ? (
                                     <span className="ml-1 inline-block h-4 w-1 animate-pulse rounded bg-harx-400 align-middle" />
