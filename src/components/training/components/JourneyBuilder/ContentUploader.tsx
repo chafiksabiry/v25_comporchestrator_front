@@ -47,6 +47,7 @@ export type TrainingReadinessPayload = {
 
 const HARX_TRAINING_STATUS_REGEX = /<harx-training-status>\s*([\s\S]*?)\s*<\/harx-training-status>/i;
 const HARX_PLAN_CONFIRM_REGEX = /<harx-plan-confirm>\s*([\s\S]*?)\s*<\/harx-plan-confirm>/i;
+const HIDDEN_CHAT_COMMAND_REGEX = /^__(?:CONFIRM_PLAN_SAVE__|VALIDATE_MODULE_CONTENT__|VALIDATE_ALL_MODULES_CONTENT__)/i;
 
 type PlanConfirmPayload = {
   token: string;
@@ -79,6 +80,10 @@ function extractPlanConfirmBlock(raw: string): {
   } catch {
     return { displayText, planConfirm: null };
   }
+}
+
+function isHiddenSystemCommandMessage(raw: string): boolean {
+  return HIDDEN_CHAT_COMMAND_REGEX.test(String(raw || '').trim());
 }
 
 function extractTrainingReadinessBlock(raw: string): {
@@ -508,6 +513,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
       isStreaming?: boolean;
       trainingReadiness?: TrainingReadinessPayload | null;
       planConfirm?: PlanConfirmPayload | null;
+      /** Masque le texte de confirmation après clic sur le bouton. */
+      suppressText?: boolean;
       /** Après « oui » / validation : le plan n’est plus affiché en cartes cliquables. */
       planInteractiveDisabled?: boolean;
     }>
@@ -547,6 +554,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
   const autoOpenedHistoryForJourneyRef = useRef<string | null>(null);
+  const historyFetchSeqRef = useRef(0);
   const [gigSwitchHint, setGigSwitchHint] = useState<string | null>(null);
   const [podcastScript, setPodcastScript] = useState('');
   const [isPodcastGenerating, setIsPodcastGenerating] = useState(false);
@@ -1291,15 +1299,20 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setChatHistorySessions([]);
       return;
     }
+    const requestedGigId = String(activeChatGigId).trim();
+    const seq = ++historyFetchSeqRef.current;
     setIsHistoryLoading(true);
     try {
-      const sessions = await AIService.listChatHistory(String(activeChatGigId));
+      const sessions = await AIService.listChatHistory(requestedGigId);
+      // Ignore stale responses when user switches gig quickly.
+      if (seq !== historyFetchSeqRef.current) return;
       setChatHistorySessions(Array.isArray(sessions) ? sessions : []);
     } catch (error) {
       console.error('[ContentUploader] Failed loading chat history:', error);
+      if (seq !== historyFetchSeqRef.current) return;
       setChatHistorySessions([]);
     } finally {
-      setIsHistoryLoading(false);
+      if (seq === historyFetchSeqRef.current) setIsHistoryLoading(false);
     }
   }, [activeChatGigId]);
 
@@ -1311,6 +1324,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       return;
     }
     setActiveChatSessionId(null);
+    setChatHistorySessions([]);
     void refreshChatHistory();
   }, [activeChatGigId, refreshChatHistory]);
 
@@ -2652,8 +2666,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
       try {
         const session = await AIService.getChatSession(sessionId);
         if (!session) return;
+        const activeGig = String(activeChatGigId || '').trim();
+        const sessionGig = String((session as any)?.gigId || '').trim();
+        if (activeGig && sessionGig && activeGig !== sessionGig) {
+          setGigSwitchHint('Cette conversation appartient à un autre gig. Rechargez la liste History du gig courant.');
+          return;
+        }
         setGigSwitchHint(null);
-        const mappedMessages = (session.messages || []).map((m, idx) => {
+        const mappedMessages = (session.messages || [])
+          .filter((m) => !isHiddenSystemCommandMessage(String(m?.text || '')))
+          .map((m, idx) => {
           const raw = m.text || '';
           const readinessParsed = extractTrainingReadinessBlock(raw);
           const confirmParsed = extractPlanConfirmBlock(readinessParsed.displayText);
@@ -2665,7 +2687,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             planConfirm: confirmParsed.planConfirm || undefined,
             isStreaming: false,
           };
-        });
+          });
         setChatMessages(mappedMessages);
         const hasSavedPlanAck = mappedMessages.some(
           (m) => m.role === 'assistant' && /\bplan\s+enregistr[eé]\b/i.test(String(m.text || ''))
@@ -3331,7 +3353,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
         const usesUploadsForChat = effectiveGenerationMode === 'uploads_only' || effectiveGenerationMode === 'kb_and_uploads';
         const uploadsForChat = usesUploadsForChat ? effectiveAnalyzedUploads : [];
 
-        const sourceHistory = options?.historyMessages || chatMessages;
+        const sourceHistory = (options?.historyMessages || chatMessages).filter(
+          (m) => !isHiddenSystemCommandMessage(String(m?.text || ''))
+        );
         const historyForContext = sourceHistory
           .filter((m) => m.id !== options?.replaceAssistantId)
           .filter((m) => m.text?.trim())
@@ -4363,6 +4387,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
             disabled={isChatLoading}
             onClick={() => {
               if (isChatLoading) return;
+              setChatMessages((prev) =>
+                prev.map((m) =>
+                  m.id === messageId
+                    ? { ...m, planConfirm: undefined, suppressText: true }
+                    : m
+                )
+              );
               void sendChatMessage(`__CONFIRM_PLAN_SAVE__:${planConfirm.token}`, { appendUser: false });
             }}
             className="rounded-lg border border-emerald-300 bg-white px-3 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
@@ -5122,7 +5153,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       </div>
                     </div>
                   )}
-                  {chatMessages.map((msg) => (
+                  {chatMessages
+                    .filter((msg) => !isHiddenSystemCommandMessage(String(msg?.text || '')))
+                    .map((msg) => (
                     <div key={msg.id} className={msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
                       {msg.role === 'assistant' ? (
                         <div className="max-w-[88%]">
@@ -5182,6 +5215,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                 !!msg.planConfirm
                               );
                               const hideMarkdownForInteractivePlan = !!interactiveTimeline;
+                              const shouldShowMarkdownBody = !hideMarkdownForInteractivePlan && !msg.suppressText;
                               return (
                                 <>
                                   {presentationArtifact ? (
@@ -5205,7 +5239,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   {interactiveChoiceCards ? (
                                     <div className="mb-2">{interactiveChoiceCards}</div>
                                   ) : null}
-                                  {!hideMarkdownForInteractivePlan ? (
+                                  {shouldShowMarkdownBody ? (
                                     <div
                                       className={`${moduleShapeClass} border p-3`}
                                       style={{
