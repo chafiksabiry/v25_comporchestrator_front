@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, Clock, AlertCircle, AlertTriangle, X, Sparkles, Zap, BarChart3, Wand2, Save, Loader2, Presentation, FileDown, Maximize2, RefreshCw, LayoutGrid, FolderOpen, Briefcase, Plus, Search, RotateCcw, Send, History, Bot, Mic, Square, Play, Target } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ContentUpload } from '../../types/core';
 import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef, type ChatHistoryItem, type SavedPodcastItem, type TrainingImageSet, type QuizQuestion, type StructuredTrainingSlidesPayload } from '../../infrastructure/services/AIService';
@@ -5206,7 +5206,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                 /(plan de formation|formation\s+compl[eè]te|module\s*\d+|🎯|📌|🧩|📊|learning objectives|mini quiz|self-assessment)/i.test(
                                   String(textWithoutStyle || '')
                                 );
-                              const disableDecorativeTrainingUi = isTrainingGenerationMessage;
+                              const parsedPlanPreview = parseTrainingPlan(textWithoutStyle);
+                              const hasParsedPlanModules = parsedPlanPreview.modules.length >= 2;
+                              // Ne pas supprimer le rendu "timeline/cards" quand le texte ressemble à un plan structuré :
+                              // les emojis 🎯/📌/… sont justement des marqueurs du plan.
+                              const disableDecorativeTrainingUi =
+                                isTrainingGenerationMessage && !hasParsedPlanModules;
                               const interactiveTimeline =
                                 msg.planInteractiveDisabled || disableDecorativeTrainingUi
                                   ? null
@@ -5221,6 +5226,142 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               );
                               const hideMarkdownForInteractivePlan = !!interactiveTimeline;
                               const shouldShowMarkdownBody = !hideMarkdownForInteractivePlan && !msg.suppressText;
+                              // Fallback markdown: keep typography hierarchy, but avoid "card-like" tinted blocks
+                              // (paragraph/list backgrounds) which users perceive as unwanted background colors.
+                              const softMarkdownChrome = disableDecorativeTrainingUi;
+                              const effectiveCardParagraphs = softMarkdownChrome ? false : cardParagraphs;
+                              const effectiveEditorialParagraphs = softMarkdownChrome ? false : editorialParagraphs;
+                              const markdownComponents: Partial<Components> = {
+                                h1: ({ children }) => (
+                                  <h3
+                                    className={`${moduleShapeClass} mb-2 mt-3 border px-3 py-2 text-[22px] font-bold`}
+                                    style={{
+                                      borderColor: styleBlueprint.accentColor || '#f9a8d4',
+                                      color: styleBlueprint.titleColor || contentTheme?.headingColor || '#0f172a',
+                                      background: `linear-gradient(90deg, ${contentTheme?.badgeBg || '#fdf2f8'} 0%, ${contentTheme?.tableHeaderBg || '#eff6ff'} 100%)`,
+                                      fontFamily: typography.headingFont,
+                                    }}
+                                  >
+                                    {children}
+                                  </h3>
+                                ),
+                                h2: ({ children }) => (
+                                  <h4
+                                    className={`${moduleShapeClass} mb-2 mt-3 border px-3 py-1.5 text-[18px] font-semibold`}
+                                    style={{
+                                      borderColor: contentTheme?.tableBorder || '#bae6fd',
+                                      background: contentTheme?.tableHeaderBg || '#eff6ff',
+                                      color: contentTheme?.headingColor || '#0f172a',
+                                      fontFamily: typography.headingFont,
+                                    }}
+                                  >
+                                    {children}
+                                  </h4>
+                                ),
+                                h3: ({ children }) => (
+                                  <h5
+                                    className="mb-1.5 mt-2 text-[16px] font-semibold"
+                                    style={{
+                                      color: styleBlueprint.accentColor || '#be123c',
+                                      fontFamily: typography.headingFont,
+                                    }}
+                                  >
+                                    {children}
+                                  </h5>
+                                ),
+                                p: ({ children }) => (
+                                  <p
+                                    className={`my-1.5 text-[15px] leading-7 ${effectiveCardParagraphs ? `${moduleShapeClass} border px-2.5 py-1.5` : ''} ${effectiveEditorialParagraphs ? 'pl-3 border-l-2' : ''}`}
+                                    style={{
+                                      color: contentTheme?.bodyColor || '#334155',
+                                      borderColor: effectiveCardParagraphs
+                                        ? (contentTheme?.panelBorder || '#e2e8f0')
+                                        : (effectiveEditorialParagraphs ? (styleBlueprint.accentColor || '#be123c') : undefined),
+                                      backgroundColor: effectiveCardParagraphs ? (contentTheme?.panelBg || '#f8fafc') : 'transparent',
+                                    }}
+                                  >
+                                    {children}
+                                  </p>
+                                ),
+                                ul: ({ children }) => (
+                                  <ul
+                                    className="my-2 space-y-1 pl-4 text-[15px] leading-7"
+                                    style={{ color: contentTheme?.bodyColor || '#334155' }}
+                                  >
+                                    {children}
+                                  </ul>
+                                ),
+                                ol: ({ children }) => (
+                                  <ol
+                                    className="my-2 space-y-1 pl-5 text-[15px] leading-7 marker:font-semibold"
+                                    style={{ color: contentTheme?.bodyColor || '#334155' }}
+                                  >
+                                    {children}
+                                  </ol>
+                                ),
+                                li: ({ children }) => (
+                                  <li
+                                    className={softMarkdownChrome ? 'py-0.5' : `${moduleShapeClass} px-2 py-1`}
+                                    style={{
+                                      color: contentTheme?.bodyColor || '#334155',
+                                      backgroundColor: softMarkdownChrome ? 'transparent' : (contentTheme?.panelBg || '#f8fafc'),
+                                    }}
+                                  >
+                                    {children}
+                                  </li>
+                                ),
+                                strong: ({ children }) => <strong className="font-semibold text-slate-900">{children}</strong>,
+                                table: ({ children }) => (
+                                  <div
+                                    className={`${moduleShapeClass} my-3 overflow-x-auto border bg-white`}
+                                    style={{ borderColor: contentTheme?.tableBorder || '#cbd5e1' }}
+                                  >
+                                    <table className="min-w-full border-collapse">{children}</table>
+                                  </div>
+                                ),
+                                thead: ({ children }) => (
+                                  <thead style={{ backgroundColor: contentTheme?.tableHeaderBg || '#f1f5f9' }}>{children}</thead>
+                                ),
+                                tbody: ({ children }) => <tbody className="divide-y" style={{ borderColor: contentTheme?.tableBorder || '#cbd5e1' }}>{children}</tbody>,
+                                tr: ({ children }) => <tr className="align-top">{children}</tr>,
+                                th: ({ children }) => (
+                                  <th
+                                    className="px-3 py-2 text-left text-sm font-semibold"
+                                    style={{ color: contentTheme?.tableHeaderText || contentTheme?.headingColor || '#0f172a' }}
+                                  >
+                                    {children}
+                                  </th>
+                                ),
+                                td: ({ children }) => (
+                                  <td className="px-3 py-2 text-sm" style={{ color: contentTheme?.bodyColor || '#334155' }}>
+                                    {children}
+                                  </td>
+                                ),
+                                code: ({ children }) => (
+                                  <code
+                                    className={`${moduleShapeClass} px-1.5 py-0.5 text-[13px] ring-1`}
+                                    style={{
+                                      color: contentTheme?.headingColor || '#1e293b',
+                                      backgroundColor: contentTheme?.tableRowBg || '#f8fafc',
+                                      borderColor: contentTheme?.tableBorder || '#cbd5e1',
+                                    }}
+                                  >
+                                    {children}
+                                  </code>
+                                ),
+                                blockquote: ({ children }) => (
+                                  <blockquote
+                                    className={`${moduleShapeClass} my-2 border-l-4 px-3 py-2 italic`}
+                                    style={{
+                                      borderLeftColor: styleBlueprint.accentColor || '#be123c',
+                                      backgroundColor: contentTheme?.badgeBg || '#fdf2f8',
+                                      color: contentTheme?.bodyColor || '#334155',
+                                    }}
+                                  >
+                                    {children}
+                                  </blockquote>
+                                ),
+                              };
                               return (
                                 <>
                                   {presentationArtifact ? (
@@ -5242,159 +5383,18 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                     <div className="mb-2">{interactiveChoiceCards}</div>
                                   ) : null}
                                   {shouldShowMarkdownBody ? (
-                                    disableDecorativeTrainingUi ? (
-                                      <div className="text-sm leading-7 text-slate-800" style={{ fontFamily: typography.bodyFont }}>
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                          {textWithoutStyle}
-                                        </ReactMarkdown>
-                                      </div>
-                                    ) : (
-                                      <div
-                                        className={`${moduleShapeClass} border p-3`}
-                                        style={{
-                                          borderColor: contentTheme?.panelBorder || '#e2e8f0',
-                                          background: wrapperBackground,
-                                          fontFamily: typography.bodyFont,
-                                        }}
-                                      >
-                                        <ReactMarkdown
-                                          remarkPlugins={[remarkGfm]}
-                                          components={{
-                                          h1: ({ children }) => (
-                                            <h3
-                                              className={`${moduleShapeClass} mb-2 mt-3 border px-3 py-2 text-[22px] font-bold`}
-                                              style={{
-                                                borderColor: styleBlueprint.accentColor || '#f9a8d4',
-                                                color: styleBlueprint.titleColor || contentTheme?.headingColor || '#0f172a',
-                                                background: `linear-gradient(90deg, ${contentTheme?.badgeBg || '#fdf2f8'} 0%, ${contentTheme?.tableHeaderBg || '#eff6ff'} 100%)`,
-                                                fontFamily: typography.headingFont,
-                                              }}
-                                            >
-                                              {children}
-                                            </h3>
-                                          ),
-                                          h2: ({ children }) => (
-                                            <h4
-                                              className={`${moduleShapeClass} mb-2 mt-3 border px-3 py-1.5 text-[18px] font-semibold`}
-                                              style={{
-                                                borderColor: contentTheme?.tableBorder || '#bae6fd',
-                                                background: contentTheme?.tableHeaderBg || '#eff6ff',
-                                                color: contentTheme?.headingColor || '#0f172a',
-                                                fontFamily: typography.headingFont,
-                                              }}
-                                            >
-                                              {children}
-                                            </h4>
-                                          ),
-                                          h3: ({ children }) => (
-                                            <h5
-                                              className="mb-1.5 mt-2 text-[16px] font-semibold"
-                                              style={{
-                                                color: styleBlueprint.accentColor || '#be123c',
-                                                fontFamily: typography.headingFont,
-                                              }}
-                                            >
-                                              {children}
-                                            </h5>
-                                          ),
-                                          p: ({ children }) => (
-                                            <p
-                                              className={`my-1.5 text-[15px] leading-7 ${cardParagraphs ? `${moduleShapeClass} border px-2.5 py-1.5` : ''} ${editorialParagraphs ? 'pl-3 border-l-2' : ''}`}
-                                              style={{
-                                                color: contentTheme?.bodyColor || '#334155',
-                                                borderColor: cardParagraphs
-                                                  ? (contentTheme?.panelBorder || '#e2e8f0')
-                                                  : (editorialParagraphs ? (styleBlueprint.accentColor || '#be123c') : undefined),
-                                                backgroundColor: cardParagraphs ? (contentTheme?.panelBg || '#f8fafc') : 'transparent',
-                                              }}
-                                            >
-                                              {children}
-                                            </p>
-                                          ),
-                                          ul: ({ children }) => (
-                                            <ul
-                                              className="my-2 space-y-1 pl-4 text-[15px] leading-7"
-                                              style={{ color: contentTheme?.bodyColor || '#334155' }}
-                                            >
-                                              {children}
-                                            </ul>
-                                          ),
-                                          ol: ({ children }) => (
-                                            <ol
-                                              className="my-2 space-y-1 pl-5 text-[15px] leading-7 marker:font-semibold"
-                                              style={{ color: contentTheme?.bodyColor || '#334155' }}
-                                            >
-                                              {children}
-                                            </ol>
-                                          ),
-                                          li: ({ children }) => (
-                                            <li
-                                              className={`${moduleShapeClass} px-2 py-1`}
-                                              style={{
-                                                color: contentTheme?.bodyColor || '#334155',
-                                                backgroundColor: contentTheme?.panelBg || '#f8fafc',
-                                              }}
-                                            >
-                                              {children}
-                                            </li>
-                                          ),
-                                          strong: ({ children }) => <strong className="font-semibold text-slate-900">{children}</strong>,
-                                          table: ({ children }) => (
-                                            <div
-                                              className={`${moduleShapeClass} my-3 overflow-x-auto border bg-white`}
-                                              style={{ borderColor: contentTheme?.tableBorder || '#cbd5e1' }}
-                                            >
-                                              <table className="min-w-full border-collapse">{children}</table>
-                                            </div>
-                                          ),
-                                          thead: ({ children }) => (
-                                            <thead style={{ backgroundColor: contentTheme?.tableHeaderBg || '#f1f5f9' }}>{children}</thead>
-                                          ),
-                                          tbody: ({ children }) => <tbody className="divide-y" style={{ borderColor: contentTheme?.tableBorder || '#cbd5e1' }}>{children}</tbody>,
-                                          tr: ({ children }) => <tr className="align-top">{children}</tr>,
-                                          th: ({ children }) => (
-                                            <th
-                                              className="px-3 py-2 text-left text-sm font-semibold"
-                                              style={{ color: contentTheme?.tableHeaderText || contentTheme?.headingColor || '#0f172a' }}
-                                            >
-                                              {children}
-                                            </th>
-                                          ),
-                                          td: ({ children }) => (
-                                            <td className="px-3 py-2 text-sm" style={{ color: contentTheme?.bodyColor || '#334155' }}>
-                                              {children}
-                                            </td>
-                                          ),
-                                          code: ({ children }) => (
-                                            <code
-                                              className={`${moduleShapeClass} px-1.5 py-0.5 text-[13px] ring-1`}
-                                              style={{
-                                                color: contentTheme?.headingColor || '#1e293b',
-                                                backgroundColor: contentTheme?.tableRowBg || '#f8fafc',
-                                                borderColor: contentTheme?.tableBorder || '#cbd5e1',
-                                              }}
-                                            >
-                                              {children}
-                                            </code>
-                                          ),
-                                          blockquote: ({ children }) => (
-                                            <blockquote
-                                              className={`${moduleShapeClass} my-2 border-l-4 px-3 py-2 italic`}
-                                              style={{
-                                                borderLeftColor: styleBlueprint.accentColor || '#be123c',
-                                                backgroundColor: contentTheme?.badgeBg || '#fdf2f8',
-                                                color: contentTheme?.bodyColor || '#334155',
-                                              }}
-                                            >
-                                              {children}
-                                            </blockquote>
-                                          ),
-                                          }}
-                                        >
-                                          {textWithoutStyle}
-                                        </ReactMarkdown>
-                                      </div>
-                                    )
+                                    <div
+                                      className={disableDecorativeTrainingUi ? 'text-sm leading-7 text-slate-800' : `${moduleShapeClass} border p-3`}
+                                      style={{
+                                        borderColor: disableDecorativeTrainingUi ? undefined : (contentTheme?.panelBorder || '#e2e8f0'),
+                                        background: disableDecorativeTrainingUi ? 'transparent' : wrapperBackground,
+                                        fontFamily: typography.bodyFont,
+                                      }}
+                                    >
+                                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                                        {textWithoutStyle}
+                                      </ReactMarkdown>
+                                    </div>
                                   ) : null}
                                   {msg.isStreaming && !!textWithoutStyle.trim() ? (
                                     <span className="ml-1 inline-block h-4 w-1 animate-pulse rounded bg-harx-400 align-middle" />
