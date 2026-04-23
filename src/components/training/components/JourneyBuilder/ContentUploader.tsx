@@ -119,8 +119,6 @@ function extractTrainingReadinessBlock(raw: string): {
             (a) =>
               a &&
               (a.id === 'validate_training' ||
-                a.id === 'validate_module_content' ||
-                a.id === 'validate_all_modules_content' ||
                 a.id === 'save_without_missing' ||
                 a.id === 'generate_missing_modules')
           )
@@ -3818,11 +3816,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       void sendChatMessage(modulePrompt);
                     }}
                     disabled={!canGenerateFromPlan}
-                    title={
-                      canGenerateFromPlan
-                        ? 'Générer le contenu de ce module'
-                        : 'Validez et enregistrez d’abord le plan pour activer la génération de contenu.'
-                    }
                     className={`w-full rounded-xl border p-3 text-left transition ${
                       canGenerateFromPlan ? 'hover:-translate-y-0.5' : 'cursor-not-allowed opacity-65'
                     } ${theme.bg} ${theme.border}`}
