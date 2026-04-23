@@ -2747,6 +2747,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           keyTopics: string[];
           activities: string[];
           evaluation: string[];
+          deliverables: string[];
         };
       }>;
     } => {
@@ -2784,6 +2785,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           keyTopics: string[];
           activities: string[];
           evaluation: string[];
+          deliverables: string[];
         };
       }> = [];
       let current: {
@@ -2795,9 +2797,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
           keyTopics: string[];
           activities: string[];
           evaluation: string[];
+          deliverables: string[];
         };
       } | null = null;
-      let activeSection: 'objectives' | 'keyTopics' | 'activities' | 'evaluation' | null = null;
+      let activeSection: 'objectives' | 'keyTopics' | 'activities' | 'evaluation' | 'deliverables' | null = null;
       let activeNestedTitle: string | null = null;
 
       const splitMdRow = (row: string) =>
@@ -2845,6 +2848,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               keyTopics: titleCell ? [`Parcours: ${titleCell}`] : [],
               activities: [],
               evaluation: [],
+              deliverables: [],
             },
           });
         }
@@ -2887,6 +2891,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               keyTopics: [],
               activities: [],
               evaluation: [],
+              deliverables: [],
             },
           };
           activeSection = null;
@@ -2911,24 +2916,50 @@ export default function ContentUploader(props: ContentUploaderProps) {
           continue;
         }
 
-        if (/^(🎯\s*)?objectifs?/i.test(normalized)) {
+        if (/^(🎯\s*)?(objectifs?|learning\s+objectives?)(\b|[\s:–-]|$)/i.test(normalized)) {
           activeSection = 'objectives';
           activeNestedTitle = null;
           continue;
         }
-        if (/^(📌\s*)?(key topics|topics|th[eè]mes cl[eé]s?)/i.test(normalized)) {
+        if (
+          /^(📌\s*)?(key\s*topics|topics|th[eè]mes?\s*cl[eé]s?|points?\s*cl[eé]s?|sujets?\s*cl[eé]s?)(\b|[\s:–-]|$)/i.test(
+            normalized
+          )
+        ) {
           activeSection = 'keyTopics';
           activeNestedTitle = null;
           continue;
         }
-        if (/^(🧩\s*)?activit[eé]s?/i.test(normalized)) {
+        if (/^(🧩\s*)?activit[eé]s?(\b|[\s:–-]|$)/i.test(normalized)) {
           activeSection = 'activities';
           activeNestedTitle = null;
           continue;
         }
-        if (/^(📊\s*)?indicateur d['’]?[eé]valuation/i.test(normalized)) {
+        if (/^(📦|📋)?\s*livrables?(\b|[\s:–-]|$)/i.test(normalized) || /^(📦|📋)?\s*deliverables?(\b|[\s:–-]|$)/i.test(normalized)) {
+          activeSection = 'deliverables';
+          activeNestedTitle = null;
+          continue;
+        }
+        if (/^(📊\s*)?(indicateur d['’]?[eé]valuation|evaluations?|évaluations?)(\b|[\s:–-]|$)/i.test(normalized)) {
           activeSection = 'evaluation';
           activeNestedTitle = null;
+          continue;
+        }
+
+        // Plan LMS : "### 📌 1.1 …" souvent sans ligne "Key topics" explicite
+        if (/^📌\s*(livrables?|deliverables?)(\b|[\s:–-]|$)/i.test(normalized)) {
+          activeSection = 'deliverables';
+          activeNestedTitle = null;
+          continue;
+        }
+        if (/^📌\s*\d+(?:\.\d+)+\s+.+$/i.test(normalized)) {
+          activeSection = 'keyTopics';
+          activeNestedTitle = normalized.replace(/^📌\s*/i, '').trim();
+          continue;
+        }
+        if (/^📌\s+.+/i.test(normalized) && !/key\s*topics/i.test(normalized)) {
+          activeSection = 'keyTopics';
+          activeNestedTitle = normalized.replace(/^📌\s*/i, '').trim();
           continue;
         }
 
@@ -2938,9 +2969,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
             activeNestedTitle = normalized;
             continue;
           }
-          if (/^livrables?$/i.test(lower)) {
-            activeNestedTitle = 'Livrables';
-            activeSection = 'evaluation';
+          if (/^livrables?$|^deliverables?$/i.test(lower)) {
+            activeNestedTitle = null;
+            activeSection = 'deliverables';
             continue;
           }
           if (/^activit[eé]s?$/i.test(lower)) {
@@ -2960,6 +2991,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
         if (isNestedNumberedTitle) {
           activeNestedTitle = normalized.replace(/^[-•*]\s*/, '').trim();
           continue;
+        }
+
+        // Puces avant tout titre de section : les ranger sous "sujets clés" pour garder des blocs structurés
+        if (current && !activeSection && (/^[-•*]\s+/.test(line) || /^\d+[.)]\s+/.test(line))) {
+          activeSection = 'keyTopics';
         }
 
         if (/^[-•*]\s+/.test(line) || /^\d+[.)]\s+/.test(line) || normalized.includes(':')) {
@@ -3888,12 +3924,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     <p className="text-sm font-semibold text-slate-900">{`${moduleEmoji} ${module.title}`}</p>
                     <div className="mt-2 space-y-2">
                       {renderSectionWithIndent(module.sections.objectives.slice(0, 10), 'Objectifs', '🎯', 'objectives')}
-                      {renderSectionWithIndent(module.sections.keyTopics.slice(0, 12), 'Key Topics', '📌', 'topics')}
-                      {renderSectionWithIndent(module.sections.activities.slice(0, 10), 'Activites', '🧩', 'activities')}
-                      {renderSectionWithIndent(module.sections.evaluation.slice(0, 8), "Indicateur d'evaluation", '📊', 'evaluation')}
+                      {renderSectionWithIndent(module.sections.keyTopics.slice(0, 14), 'Sujets clés', '📌', 'topics')}
+                      {renderSectionWithIndent(module.sections.activities.slice(0, 10), 'Activités', '🧩', 'activities')}
+                      {renderSectionWithIndent(module.sections.deliverables.slice(0, 10), 'Livrables', '📦', 'deliverables')}
+                      {renderSectionWithIndent(module.sections.evaluation.slice(0, 8), "Indicateur d'évaluation", '📊', 'evaluation')}
                       {module.sections.objectives.length === 0 &&
                       module.sections.keyTopics.length === 0 &&
                       module.sections.activities.length === 0 &&
+                      module.sections.deliverables.length === 0 &&
                       module.sections.evaluation.length === 0 ? (
                         <ul className="space-y-0.5 pl-4 text-xs text-slate-700">
                           {(module.bullets || []).slice(0, 8).map((item, itemIdx) => (
