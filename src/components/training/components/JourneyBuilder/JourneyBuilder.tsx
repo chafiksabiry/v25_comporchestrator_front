@@ -7,6 +7,7 @@ import LaunchApproval from './LaunchApproval';
 import { Company, TrainingJourney, ContentUpload, TrainingModule, Rep, RehearsalFeedback } from '../../types';
 import { TrainingMethodology } from '../../types/methodology';
 import { DraftService } from '../../infrastructure/services/DraftService';
+import { JourneyService } from '../../infrastructure/services/JourneyService';
 import { scrollJourneyMainToTop } from './journeyScroll';
 
 interface JourneyBuilderProps {
@@ -52,6 +53,29 @@ export default function JourneyBuilder({
       if (prevId === id) return prev;
       return { ...(prev || {}), _id: id, id };
     });
+  }, [initialJourneyId]);
+
+  useEffect(() => {
+    const id = String(initialJourneyId || '').trim();
+    if (!id) return;
+    let cancelled = false;
+    JourneyService.getJourneyById(id)
+      .then((fullJourney: any) => {
+        if (cancelled || !fullJourney) return;
+        setJourney((prev: any) => ({ ...(prev || {}), ...fullJourney }));
+        const gid = String(fullJourney?.gigId?._id || fullJourney?.gigId || '').trim();
+        if (gid) setSelectedGigId(gid);
+        const cid = String(fullJourney?.companyId?._id || fullJourney?.companyId || '').trim();
+        if (cid) {
+          setCompany((prev: any) => ({ ...(prev || {}), id: cid, _id: cid }));
+        }
+      })
+      .catch((e) => {
+        console.warn('[JourneyBuilder] Failed to hydrate initial journey:', e);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [initialJourneyId]);
 
   // Restaurer le brouillon au chargement
