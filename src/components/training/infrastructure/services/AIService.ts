@@ -119,6 +119,7 @@ export interface ChatHistoryItem {
   title: string;
   lastActivityAt?: string;
   messagesCount?: number;
+  trainingJourneyId?: string;
   preview?: string;
 }
 
@@ -126,6 +127,7 @@ export interface ChatSessionDetails {
   _id: string;
   title: string;
   gigId?: string | null;
+  trainingJourneyId?: string;
   lastActivityAt?: string;
   messages: Array<{ role: 'user' | 'assistant'; text: string; createdAt?: string | null }>;
 }

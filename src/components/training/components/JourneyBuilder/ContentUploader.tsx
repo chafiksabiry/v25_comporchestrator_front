@@ -546,6 +546,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
+  const autoOpenedHistoryForJourneyRef = useRef<string | null>(null);
   const [podcastScript, setPodcastScript] = useState('');
   const [isPodcastGenerating, setIsPodcastGenerating] = useState(false);
   const [podcastError, setPodcastError] = useState<string | null>(null);
@@ -2621,6 +2622,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setChatUploadedSources([]);
       setShowRepSourcePopup(false);
       setActiveChatSessionId(null);
+      autoOpenedHistoryForJourneyRef.current = null;
       setIsHistoryOpen(false);
       setKbGenerationChoice(null);
       setChatKbDocuments([]);
@@ -2667,6 +2669,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
         );
         if (hasSavedPlanAck) setIsPlanSavedForChat(true);
         setActiveChatSessionId(session._id || sessionId);
+        autoOpenedHistoryForJourneyRef.current =
+          (session as any)?.trainingJourneyId || linkedTrainingJourneyMongoId() || null;
         setIsHistoryOpen(false);
         lastPodcastGenChatLengthRef.current = 0;
       } catch (error) {
@@ -2675,6 +2679,22 @@ export default function ContentUploader(props: ContentUploaderProps) {
         setIsHistoryLoading(false);
       }
     };
+
+    useEffect(() => {
+      if (!repOnboardingLayout) return;
+      const journeyId = linkedTrainingJourneyMongoId();
+      if (!journeyId) return;
+      if (activeChatSessionId) return;
+      if (!Array.isArray(chatHistorySessions) || chatHistorySessions.length === 0) return;
+      if (autoOpenedHistoryForJourneyRef.current === journeyId) return;
+
+      const match = chatHistorySessions.find(
+        (s) => String((s as any)?.trainingJourneyId || '').trim() === journeyId
+      );
+      if (!match?._id) return;
+      autoOpenedHistoryForJourneyRef.current = journeyId;
+      void openHistorySession(match._id);
+    }, [repOnboardingLayout, chatHistorySessions, activeChatSessionId]);
 
     const generationPreferences = {
       selectedDuration: formatDurationForAi(journey?.estimatedDuration ? String(journey.estimatedDuration) : undefined),
