@@ -547,6 +547,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
   const autoOpenedHistoryForJourneyRef = useRef<string | null>(null);
+  const [gigSwitchHint, setGigSwitchHint] = useState<string | null>(null);
   const [podcastScript, setPodcastScript] = useState('');
   const [isPodcastGenerating, setIsPodcastGenerating] = useState(false);
   const [podcastError, setPodcastError] = useState<string | null>(null);
@@ -2616,6 +2617,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       // Hard reset chat + generated artifacts so next generations are based only on the new chat.
       chatConfirmedJourneyIdRef.current = null;
       setIsPlanSavedForChat(false);
+      setGigSwitchHint(null);
       setChatMessages([]);
       setChatInput('');
       setUploads([]);
@@ -2650,6 +2652,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       try {
         const session = await AIService.getChatSession(sessionId);
         if (!session) return;
+        setGigSwitchHint(null);
         const mappedMessages = (session.messages || []).map((m, idx) => {
           const raw = m.text || '';
           const readinessParsed = extractTrainingReadinessBlock(raw);
@@ -2678,6 +2681,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
       } finally {
         setIsHistoryLoading(false);
       }
+    };
+
+    const handleChatGigChange = (nextGigId: string) => {
+      const prevGigId = String(activeChatGigId || '').trim();
+      setSelectedChatGigId(nextGigId);
+      const changed = prevGigId && nextGigId && prevGigId !== nextGigId;
+      if (!changed) return;
+      const nextGigTitle =
+        companyGigs.find((g: any) => String(g?._id || g?.id || '') === String(nextGigId))?.title ||
+        `Gig ${String(nextGigId).slice(0, 8)}`;
+      setGigSwitchHint(
+        `Gig changé vers "${nextGigTitle}". Ouvrez History pour charger les conversations de ce gig.`
+      );
     };
 
     useEffect(() => {
@@ -4733,7 +4749,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 }`}>
                   <select
                     value={activeChatGigId}
-                    onChange={(e) => setSelectedChatGigId(e.target.value)}
+                    onChange={(e) => handleChatGigChange(e.target.value)}
                     className="min-w-0 flex-1 truncate rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 outline-none transition-all duration-200 hover:bg-white focus:bg-white focus:ring-2 focus:ring-harx-500/30 sm:min-w-[12rem] sm:max-w-[min(20rem,50vw)] sm:flex-none sm:shrink-0"
                     title="Choose gig for chat"
                   >
@@ -4774,6 +4790,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     New
                   </button>
                 </div>
+                {gigSwitchHint ? (
+                  <div className="w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">
+                    {gigSwitchHint}
+                  </div>
+                ) : null}
                 {rep && (
                   <div className="flex w-full flex-wrap items-center justify-end gap-2 rounded-2xl border border-harx-100 bg-white p-2 shadow-sm ring-1 ring-harx-500/5">
                     <select
