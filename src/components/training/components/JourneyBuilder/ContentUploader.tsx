@@ -119,6 +119,8 @@ function extractTrainingReadinessBlock(raw: string): {
             (a) =>
               a &&
               (a.id === 'validate_training' ||
+                a.id === 'validate_module_content' ||
+                a.id === 'validate_all_modules_content' ||
                 a.id === 'save_without_missing' ||
                 a.id === 'generate_missing_modules')
           )
@@ -4325,6 +4327,55 @@ export default function ContentUploader(props: ContentUploaderProps) {
       );
     };
 
+    const renderTrainingReadinessCard = (
+      messageId: string,
+      readiness?: TrainingReadinessPayload | null
+    ): React.ReactNode | null => {
+      if (!readiness || !Array.isArray(readiness.actions) || readiness.actions.length === 0) return null;
+      return (
+        <div className="mb-2 rounded-2xl border border-violet-200 bg-violet-50 p-3">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-violet-800">Validation contenu</p>
+          {readiness.messageFr ? (
+            <p className="mt-1 text-xs text-violet-900">{readiness.messageFr}</p>
+          ) : null}
+          <div className="mt-2 flex flex-wrap gap-2">
+            {readiness.actions.map((action, idx) => (
+              <button
+                key={`readiness-action-${messageId}-${idx}-${action.id}`}
+                type="button"
+                disabled={isChatLoading}
+                onClick={() => {
+                  if (isChatLoading) return;
+                  if (action.id === 'validate_module_content') {
+                    void sendChatMessage('__VALIDATE_MODULE_CONTENT__', { appendUser: false });
+                    return;
+                  }
+                  if (action.id === 'validate_all_modules_content') {
+                    void sendChatMessage('__VALIDATE_ALL_MODULES_CONTENT__', { appendUser: false });
+                    return;
+                  }
+                  if (action.id === 'generate_missing_modules') {
+                    void sendChatMessage('Génère le contenu des modules manquants en suivant le plan sauvegardé.', {
+                      appendUser: false,
+                    });
+                    return;
+                  }
+                  if (action.id === 'save_without_missing' || action.id === 'validate_training') {
+                    void sendChatMessage('Je valide et j’enregistre.', { appendUser: false });
+                    return;
+                  }
+                  void sendChatMessage(String(action.label || '').trim(), { appendUser: false });
+                }}
+                className="rounded-lg border border-violet-300 bg-white px-3 py-1.5 text-xs font-semibold text-violet-900 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
 
     const anchoredChoiceUi = false;
 
@@ -5055,6 +5106,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               const interactiveQuestionnaire = renderInteractiveQuestionnaire(msg.id, textWithoutStyle, String(msg.text || ''));
                               const interactiveChoiceCards = renderInteractiveChoiceCards(msg.id, textWithoutStyle, String(msg.text || ''));
                               const planConfirmCard = renderPlanConfirmCard(msg.id, msg.planConfirm);
+                              const trainingReadinessCard = renderTrainingReadinessCard(msg.id, msg.trainingReadiness);
                               const nextStepHint = renderPlanNextStepHint(
                                 !!interactiveTimeline || !!msg.planConfirm,
                                 !!msg.planConfirm
@@ -5070,6 +5122,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   ) : null}
                                   {planConfirmCard ? (
                                     <div className="mb-2">{planConfirmCard}</div>
+                                  ) : null}
+                                  {trainingReadinessCard ? (
+                                    <div className="mb-2">{trainingReadinessCard}</div>
                                   ) : null}
                                   {nextStepHint ? (
                                     <div className="mb-2">{nextStepHint}</div>
