@@ -14,10 +14,18 @@ interface JourneyBuilderProps {
   forceNew?: boolean;
   repOnboardingLayout?: boolean;
   initialStep?: number;
+  initialJourneyId?: string;
   initialGigId?: string;
 }
 
-export default function JourneyBuilder({ onComplete, forceNew = false, repOnboardingLayout = false, initialStep = 0, initialGigId = null }: JourneyBuilderProps) {
+export default function JourneyBuilder({
+  onComplete,
+  forceNew = false,
+  repOnboardingLayout = false,
+  initialStep = 0,
+  initialJourneyId,
+  initialGigId = null,
+}: JourneyBuilderProps) {
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [company, setCompany] = useState<Company | null>(null);
   const [journey, setJourney] = useState<TrainingJourney | null>(null);
@@ -35,6 +43,16 @@ export default function JourneyBuilder({ onComplete, forceNew = false, repOnboar
   useEffect(() => {
     scrollJourneyMainToTop();
   }, [currentStep]);
+
+  useEffect(() => {
+    const id = String(initialJourneyId || '').trim();
+    if (!id) return;
+    setJourney((prev: any) => {
+      const prevId = String(prev?._id || prev?.id || '').trim();
+      if (prevId === id) return prev;
+      return { ...(prev || {}), _id: id, id };
+    });
+  }, [initialJourneyId]);
 
   // Restaurer le brouillon au chargement
   useEffect(() => {
