@@ -21,6 +21,13 @@ export interface TrainingJourney {
   createdAt: string;
   estimatedDuration: string;
   targetRoles: string[];
+  modulePlan?: Array<{
+    title: string;
+    objectifs?: string[];
+    keyTopics?: string[];
+    activites?: string[];
+    durationMinutes?: number;
+  }>;
 }
 
 export interface JourneyStep {

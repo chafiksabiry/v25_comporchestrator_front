@@ -3320,6 +3320,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 sectionCount: Array.isArray(m?.sections) ? m.sections.length : 0,
               }))
             : [],
+          journeyModulePlan: Array.isArray((journey as any)?.modulePlan)
+            ? ((journey as any).modulePlan as any[]).map((m) => ({
+                title: String(m?.title || '').trim(),
+                objectifs: Array.isArray(m?.objectifs) ? m.objectifs : [],
+                keyTopics: Array.isArray(m?.keyTopics) ? m.keyTopics : [],
+                activites: Array.isArray(m?.activites) ? m.activites : [],
+                durationMinutes: Number(m?.durationMinutes || 0) || undefined,
+              }))
+            : [],
         });
 
         const streamingAssistantId = options?.replaceAssistantId || appendChatMessage('assistant', '', { isStreaming: true });
