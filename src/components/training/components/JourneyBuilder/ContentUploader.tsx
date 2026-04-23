@@ -514,6 +514,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
       planInteractiveDisabled?: boolean;
     }>
   >([]);
+  const [isPlanSavedForChat, setIsPlanSavedForChat] = useState<boolean>(() => {
+    const frozen = Boolean((journey as any)?.methodologyData?.planFrozenFromChat);
+    const hasModulePlan = Array.isArray((journey as any)?.modulePlan) && (journey as any).modulePlan.length > 0;
+    return frozen || hasModulePlan;
+  });
   const [chatInput, setChatInput] = useState('');
   const [showRepSourcePopup, setShowRepSourcePopup] = useState(false);
   const [isChatLoading, setIsChatLoading] = useState(false);
@@ -2611,6 +2616,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const startNewConversation = () => {
       // Hard reset chat + generated artifacts so next generations are based only on the new chat.
       chatConfirmedJourneyIdRef.current = null;
+      setIsPlanSavedForChat(false);
       setChatMessages([]);
       setChatInput('');
       setUploads([]);
@@ -2658,6 +2664,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
           };
         });
         setChatMessages(mappedMessages);
+        const hasSavedPlanAck = mappedMessages.some(
+          (m) => m.role === 'assistant' && /\bplan\s+enregistr[eé]\b/i.test(String(m.text || ''))
+        );
+        if (hasSavedPlanAck) setIsPlanSavedForChat(true);
         setActiveChatSessionId(session._id || sessionId);
         setIsHistoryOpen(false);
         lastPodcastGenChatLengthRef.current = 0;
@@ -3309,8 +3319,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
         const chatGigRow = companyGigs.find((g: any) => String(g?._id || g?.id || '') === String(activeChatGigId));
         const chatGigSnapshot = chatGigRow ? buildGigSnapshotForAi(chatGigRow) : null;
+        const isPlanEditIntent =
+          /(modifi|modifier|change|changer|ajuste|ajouter|supprim|retir|update|edit|corrig|restructur|reorganis|adapt)/i.test(cleanMessage) &&
+          (/\bmodule\s*\d+\b/i.test(cleanMessage) || /\bmodule\b/i.test(cleanMessage));
         const requestedOutput: 'training_plan' | 'full_training_content' | 'module_content' | 'general_chat' =
-          /(contenu\s+d[’']?un\s+module|contenu\s+du\s+module|module\s+\d+|d[ée]taille\s+le\s+module|detaille\s+le\s+module)/i.test(cleanMessage)
+          isPlanEditIntent
+            ? 'training_plan'
+            : /(contenu\s+d[’']?un\s+module|contenu\s+du\s+module|module\s+\d+|d[ée]taille\s+le\s+module|detaille\s+le\s+module)/i.test(cleanMessage)
             ? 'module_content'
             : /(contenu\s+de\s+formation|formation\s+compl[eè]te|g[ée]n[ée]rer\s+une\s+formation|creer\s+une\s+formation)/i.test(cleanMessage)
               ? 'full_training_content'
@@ -3397,6 +3412,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         }
         if (streamResult.planSaved && streamResult.journeyId && /^[a-f\d]{24}$/i.test(streamResult.journeyId)) {
           chatConfirmedJourneyIdRef.current = streamResult.journeyId;
+          setIsPlanSavedForChat(true);
         }
         const rawAssistant = streamResult.text?.trim() || "Je n'ai pas pu generer une reponse pour le moment.";
         const readinessParsed = extractTrainingReadinessBlock(rawAssistant);
@@ -3708,7 +3724,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
     };
 
-    const renderInteractiveTrainingTimeline = (messageId: string, rawText: string): React.ReactNode | null => {
+    const renderInteractiveTrainingTimeline = (
+      messageId: string,
+      rawText: string,
+      canGenerateFromPlan: boolean
+    ): React.ReactNode | null => {
       const text = String(rawText || '').trim();
       if (!text) return null;
       const parsedPlan = parseTrainingPlan(text);
@@ -3793,11 +3813,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     key={`plan-card-${messageId}-${idx}`}
                     type="button"
                     onClick={() => {
-                      if (isChatLoading) return;
+                      if (isChatLoading || !canGenerateFromPlan) return;
                       const modulePrompt = `Donne le contenu du ${module.title}.`;
                       void sendChatMessage(modulePrompt);
                     }}
-                    className={`w-full rounded-xl border p-3 text-left transition hover:-translate-y-0.5 ${theme.bg} ${theme.border}`}
+                    disabled={!canGenerateFromPlan}
+                    title={
+                      canGenerateFromPlan
+                        ? 'Générer le contenu de ce module'
+                        : 'Validez et enregistrez d’abord le plan pour activer la génération de contenu.'
+                    }
+                    className={`w-full rounded-xl border p-3 text-left transition ${
+                      canGenerateFromPlan ? 'hover:-translate-y-0.5' : 'cursor-not-allowed opacity-65'
+                    } ${theme.bg} ${theme.border}`}
                   >
                     <div className="mb-1.5 flex items-center justify-between gap-2">
                       <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-[10px] font-bold text-white ${theme.badge}`}>
@@ -4327,7 +4355,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
           <p className="mt-1 text-xs text-sky-900">
             {hasConfirmButton
               ? "Confirmez le plan avec le bouton ci-dessus pour l'enregistrer dans la base."
-              : "Cliquez sur un module pour générer son contenu, ou répondez 'oui' pour afficher la confirmation du plan."}
+              : isPlanSavedForChat
+                ? 'Cliquez sur un module pour générer son contenu.'
+                : "Le clic module est désactivé tant que le plan n'est pas enregistré. Répondez 'oui' puis confirmez le plan."}
           </p>
         </div>
       );
@@ -5107,7 +5137,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               }
                               const interactiveTimeline = msg.planInteractiveDisabled
                                 ? null
-                                : renderInteractiveTrainingTimeline(msg.id, textWithoutStyle);
+                                : renderInteractiveTrainingTimeline(msg.id, textWithoutStyle, isPlanSavedForChat);
                               const presentationArtifact = renderPresentationArtifact(textWithoutStyle);
                               const interactiveQuestionnaire = renderInteractiveQuestionnaire(msg.id, textWithoutStyle, String(msg.text || ''));
                               const interactiveChoiceCards = renderInteractiveChoiceCards(msg.id, textWithoutStyle, String(msg.text || ''));
