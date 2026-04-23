@@ -229,6 +229,8 @@ export interface AiBaseResponse {
 }
 
 export interface AiResponse<T> extends AiBaseResponse {
+  slide: any;
+  journey: any;
   analysis?: T;
   data?: T;
   questions?: T;
