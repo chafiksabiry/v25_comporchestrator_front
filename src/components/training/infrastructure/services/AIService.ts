@@ -903,7 +903,7 @@ export class AIService {
     context: string,
     onChunk: (chunk: string) => void,
     options?: { gigId?: string; companyId?: string; sessionId?: string }
-  ): Promise<{ text: string; sessionId?: string }> {
+  ): Promise<{ text: string; sessionId?: string; planSaved?: boolean; journeyId?: string }> {
     const token = ApiClient.getToken();
     const apiUrl =
       import.meta.env.VITE_API_TRAINING_URL ||
@@ -936,6 +936,8 @@ export class AIService {
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
     const sessionId = response.headers.get('X-Chat-Session-Id') || undefined;
+    const planSaved = response.headers.get('X-Plan-Saved') === '1';
+    const journeyId = response.headers.get('X-Saved-Journey-Id') || undefined;
     let fullText = '';
 
     while (true) {
@@ -947,7 +949,7 @@ export class AIService {
       onChunk(chunk);
     }
 
-    return { text: fullText, sessionId };
+    return { text: fullText, sessionId, planSaved, journeyId };
   }
 
   static async listChatHistory(gigId: string): Promise<ChatHistoryItem[]> {

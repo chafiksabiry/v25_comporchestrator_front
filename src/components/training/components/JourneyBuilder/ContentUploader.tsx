@@ -432,8 +432,12 @@ function RepPodcastSidebarPanel({
 
 export default function ContentUploader(props: ContentUploaderProps) {
   const { onComplete, onBack, company, gigId, journey, methodology, repOnboardingLayout = false } = props;
+  /** Après validation du plan dans le chat, le backend renvoie l’id — on le réinjecte dans le contexte des appels suivants. */
+  const chatConfirmedJourneyIdRef = useRef<string | null>(null);
   /** Id Mongo `training_journeys` du parcours courant uniquement (pas de fallback sur anciens drafts). */
   const linkedTrainingJourneyMongoId = (): string | undefined => {
+    const fromChat = chatConfirmedJourneyIdRef.current?.trim();
+    if (fromChat && /^[a-f\d]{24}$/i.test(fromChat)) return fromChat;
     const candidates = [(journey as any)?._id, (journey as any)?.id];
     for (const c of candidates) {
       const s = c != null ? String(c).trim() : '';
@@ -477,6 +481,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
       text: string;
       isStreaming?: boolean;
       trainingReadiness?: TrainingReadinessPayload | null;
+      /** Après « oui » / validation : le plan n’est plus affiché en cartes cliquables. */
+      planInteractiveDisabled?: boolean;
     }>
   >([]);
   const [chatInput, setChatInput] = useState('');
@@ -2563,7 +2569,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const appendChatMessage = (
       role: 'user' | 'assistant',
       text: string,
-      extra: Partial<{ isStreaming: boolean }> = {}
+      extra: Partial<{ isStreaming: boolean; planInteractiveDisabled?: boolean }> = {}
     ) => {
       const id = `${role}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       setChatMessages((prev) => [
@@ -2575,6 +2581,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
     const startNewConversation = () => {
       // Hard reset chat + generated artifacts so next generations are based only on the new chat.
+      chatConfirmedJourneyIdRef.current = null;
       setChatMessages([]);
       setChatInput('');
       setUploads([]);
@@ -2757,15 +2764,27 @@ export default function ContentUploader(props: ContentUploaderProps) {
         return out;
       };
 
+      /** Accepts e.g. "📚 Module 1 : …", "🖥️ Module 2 – …", "## Module 3" (hash stripped earlier), not "Voici Module 1". */
+      const tryParseModuleHeadingLine = (n: string): { tail: string } | null => {
+        const m = n.match(/\bmodule\s*\d+\s*[—:–-]?\s*(.+)$/i);
+        if (!m?.[1]) return null;
+        const i = n.search(/\bmodule\s*\d+/i);
+        if (i < 0 || i > 24) return null;
+        const prefix = n.slice(0, i);
+        if (/[a-zà-ÿæœ]/i.test(prefix)) return null;
+        const tail = String(m[1])
+          .trim()
+          .replace(/^[:\s–-]+/u, '')
+          .trim();
+        return { tail };
+      };
+
       for (const line of lines) {
         const normalized = clean(line);
-        const emojiModuleMatch = normalized.match(
-          /^[🟢🟡🟠🔵🟣🟤]\s*module\s*\d+\s*[—:-]?\s*(.+)$/i
-        );
-        const moduleMatch = normalized.match(/^module\s*\d+\s*[—:-]?\s*(.+)$/i);
-        if (emojiModuleMatch || moduleMatch) {
+        const moduleHeading = tryParseModuleHeadingLine(normalized);
+        if (moduleHeading) {
           if (current) modules.push(current);
-          const tail = String((emojiModuleMatch || moduleMatch)?.[1] || '').trim();
+          const tail = moduleHeading.tail;
           const idx = modules.length + 1;
           current = {
             title: tail ? `Module ${idx} - ${tail}` : `Module ${idx}`,
@@ -2785,7 +2804,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
           if (
             normalized &&
             !/^(plan de formation|training plan)/i.test(normalized) &&
-            !/^module\s*\d+/i.test(normalized)
+            !/^module\s*\d+/i.test(normalized) &&
+            !tryParseModuleHeadingLine(normalized)
           ) {
             introLines.push(normalized);
           }
@@ -2882,6 +2902,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
         if (durationFromTitle?.[1]) {
           duration = String(durationFromTitle[1]).trim();
           title = title.replace(/\s*⏱️\s*[^\n]+$/i, '').trim();
+        }
+        const durationFromParen = title.match(
+          /\(\s*(\d+\s*(?:min|minutes?|h(?:eures?)?))\s*\)\s*$/i
+        );
+        if (durationFromParen?.[1]) {
+          duration = duration || String(durationFromParen[1]).trim();
+          title = title.replace(/\s*\(\s*\d+\s*(?:min|minutes?|h(?:eures?)?)\s*\)\s*$/i, '').trim();
         }
         title = title.replace(/^[🟢🟡🟠🔵🟣🟤]\s*/u, '').trim();
         return { ...m, title, duration };
@@ -3283,6 +3310,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           sourceModeRequested: requestedMode || null,
           requestedOutput,
           requestedModuleReference: requestedModuleReference || null,
+          trainingJourneyId: linkedTrainingJourneyMongoId() || null,
           conversationHistory: historyForContext,
           canGenerateTraining: canProceed,
           curriculumOutline: Array.isArray(generatedCurriculum?.modules)
@@ -3321,10 +3349,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
         if (streamResult.sessionId && streamResult.sessionId !== activeChatSessionId) {
           setActiveChatSessionId(streamResult.sessionId);
         }
+        if (streamResult.planSaved && streamResult.journeyId && /^[a-f\d]{24}$/i.test(streamResult.journeyId)) {
+          chatConfirmedJourneyIdRef.current = streamResult.journeyId;
+        }
         const rawAssistant = streamResult.text?.trim() || "Je n'ai pas pu generer une reponse pour le moment.";
         const { displayText, trainingReadiness } = extractTrainingReadinessBlock(rawAssistant);
-        setChatMessages((prev) =>
-          prev.map((m) =>
+        setChatMessages((prev) => {
+          const next = prev.map((m) =>
             m.id === streamingAssistantId
               ? {
                   ...m,
@@ -3332,9 +3363,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   trainingReadiness: trainingReadiness || undefined,
                   isStreaming: false,
                 }
-              : m
-          )
-        );
+              : { ...m }
+          );
+          if (streamResult.planSaved) {
+            const ackIdx = next.findIndex((m) => m.id === streamingAssistantId);
+            if (ackIdx >= 2) {
+              const planMsg = next[ackIdx - 2];
+              if (planMsg?.role === 'assistant') {
+                planMsg.planInteractiveDisabled = true;
+              }
+            }
+          }
+          return next;
+        });
         if (analyzedUploads.length > 0) {
           const namesThisRound = uploads
             .filter((u) => u.status === 'analyzed' && !!u.aiAnalysis)
@@ -4926,7 +4967,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   </div>
                                 );
                               }
-                              const interactiveTimeline = renderInteractiveTrainingTimeline(msg.id, textWithoutStyle);
+                              const interactiveTimeline = msg.planInteractiveDisabled
+                                ? null
+                                : renderInteractiveTrainingTimeline(msg.id, textWithoutStyle);
                               const presentationArtifact = renderPresentationArtifact(textWithoutStyle);
                               const interactiveQuestionnaire = renderInteractiveQuestionnaire(msg.id, textWithoutStyle, String(msg.text || ''));
                               const interactiveChoiceCards = renderInteractiveChoiceCards(msg.id, textWithoutStyle, String(msg.text || ''));
