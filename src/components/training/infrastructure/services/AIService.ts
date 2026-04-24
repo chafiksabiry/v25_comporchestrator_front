@@ -123,11 +123,22 @@ export interface ChatHistoryItem {
   preview?: string;
 }
 
+/** Mirrors `TrainingJourney.modulePlan` when the chat session has parsed a training plan. */
+export interface ChatSessionModulePlanItem {
+  title: string;
+  objectifs: string[];
+  keyTopics: string[];
+  activites: string[];
+  durationMinutes?: number;
+}
+
 export interface ChatSessionDetails {
   _id: string;
   title: string;
   gigId?: string | null;
   trainingJourneyId?: string;
+  modulePlan?: ChatSessionModulePlanItem[];
+  modulePlanUpdatedAt?: string;
   lastActivityAt?: string;
   messages: Array<{ role: 'user' | 'assistant'; text: string; createdAt?: string | null }>;
 }
