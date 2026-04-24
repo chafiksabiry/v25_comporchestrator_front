@@ -2634,7 +2634,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           ].join('\n');
           setShowPersonalizationCard(false);
           setPersonalizationStep(0);
-          void sendChatMessage(summary);
+          void sendChatMessage(summary, { personalizationProfileSnapshot: nextAnswers });
         }
         return;
       }
@@ -3397,6 +3397,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
         replaceAssistantId?: string;
         historyMessages?: Array<{ id: string; role: 'user' | 'assistant'; text: string; isStreaming?: boolean }>;
         attachments?: Array<{ id: string; name: string; type: ContentUpload['type']; size?: number }>;
+        /** Last-step questionnaire answers (React state can lag one tick behind). */
+        personalizationProfileSnapshot?: Partial<{
+          source: string;
+          level: string;
+          objective: string;
+          format: string;
+        }>;
       }
     ): Promise<{ ok: boolean; planSaved?: boolean; error?: string }> => {
       const cleanMessage = message.trim();
@@ -3462,7 +3469,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
         const hasKbForChat = chatKbDocuments.length > 0;
         const hasUploadsForChat = effectiveAnalyzedUploads.length > 0;
-        const sourcePreference = String(personalizationAnswers.source || '').toLowerCase();
+        const personalizationForContext = options?.personalizationProfileSnapshot || personalizationAnswers;
+        const sourcePreference = String(personalizationForContext.source || '').toLowerCase();
         const sourceChoiceFromQuestions: KbGenerationMode | null =
           sourcePreference.includes('kb +') || sourcePreference.includes('kb et')
             ? 'kb_and_uploads'
@@ -3511,6 +3519,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
         const chatGigRow = companyGigs.find((g: any) => String(g?._id || g?.id || '') === String(activeChatGigId));
         const chatGigSnapshot = chatGigRow ? buildGigSnapshotForAi(chatGigRow) : null;
+        const isPostPersonalizationSummary = cleanMessage.startsWith(
+          'A few questions to personalize your training'
+        );
         const isPlanEditIntent =
           /(modifi|modifier|change|changer|ajuste|ajouter|supprim|retir|update|edit|corrig|restructur|reorganis|adapt)/i.test(cleanMessage) &&
           (/\bmodule\s*\d+\b/i.test(cleanMessage) || /\bmodule\b/i.test(cleanMessage));
@@ -3519,7 +3530,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
           /(je\s+veux|donne|g[ée]n[ée]r\w*|cr[ée]e\w*|produi\w*|pr[ée]par\w*|lance\w*)[\s\S]{0,40}(la\s+)?formation/i.test(cleanMessage) ||
           /(tout\s+le\s+contenu|tous\s+les\s+modules|formation\s+enti[eè]re)/i.test(cleanMessage);
         const requestedOutput: 'training_plan' | 'full_training_content' | 'module_content' | 'general_chat' =
-          isPlanEditIntent
+          isPostPersonalizationSummary
+            ? 'training_plan'
+            : isPlanEditIntent
             ? 'training_plan'
             : /(contenu\s+d[’']?un\s+module|contenu\s+du\s+module|module\s+\d+|d[ée]taille\s+le\s+module|detaille\s+le\s+module)/i.test(cleanMessage)
             ? 'module_content'
@@ -3580,11 +3593,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
           selectedDuration: generationPreferences.selectedDuration,
           selectedMethodology: generationPreferences.methodologyName,
           personalizationProfile: {
-            source: personalizationAnswers.source || null,
-            level: personalizationAnswers.level || null,
-            objective: personalizationAnswers.objective || null,
-            format: personalizationAnswers.format || null,
+            source: personalizationForContext.source || null,
+            level: personalizationForContext.level || null,
+            objective: personalizationForContext.objective || null,
+            format: personalizationForContext.format || null,
           },
+          bootstrapTrainingPlanFromGig: isPostPersonalizationSummary,
           sourceModeRequested: requestedMode || null,
           requestedOutput,
           requestedModuleReference: requestedModuleReference || null,
