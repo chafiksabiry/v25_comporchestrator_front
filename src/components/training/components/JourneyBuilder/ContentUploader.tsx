@@ -4506,6 +4506,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 onClick={async () => {
                   if (isChatLoading) return;
                   if (action.id === 'validate_module_content') {
+                    appendChatMessage('user', 'Je valide le contenu du module.');
                     void sendChatMessage('__VALIDATE_MODULE_CONTENT__', { appendUser: false });
                     return;
                   }
@@ -4517,6 +4518,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       });
                       return;
                     }
+                    appendChatMessage('user', 'Je valide le plan.');
                     setIsPlanValidationSubmitting(true);
                     setPlanValidationHint(null);
                     const result = await sendChatMessage('__VALIDATE_PLAN__', { appendUser: false });
@@ -4536,28 +4538,25 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     return;
                   }
                   if (action.id === 'validate_all_modules_content') {
+                    appendChatMessage('user', 'Je valide le contenu de tous les modules.');
                     void sendChatMessage('__VALIDATE_ALL_MODULES_CONTENT__', { appendUser: false });
                     return;
                   }
                   if (action.id === 'generate_missing_modules') {
-                    void sendChatMessage('Génère le contenu des modules manquants en suivant le plan sauvegardé.', {
-                      appendUser: false,
-                    });
+                    void sendChatMessage('Génère le contenu des modules manquants en suivant le plan sauvegardé.');
                     return;
                   }
                   if (action.id === 'generate_current_module') {
                     const moduleRef =
                       String(action.label || '').match(/module\s+\d+/i)?.[0] || 'Module 1';
-                    void sendChatMessage(`Donne le contenu du ${moduleRef}.`, {
-                      appendUser: false,
-                    });
+                    void sendChatMessage(`Génère-moi le contenu du ${moduleRef}.`);
                     return;
                   }
                   if (action.id === 'save_without_missing' || action.id === 'validate_training') {
-                    void sendChatMessage('Je valide et j’enregistre.', { appendUser: false });
+                    void sendChatMessage('Je valide et j’enregistre.');
                     return;
                   }
-                  void sendChatMessage(String(action.label || '').trim(), { appendUser: false });
+                  void sendChatMessage(String(action.label || '').trim());
                 }}
                 className="rounded-lg border border-violet-300 bg-white px-3 py-1.5 text-xs font-semibold text-violet-900 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
