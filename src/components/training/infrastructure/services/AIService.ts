@@ -930,7 +930,7 @@ export class AIService {
     message: string,
     context: string,
     onChunk: (chunk: string) => void,
-    options?: { gigId?: string; companyId?: string; sessionId?: string }
+    options?: { gigId?: string; companyId?: string; sessionId?: string; signal?: AbortSignal }
   ): Promise<{ text: string; sessionId?: string; planSaved?: boolean; journeyId?: string }> {
     const token = ApiClient.getToken();
     const apiUrl =
@@ -952,6 +952,7 @@ export class AIService {
         ...(token && { Authorization: `Bearer ${token}` }),
       },
       body: JSON.stringify(requestBody),
+      signal: options?.signal,
     });
 
     if (!response.ok) {
