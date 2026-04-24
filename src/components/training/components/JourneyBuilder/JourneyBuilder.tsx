@@ -349,7 +349,7 @@ export default function JourneyBuilder({
             journey={journey}
             methodology={methodology}
             repOnboardingLayout={repOnboardingLayout}
-            onForkNewJourneyTraining={repOnboardingLayout ? handleForkNewJourneyTraining : undefined}
+            onForkNewJourneyTraining={company ? handleForkNewJourneyTraining : undefined}
           />
         );
       case 2:
