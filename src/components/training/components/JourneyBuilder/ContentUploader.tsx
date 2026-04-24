@@ -2774,7 +2774,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           sections: {
             objectives: Array.isArray(m?.objectifs) ? m.objectifs.map((x: any) => String(x || '').trim()).filter(Boolean) : [],
             keyTopics: Array.isArray(m?.keyTopics) ? m.keyTopics.map((x: any) => String(x || '').trim()).filter(Boolean) : [],
-            activities: Array.isArray(m?.activites) ? m.activites.map((x: any) => String(x || '').trim()).filter(Boolean) : [],
+            activities: [],
             evaluation: [],
             deliverables: [],
           },
@@ -3972,14 +3972,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     <div className="mt-2 space-y-2">
                       {renderSectionWithIndent(module.sections.objectives.slice(0, 10), 'Objectifs', '🎯', 'objectives')}
                       {renderSectionWithIndent(module.sections.keyTopics.slice(0, 14), 'Sujets clés', '📌', 'topics')}
-                      {renderSectionWithIndent(module.sections.activities.slice(0, 10), 'Activités', '🧩', 'activities')}
-                      {renderSectionWithIndent(module.sections.deliverables.slice(0, 10), 'Livrables', '📦', 'deliverables')}
-                      {renderSectionWithIndent(module.sections.evaluation.slice(0, 8), "Indicateur d'évaluation", '📊', 'evaluation')}
                       {module.sections.objectives.length === 0 &&
-                      module.sections.keyTopics.length === 0 &&
-                      module.sections.activities.length === 0 &&
-                      module.sections.deliverables.length === 0 &&
-                      module.sections.evaluation.length === 0 ? (
+                      module.sections.keyTopics.length === 0 ? (
                         <ul className="space-y-0.5 pl-4 text-xs text-slate-700">
                           {(module.bullets || []).slice(0, 8).map((item, itemIdx) => (
                             <li key={`plan-card-item-${messageId}-${idx}-${itemIdx}`} className="list-disc">
@@ -4622,11 +4616,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             utiliser{' '}
             <code className="rounded bg-slate-100 px-1 text-[10px] text-slate-800">## Module N: titre</code> puis{' '}
             <code className="rounded bg-slate-100 px-1 text-[10px] text-slate-800">### 🎯 Objectifs</code>,{' '}
-            <code className="rounded bg-slate-100 px-1 text-[10px] text-slate-800">### 📌 Contenu clé</code>,{' '}
-            <code className="rounded bg-slate-100 px-1 text-[10px] text-slate-800">### 🧩 Activités</code>,{' '}
-            <code className="rounded bg-slate-100 px-1 text-[10px] text-slate-800">
-              {'### 📊 Indicateur d\u2019évaluation'}
-            </code>
+            <code className="rounded bg-slate-100 px-1 text-[10px] text-slate-800">### 📌 Contenu clé</code>
             , chacun suivi de puces <code className="rounded bg-slate-100 px-1 text-[10px]">- </code> (enregistrement
             structuré en base).
           </p>
