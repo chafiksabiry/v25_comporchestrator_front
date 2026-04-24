@@ -49,12 +49,33 @@ const HARX_TRAINING_STATUS_REGEX = /<harx-training-status>\s*([\s\S]*?)\s*<\/har
 const HIDDEN_CHAT_COMMAND_REGEX = /^__(?:VALIDATE_PLAN__|VALIDATE_MODULE_CONTENT__|VALIDATE_ALL_MODULES_CONTENT__)/i;
 
 function stripAssistantTrainingTags(raw: string): string {
-  return String(raw || '')
-    .replace(/<harx-style>[\s\S]*?<\/harx-style>/gi, '')
+  return stripHarxStyleBlocks(String(raw || ''))
     .replace(/<harx-html>[\s\S]*?<\/harx-html>/gi, '')
     .replace(HARX_TRAINING_STATUS_REGEX, '')
     .replace(/<harx-plan-confirm>[\s\S]*?<\/harx-plan-confirm>/gi, '')
     .trim();
+}
+
+/** Remove `<harx-style>…</harx-style>` including unclosed blocks (streaming) up to `<harx-training-status` or EOF. */
+function stripHarxStyleBlocks(rawText: string): string {
+  let s = String(rawText || '');
+  for (;;) {
+    const m = s.match(/<harx-style\b[^>]*>/i);
+    if (!m || m.index == null) break;
+    const start = m.index;
+    const tail = s.slice(start + m[0].length);
+    const closeMatch = tail.match(/<\/harx-style>/i);
+    if (closeMatch && closeMatch.index != null) {
+      const end = start + m[0].length + closeMatch.index + closeMatch[0].length;
+      s = s.slice(0, start) + s.slice(end);
+      continue;
+    }
+    const nextStatus = tail.search(/<harx-training-status\b/i);
+    const cut = nextStatus >= 0 ? start + m[0].length + nextStatus : s.length;
+    s = s.slice(0, start) + s.slice(cut);
+    break;
+  }
+  return s.replace(/<\/harx-style>/gi, '').trim();
 }
 
 function isHiddenSystemCommandMessage(raw: string): boolean {
@@ -2509,6 +2530,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const rep = repOnboardingLayout;
     const displayName = String(company?.name || 'QARA EL HOUCINE').toUpperCase();
     const hasStartedChat = chatMessages.length > 0;
+    const showChatModuleSidebar =
+      hasStartedChat ||
+      Boolean(chatWorkflowStatus || chatWorkflowStatusRef.current) ||
+      (Array.isArray(chatSessionModulePlanRef.current) && chatSessionModulePlanRef.current.length >= 2) ||
+      (Array.isArray((journey as any)?.modulePlan) && (journey as any).modulePlan.length >= 2);
     const repSplitLayout = rep && hasStartedChat;
     const shouldShowKbQuestionInChat = false;
     const shouldShowChatThread = !showRepSourcePopup;
@@ -3294,12 +3320,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       }
     };
 
-    const stripStyleBlueprint = (rawText: string): string =>
-      String(rawText || '')
-        .replace(/<harx-style>[\s\S]*?<\/harx-style>/gi, '')
-        .replace(/<harx-style>[\s\S]*$/gi, '')
-        .replace(/<\/harx-style>/gi, '')
-        .trim();
+    const stripStyleBlueprint = (rawText: string): string => stripHarxStyleBlocks(rawText);
 
     const stripResourceSections = (rawText: string): string => {
       const lines = String(rawText || '').split('\n');
@@ -5117,7 +5138,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 ? 'mx-auto mb-2 flex min-h-0 w-full min-w-0 max-w-none flex-1 flex-col lg:flex-row lg:items-stretch'
                 : rep
                   ? 'mx-auto mb-0 flex h-full min-h-0 w-full min-w-0 max-w-5xl flex-1 flex-col overflow-hidden'
-                  : 'mx-auto flex min-h-0 w-full min-w-0 max-w-5xl flex-1 flex-col pb-2'
+                  : `mx-auto flex min-h-0 w-full min-w-0 max-w-5xl flex-1 flex-col pb-2${
+                      showChatModuleSidebar ? ' lg:flex-row lg:items-stretch lg:gap-4' : ''
+                    }`
             }
           >
             <div
@@ -5985,9 +6008,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               ))}
 
             </div>
-            {rep && (hasStartedChat || !!chatWorkflowStatus || !!chatWorkflowStatusRef.current)
-              ? renderChatWorkflowSidebar()
-              : null}
+            {showChatModuleSidebar ? renderChatWorkflowSidebar() : null}
           </div>
 
           {rep && showPresentationModal && (
