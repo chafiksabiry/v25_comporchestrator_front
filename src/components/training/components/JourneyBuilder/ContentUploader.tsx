@@ -4592,7 +4592,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         s === 'in_progress' ? 'in_progress' : s;
 
       return (
-        <aside className="mt-2 hidden w-full shrink-0 flex-col gap-3 xl:mt-0 xl:flex xl:w-[260px] xl:pl-3">
+        <aside className="mt-2 hidden w-full shrink-0 flex-col gap-3 lg:mt-0 lg:flex lg:w-[260px] lg:pl-3">
           <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Chat status</p>
             <div className="mt-2 flex items-center justify-between">
@@ -4781,7 +4781,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           <div
             className={
               repSplitLayout
-                ? 'flex h-full min-h-0 w-full flex-col-reverse gap-3 overflow-hidden xl:flex-row xl:items-stretch xl:gap-4'
+                ? 'flex h-full min-h-0 w-full flex-col-reverse gap-3 overflow-hidden lg:flex-row lg:items-stretch lg:gap-4'
                 : rep
                   ? 'flex h-full min-h-0 w-full flex-col overflow-hidden'
                   : 'grid min-h-[88vh] gap-3 lg:grid-cols-[265px_minmax(0,1fr)]'
