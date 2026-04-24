@@ -4043,15 +4043,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
           ? 'Plan de formation (sauvegardé)'
           : parsedPlan.title || 'Plan de formation';
         const timelineIntro = usingParsedForCurrentMessage ? parsedPlan.intro : '';
-        const moduleThemes = [
-          { bg: 'bg-emerald-50', border: 'border-emerald-200', badge: 'bg-emerald-600' },
-          { bg: 'bg-sky-50', border: 'border-sky-200', badge: 'bg-sky-600' },
-          { bg: 'bg-violet-50', border: 'border-violet-200', badge: 'bg-violet-600' },
-          { bg: 'bg-amber-50', border: 'border-amber-200', badge: 'bg-amber-600' },
-          { bg: 'bg-rose-50', border: 'border-rose-200', badge: 'bg-rose-600' },
-          { bg: 'bg-cyan-50', border: 'border-cyan-200', badge: 'bg-cyan-600' },
-        ];
-        const moduleEmojis = ['🟢', '🟡', '🟠', '🔵', '🟣', '🟤'];
         return (
           <div className="mb-3 rounded-2xl border border-harx-100 bg-white p-3 shadow-sm">
             <div className="mb-2">
@@ -4061,17 +4052,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
               </p>
               {timelineIntro ? <p className="mt-1 text-xs text-slate-600">{timelineIntro}</p> : null}
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               {timelineModules.map((module, idx) => {
-                const theme = moduleThemes[idx % moduleThemes.length];
-                const moduleEmoji = moduleEmojis[idx % moduleEmojis.length];
-                const renderSectionWithIndent = (
-                  items: string[],
-                  label: string,
-                  emoji: string,
-                  sectionKey: string,
-                  tone: 'objectives' | 'topics' = 'objectives'
-                ) => {
+                const renderSectionWithIndent = (items: string[], label: string, emoji: string, sectionKey: string) => {
                   if (!items.length) return null;
                   const groups: Array<{ title: string | null; values: string[] }> = [];
                   items.forEach((raw) => {
@@ -4091,15 +4074,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   });
                   const cleanBold = (s: string) =>
                     s.replace(/\*\*(.*?)\*\*/g, '$1').replace(/__(.*?)__/g, '$1');
-                  const headerClasses =
-                    tone === 'objectives'
-                      ? 'bg-emerald-100 text-emerald-800 ring-emerald-200'
-                      : 'bg-sky-100 text-sky-800 ring-sky-200';
                   return (
                     <div>
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${headerClasses}`}
-                      >
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-slate-600">
                         <span>{emoji}</span>
                         <span>{label}</span>
                       </span>
@@ -4140,27 +4117,25 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       void sendChatMessage(modulePrompt);
                     }}
                     disabled={!canGenerateFromPlan}
-                    className={`w-full rounded-xl border p-3 text-left transition ${
-                      canGenerateFromPlan ? 'hover:-translate-y-0.5' : 'cursor-not-allowed opacity-65'
-                    } ${theme.bg} ${theme.border}`}
+                    className={`w-full rounded-lg border border-slate-200 bg-white p-3 text-left transition ${
+                      canGenerateFromPlan ? 'hover:border-slate-300 hover:bg-slate-50/80' : 'cursor-not-allowed opacity-65'
+                    }`}
                   >
                     <div className="mb-1.5 flex items-center justify-between gap-2">
-                      <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-[10px] font-bold text-white ${theme.badge}`}>
+                      <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-2 text-[10px] font-bold text-slate-700">
                         {idx + 1}
                       </span>
                       {module.duration ? (
-                        <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600 ring-1 ring-slate-200">
-                          {module.duration}
-                        </span>
+                        <span className="text-[10px] font-semibold text-slate-500">{module.duration}</span>
                       ) : null}
                     </div>
-                    <p className="text-sm font-semibold text-slate-900">{`${moduleEmoji} ${module.title}`}</p>
+                    <p className="text-sm font-semibold text-slate-900">{module.title}</p>
                     <div className="mt-2 space-y-3">
-                      {renderSectionWithIndent(module.sections.objectives.slice(0, 10), 'Objectifs', '🎯', 'objectives', 'objectives')}
+                      {renderSectionWithIndent(module.sections.objectives.slice(0, 10), 'Objectifs', '🎯', 'objectives')}
                       {module.sections.objectives.length > 0 && module.sections.keyTopics.length > 0 ? (
                         <div className="h-px w-full bg-slate-200/70" />
                       ) : null}
-                      {renderSectionWithIndent(module.sections.keyTopics.slice(0, 14), 'Sujets clés', '📌', 'topics', 'topics')}
+                      {renderSectionWithIndent(module.sections.keyTopics.slice(0, 14), 'Sujets clés', '📌', 'topics')}
                       {module.sections.objectives.length === 0 &&
                       module.sections.keyTopics.length === 0 ? (
                         <ul className="space-y-0.5 pl-4 text-xs text-slate-700">
