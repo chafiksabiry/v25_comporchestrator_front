@@ -23,6 +23,11 @@ interface ContentUploaderProps {
   gigId?: string | null;
   journey?: any;
   methodology?: TrainingMethodology | null;
+  /**
+   * REP / gig chat: créer un nouveau `training_journeys` + vider le fil (nouveau chat serveur au prochain message).
+   * Sans cela, « New » ne faisait qu’effacer l’UI tout en gardant le même parcours Mongo.
+   */
+  onForkNewJourneyTraining?: () => Promise<{ trainingJourneyId: string }>;
   /** `persistedJourneyId` : id Mongo renvoyé après save cloud — évite un 2e POST dans JourneyBuilder. */
   onFinishEarly?: (
     uploads: ContentUpload[],
@@ -462,7 +467,7 @@ function RepPodcastSidebarPanel({
 }
 
 export default function ContentUploader(props: ContentUploaderProps) {
-  const { onComplete, onBack, company, gigId, journey, methodology, repOnboardingLayout = false } = props;
+  const { onComplete, onBack, company, gigId, journey, methodology, repOnboardingLayout = false, onForkNewJourneyTraining } = props;
   /** Après validation du plan dans le chat, le backend renvoie l’id — on le réinjecte dans le contexte des appels suivants. */
   const chatConfirmedJourneyIdRef = useRef<string | null>(null);
   /** Plan structuré issu de `training_chat_sessions.contextSnapshot.modulePlan` (aligné sur TrainingJourney). */
@@ -2658,9 +2663,22 @@ export default function ContentUploader(props: ContentUploaderProps) {
       return id;
     };
 
-    const startNewConversation = () => {
+    const startNewConversation = async () => {
+      if (rep && onForkNewJourneyTraining) {
+        try {
+          const { trainingJourneyId } = await onForkNewJourneyTraining();
+          if (trainingJourneyId && /^[a-f\d]{24}$/i.test(trainingJourneyId)) {
+            chatConfirmedJourneyIdRef.current = trainingJourneyId;
+          }
+        } catch (e) {
+          console.error('[ContentUploader] onForkNewJourneyTraining failed', e);
+          window.alert('Impossible de créer un nouveau parcours formation. Réessayez.');
+          return;
+        }
+      } else {
+        chatConfirmedJourneyIdRef.current = null;
+      }
       // Hard reset chat + generated artifacts so next generations are based only on the new chat.
-      chatConfirmedJourneyIdRef.current = null;
       chatSessionModulePlanRef.current = [];
       chatWorkflowStatusRef.current = null;
       setChatWorkflowStatus(null);
@@ -2673,6 +2691,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       setShowRepSourcePopup(false);
       setActiveChatSessionId(null);
       autoOpenedHistoryForJourneyRef.current = null;
+      void refreshChatHistory();
       setIsHistoryOpen(false);
       setKbGenerationChoice(null);
       setChatKbDocuments([]);
@@ -4978,7 +4997,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               </div>
               <button
                 type="button"
-                onClick={startNewConversation}
+                onClick={() => void startNewConversation()}
                 className="mb-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-harx px-3 py-2.5 text-sm font-semibold text-white shadow-md shadow-harx-500/20 transition hover:brightness-105"
               >
                 <Plus className="h-4 w-4" />
@@ -5182,7 +5201,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   </button>
                   <button
                     type="button"
-                    onClick={startNewConversation}
+                    onClick={() => void startNewConversation()}
                     className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-gradient-harx px-3 py-2 text-xs font-bold text-white shadow-sm shadow-harx-500/20 transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0 active:brightness-95"
                     title="New conversation"
                   >

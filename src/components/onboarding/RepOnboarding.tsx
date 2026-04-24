@@ -11,6 +11,7 @@ import {
   Square,
   Settings,
   RefreshCw,
+  Loader2,
   Plus,
   Trash2,
   MessageSquare,
@@ -27,6 +28,8 @@ import {
 import { AppContent } from '../training/App';
 import { getGigsByCompanyId } from '../../api/matching';
 import { DraftService } from '../training/infrastructure/services/DraftService';
+import { JourneyService } from '../training/infrastructure/services/JourneyService';
+import type { TrainingJourney } from '../training/types';
 import { OnboardingService } from '../training/infrastructure/services/OnboardingService';
 import { AIService, type SavedPodcastItem, type TrainingImageSet } from '../training/infrastructure/services/AIService';
 import { cloudinaryService } from '../training/lib/cloudinaryService';
@@ -48,6 +51,7 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
   const [selectedImageSet, setSelectedImageSet] = useState<TrainingImageSet | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showTraining, setShowTraining] = useState<{ isOpen: boolean, journeyId?: string, gigId?: string, newJourney?: boolean }>({ isOpen: false });
+  const [openingNewTrainingJourney, setOpeningNewTrainingJourney] = useState(false);
   /** Journey context when viewing generated slide images from a training card */
   const [previewJourney, setPreviewJourney] = useState<any | null>(null);
   const [deletingJourneyId, setDeletingJourneyId] = useState<string | null>(null);
@@ -292,6 +296,50 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
     const resolvedGigId = resolveJourneyGigId(journey) || undefined;
     // Open journey chat directly on chat step, keeping journey context/history + gig context
     setShowTraining({ isOpen: true, newJourney: true, journeyId, gigId: resolvedGigId || undefined });
+  };
+
+  /** Nouveau parcours Mongo + nouveau fil chat (un gig peut avoir plusieurs journeys). */
+  const handleCreateNewTrainingJourney = async () => {
+    if (!companyId) {
+      window.alert('Company context is missing. Cannot create a training journey.');
+      return;
+    }
+    const gigId = filterGigId !== 'all' ? String(filterGigId).trim() : undefined;
+    setOpeningNewTrainingJourney(true);
+    try {
+      const gigTitle =
+        gigId &&
+        companyGigs.find((g: any) => String(g?._id || g?.id || '').trim() === gigId)?.title;
+      const stamp = new Date().toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+      const titleBase = gigTitle ? String(gigTitle) : 'Training';
+      const shell: TrainingJourney = {
+        name: `${titleBase} — ${stamp}`,
+        title: `${titleBase} — ${stamp}`,
+        description: '',
+        status: 'draft',
+      } as TrainingJourney;
+      const result = await JourneyService.saveJourney(
+        shell,
+        [],
+        companyId,
+        gigId,
+        undefined,
+        undefined,
+        undefined,
+        undefined
+      );
+      const journeyId = String(result.journeyId || result.journey?._id || '').trim();
+      if (!/^[a-f\d]{24}$/i.test(journeyId)) {
+        throw new Error('Invalid journey id');
+      }
+      DraftService.clearDraft();
+      setShowTraining({ isOpen: true, newJourney: true, journeyId, gigId });
+    } catch (e) {
+      console.error('[RepOnboarding] create training journey failed', e);
+      window.alert('Could not create a new training journey. Please try again.');
+    } finally {
+      setOpeningNewTrainingJourney(false);
+    }
   };
 
   /** Mark Phase 3 Step 9 (REP Onboarding) complete and notify CompanyOnboarding like other steps. */
@@ -1026,16 +1074,15 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
               </div>
               <button
                 type="button"
-                onClick={() =>
-                  setShowTraining({
-                    isOpen: true,
-                    newJourney: true,
-                    gigId: filterGigId !== 'all' ? String(filterGigId) : undefined
-                  })
-                }
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-harx px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-harx-500/20 transition-all hover:-translate-y-0.5 hover:shadow-harx-500/40 sm:w-auto"
+                disabled={openingNewTrainingJourney}
+                onClick={() => void handleCreateNewTrainingJourney()}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-harx px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-harx-500/20 transition-all hover:-translate-y-0.5 hover:shadow-harx-500/40 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
-                <Plus className="h-4 w-4" />
+                {openingNewTrainingJourney ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
                 <span>New training journey</span>
               </button>
             </div>
@@ -1123,16 +1170,15 @@ const RepOnboarding: React.FC<RepOnboardingProps> = () => {
                       </p>
                       <button
                         type="button"
-                        onClick={() =>
-                          setShowTraining({
-                            isOpen: true,
-                            newJourney: true,
-                            gigId: filterGigId !== 'all' ? String(filterGigId) : undefined
-                          })
-                        }
-                        className="mt-6 inline-flex items-center space-x-2 rounded-xl bg-gradient-harx px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md"
+                        disabled={openingNewTrainingJourney}
+                        onClick={() => void handleCreateNewTrainingJourney()}
+                        className="mt-6 inline-flex items-center space-x-2 rounded-xl bg-gradient-harx px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        <Plus className="h-4 w-4" />
+                        {openingNewTrainingJourney ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Plus className="h-4 w-4" />
+                        )}
                         <span>Create First Journey</span>
                       </button>
                     </div>

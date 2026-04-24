@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import SetupWizard from './SetupWizard';
 import ContentUploader from './ContentUploader';
 import CurriculumDesigner from './CurriculumDesigner';
@@ -248,6 +248,41 @@ export default function JourneyBuilder({
     }
   };
 
+  const handleForkNewJourneyTraining = useCallback(async (): Promise<{ trainingJourneyId: string }> => {
+    const cid = String(company?.id || (company as any)?._id || '').trim();
+    if (!cid) {
+      throw new Error('Company ID is required to create a new training journey.');
+    }
+    const gid = selectedGigId ? String(selectedGigId).trim() : undefined;
+    const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+    const shell: TrainingJourney = {
+      name: `Formation — ${stamp}`,
+      title: `Formation — ${stamp}`,
+      description: '',
+      status: 'draft',
+    } as TrainingJourney;
+    const result = await JourneyService.saveJourney(shell, [], cid, gid, undefined, undefined, undefined, undefined);
+    const trainingJourneyId = String(result.journeyId || result.journey?._id || '').trim();
+    if (!/^[a-f\d]{24}$/i.test(trainingJourneyId)) {
+      throw new Error('Invalid training journey id returned by server.');
+    }
+    setJourney({
+      _id: trainingJourneyId,
+      id: trainingJourneyId,
+      name: shell.name,
+      title: shell.title,
+      description: '',
+      status: 'draft',
+      modulePlan: [],
+      planIsValid: false,
+      methodologyData: {},
+      gigId: gid,
+      companyId: cid,
+    } as TrainingJourney);
+    DraftService.clearDraft();
+    return { trainingJourneyId };
+  }, [company, selectedGigId]);
+
   const handleCurriculumComplete = async (newModules: TrainingModule[]) => {
     // If methodology is selected, enhance modules with methodology-specific content
     let finalModules = newModules;
@@ -314,6 +349,7 @@ export default function JourneyBuilder({
             journey={journey}
             methodology={methodology}
             repOnboardingLayout={repOnboardingLayout}
+            onForkNewJourneyTraining={repOnboardingLayout ? handleForkNewJourneyTraining : undefined}
           />
         );
       case 2:
