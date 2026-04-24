@@ -3277,7 +3277,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
     };
 
     const stripStyleBlueprint = (rawText: string): string =>
-      String(rawText || '').replace(/<harx-style>[\s\S]*?<\/harx-style>/gi, '').trim();
+      String(rawText || '')
+        .replace(/<harx-style>[\s\S]*?<\/harx-style>/gi, '')
+        .replace(/<harx-style>[\s\S]*$/gi, '')
+        .replace(/<\/harx-style>/gi, '')
+        .trim();
 
     const stripResourceSections = (rawText: string): string => {
       const lines = String(rawText || '').split('\n');
@@ -4584,7 +4588,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         s === 'in_progress' ? 'in_progress' : s;
 
       return (
-        <aside className="hidden lg:flex lg:w-[280px] lg:shrink-0 lg:flex-col lg:gap-3 lg:pl-3">
+        <aside className="mt-2 flex w-full shrink-0 flex-col gap-3 lg:mt-0 lg:w-[280px] lg:pl-3">
           <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Chat status</p>
             <div className="mt-2 flex items-center justify-between">
@@ -4623,6 +4627,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
         </aside>
       );
     };
+
+    const lastAssistantMessageId = [...chatMessages]
+      .filter((m) => !isHiddenSystemCommandMessage(String(m?.text || '')))
+      .reverse()
+      .find((m) => m.role === 'assistant')?.id;
 
 
     const anchoredChoiceUi = false;
@@ -5382,7 +5391,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               const presentationArtifact = renderPresentationArtifact(textWithoutStyle);
                               const interactiveQuestionnaire = renderInteractiveQuestionnaire(msg.id, textWithoutStyle, String(msg.text || ''));
                               const interactiveChoiceCards = renderInteractiveChoiceCards(msg.id, textWithoutStyle, String(msg.text || ''));
-                              const trainingReadinessCard = renderTrainingReadinessCard(msg.id, msg.trainingReadiness);
+                              const trainingReadinessCard =
+                                msg.role === 'assistant' && msg.id === lastAssistantMessageId
+                                  ? renderTrainingReadinessCard(msg.id, msg.trainingReadiness)
+                                  : null;
                               const hideMarkdownForInteractivePlan = !!interactiveTimeline;
                               const shouldShowMarkdownBody = !hideMarkdownForInteractivePlan && !msg.suppressText;
                               // Fallback markdown: keep typography hierarchy, but avoid "card-like" tinted blocks
@@ -5763,7 +5775,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               ))}
 
             </div>
-            {repSplitLayout ? renderChatWorkflowSidebar() : null}
+            {rep && hasStartedChat ? renderChatWorkflowSidebar() : null}
           </div>
 
           {rep && showPresentationModal && (
