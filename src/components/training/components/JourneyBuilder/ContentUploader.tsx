@@ -4603,6 +4603,21 @@ export default function ContentUploader(props: ContentUploaderProps) {
             })}
           </div>
         )}
+        {!repOnboardingLayout ? (
+          <p className="mb-2 text-[11px] leading-snug text-slate-500">
+            <span className="font-semibold text-slate-600">Plan (Journey Builder) :</span> chaque module doit
+            utiliser{' '}
+            <code className="rounded bg-slate-100 px-1 text-[10px] text-slate-800">## Module N: titre</code> puis{' '}
+            <code className="rounded bg-slate-100 px-1 text-[10px] text-slate-800">### 🎯 Objectifs</code>,{' '}
+            <code className="rounded bg-slate-100 px-1 text-[10px] text-slate-800">### 📌 Contenu clé</code>,{' '}
+            <code className="rounded bg-slate-100 px-1 text-[10px] text-slate-800">### 🧩 Activités</code>,{' '}
+            <code className="rounded bg-slate-100 px-1 text-[10px] text-slate-800">
+              {'### 📊 Indicateur d\u2019évaluation'}
+            </code>
+            , chacun suivi de puces <code className="rounded bg-slate-100 px-1 text-[10px]">- </code> (enregistrement
+            structuré en base).
+          </p>
+        ) : null}
         <textarea
           ref={chatTextareaRef}
           value={chatInput}
