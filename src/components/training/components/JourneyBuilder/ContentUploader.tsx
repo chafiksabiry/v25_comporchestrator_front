@@ -4,7 +4,7 @@ import { Upload, FileText, Video, Music, Image, File as FileIcon, CheckCircle, C
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ContentUpload } from '../../types/core';
-import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef, type ChatHistoryItem, type SavedPodcastItem, type TrainingImageSet, type QuizQuestion, type StructuredTrainingSlidesPayload } from '../../infrastructure/services/AIService';
+import { AIService, normalizePresentationFromApi, type UploadCurriculumContext, type PresentationGenerationContext, type CallRecordingRef, type ChatHistoryItem, type SavedPodcastItem, type TrainingImageSet, type QuizQuestion, type StructuredTrainingSlidesPayload, type ChatWorkflowStatus } from '../../infrastructure/services/AIService';
 import { WebSpeechService } from '../../infrastructure/services/CanvasVideoService';
 import { JourneyService } from '../../infrastructure/services/JourneyService';
 import { DraftService } from '../../infrastructure/services/DraftService';
@@ -445,6 +445,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const chatConfirmedJourneyIdRef = useRef<string | null>(null);
   /** Plan structuré issu de `training_chat_sessions.contextSnapshot.modulePlan` (aligné sur TrainingJourney). */
   const chatSessionModulePlanRef = useRef<Array<Record<string, unknown>>>([]);
+  /** Workflow status persisted on `training_chat_sessions.workflowStatus`. */
+  const chatWorkflowStatusRef = useRef<ChatWorkflowStatus | null>(null);
   /** Id Mongo `training_journeys` du parcours courant uniquement (pas de fallback sur anciens drafts). */
   const linkedTrainingJourneyMongoId = (): string | undefined => {
     const fromChat = chatConfirmedJourneyIdRef.current?.trim();
@@ -537,6 +539,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
+  const [chatWorkflowStatus, setChatWorkflowStatus] = useState<ChatWorkflowStatus | null>(null);
   const autoOpenedHistoryForJourneyRef = useRef<string | null>(null);
   const historyFetchSeqRef = useRef(0);
   const [gigSwitchHint, setGigSwitchHint] = useState<string | null>(null);
@@ -2615,6 +2618,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
       // Hard reset chat + generated artifacts so next generations are based only on the new chat.
       chatConfirmedJourneyIdRef.current = null;
       chatSessionModulePlanRef.current = [];
+      chatWorkflowStatusRef.current = null;
+      setChatWorkflowStatus(null);
       setIsPlanSavedForChat(false);
       setGigSwitchHint(null);
       setChatMessages([]);
@@ -2680,6 +2685,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
         const sidPlan = (session as { modulePlan?: unknown[] })?.modulePlan;
         chatSessionModulePlanRef.current =
           Array.isArray(sidPlan) && sidPlan.length > 0 ? (sidPlan as Array<Record<string, unknown>>) : [];
+        const sessionWorkflow = (session as { workflowStatus?: ChatWorkflowStatus })?.workflowStatus || null;
+        chatWorkflowStatusRef.current = sessionWorkflow;
+        setChatWorkflowStatus(sessionWorkflow);
         autoOpenedHistoryForJourneyRef.current =
           (session as any)?.trainingJourneyId || linkedTrainingJourneyMongoId() || null;
         setIsHistoryOpen(false);
@@ -3567,6 +3575,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
             if (Array.isArray(mp) && mp.length >= 2) {
               chatSessionModulePlanRef.current = mp as Array<Record<string, unknown>>;
             }
+            const refreshedWorkflow = (refreshed as { workflowStatus?: ChatWorkflowStatus })?.workflowStatus || null;
+            chatWorkflowStatusRef.current = refreshedWorkflow;
+            setChatWorkflowStatus(refreshedWorkflow);
           } catch {
             /* ignore refresh errors */
           }
@@ -4558,6 +4569,61 @@ export default function ContentUploader(props: ContentUploaderProps) {
       );
     };
 
+    const renderChatWorkflowSidebar = (): React.ReactNode | null => {
+      const status = chatWorkflowStatus || chatWorkflowStatusRef.current;
+      if (!status) return null;
+      const planStatus = String(status.plan || 'pending') as 'pending' | 'in_progress' | 'completed';
+      const modules = Array.isArray(status.modules) ? status.modules : [];
+      const chipClass = (s: 'pending' | 'in_progress' | 'completed'): string =>
+        s === 'completed'
+          ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+          : s === 'in_progress'
+            ? 'border-amber-300 bg-amber-50 text-amber-700'
+            : 'border-slate-300 bg-slate-50 text-slate-600';
+      const formatStatus = (s: 'pending' | 'in_progress' | 'completed') =>
+        s === 'in_progress' ? 'in_progress' : s;
+
+      return (
+        <aside className="hidden lg:flex lg:w-[280px] lg:shrink-0 lg:flex-col lg:gap-3 lg:pl-3">
+          <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Chat status</p>
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-700">Plan</span>
+              <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${chipClass(planStatus)}`}>
+                {formatStatus(planStatus)}
+              </span>
+            </div>
+          </div>
+          <div className="max-h-[52vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Modules</p>
+            <div className="mt-2 space-y-2">
+              {modules.length === 0 ? (
+                <p className="text-xs text-slate-500">No module status yet.</p>
+              ) : (
+                modules.map((m, idx) => {
+                  const statusValue = String(m?.status || 'pending') as 'pending' | 'in_progress' | 'completed';
+                  const title = String(m?.title || `Module ${idx + 1}`);
+                  return (
+                    <div key={`wf-module-${idx}`} className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2">
+                      <div className="mb-1 text-xs font-semibold text-slate-800">
+                        {`Module ${Number.isFinite(Number(m?.index)) ? Number(m.index) + 1 : idx + 1}`}
+                      </div>
+                      <div className="line-clamp-2 text-[11px] text-slate-600">{title}</div>
+                      <div className="mt-1.5">
+                        <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${chipClass(statusValue)}`}>
+                          {formatStatus(statusValue)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </aside>
+      );
+    };
+
 
     const anchoredChoiceUi = false;
 
@@ -4854,7 +4920,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           <div
             className={
               repSplitLayout
-                ? 'mx-auto mb-2 flex min-h-0 w-full min-w-0 max-w-none flex-1 flex-col'
+                ? 'mx-auto mb-2 flex min-h-0 w-full min-w-0 max-w-none flex-1 flex-col lg:flex-row lg:items-stretch'
                 : rep
                   ? 'mx-auto mb-0 w-full min-w-0 max-w-5xl'
                   : 'mx-auto flex min-h-0 w-full min-w-0 max-w-5xl flex-1 flex-col pb-2'
@@ -5697,6 +5763,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               ))}
 
             </div>
+            {repSplitLayout ? renderChatWorkflowSidebar() : null}
           </div>
 
           {rep && showPresentationModal && (
