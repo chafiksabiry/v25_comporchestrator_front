@@ -587,10 +587,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const lastPodcastGenChatLengthRef = useRef(0);
   const chatFileInputRef = useRef<HTMLInputElement | null>(null);
   const chatTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const chatThreadRef = useRef<HTMLDivElement | null>(null);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const shouldStickToBottomRef = useRef(true);
 
   useEffect(() => {
     window.requestAnimationFrame(() => {
-      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+      const container = chatThreadRef.current;
+      if (!container || !shouldStickToBottomRef.current) return;
+      chatEndRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
     });
   }, [chatMessages, isChatLoading]);
 
@@ -4748,6 +4753,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
       </>
     );
 
+    const handleChatThreadScroll = () => {
+      const container = chatThreadRef.current;
+      if (!container) return;
+      const thresholdPx = 24;
+      const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      shouldStickToBottomRef.current = distanceToBottom <= thresholdPx;
+    };
+
     return (
     <div className={rep ? 'flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-white' : 'min-h-[92vh] bg-white p-2'}>
       <div
@@ -5238,6 +5251,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 )}
               {shouldShowChatThread && (
                 <div
+                  ref={chatThreadRef}
+                  onScroll={handleChatThreadScroll}
                   style={{ scrollBehavior: 'smooth' }}
                   className={
                     rep
@@ -5613,6 +5628,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       })()}
                     </div>
                   ))}
+                  <div ref={chatEndRef} />
                   {rep && showPersonalizationCard && currentPersonalizationQuestion && (
                     <div className="flex justify-start">
                       <div className="w-full rounded-2xl border border-harx-100 bg-white p-2.5 shadow-md shadow-harx-500/10 sm:p-3">
