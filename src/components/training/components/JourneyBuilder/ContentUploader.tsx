@@ -3930,7 +3930,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   items: string[],
                   label: string,
                   emoji: string,
-                  sectionKey: string
+                  sectionKey: string,
+                  tone: 'objectives' | 'topics' = 'objectives'
                 ) => {
                   if (!items.length) return null;
                   const groups: Array<{ title: string | null; values: string[] }> = [];
@@ -3949,18 +3950,29 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       groups.push({ title: null, values: [raw] });
                     }
                   });
+                  const cleanBold = (s: string) =>
+                    s.replace(/\*\*(.*?)\*\*/g, '$1').replace(/__(.*?)__/g, '$1');
+                  const headerClasses =
+                    tone === 'objectives'
+                      ? 'bg-emerald-100 text-emerald-800 ring-emerald-200'
+                      : 'bg-sky-100 text-sky-800 ring-sky-200';
                   return (
                     <div>
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-600">{`${emoji} ${label}`}</p>
-                      <div className="mt-0.5 space-y-1">
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${headerClasses}`}
+                      >
+                        <span>{emoji}</span>
+                        <span>{label}</span>
+                      </span>
+                      <div className="mt-1 space-y-1">
                         {groups.map((g, gIdx) =>
                           g.title ? (
                             <div key={`plan-sec-${messageId}-${idx}-${sectionKey}-${gIdx}`} className="ml-1">
-                              <p className="text-[11px] font-semibold text-slate-700">{g.title}</p>
+                              <p className="text-[11px] font-semibold text-slate-700">{cleanBold(g.title)}</p>
                               <ul className="ml-4 space-y-0.5 pl-4 text-xs text-slate-700">
                                 {g.values.map((v, vIdx) => (
                                   <li key={`plan-sec-item-${messageId}-${idx}-${sectionKey}-${gIdx}-${vIdx}`} className="list-disc">
-                                    {v}
+                                    {cleanBold(v)}
                                   </li>
                                 ))}
                               </ul>
@@ -3969,7 +3981,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                             <ul key={`plan-flat-${messageId}-${idx}-${sectionKey}-${gIdx}`} className="space-y-0.5 pl-4 text-xs text-slate-700">
                               {g.values.map((v, vIdx) => (
                                 <li key={`plan-flat-item-${messageId}-${idx}-${sectionKey}-${gIdx}-${vIdx}`} className="list-disc">
-                                  {v}
+                                  {cleanBold(v)}
                                 </li>
                               ))}
                             </ul>
@@ -4004,9 +4016,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       ) : null}
                     </div>
                     <p className="text-sm font-semibold text-slate-900">{`${moduleEmoji} ${module.title}`}</p>
-                    <div className="mt-2 space-y-2">
-                      {renderSectionWithIndent(module.sections.objectives.slice(0, 10), 'Objectifs', '🎯', 'objectives')}
-                      {renderSectionWithIndent(module.sections.keyTopics.slice(0, 14), 'Sujets clés', '📌', 'topics')}
+                    <div className="mt-2 space-y-3">
+                      {renderSectionWithIndent(module.sections.objectives.slice(0, 10), 'Objectifs', '🎯', 'objectives', 'objectives')}
+                      {module.sections.objectives.length > 0 && module.sections.keyTopics.length > 0 ? (
+                        <div className="h-px w-full bg-slate-200/70" />
+                      ) : null}
+                      {renderSectionWithIndent(module.sections.keyTopics.slice(0, 14), 'Sujets clés', '📌', 'topics', 'topics')}
                       {module.sections.objectives.length === 0 &&
                       module.sections.keyTopics.length === 0 ? (
                         <ul className="space-y-0.5 pl-4 text-xs text-slate-700">
