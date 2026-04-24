@@ -441,6 +441,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const { onComplete, onBack, company, gigId, journey, methodology, repOnboardingLayout = false } = props;
   /** Après validation du plan dans le chat, le backend renvoie l’id — on le réinjecte dans le contexte des appels suivants. */
   const chatConfirmedJourneyIdRef = useRef<string | null>(null);
+  /** Plan structuré issu de `training_chat_sessions.contextSnapshot.modulePlan` (aligné sur TrainingJourney). */
+  const chatSessionModulePlanRef = useRef<Array<Record<string, unknown>>>([]);
   /** Id Mongo `training_journeys` du parcours courant uniquement (pas de fallback sur anciens drafts). */
   const linkedTrainingJourneyMongoId = (): string | undefined => {
     const fromChat = chatConfirmedJourneyIdRef.current?.trim();
@@ -2610,6 +2612,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const startNewConversation = () => {
       // Hard reset chat + generated artifacts so next generations are based only on the new chat.
       chatConfirmedJourneyIdRef.current = null;
+      chatSessionModulePlanRef.current = [];
       setIsPlanSavedForChat(false);
       setGigSwitchHint(null);
       setChatMessages([]);
@@ -2672,6 +2675,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
         );
         if (hasSavedPlanAck) setIsPlanSavedForChat(true);
         setActiveChatSessionId(session._id || sessionId);
+        const sidPlan = (session as { modulePlan?: unknown[] })?.modulePlan;
+        chatSessionModulePlanRef.current =
+          Array.isArray(sidPlan) && sidPlan.length > 0 ? (sidPlan as Array<Record<string, unknown>>) : [];
         autoOpenedHistoryForJourneyRef.current =
           (session as any)?.trainingJourneyId || linkedTrainingJourneyMongoId() || null;
         setIsHistoryOpen(false);
@@ -3425,6 +3431,35 @@ export default function ContentUploader(props: ContentUploaderProps) {
             ? (cleanMessage.match(/module\s+\d+/i)?.[0] || cleanMessage.match(/module\s*[:\-]\s*([^\n]+)/i)?.[1] || '').trim()
             : '';
 
+        const journeyModulePlanRaw = Array.isArray((journey as any)?.modulePlan) ? ((journey as any).modulePlan as any[]) : [];
+        const sessionPlanRaw = chatSessionModulePlanRef.current || [];
+        const normalizePlanItem = (m: any) => ({
+          title: String(m?.title || '').trim(),
+          objectifs: Array.isArray(m?.objectifs) ? m.objectifs : [],
+          keyTopics: Array.isArray(m?.keyTopics) ? m.keyTopics : [],
+          activites: Array.isArray(m?.activites) ? m.activites : [],
+          durationMinutes: Number(m?.durationMinutes || 0) || undefined,
+        });
+        const effectiveModulePlanSource =
+          journeyModulePlanRaw.length >= 2 ? journeyModulePlanRaw : sessionPlanRaw;
+        const journeyModulePlanForContext = effectiveModulePlanSource.map(normalizePlanItem).filter((x) => x.title);
+        const curriculumOutlineFromSessionPlan =
+          journeyModulePlanForContext.length >= 2
+            ? journeyModulePlanForContext.map((m) => ({
+                title: String(m?.title || '').trim(),
+                hasSections: false,
+                sectionCount: 0,
+              }))
+            : [];
+        const curriculumOutlineForContext =
+          Array.isArray(generatedCurriculum?.modules) && (generatedCurriculum.modules as any[]).length > 0
+            ? (generatedCurriculum.modules as any[]).map((m) => ({
+                title: String(m?.title || '').trim(),
+                hasSections: Array.isArray(m?.sections) && m.sections.length > 0,
+                sectionCount: Array.isArray(m?.sections) ? m.sections.length : 0,
+              }))
+            : curriculumOutlineFromSessionPlan;
+
         const chatContext = JSON.stringify({
           app: 'HARX Journey Builder',
           selectedGigId: activeChatGigId || '',
@@ -3453,22 +3488,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
           trainingJourneyId: linkedTrainingJourneyMongoId() || null,
           conversationHistory: historyForContext,
           canGenerateTraining: canProceed,
-          curriculumOutline: Array.isArray(generatedCurriculum?.modules)
-            ? (generatedCurriculum.modules as any[]).map((m) => ({
-                title: String(m?.title || '').trim(),
-                hasSections: Array.isArray(m?.sections) && m.sections.length > 0,
-                sectionCount: Array.isArray(m?.sections) ? m.sections.length : 0,
-              }))
-            : [],
-          journeyModulePlan: Array.isArray((journey as any)?.modulePlan)
-            ? ((journey as any).modulePlan as any[]).map((m) => ({
-                title: String(m?.title || '').trim(),
-                objectifs: Array.isArray(m?.objectifs) ? m.objectifs : [],
-                keyTopics: Array.isArray(m?.keyTopics) ? m.keyTopics : [],
-                activites: Array.isArray(m?.activites) ? m.activites : [],
-                durationMinutes: Number(m?.durationMinutes || 0) || undefined,
-              }))
-            : [],
+          curriculumOutline: curriculumOutlineForContext,
+          journeyModulePlan: journeyModulePlanForContext,
+          modulePlan: journeyModulePlanForContext.length >= 2 ? journeyModulePlanForContext : [],
         });
 
         const streamingAssistantId = options?.replaceAssistantId || appendChatMessage('assistant', '', { isStreaming: true });
@@ -3526,6 +3548,18 @@ export default function ContentUploader(props: ContentUploaderProps) {
           }
           return next;
         });
+        const sessionIdForRefresh = streamResult.sessionId || activeChatSessionId;
+        if (sessionIdForRefresh) {
+          try {
+            const refreshed = await AIService.getChatSession(sessionIdForRefresh);
+            const mp = (refreshed as { modulePlan?: unknown[] })?.modulePlan;
+            if (Array.isArray(mp) && mp.length >= 2) {
+              chatSessionModulePlanRef.current = mp as Array<Record<string, unknown>>;
+            }
+          } catch {
+            /* ignore refresh errors */
+          }
+        }
         if (analyzedUploads.length > 0) {
           const namesThisRound = uploads
             .filter((u) => u.status === 'analyzed' && !!u.aiAnalysis)
