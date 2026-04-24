@@ -5547,9 +5547,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   {interactiveChoiceCards ? (
                                     <div className="mb-2">{interactiveChoiceCards}</div>
                                   ) : null}
-                                  {trainingReadinessCard ? (
-                                    <div className="mb-2">{trainingReadinessCard}</div>
-                                  ) : null}
                                   {shouldShowMarkdownBody ? (
                                     <div
                                       className={disableDecorativeTrainingUi ? 'text-sm leading-7 text-slate-800' : `${moduleShapeClass} border p-3`}
@@ -5566,6 +5563,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   ) : null}
                                   {msg.isStreaming && !!textWithoutStyle.trim() ? (
                                     <span className="ml-1 inline-block h-4 w-1 animate-pulse rounded bg-harx-400 align-middle" />
+                                  ) : null}
+                                  {trainingReadinessCard ? (
+                                    <div className="mt-2">{trainingReadinessCard}</div>
                                   ) : null}
                                 </>
                               );
