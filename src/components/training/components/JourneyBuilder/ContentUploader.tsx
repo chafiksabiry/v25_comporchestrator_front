@@ -3379,6 +3379,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
     ): Promise<{ ok: boolean; planSaved?: boolean; error?: string }> => {
       const cleanMessage = message.trim();
       if (!cleanMessage || isChatLoading) return { ok: false, error: 'busy_or_empty' };
+      let streamingAssistantId: string | null = null;
       const shouldAppendUser = options?.appendUser !== false;
       if (shouldAppendUser) {
         appendChatMessage(
@@ -3562,7 +3563,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           modulePlan: journeyModulePlanForContext.length >= 2 ? journeyModulePlanForContext : [],
         });
 
-        const streamingAssistantId = options?.replaceAssistantId || appendChatMessage('assistant', '', { isStreaming: true });
+        streamingAssistantId = options?.replaceAssistantId || appendChatMessage('assistant', '', { isStreaming: true });
         if (options?.replaceAssistantId) {
           setChatMessages((prev) =>
             prev.map((m) =>
@@ -3672,10 +3673,25 @@ export default function ContentUploader(props: ContentUploaderProps) {
         const errorMessage = error?.message
           ? `Erreur backend: ${error.message}`
           : "Impossible de contacter le backend Claude pour l'instant.";
-        appendChatMessage(
-          'assistant',
-          errorMessage
-        );
+        if (streamingAssistantId) {
+          setChatMessages((prev) =>
+            prev.map((m) =>
+              m.id === streamingAssistantId
+                ? {
+                    ...m,
+                    text: errorMessage,
+                    isStreaming: false,
+                    trainingReadiness: undefined,
+                    suppressText: false,
+                  }
+                : m.isStreaming
+                  ? { ...m, isStreaming: false }
+                  : m
+            )
+          );
+        } else {
+          appendChatMessage('assistant', errorMessage);
+        }
         return { ok: false, error: errorMessage };
       } finally {
         setIsChatLoading(false);
