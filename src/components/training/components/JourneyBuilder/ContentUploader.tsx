@@ -5452,14 +5452,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   {interactiveTimeline ? (
                                     <div className="mb-2">{interactiveTimeline}</div>
                                   ) : null}
-                                  {trainingReadinessCard ? (
-                                    <div className="mb-2">{trainingReadinessCard}</div>
-                                  ) : null}
                                   {interactiveQuestionnaire ? (
                                     <div className="mb-2">{interactiveQuestionnaire}</div>
                                   ) : null}
                                   {interactiveChoiceCards ? (
                                     <div className="mb-2">{interactiveChoiceCards}</div>
+                                  ) : null}
+                                  {trainingReadinessCard ? (
+                                    <div className="mb-2">{trainingReadinessCard}</div>
                                   ) : null}
                                   {shouldShowMarkdownBody ? (
                                     <div
