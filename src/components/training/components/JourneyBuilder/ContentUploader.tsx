@@ -5900,7 +5900,9 @@ export default function ContentUploader(props: ContentUploaderProps) {
               ))}
 
             </div>
-            {rep && hasStartedChat ? renderChatWorkflowSidebar() : null}
+            {rep && (hasStartedChat || !!chatWorkflowStatus || !!chatWorkflowStatusRef.current)
+              ? renderChatWorkflowSidebar()
+              : null}
           </div>
 
           {rep && showPresentationModal && (
