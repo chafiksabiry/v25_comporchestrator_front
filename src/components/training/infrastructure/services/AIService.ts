@@ -132,6 +132,18 @@ export interface ChatSessionModulePlanItem {
   isValid?: boolean;
 }
 
+export type ChatBuildStatus = 'pending' | 'in_progress' | 'completed';
+
+export interface ChatWorkflowStatus {
+  plan: ChatBuildStatus;
+  modules: Array<{
+    index: number;
+    title: string;
+    status: ChatBuildStatus;
+  }>;
+  updatedAt?: string;
+}
+
 export interface ChatSessionDetails {
   _id: string;
   title: string;
@@ -139,6 +151,7 @@ export interface ChatSessionDetails {
   trainingJourneyId?: string;
   modulePlan?: ChatSessionModulePlanItem[];
   modulePlanUpdatedAt?: string;
+  workflowStatus?: ChatWorkflowStatus;
   lastActivityAt?: string;
   messages: Array<{ role: 'user' | 'assistant'; text: string; createdAt?: string | null }>;
 }
