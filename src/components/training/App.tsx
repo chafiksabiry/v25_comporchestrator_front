@@ -2106,7 +2106,7 @@ export function AppContent({
 
   // Debug logs removed for production
   return (
-    <div className={`h-full bg-gray-50 relative min-h-[500px] ${isEmbedded ? '' : ''}`}>
+    <div className={`h-full bg-gray-50 relative min-h-[500px] ${isEmbedded ? 'overflow-hidden' : ''}`}>
       {/* Sidebar - Always rendered first */}
       {!isEmbedded && (
         <Sidebar
@@ -2178,7 +2178,7 @@ export function AppContent({
           </div>
         )}
 
-        <main className={`flex-1 flex gap-6 w-full ${selectedModule ? 'p-6 pb-0' : 'p-0'}`} style={{ display: 'flex', flexDirection: 'row', minHeight: 0, overflow: 'visible' }}>
+        <main className={`flex-1 flex gap-6 w-full ${selectedModule ? 'p-6 pb-0' : 'p-0'}`} style={{ display: 'flex', flexDirection: 'row', minHeight: 0, overflow: isEmbedded ? 'hidden' : 'visible' }}>
           <div className="flex-1 w-full h-full overflow-y-auto" style={{ minHeight: 0 }}>
             {renderContent()}
           </div>
