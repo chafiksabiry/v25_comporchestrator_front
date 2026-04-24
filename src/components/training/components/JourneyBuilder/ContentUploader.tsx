@@ -548,6 +548,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [activeChatSessionId, setActiveChatSessionId] = useState<string | null>(null);
   const [chatWorkflowStatus, setChatWorkflowStatus] = useState<ChatWorkflowStatus | null>(null);
+  const activeChatAbortRef = useRef<AbortController | null>(null);
   const autoOpenedHistoryForJourneyRef = useRef<string | null>(null);
   const historyFetchSeqRef = useRef(0);
   const [gigSwitchHint, setGigSwitchHint] = useState<string | null>(null);
@@ -3585,6 +3586,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
           );
         }
         const companyId = company?.id || company?._id ? String(company?.id || company?._id) : undefined;
+        const abortController = new AbortController();
+        activeChatAbortRef.current = abortController;
         const streamResult = await AIService.chatStream(cleanMessage, chatContext, (chunk) => {
           setChatMessages((prev) =>
             prev.map((m) =>
@@ -3597,6 +3600,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           gigId: activeChatGigId ? String(activeChatGigId) : undefined,
           companyId,
           sessionId: activeChatSessionId || undefined,
+          signal: abortController.signal,
         });
         if (streamResult.sessionId && streamResult.sessionId !== activeChatSessionId) {
           setActiveChatSessionId(streamResult.sessionId);
@@ -3680,6 +3684,23 @@ export default function ContentUploader(props: ContentUploaderProps) {
         void refreshChatHistory();
         return { ok: true, planSaved: !!streamResult.planSaved };
       } catch (error: any) {
+        const isAbort =
+          error?.name === 'AbortError' ||
+          /aborted|aborterror/i.test(String(error?.message || ''));
+        if (isAbort) {
+          if (streamingAssistantId) {
+            setChatMessages((prev) =>
+              prev.map((m) =>
+                m.id === streamingAssistantId
+                  ? { ...m, isStreaming: false, trainingReadiness: undefined }
+                  : m.isStreaming
+                    ? { ...m, isStreaming: false }
+                    : m
+              )
+            );
+          }
+          return { ok: false, error: 'aborted' };
+        }
         console.error('[ContentUploader] Chat backend call failed:', error);
         const errorMessage = error?.message
           ? `Erreur backend: ${error.message}`
@@ -3705,8 +3726,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
         }
         return { ok: false, error: errorMessage };
       } finally {
+        activeChatAbortRef.current = null;
         setIsChatLoading(false);
       }
+    };
+
+    const handleStopChatGeneration = () => {
+      if (!isChatLoading) return;
+      activeChatAbortRef.current?.abort();
+      activeChatAbortRef.current = null;
+      setIsChatLoading(false);
+      setChatMessages((prev) => prev.map((m) => (m.isStreaming ? { ...m, isStreaming: false } : m)));
     };
 
     const handleRegenerateMessage = async (assistantId: string) => {
@@ -4864,20 +4894,32 @@ export default function ContentUploader(props: ContentUploaderProps) {
             +
           </button>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => void handleChatSubmit()}
-              disabled={!chatInput.trim() || composerSendDisabled}
-              className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
-              title={hasPendingUpload ? 'Analyse des documents en cours…' : 'Send'}
-            >
-              {hasPendingUpload ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Send className="h-3.5 w-3.5" />
-              )}
-              Send
-            </button>
+            {isChatLoading ? (
+              <button
+                type="button"
+                onClick={handleStopChatGeneration}
+                className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100"
+                title="Stop generation"
+              >
+                <Square className="h-3.5 w-3.5" />
+                Stop
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void handleChatSubmit()}
+                disabled={!chatInput.trim() || composerSendDisabled}
+                className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                title={hasPendingUpload ? 'Analyse des documents en cours…' : 'Send'}
+              >
+                {hasPendingUpload ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Send className="h-3.5 w-3.5" />
+                )}
+                Send
+              </button>
+            )}
           </div>
         </div>
       </>
