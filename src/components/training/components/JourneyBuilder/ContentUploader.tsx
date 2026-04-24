@@ -99,6 +99,7 @@ function extractTrainingReadinessBlock(raw: string): {
             (a) =>
               a &&
               (a.id === 'validate_plan' ||
+                a.id === 'generate_current_module' ||
                 a.id === 'validate_training' ||
                 a.id === 'save_without_missing' ||
                 a.id === 'generate_missing_modules')
