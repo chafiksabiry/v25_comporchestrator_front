@@ -4588,7 +4588,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         s === 'in_progress' ? 'in_progress' : s;
 
       return (
-        <aside className="mt-2 flex w-full shrink-0 flex-col gap-3 lg:mt-0 lg:w-[280px] lg:pl-3">
+        <aside className="mt-2 hidden w-full shrink-0 flex-col gap-3 xl:mt-0 xl:flex xl:w-[260px] xl:pl-3">
           <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Chat status</p>
             <div className="mt-2 flex items-center justify-between">
@@ -4598,7 +4598,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               </span>
             </div>
           </div>
-          <div className="max-h-[52vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+          <div className="max-h-[56vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Modules</p>
             <div className="mt-2 space-y-2">
               {modules.length === 0 ? (
@@ -4749,29 +4749,29 @@ export default function ContentUploader(props: ContentUploaderProps) {
     );
 
     return (
-    <div className={rep ? 'flex w-full min-w-0 flex-col bg-white' : 'min-h-[92vh] bg-white p-2'}>
+    <div className={rep ? 'flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-white' : 'min-h-[92vh] bg-white p-2'}>
       <div
         className={
           rep
             ? repSplitLayout
-              ? 'mx-auto flex w-full max-w-[min(100%,1680px)] flex-col px-2 py-4 md:px-4'
-              : 'mx-auto flex w-full max-w-5xl flex-col px-4 py-6 md:px-6'
+                ? 'mx-auto flex h-full min-h-0 w-full max-w-[min(100%,1760px)] flex-col overflow-hidden px-2 py-4 md:px-4'
+                : 'mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col overflow-hidden px-4 py-6 md:px-6'
             : 'mx-auto w-full max-w-[1400px]'
         }
       >
         <div
           className={
             rep
-              ? 'flex w-full flex-col'
+              ? 'flex h-full min-h-0 w-full flex-col overflow-hidden'
               : 'w-full flex-1 rounded-3xl border border-slate-200/90 bg-white p-2 shadow-sm md:p-3'
           }
         >
           <div
             className={
               repSplitLayout
-                ? 'flex min-h-[72vh] w-full flex-col-reverse gap-3 lg:h-[calc(100dvh-5.5rem)] lg:flex-row lg:items-stretch lg:gap-4 lg:overflow-hidden'
+                ? 'flex h-full min-h-0 w-full flex-col-reverse gap-3 overflow-hidden xl:flex-row xl:items-stretch xl:gap-4'
                 : rep
-                  ? 'flex min-h-[72vh] w-full flex-col'
+                  ? 'flex h-full min-h-0 w-full flex-col overflow-hidden'
                   : 'grid min-h-[88vh] gap-3 lg:grid-cols-[265px_minmax(0,1fr)]'
             }
           >
@@ -4931,7 +4931,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
               repSplitLayout
                 ? 'mx-auto mb-2 flex min-h-0 w-full min-w-0 max-w-none flex-1 flex-col lg:flex-row lg:items-stretch'
                 : rep
-                  ? 'mx-auto mb-0 w-full min-w-0 max-w-5xl'
+                  ? 'mx-auto mb-0 flex h-full min-h-0 w-full min-w-0 max-w-5xl flex-1 flex-col overflow-hidden'
                   : 'mx-auto flex min-h-0 w-full min-w-0 max-w-5xl flex-1 flex-col pb-2'
             }
           >
@@ -4940,14 +4940,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 repSplitLayout
                   ? 'relative flex min-h-0 flex-1 flex-col rounded-none border-0 bg-transparent p-0 shadow-none'
                   : rep
-                    ? 'relative rounded-none border-0 bg-transparent p-0 shadow-none'
+                    ? 'relative flex min-h-0 flex-1 flex-col rounded-none border-0 bg-transparent p-0 shadow-none'
                     : 'relative flex min-h-0 flex-1 flex-col rounded-3xl border border-harx-100 bg-white shadow-[0_12px_36px_rgba(25,25,50,0.08)]'
               }
             >
               <div
                 className={`relative mb-2 flex w-full shrink-0 ${rep ? 'flex-col gap-2 px-0.5 pt-0.5' : 'justify-end px-3 pt-3'}`}
               >
-                <div className={`flex w-full max-w-full flex-wrap items-center justify-end gap-2 transition-all duration-300 sm:inline-flex sm:w-auto sm:flex-nowrap sm:gap-1.5 ${
+                <div className={`flex w-full max-w-full items-center justify-end gap-2 overflow-x-auto whitespace-nowrap transition-all duration-300 sm:inline-flex sm:w-auto sm:flex-nowrap sm:gap-1.5 ${
                   rep ? 'rounded-none border-0 bg-transparent p-0 shadow-none' : 'rounded-2xl border border-harx-100/90 bg-white p-1.5 shadow-sm'
                 }`}>
                   <select
@@ -4999,11 +4999,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
                   </div>
                 ) : null}
                 {rep && (
-                  <div className="flex w-full flex-wrap items-center justify-end gap-2 rounded-2xl border border-harx-100 bg-white p-2 shadow-sm ring-1 ring-harx-500/5">
+                  <div className="flex w-full items-center justify-end gap-1.5 overflow-x-auto rounded-2xl border border-harx-100 bg-white p-2 shadow-sm ring-1 ring-harx-500/5">
                     <select
                       value={imageRenderMode}
                       onChange={(e) => setImageRenderMode(e.target.value === 'template_slides' ? 'template_slides' : 'ai_images')}
-                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700"
+                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700"
                       title="Presentation rendering mode"
                     >
                       <option value="ai_images">AI images</option>
@@ -5760,7 +5760,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 </div>
               ) : (
                 <div
-                  className={`shrink-0 bg-white pb-1 pt-2 ${rep ? 'sticky bottom-0 z-20 border-t border-harx-100/80' : 'sticky bottom-0 z-20 border-t border-harx-100/80 px-3'}`}
+                  className={`shrink-0 bg-white pb-1 pt-2 ${rep ? 'sticky bottom-0 z-20 border-t border-harx-100/80 backdrop-blur supports-[backdrop-filter]:bg-white/95' : 'sticky bottom-0 z-20 border-t border-harx-100/80 px-3'}`}
                 >
                   <div
                     className={
