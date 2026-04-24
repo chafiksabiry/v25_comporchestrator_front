@@ -100,6 +100,7 @@ function extractTrainingReadinessBlock(raw: string): {
               a &&
               (a.id === 'validate_plan' ||
                 a.id === 'validate_module_content' ||
+                a.id === 'validate_all_modules_content' ||
                 a.id === 'generate_current_module' ||
                 a.id === 'validate_training' ||
                 a.id === 'save_without_missing' ||
@@ -498,6 +499,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
       suppressText?: boolean;
       /** Après « oui » / validation : le plan n’est plus affiché en cartes cliquables. */
       planInteractiveDisabled?: boolean;
+      /** Fichiers attachés à ce message user (snapshot au moment de l'envoi). */
+      attachments?: Array<{
+        id: string;
+        name: string;
+        type: ContentUpload['type'];
+        size?: number;
+      }>;
     }>
   >([]);
   const [isPlanSavedForChat, setIsPlanSavedForChat] = useState<boolean>(() => {
@@ -2609,7 +2617,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const appendChatMessage = (
       role: 'user' | 'assistant',
       text: string,
-      extra: Partial<{ isStreaming: boolean; planInteractiveDisabled?: boolean }> = {}
+      extra: Partial<{
+        isStreaming: boolean;
+        planInteractiveDisabled?: boolean;
+        attachments?: Array<{ id: string; name: string; type: ContentUpload['type']; size?: number }>;
+      }> = {}
     ) => {
       const id = `${role}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       setChatMessages((prev) => [
@@ -3326,6 +3338,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const handleChatSubmit = async () => {
       const message = chatInput.trim();
       if (!message || isChatLoading) return;
+      const pendingUpload = uploads.some(
+        (u) => u.status === 'uploading' || u.status === 'processing'
+      );
+      if (pendingUpload) return;
       setChatInput('');
       setShowRepSourcePopup(false);
       // If user starts typing freely, do not keep onboarding source card visible.
@@ -3337,7 +3353,19 @@ export default function ContentUploader(props: ContentUploaderProps) {
           source: prev.source || 'No KB, no documents',
         }));
       }
-      await sendChatMessage(message);
+      // Snapshot analyzed uploads so they appear attached to the user bubble,
+      // then clear the composer so they don't keep showing below the input.
+      const attachmentsForMessage = uploads
+        .filter((u) => u.status === 'analyzed')
+        .map((u) => ({
+          id: u.id,
+          name: u.name,
+          type: u.type,
+          size: (u as any).size,
+        }));
+      await sendChatMessage(message, {
+        attachments: attachmentsForMessage.length > 0 ? attachmentsForMessage : undefined,
+      });
     };
 
     const sendChatMessage = async (
@@ -3346,13 +3374,26 @@ export default function ContentUploader(props: ContentUploaderProps) {
         appendUser?: boolean;
         replaceAssistantId?: string;
         historyMessages?: Array<{ id: string; role: 'user' | 'assistant'; text: string; isStreaming?: boolean }>;
+        attachments?: Array<{ id: string; name: string; type: ContentUpload['type']; size?: number }>;
       }
     ): Promise<{ ok: boolean; planSaved?: boolean; error?: string }> => {
       const cleanMessage = message.trim();
       if (!cleanMessage || isChatLoading) return { ok: false, error: 'busy_or_empty' };
       const shouldAppendUser = options?.appendUser !== false;
       if (shouldAppendUser) {
-        appendChatMessage('user', cleanMessage);
+        appendChatMessage(
+          'user',
+          cleanMessage,
+          options?.attachments && options.attachments.length > 0
+            ? { attachments: options.attachments }
+            : {}
+        );
+      }
+      // After the attachments are snapshotted on the user bubble, clear the composer tray
+      // so the same files don't linger under the input.
+      if (options?.attachments && options.attachments.length > 0) {
+        const attachedIds = new Set(options.attachments.map((a) => a.id));
+        setUploads((prev) => prev.filter((u) => !attachedIds.has(u.id)));
       }
       setIsChatLoading(true);
 
@@ -3554,17 +3595,33 @@ export default function ContentUploader(props: ContentUploaderProps) {
         }
         const rawAssistant = streamResult.text?.trim() || "Je n'ai pas pu generer une reponse pour le moment.";
         const readinessParsed = extractTrainingReadinessBlock(rawAssistant);
+        const finalDisplayText = String(readinessParsed.displayText || '').trim();
+        const hasReadinessCard = !!readinessParsed.trainingReadiness;
         setChatMessages((prev) => {
-          const next = prev.map((m) =>
-            m.id === streamingAssistantId
-              ? {
-                  ...m,
-                  text: readinessParsed.displayText,
-                  trainingReadiness: readinessParsed.trainingReadiness || undefined,
-                  isStreaming: false,
-                }
-              : { ...m }
-          );
+          const next = prev
+            .map((m) =>
+              m.id === streamingAssistantId
+                ? {
+                    ...m,
+                    text: readinessParsed.displayText,
+                    trainingReadiness: readinessParsed.trainingReadiness || undefined,
+                    isStreaming: false,
+                    // Masque la bulle de texte vide quand la réponse ne contient qu'une carte
+                    // (ex: réponse à __VALIDATE_PLAN__ qui ne renvoie qu'un bloc readiness).
+                    suppressText: !finalDisplayText && hasReadinessCard ? true : m.suppressText,
+                  }
+                : { ...m }
+            )
+            // Supprime complètement l'éventuelle bulle assistant qui n'a ni texte ni carte
+            // (sinon une bulle vide persiste dans le thread).
+            .filter(
+              (m) =>
+                !(
+                  m.id === streamingAssistantId &&
+                  !String(m.text || '').trim() &&
+                  !m.trainingReadiness
+                )
+            );
           if (streamResult.planSaved) {
             const ackIdx = next.findIndex((m) => m.id === streamingAssistantId);
             if (ackIdx >= 2) {
@@ -3892,13 +3949,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
       if (looksLikeModuleContent) return null;
       const likelyPlanMessage =
         /(plan\s+de\s+formation|training\s+plan|^\s*##\s*module\s*\d+|^\s*module\s*\d+\s*[-:])/im.test(text);
+      // Ne réaffiche le timeline du plan QUE sur un message qui contient effectivement un plan.
+      // Sur un simple accusé de validation (module / plan) ou toute autre réponse courte,
+      // ne pas ré-injecter le plan sauvegardé (sinon l'UI semble répondre « en affichant le plan »
+      // alors que la demande était une simple validation).
+      if (!likelyPlanMessage) return null;
       const parsedPlan = parseTrainingPlan(text);
       const structuredModules = getStructuredModulePlanForUi();
-      const timelineModules = likelyPlanMessage
-        ? (parsedPlan.modules.length >= 2 ? parsedPlan.modules : structuredModules)
-        : (structuredModules.length >= 2 ? structuredModules : parsedPlan.modules);
+      const timelineModules =
+        parsedPlan.modules.length >= 2 ? parsedPlan.modules : structuredModules;
       if (timelineModules.length >= 2) {
-        const usingParsedForCurrentMessage = likelyPlanMessage && parsedPlan.modules.length >= 2;
+        const usingParsedForCurrentMessage = parsedPlan.modules.length >= 2;
         const usingStructuredPlan = !usingParsedForCurrentMessage && structuredModules.length >= 2;
         const timelineTitle = usingStructuredPlan
           ? 'Plan de formation (sauvegardé)'
@@ -4539,10 +4600,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     const result = await sendChatMessage('__VALIDATE_PLAN__', { appendUser: false });
                     if (result.ok && result.planSaved) {
                       setIsPlanSavedForChat(true);
-                      setPlanValidationHint({
-                        type: 'success',
-                        text: 'Plan validé et enregistré en base.',
-                      });
+                      setPlanValidationHint(null);
                     } else {
                       setPlanValidationHint({
                         type: 'error',
@@ -4655,6 +4713,16 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
     const anchoredChoiceUi = false;
 
+    const hasPendingUpload = uploads.some(
+      (u) => u.status === 'uploading' || u.status === 'processing'
+    );
+    const composerDisabled = isChatLoading || hasPendingUpload;
+    const composerPlaceholder = hasPendingUpload
+      ? 'Analyse des documents en cours…'
+      : hasStartedChat
+        ? 'Reply...'
+        : 'How can I help you?';
+
     const renderComposerBody = () => (
       <>
         <input
@@ -4725,7 +4793,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         <textarea
           ref={chatTextareaRef}
           value={chatInput}
-          disabled={isChatLoading}
+          disabled={composerDisabled}
           onChange={(e) => setChatInput(e.target.value)}
           onInput={(e) => {
             const el = e.currentTarget;
@@ -4735,12 +4803,13 @@ export default function ContentUploader(props: ContentUploaderProps) {
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
+              if (composerDisabled) return;
               void handleChatSubmit();
             }
           }}
           rows={1}
-          placeholder={hasStartedChat ? 'Reply...' : 'How can I help you?'}
-          className="mb-3 w-full resize-none bg-transparent text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
+          placeholder={composerPlaceholder}
+          className="mb-3 w-full resize-none bg-transparent text-[15px] text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
         />
         <div className="flex items-center justify-between">
           <button
@@ -4755,11 +4824,15 @@ export default function ContentUploader(props: ContentUploaderProps) {
             <button
               type="button"
               onClick={() => void handleChatSubmit()}
-              disabled={!chatInput.trim() || isChatLoading}
-              className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
-              title="Send"
+              disabled={!chatInput.trim() || composerDisabled}
+              className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              title={hasPendingUpload ? 'Analyse des documents en cours…' : 'Send'}
             >
-              <Send className="h-3.5 w-3.5" />
+              {hasPendingUpload ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Send className="h-3.5 w-3.5" />
+              )}
               Send
             </button>
           </div>
@@ -5600,20 +5673,40 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               );
                             })()}
                           </div>
-                          <div className={`mt-2 flex items-center gap-2 text-slate-500 ${msg.isStreaming || !msg.text.trim() ? 'opacity-40 pointer-events-none' : ''}`}>
-                            <button
-                              type="button"
-                              onClick={() => handleRegenerateMessage(msg.id)}
-                              className="rounded-md p-1.5 hover:bg-slate-100"
-                              title="Regenerate"
-                            >
-                              <RotateCcw className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
+                          {msg.text.trim() && !msg.suppressText ? (
+                            <div className={`mt-2 flex items-center gap-2 text-slate-500 ${msg.isStreaming ? 'opacity-40 pointer-events-none' : ''}`}>
+                              <button
+                                type="button"
+                                onClick={() => handleRegenerateMessage(msg.id)}
+                                className="rounded-md p-1.5 hover:bg-slate-100"
+                                title="Regenerate"
+                              >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ) : null}
                         </div>
                       ) : (() => {
                         const messageText = String(msg.text || '');
                         const isPersonalizationSummary = messageText.startsWith('A few questions to personalize your training');
+                        const attachments = Array.isArray(msg.attachments) ? msg.attachments : [];
+                        const renderAttachments = () =>
+                          attachments.length > 0 ? (
+                            <div className="mb-2 flex flex-wrap gap-1.5">
+                              {attachments.map((att) => (
+                                <div
+                                  key={`${msg.id}-att-${att.id}`}
+                                  className="inline-flex max-w-full items-center gap-2 rounded-lg border border-slate-200 bg-white/90 px-2 py-1 shadow-sm"
+                                  title={att.name}
+                                >
+                                  <span className="shrink-0">{getFileIcon(att.type, true)}</span>
+                                  <span className="max-w-[160px] truncate text-[11px] font-semibold text-slate-800">
+                                    {att.name}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null;
                         if (isPersonalizationSummary) {
                           const lines = messageText
                             .split('\n')
@@ -5623,6 +5716,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                           const detailLines = lines.slice(1);
                           return (
                             <div className="max-w-[72%] rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-slate-900">
+                              {renderAttachments()}
                               <p className="mb-2 text-[15px] font-bold leading-tight">{title}</p>
                               <div className="space-y-1.5">
                                 {detailLines.map((line, idx) => (
@@ -5636,7 +5730,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                         }
                         return (
                           <div className="max-w-[60%] rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-medium text-slate-900">
-                            {msg.text}
+                            {renderAttachments()}
+                            {msg.text ? <div className="whitespace-pre-wrap">{msg.text}</div> : null}
                           </div>
                         );
                       })()}
