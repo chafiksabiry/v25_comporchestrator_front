@@ -3380,6 +3380,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
       const cleanMessage = message.trim();
       if (!cleanMessage || isChatLoading) return { ok: false, error: 'busy_or_empty' };
       let streamingAssistantId: string | null = null;
+      const getHiddenCommandUserLabel = (msg: string): string | null => {
+        if (msg === '__VALIDATE_MODULE_CONTENT__') return 'Je valide le contenu du module.';
+        if (msg === '__VALIDATE_PLAN__') return 'Je valide le plan.';
+        if (msg === '__VALIDATE_ALL_MODULES_CONTENT__') return 'Je valide le contenu de tous les modules.';
+        return null;
+      };
       const shouldAppendUser = options?.appendUser !== false;
       if (shouldAppendUser) {
         appendChatMessage(
@@ -3389,6 +3395,11 @@ export default function ContentUploader(props: ContentUploaderProps) {
             ? { attachments: options.attachments }
             : {}
         );
+      } else {
+        const hiddenCommandLabel = getHiddenCommandUserLabel(cleanMessage);
+        if (hiddenCommandLabel) {
+          appendChatMessage('user', hiddenCommandLabel);
+        }
       }
       // After the attachments are snapshotted on the user bubble, clear the composer tray
       // so the same files don't linger under the input.
@@ -4598,7 +4609,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                 onClick={async () => {
                   if (isChatLoading) return;
                   if (action.id === 'validate_module_content') {
-                    appendChatMessage('user', 'Je valide le contenu du module.');
                     void sendChatMessage('__VALIDATE_MODULE_CONTENT__', { appendUser: false });
                     return;
                   }
@@ -4610,7 +4620,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                       });
                       return;
                     }
-                    appendChatMessage('user', 'Je valide le plan.');
                     setIsPlanValidationSubmitting(true);
                     setPlanValidationHint(null);
                     const result = await sendChatMessage('__VALIDATE_PLAN__', { appendUser: false });
@@ -4627,7 +4636,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     return;
                   }
                   if (action.id === 'validate_all_modules_content') {
-                    appendChatMessage('user', 'Je valide le contenu de tous les modules.');
                     void sendChatMessage('__VALIDATE_ALL_MODULES_CONTENT__', { appendUser: false });
                     return;
                   }
@@ -4668,9 +4676,27 @@ export default function ContentUploader(props: ContentUploaderProps) {
 
     const renderChatWorkflowSidebar = (): React.ReactNode | null => {
       const status = chatWorkflowStatus || chatWorkflowStatusRef.current;
-      if (!status) return null;
-      const planStatus = String(status.plan || 'pending') as 'pending' | 'in_progress' | 'completed';
-      const modules = Array.isArray(status.modules) ? status.modules : [];
+      const fallbackPlanRaw =
+        chatSessionModulePlanRef.current.length > 0
+          ? chatSessionModulePlanRef.current
+          : Array.isArray((journey as any)?.modulePlan)
+            ? ((journey as any).modulePlan as Array<Record<string, any>>)
+            : [];
+      const fallbackModules = fallbackPlanRaw
+        .map((m, idx) => ({
+          index: idx,
+          title: String(m?.title || `Module ${idx + 1}`).trim(),
+          status: Boolean(m?.isValid) ? 'completed' : ('pending' as const),
+        }))
+        .filter((m) => m.title);
+      const resolvedModules = Array.isArray(status?.modules) && status.modules.length > 0
+        ? status.modules
+        : fallbackModules;
+      if (!status && resolvedModules.length === 0) return null;
+      const planStatus = String(
+        status?.plan || (resolvedModules.length >= 2 ? 'in_progress' : 'pending')
+      ) as 'pending' | 'in_progress' | 'completed';
+      const modules = resolvedModules;
       const chipClass = (s: 'pending' | 'in_progress' | 'completed'): string =>
         s === 'completed'
           ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
