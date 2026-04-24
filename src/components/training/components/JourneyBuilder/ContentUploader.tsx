@@ -3861,9 +3861,17 @@ export default function ContentUploader(props: ContentUploaderProps) {
     ): React.ReactNode | null => {
       const text = String(rawText || '').trim();
       if (!text) return null;
+      const looksLikeModuleContent =
+        /###\s*(📚|🧪|✅|📝)\s*|explication\s+d[ée]taill[ée]e|mini\s+quiz|auto[-\s]?[eé]valuation|hands-on\s+exercise/i.test(
+          text
+        );
+      if (looksLikeModuleContent) return null;
+      const likelyPlanMessage =
+        /(plan\s+de\s+formation|training\s+plan|^\s*##\s*module\s*\d+|^\s*module\s*\d+\s*[-:])/im.test(text);
       const parsedPlan = parseTrainingPlan(text);
       const structuredModules = getStructuredModulePlanForUi();
-      const timelineModules = structuredModules.length >= 2 ? structuredModules : parsedPlan.modules;
+      const timelineModules =
+        likelyPlanMessage && structuredModules.length >= 2 ? structuredModules : parsedPlan.modules;
       if (timelineModules.length >= 2) {
         const usingStructuredPlan = structuredModules.length >= 2;
         const timelineTitle = usingStructuredPlan ? 'Plan de formation (sauvegardé)' : parsedPlan.title || 'Plan de formation';
@@ -4442,23 +4450,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
               </button>
             ))}
           </div>
-        </div>
-      );
-    };
-
-    const renderPlanNextStepHint = (
-      show: boolean,
-      _hasConfirmButton: boolean
-    ): React.ReactNode | null => {
-      if (!show) return null;
-      return (
-        <div className="mb-2 rounded-2xl border border-sky-200 bg-sky-50 p-3">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-sky-800">Next step</p>
-          <p className="mt-1 text-xs text-sky-900">
-            {isPlanSavedForChat
-              ? 'Cliquez sur un module pour générer son contenu.'
-              : "Le clic module est désactivé tant que le plan n'est pas enregistré."}
-          </p>
         </div>
       );
     };
@@ -5309,10 +5300,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                               const interactiveQuestionnaire = renderInteractiveQuestionnaire(msg.id, textWithoutStyle, String(msg.text || ''));
                               const interactiveChoiceCards = renderInteractiveChoiceCards(msg.id, textWithoutStyle, String(msg.text || ''));
                               const trainingReadinessCard = renderTrainingReadinessCard(msg.id, msg.trainingReadiness);
-                              const nextStepHint = renderPlanNextStepHint(
-                                !!interactiveTimeline,
-                                false
-                              );
                               const hideMarkdownForInteractivePlan = !!interactiveTimeline;
                               const shouldShowMarkdownBody = !hideMarkdownForInteractivePlan && !msg.suppressText;
                               // Fallback markdown: keep typography hierarchy, but avoid "card-like" tinted blocks
@@ -5461,9 +5448,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   ) : null}
                                   {trainingReadinessCard ? (
                                     <div className="mb-2">{trainingReadinessCard}</div>
-                                  ) : null}
-                                  {nextStepHint ? (
-                                    <div className="mb-2">{nextStepHint}</div>
                                   ) : null}
                                   {interactiveQuestionnaire ? (
                                     <div className="mb-2">{interactiveQuestionnaire}</div>
