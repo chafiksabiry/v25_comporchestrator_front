@@ -2741,21 +2741,51 @@ export default function ContentUploader(props: ContentUploaderProps) {
       trainingDescription: journey?.description,
     };
 
+    type TimelinePlanModule = {
+      title: string;
+      duration?: string;
+      bullets: string[];
+      sections: {
+        objectives: string[];
+        keyTopics: string[];
+        activities: string[];
+        evaluation: string[];
+        deliverables: string[];
+      };
+    };
+
+    const getStructuredModulePlanForUi = (): TimelinePlanModule[] => {
+      const fromJourney = Array.isArray((journey as any)?.modulePlan) ? ((journey as any).modulePlan as any[]) : [];
+      const fromSession = Array.isArray(chatSessionModulePlanRef.current) ? chatSessionModulePlanRef.current : [];
+      const source = fromJourney.length >= 2 ? fromJourney : fromSession;
+      if (!Array.isArray(source) || source.length < 2) return [];
+
+      const normalizeDuration = (v: any): string | undefined => {
+        const n = Number(v);
+        if (!Number.isFinite(n) || n <= 0) return undefined;
+        return `${Math.round(n)} min`;
+      };
+
+      return source
+        .map((m: any): TimelinePlanModule => ({
+          title: String(m?.title || '').trim(),
+          duration: normalizeDuration(m?.durationMinutes),
+          bullets: [],
+          sections: {
+            objectives: Array.isArray(m?.objectifs) ? m.objectifs.map((x: any) => String(x || '').trim()).filter(Boolean) : [],
+            keyTopics: Array.isArray(m?.keyTopics) ? m.keyTopics.map((x: any) => String(x || '').trim()).filter(Boolean) : [],
+            activities: Array.isArray(m?.activites) ? m.activites.map((x: any) => String(x || '').trim()).filter(Boolean) : [],
+            evaluation: [],
+            deliverables: [],
+          },
+        }))
+        .filter((m) => m.title);
+    };
+
     const parseTrainingPlan = (rawText: string): {
       title?: string;
       intro?: string;
-      modules: Array<{
-        title: string;
-        duration?: string;
-        bullets: string[];
-        sections: {
-          objectives: string[];
-          keyTopics: string[];
-          activities: string[];
-          evaluation: string[];
-          deliverables: string[];
-        };
-      }>;
+      modules: TimelinePlanModule[];
     } => {
       const lines = String(rawText || '')
         .split('\n')
@@ -2782,30 +2812,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
         return false;
       });
       const introLines: string[] = [];
-      const modules: Array<{
-        title: string;
-        duration?: string;
-        bullets: string[];
-        sections: {
-          objectives: string[];
-          keyTopics: string[];
-          activities: string[];
-          evaluation: string[];
-          deliverables: string[];
-        };
-      }> = [];
-      let current: {
-        title: string;
-        duration?: string;
-        bullets: string[];
-        sections: {
-          objectives: string[];
-          keyTopics: string[];
-          activities: string[];
-          evaluation: string[];
-          deliverables: string[];
-        };
-      } | null = null;
+      const modules: TimelinePlanModule[] = [];
+      let current: TimelinePlanModule | null = null;
       let activeSection: 'objectives' | 'keyTopics' | 'activities' | 'evaluation' | 'deliverables' | null = null;
       let activeNestedTitle: string | null = null;
 
@@ -3855,7 +3863,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
       const text = String(rawText || '').trim();
       if (!text) return null;
       const parsedPlan = parseTrainingPlan(text);
-      if (parsedPlan.modules.length >= 2) {
+      const structuredModules = getStructuredModulePlanForUi();
+      const timelineModules = structuredModules.length >= 2 ? structuredModules : parsedPlan.modules;
+      if (timelineModules.length >= 2) {
+        const usingStructuredPlan = structuredModules.length >= 2;
+        const timelineTitle = usingStructuredPlan ? 'Plan de formation (sauvegardé)' : parsedPlan.title || 'Plan de formation';
+        const timelineIntro = usingStructuredPlan ? '' : parsedPlan.intro;
         const moduleThemes = [
           { bg: 'bg-emerald-50', border: 'border-emerald-200', badge: 'bg-emerald-600' },
           { bg: 'bg-sky-50', border: 'border-sky-200', badge: 'bg-sky-600' },
@@ -3870,12 +3883,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
             <div className="mb-2">
               <p className="text-xs font-bold uppercase tracking-wide text-harx-600">Plan</p>
               <p className="text-sm font-semibold text-slate-900">
-                {parsedPlan.title || 'Plan de formation'}
+                {timelineTitle}
               </p>
-              {parsedPlan.intro ? <p className="mt-1 text-xs text-slate-600">{parsedPlan.intro}</p> : null}
+              {timelineIntro ? <p className="mt-1 text-xs text-slate-600">{timelineIntro}</p> : null}
             </div>
             <div className="flex flex-col gap-2">
-              {parsedPlan.modules.map((module, idx) => {
+              {timelineModules.map((module, idx) => {
                 const theme = moduleThemes[idx % moduleThemes.length];
                 const moduleEmoji = moduleEmojis[idx % moduleEmojis.length];
                 const renderSectionWithIndent = (
