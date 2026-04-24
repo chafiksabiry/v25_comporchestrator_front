@@ -4522,6 +4522,14 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     });
                     return;
                   }
+                  if (action.id === 'generate_current_module') {
+                    const moduleRef =
+                      String(action.label || '').match(/module\s+\d+/i)?.[0] || 'Module 1';
+                    void sendChatMessage(`Donne le contenu du ${moduleRef}.`, {
+                      appendUser: false,
+                    });
+                    return;
+                  }
                   if (action.id === 'save_without_missing' || action.id === 'validate_training') {
                     void sendChatMessage('Je valide et j’enregistre.', { appendUser: false });
                     return;
