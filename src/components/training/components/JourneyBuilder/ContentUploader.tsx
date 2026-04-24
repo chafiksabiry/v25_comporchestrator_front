@@ -4499,6 +4499,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     setPlanValidationHint(null);
                     const result = await sendChatMessage('__VALIDATE_PLAN__', { appendUser: false });
                     if (result.ok && result.planSaved) {
+                      setIsPlanSavedForChat(true);
                       setPlanValidationHint({
                         type: 'success',
                         text: 'Plan validé et enregistré en base.',
