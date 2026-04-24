@@ -4211,8 +4211,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
       if (blocks.length < 2) return null;
 
       return (
-        <div className="mb-3 rounded-2xl border border-harx-100 bg-gradient-to-b from-white to-indigo-50/30 p-3 shadow-sm">
-          <div className="mb-3 rounded-xl border border-indigo-200 bg-indigo-50/60 px-3 py-2 text-center">
+        <div className="mb-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+          <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center">
             <p className="text-sm font-bold text-slate-900">{titleCandidate}</p>
           </div>
           <div className="grid gap-2 md:grid-cols-3">
@@ -4292,10 +4292,10 @@ export default function ContentUploader(props: ContentUploaderProps) {
       const artifact = extractPresentationArtifactFromText(rawText);
       if (!artifact) return null;
       return (
-        <div className="mb-2 rounded-2xl border border-indigo-200 bg-gradient-to-b from-white to-indigo-50/40 p-3 shadow-sm">
+        <div className="mb-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
           <div className="mb-2 flex items-center justify-between gap-2">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-indigo-600">Presentation Artifact</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-600">Presentation Artifact</p>
               <p className="text-sm font-semibold text-slate-900">{artifact.title}</p>
             </div>
             <div className="flex items-center gap-1.5">
@@ -4314,7 +4314,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
                     setShowPresentationModal(true);
                   }
                 }}
-                className="rounded-md border border-indigo-200 bg-white px-2 py-1 text-[10px] font-semibold text-indigo-700 hover:bg-indigo-50"
+                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Open preview
               </button>
@@ -5527,21 +5527,6 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                 bodyFont: 'Inter, system-ui, sans-serif',
                                 headingFont: 'Inter, system-ui, sans-serif',
                               };
-                              const layoutPreset = styleBlueprint.layoutPreset || 'cards';
-                              const moduleShapeClass =
-                                contentTheme?.moduleShape === 'square'
-                                  ? 'rounded-none'
-                                  : contentTheme?.moduleShape === 'soft'
-                                    ? 'rounded-3xl'
-                                    : 'rounded-2xl';
-                              const cardParagraphs = layoutPreset === 'cards';
-                              const editorialParagraphs = layoutPreset === 'editorial';
-                              const wrapperBackground =
-                                layoutPreset === 'cards'
-                                  ? `linear-gradient(180deg, ${contentTheme?.canvasBg || '#ffffff'} 0%, #f8fafc 100%)`
-                                  : layoutPreset === 'editorial'
-                                    ? `linear-gradient(145deg, ${contentTheme?.canvasBg || '#ffffff'} 0%, #f1f5f9 100%)`
-                                    : (contentTheme?.canvasBg || '#ffffff');
                               const pendingStream = Boolean(msg.isStreaming && !String(textWithoutStyle || '').trim());
                               if (pendingStream) {
                                 return (
@@ -5582,59 +5567,35 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   : null;
                               const hideMarkdownForInteractivePlan = !!interactiveTimeline;
                               const shouldShowMarkdownBody = !hideMarkdownForInteractivePlan && !msg.suppressText;
-                              // Fallback markdown: keep typography hierarchy, but avoid "card-like" tinted blocks
-                              // (paragraph/list backgrounds) which users perceive as unwanted background colors.
-                              const softMarkdownChrome = disableDecorativeTrainingUi;
-                              const effectiveCardParagraphs = softMarkdownChrome ? false : cardParagraphs;
-                              const effectiveEditorialParagraphs = softMarkdownChrome ? false : editorialParagraphs;
                               const markdownComponents: Partial<Components> = {
                                 h1: ({ children }) => (
                                   <h3
-                                    className={`${moduleShapeClass} mb-2 mt-3 border px-3 py-2 text-[22px] font-bold`}
-                                    style={{
-                                      borderColor: styleBlueprint.accentColor || '#f9a8d4',
-                                      color: styleBlueprint.titleColor || contentTheme?.headingColor || '#0f172a',
-                                      background: `linear-gradient(90deg, ${contentTheme?.badgeBg || '#fdf2f8'} 0%, ${contentTheme?.tableHeaderBg || '#eff6ff'} 100%)`,
-                                      fontFamily: typography.headingFont,
-                                    }}
+                                    className="mb-2 mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[22px] font-bold text-slate-900"
+                                    style={{ fontFamily: typography.headingFont }}
                                   >
                                     {children}
                                   </h3>
                                 ),
                                 h2: ({ children }) => (
                                   <h4
-                                    className={`${moduleShapeClass} mb-2 mt-3 border px-3 py-1.5 text-[18px] font-semibold`}
-                                    style={{
-                                      borderColor: contentTheme?.tableBorder || '#bae6fd',
-                                      background: contentTheme?.tableHeaderBg || '#eff6ff',
-                                      color: contentTheme?.headingColor || '#0f172a',
-                                      fontFamily: typography.headingFont,
-                                    }}
+                                    className="mb-2 mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[18px] font-semibold text-slate-900"
+                                    style={{ fontFamily: typography.headingFont }}
                                   >
                                     {children}
                                   </h4>
                                 ),
                                 h3: ({ children }) => (
                                   <h5
-                                    className="mb-1.5 mt-2 text-[16px] font-semibold"
-                                    style={{
-                                      color: styleBlueprint.accentColor || '#be123c',
-                                      fontFamily: typography.headingFont,
-                                    }}
+                                    className="mb-1.5 mt-2 text-[16px] font-semibold text-slate-900"
+                                    style={{ fontFamily: typography.headingFont }}
                                   >
                                     {children}
                                   </h5>
                                 ),
                                 p: ({ children }) => (
                                   <p
-                                    className={`my-1.5 text-[15px] leading-7 ${effectiveCardParagraphs ? `${moduleShapeClass} border px-2.5 py-1.5` : ''} ${effectiveEditorialParagraphs ? 'pl-3 border-l-2' : ''}`}
-                                    style={{
-                                      color: contentTheme?.bodyColor || '#334155',
-                                      borderColor: effectiveCardParagraphs
-                                        ? (contentTheme?.panelBorder || '#e2e8f0')
-                                        : (effectiveEditorialParagraphs ? (styleBlueprint.accentColor || '#be123c') : undefined),
-                                      backgroundColor: effectiveCardParagraphs ? (contentTheme?.panelBg || '#f8fafc') : 'transparent',
-                                    }}
+                                    className="my-1.5 text-[15px] leading-7 text-slate-700"
+                                    style={{ color: contentTheme?.bodyColor || '#334155' }}
                                   >
                                     {children}
                                   </p>
@@ -5657,28 +5618,20 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                 ),
                                 li: ({ children }) => (
                                   <li
-                                    className={softMarkdownChrome ? 'py-0.5' : `${moduleShapeClass} px-2 py-1`}
-                                    style={{
-                                      color: contentTheme?.bodyColor || '#334155',
-                                      backgroundColor: softMarkdownChrome ? 'transparent' : (contentTheme?.panelBg || '#f8fafc'),
-                                    }}
+                                    className="py-0.5 text-slate-700"
+                                    style={{ color: contentTheme?.bodyColor || '#334155' }}
                                   >
                                     {children}
                                   </li>
                                 ),
                                 strong: ({ children }) => <strong className="font-semibold text-slate-900">{children}</strong>,
                                 table: ({ children }) => (
-                                  <div
-                                    className={`${moduleShapeClass} my-3 overflow-x-auto border bg-white`}
-                                    style={{ borderColor: contentTheme?.tableBorder || '#cbd5e1' }}
-                                  >
+                                  <div className="my-3 overflow-x-auto rounded-lg border border-slate-200 bg-white">
                                     <table className="min-w-full border-collapse">{children}</table>
                                   </div>
                                 ),
-                                thead: ({ children }) => (
-                                  <thead style={{ backgroundColor: contentTheme?.tableHeaderBg || '#f1f5f9' }}>{children}</thead>
-                                ),
-                                tbody: ({ children }) => <tbody className="divide-y" style={{ borderColor: contentTheme?.tableBorder || '#cbd5e1' }}>{children}</tbody>,
+                                thead: ({ children }) => <thead className="bg-slate-100">{children}</thead>,
+                                tbody: ({ children }) => <tbody className="divide-y divide-slate-200">{children}</tbody>,
                                 tr: ({ children }) => <tr className="align-top">{children}</tr>,
                                 th: ({ children }) => (
                                   <th
@@ -5694,26 +5647,12 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   </td>
                                 ),
                                 code: ({ children }) => (
-                                  <code
-                                    className={`${moduleShapeClass} px-1.5 py-0.5 text-[13px] ring-1`}
-                                    style={{
-                                      color: contentTheme?.headingColor || '#1e293b',
-                                      backgroundColor: contentTheme?.tableRowBg || '#f8fafc',
-                                      borderColor: contentTheme?.tableBorder || '#cbd5e1',
-                                    }}
-                                  >
+                                  <code className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[13px] text-slate-800">
                                     {children}
                                   </code>
                                 ),
                                 blockquote: ({ children }) => (
-                                  <blockquote
-                                    className={`${moduleShapeClass} my-2 border-l-4 px-3 py-2 italic`}
-                                    style={{
-                                      borderLeftColor: styleBlueprint.accentColor || '#be123c',
-                                      backgroundColor: contentTheme?.badgeBg || '#fdf2f8',
-                                      color: contentTheme?.bodyColor || '#334155',
-                                    }}
-                                  >
+                                  <blockquote className="my-2 border-l-4 border-slate-300 bg-slate-50 px-3 py-2 text-slate-700 italic">
                                     {children}
                                   </blockquote>
                                 ),
@@ -5734,12 +5673,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
                                   ) : null}
                                   {shouldShowMarkdownBody ? (
                                     <div
-                                      className={disableDecorativeTrainingUi ? 'text-sm leading-7 text-slate-800' : `${moduleShapeClass} border p-3`}
-                                      style={{
-                                        borderColor: disableDecorativeTrainingUi ? undefined : (contentTheme?.panelBorder || '#e2e8f0'),
-                                        background: disableDecorativeTrainingUi ? 'transparent' : wrapperBackground,
-                                        fontFamily: typography.bodyFont,
-                                      }}
+                                      className="text-sm leading-7 text-slate-800"
+                                      style={{ fontFamily: typography.bodyFont }}
                                     >
                                       <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                                         {textWithoutStyle}
