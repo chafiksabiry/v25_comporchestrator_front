@@ -4758,7 +4758,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
     const hasPendingUpload = uploads.some(
       (u) => u.status === 'uploading' || u.status === 'processing'
     );
-    const composerDisabled = isChatLoading || hasPendingUpload;
+    const composerInputDisabled = isChatLoading;
+    const composerSendDisabled = isChatLoading || hasPendingUpload;
     const composerPlaceholder = hasPendingUpload
       ? 'Analyse des documents en cours…'
       : hasStartedChat
@@ -4835,7 +4836,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
         <textarea
           ref={chatTextareaRef}
           value={chatInput}
-          disabled={composerDisabled}
+          disabled={composerInputDisabled}
           onChange={(e) => setChatInput(e.target.value)}
           onInput={(e) => {
             const el = e.currentTarget;
@@ -4845,7 +4846,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
-              if (composerDisabled) return;
+              if (composerSendDisabled) return;
               void handleChatSubmit();
             }
           }}
@@ -4866,7 +4867,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
             <button
               type="button"
               onClick={() => void handleChatSubmit()}
-              disabled={!chatInput.trim() || composerDisabled}
+              disabled={!chatInput.trim() || composerSendDisabled}
               className="inline-flex items-center gap-1 rounded-xl bg-gradient-harx px-3 py-1.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
               title={hasPendingUpload ? 'Analyse des documents en cours…' : 'Send'}
             >
