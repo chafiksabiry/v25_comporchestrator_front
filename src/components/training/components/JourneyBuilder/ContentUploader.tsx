@@ -2797,7 +2797,7 @@ export default function ContentUploader(props: ContentUploaderProps) {
       methodologyName: methodology?.name || 'Methodologie 360',
       methodologyDescription: methodology?.description,
       methodologyComponents: Array.isArray(methodology?.components)
-        ? methodology.components.map((c) => c.title).slice(0, 8)
+        ? methodology.components.map((c) => String(c?.title || '').trim()).filter(Boolean)
         : [],
       trainingTitle: journey?.name,
       trainingDescription: journey?.description,
@@ -3600,6 +3600,8 @@ export default function ContentUploader(props: ContentUploaderProps) {
           knowledgeBaseDocuments: kbDocsSummary,
           selectedDuration: generationPreferences.selectedDuration,
           selectedMethodology: generationPreferences.methodologyName,
+          methodologyDescription: generationPreferences.methodologyDescription || null,
+          methodologyComponents: generationPreferences.methodologyComponents,
           personalizationProfile: {
             source: personalizationForContext.source || null,
             level: personalizationForContext.level || null,
